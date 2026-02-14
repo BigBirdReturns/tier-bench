@@ -1,0 +1,16 @@
+{
+  "task_id": "t3_refactor_god_function_002",
+  "tier": "T3",
+  "prompt_template": "Task: Refactor the god function in {target_relpath}.\n\nRules:\n- Break process_report into at least 3 top-level functions.\n- process_report must still exist and be the main entry point.\n- process_report body must be 40 lines or fewer.\n- Return ONLY the full updated content for {target_relpath}.\n- Do not add commentary.\n- The test suite in input.py must print OK and exit 0.\n\nCurrent file content:\n{file_content}\n\nBaseline run (before edits):\nexit={baseline_rc}\nstdout:\n{baseline_stdout}\nstderr:\n{baseline_stderr}\n\nOther files in fixture (read-only context):\n{context_files}\n",
+  "fixture_dir": "fixtures/t3_refactor_god_function",
+  "target_relpath": "pipeline.py",
+  "run_command": ["python", "input.py"],
+  "validate": {
+    "compile": true,
+    "ruff_imports": false,
+    "functional_equivalence": false,
+    "tests": true
+  },
+  "max_lines_changed": 250,
+  "allowed_files": ["pipeline.py"]
+}

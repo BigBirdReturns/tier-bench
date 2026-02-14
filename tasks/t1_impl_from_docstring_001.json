@@ -1,0 +1,21 @@
+{
+  "task_id": "t1_impl_from_docstring_001",
+  "tier": "T1",
+  "prompt_template": "Task: Implement required code changes for {target_relpath}.\n\nRules:\n- Return ONLY the full updated content for {target_relpath}.\n- Do not add commentary.\n- Make the program print OK and exit 0 when run as a script.\n\nCurrent file content:\n{file_content}\n\nBaseline run (before edits):\nexit={baseline_rc}\nstdout:\n{baseline_stdout}\nstderr:\n{baseline_stderr}\n\nOther files in fixture (read-only context):\n{context_files}\n",
+  "fixture_dir": "fixtures/t1_impl_from_docstring",
+  "target_relpath": "input.py",
+  "run_command": [
+    "python",
+    "input.py"
+  ],
+  "validate": {
+    "compile": true,
+    "ruff_imports": false,
+    "functional_equivalence": false,
+    "tests": true
+  },
+  "max_lines_changed": 150,
+  "allowed_files": [
+    "input.py"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "task_id": "t3_sql_injection_fix_001",
+  "tier": "T3",
+  "prompt_template": "Task: Security audit and fix for {target_relpath}.\n\nRules:\n- Find and fix the security vulnerability in this module.\n- Return ONLY the full updated content for {target_relpath}.\n- Do not add commentary.\n- All existing functionality must continue to work.\n- The test suite in input.py must print OK and exit 0.\n\nCurrent file content:\n{file_content}\n\nBaseline run (before edits):\nexit={baseline_rc}\nstdout:\n{baseline_stdout}\nstderr:\n{baseline_stderr}\n\nOther files in fixture (read-only context):\n{context_files}\n",
+  "fixture_dir": "fixtures/t3_sql_injection_fix",
+  "target_relpath": "db.py",
+  "run_command": ["python", "input.py"],
+  "validate": {
+    "compile": true,
+    "ruff_imports": false,
+    "functional_equivalence": false,
+    "tests": true
+  },
+  "max_lines_changed": 250,
+  "allowed_files": ["db.py"]
+}

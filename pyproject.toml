@@ -1,0 +1,11 @@
+[project]
+name = "model-capability-harness"
+version = "0.1.0"
+description = "Deterministic model capability harness with cost-per-success metrics."
+requires-python = ">=3.10"
+dependencies = [
+  "ruff>=0.6.0"
+]
+
+[tool.ruff]
+line-length = 100
