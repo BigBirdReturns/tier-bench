@@ -1,0 +1,11 @@
+[project]
+name = "tier-bench"
+version = "0.1.0"
+description = "Deterministic LLM benchmark harness with tier-based routing and cost-per-success metrics."
+requires-python = ">=3.10"
+dependencies = [
+  "ruff>=0.6.0"
+]
+
+[tool.ruff]
+line-length = 100

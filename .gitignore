@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Harness outputs
+*.jsonl
+harness_results.jsonl
+orchestrator_log.jsonl
+llm_costs.jsonl
+
+# Canonical baselines (generated per-machine)
+tasks/_canonical/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated cheatsheet (rebuilt by CI)
+cheatsheet.html
+index.html

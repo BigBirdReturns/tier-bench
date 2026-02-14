@@ -1,0 +1,21 @@
+{
+  "task_id": "t0_sort_imports_001",
+  "tier": "T0",
+  "prompt_template": "Task: T0 clerical edit on {target_relpath}.\n\nRules:\n- You must preserve runtime behavior exactly.\n- Return ONLY the full updated content for {target_relpath}.\n- Do not add commentary.\n\nCurrent file content:\n{file_content}\n\nBaseline run (before edits):\nexit={baseline_rc}\nstdout:\n{baseline_stdout}\nstderr:\n{baseline_stderr}\n\nOther files in fixture (read-only context):\n{context_files}\n",
+  "fixture_dir": "fixtures/t0_sort_imports",
+  "target_relpath": "input.py",
+  "run_command": [
+    "python",
+    "input.py"
+  ],
+  "validate": {
+    "compile": true,
+    "ruff_imports": true,
+    "functional_equivalence": true,
+    "tests": false
+  },
+  "max_lines_changed": 50,
+  "allowed_files": [
+    "input.py"
+  ]
+}
