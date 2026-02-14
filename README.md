@@ -4,6 +4,8 @@ Stop paying senior-engineer rates for intern work.
 
 This system figures out which LLM models can handle which complexity of coding task, so you route cheap models to easy work and only pay for expensive models when you actually need them.
 
+**📊 [Live Pricing & Capability Cheatsheet](https://bigbirdreturns.github.io/model-capability-harness/)**
+
 ## The Problem
 
 Developers default to frontier models for everything. Sorting imports with Opus is like hiring a principal engineer to alphabetize a filing cabinet. The industry evaluates models on vibes. This evaluates them on deterministic pass/fail tests against real coding tasks.
