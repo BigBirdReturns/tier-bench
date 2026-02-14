@@ -1,64 +1,92 @@
 # Tier Bench
 
-Stop paying senior-engineer rates for intern work.
+Tier Bench is an empirical benchmarking system for LLM routing. It measures which models actually succeed at different task tiers and what they cost per successful outcome, then feeds that data into a cost-guarded router.
 
-**[📊 Live Pricing & Capability Cheatsheet](https://bigbirdreturns.github.io/tier-bench/)**
+This replaces vibe-based model selection with operational data.
 
-This system figures out which LLM models can handle which complexity of coding task, so you route cheap models to easy work and only pay for expensive models when you actually need them.
+**[Live Pricing & Capability Cheatsheet](https://bigbirdreturns.github.io/tier-bench/)**
 
-## The Problem
+## The problem
 
-Developers default to frontier models for everything. Sorting imports with Opus is like hiring a principal engineer to alphabetize a filing cabinet. The industry evaluates models on vibes. This evaluates them on deterministic pass/fail tests against real coding tasks.
+Most AI tooling does this:
 
-## From Zip to Running
+1. Pick a "best" model by reputation
+2. Route everything to it
+3. Hope the bill does not explode
+
+That approach fails because cheap models are good at many tasks, expensive models are only needed for a few, nobody measures success rate per task tier, and token cost alone is meaningless without success probability.
+
+Routing without measurement burns money.
+
+## What Tier Bench does
+
+Tier Bench treats models like infrastructure, not magic.
+
+It runs deterministic tasks across defined tiers and records success or failure, tokens consumed, and dollars spent. From that it computes:
+
+```
+cost_per_success = average_cost / success_rate
+```
+
+Routing decisions are based on measured performance, not brand names.
+
+## Task tiers
+
+Tasks are grouped by what can be validated deterministically.
+
+| Tier | Work | Tasks | Validation |
+|------|------|-------|------------|
+| T0 | Formatting, imports, renames. Zero logic change. | 3 | compile, ruff, functional equivalence |
+| T1 | Simple functions, unit tests, docstring specs. | 3 | compile, tests |
+| T2 | Bug fixes, API wiring, multi-file patches. | 3 | compile, tests, diff bounds |
+| T3 | Security fixes, god function refactors, cross-module debugging. | 3 | compile, tests, AST structural checks |
+| T4 | Planning, decomposition. | 0 | JSON plan validity (buildable, not built) |
+| T5 | Architectural judgment. | 0 | Not benchmarked. Human review. |
+
+Tier Bench is explicit about what it measures and what it does not.
+
+T0 through T3 have 12 deterministic tasks with objective pass/fail. T4 and T5 ceilings are assigned by frontier positioning. The README does not pretend otherwise.
+
+## How it works
+
+1. `models.json` defines the live model registry. Providers, pricing, tier ceilings, routing candidates. This is the single source of truth. Edit this file to add models. Do not edit Python.
+
+2. The harness runs deterministic fixtures per tier. Compile checks, tests, diff limits, behavior preservation.
+
+3. The orchestrator decomposes plain-English requests into tiered subtasks. It injects repo context, enforces path safety, sanitizes model output, and restricts writes to allowed files.
+
+4. Cost Guard enforces hard limits. Per-call caps, daily caps, tier constraints.
+
+5. Results are logged. Success rate and cost per success drive routing decisions.
+
+Humans approve routing changes. Nothing updates itself silently.
+
+## Quick start
 
 ```bash
 git clone https://github.com/bigbirdreturns/tier-bench.git && cd tier-bench
 bash setup.sh
-export ANTHROPIC_API_KEY=sk-ant-...  # or any supported provider
-python orchestrator.py --dry-run "Add user authentication"  # free, no API calls
-python orchestrator.py --benchmark T0  # costs ~$0.01
-python scripts/compute_metrics.py  # see your routing table
+```
+
+Set at least one provider key:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...    # or
+export OPENAI_API_KEY=sk-...           # or
+export GEMINI_API_KEY=...              # or start Ollama for $0 local models
+```
+
+Run:
+
+```bash
+python orchestrator.py --dry-run "Add authentication"     # estimate cost, no API calls
+python orchestrator.py --benchmark T0                      # run T0 tasks (~$0.01)
+python orchestrator.py --benchmark all                     # run all tiers
+python scripts/compute_metrics.py                          # view routing table
 python scripts/generate_cheatsheet.py --results harness_results.jsonl  # HTML reference
 ```
 
-## How Tier Ceilings Are Set
-
-This is the most important section. There are two different methodologies at work, and they meet in the middle.
-
-### Bottom-Up: T0–T3 (Deterministic Testing)
-
-Tiers 0 through 3 are backed by **12 deterministic test tasks** with objective pass/fail criteria. No vibes. The harness runs each task against every model at that tier ceiling, and either the output compiles and passes tests, or it doesn't.
-
-| Tier | What It Tests | # Tasks | Validators |
-|------|--------------|---------|------------|
-| T0 — Clerical | Format, lint, rename. Must preserve runtime behavior exactly. | 3 | compile, ruff imports, functional equivalence |
-| T1 — Junior | Implement from a docstring spec. Edge cases included. | 3 | compile, test pass |
-| T2 — Mid | Fix bugs, implement clients, coordinate across files. | 3 | compile, test pass, diff bounds |
-| T3 — Senior | Security audit (find SQL injection), refactor god functions, debug cross-module bugs with inverted logic. | 3 | compile, test pass, structural checks (AST) |
-
-**Why this works:** T0 tasks are deliberately boring — a model that "helpfully" refactors while formatting fails the functional equivalence check. T1 specs have edge cases (café → caf, multiple hyphens) that weak models miss. T2 tasks require reading across files. T3 tasks require judgment — recognizing a vulnerability, deciding how to decompose a function, tracing a bug through two modules with inverted comparison logic.
-
-**What it proves:** When the harness says a model passes T2, that model actually demonstrated it can fix a division-by-zero, implement an HTTP client, and coordinate a multi-file patch. That's not a claim — it's a test result.
-
-### Top-Down: T4–T5 (Assumed From Frontier Position)
-
-Tiers 4 and 5 have **no automated tests.** These tiers involve planning, architecture, and decomposition — tasks where "correct" is a judgment call, not a compiler check.
-
-| Tier | What It Means | How Ceiling Is Set |
-|------|--------------|-------------------|
-| T4 — Staff | Decompose vague requests into plans, design interfaces | Assigned to models priced/positioned as frontier reasoning models |
-| T5 — Principal | Architecture tradeoffs, long-horizon decisions | Assigned to the most capable models available |
-
-**Why this is honest:** You don't give a principal engineer a multiple-choice test. You look at their work and decide if it was worth the rate. T4/T5 models are expensive ($5–$25/M output tokens). If you're paying that much, you're going to evaluate the output yourself. The harness doesn't pretend to automate that judgment.
-
-**Why this still saves money:** The value isn't in proving Opus can think. The value is in proving that Haiku can handle T0 and T1 — which means 80% of your coding tasks go to a model that costs 95% less. T4/T5 gets touched once or twice a day for planning.
-
-### The Middle: Future T4 Testing
-
-T4 is the most testable of the upper tiers. The orchestrator's planner is a T4 task — give it a request and a repo, get back a JSON plan. You could test: does the plan have valid file paths? Are tier assignments reasonable? Do the subtasks actually execute when fed back through the harness? This is buildable. It just isn't built yet.
-
-## Adding Your Own Models
+## Adding models
 
 Edit `models.json`. Every model is one entry:
 
@@ -71,11 +99,11 @@ Edit `models.json`. Every model is one entry:
 }
 ```
 
-The `tier_ceiling` is your hypothesis. The benchmark proves or disproves it.
+`tier_ceiling` is your hypothesis. The benchmark proves or disproves it.
 
 Supported providers: `anthropic`, `openai`, `deepseek`, `mistral`, `google`, `ollama`, `openai-compat`.
 
-For HuggingFace models: `ollama pull hf.co/username/model-GGUF`, add entry, run benchmark.
+For HuggingFace models via Ollama: `ollama pull hf.co/username/model-GGUF`, add the entry, run the benchmark.
 
 For any OpenAI-compatible endpoint (LMStudio, vLLM, text-generation-inference):
 
@@ -89,26 +117,28 @@ For any OpenAI-compatible endpoint (LMStudio, vLLM, text-generation-inference):
 }
 ```
 
-## Cost Controls
+## Adding tasks
 
-| Layer | What It Does | Default |
+See [CONTRIBUTING.md](CONTRIBUTING.md). Add a fixture directory and a JSON manifest. Run `python scripts/validate_task.py` to verify. If it passes, it will not break the harness. No Python changes needed.
+
+## Cost controls
+
+| Layer | What it does | Default |
 |-------|-------------|---------|
 | Provider billing cap | Hard limit in your provider console | Set this yourself |
 | Daily spend limit | CostGuard refuses all calls after this | $10.00 |
 | Per-call limit | Refuses any single expensive call | $1.00 |
 
-## Commands
+Running the full T0-T3 benchmark costs roughly $0.15. Weekly automation runs about $0.60/month.
 
-```bash
-python orchestrator.py "your task here"           # decompose, route, execute
-python orchestrator.py --benchmark T0              # test models against T0 tasks
-python orchestrator.py --benchmark all             # test all tiers
-python orchestrator.py --dry-run "your task"       # estimate cost, no API calls
-python scripts/compute_metrics.py                  # view benchmark results
-python scripts/generate_cheatsheet.py              # generate HTML reference
-python scripts/generate_cheatsheet.py --results harness_results.jsonl  # with benchmark data
-```
+## What this is not
 
-## Claude Code Integration
+Tier Bench is not an agent framework, not an auto-refactor tool, not a prompt playground, and not a "just trust GPT-4" wrapper. It exists to make model selection boring, predictable, and cheap.
 
-Drop `CLAUDE.md` in your project root. Claude Code reads it automatically and self-routes: Haiku for formatting, Sonnet for debugging, Opus only for architecture. No Python harness needed for this — it works today.
+## Claude Code integration
+
+Drop `CLAUDE.md` in your project root. Claude Code reads it automatically and self-routes: Haiku for formatting, Sonnet for debugging, Opus only for architecture. No Python harness needed.
+
+## Status
+
+This project is intentionally narrow in scope. If it cannot be measured deterministically, it is not benchmarked. That constraint is the feature.

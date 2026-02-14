@@ -111,7 +111,7 @@ def generate_html(models: dict, results: dict) -> str:
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Model Routing Cheatsheet</title>
+<title>Tier Bench — Model Routing Cheatsheet</title>
 <style>
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;
@@ -166,7 +166,7 @@ def generate_html(models: dict, results: dict) -> str:
 </table>
 </div>
 
-{'<div class="section"><h2>Benchmark Results</h2><p class="note">Pass rates from harness_results.jsonl. Green ≥80%, yellow ≥50%, red &lt;50%.</p></div>' if has_results else '<div class="section"><h2>No Benchmark Results Yet</h2><p>Run <code>python orchestrator.py --benchmark T0</code> to generate results, then regenerate this page.</p></div>'}
+{'<div class="section"><h2>Benchmark Results</h2><p class="note">Pass rates from harness_results.jsonl. Green ≥80%, yellow ≥50%, red &lt;50%.</p></div>' if has_results else '<div class="section"><h2>Benchmark Results</h2><p>No benchmark data yet. The model registry above shows pricing and tier ceilings. Clone the repo and run the benchmark to add empirical pass rates.</p></div>'}
 
 <div class="add-model">
 <h2>Adding a Model</h2>
