@@ -1,10 +1,8 @@
-# Model Capability Harness
+# tier-bench
 
 Stop paying senior-engineer rates for intern work.
 
 This system figures out which LLM models can handle which complexity of coding task, so you route cheap models to easy work and only pay for expensive models when you actually need them.
-
-**📊 [Live Pricing & Capability Cheatsheet](https://bigbirdreturns.github.io/model-capability-harness/)**
 
 ## The Problem
 
@@ -13,7 +11,7 @@ Developers default to frontier models for everything. Sorting imports with Opus 
 ## From Zip to Running
 
 ```bash
-unzip model_capability_harness.zip && cd model_capability_harness
+unzip tier-bench.zip && cd tier-bench
 bash setup.sh
 export ANTHROPIC_API_KEY=sk-ant-...  # or any supported provider
 python orchestrator.py --dry-run "Add user authentication"  # free, no API calls
