@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "Model registry. Add any model here — cloud API, local Ollama, whatever.",
+    "Model registry. Add any model here \u2014 cloud API, local Ollama, whatever.",
     "The harness will test it and tell you if your tier_ceiling guess is right.",
     "",
     "Fields:",
@@ -17,176 +17,174 @@
     "  3. Run: python orchestrator.py --benchmark T0",
     "  4. Check if it passes. Adjust tier_ceiling based on results."
   ],
-
   "models": {
     "claude-haiku-4-5": {
       "provider": "anthropic",
-      "input_per_1M": 1.00,
-      "output_per_1M": 5.00,
+      "input_per_1M": 1.0,
+      "output_per_1M": 5.0,
       "tier_ceiling": "T2"
     },
     "claude-sonnet-4-5": {
       "provider": "anthropic",
-      "input_per_1M": 3.00,
-      "output_per_1M": 15.00,
+      "input_per_1M": 3.0,
+      "output_per_1M": 15.0,
       "tier_ceiling": "T3"
     },
     "claude-opus-4-6": {
       "provider": "anthropic",
-      "input_per_1M": 5.00,
-      "output_per_1M": 25.00,
+      "input_per_1M": 5.0,
+      "output_per_1M": 25.0,
       "tier_ceiling": "T5"
     },
     "claude-fable-5": {
       "provider": "anthropic",
-      "input_per_1M": 10.00,
-      "output_per_1M": 50.00,
+      "input_per_1M": 10.0,
+      "output_per_1M": 50.0,
       "tier_ceiling": "T5"
     },
-
     "gpt-5-nano": {
       "provider": "openai",
       "input_per_1M": 0.05,
-      "output_per_1M": 0.40,
+      "output_per_1M": 0.4,
       "tier_ceiling": "T1"
     },
     "gpt-5-mini": {
       "provider": "openai",
       "input_per_1M": 0.25,
-      "output_per_1M": 2.00,
+      "output_per_1M": 2.0,
       "tier_ceiling": "T3"
     },
     "gpt-5": {
       "provider": "openai",
       "input_per_1M": 1.25,
-      "output_per_1M": 10.00,
+      "output_per_1M": 10.0,
       "tier_ceiling": "T4"
     },
     "gpt-5.1": {
       "provider": "openai",
       "input_per_1M": 1.25,
-      "output_per_1M": 10.00,
+      "output_per_1M": 10.0,
       "tier_ceiling": "T4"
     },
     "gpt-5.2": {
       "provider": "openai",
       "input_per_1M": 1.75,
-      "output_per_1M": 14.00,
+      "output_per_1M": 14.0,
       "tier_ceiling": "T5"
     },
     "gpt-4.1-nano": {
       "provider": "openai",
-      "input_per_1M": 0.20,
-      "output_per_1M": 0.80,
+      "input_per_1M": 0.2,
+      "output_per_1M": 0.8,
       "tier_ceiling": "T1"
     },
     "gpt-4.1-mini": {
       "provider": "openai",
-      "input_per_1M": 0.70,
-      "output_per_1M": 2.80,
+      "input_per_1M": 0.7,
+      "output_per_1M": 2.8,
       "tier_ceiling": "T2"
     },
     "gpt-4.1": {
       "provider": "openai",
-      "input_per_1M": 3.50,
-      "output_per_1M": 14.00,
+      "input_per_1M": 3.5,
+      "output_per_1M": 14.0,
       "tier_ceiling": "T4"
     },
     "o4-mini": {
       "provider": "openai",
-      "input_per_1M": 2.00,
-      "output_per_1M": 8.00,
+      "input_per_1M": 2.0,
+      "output_per_1M": 8.0,
       "tier_ceiling": "T3"
     },
-
     "mistral-small-2506": {
       "provider": "mistral",
-      "input_per_1M": 0.10,
-      "output_per_1M": 0.30,
+      "input_per_1M": 0.1,
+      "output_per_1M": 0.3,
       "tier_ceiling": "T1"
     },
     "mistral-large-2512": {
       "provider": "mistral",
-      "input_per_1M": 0.50,
-      "output_per_1M": 1.50,
+      "input_per_1M": 0.5,
+      "output_per_1M": 1.5,
       "tier_ceiling": "T3"
     },
     "devstral-2512": {
       "provider": "mistral",
-      "input_per_1M": 0.40,
-      "output_per_1M": 2.00,
+      "input_per_1M": 0.4,
+      "output_per_1M": 2.0,
       "tier_ceiling": "T3"
     },
-
     "deepseek-chat": {
       "provider": "deepseek",
       "input_per_1M": 0.28,
       "output_per_1M": 0.42,
       "tier_ceiling": "T2"
     },
-
     "gemini-3-pro-preview": {
       "provider": "google",
-      "input_per_1M": 2.00,
-      "output_per_1M": 12.00,
+      "input_per_1M": 2.0,
+      "output_per_1M": 12.0,
       "tier_ceiling": "T4"
     },
     "gemini-3-flash-preview": {
       "provider": "google",
-      "input_per_1M": 0.50,
-      "output_per_1M": 3.00,
+      "input_per_1M": 0.5,
+      "output_per_1M": 3.0,
       "tier_ceiling": "T2"
     },
-
     "llama3.1": {
       "provider": "ollama",
       "input_per_1M": 0,
       "output_per_1M": 0,
-      "tier_ceiling": "T1"
+      "tier_ceiling": "T1",
+      "params_B": 8
     },
     "llama3.1:70b": {
       "provider": "ollama",
       "input_per_1M": 0,
       "output_per_1M": 0,
-      "tier_ceiling": "T2"
+      "tier_ceiling": "T2",
+      "params_B": 70
     },
     "mistral-nemo": {
       "provider": "ollama",
       "input_per_1M": 0,
       "output_per_1M": 0,
-      "tier_ceiling": "T1"
+      "tier_ceiling": "T1",
+      "params_B": 12
     },
     "codestral": {
       "provider": "ollama",
       "input_per_1M": 0,
       "output_per_1M": 0,
-      "tier_ceiling": "T2"
+      "tier_ceiling": "T2",
+      "params_B": 22
     },
     "qwen2.5-coder": {
       "provider": "ollama",
       "input_per_1M": 0,
       "output_per_1M": 0,
-      "tier_ceiling": "T2"
+      "tier_ceiling": "T2",
+      "params_B": 7
     },
     "deepseek-coder-v2": {
       "provider": "ollama",
       "input_per_1M": 0,
       "output_per_1M": 0,
-      "tier_ceiling": "T2"
+      "tier_ceiling": "T2",
+      "params_B": 16
     }
   },
-
   "roles": {
     "_comment": [
       "Named roles decouple 'who does what' from model names, which churn.",
-      "driver: plans, verifies, and repairs — spends judgment tokens only.",
+      "driver: plans, verifies, and repairs \u2014 spends judgment tokens only.",
       "The orchestrator uses roles.driver as its planner; override per-run",
       "with --driver or the TIER_BENCH_DRIVER env var. Execution ('hands')",
       "always auto-routes to the cheapest capable model, never the driver."
     ],
     "driver": "claude-fable-5"
   },
-
   "composites": {
     "_comment": [
       "Composite candidates: compositions benchmarked as first-class rows,",
@@ -199,26 +197,35 @@
     ],
     "cascade:haiku>sonnet": {
       "strategy": "cascade",
-      "members": ["claude-haiku-4-5", "claude-sonnet-4-5"],
+      "members": [
+        "claude-haiku-4-5",
+        "claude-sonnet-4-5"
+      ],
       "tier_ceiling": "T3"
     },
     "best3:haiku": {
       "strategy": "best_of_n",
-      "members": ["claude-haiku-4-5"],
+      "members": [
+        "claude-haiku-4-5"
+      ],
       "n": 3,
       "tier_ceiling": "T2"
     },
     "driver:fable+haiku": {
       "strategy": "driver_repair",
       "driver": "claude-fable-5",
-      "members": ["claude-haiku-4-5"],
+      "members": [
+        "claude-haiku-4-5"
+      ],
       "max_repairs": 1,
       "tier_ceiling": "T3"
     },
     "driver:fable+qwen-oss": {
       "strategy": "driver_repair",
       "driver": "claude-fable-5",
-      "members": ["qwen2.5-coder"],
+      "members": [
+        "qwen2.5-coder"
+      ],
       "max_repairs": 1,
       "tier_ceiling": "T3"
     }

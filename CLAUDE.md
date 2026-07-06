@@ -33,6 +33,9 @@ python scripts/compute_metrics.py
 # Frontier diff: what does the driver model give you, what replicates it
 python scripts/diff_report.py
 
+# Rig report: what this machine runs at $0, upgrade paths, commodity-vs-frontier
+python scripts/rig_report.py
+
 # Orchestrate with an explicit driver (planner/verifier) model
 python orchestrator.py --driver claude-fable-5 "your task"
 ```

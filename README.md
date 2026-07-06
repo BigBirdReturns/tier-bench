@@ -165,6 +165,36 @@ measurement, and the report refuses to speak about it.
 Model-side safety refusals are logged distinctly (`model_refusal`) and count
 as failed attempts: refusal risk is part of a model's real-world price.
 
+## Rig report — laptop to server farm
+
+```bash
+python scripts/rig_report.py                  # probe THIS machine
+python scripts/rig_report.py --vram-gb 24     # "what if I had a 24 GB GPU"
+python scripts/rig_report.py --emit-config    # paste-ready registry fragment
+```
+
+Probes your hardware (RAM, cores, NVIDIA/AMD GPUs, Apple-silicon unified
+memory — no dependencies) and maps it against the registry:
+
+- **What you can already run at $0** — which local models fit, using the
+  sizing heuristics the local-inference projects publish (Q4 ≈ 0.6 GB per
+  B params + KV/runtime overhead), and the task tier that covers.
+- **Commodity vs frontier, per tier** — which tiers your rig or a
+  pennies-per-call API model already holds, and which genuinely need
+  frontier pricing. A large share of "frontier" usage is commodity-tier
+  work at a 10-50× markup; this section shows exactly where that line sits
+  on *your* machine. Verdicts say `measured` when backed by benchmark rows
+  and `hypothesis` when not — the report never dresses up a guess.
+- **Upgrade paths** — the next memory rungs (described as memory classes,
+  not vendor SKUs, so the ladder stays true as hardware churns), what each
+  rung unlocks, and the no-hardware alternative: cheap API hands +
+  composites, with frontier spend reserved for the driver.
+
+`--emit-config` prints the `ollama pull` commands for what fits plus a
+ready-to-merge `driver_repair` composite that uses your best local model as
+hands under the configured driver. Model parameter counts live in
+`models.json` (`params_B`) — add local models there and the rig math follows.
+
 ## Adding tasks
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Add a fixture directory and a JSON manifest. Run `python scripts/validate_task.py` to verify. If it passes, it will not break the harness. No Python changes needed.
