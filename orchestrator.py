@@ -28,8 +28,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-from cost_guard import (CostGuard, Tier, TIER_BUDGETS, TIER_ROUTING,
-                        estimate_cost, count_tokens_approx,
+from cost_guard import (CostGuard, ROLES, Tier, TIER_BUDGETS, TIER_ROUTING,
+                        estimate_cost, count_tokens_approx, model_available,
                         available_providers as _available_providers)
 from harness.sanitize import sanitize_model_output
 from harness.validators import capture_behavior, validate_all
@@ -192,18 +192,50 @@ def _extract_json_array(text: str) -> str | None:
 
 # ─── Orchestrate mode ─────────────────────────────────────────────────
 
-def decompose_request(guard: CostGuard, prompt: str, provider: str, repo_root: Path) -> list[dict]:
-    """Ask a T4 model to decompose a request into subtasks."""
+def resolve_driver(cli_driver: str | None = None) -> str | None:
+    """Resolve the planning/verification model: the 'driver'.
+
+    Precedence: --driver flag > TIER_BENCH_DRIVER env > roles.driver in
+    models.json > None (fall back to cheapest-capable tier routing).
+    Roles are registry data so this survives model churn: swap the name in
+    models.json and every run follows. If the named driver's provider isn't
+    reachable, degrade to tier routing rather than dying — the work still
+    gets planned, just not by the preferred brain.
+    """
+    driver = cli_driver or os.environ.get("TIER_BENCH_DRIVER") or ROLES.get("driver")
+    if not driver:
+        return None
+    if not model_available(driver):
+        print(f"⚠️  driver '{driver}' unavailable (no key / provider down); "
+              "falling back to tier routing for planning.")
+        return None
+    return driver
+
+
+def decompose_request(guard: CostGuard, prompt: str, provider: str, repo_root: Path,
+                      driver: str | None = None) -> list[dict]:
+    """Ask the driver (or a T4-routed model) to decompose a request into subtasks."""
     tree = repo_tree(repo_root)
     context_prompt = f"User Request:\n{prompt}\n\nCurrent Repository Structure:\n{tree}\n"
 
-    print(f"\n🧠 Planning (T4, provider={provider})...")
-    result = guard.call(
-        tier=Tier.T4,
-        provider=provider,
-        system=SUPERVISOR_SYSTEM,
-        messages=[{"role": "user", "content": context_prompt}],
-    )
+    # Driver/hands split: the driver plans (judgment tokens); workers below
+    # auto-route to the cheapest capable model (bulk tokens).
+    if driver:
+        print(f"\n🧠 Planning (T4, driver={driver})...")
+        result = guard.call(
+            model=driver,
+            tier=Tier.T4,
+            system=SUPERVISOR_SYSTEM,
+            messages=[{"role": "user", "content": context_prompt}],
+        )
+    else:
+        print(f"\n🧠 Planning (T4, provider={provider})...")
+        result = guard.call(
+            tier=Tier.T4,
+            provider=provider,
+            system=SUPERVISOR_SYSTEM,
+            messages=[{"role": "user", "content": context_prompt}],
+        )
 
     if result.get("status") != "ok" or not isinstance(result.get("content"), str):
         print(f"❌ Planner failed: {result.get('reason', 'unknown')}")
@@ -445,6 +477,8 @@ def main() -> int:
     ap.add_argument("--benchmark", metavar="TIER", help="Run harness benchmark: T0, T1, T2, or 'all'")
     ap.add_argument("--dry-run", metavar="PROMPT", help="Estimate costs without calling APIs")
     ap.add_argument("--provider", help="Force provider for planner calls")
+    ap.add_argument("--driver", help="Model that plans/verifies (default: roles.driver in models.json; "
+                                     "env TIER_BENCH_DRIVER overrides). Workers still auto-route cheap.")
     args = ap.parse_args()
 
     # Dry run — no provider needed
@@ -487,7 +521,9 @@ def main() -> int:
     )
 
     # Plan
-    plan = decompose_request(guard, args.prompt, provider=provider, repo_root=repo_root)
+    driver = resolve_driver(args.driver)
+    plan = decompose_request(guard, args.prompt, provider=provider, repo_root=repo_root,
+                             driver=driver)
     print(f"\n📋 Plan ({len(plan)} subtasks):")
     for i, t in enumerate(plan):
         print(f"  {i+1}. [{t.get('tier', '?')}] {t.get('task_id', '?')} → {t.get('target_file', '?')}")

@@ -37,6 +37,12 @@
       "output_per_1M": 25.00,
       "tier_ceiling": "T5"
     },
+    "claude-fable-5": {
+      "provider": "anthropic",
+      "input_per_1M": 10.00,
+      "output_per_1M": 50.00,
+      "tier_ceiling": "T5"
+    },
 
     "gpt-5-nano": {
       "provider": "openai",
@@ -167,6 +173,54 @@
       "input_per_1M": 0,
       "output_per_1M": 0,
       "tier_ceiling": "T2"
+    }
+  },
+
+  "roles": {
+    "_comment": [
+      "Named roles decouple 'who does what' from model names, which churn.",
+      "driver: plans, verifies, and repairs — spends judgment tokens only.",
+      "The orchestrator uses roles.driver as its planner; override per-run",
+      "with --driver or the TIER_BENCH_DRIVER env var. Execution ('hands')",
+      "always auto-routes to the cheapest capable model, never the driver."
+    ],
+    "driver": "claude-fable-5"
+  },
+
+  "composites": {
+    "_comment": [
+      "Composite candidates: compositions benchmarked as first-class rows,",
+      "so 'cheap model + harness replicates the frontier model' is a measured",
+      "claim. Strategies: cascade (escalate through members on failure),",
+      "best_of_n (resample one member; task validators select), driver_repair",
+      "(hands model attempts; on failure the driver gets the failed output +",
+      "validator report as evidence and produces the repair). A composite is",
+      "priced by EVERY call it makes, failures included."
+    ],
+    "cascade:haiku>sonnet": {
+      "strategy": "cascade",
+      "members": ["claude-haiku-4-5", "claude-sonnet-4-5"],
+      "tier_ceiling": "T3"
+    },
+    "best3:haiku": {
+      "strategy": "best_of_n",
+      "members": ["claude-haiku-4-5"],
+      "n": 3,
+      "tier_ceiling": "T2"
+    },
+    "driver:fable+haiku": {
+      "strategy": "driver_repair",
+      "driver": "claude-fable-5",
+      "members": ["claude-haiku-4-5"],
+      "max_repairs": 1,
+      "tier_ceiling": "T3"
+    },
+    "driver:fable+qwen-oss": {
+      "strategy": "driver_repair",
+      "driver": "claude-fable-5",
+      "members": ["qwen2.5-coder"],
+      "max_repairs": 1,
+      "tier_ceiling": "T3"
     }
   }
 }

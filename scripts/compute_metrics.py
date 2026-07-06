@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
-from harness.metrics import compute
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from harness.metrics import compute  # noqa: E402
 
 def main():
     ap = argparse.ArgumentParser()

@@ -76,8 +76,8 @@ TIER_BUDGETS: dict[Tier, dict] = {
 # ─── Model registry (loaded from models.json) ─────────────────────────
 # Edit models.json to add models. Don't edit this file.
 
-def _load_models_json() -> dict:
-    """Load model registry from models.json next to this file."""
+def _load_registry() -> dict:
+    """Load the full registry (models, roles, composites) from models.json."""
     config_path = Path(__file__).parent / "models.json"
     if not config_path.exists():
         raise FileNotFoundError(
@@ -85,8 +85,7 @@ def _load_models_json() -> dict:
             "Copy models.json.example or create one — see README."
         )
     with open(config_path) as f:
-        raw = json.load(f)
-    return raw.get("models", {})
+        return json.load(f)
 
 
 def _build_tables(models: dict) -> tuple[
@@ -128,7 +127,14 @@ def _build_tables(models: dict) -> tuple[
     return pricing, providers, routing
 
 
-_MODELS_RAW = _load_models_json()
+_REGISTRY_RAW = _load_registry()
+_MODELS_RAW = _REGISTRY_RAW.get("models", {})
+# Named roles (e.g. "driver") and composite candidates are registry DATA, not
+# code: model names churn, the roles and strategies survive them.
+ROLES: dict[str, str] = {
+    k: v for k, v in _REGISTRY_RAW.get("roles", {}).items() if not k.startswith("_")
+}
+COMPOSITES_RAW: dict = _REGISTRY_RAW.get("composites", {})
 PRICING, _MODEL_PROVIDERS, TIER_ROUTING = _build_tables(_MODELS_RAW)
 
 
@@ -168,6 +174,12 @@ def _provider_available(provider: str) -> bool:
         return False
     env_var = key_map.get(provider)
     return bool(os.environ.get(env_var)) if env_var else False
+
+
+def model_available(model: str) -> bool:
+    """True when the model is registered AND its provider is reachable."""
+    provider = _detect_provider(model)
+    return provider != "unknown" and _provider_available(provider)
 
 
 def available_providers() -> dict[str, bool]:
@@ -368,6 +380,29 @@ class CostGuard:
             self.daily_spend += actual_cost
             self.call_count += 1
 
+            # Model-side refusal (e.g. Anthropic safety classifiers return a
+            # 200 with stop_reason "refusal" and empty/partial content). Label
+            # it distinctly — "the model declined" is a different fact from
+            # "the model produced nothing" — and keep any billed partial cost
+            # in the books.
+            if result.pop("stop_reason", None) == "refusal":
+                record = CallRecord(
+                    timestamp=datetime.now(timezone.utc).isoformat(),
+                    model=model, tier=tier.name,
+                    input_tokens=actual_in, output_tokens=actual_out,
+                    estimated_cost=est_cost, actual_cost=actual_cost,
+                    status="refusal", reason="model_refusal"
+                )
+                self._log(record)
+                return {
+                    "content": None,
+                    "model": model,
+                    "cost": actual_cost,
+                    "usage": result.get("usage", {}),
+                    "status": "error",
+                    "reason": "model_refusal",
+                }
+
             record = CallRecord(
                 timestamp=datetime.now(timezone.utc).isoformat(),
                 model=model, tier=tier.name,
@@ -414,8 +449,10 @@ class CostGuard:
         if system:
             api_kwargs["system"] = system
         response = client.messages.create(**api_kwargs)
+        text_blocks = [b.text for b in response.content if getattr(b, "type", "") == "text"]
         return {
-            "content": response.content[0].text if response.content else "",
+            "content": text_blocks[0] if text_blocks else "",
+            "stop_reason": getattr(response, "stop_reason", None),
             "usage": {
                 "input_tokens": response.usage.input_tokens,
                 "output_tokens": response.usage.output_tokens,

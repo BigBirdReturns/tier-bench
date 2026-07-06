@@ -117,6 +117,54 @@ For any OpenAI-compatible endpoint (LMStudio, vLLM, text-generation-inference):
 }
 ```
 
+## Frontier diff & replication (driver / hands)
+
+When a new frontier model ships, the question is never "is it good" — it is
+**what does it measurably give you over what you already have, and how much of
+that can a cheaper composition give back?** Tier Bench answers both from the
+same results file, and the design is deliberately model-agnostic: models,
+roles, and composition strategies are registry *data* (`models.json`), so the
+workflow survives every model generation that will ship over the life of this
+repo.
+
+**Roles.** `models.json` has a `roles` section. The `driver` is the model that
+plans, verifies, and repairs — it spends judgment tokens, never bulk tokens.
+The orchestrator uses `roles.driver` as its planner (override per-run with
+`--driver` or `TIER_BENCH_DRIVER`); execution always auto-routes to the
+cheapest capable model. Swap the driver by editing one line of JSON.
+
+**Composite candidates.** The `composites` section defines compositions that
+the benchmark runs as first-class rows, so "a cheap model plus a harness
+replicates the frontier model" becomes a measured claim with a price on it:
+
+| Strategy | What it does | What it proves |
+|---|---|---|
+| `cascade` | Try members cheapest-first; first validated pass wins | An escalation ladder prices the average call down |
+| `best_of_n` | Resample one member; task validators select | Verification buys back single-shot quality |
+| `driver_repair` | Cheap "hands" model attempts; on failure the **driver** gets the failed output + validator report and produces the repair | The frontier model is worth paying for judgment, not typing |
+
+Composites are priced by **every call they make, failures included** — and a
+failed attempt is never wasted: `driver_repair` feeds it to the driver as
+evidence.
+
+**The diff report.** After a benchmark run:
+
+```bash
+python orchestrator.py --benchmark all
+python scripts/diff_report.py                 # target defaults to roles.driver
+python scripts/diff_report.py --json          # machine-readable
+```
+
+Per tier it renders one of: `REPLICATED — <model> matches at N× lower
+cost-per-success`, `FRONTIER EDGE — nothing benchmarked matches; this is what
+you pay for`, or `TARGET FAILS this tier`. It closes with the target's
+measured ceiling vs its registry claim, and names the tiers that were never
+deterministically measured — capability above the ruler is a claim, not a
+measurement, and the report refuses to speak about it.
+
+Model-side safety refusals are logged distinctly (`model_refusal`) and count
+as failed attempts: refusal risk is part of a model's real-world price.
+
 ## Adding tasks
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Add a fixture directory and a JSON manifest. Run `python scripts/validate_task.py` to verify. If it passes, it will not break the harness. No Python changes needed.
