@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tier Bench — measure your models, price the frontier</title>
+<meta name="description" content="Benchmark every model you use on deterministic coding tasks, see cost-per-success, and find out which tiers of 'frontier' work are just overworked small models.">
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --line:#2d333b;
+    --ink:#e6edf3; --ink2:#9da7b3; --muted:#6e7a87;
+    --green:#3fb950; --yellow:#d29922; --red:#f85149; --blue:#58a6ff;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px}
+  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+  code,pre{font-family:var(--mono)}
+  code{background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:.9em}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;
+      padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.55;margin:14px 0}
+  pre code{background:none;padding:0}
+  h1{font-size:2.1rem;line-height:1.2;margin:0 0 12px}
+  h2{font-size:1.4rem;margin:0 0 6px;letter-spacing:-.01em}
+  h3{font-size:1.05rem;margin:18px 0 6px}
+  section{padding:44px 0;border-top:1px solid var(--line)}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .lede{color:var(--ink2);font-size:1.08rem;max-width:46em}
+  .muted{color:var(--muted)} .small{font-size:.86rem}
+  table{border-collapse:collapse;width:100%;font-size:.92rem}
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin:14px 0}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--panel);font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  .chip{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
+  .c-green{color:var(--green);border-color:color-mix(in srgb,var(--green) 45%,transparent)}
+  .c-yellow{color:var(--yellow);border-color:color-mix(in srgb,var(--yellow) 45%,transparent)}
+  .c-red{color:var(--red);border-color:color-mix(in srgb,var(--red) 45%,transparent)}
+  .c-grey{color:var(--muted)}
+  .grid{display:grid;gap:14px;margin:18px 0}
+  @media(min-width:720px){.grid.cols3{grid-template-columns:1fr 1fr 1fr}.grid.cols2{grid-template-columns:1fr 1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+  .card h3{margin-top:0}
+  .card .num{font-family:var(--mono);color:var(--muted);font-size:12px}
+  .hero{padding:64px 0 44px}
+  .hero .tag{font-family:var(--mono);color:var(--green);font-size:13px;margin-bottom:14px}
+  .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+  .btn{display:inline-block;padding:9px 16px;border-radius:8px;border:1px solid var(--line);
+       background:var(--panel);color:var(--ink);font-size:.95rem;cursor:pointer}
+  .btn:hover{border-color:var(--blue);text-decoration:none}
+  .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  .steps{counter-reset:s;margin:20px 0}
+  .step{display:flex;gap:14px;margin:0 0 22px}
+  .step::before{counter-increment:s;content:counter(s);flex:0 0 30px;height:30px;border-radius:50%;
+    background:var(--panel2);border:1px solid var(--line);color:var(--ink2);
+    font-family:var(--mono);font-size:13px;display:flex;align-items:center;justify-content:center;margin-top:2px}
+  .step>div{min-width:0;flex:1}
+  textarea{width:100%;min-height:130px;background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    color:var(--ink);font-family:var(--mono);font-size:12.5px;padding:12px;resize:vertical}
+  select{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:6px 10px;font-size:.92rem}
+  .comparebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}
+  .verdictline{font-family:var(--mono);font-size:13px;margin:10px 0;color:var(--ink2)}
+  footer{padding:36px 0 60px;color:var(--muted);font-size:.88rem}
+  .callout{border-left:3px solid var(--yellow);background:var(--panel);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;color:var(--ink2)}
+</style>
+</head>
+<body>
+
+<div class="wrap hero">
+  <div class="tag">$ python scripts/diff_report.py</div>
+  <h1>Most of what you send to a frontier model is<br>work a small model does for 2&nbsp;cents.</h1>
+  <p class="lede">
+    Tier Bench measures it — on <b>your</b> machine, on <b>your</b> workflow, against
+    <b>whatever model you're paying for today</b>. Deterministic tasks, objective validators,
+    cost-per-success. No vibes, no leaderboard politics: the harness gets the last word.
+  </p>
+  <div class="btnrow">
+    <a class="btn primary" href="#test-now">Test your workflow now</a>
+    <a class="btn" href="#compare">Compare your results</a>
+    <a class="btn" href="cheatsheet.html">Live pricing cheatsheet</a>
+    <a class="btn" href="https://github.com/bigbirdreturns/tier-bench">GitHub →</a>
+  </div>
+</div>
+
+<section id="how">
+  <div class="wrap">
+    <div class="kicker">How it works</div>
+    <h2>Tasks are graded by validators, not opinions.</h2>
+    <p class="lede">Every model — and every <em>composition</em> of models — gets the same task,
+    a fresh copy of a real repo fixture, and a deterministic pass/fail: does it compile, do the
+    tests pass, did it stay inside the diff budget. From that: success rate and
+    <code>cost_per_success = avg_cost / success_rate</code>.</p>
+
+    <div class="tblwrap"><table>
+      <tr><th>Tier</th><th>Work</th><th>Validated by</th></tr>
+      <tr><td><code>T0</code></td><td>Formatting, imports, renames — zero logic</td><td>compile, ruff, functional equivalence</td></tr>
+      <tr><td><code>T1</code></td><td>Small functions &amp; unit tests from a clear spec</td><td>compile, tests</td></tr>
+      <tr><td><code>T2</code></td><td>Bug fixes, API wiring, multi-file patches</td><td>compile, tests, diff bounds</td></tr>
+      <tr><td><code>T3</code></td><td>Security fixes, gnarly refactors, cross-module debugging</td><td>compile, tests, AST checks</td></tr>
+      <tr><td><code>T4</code></td><td>Planning &amp; decomposition</td><td>plan validity (buildable, not built)</td></tr>
+      <tr><td><code>T5</code></td><td>Architectural judgment</td><td><span class="muted">not benchmarked — human review</span></td></tr>
+    </table></div>
+
+    <div class="grid cols3">
+      <div class="card"><div class="num">pattern 01</div><h3>Driver / hands</h3>
+        <p class="small">The frontier model is the <b>driver</b>: it plans, verifies, and repairs — judgment tokens only.
+        Cheap models are the <b>hands</b>: they do the typing. Swap the driver by editing one line of <code>models.json</code>.</p></div>
+      <div class="card"><div class="num">pattern 02</div><h3>Composites</h3>
+        <p class="small"><b>cascade</b> escalates through cheap models; <b>best_of_n</b> resamples and lets the validators pick;
+        <b>driver_repair</b> feeds a failed cheap attempt to the driver as evidence. All benchmarked as first-class rows,
+        priced by every call they make — failures included.</p></div>
+      <div class="card"><div class="num">pattern 03</div><h3>The diff report</h3>
+        <p class="small">Per tier: <span class="chip c-green">REPLICATED — n× cheaper</span> or
+        <span class="chip c-red">FRONTIER EDGE</span>. The part of the frontier price that buys real capability,
+        separated from the part that's an overworked small model.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="test-now">
+  <div class="wrap">
+    <div class="kicker">Ten minutes, ~$0.15</div>
+    <h2>Test it on your own workflow, right now.</h2>
+
+    <div class="steps">
+      <div class="step"><div>
+        <h3>Clone and set one key</h3>
+        <p class="small muted">Any of Anthropic / OpenAI / DeepSeek / Mistral / Gemini — or none, with local Ollama models.</p>
+<pre><code>git clone https://github.com/bigbirdreturns/tier-bench.git &amp;&amp; cd tier-bench
+bash setup.sh
+export ANTHROPIC_API_KEY=sk-ant-...   # or OPENAI_API_KEY / GEMINI_API_KEY / ollama serve</code></pre>
+      </div></div>
+
+      <div class="step"><div>
+        <h3>Add the model you're using today</h3>
+        <p class="small muted">Whatever it is — a frontier API, a fine-tune behind an OpenAI-compatible endpoint, a local model.
+        It's one JSON entry. <code>tier_ceiling</code> is your <em>hypothesis</em>; the benchmark exists to disprove it.</p>
+<pre><code>// models.json → "models"
+"the-model-you-pay-for": {
+  "provider": "openai-compat",            // or anthropic | openai | ollama | ...
+  "base_url": "https://your-endpoint/v1", // openai-compat only
+  "input_per_1M": 5.00,
+  "output_per_1M": 25.00,
+  "tier_ceiling": "T4"
+}</code></pre>
+      </div></div>
+
+      <div class="step"><div>
+        <h3>Run the benchmark</h3>
+<pre><code>python orchestrator.py --benchmark all     # 12 tasks × every reachable model (~$0.15)
+python scripts/compute_metrics.py          # routing table: success rate + cost per success
+python scripts/diff_report.py --target the-model-you-pay-for</code></pre>
+        <p class="small muted">Unreachable providers are skipped, not failed. Model-side safety refusals are logged
+        distinctly and count as failures — refusal risk is part of a model's real price.</p>
+      </div></div>
+
+      <div class="step"><div>
+        <h3>Make the tasks <em>yours</em></h3>
+        <p class="small muted">The 12 stock tasks are a floor. The point is your actual workflow: take a real file from a
+        real repo of yours, freeze it as a fixture, write the pass condition, and the harness measures every model against
+        <b>your</b> work — not ours.</p>
+<pre><code>mkdir fixtures/my_real_task            # drop the real file(s) in here
+cat &gt; tasks/t2_my_real_task_001.json &lt;&lt;'EOF'
+{
+  "task_id": "t2_my_real_task_001",
+  "tier": "T2",
+  "prompt_template": "Task: fix the failing test in {target_relpath}...\n{file_content}",
+  "fixture_dir": "fixtures/my_real_task",
+  "target_relpath": "thing.py",
+  "run_command": ["python", "-m", "pytest", "-q"],
+  "validate": {"compile": true, "tests": true},
+  "max_lines_changed": 120,
+  "allowed_files": ["thing.py"]
+}
+EOF
+python scripts/validate_task.py        # if this passes, it can't break the harness
+python orchestrator.py --benchmark T2</code></pre>
+      </div></div>
+
+      <div class="step"><div>
+        <h3>See what your hardware already does for $0</h3>
+<pre><code>python scripts/rig_report.py               # probes RAM / GPU / unified memory
+python scripts/rig_report.py --vram-gb 24  # "what if I bought a 24 GB GPU"
+python scripts/rig_report.py --emit-config # paste-ready local setup for this rig</code></pre>
+        <p class="small muted">Laptop to server farm: what fits, the tier that covers, upgrade rungs by memory class,
+        and the no-hardware path (cheap API hands + a frontier driver).</p>
+      </div></div>
+    </div>
+
+    <div class="callout small">
+      <b>Honesty rules the output.</b> Verdicts are tagged <code>measured</code> only when benchmark rows back them;
+      everything else says <code>hypothesis</code>. T4/T5 are named as unmeasured — capability above the ruler is a
+      claim, not a measurement, and no report here will dress one up as the other.
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <div class="kicker">In-browser · nothing uploaded</div>
+    <h2>Compare against whatever you're using now.</h2>
+    <p class="lede">Paste your <code>harness_results.jsonl</code> (or load the sample). Pick the model you currently
+    pay for. Every other row — cheap models, local models, composites — gets a verdict against it, per tier.
+    This page is static: your data never leaves the browser.</p>
+
+    <textarea id="jsonl" placeholder='Paste harness_results.jsonl here — one JSON object per line…' spellcheck="false"></textarea>
+    <div class="comparebar">
+      <button class="btn" id="loadSample">Load sample data</button>
+      <input type="file" id="file" accept=".jsonl,.json,.txt" style="display:none">
+      <button class="btn" id="loadFile">Load file…</button>
+      <span id="baselineWrap" style="display:none">
+        <label class="small muted" for="baseline">the model you're using:&nbsp;</label>
+        <select id="baseline"></select>
+      </span>
+    </div>
+    <div id="summary" class="verdictline"></div>
+    <div id="out"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><b>Tier Bench</b> — routing without measurement burns money.
+    <a href="https://github.com/bigbirdreturns/tier-bench">Source</a> ·
+    <a href="cheatsheet.html">pricing cheatsheet</a> ·
+    MIT. Models, prices, roles, and composite strategies are registry data (<code>models.json</code>) —
+    this workflow is built to outlive every model named on this page.</p>
+  </div>
+</footer>
+
+<script>
+// ── Core stats (mirrors harness/metrics.py) ─────────────────────────
+function computeStats(text){
+  const cells = new Map(); // "model tier" -> {attempts, successes, cost}
+  for (const line of text.split(/\r?\n/)){
+    const s = line.trim();
+    if (!s) continue;
+    let row; try { row = JSON.parse(s); } catch { continue; }
+    if (!row || typeof row !== "object" || !row.model || !row.tier) continue;
+    const k = row.model + " " + row.tier;
+    const c = cells.get(k) || {model:row.model, tier:row.tier, attempts:0, successes:0, cost:0};
+    c.attempts += 1;
+    if (row.pass === true) c.successes += 1;
+    if (typeof row.actual_cost === "number") c.cost += row.actual_cost;
+    cells.set(k, c);
+  }
+  for (const c of cells.values()){
+    c.sr = c.attempts ? c.successes / c.attempts : 0;
+    c.avg = c.attempts ? c.cost / c.attempts : 0;
+    c.cps = c.sr > 0 ? c.avg / c.sr : null; // null = no successes
+  }
+  return [...cells.values()];
+}
+
+function verdict(row, base){
+  // row vs the baseline you currently use, same tier
+  if (!base) return {cls:"c-grey", txt:"no baseline data this tier"};
+  if (row.sr >= base.sr && row.cps !== null && base.cps !== null && row.cps < base.cps){
+    const x = row.cps > 0 ? (base.cps / row.cps) : Infinity;
+    return {cls:"c-green", txt:"REPLACES IT — " + (x === Infinity ? "free" : x.toFixed(1) + "× cheaper")};
+  }
+  if (row.sr >= base.sr) return {cls:"c-yellow", txt:"matches, not cheaper"};
+  if (row.sr > 0) return {cls:"c-yellow", txt:"partial — " + Math.round(row.sr*100) + "% vs " + Math.round(base.sr*100) + "%"};
+  return {cls:"c-red", txt:"fails this tier"};
+}
+
+// ── Rendering ────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fmt$ = v => v === null ? "—" : (v === 0 ? "$0" : "$" + v.toFixed(4));
+let CELLS = [];
+
+function render(){
+  const baseline = $("baseline").value;
+  const tiers = [...new Set(CELLS.map(c => c.tier))].sort();
+  let html = "", replicatedTiers = 0, judgedTiers = 0, edges = [];
+
+  for (const tier of tiers){
+    const rows = CELLS.filter(c => c.tier === tier).sort((a,b) => (a.cps ?? 1e18) - (b.cps ?? 1e18));
+    const base = rows.find(r => r.model === baseline);
+    if (base && base.sr > 0){
+      judgedTiers += 1;
+      if (rows.some(r => r.model !== baseline && r.sr >= base.sr && r.cps !== null && base.cps !== null && r.cps < base.cps))
+        replicatedTiers += 1;
+      else edges.push(tier);
+    }
+    html += `<h3>${esc(tier)}</h3><div class="tblwrap"><table>
+      <tr><th>model / composite</th><th>success</th><th>cost&nbsp;/&nbsp;success</th><th>vs your model</th></tr>`;
+    for (const r of rows){
+      const isBase = r.model === baseline;
+      const v = isBase ? null : verdict(r, base);
+      html += `<tr>
+        <td>${esc(r.model)}${isBase ? ' <span class="chip c-grey">yours</span>' : ""}</td>
+        <td>${Math.round(r.sr*100)}% <span class="muted small">(${r.successes}/${r.attempts})</span></td>
+        <td>${fmt$(r.cps)}</td>
+        <td>${isBase ? '<span class="muted">—</span>' : `<span class="chip ${v.cls}">${esc(v.txt)}</span>`}</td>
+      </tr>`;
+    }
+    html += "</table></div>";
+  }
+  $("out").innerHTML = html;
+
+  if (judgedTiers){
+    let s = `Of ${judgedTiers} tiers where <b>${esc(baseline)}</b> succeeds, something cheaper matches it in <b>${replicatedTiers}</b>.`;
+    s += edges.length
+      ? ` Its measured edge: <b>${edges.join(", ")}</b> — that's the part of the bill buying real capability.`
+      : ` No measured edge in this data — every tier it passes, something cheaper also passes.`;
+    $("summary").innerHTML = s;
+  } else {
+    $("summary").innerHTML = "The selected model has no passing rows — pick another baseline.";
+  }
+}
+
+function ingest(text){
+  CELLS = computeStats(text);
+  if (!CELLS.length){
+    $("summary").textContent = "No parseable result rows found — expected JSONL with model / tier / pass / actual_cost fields.";
+    $("out").innerHTML = ""; $("baselineWrap").style.display = "none";
+    return;
+  }
+  // Baseline default: the priciest-per-attempt model in the data —
+  // statistically "whatever you were using" when you cared enough to measure.
+  const models = [...new Set(CELLS.map(c => c.model))];
+  const spend = m => CELLS.filter(c => c.model === m).reduce((t,c) => t + c.avg, 0);
+  models.sort((a,b) => spend(b) - spend(a));
+  $("baseline").innerHTML = models.map(m => `<option>${esc(m)}</option>`).join("");
+  $("baselineWrap").style.display = "";
+  render();
+}
+
+// ── Sample data: shape-realistic synthetic rows (3 tasks/tier) ──────
+const SAMPLE = (() => {
+  const spec = [
+    // model, tier, [pass...], costPerAttempt
+    ["frontier-model-x","T0",[1,1,1],0.100], ["frontier-model-x","T1",[1,1,1],0.150],
+    ["frontier-model-x","T2",[1,1,1],0.200], ["frontier-model-x","T3",[1,1,0],0.300],
+    ["small-model-a","T0",[1,1,1],0.003],    ["small-model-a","T1",[1,1,1],0.007],
+    ["small-model-a","T2",[1,0,0],0.010],
+    ["local-oss-7b","T0",[1,1,1],0],         ["local-oss-7b","T1",[1,0,1],0],
+    ["cascade:small>mid","T2",[1,1,1],0.040],["cascade:small>mid","T3",[1,0,0],0.070],
+    ["driver:frontier+small","T2",[1,1,1],0.030],["driver:frontier+small","T3",[0,1,0],0.120]
+  ];
+  const rows = [];
+  for (const [model,tier,passes,cost] of spec)
+    passes.forEach((p,i) => rows.push(JSON.stringify(
+      {task_id:`${tier.toLowerCase()}_sample_${i}`, tier, model, pass: !!p, actual_cost: cost, status:"ok"})));
+  return rows.join("\n");
+})();
+
+$("loadSample").onclick = () => { $("jsonl").value = SAMPLE; ingest(SAMPLE); };
+$("loadFile").onclick = () => $("file").click();
+$("file").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  f.text().then(t => { $("jsonl").value = t; ingest(t); });
+};
+$("jsonl").addEventListener("input", e => ingest(e.target.value));
+$("baseline").addEventListener("change", render);
+</script>
+</body>
+</html>

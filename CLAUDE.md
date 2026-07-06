@@ -29,6 +29,15 @@ cat llm_costs.jsonl | python -m json.tool
 
 # View benchmark results
 python scripts/compute_metrics.py
+
+# Frontier diff: what does the driver model give you, what replicates it
+python scripts/diff_report.py
+
+# Rig report: what this machine runs at $0, upgrade paths, commodity-vs-frontier
+python scripts/rig_report.py
+
+# Orchestrate with an explicit driver (planner/verifier) model
+python orchestrator.py --driver claude-fable-5 "your task"
 ```
 
 ## Tier Routing Rules
@@ -86,9 +95,21 @@ fixtures/               <- Test repos for benchmarks
   t2_api_integration/   <- Implement fetch_json client
   t2_multi_file_patch/  <- Fix normalize_name
 
+harness/attempt.py      <- Single attempt path shared by models AND composites
+harness/composites.py   <- Cascade / best-of-n / driver-repair candidates
+
 scripts/
   compute_metrics.py    <- Parse harness_results.jsonl into routing table
+  diff_report.py        <- Frontier diff: replicated / frontier-edge per tier
 ```
+
+## Driver / hands
+
+`models.json` defines `roles.driver` — the model that plans, verifies, and
+repairs (judgment tokens). Execution auto-routes to the cheapest capable
+model (bulk tokens). Composites in `models.json` are benchmarked as
+first-class rows so replication claims carry measured prices. A failed cheap
+attempt is reused as repair evidence for the driver, never discarded.
 
 ## Environment Variables
 
