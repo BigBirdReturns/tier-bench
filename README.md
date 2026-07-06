@@ -4,7 +4,7 @@ Tier Bench is an empirical benchmarking system for LLM routing. It measures whic
 
 This replaces vibe-based model selection with operational data.
 
-**[Live Pricing & Capability Cheatsheet](https://bigbirdreturns.github.io/tier-bench/)**
+**[Live site — how it works, test your own workflow, compare your results](https://bigbirdreturns.github.io/tier-bench/)** · [pricing cheatsheet](https://bigbirdreturns.github.io/tier-bench/cheatsheet.html)
 
 ## The problem
 

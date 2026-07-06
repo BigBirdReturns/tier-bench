@@ -1,4 +1,4 @@
-name: Deploy Tier Bench Cheatsheet to GitHub Pages
+name: Deploy Tier Bench site to GitHub Pages
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - 'models.json'
       - 'scripts/generate_cheatsheet.py'
+      - 'site/**'
   workflow_dispatch:
 
 permissions:
@@ -32,10 +33,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Generate cheatsheet
+      - name: Build site
         run: |
           mkdir -p _site
-          python scripts/generate_cheatsheet.py --out _site/index.html
+          cp site/index.html _site/index.html
+          python scripts/generate_cheatsheet.py --out _site/cheatsheet.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
