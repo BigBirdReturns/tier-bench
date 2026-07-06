@@ -181,9 +181,13 @@
       "driver: plans, verifies, and repairs \u2014 spends judgment tokens only.",
       "The orchestrator uses roles.driver as its planner; override per-run",
       "with --driver or the TIER_BENCH_DRIVER env var. Execution ('hands')",
-      "always auto-routes to the cheapest capable model, never the driver."
+      "always auto-routes to the cheapest capable model, never the driver.",
+      "apprentice: a cheaper model being taught the driver role. Set it as",
+      "--driver and score it with diff_report --target <apprentice> to see",
+      "how close it is to replicating the frontier driver. See driver/README.md."
     ],
-    "driver": "claude-fable-5"
+    "driver": "claude-fable-5",
+    "apprentice": "claude-haiku-4-5"
   },
   "composites": {
     "_comment": [

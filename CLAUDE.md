@@ -36,6 +36,9 @@ python scripts/diff_report.py
 # Rig report: what this machine runs at $0, upgrade paths, commodity-vs-frontier
 python scripts/rig_report.py
 
+# Distill captured driver_repair traces into an apprentice curriculum (see driver/README.md)
+python scripts/distill.py
+
 # Orchestrate with an explicit driver (planner/verifier) model
 python orchestrator.py --driver claude-fable-5 "your task"
 ```
