@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tier Bench — run the A/B in your browser</title>
 <meta name="description" content="Paste your Anthropic key and race a frontier model against a cheap composite that only lets it review — live, in your browser, on your own workflow. Nothing leaves the page.">
+<script>document.documentElement.dataset.theme=localStorage.getItem("pta-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");</script>
 <style>
   /* AXM-flavored: paper + ink fixed, scope = the thing examined, accent = the verdict. */
   :root{
-    --paper:#f0ebe0; --paper-alt:#e8e2d5; --ink:#0e0d0c; --ink2:#2c2a27; --muted:#5e5850;
+    --paper:#f0ebe0; --card:#fbf8f1; --paper-alt:#e8e2d5; --ink:#0e0d0c; --ink2:#2c2a27; --muted:#5e5850;
     --rule:#b8afa0; --rule-dk:#9a9088;
     --scope:#5a5e52; --scope-lt:rgba(90,94,82,.10); --scope-mid:rgba(90,94,82,.22);
     --accent:#b01c18; --accent-lt:#f5e5e3; --accent-dp:#8a160f;
@@ -31,7 +32,7 @@
   .muted{color:var(--muted)} .small{font-size:.86rem}
   label{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope);margin:0 0 5px}
   input[type=text],input[type=password],textarea,select{
-    width:100%;background:#fbf8f1;border:1px solid var(--rule-dk);border-radius:6px;color:var(--ink);
+    width:100%;background:var(--card);border:1px solid var(--rule-dk);border-radius:6px;color:var(--ink);
     font-family:var(--mono);font-size:13px;padding:10px 12px}
   textarea{min-height:120px;resize:vertical;line-height:1.5}
   .row{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0}
@@ -45,7 +46,7 @@
   .note{border-left:3px solid var(--scope);background:var(--scope-lt);padding:11px 15px;border-radius:0 6px 6px 0;margin:14px 0;color:var(--ink2);font-size:.9rem}
   .note.warn{border-left-color:var(--accent);background:var(--accent-lt)}
   table{border-collapse:collapse;width:100%;font-size:.92rem}
-  .tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;margin:12px 0;background:#fbf8f1}
+  .tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;margin:12px 0;background:var(--card)}
   th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
   th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope);white-space:nowrap}
   tr:last-child td{border-bottom:none}
@@ -59,20 +60,30 @@
   .cell .v{font-family:var(--imprint);font-size:1.7rem;line-height:1.1;margin-top:3px}
   .cell .v.big{color:var(--accent-dp)}
   .cell .sub{font-size:.82rem;color:var(--muted);margin-top:2px}
-  details{border:1px solid var(--rule);border-radius:6px;margin:8px 0;background:#fbf8f1}
+  details{border:1px solid var(--rule);border-radius:6px;margin:8px 0;background:var(--card)}
   summary{cursor:pointer;padding:8px 12px;font-family:var(--mono);font-size:12px;color:var(--scope)}
   details .body{padding:0 14px 12px;white-space:pre-wrap;font-size:.9rem;line-height:1.5}
   .answers{display:grid;gap:12px;margin:6px 0}
   @media(min-width:640px){.answers{grid-template-columns:1fr 1fr}}
-  .ans{border:1px solid var(--rule);border-radius:6px;background:#fbf8f1;padding:12px}
+  .ans{border:1px solid var(--rule);border-radius:6px;background:var(--card);padding:12px}
   .ans h4{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope);margin-bottom:6px}
   .ans .txt{white-space:pre-wrap;font-size:.9rem;line-height:1.5;max-height:260px;overflow:auto}
   #status{font-family:var(--mono);font-size:13px;color:var(--scope);margin:10px 0;min-height:1.2em}
   footer{padding:34px 0 60px;color:var(--muted);font-size:.85rem;border-top:2px solid var(--ink);margin-top:20px}
   .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--rule-dk);color:var(--scope);white-space:nowrap}
+  :root[data-theme="dark"]{
+    --paper:#0d0c09; --paper-alt:#15130e; --card:#15130e; --ink:#ece7d8; --ink2:#c7c1b1;
+    --muted:#8f8975; --rule:#3a352b; --rule-dk:#4a4436; --scope:#9a9c78;
+    --scope-lt:rgba(154,156,120,.12); --scope-mid:rgba(154,156,120,.24);
+    --accent:#d0623f; --accent-lt:#2a1a14; --accent-dp:#e0855f;
+  }
+  #themeToggle{position:fixed;top:12px;right:14px;z-index:60;font-family:var(--mono);font-size:12px;
+    padding:6px 12px;border-radius:999px;border:1px solid var(--rule);background:var(--card);color:var(--scope);cursor:pointer}
+  #themeToggle:hover{border-color:var(--accent-dp);color:var(--ink)}
 </style>
 </head>
 <body>
+<button id="themeToggle" type="button" aria-label="Toggle light or dark theme">◐</button>
 
 <header class="masthead"><div class="wrap">
   <div class="kicker">Tier Bench · field test</div>
@@ -344,5 +355,6 @@ function renderSummary(tot, focus, A, judgeModel){
   </div>`;
 }
 </script>
+<script>(function(){var b=document.getElementById("themeToggle"),r=document.documentElement;if(!b)return;function L(){b.textContent=r.dataset.theme==="dark"?"◐ dark":"◑ light";}L();b.addEventListener("click",function(){var d=r.dataset.theme==="dark"?"light":"dark";r.dataset.theme=d;try{localStorage.setItem("pta-theme",d);}catch(e){}L();});})();</script>
 </body>
 </html>
