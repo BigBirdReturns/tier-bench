@@ -336,6 +336,31 @@ holistic ranking diverged? All 66 pairs, both judges.
 it is partly **indeterminate within** a tier. Some of the je-ne-sais-quoi is not a
 capability the frontier hoards — it is the absence of a fact.
 
+### CORRECTION — I was measuring sand, not knowledge
+
+The "taste is irreducible" conclusion above conflated **surface-arrangement
+variance** (which of two good lines ranks #1 — sand) with **operational knowledge**
+(good vs broken). Re-analysis of the same 66 pairwise calls, split by consensus
+quality gap (`operational_reanalysis.py`):
+
+- **Operationally DECISIVE pairs** (clearly-good vs clearly-bad, gap>=6, n=7):
+  **haiku picks the better line 100%**, opus 86%, they agree 86%. The operational
+  taste knowledge is SHARED, and haiku HAS it.
+- **Near-tie pairs** (gap<2): agreement ~chance. This is where all the
+  disagreement lives — and where opus disagrees with ITSELF. On near-ties there is
+  no fact; the order is arbitrary and operationally inert.
+
+So the residue is not "taste the frontier has and cheap lacks." It is **sand** —
+surface-form variance among operationally-equivalent outputs. You don't rent or
+distill sand; you stop measuring it (airplane or scooter, same operational
+knowledge). Small n (7 decisive pairs) — but the gradient is clean and
+theory-consistent (this is the paper's own "sand problem" applied to taste).
+
+**Corrected session verdict:** everything OPERATIONAL — checkable facts, framing,
+attention, verifiable reasoning, AND good-vs-bad judgment — is shared or rentable
+and commoditizes to cheap. What stays frontier-only is sand: it carries no
+operational knowledge and does not matter.
+
 ## Verdict so far
 
 - **Checkable tasks (01, 02): no gap** — cheap tier already tops out; nothing to lift.
