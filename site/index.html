@@ -233,10 +233,15 @@ python scripts/diff_report.py --target your-apprentice-model</code></pre>
     <p class="lede">Paste your <code>harness_results.jsonl</code> (or load the sample). Pick the model you currently
     pay for. Every other row — cheap models, local models, composites — gets a verdict against it, per tier.
     This page is static: your data never leaves the browser.</p>
+    <p class="small muted">Community results are self-reported benchmark runs merged from contributor pull
+    requests — treat any single-source cell as a claim, not a fact, until at least two independent
+    contributors corroborate it. This page rebuilds automatically whenever new validated contributions
+    merge to main, so the pooled data below is only ever as fresh as the last merge.</p>
 
     <textarea id="jsonl" placeholder='Paste harness_results.jsonl here — one JSON object per line…' spellcheck="false"></textarea>
     <div class="comparebar">
       <button class="btn" id="loadSample">Load sample data</button>
+      <button class="btn" id="loadCommunity">Load community data</button>
       <input type="file" id="file" accept=".jsonl,.json,.txt" style="display:none">
       <button class="btn" id="loadFile">Load file…</button>
       <span id="baselineWrap" style="display:none">
@@ -388,6 +393,23 @@ $("file").onchange = e => {
 };
 $("jsonl").addEventListener("input", e => ingest(e.target.value));
 $("baseline").addEventListener("change", render);
+
+// ── Community data: fetch the merged, aggregator-built JSONL ────────
+$("loadCommunity").onclick = () => {
+  fetch("community_results.jsonl").then(res => {
+    if (!res.ok) throw new Error("not ok");
+    return res.text();
+  }).then(text => {
+    if (!text.trim()) throw new Error("empty");
+    $("jsonl").value = text;
+    ingest(text);
+  }).catch(() => {
+    $("summary").innerHTML = 'No community data merged yet — run the benchmark on your machine and open a PR with your results (see ' +
+      '<a href="https://github.com/bigbirdreturns/tier-bench/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a> on GitHub).';
+    $("out").innerHTML = "";
+    $("baselineWrap").style.display = "none";
+  });
+};
 </script>
 </body>
 </html>

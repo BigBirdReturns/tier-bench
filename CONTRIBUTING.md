@@ -151,3 +151,31 @@ Look at existing tasks for patterns:
 - **Multi-file:** `t2_multi_file_patch_003` — model edits `lib.py`, test runs `input.py` which imports from it
 - **Security audit:** `t3_sql_injection_fix_001` — model must find and fix a vulnerability, test includes attack payloads
 - **Structural refactor:** `t3_refactor_god_function_002` — test checks both output correctness AND code structure via AST
+
+## Contributing benchmark data
+
+Tasks are one half of Tier Bench; the other half is measurement, and no single
+rig can run every model at every tier. If you've run the benchmark, your
+`harness_results.jsonl` is worth pooling:
+
+1. Run the benchmark with your own API keys: `python orchestrator.py --benchmark all`
+2. Package your results: `python scripts/contribute.py --results harness_results.jsonl --as yourhandle`
+   This validates every row (real task id, matching tier, sane cost) and writes
+   `data/results/<date>-yourhandle-<hash>.jsonl` — invalid rows are dropped
+   with an error only if they're a small minority; too many and the whole
+   file is rejected.
+3. Open a PR adding the generated file to `data/results/`. Do not hand-edit it
+   and do not commit synthetic data — CI re-validates the file mechanically
+   (`.github/workflows/validate.yml`) and the aggregator must digest it
+   alongside everything already merged.
+4. On merge, the site republishes automatically: `scripts/aggregate.py` pools
+   your rows with everyone else's and regenerates the routing recommendations.
+
+**Honesty doctrine.** Every contributed row is self-reported — nobody
+verifies you ran the harness honestly, only that the row is structurally
+real. A `(model, tier)` cell backed by a single contributor is
+`single-source`: a claim, not a fact. Once two or more distinct contributors
+report the same cell, it becomes `corroborated`. Every recommendation
+`scripts/aggregate.py` produces is computed only from this pooled, labeled
+data — routing picks, frontier-replication verdicts, and apprentice
+candidates all carry their evidence class, never a bare number.

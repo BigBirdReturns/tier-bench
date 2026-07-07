@@ -1,0 +1,37 @@
+name: Validate contributed data
+
+# Runs the same mechanical gate a human would otherwise have to apply by eye:
+# every packaged contribution must re-pass scripts/contribute.py --validate,
+# and the aggregator must be able to digest everything merged so far without
+# choking. No human judgment call is required to merge a data PR.
+on:
+  pull_request:
+    paths:
+      - "data/results/**"
+      - "scripts/contribute.py"
+      - "scripts/aggregate.py"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Validate every packaged contribution
+        run: |
+          for f in data/results/*.jsonl; do
+            [ -e "$f" ] || continue
+            python scripts/contribute.py --validate "$f" || exit 1
+          done
+
+      - name: Aggregator must digest everything merged so far
+        run: python scripts/aggregate.py --data data/results --json > /dev/null
