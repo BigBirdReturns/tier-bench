@@ -83,6 +83,8 @@ harness/
                        cited) + memory-class upgrade ladder.          [2]
 orchestrator.py        Plan (driver, under driver/README.md as system
                        prompt) → route to cheapest hands → validate.  [5]
+driver/control-set.md  Disposition probes for candidate drivers — the
+                       interview for tiers where no validator exists.    [2]
 driver/README.md       THE ROLE SPEC. How to be the frontier:
                        decompose / verify / repair-from-evidence.
                        An apprentice becomes the driver by literally
