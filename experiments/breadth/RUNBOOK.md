@@ -38,11 +38,19 @@ Start the session in **Sonnet** and paste:
 > 1. Assemble the task set: the graded tasks under `tasks/`/`fixtures/` plus the
 >    `experiments/tier-uplift` subjects. Write the list to
 >    `experiments/breadth/run/tasks.txt`.
-> 2. Lay the cheap floor: run each task at the cheap tier **with the capability
->    harness** (`capability_harness`, `lenses=all_lenses()` from the sealed shard).
->    Grade with the deterministic graders. Log every call to
->    `experiments/breadth/run/ledger.jsonl` via `experiments/breadth/ledger.py`.
-> 3. The **residual** = tasks the cheap+harness floor did NOT clear reliably (K=3).
+> 2. Lay the cheap floor. For each task, K=3 times: spawn a **cheap-model subagent**
+>    (the Agent tool, model `haiku`) to *solve* the task — produce the target file
+>    per the manifest. Then **grade deterministically**: run the task's own
+>    `run_command` / `harness.validators.validate_all` on the produced file (pass =
+>    exit 0 / validators pass). Log every attempt to
+>    `experiments/breadth/run/ledger.jsonl` via `experiments/breadth/ledger.py`
+>    (`tier="claude-haiku-4-5@harness"`, tokens/cost from the subagent usage).
+>    NOTE: the harness (`capability_harness`) *reviews code* — it is an **augmentation
+>    for bug-finding/review tasks** (give the subagent the lens findings before it
+>    fixes), **not** the solver, and it does nothing for implement-from-spec tasks.
+>    The grade→log→map spine is proven keyless by `experiments/breadth/smoke.py`;
+>    the only added piece here is the subagent doing the solve.
+> 3. The **residual** = tasks the cheap floor did NOT clear reliably (K=3).
 >    Write it to `experiments/breadth/run/residual.txt` — this is all Fable needs to
 >    touch, which conserves Fable quota for where it matters.
 > 4. Write `experiments/breadth/run/PLAN.md`: the residual queue, the effort ladder
