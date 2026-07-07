@@ -7,6 +7,8 @@ on:
       - 'models.json'
       - 'scripts/generate_cheatsheet.py'
       - 'site/**'
+      - 'data/results/**'
+      - 'scripts/aggregate.py'
   workflow_dispatch:
 
 permissions:
@@ -38,6 +40,7 @@ jobs:
           mkdir -p _site
           cp site/index.html _site/index.html
           python scripts/generate_cheatsheet.py --out _site/cheatsheet.html
+          python scripts/aggregate.py --data data/results --emit-rows _site/community_results.jsonl --json > _site/aggregate.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

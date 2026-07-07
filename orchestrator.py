@@ -170,6 +170,23 @@ WORKER_SYSTEM = (
     'If you cannot complete the task, return exactly: {"escalate": true, "reason": "..."}\n'
 )
 
+# The driver role spec (driver/README.md) is the portable definition of "how
+# to be the frontier": decompose / verify / repair-from-evidence. When a
+# driver is set, it runs UNDER that spec — which is what makes the apprentice
+# path real: a cheaper model put in the driver seat literally runs under the
+# same role definition the frontier ran under, and the same harness grades it.
+DRIVER_SPEC_PATH = Path(__file__).resolve().parent / "driver" / "README.md"
+
+
+def _driver_system() -> str:
+    """Role spec first (who you are), output contract second (what to emit).
+    SUPERVISOR_SYSTEM stays authoritative on the JSON schema so the planner's
+    output remains parseable regardless of which model is driving."""
+    if DRIVER_SPEC_PATH.exists():
+        spec = DRIVER_SPEC_PATH.read_text(encoding="utf-8")
+        return f"{spec}\n\n---\n\n{SUPERVISOR_SYSTEM}"
+    return SUPERVISOR_SYSTEM
+
 
 def _extract_json_array(text: str) -> str | None:
     """Extract a JSON array from text, robust to surrounding prose and brackets."""
@@ -225,7 +242,7 @@ def decompose_request(guard: CostGuard, prompt: str, provider: str, repo_root: P
         result = guard.call(
             model=driver,
             tier=Tier.T4,
-            system=SUPERVISOR_SYSTEM,
+            system=_driver_system(),
             messages=[{"role": "user", "content": context_prompt}],
         )
     else:

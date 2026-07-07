@@ -4,6 +4,8 @@ Tier Bench is an empirical benchmarking system for LLM routing. It measures whic
 
 This replaces vibe-based model selection with operational data.
 
+**Succession:** [HANDOFF.md](HANDOFF.md) is the 30-year document — mission, constitution, data contracts, and takeover protocol for whichever model or human drives this next. Keep it current.
+
 **[Live site — how it works, test your own workflow, compare your results](https://bigbirdreturns.github.io/tier-bench/)** · [pricing cheatsheet](https://bigbirdreturns.github.io/tier-bench/cheatsheet.html)
 
 ## The problem
@@ -164,6 +166,26 @@ measurement, and the report refuses to speak about it.
 
 Model-side safety refusals are logged distinctly (`model_refusal`) and count
 as failed attempts: refusal risk is part of a model's real-world price.
+
+## Teaching the driver role (distillation)
+
+Being the driver is a method, not a model (`driver/README.md`). Every
+`driver_repair` repair is imitation evidence: (task, failed hands output,
+validator report) -> (driver's fix, passed?). Validation already grades each
+one — pass or fail, no self-report — so the passing tuples are a curriculum,
+not a guess. Collecting enough of them lets a cheaper model learn the move by
+example first, then by fine-tuning on the same corpus: distillation of
+judgment, not weights.
+
+```bash
+python orchestrator.py --benchmark all         # driver_repair composites auto-capture to driver_traces.jsonl
+python scripts/distill.py                      # emit the curriculum: driver/README.md + passed exemplars
+```
+
+See `driver/README.md` for the full teach loop and the graduation test: set
+the apprentice as `--driver`, benchmark it, and check
+`scripts/diff_report.py --target <apprentice>` — it has replicated the driver
+when its cost-per-success on the role matches the frontier's.
 
 ## Rig report — laptop to server farm
 
