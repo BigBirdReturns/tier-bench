@@ -1,0 +1,17 @@
+1. Lines 36-38, `transfer`: the sender's balance is decremented (`self._balances[from_id] -= amount`) *before* checking whether the result is negative; when funds are insufficient the method raises, but `from_id`'s balance has already been left negative with no rollback — every failed insufficient-funds transfer permanently corrupts the sender's balance and breaks the non-negative-balance invariant.
+
+2. Lines 36-39, `transfer`: if `to_id` does not exist in `self._balances`, line 39 raises `KeyError` after line 36 has already debited `from_id`; the debited amount is never credited anywhere and no history entry is written, so the funds are silently destroyed from the ledger (violates `net_position` conservation) any time a transfer targets an unknown account.
+
+3. Lines 20-23 (`deposit`) and 25-30 (`withdraw`): neither method appends to `self._history`, so direct deposits/withdrawals are invisible to `total_deposits` (line 42-48) and `statement` (line 50-56) — an account funded via `deposit()` shows less (often zero) "total deposits" and no transaction rows even though real money moved in, i.e. every deposit/withdrawal silently escapes the audit trail.
+
+4. Line 60, `apply_interest`: `self._balances[account_id] *= (1 + rate)` multiplies an integer cents balance by a float, silently converting the balance from `int` to `float`; this breaks the documented "balance (cents)" integer invariant and introduces floating-point rounding error that compounds with every subsequent interest application (no rounding back to whole cents is performed).
+
+5. Line 60, `apply_interest`: `rate` is never validated; a `rate <= -1` (e.g. -1.5) drives the balance to zero or negative with no error, silently violating the non-negative-balance invariant that `withdraw`/`transfer` otherwise enforce, and there is no protection against non-numeric or absurd rate values either.
+
+6. Lines 68-73, `richest`: `best_bal` is initialized to `0` and only updated when `self._balances[a] > best_bal`; if every account in `accounts` has a balance of 0 or negative (e.g. right after the corruption described in bug 1, or for legitimately zero-balance accounts), the loop never updates `best`, so the function incorrectly returns `None` instead of the account with the actual highest balance among the given accounts.
+
+7. Lines 12-15, `open_account`: `opening_balance` is accepted with no validation — a negative or non-integer opening balance is stored as-is, letting an account start out already violating the non-negative-balance / integer-cents invariant that the rest of the ledger assumes.
+
+8. Lines 50-56, `statement`: `page` and `per_page` are not validated; a negative `page` (or `per_page`) produces a negative `start`/`end`, which Python slicing silently reinterprets as counting from the end of the list, returning an unrelated page of transactions instead of raising an error or returning an empty page — a silent-wrong-result bug rather than a crash.
+
+9. Line 40 vs. lines 36-39, `transfer` (compounding effect of bugs 1 and 2): because the balance mutation and history append are not part of a single atomic/rollback-safe operation, any exception raised mid-transfer (insufficient funds or bad `to_id`) leaves `self._balances` and `self._history` inconsistent with each other — `net_position()` (line 62-64) and `total_deposits()` (line 42-48) will thereafter report figures that no longer reconcile with the true movement of funds, and a caller that catches the exception and retries the transfer will double-debit the already-corrupted `from_id` balance.
