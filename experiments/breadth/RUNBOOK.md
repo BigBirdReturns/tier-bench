@@ -105,6 +105,48 @@ Sum it and that's your project baseline: full breadth mapped, every escalation (
 effort *or* access) backed by a `0/K → K/K` receipt in the ledger, and every token
 reconciled against the bill (`ledger.reconcile`). Not the ceiling — the frontier.
 
+## Autonomous mode — kick off and walk away
+
+You can start it and leave. The safe boundary: the run maps everything it can
+**within your current access quota** and **parks at the limit with a decision
+packet** — it never spends the next billing rung (pro/max) on its own. Access
+escalation stays the one human gate. So "walk away" means you come back to either a
+finished map, or a map complete-to-the-quota with one clear escalate-y/n question
+waiting — never a surprise bill.
+
+Kickoff prompt (paste once into the **Sonnet** session, then just toggle Fable when
+it asks):
+
+> Follow `experiments/breadth/RUNBOOK.md` autonomously. Run Phase 1 now — haiku
+> subagents solve each task, the task's own grader scores it, log to
+> `run/ledger.jsonl`, write `run/residual.txt` + `run/PLAN.md` — then stop and tell
+> me to switch to Fable. After I switch you to Fable, run Phase 2 to ~80% of the
+> quota in PLAN.md: walk each residual task bottom-up the effort ladder, K=3, logging
+> every call. Adapt as you learn under `experiments/breadth/adapt.py` — improve HOW
+> you solve/run freely, but NEVER change a grader or what counts as passing (propose
+> those to `run/harness_log.jsonl` for me). At the limit, STOP and print the decision
+> packet; do NOT escalate access — that's my call. Checkpoint the ledger and map so I
+> can pick it up when I'm back.
+
+## Adaptive harness — learn and adjust, never self-grade
+
+Fable can think about the harness and change it as it learns, inside a bright line
+that `experiments/breadth/adapt.py` **enforces in code** (not just asks for):
+
+- **FREE** — apply immediately, just log it: solve strategy, prompt wording, which
+  lenses to use, trial/retry policy within K, task ordering, tuning the effort
+  ladder. These change *how the run works*, not what it measures.
+- **GATED** — propose only, never self-apply: a task's grader, the pass criteria, a
+  task definition, skipping a task, any ledger change that hides cost. `record()`
+  forces `applied=False` on these regardless of what the model passes, and unknown
+  targets fail safe to gated. They queue in `run/harness_log.jsonl` for your review.
+
+Why the line is hard and not advisory: a model that can loosen its own grader to
+pass **will**, and the map becomes a lie. That is the reward-hacking shape Anthropic's
+J-lens work catches in the wild, and the reason this whole program keeps the
+stochastic model off the scoring path. Fable gets to be smart about the harness; it
+does not get to score itself. Review the queue anytime: `python experiments/breadth/adapt.py run/harness_log.jsonl`.
+
 ## Commands
 
 ```bash
