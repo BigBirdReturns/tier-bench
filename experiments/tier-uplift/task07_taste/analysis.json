@@ -1,0 +1,66 @@
+{
+ "rankings": {
+  "haiku": [
+   "C03",
+   "C09",
+   "C02",
+   "C04",
+   "C07",
+   "C11",
+   "C08",
+   "C06",
+   "C10",
+   "C05",
+   "C01",
+   "C12"
+  ],
+  "sonnet": [
+   "C12",
+   "C09",
+   "C10",
+   "C11",
+   "C05",
+   "C03",
+   "C07",
+   "C04",
+   "C06",
+   "C02",
+   "C08",
+   "C01"
+  ],
+  "opus": [
+   "C09",
+   "C11",
+   "C10",
+   "C03",
+   "C04",
+   "C05",
+   "C06",
+   "C12",
+   "C07",
+   "C08",
+   "C01",
+   "C02"
+  ]
+ },
+ "tops": {
+  "haiku": "C03",
+  "sonnet": "C12",
+  "opus": "C09"
+ },
+ "mean_rho": 0.322,
+ "pairwise_rho": {
+  "haiku-sonnet": -0.042,
+  "haiku-opus": 0.294,
+  "sonnet-opus": 0.713
+ },
+ "consensus_pos_by_tier": {
+  "haiku": 5.0,
+  "sonnet": 5.5,
+  "opus": 6.0
+ },
+ "best_line": {
+  "id": "C09",
+  "author": "haiku"
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "transfer_mechanism": "explicit articulated rubric (opus taste_lens.md) applied by haiku",
+ "haiku_alone_vs_frontier_rho": 0.126,
+ "haiku_with_lens_vs_frontier_rho": -0.028,
+ "note": "12-item Spearman, SE~0.3 (noisy); robust claim = NO positive taste transfer, not a reliable decrease",
+ "key_item": "frontier consensus-best line C09: haiku-alone ranked #2, haiku-with-lens ranked #11",
+ "interpretation": "taste is tacit (Polanyi); the rubric relocates the subjective judgment one level down rather than transferring it; articulation degrades it",
+ "untested_routes": [
+  "exemplar/few-shot transfer",
+  "weight-level distillation from many frontier judgments"
+ ]
+}
