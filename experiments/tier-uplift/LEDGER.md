@@ -294,6 +294,26 @@ Pure-taste task (novel opening sentence); with no ground truth the only signal i
 - Remaining lever: **weight-level distillation** from many frontier judgments
   (untested here), not articulation. Words hit a floor; gradient descent might not.
 
+### Escape-velocity attempt — does SHOWING transfer taste where TELLING failed?
+
+In-context taste transfer, two mechanisms, held-out pool. Frontier-alignment
+(mean ρ vs opus+sonnet):
+
+| haiku condition | frontier ρ | C09 (frontier's #1) rank |
+|---|--:|--:|
+| alone (gut) | **0.13** | #2 |
+| + rubric (tell) | −0.03 | #11 |
+| + 3-shot exemplars (show) | −0.19 | #9 |
+
+**No liftoff.** Neither telling nor showing produced positive transfer; both came
+in below haiku's own gut, and both demoted the frontier's favorite line off
+haiku's #2. Honest stats: 12 items, SE≈0.30 — all within noise of zero, so the
+reliable claim is "**no measurable in-context taste transfer**," not "it got
+worse." Few-shot ≠ fine-tuning: the residue held against context. The only
+untested lever is weight-level distillation. Zeno's halving, if it exists, runs
+through **parameters, not context** — which is the one thing this sandbox cannot
+run. Told true.
+
 ## Verdict so far
 
 - **Checkable tasks (01, 02): no gap** — cheap tier already tops out; nothing to lift.

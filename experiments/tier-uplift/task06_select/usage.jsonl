@@ -1,0 +1,5 @@
+{"run":"baseline_haiku","model":"haiku","tokens":39595,"tool_uses":2,"duration_ms":182169}
+{"run":"baseline_sonnet","model":"sonnet","tokens":33785,"tool_uses":3,"duration_ms":89942}
+{"run":"baseline_opus","model":"opus","tokens":25383,"tool_uses":4,"duration_ms":79327}
+{"run":"sweep_haiku_advreason","model":"haiku","tokens":25716,"tool_uses":2,"duration_ms":62035}
+{"run":"sweep_haiku_empirical","model":"haiku","tokens":26841,"tool_uses":9,"duration_ms":81507}
