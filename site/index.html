@@ -77,6 +77,7 @@
   </p>
   <div class="btnrow">
     <a class="btn primary" href="#test-now">Test your workflow now</a>
+    <a class="btn" href="#teach">Teach a cheaper driver</a>
     <a class="btn" href="#compare">Compare your results</a>
     <a class="btn" href="cheatsheet.html">Live pricing cheatsheet</a>
     <a class="btn" href="https://github.com/bigbirdreturns/tier-bench">GitHub →</a>
@@ -196,6 +197,35 @@ python scripts/rig_report.py --emit-config # paste-ready local setup for this ri
   </div>
 </section>
 
+<section id="teach">
+  <div class="wrap">
+    <div class="kicker">Distillation · any provider</div>
+    <h2>Teach a cheaper model to be the driver.</h2>
+    <p class="lede">
+      The driver role — plan, verify, repair-from-evidence — is a method, not a model. Every
+      driver repair is captured as a training trace: <code>(task, failed cheap attempt, validator
+      report) → (fix, passed?)</code>. An apprentice loads the role spec, studies the traces, then
+      takes the driver seat — and the <b>same harness</b> grades it. Works for any registry model:
+      a GPT or Gemini entry is one JSON stanza in <code>models.json</code>.
+    </p>
+<pre><code># 1. capture judgment — driver_repair composites log traces automatically
+python orchestrator.py --benchmark all
+# 2. distill the traces into a curriculum (role spec + worked repairs)
+python scripts/distill.py &gt; curriculum.txt
+# 3. put the apprentice in the driver seat
+python orchestrator.py --driver your-apprentice-model "your task"
+# 4. graduation test: has it replicated the frontier driver?
+python scripts/diff_report.py --target your-apprentice-model</code></pre>
+    <div class="callout small">
+      <b>Graduation is scoped to what the harness measures.</b> Matching the frontier's
+      cost-per-success on the driver role means it replicated the driver on the measured tiers —
+      claims above the ruler stay hypotheses. See the
+      <a href="https://github.com/bigbirdreturns/tier-bench/blob/main/driver/README.md">role spec</a>
+      for the full teach loop.
+    </div>
+  </div>
+</section>
+
 <section id="compare">
   <div class="wrap">
     <div class="kicker">In-browser · nothing uploaded</div>
@@ -225,7 +255,9 @@ python scripts/rig_report.py --emit-config # paste-ready local setup for this ri
     <a href="https://github.com/bigbirdreturns/tier-bench">Source</a> ·
     <a href="cheatsheet.html">pricing cheatsheet</a> ·
     MIT. Models, prices, roles, and composite strategies are registry data (<code>models.json</code>) —
-    this workflow is built to outlive every model named on this page.</p>
+    this workflow is built to outlive every model named on this page. Measurement is this repo's job;
+    auditing unmeasurable frontier claims — sourced ledgers, contamination, refuse-to-price — is the
+    companion instrument's: <a href="https://bigbirdreturns.github.io/axm-capability-claim-test/">Capability Claim Test</a>.</p>
   </div>
 </footer>
 

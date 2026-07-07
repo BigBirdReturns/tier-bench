@@ -35,8 +35,9 @@ fine-tuning on them. This is distillation of judgment, not weights.
 ## How another model calls this to learn
 
 1. **Load this file as the system prompt.** It *is* the curriculum — the role
-   definition an apprentice adopts. (`orchestrator.py` uses it verbatim as the
-   planner/repair system prompt when `roles.driver` points at the apprentice.)
+   definition an apprentice adopts. (When a driver is set, `orchestrator.py`
+   prepends this file to its planner system prompt — the apprentice literally
+   runs under the same spec the frontier ran under.)
 2. **Study the traces.** Point the apprentice at captured driver traces
    (`--traces`) so it sees real failure→report→repair→pass tuples before it
    drives.
