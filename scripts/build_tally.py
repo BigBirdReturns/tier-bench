@@ -64,6 +64,22 @@ DISPLAY = {  # order top-to-bottom in the tally
 }
 DISPOSITION_MAX = 20  # ten probes, 2 points each
 
+# The seven backends harness/cost_guard.py actually implements (a _call_* method
+# each), in display order. This is the "reachable universe": every model behind
+# one of these drops into the identical harness. The gate is never the repo —
+# it's whether the key is set and the endpoint is reachable. openai-compat is the
+# wildcard: any OpenAI-API-shaped host (Together, Groq, OpenRouter, vLLM, LM
+# Studio) is a one-row models.json add with a base_url, no code.
+PROVIDERS = {
+    "anthropic":     {"label": "Anthropic",       "gate": "ANTHROPIC_API_KEY", "how": "anthropic SDK"},
+    "openai":        {"label": "OpenAI",           "gate": "OPENAI_API_KEY",    "how": "openai SDK"},
+    "google":        {"label": "Google",           "gate": "GEMINI_API_KEY",    "how": "google-genai SDK"},
+    "mistral":       {"label": "Mistral",          "gate": "MISTRAL_API_KEY",   "how": "mistralai SDK"},
+    "deepseek":      {"label": "DeepSeek",         "gate": "DEEPSEEK_API_KEY",  "how": "openai SDK · DeepSeek base_url"},
+    "ollama":        {"label": "Ollama (local)",   "gate": None,                "how": "openai SDK · localhost:11434 — no key"},
+    "openai-compat": {"label": "OpenAI-compatible", "gate": "per-endpoint",     "how": "openai SDK · your base_url — add a row, no code"},
+}
+
 # tier ceiling -> capability rank 0..4 (task complexity the model can attempt)
 TIER_RANK = {"T0": 0, "T1": 1, "T2": 2, "T3": 3, "T4": 4, "T5": 4}
 # employee rank -> label. rank = min(capability_rank, disposition_rank).
@@ -161,6 +177,58 @@ def capability_by_model(results_path: str | None) -> dict:
     return cap
 
 
+def coverage(disp: dict, cap: dict, models: dict) -> dict:
+    """The reachable universe: every registered model, grouped by the backend
+    that calls it, with its declared capability and whether disposition has been
+    run for it yet. This is the honest scope of 'it can measure every model' —
+    the harness reaches every model behind an implemented backend; the gate is
+    the key, never the repo. Generated straight from models.json so it can never
+    drift from what the harness can actually call."""
+    id_to_name = {v: k for k, v in NAME_TO_ID.items()}  # registry id -> control-set name
+    by_provider = defaultdict(list)
+    measured_disp = 0
+    for mid, info in models.items():
+        prov = info.get("provider", "unknown")
+        name = id_to_name.get(mid)
+        d = disp.get(name) if name else None
+        has_disp = bool(d and d["score"] is not None)
+        if has_disp:
+            measured_disp += 1
+        by_provider[prov].append({
+            "id": mid,
+            "display": DISPLAY.get(mid, mid),
+            "tier": info.get("tier_ceiling", "T0"),
+            "price_in": info.get("input_per_1M"),
+            "price_out": info.get("output_per_1M"),
+            "capability": "declared" if not cap.get(mid, {}).get("measured") else "measured",
+            "disposition": (f"{d['score']}/{DISPOSITION_MAX}" if has_disp else "not yet run"),
+            "disposition_measured": has_disp,
+        })
+
+    provs = []
+    for prov, meta in PROVIDERS.items():
+        entries = sorted(by_provider.get(prov, []), key=lambda m: (-TIER_RANK.get(m["tier"], 0), m["id"]))
+        provs.append({
+            "provider": prov, "label": meta["label"], "gate": meta["gate"], "how": meta["how"],
+            "n_models": len(entries), "models": entries,
+            "local": prov == "ollama", "wildcard": prov == "openai-compat",
+        })
+    total_models = sum(p["n_models"] for p in provs)
+    return {
+        "providers": provs,
+        "totals": {
+            "backends_implemented": len(PROVIDERS),
+            "models_registered": total_models,
+            "vendors_with_models": sum(1 for p in provs if p["n_models"] and not p["local"] and not p["wildcard"]),
+            "disposition_measured": measured_disp,
+            "capability_measured": sum(1 for m in models if cap.get(m, {}).get("measured")),
+        },
+        "gating": "the key in the environment + network to the endpoint + a models.json row — never the repo",
+        "note": "every model behind an implemented backend flows through the identical harness; "
+                "a new OpenAI-compatible host is a one-row add (base_url), a genuinely new API is one _call_* method",
+    }
+
+
 def build(data_dir="data/control-results", results_path=None) -> dict:
     disp = disposition_by_model(data_dir)
     cap = capability_by_model(results_path)
@@ -222,6 +290,7 @@ def build(data_dir="data/control-results", results_path=None) -> dict:
             "escape_hatch": "a disposition-capped model rises under a driver/hands harness with a frozen policy (driver/policy/)",
         },
         "rows": rows,
+        "coverage": coverage(disp, cap, models),
     }
 
 
@@ -239,6 +308,15 @@ def _fmt(t: dict) -> str:
         lines.append(f"{r['model']:11}{cap:>5}{str(d['score'])+'/20':>7}{p8:>5}  {e['label']}"
                      f"   [binds: {e['binding_axis']}]{flat}")
     lines.append("* = declared ceiling, not measured (no capability run yet)")
+    cov = t["coverage"]; tot = cov["totals"]
+    lines.append("")
+    lines.append(f"reachable universe: {tot['models_registered']} models across "
+                 f"{tot['backends_implemented']} implemented backends "
+                 f"({tot['disposition_measured']} disposition-measured, {tot['capability_measured']} capability-measured)")
+    for p in cov["providers"]:
+        gate = "local, no key" if p["local"] else (p["gate"] or "")
+        ids = ", ".join(m["id"] for m in p["models"]) or "— bring your endpoint (base_url), no code"
+        lines.append(f"  {p['label']:22} [{gate}]  {p['n_models']}: {ids}")
     return "\n".join(lines)
 
 
