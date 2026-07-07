@@ -63,6 +63,11 @@
   .verdictline{font-family:var(--mono);font-size:13px;margin:10px 0;color:var(--ink2)}
   footer{padding:36px 0 60px;color:var(--muted);font-size:.88rem}
   .callout{border-left:3px solid var(--yellow);background:var(--panel);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;color:var(--ink2)}
+  .copybtn{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:11px;line-height:1;
+    padding:4px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);
+    color:var(--muted);cursor:pointer}
+  .copybtn:hover{color:var(--ink);border-color:var(--blue)}
+  .copybtn.copied{color:var(--green);border-color:var(--green)}
 </style>
 </head>
 <body>
@@ -77,6 +82,7 @@
   </p>
   <div class="btnrow">
     <a class="btn primary" href="#test-now">Test your workflow now</a>
+    <a class="btn" href="https://codespaces.new/bigbirdreturns/tier-bench">Open in Codespaces</a>
     <a class="btn" href="#teach">Teach a cheaper driver</a>
     <a class="btn" href="#compare">Compare your results</a>
     <a class="btn" href="cheatsheet.html">Live pricing cheatsheet</a>
@@ -123,6 +129,26 @@
   <div class="wrap">
     <div class="kicker">Ten minutes, ~$0.15</div>
     <h2>Test it on your own workflow, right now.</h2>
+
+    <div class="quickstart">
+      <h3>Quickstart — copy once, run once</h3>
+      <p class="small muted">This runs on <b>your</b> machine with <b>your</b> key — a static page
+      can't hold keys or run Python. It's copy-paste, not zero-click.</p>
+<pre><code>git clone https://github.com/bigbirdreturns/tier-bench.git &amp;&amp; cd tier-bench
+bash setup.sh
+export ANTHROPIC_API_KEY=sk-ant-...      # or OPENAI_API_KEY / GEMINI_API_KEY, or `ollama serve` for $0 local
+python orchestrator.py --benchmark all   # ~$0.15, 12 tasks x every reachable model
+python scripts/diff_report.py            # what the frontier gives you, and what replicates it</code></pre>
+      <p class="small muted">Closest to one-click is a cloud dev container:
+      <a href="https://codespaces.new/bigbirdreturns/tier-bench">Open in Codespaces</a>, add your key
+      as a Codespaces secret (or just export it in the terminal), then paste the two Python lines
+      above. Still your key, still your spend — nothing runs it for you.</p>
+      <p class="small muted">This benchmark measures locally, against your own key and machine; the
+      companion <a href="https://bigbirdreturns.github.io/axm-capability-claim-test/">audit
+      workbench</a> is fully in-browser, zero-setup — it audits claims instead of measuring them.</p>
+    </div>
+
+    <p class="small muted">Prefer it step by step? Full walkthrough below.</p>
 
     <div class="steps">
       <div class="step"><div>
@@ -410,6 +436,33 @@ $("loadCommunity").onclick = () => {
     $("baselineWrap").style.display = "none";
   });
 };
+
+// ── Copy-to-clipboard buttons on every <pre> ────────────────────────
+// Self-contained: does not read or call any function from the comparer above.
+(function initCopyButtons(){
+  function setup(){
+    if (!navigator.clipboard) return; // no Clipboard API in this browser — skip silently
+    document.querySelectorAll("pre").forEach(pre => {
+      if (pre.querySelector(".copybtn")) return; // already wired up
+      const codeEl = pre.querySelector("code") || pre;
+      pre.style.position = "relative";
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "copybtn";
+      btn.textContent = "Copy";
+      btn.addEventListener("click", () => {
+        navigator.clipboard.writeText(codeEl.textContent).then(() => {
+          btn.textContent = "Copied";
+          btn.classList.add("copied");
+          setTimeout(() => { btn.textContent = "Copy"; btn.classList.remove("copied"); }, 1200);
+        });
+      });
+      pre.appendChild(btn);
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", setup);
+  else setup();
+})();
 </script>
 </body>
 </html>
