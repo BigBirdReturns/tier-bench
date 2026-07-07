@@ -254,14 +254,17 @@ def generate_html(models: dict, results: dict) -> str:
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tier Bench — Model Routing Cheatsheet</title>
 <style>
+  /* AXM house style: paper + ink fixed, scope = examined, accent = verdict. */
   :root{{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --line:#2d333b;
-    --ink:#e6edf3; --ink2:#9da7b3; --muted:#6e7a87;
-    --green:#3fb950; --yellow:#d29922; --red:#f85149; --blue:#58a6ff;
+    --bg:#f0ebe0; --panel:#fbf8f1; --panel2:#efe9dc; --line:#b8afa0;
+    --ink:#0e0d0c; --ink2:#2c2a27; --muted:#5e5850; --scope:#5a5e52;
+    --green:#2d5a3d; --yellow:#8a6d1e; --red:#b01c18; --blue:#8a160f;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --serif:'Lora',Georgia,'Times New Roman',serif;
+    --imprint:'Playfair Display',Georgia,serif;
   }}
   *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}}
+  body{{background:var(--bg);color:var(--ink);font:16px/1.6 var(--serif);-webkit-font-smoothing:antialiased}}
   .wrap{{max-width:960px;margin:0 auto;padding:0 20px}}
   a{{color:var(--blue);text-decoration:none}} a:hover{{text-decoration:underline}}
   code,pre{{font-family:var(--mono)}}
@@ -269,26 +272,26 @@ def generate_html(models: dict, results: dict) -> str:
   pre{{background:var(--panel);border:1px solid var(--line);border-radius:8px;
       padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.55;margin:14px 0}}
   pre code{{background:none;padding:0}}
-  h1{{font-size:1.9rem;line-height:1.2;margin:0 0 6px}}
-  h2{{font-size:1.3rem;margin:0 0 6px;letter-spacing:-.01em}}
+  h1{{font-family:var(--imprint);font-size:2rem;line-height:1.16;margin:0 0 6px;letter-spacing:-.01em}}
+  h2{{font-family:var(--imprint);font-size:1.35rem;margin:0 0 6px;letter-spacing:-.01em}}
   h3{{font-size:1.02rem;margin:20px 0 6px}}
   section{{padding:32px 0;border-top:1px solid var(--line)}}
   section:first-of-type{{border-top:none;padding-top:36px}}
-  .kicker{{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}}
+  .kicker{{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}}
   .lede{{color:var(--ink2);font-size:1.02rem;max-width:52em;margin-bottom:4px}}
   .meta{{color:var(--muted);font-size:.85rem;margin-bottom:18px}}
   .muted{{color:var(--muted)}} .small{{font-size:.86rem}}
   table{{border-collapse:collapse;width:100%;font-size:.88rem}}
   .tblwrap{{overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin:14px 0}}
   th,td{{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}}
-  th{{background:var(--panel);font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);white-space:nowrap}}
+  th{{background:var(--panel);font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope);white-space:nowrap}}
   tr:last-child td{{border-bottom:none}}
   .chip{{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}}
   .c-green{{color:var(--green);border-color:color-mix(in srgb,var(--green) 45%,transparent)}}
   .c-yellow{{color:var(--yellow);border-color:color-mix(in srgb,var(--yellow) 45%,transparent)}}
   .c-red{{color:var(--red);border-color:color-mix(in srgb,var(--red) 45%,transparent)}}
   .c-grey{{color:var(--muted)}}
-  .callout{{border-left:3px solid var(--yellow);background:var(--panel);padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0;color:var(--ink2);font-size:.98rem}}
+  .callout{{border-left:3px solid var(--scope);background:var(--panel);padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0;color:var(--ink2);font-size:.98rem}}
   .callout b{{color:var(--ink)}}
   .card{{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-top:14px}}
 </style>
