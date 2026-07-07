@@ -8,6 +8,15 @@ This replaces vibe-based model selection with operational data.
 
 **[Live site — how it works, test your own workflow, compare your results](https://bigbirdreturns.github.io/tier-bench/)** · [pricing cheatsheet](https://bigbirdreturns.github.io/tier-bench/cheatsheet.html)
 
+## Beyond the router — the capability program
+
+Reproducible work built on top of the benchmark (all on `main`):
+
+- **[Capability harness](capability_harness/README.md)** — lift a cheap model to the tier above on operational tasks, any provider. `pip install .`, then `capability-harness review mycode.py`.
+- **[The living lens shard](memory/lenses/README.md)** — the lens registry sealed as a signed, tamper-evident AXM Genesis shard (`axm-verify` PASS; one-byte tamper fails closed).
+- **[Findings page](https://bigbirdreturns.github.io/tier-bench/uplift.html)** — the operational-moat write-up and the "workspace inside/outside" frame.
+- **[Breadth self-run RUNBOOK](experiments/breadth/RUNBOOK.md)** — Sonnet-prepares / Fable-maps-itself, with token harvesting (`ledger.py`) and evidence-driven, effort-first escalation (`escalate.py`, `rungs.py`, `limit.py`). **Runs keyless via Claude Code subagents** — see the runbook.
+
 ## The problem
 
 Most AI tooling does this:

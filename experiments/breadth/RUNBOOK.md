@@ -6,6 +6,18 @@ Fable runs the tests on itself, cascading its own effort; when it nears the quot
 limit it checkpoints and hands you one honest decision. Designed right, you never
 escalate access.
 
+## No API key required
+
+This run does **not** use `ANTHROPIC_API_KEY` or `orchestrator.py`'s real-call path.
+The model that attempts each task is **the Claude Code session itself** (Sonnet in
+Phase 1, Fable in Phase 2) — either solving each task inline and grading with the
+deterministic graders, or spawning a subagent (the Agent tool) as the "cheap tier"
+worker, exactly as `experiments/tier-uplift` did with real model instances and no
+keys. `orchestrator.py --dry-run` and the graders work keyless; only a real
+`orchestrator.py` benchmark sweep needs an exported key, and that is a *separate*
+flow from this runbook. If the session says it's blocked on a missing key, it has
+defaulted to the orchestrator path — point it back here.
+
 ## The two knobs, in order
 
 1. **EFFORT** (`low → medium → high → xhigh → max`) — the cheap knob, varied within
