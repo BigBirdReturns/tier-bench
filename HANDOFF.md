@@ -118,6 +118,10 @@ site/index.html        The public face: how it works, test-your-own-
                        community data loader.                         [2,3]
 data/control-results/  Graded control-set runs (disposition). First
                        real measured data; see its README + §8.       [2,3]
+mcp/server.py          Persona A/B MCP server (stdlib only): models &
+                       driver-composites as swappable personas, blind
+                       A/B + impersonation, ab_log.jsonl. The composites
+                       become a live runtime, not just benchmark rows. [5,3]
 .github/workflows/
   pages.yml            Merge to main → aggregate → publish site.      [3]
   validate.yml         PRs to data/results validated by CI, not
