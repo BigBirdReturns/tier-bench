@@ -56,12 +56,12 @@ def load(data_dir: str):
     return runs
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default="data/control-results")
-    ap.add_argument("--json", action="store_true")
-    a = ap.parse_args()
-    runs = load(a.data)
+def aggregate(data_dir: str) -> dict:
+    """Pool control-results into per (model, effort, probe) cells with evidence
+    labels. The single source of truth for the disposition numbers — the CLI
+    below and scripts/build_tally.py both read from here, so the ruler can never
+    drift between the table and the tally."""
+    runs = load(data_dir)
 
     # cell key: (model, effort, probe_id) -> list of obs dicts
     cells = defaultdict(list)
@@ -104,6 +104,15 @@ def main():
             "note": "all self-reported; corroborated=>=2 distinct non-subject contributors; "
                     "lineage flag set when no grader is independent of the subject's lineage",
         }
+    return out
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--data", default="data/control-results")
+    ap.add_argument("--json", action="store_true")
+    a = ap.parse_args()
+    out = aggregate(a.data)
 
     if a.json:
         print(json.dumps(out, indent=2))
