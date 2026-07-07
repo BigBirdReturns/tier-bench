@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 
 from cost_guard import COMPOSITES_RAW, Tier, model_available
@@ -233,6 +234,16 @@ def run_composite(
 
     costs = [a["actual_cost"] for a in attempts if isinstance(a.get("actual_cost"), (int, float))]
     passed = any(a.get("pass") for a in attempts)
+
+    # Capture the driver's DECISION (not its output) when policy capture is on, so
+    # the frozen snapshot survives the driver disappearing. Guarded + swallowed:
+    # a benchmark run must never fail because decision logging hiccuped.
+    if comp.strategy == "driver_repair" and os.environ.get("TIER_BENCH_CAPTURE_POLICY"):
+        try:
+            from harness.driver_policy import capture_composite_decision
+            capture_composite_decision(task, comp, passed)
+        except Exception:
+            pass
 
     return {
         "task_id": task.task_id,
