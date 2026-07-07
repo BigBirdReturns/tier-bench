@@ -54,6 +54,40 @@ measurement** — the real cost delta needs real keys.
 TIER_BENCH_MOCK=1 python3 mcp/test_offline.py     # 22 checks
 ```
 
+## Run the A/B experiment (hand a tester a frontier key)
+
+`ab_probe.py` runs a batch of prompts through two personas and reports the
+metric that makes the thesis concrete: **how many frontier output tokens the
+orchestration saves while quality holds.** Give someone with a Fable key:
+
+```
+export ANTHROPIC_API_KEY=sk-ant-...
+python3 mcp/ab_probe.py \
+    --a claude-fable-5 \            # the frontier, alone
+    --b driver:fable+haiku \       # fable only REVIEWS; haiku does the writing
+    --judge claude-sonnet-4-5 \    # blind-picks the better answer, optional
+    --prompts your_real_prompts.txt \   # your workflow — omit for a built-in set
+    --out results.jsonl
+```
+
+It prints, and writes per-prompt to `results.jsonl`:
+- **frontier output tokens** — fable alone (full generation) vs fable in the
+  composite (only what it generated: `PASS` when it blessed the cheap draft, the
+  rewrite when it didn't). This is the whole claim: *how much frontier
+  generation was avoidable.*
+- **total cost**, both ways.
+- **blind quality** — if `--judge` is set, how often the composite's answer won.
+
+Each `complete()` result now carries `input_tokens` / `output_tokens` and a
+per-call `in_tok`/`out_tok` in the trace, so the token accounting is auditable
+call by call. Send `results.jsonl` back to fold into the aggregate.
+
+What the run actually measures: how often the frontier can *bless* a cheap
+draft instead of rewriting it, and how many frontier tokens that saves. On
+long-output tasks with a good hands model the savings are large; when the draft
+is weak the frontier rewrites and you paid for the draft too. Only a real run
+settles it — the mock can't (it truncates outputs and toy-forces repairs).
+
 ## Add it to an MCP client
 
 `claude_desktop_config.json` (or any MCP client's config):
