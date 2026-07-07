@@ -174,5 +174,354 @@
         "binding_axis": "both"
       }
     }
-  ]
+  ],
+  "coverage": {
+    "providers": [
+      {
+        "provider": "anthropic",
+        "label": "Anthropic",
+        "gate": "ANTHROPIC_API_KEY",
+        "how": "anthropic SDK",
+        "n_models": 4,
+        "models": [
+          {
+            "id": "claude-fable-5",
+            "display": "Fable 5",
+            "tier": "T5",
+            "price_in": 10.0,
+            "price_out": 50.0,
+            "capability": "declared",
+            "disposition": "18.5/20",
+            "disposition_measured": true
+          },
+          {
+            "id": "claude-opus-4-8",
+            "display": "Opus 4.8",
+            "tier": "T5",
+            "price_in": 5.0,
+            "price_out": 25.0,
+            "capability": "declared",
+            "disposition": "18.0/20",
+            "disposition_measured": true
+          },
+          {
+            "id": "claude-sonnet-5",
+            "display": "Sonnet 5",
+            "tier": "T3",
+            "price_in": 3.0,
+            "price_out": 15.0,
+            "capability": "declared",
+            "disposition": "17.0/20",
+            "disposition_measured": true
+          },
+          {
+            "id": "claude-haiku-4-5",
+            "display": "Haiku 4.5",
+            "tier": "T2",
+            "price_in": 1.0,
+            "price_out": 5.0,
+            "capability": "declared",
+            "disposition": "14.0/20",
+            "disposition_measured": true
+          }
+        ],
+        "local": false,
+        "wildcard": false
+      },
+      {
+        "provider": "openai",
+        "label": "OpenAI",
+        "gate": "OPENAI_API_KEY",
+        "how": "openai SDK",
+        "n_models": 10,
+        "models": [
+          {
+            "id": "gpt-4.1",
+            "display": "gpt-4.1",
+            "tier": "T4",
+            "price_in": 3.5,
+            "price_out": 14.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "gpt-5",
+            "display": "gpt-5",
+            "tier": "T4",
+            "price_in": 1.25,
+            "price_out": 10.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "gpt-5.1",
+            "display": "gpt-5.1",
+            "tier": "T4",
+            "price_in": 1.25,
+            "price_out": 10.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "gpt-5.2",
+            "display": "gpt-5.2",
+            "tier": "T5",
+            "price_in": 1.75,
+            "price_out": 14.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "gpt-5.5",
+            "display": "gpt-5.5",
+            "tier": "T5",
+            "price_in": 5.0,
+            "price_out": 30.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "gpt-5-mini",
+            "display": "gpt-5-mini",
+            "tier": "T3",
+            "price_in": 0.25,
+            "price_out": 2.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "o4-mini",
+            "display": "o4-mini",
+            "tier": "T3",
+            "price_in": 2.0,
+            "price_out": 8.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "gpt-4.1-mini",
+            "display": "gpt-4.1-mini",
+            "tier": "T2",
+            "price_in": 0.7,
+            "price_out": 2.8,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "gpt-4.1-nano",
+            "display": "gpt-4.1-nano",
+            "tier": "T1",
+            "price_in": 0.2,
+            "price_out": 0.8,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "gpt-5-nano",
+            "display": "gpt-5-nano",
+            "tier": "T1",
+            "price_in": 0.05,
+            "price_out": 0.4,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          }
+        ],
+        "local": false,
+        "wildcard": false
+      },
+      {
+        "provider": "google",
+        "label": "Google",
+        "gate": "GEMINI_API_KEY",
+        "how": "google-genai SDK",
+        "n_models": 2,
+        "models": [
+          {
+            "id": "gemini-3.1-pro-preview",
+            "display": "gemini-3.1-pro-preview",
+            "tier": "T4",
+            "price_in": 2.0,
+            "price_out": 12.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "gemini-3.5-flash",
+            "display": "gemini-3.5-flash",
+            "tier": "T3",
+            "price_in": 1.5,
+            "price_out": 9.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          }
+        ],
+        "local": false,
+        "wildcard": false
+      },
+      {
+        "provider": "mistral",
+        "label": "Mistral",
+        "gate": "MISTRAL_API_KEY",
+        "how": "mistralai SDK",
+        "n_models": 3,
+        "models": [
+          {
+            "id": "devstral-2512",
+            "display": "devstral-2512",
+            "tier": "T3",
+            "price_in": 0.4,
+            "price_out": 2.0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "mistral-large-2512",
+            "display": "mistral-large-2512",
+            "tier": "T3",
+            "price_in": 0.5,
+            "price_out": 1.5,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "mistral-small-2506",
+            "display": "mistral-small-2506",
+            "tier": "T1",
+            "price_in": 0.1,
+            "price_out": 0.3,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          }
+        ],
+        "local": false,
+        "wildcard": false
+      },
+      {
+        "provider": "deepseek",
+        "label": "DeepSeek",
+        "gate": "DEEPSEEK_API_KEY",
+        "how": "openai SDK · DeepSeek base_url",
+        "n_models": 1,
+        "models": [
+          {
+            "id": "deepseek-chat",
+            "display": "deepseek-chat",
+            "tier": "T2",
+            "price_in": 0.28,
+            "price_out": 0.42,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          }
+        ],
+        "local": false,
+        "wildcard": false
+      },
+      {
+        "provider": "ollama",
+        "label": "Ollama (local)",
+        "gate": null,
+        "how": "openai SDK · localhost:11434 — no key",
+        "n_models": 6,
+        "models": [
+          {
+            "id": "codestral",
+            "display": "codestral",
+            "tier": "T2",
+            "price_in": 0,
+            "price_out": 0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "deepseek-coder-v2",
+            "display": "deepseek-coder-v2",
+            "tier": "T2",
+            "price_in": 0,
+            "price_out": 0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "llama3.1:70b",
+            "display": "llama3.1:70b",
+            "tier": "T2",
+            "price_in": 0,
+            "price_out": 0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "qwen2.5-coder",
+            "display": "qwen2.5-coder",
+            "tier": "T2",
+            "price_in": 0,
+            "price_out": 0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "llama3.1",
+            "display": "llama3.1",
+            "tier": "T1",
+            "price_in": 0,
+            "price_out": 0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          },
+          {
+            "id": "mistral-nemo",
+            "display": "mistral-nemo",
+            "tier": "T1",
+            "price_in": 0,
+            "price_out": 0,
+            "capability": "declared",
+            "disposition": "not yet run",
+            "disposition_measured": false
+          }
+        ],
+        "local": true,
+        "wildcard": false
+      },
+      {
+        "provider": "openai-compat",
+        "label": "OpenAI-compatible",
+        "gate": "per-endpoint",
+        "how": "openai SDK · your base_url — add a row, no code",
+        "n_models": 0,
+        "models": [],
+        "local": false,
+        "wildcard": true
+      }
+    ],
+    "totals": {
+      "backends_implemented": 7,
+      "models_registered": 26,
+      "vendors_with_models": 5,
+      "disposition_measured": 4,
+      "capability_measured": 0
+    },
+    "gating": "the key in the environment + network to the endpoint + a models.json row — never the repo",
+    "note": "every model behind an implemented backend flows through the identical harness; a new OpenAI-compatible host is a one-row add (base_url), a genuinely new API is one _call_* method"
+  }
 }
