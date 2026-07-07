@@ -1,4 +1,32 @@
-# Breadth run PLAN — Phase 1 complete (2026-07-07)
+# Breadth run PLAN — Phase 1 complete + fable@low calibration (2026-07-07)
+
+## Update: Phase-2 calibration ran with REAL telemetry
+
+Per RUNBOOK Phase 2 ("run 3 known-easy tasks at fable@low as calibration"),
+3 tasks (one per tier: t0_rename_symbol_003, t1_simple_refactor_003,
+t2_fix_failing_test_001) ran K=3 at **fable@low** — all 9/9 pass, floor confirmed.
+
+**Instrumentation upgrade over Phase 1:** trials ran via the nested
+`claude -p --model claude-fable-5 --effort low --output-format json` CLI, so the
+ledger rows carry EXACT tokens (incl. cache read/write splits) and **real billed
+USD** (`total_cost_usd`), not shadow prices. The `effort` ledger field is now
+populated. Trials ran sequentially from a constant cwd so the 1h prompt cache was
+written once (trial 1: $0.85) and read thereafter (~$0.42/trial).
+
+**Measured vs planning:** fable@low actually costs ~$0.48/trial mean — the
+rungs.py planning figure ($0.30) was ~40% low, because cache reads across the
+solver's agentic turns (~170k cache-read tokens/trial) dominate. map.json now
+uses measured per-rung mean costs where trials exist (haiku@harness $0.0365 est,
+fable@low $0.4793 real) and planning estimates elsewhere.
+
+**Effort-rung agents:** `.claude/agents/fable-{low,medium,high,xhigh,max}.md`
+are committed (model: fable, effort: <rung>). They hot-load only in sessions
+where `.claude/agents/` existed at start — this session predates the dir, hence
+the CLI path. Future sessions can walk the ladder via the Agent tool directly.
+
+Budget: $5.77 of $10 (57.7%). Decision packet: **DO NOT ESCALATE** (unchanged —
+map complete, no unmapped residual, no capability ceilings).
+
 
 ## Result: the cheap floor cleared EVERYTHING
 
