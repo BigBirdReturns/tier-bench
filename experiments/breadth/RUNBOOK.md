@@ -35,14 +35,19 @@ Start the session in **Sonnet** and paste:
 
 > You are preparing a breadth-mapping run of this repo's own task set, to be
 > executed later by Claude Fable. Do the prep only — do NOT switch models.
-> 1. Assemble the task set: the graded tasks under `tasks/`/`fixtures/` plus the
->    `experiments/tier-uplift` subjects. Write the list to
->    `experiments/breadth/run/tasks.txt`.
+> 1. Assemble the **breadth-valid** task set — ONLY tasks with a hidden grader the
+>    solver never sees. Run `python experiments/breadth/breadth_tasks.py`; use exactly
+>    what it lists (today: `task01_parse_duration`, `task02_wildcard`, `task06_select`
+>    in `experiments/tier-uplift`). Write it to `experiments/breadth/run/tasks.txt`.
+>    Do **NOT** use the `tasks/*.json` manifests or tier-uplift task03/04/05/07 — the
+>    solver can see those graders, so an agentic solver reads the answer key and every
+>    task "clears" for free (that saturation is an artifact, not capability).
 > 2. Lay the cheap floor. For each task, K=3 times: spawn a **cheap-model subagent**
->    (the Agent tool, model `haiku`) to *solve* the task — produce the target file
->    per the manifest. Then **grade deterministically**: run the task's own
->    `run_command` / `harness.validators.validate_all` on the produced file (pass =
->    exit 0 / validators pass). Log every attempt to
+>    (the Agent tool, model `haiku`) to *solve* it — give the subagent ONLY the
+>    subject + spec + the weak `visible_tests.py`, **never the hidden grader**. Then
+>    **score with the HIDDEN grader** (`hidden_tests.py` / `hidden_oracle.py` /
+>    `grader.py`) — that produces the pass/fail, and it is never shown to the solver.
+>    The daylight between visible and hidden is the whole signal. Log every attempt to
 >    `experiments/breadth/run/ledger.jsonl` via `experiments/breadth/ledger.py`
 >    (`tier="claude-haiku-4-5@harness"`, tokens/cost from the subagent usage).
 >    NOTE: the harness (`capability_harness`) *reviews code* — it is an **augmentation
