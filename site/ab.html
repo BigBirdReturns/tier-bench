@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tier Bench — run the A/B in your browser</title>
+<meta name="description" content="Paste your Anthropic key and race a frontier model against a cheap composite that only lets it review — live, in your browser, on your own workflow. Nothing leaves the page.">
+<style>
+  /* AXM-flavored: paper + ink fixed, scope = the thing examined, accent = the verdict. */
+  :root{
+    --paper:#f0ebe0; --paper-alt:#e8e2d5; --ink:#0e0d0c; --ink2:#2c2a27; --muted:#5e5850;
+    --rule:#b8afa0; --rule-dk:#9a9088;
+    --scope:#5a5e52; --scope-lt:rgba(90,94,82,.10); --scope-mid:rgba(90,94,82,.22);
+    --accent:#b01c18; --accent-lt:#f5e5e3; --accent-dp:#8a160f;
+    --serif:'Lora',Georgia,'Times New Roman',serif;
+    --imprint:'Playfair Display',Georgia,serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--paper);color:var(--ink);font:16px/1.6 var(--serif);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:0 22px}
+  a{color:var(--accent-dp)} a:hover{color:var(--accent)}
+  code,pre,.mono{font-family:var(--mono)}
+  h1{font-family:var(--imprint);font-weight:700;font-size:2.4rem;line-height:1.12;letter-spacing:-.01em;margin:0 0 10px}
+  h2{font-family:var(--imprint);font-size:1.35rem;margin:0 0 6px}
+  h3{font-size:1.02rem;margin:0 0 4px}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}
+  .lede{color:var(--ink2);font-size:1.06rem;max-width:44em}
+  header.masthead{padding:56px 0 30px;border-bottom:2px solid var(--ink)}
+  section{padding:30px 0;border-top:1px solid var(--rule)}
+  .muted{color:var(--muted)} .small{font-size:.86rem}
+  label{display:block;font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope);margin:0 0 5px}
+  input[type=text],input[type=password],textarea,select{
+    width:100%;background:#fbf8f1;border:1px solid var(--rule-dk);border-radius:6px;color:var(--ink);
+    font-family:var(--mono);font-size:13px;padding:10px 12px}
+  textarea{min-height:120px;resize:vertical;line-height:1.5}
+  .row{display:flex;gap:16px;flex-wrap:wrap;margin:14px 0}
+  .row>div{flex:1;min-width:180px}
+  .btn{display:inline-block;padding:11px 20px;border-radius:7px;border:1px solid var(--ink);
+    background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:13px;letter-spacing:.04em;cursor:pointer}
+  .btn:hover{background:var(--accent-dp);border-color:var(--accent-dp)}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn.ghost:hover{color:var(--accent-dp)}
+  .note{border-left:3px solid var(--scope);background:var(--scope-lt);padding:11px 15px;border-radius:0 6px 6px 0;margin:14px 0;color:var(--ink2);font-size:.9rem}
+  .note.warn{border-left-color:var(--accent);background:var(--accent-lt)}
+  table{border-collapse:collapse;width:100%;font-size:.92rem}
+  .tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;margin:12px 0;background:#fbf8f1}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  th{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope);white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  .num{font-family:var(--mono);white-space:nowrap}
+  .scope{color:var(--scope)} .accent{color:var(--accent-dp);font-weight:700}
+  .statstrip{display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--ink);border-radius:8px;overflow:hidden;margin:16px 0}
+  @media(min-width:640px){.statstrip{grid-template-columns:1fr 1fr 1fr}}
+  .cell{padding:14px 16px;border-bottom:1px solid var(--rule)}
+  @media(min-width:640px){.cell{border-bottom:none;border-right:1px solid var(--rule)} .cell:last-child{border-right:none}}
+  .cell .k{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope)}
+  .cell .v{font-family:var(--imprint);font-size:1.7rem;line-height:1.1;margin-top:3px}
+  .cell .v.big{color:var(--accent-dp)}
+  .cell .sub{font-size:.82rem;color:var(--muted);margin-top:2px}
+  details{border:1px solid var(--rule);border-radius:6px;margin:8px 0;background:#fbf8f1}
+  summary{cursor:pointer;padding:8px 12px;font-family:var(--mono);font-size:12px;color:var(--scope)}
+  details .body{padding:0 14px 12px;white-space:pre-wrap;font-size:.9rem;line-height:1.5}
+  .answers{display:grid;gap:12px;margin:6px 0}
+  @media(min-width:640px){.answers{grid-template-columns:1fr 1fr}}
+  .ans{border:1px solid var(--rule);border-radius:6px;background:#fbf8f1;padding:12px}
+  .ans h4{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope);margin-bottom:6px}
+  .ans .txt{white-space:pre-wrap;font-size:.9rem;line-height:1.5;max-height:260px;overflow:auto}
+  #status{font-family:var(--mono);font-size:13px;color:var(--scope);margin:10px 0;min-height:1.2em}
+  footer{padding:34px 0 60px;color:var(--muted);font-size:.85rem;border-top:2px solid var(--ink);margin-top:20px}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--rule-dk);color:var(--scope);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header class="masthead"><div class="wrap">
+  <div class="kicker">Tier Bench · field test</div>
+  <h1>Race the frontier against a cheaper<br>version of itself. In your browser.</h1>
+  <p class="lede">Paste your Anthropic key and run <b>Fable alone</b> against a composite where Fable
+  only <b>reviews</b> a cheap model's draft — on your own prompts. It measures the one number that
+  matters: <span class="scope">how many frontier output tokens the orchestration actually saves</span>
+  while quality holds. Nothing is uploaded — the calls go straight from this page to Anthropic with
+  <b>your</b> key.</p>
+  <p class="small muted" style="margin-top:12px"><a href="./index.html">← back to Tier Bench</a></p>
+</div></header>
+
+<section><div class="wrap">
+  <h2>1 · Your key</h2>
+  <p class="small muted">Kept in this browser's <code>localStorage</code> and sent only to
+  <code>api.anthropic.com</code>. It never touches any server of ours — this is a static page.
+  Use a key you're comfortable spending; you can revoke it in the Anthropic console afterward.</p>
+  <div class="row"><div>
+    <label for="key">Anthropic API key</label>
+    <input type="password" id="key" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+  </div></div>
+  <button class="btn ghost small" id="forget">Forget key</button>
+  <div class="note warn small"><b>Honest about the risk:</b> a key pasted into any web page lives in
+  that page's browser storage and is visible to scripts on this origin. That's the same exposure as
+  putting it in an env var on a shared box — fine for your own machine and your own test, not for a
+  key with broad production scope. This page's only script is the one you're reading.</div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>2 · Your prompts</h2>
+  <p class="small muted">One prompt per line. Use <b>real, substantial</b> work — code, refactors,
+  analysis. The economy shows up on big outputs; on one-liners the review overhead can cost more than
+  just answering (the page will tell you the truth either way).</p>
+  <textarea id="prompts">Write a Python function that parses an ISO-8601 duration string into total seconds, with a docstring and edge-case handling for weeks and fractional seconds.
+Refactor a 60-line function that mixes input validation, database access, and HTML formatting into clean units. Explain the split, then give the full code.</textarea>
+
+  <div class="row">
+    <div>
+      <label for="a">A — frontier, alone</label>
+      <select id="a">
+        <option value="claude-fable-5">claude-fable-5</option>
+        <option value="claude-opus-4-8">claude-opus-4-8</option>
+        <option value="claude-sonnet-5">claude-sonnet-5</option>
+      </select>
+    </div>
+    <div>
+      <label for="hands">B — composite: hands (drafts)</label>
+      <select id="hands">
+        <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+        <option value="claude-sonnet-5">claude-sonnet-5</option>
+      </select>
+    </div>
+    <div>
+      <label for="driver">B — composite: driver (reviews)</label>
+      <select id="driver">
+        <option value="claude-fable-5">claude-fable-5</option>
+        <option value="claude-opus-4-8">claude-opus-4-8</option>
+      </select>
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label for="judge">Blind judge (optional)</label>
+      <select id="judge">
+        <option value="">— none —</option>
+        <option value="claude-sonnet-5" selected>claude-sonnet-5</option>
+        <option value="claude-opus-4-8">claude-opus-4-8</option>
+      </select>
+    </div>
+    <div>
+      <label for="maxtok">Max output tokens / call</label>
+      <input type="text" id="maxtok" value="1500">
+    </div>
+  </div>
+
+  <button class="btn" id="run">Run the A/B →</button>
+  <div id="status"></div>
+</div></section>
+
+<section id="resultsSection" style="display:none"><div class="wrap">
+  <h2>3 · The verdict</h2>
+  <div id="summary"></div>
+  <div id="results"></div>
+  <div class="note small"><b>Reading the numbers.</b> The composite always makes the driver
+  <em>review</em> the cheap draft. When it replies <span class="mono">PASS</span>, the frontier
+  generated almost nothing — big savings. When it rewrites, the frontier generated the whole answer
+  <em>and</em> you paid for the draft — no savings. The review runs at <span class="mono">low</span>
+  effort by design (glancing at a draft doesn't need deep reasoning). Costs use list pricing per
+  million tokens: fable $10/$50 · opus $5/$25 · sonnet $3/$15 · haiku $1/$5.</div>
+</div></div></section>
+
+<footer><div class="wrap">
+  <b>Tier Bench</b> — the measurement lives on your machine and your key; we just hand you the ruler.
+  <a href="./index.html">Home</a> · <a href="https://github.com/bigbirdreturns/tier-bench">Source</a> ·
+  this page calls <code>api.anthropic.com</code> directly from your browser via
+  <code>anthropic-dangerous-direct-browser-access</code>.
+</div></footer>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// list pricing, $ per 1M tokens [input, output]
+const PRICE = {
+  "claude-fable-5":[10,50], "claude-opus-4-8":[5,25], "claude-sonnet-5":[3,15], "claude-haiku-4-5":[1,5],
+};
+const cost = (model,inTok,outTok) => {
+  const p = PRICE[model] || [5,25];
+  return inTok/1e6*p[0] + outTok/1e6*p[1];
+};
+const money = v => v < 0.01 ? "$"+v.toFixed(5) : "$"+v.toFixed(4);
+
+// ── restore / persist key ────────────────────────────────────────────
+try { const k = localStorage.getItem("tb_key"); if (k) $("key").value = k; } catch {}
+$("key").addEventListener("change", () => { try { localStorage.setItem("tb_key", $("key").value.trim()); } catch {} });
+$("forget").onclick = () => { try { localStorage.removeItem("tb_key"); } catch {} $("key").value = ""; setStatus("Key forgotten."); };
+
+function setStatus(t){ $("status").textContent = t; }
+
+// ── one Anthropic call, browser-direct ───────────────────────────────
+async function call(key, model, messages, opts={}){
+  const body = { model, max_tokens: opts.max_tokens || 1500, messages };
+  if (opts.system) body.system = opts.system;
+  if (opts.effort) body.output_config = { effort: opts.effort };
+  // No temperature/top_p (rejected on current models); thinking left default (on for fable).
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{
+      "content-type":"application/json",
+      "x-api-key":key,
+      "anthropic-version":"2023-06-01",
+      "anthropic-dangerous-direct-browser-access":"true",
+    },
+    body: JSON.stringify(body),
+  });
+  let data;
+  try { data = await res.json(); } catch { throw new Error("HTTP "+res.status+" (no JSON body)"); }
+  if (!res.ok) throw new Error((data.error && data.error.message) || ("HTTP "+res.status));
+  const u = data.usage || {};
+  const inTok = u.input_tokens || 0, outTok = u.output_tokens || 0;
+  if (data.stop_reason === "refusal")
+    return { text:null, refused:true, inTok, outTok, model: data.model || model };
+  const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("");
+  return { text, refused:false, inTok, outTok, model: data.model || model };
+}
+
+// plain persona
+async function runPlain(key, model, prompt, maxtok){
+  const r = await call(key, model, [{role:"user",content:prompt}], {max_tokens:maxtok});
+  return { content:r.text, refused:r.refused, cost:cost(model,r.inTok,r.outTok),
+    inTok:r.inTok, outTok:r.outTok, finalModel:model,
+    trace:[{step:"model",model,inTok:r.inTok,outTok:r.outTok}] };
+}
+
+// driver composite: cheap hands draft → frontier reviews (PASS or fix)
+async function runComposite(key, driver, hands, prompt, maxtok){
+  const trace=[]; let c=0, inS=0, outS=0;
+  const d = await call(key, hands, [{role:"user",content:prompt}], {max_tokens:maxtok});
+  let current = d.text || ""; let finalModel = hands;
+  c += cost(hands,d.inTok,d.outTok); inS+=d.inTok; outS+=d.outTok;
+  trace.push({step:"hands_draft",model:hands,inTok:d.inTok,outTok:d.outTok});
+  if (!d.refused){
+    const vmsg = "You are the driver reviewing a cheaper model's answer. USER REQUEST:\n"+prompt+
+      "\n\nCHEAPER MODEL'S ANSWER:\n"+current+
+      "\n\nIf the answer is correct, complete, and honest, reply with exactly the single word PASS. "+
+      "Otherwise reply with the corrected, complete answer (no preamble).";
+    const v = await call(key, driver, [{role:"user",content:vmsg}], {max_tokens:maxtok, effort:"low"});
+    c += cost(driver,v.inTok,v.outTok); inS+=v.inTok; outS+=v.outTok;
+    const reply = (v.text||"").trim();
+    if (v.refused || reply.startsWith("PASS")){
+      trace.push({step:"driver_verify",model:driver,verdict:v.refused?"refused":"pass",inTok:v.inTok,outTok:v.outTok});
+    } else {
+      current = v.text || current; finalModel = driver;
+      trace.push({step:"driver_repair",model:driver,inTok:v.inTok,outTok:v.outTok});
+    }
+  }
+  return { content:current, refused:false, cost:c, inTok:inS, outTok:outS, finalModel, trace };
+}
+
+async function judge(key, model, prompt, left, right){
+  const jmsg = "Two assistants answered the same request. Reply with exactly LEFT or RIGHT — "+
+    "whichever answer is better, nothing else.\n\nREQUEST:\n"+prompt+"\n\nLEFT:\n"+left+"\n\nRIGHT:\n"+right;
+  const r = await call(key, model, [{role:"user",content:jmsg}], {max_tokens:16, effort:"low"});
+  return (r.text||"").trim().toUpperCase().startsWith("RIGHT") ? "right" : "left";
+}
+
+// output tokens attributable to `model` within a result's trace
+const focusOut = (r,model) => r.trace.filter(s=>s.model===model).reduce((t,s)=>t+s.outTok,0);
+
+$("run").onclick = async () => {
+  const key = $("key").value.trim();
+  if (!key){ setStatus("Paste your Anthropic key above first."); return; }
+  const prompts = $("prompts").value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  if (!prompts.length){ setStatus("Add at least one prompt."); return; }
+  const A = $("a").value, hands = $("hands").value, driver = $("driver").value;
+  const judgeModel = $("judge").value, maxtok = Math.max(64, parseInt($("maxtok").value)||1500);
+  const focus = driver; // the shared frontier whose token burn we compare
+
+  $("run").disabled = true; $("resultsSection").style.display = "";
+  $("results").innerHTML = ""; $("summary").innerHTML = "";
+  const tot = { aFocus:0, bFocus:0, aCost:0, bCost:0, bWins:0, judged:0 };
+
+  try {
+    for (let i=0;i<prompts.length;i++){
+      const p = prompts[i];
+      setStatus(`Prompt ${i+1}/${prompts.length}: running ${A} alone…`);
+      const ra = await runPlain(key, A, p, maxtok);
+      setStatus(`Prompt ${i+1}/${prompts.length}: running composite (${hands} → ${driver} review)…`);
+      const rb = await runComposite(key, driver, hands, p, maxtok);
+
+      let winner = "";
+      if (judgeModel && ra.content && rb.content){
+        setStatus(`Prompt ${i+1}/${prompts.length}: blind judge (${judgeModel})…`);
+        // hash-blind order so the judge can't tell which is the composite
+        const order = ra.content <= rb.content ? [ra.content, rb.content, "a", "b"] : [rb.content, ra.content, "b", "a"];
+        const side = await judge(key, judgeModel, p, order[0], order[1]);
+        winner = side === "left" ? order[2] : order[3];
+        tot.judged++; if (winner === "b") tot.bWins++;
+      }
+
+      const aF = focusOut(ra, focus), bF = focusOut(rb, focus);
+      tot.aFocus += aF; tot.bFocus += bF; tot.aCost += ra.cost; tot.bCost += rb.cost;
+
+      $("results").insertAdjacentHTML("beforeend", renderPrompt(i+1, p, A, ra, hands, driver, rb, focus, aF, bF, winner));
+    }
+    renderSummary(tot, focus, A, judgeModel);
+    setStatus("Done.");
+  } catch(e){
+    setStatus("Error: " + e.message);
+  } finally {
+    $("run").disabled = false;
+  }
+};
+
+function renderPrompt(n, p, A, ra, hands, driver, rb, focus, aF, bF, winner){
+  const win = s => winner===s ? ' <span class="pill">judge pick</span>' : "";
+  const traceLine = r => r.trace.map(s =>
+    `${s.step} · ${s.model} · out ${s.outTok}${s.verdict?(" · "+s.verdict):""}`).join("\n");
+  return `<div style="margin:22px 0">
+    <h3>Prompt ${n}</h3>
+    <div class="small muted mono" style="margin:2px 0 8px">${esc(p.slice(0,140))}${p.length>140?"…":""}</div>
+    <div class="tblwrap"><table>
+      <tr><th></th><th>${esc(focus)} out tokens</th><th>total out</th><th>cost</th><th>final answer by</th></tr>
+      <tr><td><b>A</b> ${esc(A)} alone${win("a")}</td><td class="num accent">${aF}</td><td class="num">${ra.outTok}</td><td class="num">${money(ra.cost)}</td><td class="mono small">${esc(ra.finalModel)}</td></tr>
+      <tr><td><b>B</b> ${esc(hands)}→${esc(driver)}${win("b")}</td><td class="num scope">${bF}</td><td class="num">${rb.outTok}</td><td class="num">${money(rb.cost)}</td><td class="mono small">${esc(rb.finalModel)}${rb.finalModel===hands?' <span class="pill">draft passed</span>':""}</td></tr>
+    </table></div>
+    <div class="answers">
+      <div class="ans"><h4>A · ${esc(A)}</h4><div class="txt">${ra.refused?'<i>refused (safety classifier)</i>':esc(ra.content||"")}</div></div>
+      <div class="ans"><h4>B · composite</h4><div class="txt">${esc(rb.content||"")}</div></div>
+    </div>
+    <details><summary>trace</summary><div class="body mono">${esc(traceLine(rb))}</div></details>
+  </div>`;
+}
+
+function renderSummary(tot, focus, A, judgeModel){
+  const pct = (nw, old) => old ? Math.round((1-nw/old)*100) : null;
+  const fp = pct(tot.bFocus, tot.aFocus), cp = pct(tot.bCost, tot.aCost);
+  const dir = v => v===null ? "n/a" : (v>0 ? v+"% less" : (-v)+"% more");
+  $("summary").innerHTML = `<div class="statstrip">
+    <div class="cell"><div class="k">${esc(focus)} output tokens</div>
+      <div class="v big">${dir(fp)}</div>
+      <div class="sub">alone ${tot.aFocus} → orchestrated ${tot.bFocus}</div></div>
+    <div class="cell"><div class="k">total cost</div>
+      <div class="v">${dir(cp)}</div>
+      <div class="sub">${money(tot.aCost)} → ${money(tot.bCost)}</div></div>
+    <div class="cell"><div class="k">blind quality</div>
+      <div class="v">${tot.judged ? tot.bWins+"/"+tot.judged : "—"}</div>
+      <div class="sub">${tot.judged ? "composite wins (judge "+esc(judgeModel)+")" : "no judge selected"}</div></div>
+  </div>`;
+}
+</script>
+</body>
+</html>

@@ -41,6 +41,7 @@ jobs:
         run: |
           mkdir -p _site
           cp site/index.html _site/index.html
+          cp site/ab.html _site/ab.html
           python scripts/generate_cheatsheet.py --out _site/cheatsheet.html
           python scripts/aggregate.py --data data/results --emit-rows _site/community_results.jsonl --json > _site/aggregate.json
           python scripts/contribute.py --emit-meta _site/contrib_meta.json
