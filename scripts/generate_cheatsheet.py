@@ -23,6 +23,29 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
+# Light/dark toggle — defined as plain strings (literal braces) and interpolated
+# into the template so the f-string's {{ }} escaping doesn't reach them. Shares the
+# "pta-theme" localStorage key with the rest of the AXM properties, so one theme
+# choice follows the reader across every page on the domain.
+_THEME_INIT = ('<script>document.documentElement.dataset.theme='
+               'localStorage.getItem("pta-theme")||'
+               '(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");</script>')
+_DARK_CSS = (
+    ':root[data-theme="dark"]{'
+    '--bg:#0d0c09;--panel:#15130e;--panel2:#201c15;--line:#3a352b;'
+    '--ink:#ece7d8;--ink2:#c7c1b1;--muted:#8f8975;--scope:#9a9c78;'
+    '--green:#6fae72;--yellow:#c9a94e;--red:#d0623f;--blue:#d6a578;}'
+    '#themeToggle{position:fixed;top:12px;right:14px;z-index:60;font-family:var(--mono);'
+    'font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);'
+    'background:var(--panel);color:var(--scope);cursor:pointer}'
+    '#themeToggle:hover{border-color:var(--blue);color:var(--ink)}')
+_TOGGLE_BTN = '<button id="themeToggle" type="button" aria-label="Toggle light or dark theme">◐</button>'
+_TOGGLE_JS = ('<script>(function(){var b=document.getElementById("themeToggle"),'
+              'r=document.documentElement;if(!b)return;'
+              'function L(){b.textContent=r.dataset.theme==="dark"?"◐ dark":"◑ light";}L();'
+              'b.addEventListener("click",function(){var d=r.dataset.theme==="dark"?"light":"dark";'
+              'r.dataset.theme=d;try{localStorage.setItem("pta-theme",d);}catch(e){}L();});})();</script>')
+
 TIER_LABELS = {
     "T0": "Clerical — format, lint, rename",
     "T1": "Junior — implement from spec",
@@ -253,6 +276,7 @@ def generate_html(models: dict, results: dict) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Tier Bench — Model Routing Cheatsheet</title>
+{_THEME_INIT}
 <style>
   /* AXM house style: paper + ink fixed, scope = examined, accent = verdict. */
   :root{{
@@ -294,9 +318,11 @@ def generate_html(models: dict, results: dict) -> str:
   .callout{{border-left:3px solid var(--scope);background:var(--panel);padding:14px 18px;border-radius:0 8px 8px 0;margin:16px 0;color:var(--ink2);font-size:.98rem}}
   .callout b{{color:var(--ink)}}
   .card{{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-top:14px}}
+{_DARK_CSS}
 </style>
 </head>
 <body>
+{_TOGGLE_BTN}
 
 <section>
   <div class="wrap">
@@ -367,6 +393,7 @@ python scripts/generate_cheatsheet.py --results harness_results.jsonl</code></pr
   </div>
 </section>
 
+{_TOGGLE_JS}
 </body>
 </html>"""
     return html_out
