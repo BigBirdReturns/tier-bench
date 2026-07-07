@@ -85,6 +85,8 @@ orchestrator.py        Plan (driver, under driver/README.md as system
                        prompt) → route to cheapest hands → validate.  [5]
 driver/control-set.md  Disposition probes for candidate drivers — the
                        interview for tiers where no validator exists.    [2]
+driver/control-set-schema.md  Recording protocol for a run: verbatim,
+                       cold, grader≠subject, score-shape-report-spread. [2]
 driver/README.md       THE ROLE SPEC. How to be the frontier:
                        decompose / verify / repair-from-evidence.
                        An apprentice becomes the driver by literally
@@ -103,11 +105,19 @@ scripts/
   aggregate.py         Pool contributions with evidence labels;
                        compute recommendations (routing, frontier
                        check, apprentice candidates).                 [3,2]
+  aggregate_control.py Pool data/control-results/ into (model,effort,
+                       probe) cells; single-source vs corroborated,
+                       plus a grader-shares-subject-lineage flag.     [3,2]
+  merge_external_grades.py  Fold an independent grader's scores into
+                       schema files + print agreement vs baseline.    [3]
   generate_cheatsheet.py  Registry+results → honest HTML (measured
                        chips vs hypothesis chips, cost-per-success).  [2]
 site/index.html        The public face: how it works, test-your-own-
-                       workflow, teach-a-cheaper-driver, in-browser
-                       comparer + community data loader.              [2,3]
+                       workflow, teach-a-cheaper-driver, measured-
+                       disposition table, in-browser comparer +
+                       community data loader.                         [2,3]
+data/control-results/  Graded control-set runs (disposition). First
+                       real measured data; see its README + §8.       [2,3]
 .github/workflows/
   pages.yml            Merge to main → aggregate → publish site.      [3]
   validate.yml         PRs to data/results validated by CI, not
@@ -203,47 +213,71 @@ below, audited above, cross-linked both ways.
 
 ## 8. Current state (the honest ledger, 2026-07-07)
 
-- **Branch/PRs:** everything lives on `claude/frontier-diff-replication`
-  → **PR #1** (github.com/bigbirdreturns/tier-bench/pull/1), 8 commits,
-  unmerged. Merging it deploys the Pages site (workflow runs on push to
-  main; if the build passes but deploy fails, check Settings → Environments
-  → github-pages → allowed branches). The companion repo's frontier-audit
-  route is on its **PR #10** (axm-capability-claim-test), also unmerged.
-- **⚠️ No real benchmark has ever been run.** The build environment had no
-  API keys. Every tier_ceiling in the registry — including the frontier
-  models' — is an unmeasured hypothesis. `driver_traces.jsonl` does not
-  exist yet. `data/results/` is empty. The first person to run
-  `python orchestrator.py --benchmark all` with keys produces the first
-  real numbers this project has ever had.
+- **Branch/PRs:** the build (site, harness, driver, composites, rig,
+  contribution pipeline) shipped through PRs #1–#5, is **merged to `main`**,
+  and is live at https://bigbirdreturns.github.io/tier-bench/ . The companion
+  repo's frontier-audit route merged via axm-capability-claim-test PRs #10–#11.
+  (If a Pages build passes but deploy fails, check Settings → Environments →
+  github-pages → allowed branches.) The PR carrying this ledger entry adds the
+  **first measured data the project has ever held** — see the next two bullets.
+- **⚠️ The capability / cost benchmark still has not been run.** The build
+  environment had no API keys for it. Every `tier_ceiling` in the registry —
+  including the frontier models' — is still an unmeasured hypothesis;
+  `driver_traces.jsonl` does not exist; `data/results/` is empty. The first
+  person to run `python orchestrator.py --benchmark all` with keys produces the
+  first real cost-per-success numbers (gap #1).
+- **✅ The disposition control set HAS a first measured baseline.**
+  `data/control-results/` holds the ten probes administered cold and blind to
+  fable-5, opus, sonnet, and haiku (opus/sonnet/haiku at low **and** high
+  effort) — 70 graded cells. It is **single-source** (one contributor) and every
+  grade carries the **`grader shares subject lineage`** flag, because the grader
+  (opus) shares the subjects' lineage. Two *different* axes upgrade it, neither
+  optional: an independent non-Anthropic grader clears the lineage flag; a second
+  contributor re-administering the probes upgrades cells to `corroborated`.
+  `scripts/aggregate_control.py` labels both honestly; `scripts/merge_external_grades.py`
+  folds an external grader's scores back in with an agreement report. Headline
+  finding: disposition was **flat across reasoning effort** (opus 18=18, haiku
+  14=14) — it lives in the weights, not the token budget — and one planted review
+  bug (P8) survived all 70 gradings: the measured frontier residual.
 - **What IS verified (offline, no keys):** the full fixture+validator
   pipeline driven with faked model calls (cascade, best-of-n early-stop,
   driver-repair with evidence, trace capture, distill text/json); diff and
   rig reports on synthetic data; contribution packaging → CI validation →
   aggregation → cheatsheet/site consumption, end to end; tamper rejection;
   HTML/JS of the site including the comparer's verdict math (node-tested);
-  empty-data contracts for CI and Pages.
+  empty-data contracts for CI and Pages; the control-set pipeline end to end
+  (administer → schema JSONL → `aggregate_control.py` lineage flag → site table;
+  external-grade merge with agreement report).
 - **Registry:** anthropic line, gpt-5.5, gemini-3.1/3.5 sourced from
   provider pages 2026-07-07. Older openai/mistral/deepseek entries carried
   forward **unverified** (flagged in models.json's own comment).
 
 ## 9. Known gaps, prioritized (your likely first work)
 
-1. **Run the real benchmark.** Everything downstream is starving for the
-   first `harness_results.jsonl` with actual API calls. (~$0.15–$1.)
-2. **Port the offline tests into the repo** (`tests/`). They currently
+1. **Run the real capability benchmark.** Everything on the cost axis is
+   starving for the first `harness_results.jsonl` with actual API calls.
+   (~$0.15–$1.)
+2. **Clear the control-set flags** (the disposition baseline in §8 is real but
+   provisional). Two independent moves finish it, neither optional: (a) an
+   independent **non-Anthropic grader** on the preserved verbatims —
+   `scripts/merge_external_grades.py` folds the scores back and prints an
+   agreement report — clears the lineage flag; (b) a **second contributor**
+   re-administering the ten probes (cold, one per fresh instance) upgrades cells
+   to `corroborated`. A chat subscription is enough for both; no API needed.
+3. **Port the offline tests into the repo** (`tests/`). They currently
    exist only as session scratch; the repo has no committed test suite —
    the single biggest durability gap in the code itself.
-3. **Grow the ruler**: more T3 tasks where mid models demonstrably fail,
+4. **Grow the ruler**: more T3 tasks where mid models demonstrably fail,
    then deterministic T4 (plan-validity is specified but has 0 tasks).
    Without this, frontier deltas are structurally invisible.
-4. **First real distillation cycle**: benchmark with `driver_repair`
+5. **First real distillation cycle**: benchmark with `driver_repair`
    composites → traces accumulate → `distill.py` → put `roles.apprentice`
    in the driver seat → `diff_report --target` it. Publish the result
    either way; a failed graduation is a finding.
-5. **Aggregate-informed registry healing**: when pooled observed costs
+6. **Aggregate-informed registry healing**: when pooled observed costs
    contradict registry prices persistently, surface it in the cheatsheet
    (the mechanism exists; the comparison isn't wired).
-6. **Contributor identity**: handles are self-declared. Fine at small
+7. **Contributor identity**: handles are self-declared. Fine at small
    scale; revisit (signed commits? provider receipts?) when volume makes
    gaming worth someone's time (§7).
 
@@ -253,8 +287,11 @@ A change is finished when: the offline verification in §6.3 is green; every
 number a human sees carries measured/hypothesis and its evidence class; no
 model name has leaked into logic; composites and plain models still share
 one attempt path; failures still flow into traces; the site still works
-with zero community data AND with pooled data; and this file still tells
-your successor the truth. If any of those is false, it is not finished.
+with zero community data AND with pooled data (the disposition table
+likewise renders from the baked baseline offline AND upgrades from the live
+aggregate); every disposition grade still carries its lineage/corroboration
+labels; and this file still tells your successor the truth. If any of those
+is false, it is not finished.
 
 ---
 

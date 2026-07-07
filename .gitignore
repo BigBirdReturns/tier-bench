@@ -8,11 +8,18 @@ build/
 .venv/
 venv/
 
-# Harness outputs
+# Harness outputs (per-run scratch — never committed)
 *.jsonl
 harness_results.jsonl
 orchestrator_log.jsonl
 llm_costs.jsonl
+
+# ...but curated, contributed data IS the deliverable — keep it tracked.
+# (Without these, the blanket *.jsonl above silently drops every
+# contribution locally; contributions added via GitHub's web UI dodge it,
+# but a local contributor would lose their files with no error.)
+!data/results/*.jsonl
+!data/control-results/*.jsonl
 
 # Canonical baselines (generated per-machine)
 tasks/_canonical/

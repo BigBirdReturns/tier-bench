@@ -8,7 +8,9 @@ on:
       - 'scripts/generate_cheatsheet.py'
       - 'site/**'
       - 'data/results/**'
+      - 'data/control-results/**'
       - 'scripts/aggregate.py'
+      - 'scripts/aggregate_control.py'
   workflow_dispatch:
 
 permissions:
@@ -42,6 +44,7 @@ jobs:
           python scripts/generate_cheatsheet.py --out _site/cheatsheet.html
           python scripts/aggregate.py --data data/results --emit-rows _site/community_results.jsonl --json > _site/aggregate.json
           python scripts/contribute.py --emit-meta _site/contrib_meta.json
+          python scripts/aggregate_control.py --data data/control-results --json > _site/control_aggregate.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
