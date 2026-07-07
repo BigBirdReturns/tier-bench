@@ -1,0 +1,8 @@
+{
+ "atomic_agreement": 0.545,
+ "n_pairs": 66,
+ "haiku_pairwise_vs_opus_pairwise_rho": 0.049,
+ "haiku_holistic_vs_frontier": 0.126,
+ "haiku_pairwise_vs_frontier": 0.504,
+ "interpretation_hint": "high atomic agreement + low holistic = the gap was aggregation, not taste"
+}

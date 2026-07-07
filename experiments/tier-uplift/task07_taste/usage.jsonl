@@ -8,3 +8,5 @@
 {"phase":"exemplar_rank","model":"opus","tokens":23176,"tool_uses":4,"duration_ms":45349}
 {"phase":"taste_lens","model":"opus","tokens":19745,"tool_uses":1,"duration_ms":17513}
 {"phase":"judge_lens","model":"haiku","tokens":29814,"tool_uses":3,"duration_ms":111232}
+{"phase":"pairwise_judge","model":"haiku","tokens":33322,"tool_uses":2,"duration_ms":66973}
+{"phase":"pairwise_judge","model":"opus","tokens":31873,"tool_uses":2,"duration_ms":52740}
