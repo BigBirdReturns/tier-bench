@@ -1,0 +1,7 @@
+{"entity_id":"e1_bpwelcu2tneamumtnyq7oxhn54p54xenkjfwoaivofj4fp3twtca","entity_type":"concept","label":"lens/state","namespace":"lenses/tier-bench"}
+{"entity_id":"e1_mhrkbs62ok2lykddwdggayk773hv5dppzqwtfkgnh5g6ezrnnhqa","entity_type":"concept","label":"capability_harness/lens_registry","namespace":"lenses/tier-bench"}
+{"entity_id":"e1_ne6xmyaj2vejqvspnsp6xbuahybnnjumuczeevkge7ra4kpesmvq","entity_type":"concept","label":"experiments/tier-uplift","namespace":"lenses/tier-bench"}
+{"entity_id":"e1_ptngcwo6sywlhcdqrzefx3yy7sygqlp34riicsi5c5stb3ksds7q","entity_type":"concept","label":"lens/adversarial","namespace":"lenses/tier-bench"}
+{"entity_id":"e1_q6n3yl3xjm4rjjz2geooqm6naxrupbybzzzegueuxpkufkfo3oqa","entity_type":"concept","label":"lens/contracts","namespace":"lenses/tier-bench"}
+{"entity_id":"e1_qqlapqacvtxx3qhe4q2hcxjklpoo3yp5o3gvxewdpttpwfhcijwq","entity_type":"concept","label":"lens/data_types","namespace":"lenses/tier-bench"}
+{"entity_id":"e1_rruqrsy3rsnrtdry5ibwiudf7334en5efd6wvl2v6eqz5w7awfaa","entity_type":"concept","label":"lens/control_flow","namespace":"lenses/tier-bench"}

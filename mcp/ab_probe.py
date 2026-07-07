@@ -10,7 +10,7 @@ orchestration saves while quality holds.
     python3 mcp/ab_probe.py \
         --a claude-fable-5 \
         --b driver:fable+haiku \
-        --judge claude-sonnet-4-5 \
+        --judge claude-sonnet-5 \
         --prompts my_prompts.txt \
         --out results.jsonl
 

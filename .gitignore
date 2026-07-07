@@ -23,6 +23,11 @@ llm_costs.jsonl
 # Sealed memory shards are the deliverable too — their claim/evidence/ext tables
 # are .jsonl and must survive the blanket ignore (Merkle would fail without them).
 !memory/samples/**/*.jsonl
+# The living lens shard's graph/evidence tables are the deliverable too.
+!memory/lenses/**/*.jsonl
+# Build scratch and the secret publisher key never get committed.
+memory/lenses/_build/
+memory/lenses/keys/
 # Experiment telemetry + structured results are the deliverable — the blanket
 # *.jsonl above was silently dropping per-run token/cost data and results.jsonl.
 !experiments/**/*.jsonl
