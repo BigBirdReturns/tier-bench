@@ -4,233 +4,290 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The operational moat is rentable — Tier Bench</title>
-<meta name="description" content="We measured how much of a frontier model's edge is brute force vs judgment. On operational tasks a cheap model plus a harness matches or beats the frontier — often cheaper. The residue is sand. Here is the data.">
-<script>document.documentElement.dataset.theme=localStorage.getItem("pta-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");</script>
+<meta name="description" content="The industry rents you intelligence per token. We measured how much of a frontier model's edge you can capture once and own: on operational tasks a cheap model plus a small harness matches or beats the frontier, often far cheaper. Here is what everyone else does, what we did, and what you gain.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Sans:wght@600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#f0ebe0; --card:#fbf8f1; --paper-alt:#e8e2d5; --ink:#0e0d0c; --ink2:#2c2a27; --muted:#5e5850;
-    --rule:#b8afa0; --rule-dk:#9a9088;
-    --scope:#5a5e52; --scope-lt:rgba(90,94,82,.10); --scope-mid:rgba(90,94,82,.22);
-    --accent:#b01c18; --accent-lt:#f5e5e3; --accent-dp:#8a160f;
-    --green:#2d5a3d; --yellow:#8a6d1e; --red:#b01c18;
-    --serif:'Lora',Georgia,'Times New Roman',serif; --imprint:'Playfair Display',Georgia,serif;
-    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --void:#0D0C09; --void-1:#0F0E0B; --void-2:#17160f;
+    --bone:#ECE7D8; --bone-dim:#b8b3a4; --olive:#7C7F57; --ember:#C24B2C;
+    --rule:#232219; --rule-2:#33322a;
+    --sans:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--paper);color:var(--ink);font:16px/1.62 var(--serif);-webkit-font-smoothing:antialiased}
-  .wrap{max-width:960px;margin:0 auto;padding:0 22px}
-  a{color:var(--accent-dp)} a:hover{color:var(--accent)}
-  code,.mono{font-family:var(--mono)}
-  h1{font-family:var(--imprint);font-weight:700;font-size:2.7rem;line-height:1.08;letter-spacing:-.015em;margin:0 0 14px}
-  h2{font-family:var(--imprint);font-size:1.5rem;margin:0 0 8px}
-  h3{font-size:1.02rem;margin:0 0 4px}
-  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--scope);margin-bottom:12px}
-  .lede{color:var(--ink2);font-size:1.14rem;max-width:44em}
-  header.masthead{padding:64px 0 34px;border-bottom:2px solid var(--ink)}
-  section{padding:38px 0;border-top:1px solid var(--rule)}
-  .muted{color:var(--muted)} .small{font-size:.86rem}
-  .em{color:var(--accent-dp);font-weight:600}
-  /* hero numbers */
-  .stats{display:flex;flex-wrap:wrap;gap:14px;margin:22px 0 4px}
-  .stat{flex:1;min-width:180px;background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
-  .stat .n{font-family:var(--imprint);font-size:2.3rem;line-height:1;color:var(--accent-dp)}
-  .stat .l{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--scope);margin-top:8px}
-  /* bar charts (CSS, single-accent-on-neutral) */
-  figure{margin:18px 0;background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:16px 18px}
-  figcaption{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--scope);margin-bottom:14px}
-  .bar{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:12px;margin:9px 0}
-  .bar .lab{font-family:var(--mono);font-size:12.5px;color:var(--ink2);text-align:right;white-space:nowrap}
-  .track{position:relative;height:22px;background:var(--paper-alt);border-radius:5px;overflow:hidden}
-  .fill{position:absolute;left:0;top:0;bottom:0;border-radius:5px;background:var(--muted)}
-  .fill.win{background:var(--accent)}
-  .fill.ref{background:var(--scope)}
-  .val{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding-left:9px;font-family:var(--mono);font-size:12px;color:var(--paper);white-space:nowrap}
-  .val.out{left:100%;padding-left:8px;color:var(--ink2)}
-  .legend{display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:12px}
-  .legend span{display:inline-flex;align-items:center;gap:6px}
-  .sw{width:12px;height:12px;border-radius:3px;display:inline-block}
-  .note{border-left:3px solid var(--scope);background:var(--scope-lt);padding:12px 16px;border-radius:0 6px 6px 0;margin:16px 0;color:var(--ink2);font-size:.94rem}
-  .note.warn{border-left-color:var(--accent);background:var(--accent-lt)}
-  table{border-collapse:collapse;width:100%;font-size:.9rem}
-  .tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:8px;margin:12px 0;background:var(--card)}
-  th,td{padding:8px 11px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
-  th{font-family:var(--mono);font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--scope);white-space:nowrap}
+  body{background:var(--void);color:var(--bone);font-family:var(--mono);font-weight:400;
+    font-size:15px;line-height:1.62;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:0 24px}
+  a{color:var(--ember);text-decoration:none;border-bottom:1px solid var(--rule-2)}
+  a:hover{border-bottom-color:var(--ember)}
+  .disp{font-family:var(--sans);font-weight:600;text-transform:uppercase;color:var(--bone)}
+  h1{font-family:var(--sans);font-weight:600;text-transform:uppercase;letter-spacing:.02em;
+    font-size:2.05rem;line-height:1.16;margin:0 0 16px}
+  h1 em{font-style:italic;text-transform:none;letter-spacing:0;color:var(--bone-dim)}
+  h2{font-family:var(--sans);font-weight:600;text-transform:uppercase;letter-spacing:.09em;
+    font-size:1.12rem;color:var(--bone);margin:0 0 10px}
+  .kicker{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--olive)}
+  .lede{color:var(--bone-dim);font-size:1.02rem;max-width:46em}
+  .muted{color:var(--olive)} .small{font-size:.82rem}
+  .em{color:var(--ember)}
+  header.masthead{padding:56px 0 34px;border-bottom:1px solid var(--rule)}
+  .brandrow{display:flex;align-items:flex-start;gap:16px;margin-bottom:22px}
+  #mark{line-height:0}
+  section{padding:40px 0;border-top:1px solid var(--rule)}
+  /* stat row */
+  .stats{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0 2px}
+  .stat{flex:1;min-width:170px;background:var(--void-1);border:1px solid var(--rule);padding:16px 18px}
+  .stat .n{font-family:var(--sans);font-weight:600;font-size:2.1rem;line-height:1;color:var(--ember)}
+  .stat .l{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--olive);margin-top:10px;line-height:1.7}
+  /* them / you comparison */
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+  @media(max-width:680px){.cols{grid-template-columns:1fr}}
+  .col{border:1px solid var(--rule);background:var(--void-1);padding:20px}
+  .col.you{border-color:var(--ember)}
+  .col h3{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--olive);margin-bottom:14px}
+  .col.you h3{color:var(--ember)}
+  .col ul{list-style:none;display:flex;flex-direction:column;gap:11px}
+  .col li{position:relative;padding-left:20px;color:var(--bone-dim);font-size:.92rem;line-height:1.5}
+  .col li::before{content:"—";position:absolute;left:0;color:var(--olive)}
+  .col.you li::before{content:"→";color:var(--ember)}
+  .col.you li{color:var(--bone)}
+  /* bar charts */
+  figure{margin:16px 0;background:var(--void-1);border:1px solid var(--rule);padding:18px 20px}
+  figcaption{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--olive);margin-bottom:16px}
+  .bar{display:grid;grid-template-columns:135px 1fr;align-items:center;gap:12px;margin:10px 0}
+  .bar .lab{font-family:var(--mono);font-size:12px;color:var(--bone-dim);text-align:right;white-space:nowrap}
+  .track{position:relative;height:22px;background:var(--void-2);border:1px solid var(--rule)}
+  .fill{position:absolute;left:0;top:0;bottom:0;background:var(--olive)}
+  .fill.win{background:var(--ember)}
+  .fill.ref{background:#4a4c39}
+  .val{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 9px;font-family:var(--mono);font-size:11.5px;color:var(--void);font-weight:500;white-space:nowrap}
+  .val.out{left:100%;padding-left:9px;color:var(--bone-dim);font-weight:400}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--olive);margin-top:14px}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .sw{width:11px;height:11px;display:inline-block}
+  .note{border-left:2px solid var(--olive);background:var(--void-1);padding:12px 16px;margin:16px 0;color:var(--bone-dim);font-size:.9rem}
+  .note.flag{border-left-color:var(--ember)}
+  /* before -> after demonstration cards (their idiom: old struck, new lit) */
+  .demos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+  @media(max-width:680px){.demos{grid-template-columns:1fr}}
+  .demo{border:1px solid var(--rule);background:var(--void-1);padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+  .demo .do{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--olive)}
+  .demo .res{font-family:var(--sans);font-weight:600;font-size:1.12rem;line-height:1.15;display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}
+  .demo .was{color:var(--bone-dim);text-decoration:line-through;text-decoration-color:var(--olive)}
+  .demo .arr{color:var(--olive);font-family:var(--mono);font-weight:400}
+  .demo .now{color:var(--ember)}
+  .demo .cap{color:var(--bone-dim);font-size:.85rem;line-height:1.5;margin-top:-2px}
+  table{border-collapse:collapse;width:100%;font-size:.86rem;font-family:var(--mono)}
+  .tblwrap{overflow-x:auto;border:1px solid var(--rule);margin:14px 0;background:var(--void-1)}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+  th{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--olive);white-space:nowrap}
   tr:last-child td{border-bottom:none}
-  details{border:1px solid var(--rule);border-radius:6px;margin:10px 0;background:var(--card)}
-  summary{cursor:pointer;padding:9px 13px;font-family:var(--mono);font-size:12px;color:var(--scope)}
-  .chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 8px;border-radius:999px;border:1px solid var(--rule-dk)}
-  .c-win{color:var(--accent-dp);border-color:var(--accent-dp)}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  @media(max-width:680px){.grid2{grid-template-columns:1fr}.bar{grid-template-columns:120px 1fr}}
-  .btn{display:inline-block;padding:11px 20px;border-radius:7px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:13px;letter-spacing:.04em;cursor:pointer;text-decoration:none;margin:4px 6px 4px 0}
-  .btn:hover{background:var(--accent-dp);border-color:var(--accent-dp);color:var(--paper)}
-  .btn.ghost{background:transparent;color:var(--ink)}
-  footer{padding:34px 0 60px;color:var(--muted);font-size:.85rem;border-top:2px solid var(--ink);margin-top:20px}
-  footer a{color:var(--scope)}
-  :root[data-theme="dark"]{
-    --paper:#0d0c09; --paper-alt:#221f18; --card:#15130e; --ink:#ece7d8; --ink2:#c7c1b1;
-    --muted:#8f8975; --rule:#3a352b; --rule-dk:#4a4436; --scope:#9a9c78;
-    --scope-lt:rgba(154,156,120,.12); --scope-mid:rgba(154,156,120,.24);
-    --accent:#d0623f; --accent-lt:#2a1a14; --accent-dp:#e0855f;
-    --green:#6fae72; --yellow:#c9a94e; --red:#d0623f;
-  }
-  #themeToggle{position:fixed;top:12px;right:14px;z-index:60;font-family:var(--mono);font-size:12px;
-    padding:6px 12px;border-radius:999px;border:1px solid var(--rule);background:var(--card);color:var(--scope);cursor:pointer}
-  #themeToggle:hover{border-color:var(--accent-dp);color:var(--ink)}
+  .chip{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border:1px solid var(--rule-2);color:var(--olive)}
+  .chip.win{color:var(--ember);border-color:var(--ember)}
+  code{font-family:var(--mono);color:var(--bone)}
+  .btnrow{margin-top:20px}
+  .btn{display:inline-block;padding:10px 18px;border:1px solid var(--ember);color:var(--ember);background:transparent;
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin:0 8px 8px 0}
+  .btn:hover{background:var(--ember);color:var(--void)}
+  .btn.ghost{border-color:var(--rule-2);color:var(--bone-dim)}
+  .btn.ghost:hover{border-color:var(--olive);background:transparent;color:var(--bone)}
+  footer{padding:34px 0 64px;color:var(--olive);font-size:.8rem;border-top:1px solid var(--rule);margin-top:14px}
+  footer a{color:var(--olive)}
 </style>
 </head>
 <body>
-<button id="themeToggle" type="button" aria-label="Toggle light or dark theme">◐</button>
 
 <header class="masthead"><div class="wrap">
-  <div class="kicker">Tier Bench · the operational moat</div>
-  <h1>How much of the frontier is brute force, and how much is <em>je ne sais quoi</em>?</h1>
-  <p class="lede">We measured it. Across seven tasks, real model instances, graded blind: on every task
-  with an <b>operational</b> answer, a cheap model wrapped in a small harness matched or <b>beat</b> the
-  frontier — often for a fraction of the cost. What's left frontier-only turned out to be <b>sand</b>:
-  surface variance that carries no knowledge. Here is the data, and the tool.</p>
+  <div class="brandrow"><span id="mark" aria-hidden="true"></span>
+    <div><div class="kicker">Tier Bench · the operational moat</div>
+    <div class="disp small" style="letter-spacing:.2em;margin-top:6px;color:var(--olive)">measured · reproducible · yours</div></div>
+  </div>
+  <h1>Most of a frontier model's edge is <em>rentable</em>. We measured how much.</h1>
+  <p class="lede">The industry sells intelligence by the token, forever, on someone else's machines. But a
+  frontier model's <b>operational</b> advantage is mostly an <em>allocation trick</em> — it looks in more
+  places per pass. Capture that once and a cheap model you run matches or <span class="em">beats</span> it,
+  often for a fraction of the cost. Here's what everyone else does, what we did, and what you get.</p>
   <div class="stats">
-    <div class="stat"><div class="n">4.7×</div><div class="l">cheaper than opus, same verified answer</div></div>
-    <div class="stat"><div class="n">5 / 5</div><div class="l">haiku + generic harness — beat opus-solo's 4/5</div></div>
-    <div class="stat"><div class="n">100%</div><div class="l">cheap model correct on decisive taste calls</div></div>
+    <div class="stat"><div class="n">4.7×</div><div class="l">cheaper than the frontier · same verified answer</div></div>
+    <div class="stat"><div class="n">5 / 5</div><div class="l">cheap model + our harness · beat the frontier's 4/5</div></div>
+    <div class="stat"><div class="n">100%</div><div class="l">cheap model correct on the judgments that matter</div></div>
   </div>
 </div></header>
 
 <section><div class="wrap">
-  <h2>The claim, in one line</h2>
-  <p class="lede">The frontier's operational edge is mostly an <b>allocation advantage</b> — it looks in
-  more places per pass, and it can <em>search</em> when it can't derive. Both externalize into a harness a
-  cheap model runs. So the moat is real, but it's <b>rentable</b>: capture the frontier's move once, run
-  it cheap and local forever.</p>
-  <div class="note">Method: every model below is a real instance (<span class="mono">claude-haiku-4-5</span>,
-  <span class="mono">claude-sonnet-5</span>, <span class="mono">claude-opus-4-8</span>). Graders are
-  deterministic; scores regenerate from committed data. Full ledger + reproducibility manifest:
-  <a href="https://github.com/BigBirdReturns/tier-bench/tree/main/experiments/tier-uplift">experiments/tier-uplift</a>.</div>
+  <h2>The situation</h2>
+  <p class="lede">Two ways to get an answer grounded in knowledge. One rents forever. One you own.</p>
+  <div class="cols">
+    <div class="col">
+      <h3>What everyone else ships</h3>
+      <ul>
+        <li>Answer every query by calling a model — billed per token, on rented accelerators.</li>
+        <li>The frontier model sits on the critical path; you can't remove it or audit it.</li>
+        <li>Your knowledge lives in a platform that answers by generating over it.</li>
+        <li>Better retrieval (RAG, GraphRAG, rerankers) still leaves a stochastic model producing the final answer.</li>
+        <li>The capability is never yours. The meter never stops.</li>
+      </ul>
+    </div>
+    <div class="col you">
+      <h3>What this makes possible</h3>
+      <ul>
+        <li>Capture the frontier's move <b>once</b> as a reusable checklist; run it on a cheap model forever.</li>
+        <li>Point it at <b>any</b> model, any provider — local or hosted. No lock-in.</li>
+        <li>Compile knowledge into a signed artifact <b>you hold</b> and query deterministically.</li>
+        <li>Same operational answer, a fraction of the cost — often cheaper than one frontier call.</li>
+        <li>Rented capability becomes <span class="em">owned</span> capability.</li>
+      </ul>
+    </div>
+  </div>
 </div></section>
 
 <section><div class="wrap">
-  <h2>The arc: where the gap is, and where it isn't</h2>
-  <div class="tblwrap"><table>
-    <thead><tr><th>Task</th><th>Kind</th><th>Finding</th></tr></thead>
-    <tbody>
-      <tr><td>01 · parse_duration</td><td>checkable</td><td><b>No gap</b> — haiku one-shots it as well as opus (38/38 each).</td></tr>
-      <tr><td>02 · wildcard match</td><td>checkable</td><td><b>No gap</b> — 100% all three, even on 10,681 cases. Capability on checkable tasks is saturated at the cheap tier.</td></tr>
-      <tr><td>03 · bug-finding</td><td>coverage</td><td>Gap appears (haiku 6/7). <span class="chip c-win">harness → 7/7 = sonnet</span></td></tr>
-      <tr><td>04 · ledger bugs</td><td>coverage</td><td>Full gradient 4 &lt; 6.5 &lt; 8. <span class="chip c-win">haiku → 7.5, sonnet → 8 = opus</span></td></tr>
-      <tr><td>05 · intervals</td><td>coverage (frozen lenses)</td><td><span class="chip c-win">haiku + generic harness 5/5 — beat opus-solo's 4/5</span></td></tr>
-      <tr><td>06 · novel reasoning</td><td>verifiable</td><td>Haiku can't derive it. Let it <em>search</em> → <span class="chip c-win">found it, 4.7× cheaper than opus</span></td></tr>
-      <tr><td>07 · taste</td><td>unverifiable</td><td>The "residue" was <b>sand</b> — on decisive calls haiku is right 100%; only near-ties diverge, and there's no fact there.</td></tr>
-    </tbody>
-  </table></div>
+  <div class="kicker" style="margin-bottom:8px">Read alongside · Anthropic, 6 Jul 2026</div>
+  <h2>They found the workspace inside. We put it outside.</h2>
+  <p class="lede">This week Anthropic published <em>"Verbalizable Representations Form a Global Workspace
+  in Language Models."</em> A new lens on Claude's activations found a small, privileged internal
+  <b>workspace</b> — a few percent of the representation — that the model reasons <em>with</em>: holding
+  "Mars" before it answers, flagging a prompt injection, <b>noticing a bug in code</b> (their own example).
+  Suppress that workspace and shallow classification survives, but multi-hop reasoning, translation, and
+  composition collapse below a small model. The one thing robust to suppression is reasoning the model has
+  <em>written down</em> — chain-of-thought — because then the page becomes the workspace.</p>
+  <div class="cols">
+    <div class="col"><h3>Their finding · from the inside</h3><ul>
+      <li>The operational reasoning lives in a small workspace — bug-noticing included.</li>
+      <li>It drives exactly the tasks that separate tiers: inference, composition, translation.</li>
+      <li>Externalize it onto the page and it survives ablation — so it's portable in principle.</li>
+      <li>But it stays locked in the weights, read only through their lens, rented per token.</li>
+    </ul></div>
+    <div class="col you"><h3>Our result · from the outside</h3><ul>
+      <li>We externalize that workspace as a written checklist — the frontier's move, on the page.</li>
+      <li>A cheap model running it matches the frontier on exactly those tasks.</li>
+      <li>The artifact is portable, auditable, and <b>yours</b> — any provider, run local.</li>
+      <li>A better use for the space: take the workspace out of the weights and <span class="em">own</span> it.</li>
+    </ul></div>
+  </div>
+  <p class="small muted">Their science and our engineering are one claim from two sides: the part of a frontier
+  model that does the operational work is small, separable, and — once it is on the page — cheap to run
+  anywhere. <a href="https://github.com/BigBirdReturns/axm-genesis">AXM Genesis</a> extends the same move to
+  knowledge itself — compile it into a signed artifact and take the stochastic model off the critical path.</p>
 </div></section>
 
 <section><div class="wrap">
-  <h2>Cheap + harness reaches the frontier</h2>
-  <p>Task 04 — subtle bug-finding in a payments ledger, 8 planted bugs, several cross-function. Solo, the
-  tiers separate cleanly. A four-lens sweep (decompose the review, union the findings) lifts each cheap
-  tier to the one above.</p>
+  <h2>What we did — and what it showed</h2>
+  <p class="lede">Seven tasks, real model instances (<code>haiku</code>, <code>sonnet</code>, <code>opus</code>),
+  graded blind by deterministic checkers. On checkable tasks the cheap model already ties the frontier.
+  Where a gap appeared, a small harness — decompose the work into focused passes, union the findings — closed
+  it and then crossed it.</p>
+
+  <div class="demos">
+    <div class="demo">
+      <div class="do">Add the sweep to a cheap model</div>
+      <div class="res"><span class="was">4 / 8 bugs</span><span class="arr">→</span><span class="now">7.5 / 8</span></div>
+      <div class="cap">Subtle bug-finding it missed solo. The frontier finds 8/8 — the gap all but closes, at cheap-tier price.</div>
+    </div>
+    <div class="demo">
+      <div class="do">Freeze the checklist before the bug exists</div>
+      <div class="res"><span class="was">frontier 4 / 5</span><span class="arr">→</span><span class="now">cheap 5 / 5</span></div>
+      <div class="cap">Generic lenses written blind, run on unseen code. The cheap model beats the raw frontier — the lift is the harness, not tuning.</div>
+    </div>
+    <div class="demo">
+      <div class="do">Let it search instead of derive</div>
+      <div class="res"><span class="was">$0.635 frontier</span><span class="arr">→</span><span class="now">$0.134 · 4.7× cheaper</span></div>
+      <div class="cap">On a task it couldn't reason out, the cheap model wrote a checker and differentially tested to the same verified answer.</div>
+    </div>
+    <div class="demo">
+      <div class="do">Ask the frontier to judge 12 outputs two ways</div>
+      <div class="res"><span class="was">holistic vs pairwise</span><span class="arr">→</span><span class="now">ρ = 0.43</span></div>
+      <div class="cap">It disagrees with itself — and all the disagreement sits on operationally-equal near-ties. That residue is sand.</div>
+    </div>
+  </div>
+
   <figure>
-    <figcaption>bugs found / 8 · <span class="em">ember = cheap model + harness</span></figcaption>
-    <div class="bar"><div class="lab">haiku solo</div><div class="track"><div class="fill" style="width:50%"></div><div class="val">4.0</div></div></div>
-    <div class="bar"><div class="lab">haiku + harness</div><div class="track"><div class="fill win" style="width:93.75%"></div><div class="val">7.5</div></div></div>
-    <div class="bar"><div class="lab">sonnet solo</div><div class="track"><div class="fill" style="width:81.25%"></div><div class="val">6.5</div></div></div>
-    <div class="bar"><div class="lab">sonnet + harness</div><div class="track"><div class="fill win" style="width:100%"></div><div class="val">8.0</div></div></div>
-    <div class="bar"><div class="lab">opus solo</div><div class="track"><div class="fill ref" style="width:100%"></div><div class="val">8.0</div></div></div>
-    <div class="legend"><span><span class="sw" style="background:var(--muted)"></span>cheap, solo</span><span><span class="sw" style="background:var(--accent)"></span>cheap + harness</span><span><span class="sw" style="background:var(--scope)"></span>opus (frontier reference)</span></div>
+    <figcaption>subtle bugs found / 8 · a cheap model + harness reaches the frontier</figcaption>
+    <div class="bar"><div class="lab">cheap · solo</div><div class="track"><div class="fill" style="width:50%"></div><div class="val">4.0</div></div></div>
+    <div class="bar"><div class="lab">cheap + harness</div><div class="track"><div class="fill win" style="width:93.75%"></div><div class="val">7.5</div></div></div>
+    <div class="bar"><div class="lab">mid · solo</div><div class="track"><div class="fill" style="width:81.25%"></div><div class="val">6.5</div></div></div>
+    <div class="bar"><div class="lab">mid + harness</div><div class="track"><div class="fill win" style="width:100%"></div><div class="val">8.0</div></div></div>
+    <div class="bar"><div class="lab">frontier · solo</div><div class="track"><div class="fill ref" style="width:100%"></div><div class="val">8.0</div></div></div>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--olive)"></span>cheap / mid, solo</span>
+      <span><span class="sw" style="background:var(--ember)"></span>+ our harness</span>
+      <span><span class="sw" style="background:#4a4c39"></span>frontier, solo</span>
+    </div>
   </figure>
-  <p class="small muted">haiku 4.0 → 7.5 (clears sonnet, nears opus); sonnet 6.5 → 8.0 (= opus). One harness,
-  two rungs, one task. The bug that separated sonnet from opus — a self-transfer edge case — was caught by
-  the harness's interaction lens more precisely than opus found it solo.</p>
-</div></section>
 
-<section><div class="wrap">
-  <h2>And on an unseen task, with lenses written blind, it beats the frontier</h2>
-  <p>Task 05 uses a <b>frozen, generic</b> lens set — written before the bugs existed, not tuned to them.
-  The fair test of "is it the harness, or the experimenter?" It's the harness.</p>
-  <div class="grid2">
+  <div class="cols">
     <figure>
-      <figcaption>bugs found / 5 · unseen task, frozen lenses</figcaption>
-      <div class="bar"><div class="lab">haiku solo</div><div class="track"><div class="fill" style="width:60%"></div><div class="val">3</div></div></div>
-      <div class="bar"><div class="lab">opus solo</div><div class="track"><div class="fill ref" style="width:80%"></div><div class="val">4</div></div></div>
-      <div class="bar"><div class="lab">haiku + harness</div><div class="track"><div class="fill win" style="width:100%"></div><div class="val">5</div></div></div>
+      <figcaption>unseen task · frozen generic harness · bugs / 5</figcaption>
+      <div class="bar"><div class="lab">cheap · solo</div><div class="track"><div class="fill" style="width:60%"></div><div class="val">3</div></div></div>
+      <div class="bar"><div class="lab">frontier · solo</div><div class="track"><div class="fill ref" style="width:80%"></div><div class="val">4</div></div></div>
+      <div class="bar"><div class="lab">cheap + harness</div><div class="track"><div class="fill win" style="width:100%"></div><div class="val">5</div></div></div>
     </figure>
     <figure>
-      <figcaption>cost per verified answer · task 06 (novel reasoning)</figcaption>
-      <div class="bar"><div class="lab">opus solo</div><div class="track"><div class="fill ref" style="width:100%"></div><div class="val">$0.635</div></div></div>
-      <div class="bar"><div class="lab">haiku + harness</div><div class="track"><div class="fill win" style="width:21%"></div><div class="val out">$0.134 · 4.7× cheaper</div></div></div>
+      <figcaption>cost per verified answer · hard reasoning task</figcaption>
+      <div class="bar"><div class="lab">frontier · solo</div><div class="track"><div class="fill ref" style="width:100%"></div><div class="val">$0.635</div></div></div>
+      <div class="bar"><div class="lab">cheap + harness</div><div class="track"><div class="fill win" style="width:21%"></div><div class="val out">$0.134 · 4.7× cheaper</div></div></div>
     </figure>
   </div>
-  <p class="small muted">Left: the cheap model + a checklist it did not write beats the raw frontier model —
-  both missed the same validation bug, but the harness caught it. Right: on a problem haiku genuinely
-  <em>could not derive</em>, letting it write a checker and <em>search</em> found the answer for a fifth of
-  the frontier's price. Its <em>failed</em> solo attempt actually cost more than its winning harness run.</p>
+  <p class="small muted">Left: on a task it had never seen, with a checklist written before the bugs existed,
+  the cheap model beat the raw frontier model — proof the lift is the harness, not tuning. Right: on a
+  problem the cheap model couldn't reason out, letting it <em>search</em> found the answer for a fifth of
+  the frontier's price.</p>
 </div></section>
 
 <section><div class="wrap">
-  <h2>The last moat was sand</h2>
-  <p>Taste looked irreducible — cheap and frontier models rank creative writing differently. But that
-  measured the <b>arrangement</b>, not the <b>knowledge</b>. Split the judgments by whether they actually
-  carry operational content:</p>
-  <figure>
-    <figcaption>haiku agrees with the frontier's judgment — split by whether the call carries knowledge</figcaption>
-    <div class="bar"><div class="lab">decisive calls</div><div class="track"><div class="fill win" style="width:100%"></div><div class="val">100% · good vs broken</div></div></div>
-    <div class="bar"><div class="lab">near-ties</div><div class="track"><div class="fill" style="width:55%"></div><div class="val">~chance · no fact to get right</div></div></div>
-  </figure>
-  <p class="small muted">On operationally-decisive calls (a clearly-good line vs a clearly-bad one) the cheap
-  model is right <b>100%</b> of the time — cleaner than the frontier. All the disagreement lives in the
-  near-ties, where the frontier <em>disagrees with itself</em>. That's not a capability. It's sand —
-  surface variance among operationally-equivalent outputs. You don't rent sand; you stop measuring it.</p>
-</div></section>
-
-<section><div class="wrap">
-  <h2>Why this should worry the toll-collectors</h2>
-  <p class="lede">Two moats, both flipped by the same move — <b>compile once with the master, run forever
-  cheap and portable.</b></p>
-  <div class="grid2">
-    <div class="note"><b>The inference toll.</b> The industry bills intelligence per token, forever, on
-    someone else's accelerators. But the frontier's operational edge is a reusable <em>checklist</em>, not a
-    per-query miracle. Capture it once; every query after is cheap, local, and yours. Rented capability →
-    owned capability.</div>
-    <div class="note"><b>The data lock-in.</b> The other moat keeps your knowledge inside a platform that
-    answers by generating over it. <a href="https://github.com/BigBirdReturns/axm-genesis">AXM Genesis</a>
-    compiles knowledge into a signed, byte-provenanced artifact you hold and query deterministically —
-    no model on the authority path. <em>Inference is a choice, not a primitive.</em></div>
-  </div>
-  <p class="small muted">Honest edge — we did <b>not</b> delete the frontier. It still <em>mints</em> the
-  lenses, the corpus, the oracle, once. The moat didn't vanish; it moved up one level — from doing the work
-  to minting the frame — and everything downstream of the frame is now cheap and portable. That's the
-  inversion: you pay the master once per capability, not once per query.</p>
-</div></section>
-
-<section><div class="wrap">
-  <h2>Run it yourself — the harness, for any model</h2>
-  <p>The mechanism is a small, dependency-free package. Point it at <b>your</b> model on <b>any</b>
-  provider and get the lift.</p>
+  <h2>What anyone else has — and what's actually left</h2>
   <div class="tblwrap"><table>
+    <thead><tr><th>The task is…</th><th>Frontier premium</th><th>With a cheap model + harness</th></tr></thead>
     <tbody>
-      <tr><td class="mono small">from capability_harness import review</td></tr>
-      <tr><td class="mono small">from capability_harness.backends import anthropic_backend  # or openai_backend</td></tr>
-      <tr><td class="mono small">review(open("mycode.py").read(), anthropic_backend("claude-haiku-4-5"))</td></tr>
+      <tr><td>checkable (has a right answer)</td><td>none — cheap already ties it</td><td class="em">same, at cheap-tier price</td></tr>
+      <tr><td>coverage (find all the bugs)</td><td>looks in more places per pass</td><td class="em">matches / beats it — decompose &amp; union</td></tr>
+      <tr><td>verifiable-by-search</td><td>can derive it in one shot</td><td class="em">writes a checker &amp; searches · ~4.7× cheaper</td></tr>
+      <tr><td>good-vs-bad judgment</td><td>none — shared across tiers</td><td class="em">cheap model right 100% on decisive calls</td></tr>
+      <tr><td>pure taste (near-ties)</td><td>arranges the grains differently</td><td>sand — no operational content; stop measuring it</td></tr>
     </tbody>
   </table></div>
-  <p>
-    <a class="btn" href="https://github.com/BigBirdReturns/tier-bench/tree/main/capability_harness">The harness →</a>
-    <a class="btn ghost" href="https://github.com/BigBirdReturns/tier-bench/tree/main/experiments/tier-uplift">The full ledger →</a>
+  <p class="small muted">The last row is the only "residue," and it's <b>sand</b>: which of two equally-good
+  outputs a model prefers. It carries no knowledge — even the frontier disagrees with itself there. Airplane
+  or scooter, same operational answer.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>What you gain</h2>
+  <p class="lede">The mechanism is a small, dependency-free package. Point it at your model and get the lift.</p>
+  <div class="tblwrap"><table><tbody>
+    <tr><td><code>from capability_harness import review</code></td></tr>
+    <tr><td><code>from capability_harness.backends import anthropic_backend  # or openai_backend</code></td></tr>
+    <tr><td><code>review(open("mycode.py").read(), anthropic_backend("claude-haiku-4-5"))</code></td></tr>
+  </tbody></table></div>
+  <div class="cols">
+    <div class="col you"><h3>You gain</h3><ul>
+      <li>Frontier-grade operational output from a model you run cheaply.</li>
+      <li>The same checklist works on any provider — you're never locked in.</li>
+      <li>Every run also produces the corpus to distil the skill into cheaper weights.</li>
+    </ul></div>
+    <div class="col"><h3>Honest edge</h3><ul>
+      <li>The frontier still <b>mints</b> the checklist once — you amortize it, you don't delete it.</li>
+      <li>It lifts operational tasks, not taste — but taste was sand anyway.</li>
+      <li>Recall up, ~5× the tokens of one pass — still far under one frontier call for a cheap model.</li>
+    </ul></div>
+  </div>
+  <div class="btnrow">
+    <a class="btn" href="https://github.com/BigBirdReturns/tier-bench/tree/main/capability_harness">Get the harness →</a>
+    <a class="btn ghost" href="https://github.com/BigBirdReturns/tier-bench/tree/main/experiments/tier-uplift">The full data →</a>
     <a class="btn ghost" href="tally.html">The employee tally →</a>
     <a class="btn ghost" href="index.html">← overview</a>
-  </p>
+  </div>
 </div></section>
 
 <footer><div class="wrap">
-  <p><b>Everything here is reproducible.</b> Real model instances, deterministic graders, every number
-  regenerating from committed data — see the
-  <a href="https://github.com/BigBirdReturns/tier-bench/blob/main/experiments/tier-uplift/REPRODUCIBILITY.md">reproducibility manifest</a>.
-  "Quality" on the taste task is panel preference, labeled as such, never ground truth. The genuinely
-  unverifiable residue is small, and it's sand.</p>
-  <p class="small">Companion to <a href="https://github.com/BigBirdReturns/axm-genesis">AXM Genesis</a> —
-  the determinism/provenance side of the same argument: move the stochastic model off the critical path.</p>
+  <p>Everything here is reproducible — real model instances, deterministic graders, every number regenerating
+  from committed data (<a href="https://github.com/BigBirdReturns/tier-bench/blob/main/experiments/tier-uplift/REPRODUCIBILITY.md">manifest</a>).
+  Companion to <a href="https://github.com/BigBirdReturns/axm-genesis">AXM Genesis</a> — the provenance side of
+  the same move: take the stochastic model off the critical path, compile knowledge you own.</p>
 </div></footer>
 
-<script>(function(){var b=document.getElementById("themeToggle"),r=document.documentElement;if(!b)return;function L(){b.textContent=r.dataset.theme==="dark"?"◐ dark":"◑ light";}L();b.addEventListener("click",function(){var d=r.dataset.theme==="dark"?"light":"dark";r.dataset.theme=d;try{localStorage.setItem("pta-theme",d);}catch(e){}L();});})();</script>
+<script src="scg-pixel-mark.js"></script>
+<script>try{SCGPX.mount('mark',4);}catch(e){}</script>
 </body>
 </html>
