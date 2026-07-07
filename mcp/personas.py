@@ -86,7 +86,9 @@ def _mock_invoke(model, messages, system):
         content = "LEFT"
     else:
         content = f"[{model}] " + " ".join(user.split())[:80]
-    return {"content": content, "cost": _mock_cost(model, in_len, len(content)), "status": "ok"}
+    out_len = len(content)
+    return {"content": content, "cost": _mock_cost(model, in_len, out_len), "status": "ok",
+            "in_tok": in_len // 4, "out_tok": max(1, out_len // 4)}  # ~4 chars/token
 
 
 def _invoke(guard, model, messages, system=None, max_tokens=None):
@@ -94,11 +96,14 @@ def _invoke(guard, model, messages, system=None, max_tokens=None):
     if os.environ.get("TIER_BENCH_MOCK"):
         return _mock_invoke(model, messages, system)
     res = guard.call(messages=messages, model=model, system=system, max_output_tokens=max_tokens)
+    usage = res.get("usage") or {}
     return {
         "content": res.get("content"),
         "cost": float(res.get("cost", 0.0) or 0.0),
         "status": res.get("status", "error"),
         "reason": res.get("reason"),
+        "in_tok": int(usage.get("input_tokens", 0) or 0),
+        "out_tok": int(usage.get("output_tokens", 0) or 0),
     }
 
 
@@ -124,13 +129,17 @@ class ModelPersona:
     def complete(self, guard, prompt, max_tokens=None):
         r = _invoke(guard, self.model_id, [{"role": "user", "content": prompt}], None, max_tokens)
         cost = round(r["cost"], 6)
+        in_tok, out_tok = r.get("in_tok", 0), r.get("out_tok", 0)
         return {
             "persona": self.name,
             "final_model": self.model_id,
             "content": r["content"],
             "cost": cost,
+            "input_tokens": in_tok,
+            "output_tokens": out_tok,
             "status": r["status"],
-            "trace": [{"step": "model", "model": self.model_id, "cost": cost, "status": r["status"]}],
+            "trace": [{"step": "model", "model": self.model_id, "cost": cost,
+                       "in_tok": in_tok, "out_tok": out_tok, "status": r["status"]}],
         }
 
 
@@ -147,13 +156,22 @@ class DriverPersona:
         spec = _DRIVER_SPEC.read_text(encoding="utf-8") if _DRIVER_SPEC.exists() else "You are the driver."
         trace = []
         total = 0.0
+        in_sum = out_sum = 0
+
+        def _step(kind, model, r, **extra):
+            nonlocal total, in_sum, out_sum
+            total += r["cost"]
+            in_sum += r.get("in_tok", 0)
+            out_sum += r.get("out_tok", 0)
+            trace.append({"step": kind, "model": model, "cost": round(r["cost"], 6),
+                          "in_tok": r.get("in_tok", 0), "out_tok": r.get("out_tok", 0),
+                          "status": r["status"], **extra})
 
         # 1. cheap hands draft
         d = _invoke(guard, self.hands, [{"role": "user", "content": prompt}], None, max_tokens)
         current = d["content"] or ""
-        total += d["cost"]
         final_model = self.hands
-        trace.append({"step": "hands_draft", "model": self.hands, "cost": round(d["cost"], 6), "status": d["status"]})
+        _step("hands_draft", self.hands, d)
 
         # 2. driver review / repair, bounded
         for _ in range(self.max_repairs):
@@ -165,22 +183,21 @@ class DriverPersona:
                 "Otherwise reply with the corrected, complete answer (no preamble)."
             )
             v = _invoke(guard, self.driver, [{"role": "user", "content": vmsg}], spec, max_tokens)
-            total += v["cost"]
             reply = (v["content"] or "").strip()
             if reply.startswith("PASS"):
-                trace.append({"step": "driver_verify", "model": self.driver, "verdict": "pass",
-                              "cost": round(v["cost"], 6), "status": v["status"]})
+                _step("driver_verify", self.driver, v, verdict="pass")
                 break
             current = v["content"] or current
             final_model = self.driver
-            trace.append({"step": "driver_repair", "model": self.driver,
-                          "cost": round(v["cost"], 6), "status": v["status"]})
+            _step("driver_repair", self.driver, v)
 
         return {
             "persona": self.name,
             "final_model": final_model,
             "content": current,
             "cost": round(total, 6),
+            "input_tokens": in_sum,
+            "output_tokens": out_sum,
             "status": "ok",
             "trace": trace,
         }
