@@ -6,14 +6,17 @@
 <title>Tier Bench — measure your models, price the frontier</title>
 <meta name="description" content="Benchmark every model you use on deterministic coding tasks, see cost-per-success, and find out which tiers of 'frontier' work are just overworked small models.">
 <style>
+  /* AXM house style: paper + ink fixed, scope = the thing examined, accent = the verdict. */
   :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2129; --line:#2d333b;
-    --ink:#e6edf3; --ink2:#9da7b3; --muted:#6e7a87;
-    --green:#3fb950; --yellow:#d29922; --red:#f85149; --blue:#58a6ff;
+    --bg:#f0ebe0; --panel:#fbf8f1; --panel2:#efe9dc; --line:#b8afa0;
+    --ink:#0e0d0c; --ink2:#2c2a27; --muted:#5e5850; --scope:#5a5e52;
+    --green:#2d5a3d; --yellow:#8a6d1e; --red:#b01c18; --blue:#8a160f;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --serif:'Lora',Georgia,'Times New Roman',serif;
+    --imprint:'Playfair Display',Georgia,serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--serif);-webkit-font-smoothing:antialiased}
   .wrap{max-width:960px;margin:0 auto;padding:0 20px}
   a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
   code,pre{font-family:var(--mono)}
@@ -21,17 +24,17 @@
   pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;
       padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.55;margin:14px 0}
   pre code{background:none;padding:0}
-  h1{font-size:2.1rem;line-height:1.2;margin:0 0 12px}
-  h2{font-size:1.4rem;margin:0 0 6px;letter-spacing:-.01em}
+  h1{font-family:var(--imprint);font-size:2.35rem;line-height:1.14;margin:0 0 12px;letter-spacing:-.01em}
+  h2{font-family:var(--imprint);font-size:1.5rem;margin:0 0 6px;letter-spacing:-.01em}
   h3{font-size:1.05rem;margin:18px 0 6px}
   section{padding:44px 0;border-top:1px solid var(--line)}
-  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}
   .lede{color:var(--ink2);font-size:1.08rem;max-width:46em}
   .muted{color:var(--muted)} .small{font-size:.86rem}
   table{border-collapse:collapse;width:100%;font-size:.92rem}
-  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin:14px 0}
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;margin:14px 0;background:var(--panel)}
   th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
-  th{background:var(--panel);font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);white-space:nowrap}
+  th{background:var(--panel);font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope);white-space:nowrap}
   tr:last-child td{border-bottom:none}
   .chip{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap}
   .c-green{color:var(--green);border-color:color-mix(in srgb,var(--green) 45%,transparent)}
@@ -42,18 +45,19 @@
   @media(min-width:720px){.grid.cols3{grid-template-columns:1fr 1fr 1fr}.grid.cols2{grid-template-columns:1fr 1fr}}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
   .card h3{margin-top:0}
-  .card .num{font-family:var(--mono);color:var(--muted);font-size:12px}
+  .card .num{font-family:var(--mono);color:var(--scope);font-size:12px}
   .hero{padding:64px 0 44px}
-  .hero .tag{font-family:var(--mono);color:var(--green);font-size:13px;margin-bottom:14px}
+  .hero .tag{font-family:var(--mono);color:var(--scope);font-size:13px;margin-bottom:14px}
   .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
   .btn{display:inline-block;padding:9px 16px;border-radius:8px;border:1px solid var(--line);
        background:var(--panel);color:var(--ink);font-size:.95rem;cursor:pointer}
   .btn:hover{border-color:var(--blue);text-decoration:none}
-  .btn.primary{background:#1f6feb;border-color:#1f6feb;color:#fff}
+  .btn.primary{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+  .btn.primary:hover{background:var(--blue);border-color:var(--blue)}
   .steps{counter-reset:s;margin:20px 0}
   .step{display:flex;gap:14px;margin:0 0 22px}
   .step::before{counter-increment:s;content:counter(s);flex:0 0 30px;height:30px;border-radius:50%;
-    background:var(--panel2);border:1px solid var(--line);color:var(--ink2);
+    background:var(--panel2);border:1px solid var(--line);color:var(--scope);
     font-family:var(--mono);font-size:13px;display:flex;align-items:center;justify-content:center;margin-top:2px}
   .step>div{min-width:0;flex:1}
   textarea{width:100%;min-height:130px;background:var(--panel);border:1px solid var(--line);border-radius:8px;
@@ -61,8 +65,8 @@
   select{background:var(--panel);border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:6px 10px;font-size:.92rem}
   .comparebar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:14px 0}
   .verdictline{font-family:var(--mono);font-size:13px;margin:10px 0;color:var(--ink2)}
-  footer{padding:36px 0 60px;color:var(--muted);font-size:.88rem}
-  .callout{border-left:3px solid var(--yellow);background:var(--panel);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;color:var(--ink2)}
+  footer{padding:36px 0 60px;color:var(--muted);font-size:.88rem;border-top:2px solid var(--ink)}
+  .callout{border-left:3px solid var(--scope);background:var(--panel);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0;color:var(--ink2)}
   .copybtn{position:absolute;top:8px;right:8px;font-family:var(--mono);font-size:11px;line-height:1;
     padding:4px 9px;border-radius:6px;background:var(--panel2);border:1px solid var(--line);
     color:var(--muted);cursor:pointer}
@@ -92,6 +96,30 @@
     <a class="btn" href="https://github.com/bigbirdreturns/tier-bench">GitHub →</a>
   </div>
 </div>
+
+<section id="run-now">
+  <div class="wrap">
+    <div class="kicker">Zero install · your key, your browser</div>
+    <h2>Two ways to run it right now — nothing to clone.</h2>
+    <p class="lede">Both pages call Anthropic straight from your browser with your own key (kept in the
+    page, sent nowhere else). No setup, no server, no walking anyone through a terminal.</p>
+    <div class="grid cols2">
+      <div class="card"><div class="num">the economy</div>
+        <h3><a href="ab.html">Run the A/B in your browser →</a></h3>
+        <p class="small">Race a frontier model alone against a composite where it only <b>reviews</b> a
+        cheap model's draft, on your prompts. See — live — how many frontier output tokens the
+        orchestration saves, and what it costs.</p></div>
+      <div class="card"><div class="num">the judgment · no Fable needed</div>
+        <h3><a href="control.html">Score any model on the ruler →</a></h3>
+        <p class="small">We already measured Fable, Opus, Sonnet, and Haiku on ten disposition probes.
+        Run the same ten on any model you can reach and drop it into the same scorecard — see exactly
+        where it lands.</p></div>
+    </div>
+    <p class="small muted">Want the full, deterministic cost-per-success benchmark across every model
+    you use? That one runs the harness on <b>your machine</b> —
+    <a href="#test-now">jump to the local setup ↓</a>.</p>
+  </div>
+</section>
 
 <section id="how">
   <div class="wrap">
@@ -135,8 +163,10 @@
 
     <div class="quickstart">
       <h3>Quickstart — copy once, run once</h3>
-      <p class="small muted">This runs on <b>your</b> machine with <b>your</b> key — a static page
-      can't hold keys or run Python. It's copy-paste, not zero-click.</p>
+      <p class="small muted">The browser tools above run single comparisons with your key. <b>This</b>
+      is the full instrument — the deterministic harness with real fixtures, objective validators, and
+      cost-per-success across every model — and it runs on <b>your</b> machine (it needs Python, not
+      just a browser). It's copy-paste, not zero-click.</p>
 <pre><code>git clone https://github.com/bigbirdreturns/tier-bench.git &amp;&amp; cd tier-bench
 bash setup.sh
 export ANTHROPIC_API_KEY=sk-ant-...      # or OPENAI_API_KEY / GEMINI_API_KEY, or `ollama serve` for $0 local
