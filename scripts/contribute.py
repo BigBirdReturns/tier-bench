@@ -296,13 +296,40 @@ def cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_emit_meta(args: argparse.Namespace) -> int:
+    """Emit the validation contract the browser needs to check a contribution
+    BEFORE it is submitted: the task_id -> tier map and the known-model list,
+    drawn from the SAME loaders the CLI/CI validator uses. The static site
+    can't read tasks/*.json itself, so the Pages build calls this to bake the
+    map next to index.html. One source of truth: if a new task lands, the map
+    the page validates against updates on the next deploy -- no drift between
+    what the page promises and what CI enforces."""
+    repo_root = Path(__file__).resolve().parent.parent
+    meta = {
+        "task_tiers": _load_task_tiers(repo_root / "tasks"),
+        "models": sorted(_load_registry_models(repo_root)),
+        "max_row_cost": MAX_ROW_COST,
+        "max_invalid_fraction": MAX_INVALID_FRACTION,
+        "valid_tiers": sorted(VALID_TIERS),
+    }
+    out = Path(args.emit_meta)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    print(f"Wrote {out} ({len(meta['task_tiers'])} tasks, {len(meta['models'])} models)")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--results", help="Raw harness_results.jsonl to package")
     ap.add_argument("--as", dest="as_handle", help="Your contributor handle")
     ap.add_argument("--out", default="data/results", help="Output directory for packaged mode")
     ap.add_argument("--validate", help="Path to a packaged data/results/*.jsonl file to re-validate")
+    ap.add_argument("--emit-meta", help="Write the browser validation contract (task_tiers + models) to this path")
     args = ap.parse_args()
+
+    if args.emit_meta:
+        return cmd_emit_meta(args)
 
     if args.validate:
         return cmd_validate(args)

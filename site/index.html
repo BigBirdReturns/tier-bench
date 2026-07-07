@@ -263,6 +263,10 @@ python scripts/diff_report.py --target your-apprentice-model</code></pre>
     requests — treat any single-source cell as a claim, not a fact, until at least two independent
     contributors corroborate it. This page rebuilds automatically whenever new validated contributions
     merge to main, so the pooled data below is only ever as fresh as the last merge.</p>
+    <p class="small muted">Pasting above shows your private verdict — nothing leaves the browser for that.
+    "Contribute these results" is different: it checks your rows against the same rules CI runs and, if
+    they pass, opens a pre-filled GitHub pull request — a GitHub account is required, which is what makes
+    each contribution traceable and lets a second person's agreement upgrade a cell to "corroborated".</p>
 
     <textarea id="jsonl" placeholder='Paste harness_results.jsonl here — one JSON object per line…' spellcheck="false"></textarea>
     <div class="comparebar">
@@ -277,6 +281,16 @@ python scripts/diff_report.py --target your-apprentice-model</code></pre>
     </div>
     <div id="summary" class="verdictline"></div>
     <div id="out"></div>
+
+    <h3>Contribute these results</h3>
+    <p class="small muted">Validated the same way CI validates a pull request: real task ids, correct
+    tiers, sane costs. Rows that fail are dropped (or the whole submission is rejected if too many fail);
+    the rest gets packaged and handed to GitHub as a ready-to-open pull request.</p>
+    <div class="comparebar">
+      <input type="text" id="contribHandle" placeholder="your handle">
+      <button class="btn" id="contribBtn">Contribute these results</button>
+    </div>
+    <div id="contribStatus" class="verdictline"></div>
   </div>
 </section>
 
@@ -463,6 +477,238 @@ $("loadCommunity").onclick = () => {
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", setup);
   else setup();
 })();
+
+// ── Contribute flow: client-side mirror of scripts/contribute.py ───────
+// Pure addition — does not read or call any of the stats/render/ingest/
+// loader/copy-button logic defined earlier in this script.
+const CONTRIB_FALLBACK = {
+  valid_tiers: ["T0","T1","T2","T3","T4","T5"],
+  max_row_cost: 10.0,
+  max_invalid_fraction: 0.20
+};
+
+let CONTRIB_CONTRACT = null; // null until contrib_meta.json loads (or stays null if it can't)
+
+// validateRows mirrors scripts/contribute.py::validate_rows row-for-row.
+// Returns {errors, warnings, badRows} where badRows is a Set of row indices
+// that produced at least one error (i.e. must be dropped before packaging).
+function validateRows(rows, contract){
+  const validTiers = (contract && Array.isArray(contract.valid_tiers)) ? contract.valid_tiers : CONTRIB_FALLBACK.valid_tiers;
+  const maxRowCost = (contract && typeof contract.max_row_cost === "number") ? contract.max_row_cost : CONTRIB_FALLBACK.max_row_cost;
+  // task_tiers is only present when the real contract loaded — when contract
+  // is null (fetch failed / offline) we cannot know real tasks, so we DEGRADE
+  // HONESTLY: skip the task-existence/tier-match cross-check entirely rather
+  // than guess.
+  const taskTiers = contract ? contract.task_tiers : null;
+  const knownModels = (contract && Array.isArray(contract.models)) ? contract.models : [];
+
+  const errors = [];
+  const warnings = [];
+  const badRows = new Set();
+
+  rows.forEach((row, i) => {
+    const prefix = `row ${i}`;
+
+    if (row === null || row === undefined || typeof row !== "object" || Array.isArray(row)){
+      errors.push(`${prefix}: not a JSON object`);
+      badRows.add(i);
+      return;
+    }
+
+    let bad = false;
+
+    let taskId = row.task_id;
+    if (typeof taskId !== "string" || !taskId){
+      errors.push(`${prefix}: task_id missing or not a string`);
+      taskId = null;
+      bad = true;
+    }
+
+    const tier = row.tier;
+    if (!validTiers.includes(tier)){
+      errors.push(`${prefix} (${taskId}): tier ${JSON.stringify(tier)} not in ${JSON.stringify(validTiers)}`);
+      bad = true;
+    }
+
+    let model = row.model;
+    if (typeof model !== "string" || !model){
+      errors.push(`${prefix} (${taskId}): model missing or not a string`);
+      model = null;
+      bad = true;
+    }
+
+    if (typeof row.pass !== "boolean"){
+      errors.push(`${prefix} (${taskId}): pass must be a bool`);
+      bad = true;
+    }
+
+    if (row.cost_missing === true){
+      // explicitly declared missing -- not a fabricated free run
+    } else {
+      const cost = row.actual_cost;
+      if (typeof cost !== "number" || !isFinite(cost)){
+        errors.push(`${prefix} (${taskId}): actual_cost missing/not numeric (set cost_missing:true if unknown)`);
+        bad = true;
+      } else if (cost < 0){
+        errors.push(`${prefix} (${taskId}): actual_cost ${cost} is negative`);
+        bad = true;
+      } else if (cost > maxRowCost){
+        errors.push(`${prefix} (${taskId}): actual_cost ${cost} exceeds sanity ceiling $${maxRowCost}`);
+        bad = true;
+      }
+    }
+
+    if (taskId !== null && taskTiers){
+      const hasTask = Object.prototype.hasOwnProperty.call(taskTiers, taskId);
+      const expectedTier = hasTask ? taskTiers[taskId] : undefined;
+      if (expectedTier === undefined){
+        errors.push(`${prefix}: task_id ${JSON.stringify(taskId)} not found in manifests`);
+        bad = true;
+      } else if (validTiers.includes(tier) && tier !== expectedTier){
+        errors.push(`${prefix}: task_id ${JSON.stringify(taskId)} is tier ${expectedTier} in the manifest, row claims ${tier}`);
+        bad = true;
+      }
+    }
+
+    if (model !== null && knownModels.length > 0 && !knownModels.includes(model)){
+      const tag = model.includes(":") ? "composite/strategy name" : "not in models.json registry";
+      warnings.push(`${prefix} (${taskId}): model ${JSON.stringify(model)} ${tag} -- new data is welcome, add a registry entry when convenient`);
+    }
+
+    if (bad) badRows.add(i);
+  });
+
+  return {errors, warnings, badRows};
+}
+
+// Packaged file body: meta line + one JSON line per kept row, mirroring
+// cmd_package's on-disk format exactly (each line, including the last, ends
+// with a trailing "\n").
+function packageContribRows(validRows, handle, date){
+  const meta = {_meta: {schema: 1, contributor: handle, submitted: date, rows: validRows.length}};
+  let body = JSON.stringify(meta) + "\n";
+  for (const row of validRows) body += JSON.stringify(row) + "\n";
+  return body;
+}
+
+// First 8 hex chars of SHA-256 of the packaged body, via SubtleCrypto where
+// available. CI does not re-check the filename hash, so a deterministic
+// fallback (char-sum) is fine when crypto.subtle is unreachable (file://).
+async function contribHash8(content){
+  if (globalThis.crypto && globalThis.crypto.subtle){
+    const bytes = new TextEncoder().encode(content);
+    const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes);
+    const view = new Uint8Array(digest);
+    let hex = "";
+    for (let i = 0; i < 4; i++) hex += view[i].toString(16).padStart(2, "0");
+    return hex;
+  }
+  let sum = 0;
+  for (let i = 0; i < content.length; i++) sum = (sum + content.charCodeAt(i) * (i + 37)) >>> 0;
+  return sum.toString(16).padStart(8, "0").slice(0, 8);
+}
+
+function contribDownloadFallback(content, filename){
+  const blob = new Blob([content], {type: "application/x-ndjson"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+// Load the validation contract the build emits (task_tiers + models +
+// thresholds), same-origin, once on load. If it can't be loaded, contract
+// stays null and validateRows() above degrades honestly.
+(function loadContribContract(){
+  fetch("contrib_meta.json").then(res => {
+    if (!res.ok) throw new Error("not ok");
+    return res.json();
+  }).then(data => {
+    CONTRIB_CONTRACT = data;
+  }).catch(() => {
+    CONTRIB_CONTRACT = null;
+    const el = $("contribStatus");
+    if (el) el.textContent = "Loaded without the task manifest — GitHub CI will do the full check.";
+  });
+})();
+
+async function onContribClick(){
+  const statusEl = $("contribStatus");
+  statusEl.style.color = "";
+
+  const rawHandle = ($("contribHandle").value || "").trim();
+  if (!rawHandle || !/^[A-Za-z0-9_-]+$/.test(rawHandle)){
+    statusEl.textContent = "enter a handle (letters, digits, - _)";
+    statusEl.style.color = "var(--red)";
+    return;
+  }
+
+  const lines = ($("jsonl").value || "").split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  const rows = lines.map(line => {
+    try { return JSON.parse(line); } catch { return undefined; } // flagged as "not a JSON object" below
+  });
+
+  const total = rows.length;
+  if (total === 0){
+    statusEl.textContent = "Nothing to submit — paste your harness_results.jsonl above first.";
+    statusEl.style.color = "var(--red)";
+    return;
+  }
+
+  const {errors, warnings, badRows} = validateRows(rows, CONTRIB_CONTRACT);
+  const maxInvalidFraction = (CONTRIB_CONTRACT && typeof CONTRIB_CONTRACT.max_invalid_fraction === "number")
+    ? CONTRIB_CONTRACT.max_invalid_fraction : CONTRIB_FALLBACK.max_invalid_fraction;
+  const invalidFraction = badRows.size / total;
+
+  if (invalidFraction > maxInvalidFraction){
+    statusEl.innerHTML = `Rejected: ${badRows.size}/${total} rows invalid (${Math.round(invalidFraction*100)}%), ` +
+      `exceeds the ${Math.round(maxInvalidFraction*100)}% sloppiness ceiling.<br>` +
+      errors.map(e => esc(e)).join("<br>");
+    statusEl.style.color = "var(--red)";
+    return;
+  }
+
+  const validRows = rows.filter((_, i) => !badRows.has(i));
+  if (validRows.length === 0){
+    statusEl.innerHTML = "Rejected: zero valid rows.<br>" + errors.map(e => esc(e)).join("<br>");
+    statusEl.style.color = "var(--red)";
+    return;
+  }
+
+  const date = new Date().toISOString().slice(0, 10);
+  const packaged = packageContribRows(validRows, rawHandle, date);
+  const hash8 = await contribHash8(packaged);
+  const bareName = `${date}-${rawHandle}-${hash8}.jsonl`;
+  const filename = `data/results/${bareName}`;
+  // GitHub's /new/ endpoint places the file by the LITERAL slashes in the
+  // filename param. encodeURIComponent would turn "/" into "%2F" and create a
+  // wrongly-named file in the repo ROOT — dodging the data/results/** CI path
+  // filter and the aggregator, so it would look submitted but never count.
+  // Keep the path literal; the bare name's charset ([A-Za-z0-9-_.]) is URL-safe.
+  const url = `https://github.com/bigbirdreturns/tier-bench/new/main?filename=data/results/${encodeURIComponent(bareName)}&value=${encodeURIComponent(packaged)}`;
+
+  let successMsg = `Validated ✓ ${validRows.length} rows. A GitHub pull request is opening — click ` +
+    `Commit changes, then Create pull request. CI re-checks it; on merge it joins the pooled data. ` +
+    `(You'll need a GitHub account — that's what makes each contribution traceable.)`;
+  if (badRows.size > 0) successMsg += ` (Dropped ${badRows.size}/${total} invalid row${badRows.size === 1 ? "" : "s"}.)`;
+
+  if (url.length <= 7000){
+    window.open(url, "_blank");
+    statusEl.textContent = successMsg;
+    statusEl.style.color = "var(--green)";
+  } else {
+    contribDownloadFallback(packaged, filename.split("/").pop());
+    window.open("https://github.com/bigbirdreturns/tier-bench/upload/main/data/results", "_blank");
+    statusEl.textContent = "Too large to prefill — the file downloaded; drop it into the GitHub upload tab " +
+      "that opened, then Commit → Create pull request.";
+    statusEl.style.color = "var(--yellow)";
+  }
+}
+
+$("contribBtn").addEventListener("click", () => { onContribClick(); });
 </script>
 </body>
 </html>
