@@ -67,8 +67,24 @@ python -m capability_harness review mycode.py --backend echo  # no key, smoke te
   forever — it doesn't eliminate it. That's the trade: renting per query → owning a
   reusable checklist.
 
-## Extend
+## Extend — and grow the library
 
 `DEFAULT_LENSES` is a plain list of `Lens(key, instruction)`. Add your own, or pass
 a custom set to `review(target, call, lenses=...)`. Keep them **generic** — the
 proof of portability is that the same set works on code it has never seen.
+
+The library is meant to **compound**. Every validated community lens lives in
+[`lenses_contrib.py`](lenses_contrib.py); `all_lenses()` unions them with the frozen
+five (defaults keep priority):
+
+```python
+from capability_harness import review
+from capability_harness.lenses_contrib import all_lenses
+review(code, call, lenses=all_lenses())
+```
+
+A lens earns its place by one objective bar: on a **held-out** subject, its pass
+surfaces a real issue the model's plain pass missed. Prove it with
+[`scripts/validate_lens.py`](../scripts/validate_lens.py), add a `ContribLens` entry
+with provenance, open a PR. Full guide: repo [`CONTRIBUTING.md`](../CONTRIBUTING.md)
+→ *Contribute a lens*.

@@ -3,9 +3,26 @@ name = "tier-bench"
 version = "0.1.0"
 description = "Deterministic LLM benchmark harness with tier-based routing and cost-per-success metrics."
 requires-python = ">=3.10"
-dependencies = [
-  "ruff>=0.6.0"
-]
+# The shippable, give-to-everyone package (capability_harness) has ZERO runtime
+# dependencies on purpose — you bring your own model via a call(prompt)->str.
+dependencies = []
+
+[project.optional-dependencies]
+# Adapters and dev tooling are opt-in so the core stays dependency-free.
+anthropic = ["anthropic>=0.40"]
+openai = ["openai>=1.0"]
+dev = ["ruff>=0.6.0"]
+
+[project.scripts]
+capability-harness = "capability_harness.__main__:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Ship the harness as an importable package; the benchmark itself stays script-run.
+packages = ["capability_harness"]
 
 [tool.ruff]
 line-length = 100

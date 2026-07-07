@@ -1,3 +1,86 @@
+# Contributing
+
+Three ways in, each compounding a different asset:
+
+| Contribute a… | Grows | Section |
+|---|---|---|
+| **lens** | the capability harness — the library of frontier moves any cheap model can run | [Contribute a lens](#contribute-a-lens) |
+| **benchmark task** | the tier ladder that measures models | [Contributing Tasks](#contributing-tasks) |
+| **benchmark run** | the pooled, corroborated measurement data | [Contributing benchmark data](#contributing-benchmark-data) |
+
+The lens library is the one that gets *scary* as it grows: every validated lens is
+a captured way-of-looking that then runs on a cheap model forever. Start there.
+
+---
+
+# Contribute a lens
+
+The harness ([`capability_harness/`](capability_harness/)) lifts a cheap model by
+running one focused pass per **lens** and unioning the findings — *"iteration can
+only buy what selection can see."* The five frozen defaults are proven to transfer
+blind; everything past that is community-grown in
+[`capability_harness/lenses_contrib.py`](capability_harness/lenses_contrib.py).
+
+A lens earns its place by clearing **one objective bar** — no taste, no vibes:
+
+> On a **held-out** subject it was *not* written for, the lens's single pass must
+> surface a real issue the same model's plain, lens-free pass **missed**.
+
+That is the whole harness claim applied to the lens itself. `scripts/validate_lens.py`
+checks it mechanically.
+
+```bash
+# Prove your lens lifts a cheap model on code it hasn't seen:
+python scripts/validate_lens.py \
+  --lens-key resource_lifetime \
+  --lens "RESOURCE LIFETIME only: every acquire (file, lock, connection, allocation) \
+matched to a release on ALL paths incl. exceptions and early returns; double-release; \
+use-after-release; leak on the error path." \
+  --subject fixtures/<some_held_out_file>.py \
+  --expect "open" --expect "release" \
+  --backend anthropic --model claude-haiku-4-5   # or --backend openai / echo (smoke)
+```
+
+`--expect SUBSTR` (repeatable) is the held-out issue's fingerprint: the lens output
+must contain it **and** the baseline pass must not already have it — so a lens can't
+"pass" by emitting generic noise the naked pass also emitted.
+
+**Three rules for a lens (the same three the validator + review enforce):**
+
+1. **Generic.** Name a *class* of failure ("aliasing", "resource lifetime"), never a
+   specific bug in a specific file. If it only works on the file it shipped with,
+   it's tailoring, not a lens — and it won't transfer, which is the whole point.
+2. **Proven.** It must add a finding the baseline missed on held-out code. The
+   validator exits non-zero otherwise.
+3. **Attributed.** Add a `ContribLens(lens=…, author=…, proven_on=…, caught=…)` to
+   `CONTRIB_LENSES` so the library stays auditable as it grows.
+
+Then open a PR with the registry entry and the held-out subject you proved it on.
+
+**Honesty doctrine (same as the rest of the repo).** A contributed lens is a
+*claim* that this aperture generalizes; the validator only proves it lifted on the
+subject(s) you showed. A lens proven on one held-out subject is `single-source`; a
+lens shown to lift on subjects from two or more distinct contributors is
+`corroborated`. `all_lenses()` ships every validated lens; the frozen five keep
+priority. Use it with `review(code, call, lenses=all_lenses())`.
+
+## Use the harness
+
+```bash
+pip install .            # zero runtime deps; adds the `capability-harness` CLI
+pip install '.[anthropic]'   # optional adapter; or '.[openai]' for any OpenAI-compatible host
+capability-harness review mycode.py --model claude-haiku-4-5
+```
+
+```python
+from capability_harness import review
+from capability_harness.backends import anthropic_backend
+from capability_harness.lenses_contrib import all_lenses
+review(open("mycode.py").read(), anthropic_backend("claude-haiku-4-5"), lenses=all_lenses())
+```
+
+---
+
 # Contributing Tasks
 
 Add benchmark tasks without touching any Python code. The harness discovers tasks automatically from the `tasks/` and `fixtures/` directories.
