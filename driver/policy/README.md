@@ -14,6 +14,13 @@ does **not** yield to brute force: disposition is flat on effort, see
 `data/control-results/`). Freezing the orchestration policy is how you get a
 mythos-tier *decision* out of a lesser model without mythos-tier weights.
 
+> **This is the toy; `memory/` is the industrial version.** A frozen
+> `policy.json` is an ad-hoc snapshot you have to trust. `memory/` seals the same
+> kind of thing — a session's decisions — into a **signed, byte-traceable
+> decision shard** (AXM Genesis) you can query deterministically and verify
+> offline forever: tamper one byte and verification fails. Horizon is a memory
+> problem, and that is the memory. See `memory/README.md`.
+
 ## The three moves
 
 ```

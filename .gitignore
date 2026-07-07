@@ -20,6 +20,9 @@ llm_costs.jsonl
 # but a local contributor would lose their files with no error.)
 !data/results/*.jsonl
 !data/control-results/*.jsonl
+# Sealed memory shards are the deliverable too — their claim/evidence/ext tables
+# are .jsonl and must survive the blanket ignore (Merkle would fail without them).
+!memory/samples/**/*.jsonl
 
 # Canonical baselines (generated per-machine)
 tasks/_canonical/

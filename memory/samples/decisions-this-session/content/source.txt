@@ -1,0 +1,123 @@
+=== DECISION SHARD: tier-bench session (raw transcript): capability, disposition, horizon = memory ===
+Source: sh1_97c8b4a383dc14b86a1dd64968764f4f9b87fbc8613dd5bd345545b52cb624f2
+Distilled: 2026-07-07T11:51:14Z
+Decisions: 11
+
+--- Decision 1 ---
+Subject: disposition_effort_response
+Action: discovered
+Object: flat_on_effort
+When:
+Speaker: assistant
+Reasoning: Effort did not move the disposition score; it lives in the weights.
+Rejected alternatives: the hypothesis that more reasoning buys disposition
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 2 ---
+Subject: frontier_residual
+Action: discovered
+Object: p8_planted_2f_bug
+When:
+Speaker: assistant
+Reasoning: P8 is the one probe the cheap model misses at any effort while others catch it.
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 3 ---
+Subject: composite_pricing
+Action: adopted
+Object: mandatory_residual_per_strategy
+When:
+Speaker: assistant
+Reasoning: Every composition must name what it does NOT give back.
+Rejected alternatives: reporting only the upside of a composite
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 4 ---
+Subject: theme
+Action: rejected
+Object: light_only_ship
+When:
+Speaker: assistant
+Reasoning: The AXM system is two lightness modes of one system; shipping light-only ignored it.
+Rejected alternatives: a light + dark toggle on the shared theme key
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 5 ---
+Subject: employee_tally
+Action: decided
+Object: min_capability_disposition
+When:
+Speaker: assistant
+Reasoning: A model cannot be trusted above its disposition.
+Rejected alternatives: averaging the two axes
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 6 ---
+Subject: decision_snapshot
+Action: committed
+Object: capture_driver_decision_not_output
+When:
+Speaker: assistant
+Reasoning: Freeze the judgment, not the answer, so a cheaper model can replay it.
+Rejected alternatives: distilling repair answers only
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 7 ---
+Subject: je_ne_sais_quoi
+Action: discovered
+Object: iteration_buys_what_selection_sees
+When:
+Speaker: assistant
+Reasoning: A composite recovers only the quality its validator can distinguish.
+Rejected alternatives: assuming iteration recovers everything
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 8 ---
+Subject: provider_reach
+Action: discovered
+Object: seven_backends
+When:
+Speaker: assistant
+Reasoning: The harness reaches every model behind an implemented backend; the gate is the key.
+Rejected alternatives: the hedge that the shim was Anthropic-only
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 9 ---
+Subject: frontier_diff
+Action: proposed
+Object: horizon_not_local_judgment
+When:
+Speaker: human
+Reasoning: The real edge is holding the global frame over distance, which the ten probes don't test.
+Rejected alternatives: treating disposition as only local judgment
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 10 ---
+Subject: dogfood
+Action: decided
+Object: seal_this_session
+When:
+Speaker: assistant
+Reasoning: Prove the memory by using it on the exact frame the model kept losing.
+Rejected alternatives: only building a horizon probe to measure the gap
+Confidence: 0.9
+Source turn: -1
+
+--- Decision 11 ---
+Subject: axm_convergence
+Action: confirmed
+Object: distill_is_decision_shard
+When:
+Speaker: assistant
+Reasoning: axm-chat's distill is the industrial version of the hand-rolled driver_policy.
+Confidence: 0.9
+Source turn: -1

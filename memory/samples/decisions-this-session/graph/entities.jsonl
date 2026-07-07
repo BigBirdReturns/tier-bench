@@ -1,0 +1,11 @@
+{"entity_id":"e1_3xsde5ufo2s4gbt2hzeuseflfpy7qdg7l46al7yfgu4qees77btq","entity_type":"concept","label":"project/composite_pricing","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_7rcivaj6fp3hvytdkmnkj3qlbrts742vxtocg5u5zkfjlvmkaeeq","entity_type":"concept","label":"project/theme","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_m7cdeyuudsdmy4vij5xrzapqgek5363p4saiadarpofz77d5l7na","entity_type":"concept","label":"project/employee_tally","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_mczawpxneubh7ieguw5gh63lqqmbcrwy46agnngszxipo4ykdowq","entity_type":"concept","label":"project/axm_convergence","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_nj4bs2oi35w46i2feppcaexblmxeo6p6kibjqfn4e5q7lz2shwjq","entity_type":"concept","label":"project/dogfood","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_o7qcplkgeayjuj6xdct36b76wr7ndhl4h7nmgymiitddm4skn23q","entity_type":"concept","label":"project/frontier_diff","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_pofccvjv6mlhkvp5zdkozmnpdo5aqg7tzdpy55w7h67yqsfqv2gq","entity_type":"concept","label":"project/je_ne_sais_quoi","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_qt3muzsthxgxvesm6xzicsqwocm3vg6yenqej2pc4fj4g3z7ebva","entity_type":"concept","label":"project/decision_snapshot","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_rlworrseuyec6blcmbccfqlzj7ldlw5rvbcykbuflj4hhrmfgnca","entity_type":"concept","label":"project/frontier_residual","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_u5e2l33qtyrhroqa6jcbbh7x3s2klni7dhyta5liaf4hxguilbyq","entity_type":"concept","label":"project/provider_reach","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
+{"entity_id":"e1_uplsudtqtmywowm7uq77pvvscgrtknquhmyiw4yj7scoalwhklvq","entity_type":"concept","label":"project/disposition_effort_response","namespace":"decisions/sh1_97c8b4a383dc14b86a1dd6496876"}
