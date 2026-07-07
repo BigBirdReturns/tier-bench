@@ -270,6 +270,30 @@ oracle) → nothing to search against → the reasoning gap stands. So:
 > Everything **checkable** is rentable by a cheap model with a harness. The residue
 > that stays frontier-only is **unverifiable judgment**.
 
+---
+
+## Task 07 — the residue: is taste flat across tiers? (no oracle)
+
+Pure-taste task (novel opening sentence); with no ground truth the only signal is
+**inter-tier agreement** on a blind pooled ranking of 12 candidates (4/tier).
+
+- **Taste is NOT flat.** Mean inter-judge Spearman rho = **0.32**. sonnet<->opus
+  **0.71** (shared aesthetic); haiku uncorrelated with the frontier (haiku<->sonnet
+  **-0.04**). Unlike disposition (flat on effort), **taste scales with tier** — the
+  first axis in the whole run that does not collapse.
+- **Gap is SELECTION, not generation.** The blind consensus-best line (C09) was
+  **haiku's** — it just couldn't pick it (ranked it #2). Cheap generation reaches
+  the top; cheap *selection* doesn't share frontier taste. (N=4/tier — generation
+  parity is noisy; the rho divergence is robust.)
+- **Articulated taste does NOT transfer.** Handing haiku opus's explicit taste
+  rubric produced no frontier-aligned taste (rho 0.13 -> -0.03, within noise) and
+  demoted the frontier's favorite line #2 -> #11. Taste is **tacit** (Polanyi): a
+  rubric relocates the subjective judgment one level down ("is this criterion
+  earned?") instead of transferring it. The externalization move that commoditized
+  every verifiable capability **fails for taste**.
+- Remaining lever: **weight-level distillation** from many frontier judgments
+  (untested here), not articulation. Words hit a floor; gradient descent might not.
+
 ## Verdict so far
 
 - **Checkable tasks (01, 02): no gap** — cheap tier already tops out; nothing to lift.
