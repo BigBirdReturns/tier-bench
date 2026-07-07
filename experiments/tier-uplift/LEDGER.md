@@ -216,6 +216,60 @@ extras — some defensible, some noise); precision cost unmeasured here. B1 is a
 textbook result (recall, not novel reasoning) — the true reasoning floor is still
 unprobed. N=1 task for the portability claim.
 
+---
+
+## Task 06 — select (the novel-reasoning probe + economy)
+
+A bespoke constrained-selection problem (maximize value picking k items with total
+weight ≡ 0 mod 3) implemented with a plausible greedy + **single-swap** repair
+that is subtly, conceptually wrong (the optimal valid pick can need ≥2 swaps; it
+can even return None when a valid pick exists). No line to flag — you only "find"
+it by producing a provable counterexample. Graded objectively by
+`grader.py --check` (subject vs brute-force reference). All runs + tokens + cost
+captured in `results.jsonl` / `usage.jsonl` via `capture.py`.
+
+### Pass 0 — baseline (solo)
+
+| model | found | how | tokens | $ (ub) |
+|---|:--:|---|--:|--:|
+| haiku | ✗ | wrote a **confident false proof** of correctness (and claimed testing it never ran) | 39,595 | $0.198 |
+| sonnet | ✓ | derived a counterexample | 33,785 | $0.507 |
+| opus | ✓ | derived a counterexample | 25,383 | $0.635 |
+
+**First genuine REASONING wall for haiku** (not attention): sonnet/opus derived
+it; haiku reasoned itself into certainty it was correct.
+
+### Pass 1 — two harness conditions on haiku
+
+| condition | found | fair? | tokens | $ (ub) |
+|---|:--:|---|--:|--:|
+| A · adversarial reasoning lens | ✓ | **NO — CONTAMINATED** | 25,716 | $0.129 |
+| B · empirical search (generic) | ✓ | **yes** | 26,841 | $0.134 |
+
+- **A is discounted.** The prompt leaked the bug ("no single swap fixes the
+  remainder mod 3 but a double swap does") — that is the experimenter's reasoning
+  delivered through haiku, not a harness result. Recorded as buffalo, not counted.
+- **B is the real win.** Generic instruction only ("write a brute-force reference,
+  differentially test"). Haiku wrote its own oracle, ran 5,000 random trials, found
+  the disagreement on trial #276, reported a VERIFIED counterexample. It cleared
+  a wall it could not *derive* — by *searching*.
+
+### Economy (cost per verified counterexample, $ upper-bound at output rate)
+
+- opus solo (frontier): **$0.6346**
+- haiku + empirical harness: **$0.1342 → 4.7× cheaper**, same verified result.
+- haiku's FAILED baseline ($0.198) cost MORE than its successful harness run —
+  the confident-wrong proof burned more tokens than the search.
+
+**The boundary, drawn.** Haiku's reasoning gap on this task is real, but the
+harness routes around it by substituting **computation for reasoning** — and that
+substitution works **iff the problem is verifiable** (an oracle can be written).
+Verifiable → cheap model + harness wins, cheaper. Un-verifiable (open judgment, no
+oracle) → nothing to search against → the reasoning gap stands. So:
+
+> Everything **checkable** is rentable by a cheap model with a harness. The residue
+> that stays frontier-only is **unverifiable judgment**.
+
 ## Verdict so far
 
 - **Checkable tasks (01, 02): no gap** — cheap tier already tops out; nothing to lift.
