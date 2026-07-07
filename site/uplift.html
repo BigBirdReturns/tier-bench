@@ -63,6 +63,7 @@
   .fill.ref{background:#4a4c39}
   .val{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding:0 9px;font-family:var(--mono);font-size:11.5px;color:var(--void);font-weight:500;white-space:nowrap}
   .val.out{left:100%;padding-left:9px;color:var(--bone-dim);font-weight:400}
+  .val.rightin{left:auto;right:0;color:var(--bone-dim);font-weight:400}
   .legend{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--olive);margin-top:14px}
   .legend span{display:inline-flex;align-items:center;gap:7px}
   .sw{width:11px;height:11px;display:inline-block}
@@ -94,6 +95,17 @@
   .btn.ghost:hover{border-color:var(--olive);background:transparent;color:var(--bone)}
   footer{padding:34px 0 64px;color:var(--olive);font-size:.8rem;border-top:1px solid var(--rule);margin-top:14px}
   footer a{color:var(--olive)}
+  /* workspace inside/outside diagram — the dandelion casts the seeds */
+  .wsdiagram{margin:20px 0;background:var(--void-1);border:1px solid var(--rule);padding:20px}
+  .wsdiagram figcaption{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--olive);margin-bottom:16px}
+  .wsgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.wsgrid{grid-template-columns:1fr}}
+  .wspanel{border:1px solid var(--rule);background:var(--void-2);padding:14px}
+  .wspanel.out{border-color:var(--ember)}
+  .wtag{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--olive);margin-bottom:8px}
+  .wtag.out{color:var(--ember)}
+  .wspanel svg{width:100%;height:auto;display:block}
+  .wnote{color:var(--bone-dim);font-size:.82rem;line-height:1.5;margin-top:10px}
 </style>
 </head>
 <body>
@@ -152,6 +164,51 @@
   Suppress that workspace and shallow classification survives, but multi-hop reasoning, translation, and
   composition collapse below a small model. The one thing robust to suppression is reasoning the model has
   <em>written down</em> — chain-of-thought — because then the page becomes the workspace.</p>
+
+  <figure class="wsdiagram">
+    <figcaption>the same workspace — locked in the weights, or written on the page and sown to any model</figcaption>
+    <div class="wsgrid">
+      <div class="wspanel">
+        <div class="wtag">inside the weights · theirs</div>
+        <svg viewBox="0 0 300 168" role="img" aria-label="A small privileged workspace locked inside a large field of automatic processing, read only through their internal lens.">
+          <defs><pattern id="ocean" width="11" height="11" patternUnits="userSpaceOnUse"><circle cx="2.2" cy="2.2" r="1.1" fill="#3a3d30"/></pattern></defs>
+          <text x="10" y="12" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#7C7F57" letter-spacing="0.6">automatic processing · the weights</text>
+          <rect x="10" y="18" width="238" height="134" rx="3" fill="#17160f" stroke="#33322a"/>
+          <rect x="10" y="18" width="238" height="134" rx="3" fill="url(#ocean)"/>
+          <rect x="150" y="60" width="52" height="38" rx="3" fill="#0F0E0B" stroke="#ECE7D8" stroke-opacity="0.85"/>
+          <circle cx="160" cy="72" r="1.7" fill="#ECE7D8"/><circle cx="172" cy="70" r="1.7" fill="#ECE7D8"/><circle cx="184" cy="76" r="1.7" fill="#ECE7D8"/><circle cx="166" cy="86" r="1.7" fill="#ECE7D8"/><circle cx="186" cy="88" r="1.7" fill="#ECE7D8"/>
+          <text x="150" y="112" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#ECE7D8">workspace · ~6–7%</text>
+          <circle cx="52" cy="44" r="4" fill="none" stroke="#ECE7D8" stroke-opacity="0.7"/>
+          <line x1="56" y1="46" x2="150" y2="70" stroke="#ECE7D8" stroke-opacity="0.4" stroke-dasharray="3 3"/>
+          <text x="30" y="34" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#7C7F57">their lens</text>
+          <text x="150" y="146" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#7C7F57">opaque · rented per token</text>
+        </svg>
+        <div class="wnote">A small privileged workspace drives the reasoning — but it stays in the weights, readable only through their lens, and metered by the token. One owner, one off-switch.</div>
+      </div>
+      <div class="wspanel out">
+        <div class="wtag out">outside, on the page · yours</div>
+        <svg viewBox="0 0 300 168" role="img" aria-label="The same workspace written on the page as a checklist; the dandelion casts its seeds and each takes root as a cheap model running it.">
+          <text x="10" y="12" font-family="'IBM Plex Mono',monospace" font-size="8.5" fill="#7C7F57" letter-spacing="0.6">written down · sown · rooted</text>
+          <g id="dande-slot"></g>
+          <line x1="92" y1="48" x2="196" y2="40" stroke="#7C7F57" stroke-width="0.9" stroke-dasharray="2 3"/>
+          <line x1="94" y1="58" x2="196" y2="72" stroke="#7C7F57" stroke-width="0.9" stroke-dasharray="2 3"/>
+          <line x1="94" y1="70" x2="196" y2="104" stroke="#7C7F57" stroke-width="0.9" stroke-dasharray="2 3"/>
+          <line x1="90" y1="82" x2="196" y2="136" stroke="#7C7F57" stroke-width="0.9" stroke-dasharray="2 3"/>
+          <g font-family="'IBM Plex Mono',monospace" font-size="9" fill="#ECE7D8">
+            <rect x="198" y="32" width="94" height="16" fill="none" stroke="#33322a"/><text x="205" y="43">haiku</text>
+            <rect x="198" y="64" width="94" height="16" fill="none" stroke="#33322a"/><text x="205" y="75">llama · local</text>
+            <rect x="198" y="96" width="94" height="16" fill="none" stroke="#33322a"/><text x="205" y="107">qwen · your gpu</text>
+            <rect x="198" y="128" width="94" height="16" fill="none" stroke="#33322a"/><text x="205" y="139">any model</text>
+          </g>
+          <circle cx="198" cy="40" r="2.3" fill="#C24B2C"/><circle cx="198" cy="72" r="2.3" fill="#C24B2C"/><circle cx="198" cy="104" r="2.3" fill="#C24B2C"/><circle cx="198" cy="136" r="2.3" fill="#C24B2C"/>
+          <text x="12" y="148" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#7C7F57">capture once →</text>
+          <text x="12" y="162" font-family="'IBM Plex Mono',monospace" font-size="8" fill="#7C7F57">rooted · cheap · no off-switch</text>
+        </svg>
+        <div class="wnote">Write that workspace down as a portable checklist and it leaves the weights for good. The dandelion casts it — every seed takes root in whatever model you run, cheap and owned, and the library compounds as more seeds are added.</div>
+      </div>
+    </div>
+  </figure>
+
   <div class="cols">
     <div class="col"><h3>Their finding · from the inside</h3><ul>
       <li>The operational reasoning lives in a small workspace — bug-noticing included.</li>
@@ -226,7 +283,7 @@
     <figure>
       <figcaption>cost per verified answer · hard reasoning task</figcaption>
       <div class="bar"><div class="lab">frontier · solo</div><div class="track"><div class="fill ref" style="width:100%"></div><div class="val">$0.635</div></div></div>
-      <div class="bar"><div class="lab">cheap + harness</div><div class="track"><div class="fill win" style="width:21%"></div><div class="val out">$0.134 · 4.7× cheaper</div></div></div>
+      <div class="bar"><div class="lab">cheap + harness</div><div class="track"><div class="fill win" style="width:21%"></div><div class="val" style="left:calc(21% + 9px);color:var(--bone)">$0.134</div><div class="val rightin">4.7× cheaper</div></div></div>
     </figure>
   </div>
   <p class="small muted">Left: on a task it had never seen, with a checklist written before the bugs existed,
@@ -288,6 +345,12 @@
 </div></footer>
 
 <script src="scg-pixel-mark.js"></script>
-<script>try{SCGPX.mount('mark',4);}catch(e){}</script>
+<script>try{
+  SCGPX.mount('mark',4);
+  // Sow the same sanctioned mark into the diagram — do not redraw, do not center,
+  // do not tidy the drift. Just place it and let its seeds fall toward the models.
+  var slot=document.getElementById('dande-slot');
+  if(slot){var d=SCGPX.mark(1);d.setAttribute('x',10);d.setAttribute('y',20);d.setAttribute('width',92);d.setAttribute('height',103);slot.appendChild(d);}
+}catch(e){}</script>
 </body>
 </html>
