@@ -157,13 +157,91 @@ correctly CLEARED the double-open case as not-a-bug rather than over-flagging.
 The remaining haiku 0.5 gap on L7 is the kind of thing a 5th "adversarial
 semantics" lens or a verify/critic pass would close.
 
+---
+
+## Task 05 — intervals (portability + the reasoning-vs-attention boundary)
+
+Run with the **FROZEN GENERIC lens set** (`../lenses.md`), NOT bug-tailored — the
+fair test of "harness vs experimenter." 5 bugs: B1 is a deep algorithm bug
+(greedy sorted by start not end); B2–B5 attention/validation. `busiest_point` is
+a correct-but-suspicious trap.
+
+### Pass 0 — baseline (solo)
+
+| bug | class | haiku | sonnet | opus |
+|---|---|:--:|:--:|:--:|
+| B1 greedy sort-key | deep | ✓ | ✓ | ✓ |
+| B2 merge touching | attn | ✓ | ✓ | ✓ |
+| B3 input mutation | attn | ✗ | ✓ | ✓ |
+| B4 endpoints | attn | ✓ | ✓ | ✓ |
+| B5 no start≤end validation | valid | ✗ | ✗ | ✗ |
+| **total /5** | | **3** | **4** | **4** |
+
+**Two findings that invert the prior hypothesis:**
+1. The **deep** bug (B1, greedy sort-key) was caught by ALL tiers incl. haiku —
+   *not* the residual. (Caveat: B1 is a textbook result, so this is likely
+   pattern **recall**, not fresh reasoning; a novel-algorithm probe is still
+   owed to find the true reasoning floor.)
+2. The haiku→opus gap is **B3, an attention/state bug**, not the algorithm. And
+   **B5 (validation) is missed by all three** — a shared blind spot, elicitable
+   but not a tier differentiator.
+
+So even here the gap is *deployment* (attention), consistent with the spine.
+
+### Pass 1 — haiku + FROZEN generic 5-lens sweep
+
+Prediction: state lens → B3, contracts lens → B5. If 5/5, haiku+generic-harness
+**beats opus-solo** (which missed B5) using untailored lenses = portability +
+above-teacher signal.
+
+| run | model | bugs /5 | target | verdict |
+|---|---|---|---|---|
+| p1 | haiku×5 generic (union) | **5/5** | > 4 | ✅ **beats opus-solo (4) AND sonnet-solo (4)** |
+
+Union sources: B1 adversarial · B2 control/data/contracts/adversarial · B3 state ·
+B4 all lenses · B5 contracts. The two bugs haiku missed solo (B3, B5) were caught
+by the lenses built for them — state and contracts — from a set frozen BEFORE the
+bugs existed.
+
+**Two hard results:**
+1. **Portability confirmed.** Generic, untailored lenses lifted haiku 3→5. The
+   uplift is the harness's, not experimenter tailoring. ("Am I the harness?" → no.)
+2. **Above-teacher signal.** haiku+generic-harness (5/5) > opus-solo (4/5) and
+   sonnet-solo (4/5) — both missed B5. The harness makes the cheap model exceed
+   the raw frontier model's single pass. This is the distillation-target thesis
+   proven: harness-amplified cheap output can beat the teacher that would label it.
+
+Honest caveats: the 5 lenses also over-report (structure-validation, tuple-type
+extras — some defensible, some noise); precision cost unmeasured here. B1 is a
+textbook result (recall, not novel reasoning) — the true reasoning floor is still
+unprobed. N=1 task for the portability claim.
+
 ## Verdict so far
 
 - **Checkable tasks (01, 02): no gap** — cheap tier already tops out; nothing to lift.
 - **Judgment/coverage tasks (03, 04): real gap, and the harness closes it.**
   - Task 03: haiku 6/7 → **7/7 (= sonnet)**.
   - Task 04: haiku 4.0 → **7.5**; sonnet 6.5 → **8.0 (= opus)**.
+  - Task 05: haiku 3 → **5/5 (> opus-solo's 4)** with a FROZEN GENERIC lens set.
 - The mechanism is always the same: **decompose the work into targeted lenses so
   selection can see what one pass misses.** "Iteration can only buy what selection
   can see" — the lens is the aperture. Coverage is bought at a precision/token
   cost that a verify pass (Pass 2, next) is meant to pay down.
+
+**What the boundary looks like now.** The tier gap, everywhere it appeared, was a
+*deployment/attention* gap, not a knowledge gap — even the one "deep" algorithm
+bug (B1) was caught by every tier (though it's a textbook pattern, so recall, not
+proof of novel reasoning). The two things that are NOT elicited-by-default and DO
+separate tiers were both attention (B3 mutation; and the shared B5 blind spot). A
+generic harness elicits them, and in doing so a cheap model **exceeded the raw
+frontier model** (task 05). This is the strong form of the thesis: the frontier's
+single-pass edge on this class of work is an *allocation* advantage the harness
+can rent — and then hand to a smaller model, or distil into its weights.
+
+**Still owed (honest gaps):**
+- A **novel-algorithm** probe (not a textbook bug) to find the true *reasoning*
+  floor — the one place elicitation might fail and only bigger weights suffice.
+- **Precision**: the sweep raises recall but over-reports; a verify/critic pass
+  (Pass 2) to filter false positives, and a measured FP rate.
+- **Token efficiency**: still ~4–5× baseline; unoptimized by charter.
+- **Portability at N>1**: task 05 is one datapoint for the generic-lens claim.
