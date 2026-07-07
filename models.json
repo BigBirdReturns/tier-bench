@@ -19,9 +19,9 @@
     "",
     "STALENESS: models ship monthly and prices drift. This registry rots",
     "silently unless reviewed against the providers' own pricing pages.",
-    "Last reviewed: 2026-07-07 (anthropic + openai gpt-5.5 + google gemini",
-    "3.x/3.5 lines verified; other openai/mistral/deepseek entries carried",
-    "forward unverified from the previous review)."
+    "Last reviewed: 2026-07-07 (anthropic line refreshed to current: opus-4-8,",
+    "sonnet-5, haiku-4-5, fable-5; openai gpt-5.5 + google gemini 3.x/3.5",
+    "verified; other openai/mistral/deepseek entries carried forward unverified)."
   ],
   "models": {
     "claude-haiku-4-5": {
@@ -30,13 +30,13 @@
       "output_per_1M": 5.0,
       "tier_ceiling": "T2"
     },
-    "claude-sonnet-4-5": {
+    "claude-sonnet-5": {
       "provider": "anthropic",
       "input_per_1M": 3.0,
       "output_per_1M": 15.0,
       "tier_ceiling": "T3"
     },
-    "claude-opus-4-6": {
+    "claude-opus-4-8": {
       "provider": "anthropic",
       "input_per_1M": 5.0,
       "output_per_1M": 25.0,
@@ -215,7 +215,7 @@
       "strategy": "cascade",
       "members": [
         "claude-haiku-4-5",
-        "claude-sonnet-4-5"
+        "claude-sonnet-5"
       ],
       "tier_ceiling": "T3"
     },
