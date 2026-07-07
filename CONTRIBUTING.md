@@ -57,6 +57,18 @@ must contain it **and** the baseline pass must not already have it — so a lens
 
 Then open a PR with the registry entry and the held-out subject you proved it on.
 
+**The registry is a living AXM shard.** The lens library is also sealed as a
+signed, tamper-evident, deterministically-queryable AXM Genesis shard
+([`memory/lenses/`](memory/lenses/README.md)) — every lens a claim bound to its
+source bytes, the whole thing one BLAKE3 Merkle tree under a post-quantum
+signature. When your lens merges, the shard is re-sealed (Merkle root + identity
+move; lineage records the supersession) so the sovereign, verifiable copy grows
+with the Python registry. Verify the current one:
+
+```bash
+axm-verify shard memory/lenses/shard --trusted-key memory/lenses/shard/sig/publisher.pub
+```
+
 **Honesty doctrine (same as the rest of the repo).** A contributed lens is a
 *claim* that this aperture generalizes; the validator only proves it lifted on the
 subject(s) you showed. A lens proven on one held-out subject is `single-source`; a

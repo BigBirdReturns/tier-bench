@@ -82,7 +82,7 @@ check("driver/hard cost == sum(trace costs)",
 
 # 6. ab blind with a judge → no names leak in left/right; log records the winner
 res, _ = call_tool(reg, "ab", {"prompt": "write a haiku", "a": "claude-haiku-4-5",
-                               "b": "driver:fable+haiku", "judge": "claude-sonnet-4-5", "blind": True})
+                               "b": "driver:fable+haiku", "judge": "claude-sonnet-5", "blind": True})
 leak = ("persona" in res["left"] or "persona" in res["right"] or "mapping" in res)
 check("ab blind hides persona names in left/right", not leak)
 check("ab blind still returns two answers", bool(res["left"]["content"]) and bool(res["right"]["content"]))

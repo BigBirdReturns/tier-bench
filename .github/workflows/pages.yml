@@ -40,9 +40,12 @@ jobs:
       - name: Build site
         run: |
           mkdir -p _site
-          cp site/index.html _site/index.html
-          cp site/ab.html _site/ab.html
-          cp site/control.html _site/control.html
+          # Ship every static asset in site/ (index, ab, control, uplift, tally,
+          # the SCG mark script, tally.json) — not a hardcoded subset, so new
+          # pages can't silently 404 on the live site.
+          cp site/*.html _site/
+          cp site/*.js _site/ 2>/dev/null || true
+          cp site/*.json _site/ 2>/dev/null || true
           python scripts/generate_cheatsheet.py --out _site/cheatsheet.html
           python scripts/aggregate.py --data data/results --emit-rows _site/community_results.jsonl --json > _site/aggregate.json
           python scripts/contribute.py --emit-meta _site/contrib_meta.json

@@ -1,0 +1,30 @@
+# tier-bench capability lens registry — AXM Genesis sealed source
+#
+# Each lens is a generic, held-out-proven way of looking that a cheap model
+# can run. 'Iteration can only buy what selection can see' — the lens is the
+# aperture. Frozen defaults were proven blind in experiments/tier-uplift.
+
+[lens control_flow] tier=3 status=frozen-default
+catches: control-flow & boundary errors — off-by-one, missed first/last, wrong stop
+proven-on: experiments/tier-uplift
+instruction: CONTROL FLOW & BOUNDARIES only: every loop bound, range, slice, index, early return, termination condition. Trace a small example through any loop and count outputs against the intended count. Off-by-one, missed first/last element, wrong stop.
+
+[lens state] tier=3 status=frozen-default
+catches: state & effects — mutation, aliasing, partial updates, invariant disagreement
+proven-on: experiments/tier-uplift
+instruction: STATE & EFFECTS only: mutation of arguments or shared/persistent state; aliasing; ordering of mutations vs checks; partial updates left un-rolled-back on an error path; two functions that disagree about an invariant.
+
+[lens data_types] tier=3 status=frozen-default
+catches: data & types — int/float precision, None/empty/degenerate, bad conversion/comparison
+proven-on: experiments/tier-uplift
+instruction: DATA & TYPES only: types and precision (int vs float), None/empty/degenerate inputs, conversions, comparisons that misbehave on ties or specific values, container-type assumptions.
+
+[lens contracts] tier=3 status=frozen-default
+catches: contracts & errors — missing validation, silent failure, misleading return, unguarded division
+proven-on: experiments/tier-uplift
+instruction: CONTRACTS & ERRORS only: missing input validation; silent failures; functions that return a misleading value instead of raising; unguarded division; documented invariants the code can violate.
+
+[lens adversarial] tier=3 status=frozen-default
+catches: adversarial semantics — a wrong algorithm/greedy/sort-key, exposed by a constructed counterexample
+proven-on: experiments/tier-uplift
+instruction: ADVERSARIAL SEMANTICS only: assume the obvious implementation is subtly wrong and try to BREAK it. Is the whole approach (a greedy choice, a sort key, a recurrence) correct, or only on easy inputs? Actively CONSTRUCT a specific input that exposes a wrong algorithm, not just a wrong line.
