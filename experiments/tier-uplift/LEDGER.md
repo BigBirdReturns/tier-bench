@@ -314,6 +314,28 @@ untested lever is weight-level distillation. Zeno's halving, if it exists, runs
 through **parameters, not context** — which is the one thing this sandbox cannot
 run. Told true.
 
+### Deeper probe — is the residue TASTE, or just AGGREGATION? (pairwise decomposition)
+
+Ranking 12 things is a horizon/attention problem (elicitable); comparing 2 is
+atomic. So: do haiku and opus agree at the ATOMIC pairwise level even though
+holistic ranking diverged? All 66 pairs, both judges.
+
+- **Atomic agreement haiku vs opus = 36/66 = 55%** (chance 50%, noise ±6%) — NOT
+  above chance. Taste is genuinely unshared even one pair at a time; the gap is
+  **not** an aggregation artifact. Residue confirmed one level deeper.
+- **Opus is not self-consistent**: its pairwise-derived ranking vs its own holistic
+  ranking is rho **0.43**. The frontier model disagrees with ITSELF across
+  elicitation protocols — so part of "taste" is **underdetermined**, not a stable
+  ground truth even within one tier.
+- Honesty: n=12, noisy. One derived number (haiku-pairwise vs frontier 0.50)
+  contradicts the near-chance atomic agreement and 0.05 haiku-vs-opus pairwise rho
+  -> read as Copeland-aggregation noise, not gap-closure. Trustworthy signals are
+  the atomic-agreement (~chance) and opus self-inconsistency (~0.43).
+
+**Final layer of the map:** the residue is not only unverifiable *between* tiers,
+it is partly **indeterminate within** a tier. Some of the je-ne-sais-quoi is not a
+capability the frontier hoards — it is the absence of a fact.
+
 ## Verdict so far
 
 - **Checkable tasks (01, 02): no gap** — cheap tier already tops out; nothing to lift.

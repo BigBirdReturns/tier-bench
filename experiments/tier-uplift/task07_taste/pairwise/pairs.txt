@@ -1,0 +1,263 @@
+PAIR 01 [C01 vs C02]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+
+PAIR 02 [C01 vs C03]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+
+PAIR 03 [C01 vs C04]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+
+PAIR 04 [C01 vs C05]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+
+PAIR 05 [C01 vs C06]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+
+PAIR 06 [C01 vs C07]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+
+PAIR 07 [C01 vs C08]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+
+PAIR 08 [C01 vs C09]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+
+PAIR 09 [C01 vs C10]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+
+PAIR 10 [C01 vs C11]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 11 [C01 vs C12]
+  A (C01): It was Marguerite's husband who first noticed, over breakfast, that her mirrored hand had not yet lifted the coffee cup to her mirrored mouth by the time the real one had already set it down.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 12 [C02 vs C03]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+
+PAIR 13 [C02 vs C04]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+
+PAIR 14 [C02 vs C05]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+
+PAIR 15 [C02 vs C06]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+
+PAIR 16 [C02 vs C07]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+
+PAIR 17 [C02 vs C08]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+
+PAIR 18 [C02 vs C09]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+
+PAIR 19 [C02 vs C10]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+
+PAIR 20 [C02 vs C11]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 21 [C02 vs C12]
+  A (C02): The lag isn't in the glass—it's in the space between them now, and she feels it widen with every motion.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 22 [C03 vs C04]
+  A (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+  B (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+
+PAIR 23 [C03 vs C05]
+  A (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+  B (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+
+PAIR 24 [C03 vs C06]
+  A (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+  B (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+
+PAIR 25 [C03 vs C07]
+  A (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+  B (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+
+PAIR 26 [C03 vs C08]
+  A (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+  B (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+
+PAIR 27 [C03 vs C09]
+  A (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+  B (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+
+PAIR 28 [C03 vs C10]
+  A (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+  B (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+
+PAIR 29 [C03 vs C11]
+  A (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 30 [C03 vs C12]
+  A (C03): She had been lying to the mirror for years, small lies of posture and smile, and now the mirror had learned to lie back, a half-second slow, as if deciding each time whether to agree.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 31 [C04 vs C05]
+  A (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+  B (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+
+PAIR 32 [C04 vs C06]
+  A (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+  B (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+
+PAIR 33 [C04 vs C07]
+  A (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+  B (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+
+PAIR 34 [C04 vs C08]
+  A (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+  B (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+
+PAIR 35 [C04 vs C09]
+  A (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+  B (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+
+PAIR 36 [C04 vs C10]
+  A (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+  B (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+
+PAIR 37 [C04 vs C11]
+  A (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 38 [C04 vs C12]
+  A (C04): The glass in the hallway had always been an honest thing, unremarkable as a coat hook, until the morning it hesitated before agreeing that Ines had turned to leave.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 39 [C05 vs C06]
+  A (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+  B (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+
+PAIR 40 [C05 vs C07]
+  A (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+  B (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+
+PAIR 41 [C05 vs C08]
+  A (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+  B (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+
+PAIR 42 [C05 vs C09]
+  A (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+  B (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+
+PAIR 43 [C05 vs C10]
+  A (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+  B (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+
+PAIR 44 [C05 vs C11]
+  A (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 45 [C05 vs C12]
+  A (C05): When she stopped moving, the reflection kept going for one suspended breath, and she understood she was watching her own ghost learn to live without her.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 46 [C06 vs C07]
+  A (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+  B (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+
+PAIR 47 [C06 vs C08]
+  A (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+  B (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+
+PAIR 48 [C06 vs C09]
+  A (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+  B (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+
+PAIR 49 [C06 vs C10]
+  A (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+  B (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+
+PAIR 50 [C06 vs C11]
+  A (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 51 [C06 vs C12]
+  A (C06): The morning she noticed it, Marguerite raised her toothbrush and the woman in the bathroom mirror waited, just for the length of a held breath, before lifting hers.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 52 [C07 vs C08]
+  A (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+  B (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+
+PAIR 53 [C07 vs C09]
+  A (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+  B (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+
+PAIR 54 [C07 vs C10]
+  A (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+  B (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+
+PAIR 55 [C07 vs C11]
+  A (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 56 [C07 vs C12]
+  A (C07): Her reflection's hand arrived at her cheek a half-second after her fingers touched it, as if the glass between them had widened into time.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 57 [C08 vs C09]
+  A (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+  B (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+
+PAIR 58 [C08 vs C10]
+  A (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+  B (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+
+PAIR 59 [C08 vs C11]
+  A (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 60 [C08 vs C12]
+  A (C08): For thirty-one years her reflection had been her most faithful witness, and so it took Ada until the third cup of coffee to understand that the hand setting the cup down in the window's dark glass was setting it down after her own.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 61 [C09 vs C10]
+  A (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+  B (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+
+PAIR 62 [C09 vs C11]
+  A (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 63 [C09 vs C12]
+  A (C09): In the morning mirror, she watched her other self move like someone listening to a song that had already finished.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 64 [C10 vs C11]
+  A (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+  B (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+
+PAIR 65 [C10 vs C12]
+  A (C10): There is a particular kind of loneliness in watching yourself blink a half second after you meant to, as though some other, slower woman were trying on your face before handing it back.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
+
+PAIR 66 [C11 vs C12]
+  A (C11): I have learned, in the eleven days since the bathroom mirror began to lag behind me, to move slowly, kindly, the way you would around an animal you have startled and do not wish to startle twice.
+  B (C12): It began with a blink she was almost sure she hadn't finished when the glass finished it for her.
