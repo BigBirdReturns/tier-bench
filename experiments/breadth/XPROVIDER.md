@@ -1,10 +1,10 @@
 # XPROVIDER — Codex/OpenAI reproduction
 
-Evidence label: `single-source, cross-provider`.
+Evidence label: `single-source, cross-provider` for the blocked setup record only. Successful keyed runs will produce measured generation and grade rows under the same account/model discipline.
 
 ## Status
 
-A real OpenAI reproduction requires an OpenAI API key because the protocol requires a cheap GPT solver, real token usage, and real cost telemetry. This execution environment still has no `OPENAI_API_KEY`, so no benchmark outcomes are claimed in this file.
+A real OpenAI reproduction requires a provider key because the protocol requires a cheap GPT solver, real token usage, and real cost telemetry. This execution environment still has no provider key, so no benchmark outcomes are claimed in this file.
 
 This PR adds `experiments/breadth/xprovider_run.py` so the next keyed run is executable rather than merely described. The runner performs the requested K=3 solo and K=3 harness trials against exactly the hidden-grader breadth tasks and invokes hidden graders only after candidate generation.
 
@@ -12,9 +12,7 @@ The committed ledger row is a setup-blocker row only. It is not benchmark eviden
 
 ## How to run the reproduction
 
-```bash
-OPENAI_API_KEY=... python experiments/breadth/xprovider_run.py --model gpt-4.1-mini --k 3
-```
+Run `python experiments/breadth/xprovider_run.py --model gpt-4.1-mini --k 3` in an environment with provider credentials available.
 
 The runner uses the OpenAI Chat Completions API directly so it can capture provider usage for each call. Cost is computed from observed usage and model prices in `models.json`. If OpenAI reports cached input tokens, the runner records them as `cache_read_tokens`; if the registry lacks a cached-input price, cached tokens are conservatively priced at the full input rate and marked with `cache_pricing="full_input_rate_assumed"`.
 
