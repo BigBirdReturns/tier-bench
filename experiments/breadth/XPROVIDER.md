@@ -14,13 +14,13 @@ The committed ledger row is a setup-blocker row only. It is not benchmark eviden
 
 Run `python experiments/breadth/xprovider_run.py --model gpt-4.1-mini --k 3` in an environment with provider credentials available.
 
-The runner uses the OpenAI Chat Completions API directly so it can capture provider usage for each call. Cost is computed from observed usage and model prices in `models.json`. If OpenAI reports cached input tokens, the runner records them as `cache_read_tokens`; if the registry lacks a cached-input price, cached tokens are conservatively priced at the full input rate and marked with `cache_pricing="full_input_rate_assumed"`.
+The runner captures provider usage for each call. Cost is computed from observed usage and model prices in `models.json`. If cached input tokens are reported, the runner records them as `cache_read_tokens`; if the registry lacks a cached-input price, cached tokens are conservatively priced at the full input rate and marked with `cache_pricing="full_input_rate_assumed"`.
 
 ## Evidence model
 
 The runner splits generation evidence from grading evidence:
 
-- Provider rows are logged immediately after each OpenAI response returns and before any hidden grader runs.
+- Provider rows are logged immediately after each provider response returns and before any hidden grader runs.
 - Provider rows use non-verdict outcomes such as `generated` and phases such as `solo_generate`, `harness_lens_N`, and `harness_synthesize`.
 - Each solver attempt gets a stable `attempt_id` in `extra`.
 - Hidden-grader rows are separate zero-token, zero-cost rows with phases such as `solo_grade` and `harness_grade`.
@@ -46,4 +46,4 @@ The runner splits generation evidence from grading evidence:
 | `task02_wildcard` | `hidden_oracle.py` | not run | not run |
 | `task06_select` | `grader.py` | not run | not run |
 
-There are currently no valid matches or divergences to report against the Anthropic map because the OpenAI solver calls have not been run in this keyless environment.
+There are currently no valid matches or divergences to report against the Anthropic map because solver calls have not been run in this keyless environment.
