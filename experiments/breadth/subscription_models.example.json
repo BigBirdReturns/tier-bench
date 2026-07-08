@@ -1,0 +1,40 @@
+{
+  "notes": [
+    "Edit this file into a run inventory using exact model labels visible in the user's ChatGPT/Codex subscription UI.",
+    "Visibility is plan-specific, account-specific, and time-varying. Do not treat this file as a universal OpenAI model availability claim.",
+    "Only mark a model tested after a candidate output was saved and graded locally with subscription_run.py."
+  ],
+  "surface": "chatgpt_codex_subscription",
+  "models": [
+    {
+      "selected_model_label": "GPT-5.5 Instant",
+      "visible": true,
+      "include_in_sweep": true,
+      "notes": "Use only if this exact label is visible in the model picker."
+    },
+    {
+      "selected_model_label": "GPT-5.5 Thinking",
+      "visible": true,
+      "include_in_sweep": true,
+      "notes": "Use only if this exact label is visible in the model picker."
+    },
+    {
+      "selected_model_label": "GPT-5 Thinking Mini",
+      "visible": true,
+      "include_in_sweep": true,
+      "notes": "Use only if this exact label is visible in the model picker."
+    },
+    {
+      "selected_model_label": "GPT-5.5 Pro",
+      "visible": false,
+      "include_in_sweep": false,
+      "notes": "Enable only if visible on the user's plan."
+    },
+    {
+      "selected_model_label": "Legacy model: <exact UI label>",
+      "visible": false,
+      "include_in_sweep": false,
+      "notes": "Replace with an exact visible legacy label before use."
+    }
+  ]
+}
