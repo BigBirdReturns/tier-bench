@@ -1,0 +1,10 @@
+{
+  "description": "Editable observed ChatGPT UI subscription selector inventory; not a universal availability claim.",
+  "surface": "chatgpt_ui_subscription",
+  "observed_cells": {
+    "GPT-5.5": {"Instant": "exposed", "Medium": "exposed", "High": "exposed"},
+    "GPT-5.4": {"Instant": "exposed", "Medium": "exposed", "High": "exposed"},
+    "GPT-5.3": {"Instant": "exposed", "Medium": "not_exposed_in_ui", "High": "not_exposed_in_ui"},
+    "o3": {"Instant": "not_exposed_in_ui", "Medium": "not_exposed_in_ui", "High": "exposed"}
+  }
+}

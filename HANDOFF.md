@@ -256,7 +256,46 @@ below, audited above, cross-linked both ways.
   provider pages 2026-07-07. Older openai/mistral/deepseek entries carried
   forward **unverified** (flagged in models.json's own comment).
 
+### 2026-07-08 — the breadth self-run session (second driver)
+
+- **Hidden grading is now a harness capability.** `hidden_files` +
+  `hidden_run_command` manifest fields (task_schema/attempt): hidden graders
+  are stripped from the solver's working copy and prompt, injected at grade
+  time. Rationale: agentic solvers iterate any visible grader green — the
+  saturation this session measured firsthand before fixing.
+- **T4 has its first deterministic task** (`t4_plan_decomposition_001`:
+  visible schema lint + hidden semantic judge) plus a hard-T3
+  (`t3_parse_duration_004`). The measured finding: haiku clears BOTH 3/3
+  including hidden graders — the spec-following floor is genuinely high, and
+  GPT-5.5 Thinking (subscription surface) matches it on tier-uplift
+  task01/02/06. Tiers separate on novel reasoning (counterexample
+  construction), not spec-following. Grow the ruler THAT direction.
+- **The breadth self-run is replicable from committed code**:
+  `experiments/breadth/selfrun/` (prep / grade / effort_trial) executes
+  RUNBOOK Phases 1–2 against any scratch dir; `.claude/agents/fable-*.md`
+  give Agent-tool effort rungs; the nested `claude -p --effort` CLI gives
+  exact tokens (cache splits) + real billed USD per trial. Three measurement
+  lanes exist: keyless session (selfrun), API cross-provider
+  (xprovider_run.py, #39), subscription surface (subscription_run.py, #41 —
+  ledger crash fixed on landing). Evidence discipline: operator-reported
+  grades log as `partial` until locally re-graded; a session-limit abort
+  logs as phase=probe error, never a task failure.
+- **Run receipts** live in `experiments/breadth/run/` (ledger, map, PLAN,
+  harness_log, subscription/xprovider ledgers): 14 tasks mapped, residual
+  empty, fable@low calibration at real prices (~$0.48/trial vs the $0.30
+  planning figure), DO NOT ESCALATE standing.
+
 ## 9. Known gaps, prioritized (your likely first work)
+
+> **2026-07-08 re-prioritization:** the original hypotheses now have verdicts
+> against measured data — see `HYPOTHESES.md` (top level). Headline: H2 (the
+> tier-difficulty ladder discriminates models) is CHALLENGED — hidden-graded
+> spec-following saturates at the cheap floor through T4; the discriminating
+> axis is settled-vs-derived work. Gaps below are reordered by that finding:
+> the highest-value work is the judgment-boundary task families
+> (task02_edge_family, almanac boundary vectors), then re-axising
+> models.json's tier_ceiling toward measured settled_floor/judgment_residue.
+
 
 1. **Run the real capability benchmark.** Everything on the cost axis is
    starving for the first `harness_results.jsonl` with actual API calls.
@@ -271,9 +310,11 @@ below, audited above, cross-linked both ways.
 3. **Port the offline tests into the repo** (`tests/`). They currently
    exist only as session scratch; the repo has no committed test suite —
    the single biggest durability gap in the code itself.
-4. **Grow the ruler**: more T3 tasks where mid models demonstrably fail,
-   then deterministic T4 (plan-validity is specified but has 0 tasks).
-   Without this, frontier deltas are structurally invisible.
+4. **Grow the ruler**: partially done 2026-07-08 — hidden grading shipped,
+   T4 plan-validity has its first task, hard-T3 added. Still open: tasks
+   where the cheap floor demonstrably WALLS. Measured guidance: spec-following
+   saturates even hidden-graded; author novel-reasoning probes
+   (task06-style counterexample construction) instead.
 5. **First real distillation cycle**: benchmark with `driver_repair`
    composites → traces accumulate → `distill.py` → put `roles.apprentice`
    in the driver seat → `diff_report --target` it. Publish the result

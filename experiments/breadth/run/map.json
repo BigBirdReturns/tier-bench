@@ -1,0 +1,146 @@
+{
+  "tiers": [
+    "claude-haiku-4-5@harness",
+    "claude-fable-5@low",
+    "claude-fable-5@medium",
+    "claude-fable-5@high",
+    "claude-fable-5@xhigh",
+    "claude-fable-5@max"
+  ],
+  "tasks": {
+    "t0_format_whitespace_002": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t0_rename_symbol_003": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3",
+        "claude-fable-5@low": "3/3"
+      }
+    },
+    "t0_sort_imports_001": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t1_impl_from_docstring_001": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t1_simple_refactor_003": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3",
+        "claude-fable-5@low": "3/3"
+      }
+    },
+    "t1_unit_test_gen_002": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t2_api_integration_002": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t2_fix_failing_test_001": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3",
+        "claude-fable-5@low": "3/3"
+      }
+    },
+    "t2_multi_file_patch_003": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t3_cross_module_bug_003": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t3_parse_duration_004": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t3_refactor_god_function_002": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t3_sql_injection_fix_001": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    },
+    "t4_plan_decomposition_001": {
+      "min_sufficient_tier": "claude-haiku-4-5@harness",
+      "cost_at_min": 0.0369,
+      "cost_if_max_everywhere": 1.8,
+      "waste_avoided": 1.7631,
+      "measured": {
+        "claude-haiku-4-5@harness": "3/3"
+      }
+    }
+  },
+  "escalations": [],
+  "baseline_cost_usd": 0.5166,
+  "naive_max_everywhere_usd": 25.2,
+  "saved_vs_naive_usd": 24.6834,
+  "unjustified_escalations": []
+}

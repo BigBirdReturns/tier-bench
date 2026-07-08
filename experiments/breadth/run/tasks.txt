@@ -1,0 +1,14 @@
+t0_format_whitespace_002
+t0_rename_symbol_003
+t0_sort_imports_001
+t1_impl_from_docstring_001
+t1_simple_refactor_003
+t1_unit_test_gen_002
+t2_api_integration_002
+t2_fix_failing_test_001
+t2_multi_file_patch_003
+t3_cross_module_bug_003
+t3_refactor_god_function_002
+t3_sql_injection_fix_001
+t3_parse_duration_004
+t4_plan_decomposition_001

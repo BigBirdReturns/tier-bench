@@ -14,18 +14,22 @@
 
 This document tracks the classification of tasks across the breadth test suite as they accumulate through layers.
 
-### Current Layer: initial
+### Current Layer: k3-floor-20260708
 
-**Settled Cells: 3**
-- task01_parse_duration
-- task02_wildcard
-- task06_select
+**Settled Cells: 4** (K=3, hidden grades re-run by the driver)
+- task01_parse_duration (3/3, hidden 38/38)
+- task06_select (3/3, verified counterexamples — search-shaped framing caveat stands)
+- t3_parse_duration_004 (3/3, tasks/ manifest via hidden_files mechanism)
+- t4_plan_decomposition_001 (3/3, incl. hidden semantic judge)
 
 These tasks are settled (cleared by the cheap hidden-graded floor → sealed-and-forget, commoditized). All three were resolved without requiring escalation to a stronger model.
 
-**Liquid Cells: 0**
-
-No tasks currently classified as liquid (needed a stronger model to resolve). All settled tasks cleared the hidden-graded floor with cheap evaluation.
+**Unstable Cells: 1**
+- task02_wildcard — 3/5 at the haiku floor. Both failures are the SAME edge:
+  escape-inside-character-class, judged malformed (ValueError) where the oracle
+  says non-matching (False). Not a wall (never 0/K), so escalation is
+  unjustified; this is the first measured *reliability* residue at the floor,
+  and it is a judgment edge, not a spec-coverage edge.
 
 **Open Cells: 0**
 
@@ -43,5 +47,9 @@ This accumulation strategy prevents unnecessary re-work and tracks the frontier 
 
 ## Layer History
 
-- **initial**: 3 settled tasks (all cleared cheaply, no escalation needed)
+- **initial**: 3 settled tasks at K=1 (provisional — below the settled bar)
+- **k3-floor-20260708**: initial layer re-probed at K=3 (K=5 where unstable) and
+  promoted: task01/task06 settled; task02 demoted to unstable (3/5, single
+  repeating judgment edge); the two hidden-graded tasks/ manifests sealed
+  settled. Fable was never turned on — no wall appeared (LESSONS rule 2).
 

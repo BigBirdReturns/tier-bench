@@ -181,6 +181,8 @@ The test runner (`input.py` by convention) must:
 | `validate` | dict | yes | Which validators to run (see below) |
 | `max_lines_changed` | int | yes | Diff limit — reject if model changes more lines |
 | `allowed_files` | list | yes | Which files the model is allowed to modify |
+| `hidden_files` | list | no | Grader files removed from the solver's working copy (and prompt) and injected back at grade time |
+| `hidden_run_command` | list | no | Command run after injecting `hidden_files`; must exit 0. Keeps agentic solvers from iterating against the deciding tests |
 
 ### Validation Flags
 
@@ -221,7 +223,13 @@ The point of tiers is to differentiate models. A good task at tier N should:
 
 **T3 (Senior):** Judgment required. Security bugs that aren't flagged by linters. Refactoring where the structural check (AST analysis in test runner) verifies the model actually decomposed the function. Cross-module bugs with inverted logic that only manifest through integration.
 
-**T4-T5:** Not currently testable in the harness. See README for the methodology split.
+**T4 (Staff):** Plan validity. The first deterministic T4 task
+(`t4_plan_decomposition_001`) grades a written `plan.json` twice: a visible
+schema lint (shape) and a hidden semantic judge (coverage of the request, scope
+discipline, dependency order, tier sanity). Hidden grading is the point — an
+agentic solver iterates any visible grader green.
+
+**T5:** Not currently testable in the harness. See README for the methodology split.
 
 ## Validation
 

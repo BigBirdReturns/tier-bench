@@ -39,6 +39,11 @@ def run_attempt(
         shutil.copytree(task.fixture_dir, work / "repo", dirs_exist_ok=True)
         repo = work / "repo"
 
+        # Hidden graders never enter the solver's copy (or the rendered prompt):
+        # an agentic solver iterates against any test it can see.
+        for hf in (task.hidden_files or []):
+            (repo / hf).unlink(missing_ok=True)
+
         ensure_git_repo(repo)
         git_commit_all(repo, "baseline")
 
@@ -119,10 +124,24 @@ def run_attempt(
             "notes": v.notes,
         })
 
+        # Hidden grading: inject the withheld tests and run them. The solver
+        # never saw these, so passing them measures spec-following, not
+        # iterate-until-green against a visible grader.
+        hidden_ok = True
+        if task.hidden_run_command:
+            import subprocess
+            for hf in (task.hidden_files or []):
+                shutil.copy2(task.fixture_dir / hf, repo / hf)
+            h = subprocess.run(task.hidden_run_command, cwd=str(repo),
+                               capture_output=True, text=True)
+            hidden_ok = (h.returncode == 0)
+            row["hidden_ok"] = hidden_ok
+            row["hidden_rc"] = h.returncode
+
         # Pass criteria: deterministic checks + (canonical only enforced for T0)
         if _tier_requires_canonical(tier):
-            row["pass"] = bool(v.pass_all and (canonical_match is True))
+            row["pass"] = bool(v.pass_all and hidden_ok and (canonical_match is True))
         else:
-            row["pass"] = bool(v.pass_all)
+            row["pass"] = bool(v.pass_all and hidden_ok)
 
         return row, call["content"]
