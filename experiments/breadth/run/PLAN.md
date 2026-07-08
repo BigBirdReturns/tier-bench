@@ -82,3 +82,24 @@ access; everything reached a clear. Escalating effort or access buys nothing.
   scratch copy instead of returning content in chat (the template's
   "Return ONLY..." wording predates tool-using solvers).
 - GATED proposals pending review: none.
+
+## Update 2: hidden-graded floor + first cross-provider row (2026-07-08)
+
+- **PRs triaged per operator:** #39 (xprovider runner) and #41 (subscription
+  sweep) merged into this branch (with a real bug fixed in #41's ledger path:
+  `extra=` collided with log_call's own extra-routing). #37 arrived via main;
+  #38/#40 remain closed. breadth_tasks.py reconciled: manifests with
+  hidden_files/hidden_run_command are breadth-valid (set is now 5).
+- **New hidden-graded tasks measured (K=3, haiku@harness): 6/6 pass INCLUDING
+  the hidden judges.** The mechanism discriminates (a shallow plan fails the
+  judge; graders verified fail-unsolved/pass-reference) but haiku legitimately
+  clears both: given the full spec it implements to spec, not just to visible
+  tests. The floor on spec-following work is genuinely high — a finding,
+  echoed cross-provider below. To find the haiku wall, author novel-reasoning
+  probes (task06-style counterexample construction), not richer specs.
+- **First subscription-surface rows (GPT-5.5 Thinking, chat surface, K=1),
+  run/subscription_ledger.jsonl:** task06_select PASS — counterexample
+  locally re-verified (subject=None vs reference=5), candidate-hashed;
+  task01/task02 held at PARTIAL (operator-reported 38/38, 10681/10681) until
+  the frozen candidates are saved and locally hidden-graded.
+- Budget: $6.16/$10 (62%). Residual: still empty. DO NOT ESCALATE stands.
