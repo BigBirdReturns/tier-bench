@@ -8,9 +8,26 @@ REPO = Path(__file__).resolve().parents[2]
 
 def sha(s: str) -> str: return hashlib.sha256(s.encode()).hexdigest()
 def label(fam: str, intel: str, selected: str|None=None) -> str: return selected or f"{fam} / {intel}"
+# The full PUBLIC packet. task06-style review tasks are unsolvable from spec.md
+# alone — the flawed subject.py under review is part of the public material.
+# Hidden graders and answer keys must never enter a packet.
+PUBLIC_FILES = ("spec.md", "subject.py", "visible_tests.py")
+FORBIDDEN_NAMES = ("hidden_tests.py", "hidden_oracle.py", "grader.py", "answer_key.md")
+
 def prompt_for(task_id: str) -> str:
-    p = REPO / "experiments/tier-uplift" / task_id / "spec.md"
-    return p.read_text(encoding="utf-8")
+    d = REPO / "experiments/tier-uplift" / task_id
+    parts = []
+    for name in PUBLIC_FILES:
+        f = d / name
+        if f.exists():
+            parts.append(f"===== {name} =====\n{f.read_text(encoding='utf-8')}")
+    if not parts:
+        raise SystemExit(f"no public files found for {task_id}")
+    text = "\n\n".join(parts)
+    for bad in FORBIDDEN_NAMES:
+        # scrub incidental mentions so a pasted prompt can't name hidden artifacts
+        text = text.replace(bad, "[hidden artifact]")
+    return text
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)

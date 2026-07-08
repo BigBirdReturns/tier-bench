@@ -58,3 +58,31 @@ from spec — the strongest discriminating-task candidate yet, because
 sexagenary + ephemeris math has real edge structure (year/month boundaries,
 timezone/UT handling, master-number rules) that satisficing implementations
 miss.
+
+## Next: promotion to a graded lens family (TODO — design note, not a claim)
+
+The reference engine is corroborated (34/35 field checks against ten
+independently hand-computed charts, held locally; the two mismatches were
+errata in the hand computation, adjudicated by the published algorithms and
+the Meeus worked example). Before this becomes a graded task family:
+
+- **Synthetic hidden vectors only** — committed vectors are generated at
+  constructed datetimes, never from anyone's real birth data. PII never
+  enters the repo; the operator sheet remains a local-only corroboration set.
+- Vector coverage to author (each targets a judgment/boundary, mirroring the
+  task02 edge-family shape):
+  - dates within ±48h of lichun (year-pillar rollover)
+  - dates within ±24h of each jieqi (month-branch boundary at λ = 315°+30k)
+  - UTC-offset handling: same local time, different tz -> different pillars
+  - late-zi hour (23:00–23:59) under the declared no-rollover convention
+  - sexagenary day anchor: dates exactly 60k days apart must share a pillar
+  - western cusp band (<1°): the cusp_warning must fire; sign must match a
+    full-precision ephemeris at sign level
+  - master-number numerology: component-level 11/22/33 preservation vs the
+    reduce-everything school (convention must be cited in the output)
+- The task framing to test tiers with: give the solver the DESIGN.md
+  conventions + spec, hide the vectors — same visible/hidden daylight as
+  t3_parse_duration_004.
+
+Nothing in this section is a benchmark claim; no model has been graded on
+almanac tasks yet.
