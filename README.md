@@ -58,6 +58,14 @@ Tier Bench is explicit about what it measures and what it does not.
 
 T0 through T3 have 13 deterministic tasks with objective pass/fail, and T4 has its first (plan validity: visible schema lint + hidden semantic judge). T5 ceilings are assigned by frontier positioning. The README does not pretend otherwise.
 
+**Measured update (2026-07-08):** with hidden grading (the solver never sees
+the deciding tests), the cheapest current model clears T0–T4 spec-following at
+3/3 — the difficulty ladder no longer separates 2026 models; the axis that
+does is settled (spec-following) vs. derived (judgment/counterexample) work.
+The original hypotheses are scored against the data in
+[HYPOTHESES.md](HYPOTHESES.md); the measured frontier residue so far is one
+nameable judgment edge (`experiments/breadth/run/task02_edge_family.md`).
+
 ## How it works
 
 1. `models.json` defines the live model registry. Providers, pricing, tier ceilings, routing candidates. This is the single source of truth. Edit this file to add models. Do not edit Python.

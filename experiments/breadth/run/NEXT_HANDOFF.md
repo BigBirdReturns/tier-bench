@@ -74,6 +74,19 @@ Lane self-test (no live model, $0): `python experiments/breadth/ui_capture_smoke
   TODO — synthetic hidden vectors around lichun/jieqi/tz/cusp/anchor/master
   boundaries. PII stays out of the repo; no benchmark claim made.
 
+## Forward plan (the hypothesis tests — full ledger in /HYPOTHESES.md)
+
+1. Operator: 3 clean GPT-5.5 task02 captures (raw-function transport) — closes
+   the cross-provider comparison on the measured crack.
+2. Freeze the task02 edge-family invariant table (operator review — gated),
+   then build the 8 probes and run haiku/sonnet/GPT/fable-low at K=3: the
+   first real test of H6 (frontier residue = judgment at boundaries).
+3. Almanac boundary vectors (synthetic, PII-free) as the second judgment
+   family.
+4. Re-axis models.json: measured settled_floor + judgment_residue fields
+   where rows exist; tier_ceiling stays declared elsewhere.
+5. Fable medium→max: DO NOT RUN until a wall exists.
+
 ## Standing rules (short form — full text in LESSONS.md)
 
 Map only hidden-grader tasks (`breadth_tasks.py` prints the valid set).

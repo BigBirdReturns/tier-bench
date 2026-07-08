@@ -287,6 +287,16 @@ below, audited above, cross-linked both ways.
 
 ## 9. Known gaps, prioritized (your likely first work)
 
+> **2026-07-08 re-prioritization:** the original hypotheses now have verdicts
+> against measured data — see `HYPOTHESES.md` (top level). Headline: H2 (the
+> tier-difficulty ladder discriminates models) is CHALLENGED — hidden-graded
+> spec-following saturates at the cheap floor through T4; the discriminating
+> axis is settled-vs-derived work. Gaps below are reordered by that finding:
+> the highest-value work is the judgment-boundary task families
+> (task02_edge_family, almanac boundary vectors), then re-axising
+> models.json's tier_ceiling toward measured settled_floor/judgment_residue.
+
+
 1. **Run the real capability benchmark.** Everything on the cost axis is
    starving for the first `harness_results.jsonl` with actual API calls.
    (~$0.15–$1.)
