@@ -51,12 +51,12 @@ Tasks are grouped by what can be validated deterministically.
 | T1 | Simple functions, unit tests, docstring specs. | 3 | compile, tests |
 | T2 | Bug fixes, API wiring, multi-file patches. | 3 | compile, tests, diff bounds |
 | T3 | Security fixes, god function refactors, cross-module debugging. | 3 | compile, tests, AST structural checks |
-| T4 | Planning, decomposition. | 0 | JSON plan validity (buildable, not built) |
+| T4 | Planning, decomposition. | 1 | JSON plan lint (visible) + hidden semantic judge |
 | T5 | Architectural judgment. | 0 | Not benchmarked. Human review. |
 
 Tier Bench is explicit about what it measures and what it does not.
 
-T0 through T3 have 12 deterministic tasks with objective pass/fail. T4 and T5 ceilings are assigned by frontier positioning. The README does not pretend otherwise.
+T0 through T3 have 13 deterministic tasks with objective pass/fail, and T4 has its first (plan validity: visible schema lint + hidden semantic judge). T5 ceilings are assigned by frontier positioning. The README does not pretend otherwise.
 
 ## How it works
 

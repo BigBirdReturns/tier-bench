@@ -1,0 +1,18 @@
+{
+  "task_id": "t4_plan_decomposition_001",
+  "tier": "T4",
+  "prompt_template": "Task: T4 planning. Decompose the feature request below into a plan and write it to {target_relpath}.\n\nYou are a Staff-level engineering planner. Decompose the request into isolated, testable subtasks.\n\nRules:\n1) Each subtask edits ONE file.\n2) Assign a tier: T0 (format/lint), T1 (implement from spec), T2 (debug/integrate), T3 (refactor/review).\n3) Order subtasks so later ones can depend on earlier ones.\n4) Be specific: 'Implement function foo(a: int) -> str that does Y' not 'Implement X'.\n5) {target_relpath} must contain ONLY a JSON array matching this schema:\n[{{\"task_id\":\"step_1_short\",\"tier\":\"T0\"|\"T1\"|\"T2\"|\"T3\",\"target_file\":\"path/to/file.py\",\"instruction\":\"What to do\",\"acceptance\":\"How to verify\"}}]\n\nFEATURE REQUEST (also in REQUEST.md):\n1. Add a discount(price, percent) function to pricing.py: returns the price reduced by percent percent, rounded to 2 decimal places. Raise ValueError if percent is outside 0..100.\n2. Fix the bug in inventory.py: count_low_stock must count items whose quantity is less than or equal to the threshold (its docstring already says <=), but the code uses strict <.\n3. Update report.py so the summary it builds includes a discounted total (10% off) computed via the new pricing.discount.\nConstraints: do NOT touch output.py — its formatting is frozen for downstream consumers.\n\nRules for your edit:\n- Return ONLY the full updated content for {target_relpath} (a JSON array — no markdown, no prose).\n- Make the program print OK and exit 0 when run.\n- Do not modify any file outside {target_relpath}.\n\nCurrent file content:\n{file_content}\n\nBaseline run (before edits):\nexit={baseline_rc}\nstdout:\n{baseline_stdout}\nstderr:\n{baseline_stderr}\n\nRepository files (read-only context):\n{context_files}\n",
+  "fixture_dir": "fixtures/t4_plan_decomposition",
+  "target_relpath": "plan.json",
+  "run_command": ["python", "input.py"],
+  "validate": {
+    "compile": false,
+    "ruff_imports": false,
+    "functional_equivalence": false,
+    "tests": true
+  },
+  "max_lines_changed": 250,
+  "allowed_files": ["plan.json"],
+  "hidden_files": ["hidden_plan_judge.py"],
+  "hidden_run_command": ["python", "hidden_plan_judge.py"]
+}
