@@ -34,6 +34,18 @@ def classify_and_extract(task_id: str, raw: str) -> tuple[str, str | None]:
         return "malformed_no_candidate", None
     if task_id in FUNCTION_NAMES:
         fn = FUNCTION_NAMES[task_id]
+        # json_candidate_lines transport (JSON object with candidate_lines[]).
+        # ESCAPE-FRAGILE: JSON-inside-JSON collapses backslashes (measured:
+        # PR #44 trial-2, all '\\' literals arrived single). Supported for
+        # ingesting existing receipts; prefer raw function paste for captures.
+        if raw.lstrip().startswith("{"):
+            try:
+                obj = json.loads(raw)
+                lines = obj.get("candidate_lines")
+                if isinstance(lines, list) and any(f"def {fn}" in l for l in lines):
+                    return "json_candidate_lines", "\n".join(lines) + "\n"
+            except (json.JSONDecodeError, TypeError):
+                pass
         if re.match(rf"^\s*def\s+{re.escape(fn)}\s*\(", raw) and "```" not in raw:
             return "raw_function_only", raw.strip() + "\n"
         m = re.search(r"```(?:python)?\s*(.*?)```", raw, re.S | re.I)
@@ -60,6 +72,14 @@ def classify_and_extract(task_id: str, raw: str) -> tuple[str, str | None]:
             return "malformed_no_candidate", None
         return status, candidate
     return "malformed_no_candidate", None
+
+
+def _syntax_error(candidate: str) -> str | None:
+    try:
+        compile(candidate, "<candidate>", "exec")
+        return None
+    except SyntaxError as e:
+        return f"SyntaxError line {e.lineno}: {e.msg}"
 
 
 def grade(task_id: str, candidate: str) -> tuple[str, str, str | None]:
@@ -111,6 +131,14 @@ def process_packet(pkt: dict[str, Any], ledger: Path) -> tuple[dict, dict]:
         fmt, candidate = classify_and_extract(task_id, raw)
         if candidate is None:
             outcome, note = "error", "malformed_no_candidate; hidden grader not run"
+        elif task_id in FUNCTION_NAMES and _syntax_error(candidate):
+            # A candidate that cannot even compile is a TRANSPORT casualty, not
+            # a capability fail (constitution: provider-unreachable is a skip).
+            # The hidden grader is not run; the cell stays unmeasured.
+            candidate_hash = sha256_text(candidate)
+            outcome = "error"
+            fmt = fmt + "_syntax_error_transport_suspect"
+            note = f"candidate source unloadable ({_syntax_error(candidate)}); hidden grader NOT run; re-capture with raw paste"
         else:
             candidate_hash = sha256_text(candidate)
             outcome, score, grade_output = grade(task_id, candidate)

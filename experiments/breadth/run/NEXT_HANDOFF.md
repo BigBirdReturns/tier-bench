@@ -51,6 +51,12 @@ Priority captures when awake (per operator's own note): GPT-5.5 Instant /
 Medium / High on **task02_wildcard** — that puts the frontier-vs-floor
 comparison right on the one measured crack.
 
+**Transport rule (learned from PR #44 trial-2, see pr44_trial2_adjudication.md):
+have the model answer with the RAW function only** — starting at
+`def wildcard_match(`, no JSON wrapper, no code fence. The JSON-lines transport
+collapsed backslash escapes and turned three probable passes into unloadable
+sources; ingest now classifies such rows as transport errors, never fails.
+
 Lane self-test (no live model, $0): `python experiments/breadth/ui_capture_smoke.py`
 
 ## What was prepared overnight (this commit)
