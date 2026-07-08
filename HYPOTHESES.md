@@ -82,6 +82,15 @@ task02 edge-family probes (8 designed) and almanac boundary vectors
 (lichun/jieqi/tz/cusp) will separate models *within* the same task where
 difficulty tiers did not — and the separation will track model, not effort.
 
+**First confirmation (2026-07-08, layer model-ladder-task02):** on the one
+uncleared cell, sonnet-5 at its LOWEST effort cleared 3/3 (hidden
+10681/10681, real-billed ~$0.23/trial) where haiku sat at 3/5 — the residue
+separated *models* at minimum effort, exactly as predicted. Effort was not
+the lever; the model was. The Anthropic model×effort matrix is otherwise
+still mostly unmeasured (haiku has no effort knob; sonnet has 1 of 5 rungs
+measured, opus 0 of 5, fable 1 of 5) — and stays that way BY DESIGN until
+another cell cracks (LESSONS rule 2).
+
 ---
 
 ## The going-forward test plan (what would move each verdict)

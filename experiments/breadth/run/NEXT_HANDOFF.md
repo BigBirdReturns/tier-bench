@@ -12,7 +12,7 @@ it.
 | task06_select | **settled** | 3/3 verified counterexamples (search-framing caveat noted in layer) |
 | t3_parse_duration_004 | **settled** | 3/3 hidden-graded (tasks/ manifest, hidden_files mechanism) |
 | t4_plan_decomposition_001 | **settled** | 3/3 incl. hidden semantic judge |
-| task02_wildcard | **unstable** | 3/5; both failures the same escape-inside-class judgment edge — see `task02_edge_family.md` |
+| task02_wildcard | **settled at sonnet-5@low** | haiku 3/5 (judgment edge) -> sonnet@low 3/3 hidden 10681/10681, real ~$0.23/trial; first measured model-separation (layer model-ladder-task02-20260708) |
 
 Open cells: **0**. Decision: **DO NOT ESCALATE** — no wall anywhere; Fable was
 not turned on for the K=3 floor (frontier spend this layer: $0.00). task02 at
