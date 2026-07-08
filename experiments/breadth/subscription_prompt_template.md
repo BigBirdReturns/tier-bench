@@ -1,32 +1,12 @@
-# Subscription-surface prompt template
+# ChatGPT UI subscription capture template
 
-Use this template when pasting a public breadth task into a selected ChatGPT/Codex subscription model.
+1. Generate a public prompt packet with `subscription_run.py`.
+2. Select exactly: `{model_family} / {intelligence}` in the ChatGPT UI.
+3. Paste only the public `prompt_text` into a fresh chat. Never paste hidden grader content.
+4. Copy the exact raw model answer into `raw_output`.
+5. Preserve selector metadata and optional visible thought seconds/screenshot hash.
 
-```text
-You are the selected subscription-surface model: <exact UI/Codex model label>.
+Expected answer formats:
 
-Task: <task_id>
-Phase: <solo|harness>
-Trial: <trial_number>
-
-Use only the public task packet below. Do not assume access to hidden tests, hidden graders, answer keys, or repository files not shown here.
-
-<PUBLIC_TASK_PACKET>
-
-Output rule:
-- For implementation tasks, return only the Python function implementation. No prose and no markdown.
-- For counterexample tasks, return exactly one counterexample as: items=[...]; k=...
-```
-
-Generate concrete prompts with:
-
-```bash
-python experiments/breadth/subscription_run.py \
-  --selected-model-label "<exact UI/Codex model label>" \
-  --task-id all \
-  --phase solo \
-  --trial 1 \
-  --prompt-dir /tmp/subscription-prompts
-```
-
-The generated prompts include only public task material: `spec.md`, intended public `subject.py` when present, and `visible_tests.py` when present. Hidden grader files and answer artifacts are not read into the prompt.
+- `task01_parse_duration` / `task02_wildcard`: a single Python function only; no prose or markdown fences.
+- `task06_select`: exactly `items=[...]; k=...`.

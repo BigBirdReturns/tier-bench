@@ -1,0 +1,24 @@
+title: UI subscription capture packet
+type: object
+required:
+  - capture_id
+  - model_family
+  - intelligence
+  - task_id
+  - phase
+  - trial
+  - raw_output
+properties:
+  capture_id: string
+  model_family: string
+  intelligence: string
+  selected_model_label: string
+  task_id: string
+  phase: string
+  trial: integer
+  visible_thought_seconds: number_or_null
+  prompt_text: string
+  raw_output: string
+  screenshot_sha256: string_or_null
+  quota_status: string
+additional_properties: true
