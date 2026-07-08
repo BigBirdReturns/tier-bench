@@ -4,7 +4,7 @@ Evidence label: `single-source, cross-provider` for the blocked setup record onl
 
 ## Status
 
-A real OpenAI reproduction requires a provider key because the protocol requires a cheap GPT solver, real token usage, and real cost telemetry. This execution environment still has no provider key, so no benchmark outcomes are claimed in this file.
+A real cross-provider reproduction requires configured provider credentials because the protocol requires a cheap GPT solver, real token usage, and real cost telemetry. This execution environment still has no configured provider credentials, so no benchmark outcomes are claimed in this file.
 
 This PR adds `experiments/breadth/xprovider_run.py` so the next keyed run is executable rather than merely described. The runner performs the requested K=3 solo and K=3 harness trials against exactly the hidden-grader breadth tasks and invokes hidden graders only after candidate generation.
 
