@@ -1,6 +1,6 @@
 {
   "_comment": [
-    "Model registry. Add any model here \u2014 cloud API, local Ollama, whatever.",
+    "Model registry. Add any model here — cloud API, local Ollama, whatever.",
     "The harness will test it and tell you if your tier_ceiling guess is right.",
     "",
     "Fields:",
@@ -21,20 +21,52 @@
     "silently unless reviewed against the providers' own pricing pages.",
     "Last reviewed: 2026-07-07 (anthropic line refreshed to current: opus-4-8,",
     "sonnet-5, haiku-4-5, fable-5; openai gpt-5.5 + google gemini 3.x/3.5",
-    "verified; other openai/mistral/deepseek entries carried forward unverified)."
+    "verified; other openai/mistral/deepseek entries carried forward unverified).",
+    "AXIS NOTE (2026-07-08): tier_ceiling is a DECLARED hypothesis (read: declared_tier_ceiling), kept for backward compatibility. The measured axis is settled-vs-derived work — see the 'measured' block on models with evidence, HYPOTHESES.md H2/H6, and experiments/breadth/run/waterline.json. Do not add 'measured' blocks without sediment-layer evidence."
   ],
   "models": {
     "claude-haiku-4-5": {
       "provider": "anthropic",
       "input_per_1M": 1.0,
       "output_per_1M": 5.0,
-      "tier_ceiling": "T2"
+      "tier_ceiling": "T2",
+      "measured": {
+        "settled_floor": {
+          "max_spec_following_tier": "T4",
+          "evidence_layer": "k3-floor-20260708",
+          "measured_status": "measured (K=3, hidden-graded)"
+        },
+        "judgment_residue": {
+          "known_failures": [
+            {
+              "task_id": "task02_wildcard",
+              "residue": "escape-inside-class malformed-vs-non-match boundary",
+              "status": "unstable_at_floor (3/5)",
+              "evidence_layer": "model-ladder-task02-20260708"
+            }
+          ]
+        }
+      }
     },
     "claude-sonnet-5": {
       "provider": "anthropic",
       "input_per_1M": 3.0,
       "output_per_1M": 15.0,
-      "tier_ceiling": "T3"
+      "tier_ceiling": "T3",
+      "measured": {
+        "judgment_residue": {
+          "clears": [
+            {
+              "task_id": "task02_wildcard",
+              "rung": "low",
+              "score": "hidden 10681/10681 x3",
+              "cost_usd_per_trial": 0.227,
+              "cost_basis": "real-billed",
+              "evidence_layer": "model-ladder-task02-20260708"
+            }
+          ]
+        }
+      }
     },
     "claude-opus-4-8": {
       "provider": "anthropic",
@@ -190,7 +222,7 @@
   "roles": {
     "_comment": [
       "Named roles decouple 'who does what' from model names, which churn.",
-      "driver: plans, verifies, and repairs \u2014 spends judgment tokens only.",
+      "driver: plans, verifies, and repairs — spends judgment tokens only.",
       "The orchestrator uses roles.driver as its planner; override per-run",
       "with --driver or the TIER_BENCH_DRIVER env var. Execution ('hands')",
       "always auto-routes to the cheapest capable model, never the driver.",

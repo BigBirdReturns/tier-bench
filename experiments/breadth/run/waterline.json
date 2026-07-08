@@ -1,0 +1,73 @@
+{
+  "_schema": 1,
+  "_generated": "2026-07-08",
+  "_rule": "Only measured claims appear here. Anything not present is unmeasured. Evidence layers live in known_corner.jsonl; rows in ledger.jsonl / subscription_ledger.jsonl.",
+  "settled_floor": {
+    "task01_parse_duration": {
+      "status": "settled",
+      "cheapest_measured": "claude-haiku-4-5",
+      "rung": "harness",
+      "score": "hidden 38/38 x3 (K=3)",
+      "evidence_layer": "k3-floor-20260708",
+      "cost_usd_per_trial": 0.038,
+      "cost_basis": "shadow-estimated",
+      "caveats": [],
+      "next_allowed_action": "none — sealed; do not re-derive"
+    },
+    "task06_select": {
+      "status": "settled",
+      "cheapest_measured": "claude-haiku-4-5",
+      "rung": "framed-search",
+      "score": "3/3 verified counterexamples",
+      "evidence_layer": "k3-floor-20260708",
+      "cost_usd_per_trial": 0.045,
+      "cost_basis": "shadow-estimated",
+      "caveats": ["search framing did part of the lifting — solver was told to hunt a counterexample, not to judge the code"],
+      "next_allowed_action": "none — sealed; do not re-derive"
+    },
+    "t3_parse_duration_004": {
+      "status": "settled",
+      "cheapest_measured": "claude-haiku-4-5",
+      "rung": "hidden-grade",
+      "score": "3/3 incl. hidden edge tests",
+      "evidence_layer": "k3-floor-20260708",
+      "cost_usd_per_trial": 0.04,
+      "cost_basis": "shadow-estimated",
+      "caveats": [],
+      "next_allowed_action": "none — sealed; do not re-derive"
+    },
+    "t4_plan_decomposition_001": {
+      "status": "settled",
+      "cheapest_measured": "claude-haiku-4-5",
+      "rung": "hidden-semantic-judge",
+      "score": "3/3 incl. hidden judge",
+      "evidence_layer": "k3-floor-20260708",
+      "cost_usd_per_trial": 0.037,
+      "cost_basis": "shadow-estimated",
+      "caveats": [],
+      "next_allowed_action": "none — sealed; do not re-derive"
+    }
+  },
+  "judgment_residue": {
+    "task02_wildcard": {
+      "status": "settled_above_floor",
+      "residue_name": "escape-inside-class malformed-vs-non-match boundary (in-class backslash is a literal, not an escape prefix)",
+      "floor_instability": "claude-haiku-4-5 3/5; both failures the same rule commitment (edge_family/RESULTS.md)",
+      "cheapest_measured": "claude-sonnet-5",
+      "rung": "low",
+      "score": "hidden 10681/10681 x3 (K=3)",
+      "evidence_layer": "model-ladder-task02-20260708",
+      "cost_usd_per_trial": 0.227,
+      "cost_basis": "real-billed",
+      "caveats": ["GPT-5.5 derived repairs also 10681/10681 x3 — derived class, not receipts (pr44_trial2_adjudication.md)"],
+      "next_allowed_action": "cheap edge-family probes only; frontier escalation blocked by DO NOT ESCALATE"
+    }
+  },
+  "adjudications": {
+    "pr44_trial2_gpt55_task02": {
+      "classification": "transport_error_not_model_failure",
+      "detail": "json_candidate_lines collapsed backslash escapes; candidates unloadable; rows recorded outcome=error, hidden grader not run",
+      "evidence": "run/pr44_trial2_adjudication.md"
+    }
+  }
+}
