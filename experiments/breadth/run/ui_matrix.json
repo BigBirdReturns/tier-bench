@@ -1,0 +1,45 @@
+{
+  "task02_wildcard": {
+    "GPT-5.5": {
+      "High": {
+        "2": {
+          "availability": "available",
+          "candidate_sha256": "07f0f2a7fd7b47d64d50566ed04929fb9f3095fd81d17f6e6d0cc985f3f63f7c",
+          "format_compliance": "json_candidate_lines",
+          "note": "SCORE 0/10681",
+          "prompt_sha256": "4b50bba6676cdbef89fd48ac27e0d4415aff03153817af277de8aaffb74f8cae",
+          "raw_output_sha256": "453f6e6961a671a8ae767c17efa36e51f8ec5d1e43179a1ac17aeff79e264a17",
+          "score": "SCORE 0/10681",
+          "semantic_outcome": "fail",
+          "visible_thought_seconds": null
+        }
+      },
+      "Instant": {
+        "2": {
+          "availability": "available",
+          "candidate_sha256": "c012cb803762f2365758dbcb131ea2d9dcda6b8f3f83e36c0e49872e5e003d41",
+          "format_compliance": "json_candidate_lines",
+          "note": "SCORE 0/10681",
+          "prompt_sha256": "4b50bba6676cdbef89fd48ac27e0d4415aff03153817af277de8aaffb74f8cae",
+          "raw_output_sha256": "31ec32a3aaa16cd5b1e4c571f52596b055008b341d53124fb768bc6fe46a991a",
+          "score": "SCORE 0/10681",
+          "semantic_outcome": "fail",
+          "visible_thought_seconds": null
+        }
+      },
+      "Medium": {
+        "2": {
+          "availability": "available",
+          "candidate_sha256": "d91d249a854a805ee8911037d01ad12c8676fbe2d7bada4eb5325d6fce7d9fd7",
+          "format_compliance": "json_candidate_lines",
+          "note": "SCORE 0/10681",
+          "prompt_sha256": "4b50bba6676cdbef89fd48ac27e0d4415aff03153817af277de8aaffb74f8cae",
+          "raw_output_sha256": "2566a6627c7c9e2735c5bc7ec7bc85e998920d23921b12ff0f64724793898c7e",
+          "score": "SCORE 0/10681",
+          "semantic_outcome": "fail",
+          "visible_thought_seconds": null
+        }
+      }
+    }
+  }
+}
