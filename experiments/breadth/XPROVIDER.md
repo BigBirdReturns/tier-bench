@@ -6,9 +6,9 @@ Evidence label: `single-source, cross-provider`.
 
 A real OpenAI reproduction requires an OpenAI API key because the protocol requires a cheap GPT solver, real token usage, and real cost telemetry. This execution environment still has no `OPENAI_API_KEY`, so no benchmark outcomes are claimed in this file.
 
-To remove ambiguity and make the next run executable rather than merely described, this PR adds `experiments/breadth/xprovider_run.py`. The runner performs the requested K=3 solo and K=3 harness trials against exactly the hidden-grader breadth tasks, logs every OpenAI call to `experiments/breadth/run/xprovider_ledger.jsonl`, and invokes hidden graders only after candidate generation.
+This PR adds `experiments/breadth/xprovider_run.py` so the next keyed run is executable rather than merely described. The runner performs the requested K=3 solo and K=3 harness trials against exactly the hidden-grader breadth tasks and invokes hidden graders only after candidate generation.
 
-The existing ledger row is a setup-blocker row only. It is not benchmark evidence and it must not be counted as a pass/fail result.
+The committed ledger row is a setup-blocker row only. It is not benchmark evidence and it must not be counted as a pass/fail result.
 
 ## How to run the reproduction
 
@@ -16,7 +16,18 @@ The existing ledger row is a setup-blocker row only. It is not benchmark evidenc
 OPENAI_API_KEY=... python experiments/breadth/xprovider_run.py --model gpt-4.1-mini --k 3
 ```
 
-The runner uses the OpenAI Chat Completions API directly so it can capture provider usage for each call. Cost is computed from the observed prompt/completion token counts and the model prices in `models.json`.
+The runner uses the OpenAI Chat Completions API directly so it can capture provider usage for each call. Cost is computed from observed usage and model prices in `models.json`. If OpenAI reports cached input tokens, the runner records them as `cache_read_tokens`; if the registry lacks a cached-input price, cached tokens are conservatively priced at the full input rate and marked with `cache_pricing="full_input_rate_assumed"`.
+
+## Evidence model
+
+The runner splits generation evidence from grading evidence:
+
+- Provider rows are logged immediately after each OpenAI response returns and before any hidden grader runs.
+- Provider rows use non-verdict outcomes such as `generated` and phases such as `solo_generate`, `harness_lens_N`, and `harness_synthesize`.
+- Each solver attempt gets a stable `attempt_id` in `extra`.
+- Hidden-grader rows are separate zero-token, zero-cost rows with phases such as `solo_grade` and `harness_grade`.
+- Grade rows link back to provider rows through `extra.parent_attempt_id` and record `candidate_sha256`.
+- Grader timeouts or crashes become `error` grade rows instead of erasing already-logged generation spend.
 
 ## Protocol boundaries enforced by the runner
 
@@ -27,7 +38,7 @@ The runner uses the OpenAI Chat Completions API directly so it can capture provi
 - Solver prompts include only public task material: `spec.md`, `subject.py` when present, and `visible_tests.py` when present.
 - Hidden graders are never inserted into prompts.
 - Harness trials use `capability_harness.review(..., lenses=all_lenses())` before a synthesis call.
-- Every model call is logged through `experiments.breadth.ledger.log_call` with `account="codex-openai"`, model, phase, trial, tokens, cost, latency, and outcome.
+- Every model call is logged through `experiments.breadth.ledger.log_call` with account, model, phase, trial, tokens, cost, latency, and non-verdict generation outcome.
 
 ## Current outcomes
 
