@@ -220,7 +220,9 @@ def log_subscription_row(
         cache_write_tokens=0,
         cost_usd=0.0,
         latency_ms=0.0,
-        extra=subscription_extra(
+        # log_call routes unknown kwargs into Call.extra itself; passing extra=
+        # explicitly collides with that and raises TypeError.
+        **subscription_extra(
             selected_model_label=selected_model_label,
             token_accounting="unavailable",
             cost_accounting="subscription_quota" if quota_status else "unavailable",
