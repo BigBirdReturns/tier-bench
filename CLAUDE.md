@@ -1,4 +1,33 @@
-# CLAUDE.md — Tier-Based Model Routing for This Project
+# CLAUDE.md — Tier Bench
+
+## ⭐ START HERE — the active mission (a fresh session reads THIS first)
+
+Tier Bench began as a model-routing benchmark (that is most of this file, below).
+The **active work built on top** is the **capability / breadth program**: proving a
+cheap model + a small *sealed* harness replicates the frontier on operational tasks,
+measured with **hidden graders**. If you are a fresh session told to "get set up",
+"run", "go", "continue the work", or anything open-ended, do THIS — do **not** default
+to `orchestrator.py`:
+
+1. Read, in order: `HANDOFF.md`, `ROADMAP.md`, `experiments/breadth/LESSONS.md`.
+2. Open `experiments/breadth/FABLE_KICKOFF.md` and follow the paste-prompt inside. It
+   self-drives the breadth run: cheap floor on hidden-graded tasks → escalate only
+   real walls → seal → decision packet. **It needs NO API key** — the session's own
+   model (or Agent-tool subagents) is the solver, graded by deterministic hidden
+   graders. "No keys set" is NOT a dead end; it is the normal keyless path.
+3. Sanity first, all keyless/$0: `python experiments/breadth/smoke.py` and
+   `python experiments/breadth/breadth_tasks.py` (prints the ONLY valid task set).
+
+**Rails that make an unattended run safe** (confirm they are green before a long run):
+`limit.py` parks at ~80% quota and never auto-escalates access; `adapt.py` forbids the
+solver from changing any grader (no self-grading); `breadth_tasks.py` refuses gameable
+tasks; `ledger.py` reconciles spend. See `docs/burden-discipline.md` for the closure rule.
+
+The `orchestrator.py` router/benchmark documented below is the **original foundation
+layer** — real and keyed, but NOT today's task unless you are explicitly asked to
+benchmark model routing.
+
+---
 
 ## What This Repo Does
 
