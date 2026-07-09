@@ -87,6 +87,26 @@ Lane self-test (no live model, $0): `python experiments/breadth/ui_capture_smoke
    where rows exist; tier_ceiling stays declared elsewhere.
 5. Fable medium→max: DO NOT RUN until a wall exists.
 
+## Fable runway (remaining frontier quota until the Friday reset)
+
+Fable's tokens are for judgment work ONLY — everything below this list is
+already done or is Opus/Sonnet-class. Ordered by value:
+
+1. **AXM provenance layer** (operator's AXM_provenance_ledger: §22 tasks) —
+   `docs/provenance.md`, `schemas/source_ledger.schema.json`, versioned
+   primitive registry with source_basis/derived_claim/not_source_claim
+   fields, tests that reject unsourced primitives. Architecture + judgment;
+   the repo is named in the ledger as AXM's measurement instrument.
+2. **Freeze the task02 edge-family invariant table** (run/task02_edge_family.md
+   → a reviewed verdict table) and **author the almanac synthetic hidden
+   vectors** (almanac/DESIGN.md "Next" list) — grader authoring is
+   driver-owned work.
+3. **Adjudications only**: any new evidence-class call (transport vs model,
+   receipt vs derived) that comes in from captures.
+
+NOT Fable work (done or cheap): site/data plumbing (PR #46), reruns of
+settled cells, effort-matrix filling (blocked by LESSONS rule 2), doc edits.
+
 ## Standing rules (short form — full text in LESSONS.md)
 
 Map only hidden-grader tasks (`breadth_tasks.py` prints the valid set).

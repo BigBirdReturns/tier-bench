@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Waterline — where the frontier actually is | Tier Bench</title>
+<meta name="description" content="Hidden-graded measurements of five coding tasks across cheap and frontier models. Everything spec-shaped settled at the cheapest model. The measured frontier is one named rule.">
+<!-- AXM house-style family thread: Barlow Condensed (display) + IBM Plex Sans (running) + IBM Plex Mono (evidence). System fallbacks keep it readable if the CDN is blocked. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script>document.documentElement.dataset.theme=localStorage.getItem("pta-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");</script>
+<style>
+  /* ── Frozen SCG tokens — source of truth: axm-tools identity/scg/source/scg.tokens.css
+     (Mark Constitution §1,§4). Four-token palette + the family type stack. Ember is
+     findings/flags ONLY; this whole surface is a findings surface, so tier-bench earns
+     ember as its signature accent (PROPERTY-FLAVORS registry). ── */
+  :root{
+    --scg-bone:#ECE7D8; --scg-olive:#7C7F57; --scg-void:#0D0C09; --scg-ember:#C24B2C;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --display:'Barlow Condensed','IBM Plex Sans',system-ui,sans-serif;
+
+    /* Cream Editorial (light family) — paper dressed around the frozen tokens */
+    --bg:#f0ebe0; --panel:#faf9f5; --panel2:#efe9dc; --line:#c9c0ae;
+    --ink:#1a1712; --ink2:#3a352b; --muted:#6b6459; --scope:var(--scg-olive);
+    --flag:var(--scg-ember); --blue:#7c4a2c;
+    --green:#3d6b4a; --yellow:#8a6d1e;
+    --water:#e6ece8; --air:#f6f1e6;
+  }
+  :root[data-theme="dark"]{
+    /* Dark Ecosystem (warm-black family) — bone on void, the frozen pair */
+    --bg:var(--scg-void); --panel:#15130e; --panel2:#201c15; --line:#33302a;
+    --ink:var(--scg-bone); --ink2:#c7c1b1; --muted:#8f8975; --scope:#9a9c78;
+    --flag:#d0623f; --blue:#d6a578;  /* ember lifted for contrast on void — same hue */
+    --green:#6fae72; --yellow:#c9a94e;
+    --water:#12181a; --air:#1a1710;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px}
+  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+  code{font-family:var(--mono);background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:.9em}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.55;margin:14px 0;font-family:var(--mono)}
+  h1{font-family:var(--display);font-weight:600;font-size:2.9rem;line-height:1.06;margin:0 0 14px;letter-spacing:.005em}
+  h2{font-family:var(--display);font-weight:600;font-size:1.7rem;line-height:1.1;margin:0 0 10px;letter-spacing:.01em}
+  section{padding:40px 0;border-top:1px solid var(--line)}
+  .hero{padding:60px 0 40px;border-top:none}
+  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}
+  .lede{color:var(--ink2);font-size:1.1rem;max-width:44em}
+  .muted{color:var(--muted)} .small{font-size:.86rem}
+  .chip{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap;background:var(--panel)}
+  .c-green{color:var(--green)} .c-yellow{color:var(--yellow)} .c-ember{color:var(--flag)}
+  #themeToggle{position:fixed;top:12px;right:14px;z-index:60;font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--scope);cursor:pointer}
+
+  /* ---- fig 1: the waterline ---- */
+  .waterfig{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:22px 0 6px}
+  .band{padding:18px 20px}
+  .band .bandlabel{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}
+  .band.air .bandlabel{color:var(--flag)}  /* ember: the tension band is the finding */
+  .band.air{background:var(--air)}
+  .band.water{background:var(--water);border-top:2px dashed var(--line)}
+  .cells{display:flex;flex-wrap:wrap;gap:8px}
+  .cell{font-family:var(--mono);font-size:12px;padding:6px 10px;border-radius:6px;background:var(--panel);border:1px solid var(--line)}
+  .cell b{font-weight:600}
+  .cell .st{margin-left:6px}
+  .figcap{font-size:.85rem;color:var(--muted);margin:8px 2px 0;max-width:46em}
+
+  /* ---- fig 2: pass-rate bars (one measure, one axis, direct labels) ---- */
+  .bars{margin:18px 0 4px;display:grid;gap:12px}
+  .barrow{display:grid;grid-template-columns:210px 1fr;gap:12px;align-items:center}
+  .barrow .who{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
+  .barrow .who .sub{color:var(--muted);display:block;font-size:11px}
+  .track{position:relative;height:14px;background:var(--panel2);border-radius:4px}
+  .fill{position:absolute;inset:0 auto 0 0;border-radius:4px}
+  .fill.ok{background:var(--green)} .fill.warn{background:var(--yellow)}
+  .val{font-family:var(--mono);font-size:12px;color:var(--ink);margin-left:8px;white-space:nowrap}
+  .trackline{display:flex;align-items:center}
+  @media(max-width:560px){.barrow{grid-template-columns:1fr}.barrow .who{margin-bottom:-6px}}
+
+  .rule{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--flag);border-radius:8px;padding:14px 18px;margin:16px 0}
+  details{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:10px 0}
+  summary{cursor:pointer;font-weight:600}
+  details[open]{padding-bottom:16px}
+  table{border-collapse:collapse;width:100%;font-size:.9rem;margin:10px 0}
+  th,td{padding:7px 10px;text-align:left;border-bottom:1px solid var(--line)}
+  th{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--scope)}
+  footer{padding:34px 0 60px;border-top:1px solid var(--line);color:var(--muted);font-size:.9rem}
+</style>
+</head>
+<body>
+<button id="themeToggle" onclick="const r=document.documentElement,n=r.dataset.theme==='dark'?'light':'dark';r.dataset.theme=n;localStorage.setItem('pta-theme',n)">theme</button>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Tier Bench · Measured finding · July 8, 2026</div>
+    <h1>The waterline: where the frontier actually is</h1>
+    <p class="lede">We gave the same coding tasks to cheap and frontier models and graded them
+    with tests the models never saw. Everything spec-shaped settled at the cheapest model.
+    Across five hidden-graded tasks and three model families, the measured frontier came down
+    to <strong>one named rule</strong> — and the second-cheapest model already handles it.</p>
+    <p style="margin-top:16px">
+      <span class="chip">hidden-graded · K=3</span>
+      <span class="chip">graders never shown to solvers</span>
+      <span class="chip">real, per-trial prices</span>
+      <span class="chip"><a href="https://github.com/BigBirdReturns/tier-bench">every row re-derivable</a></span>
+    </p>
+  </header>
+
+  <section>
+    <h2>One picture</h2>
+    <p>Each cell is a task, placed by the cheapest model that reliably clears it
+    (3 of 3 trials against a hidden grader). Below the line is <em>settled</em> work —
+    commodity, route it to the cheapest thing. Above the line is <em>derived</em> work —
+    the residue that still separates models.</p>
+
+    <figure class="waterfig" role="img" aria-label="Waterline diagram: one task above the line requiring sonnet-5 at low effort; four tasks below the line settled by haiku">
+      <div class="band air">
+        <div class="bandlabel">Above the line — judgment residue (needs a stronger model)</div>
+        <div class="cells">
+          <span class="cell"><b>wildcard matcher</b> <span class="st c-ember">■ sonnet-5 @ low · $0.23/try</span></span>
+        </div>
+      </div>
+      <div class="band water">
+        <div class="bandlabel">Below the line — settled at the cheapest model (haiku, ~$0.04/try)</div>
+        <div class="cells">
+          <span class="cell"><b>duration parser</b> <span class="st c-green">● 3/3</span></span>
+          <span class="cell"><b>find-the-bug counterexample</b> <span class="st c-green">● 3/3</span></span>
+          <span class="cell"><b>edge-case parser (hard)</b> <span class="st c-green">● 3/3</span></span>
+          <span class="cell"><b>plan decomposition (staff-level)</b> <span class="st c-green">● 3/3</span></span>
+        </div>
+      </div>
+    </figure>
+    <p class="figcap">Fig. 1 — The measured waterline, July 2026. Five tasks, hidden graders, K=3.
+    Tasks we <em>designed to be senior/staff-difficulty</em> — security-style parsing, plan review —
+    sank below the line the moment grading was made honest (solvers can’t iterate against tests
+    they can’t see).</p>
+  </section>
+
+  <section>
+    <h2>The one task that separated models</h2>
+    <p>The wildcard-matcher task asks a model to implement pattern matching from a complete
+    written spec. One judgment inside it isn’t spelled out and must be committed to:
+    <em>what does a backslash mean inside <code>[...]</code>?</em></p>
+
+    <div class="rule">
+      <strong>The rule that is the frontier (today, on this set):</strong> inside a character
+      class, a backslash is a literal character — not an escape. Pattern <code>[\]</code> is a
+      valid class that matches <code>\</code>, not a malformed pattern. Two of five haiku attempts
+      judged it malformed and raised an error. That single commitment, cascading through the
+      hidden tests, was the <em>entire</em> measured difference between models.
+    </div>
+
+    <div class="bars" role="img" aria-label="Pass rate against the hidden grader: haiku 3 of 5 trials, sonnet-5 at low effort 3 of 3, GPT-5.5 derived 3 of 3">
+      <div class="barrow">
+        <div class="who">claude-haiku-4-5 <span class="sub">cheapest · ~$0.04/try (est.)</span></div>
+        <div class="trackline"><div class="track" style="flex:1"><div class="fill warn" style="width:60%"></div></div><span class="val">3/5 trials</span></div>
+      </div>
+      <div class="barrow">
+        <div class="who">claude-sonnet-5 @ lowest effort <span class="sub">$0.23/try (real-billed)</span></div>
+        <div class="trackline"><div class="track" style="flex:1"><div class="fill ok" style="width:100%"></div></div><span class="val">3/3 trials · 10,681/10,681 hidden cases</span></div>
+      </div>
+      <div class="barrow">
+        <div class="who">GPT-5.5 (ChatGPT UI) <span class="sub">derived — pending clean receipts</span></div>
+        <div class="trackline"><div class="track" style="flex:1"><div class="fill ok" style="width:100%;opacity:.55"></div></div><span class="val">3/3 (transport-repaired)</span></div>
+      </div>
+    </div>
+    <p class="figcap">Fig. 2 — Pass rate against the hidden grader on the wildcard task.
+    Sonnet cleared it at its <em>minimum</em> effort setting: the separator was the model, not
+    how hard it thought. The GPT-5.5 row is faded because its raw captures were mangled in
+    transit (a copy-paste pipeline ate the backslashes — fitting); mechanically repaired
+    candidates pass everything, but we don’t count repairs as receipts.</p>
+  </section>
+
+  <section>
+    <h2>What this means</h2>
+    <p><strong>1 — “Difficulty tiers” stopped separating models.</strong> Our own T0–T4 ladder
+    (format → implement → debug → refactor → plan) was built on the industry’s mental model:
+    harder work needs bigger models. Measured honestly, the cheapest 2026 model clears all of it.
+    The axis that separates models is not how <em>hard</em> the work is but whether the answer
+    is <em>written down</em> — spec-following vs. judgment calls a spec constrains but doesn’t state.</p>
+    <p><strong>2 — The frontier is a list, and today the list has one item.</strong> Not “GPT vs
+    Claude,” not open-vs-closed: on everything we can grade without showing models the answer key,
+    the residue that justifies paying more is one backslash-semantics rule, named, priced at 19¢
+    of extra spend per attempt, and already handled one rung up. The job now is growing that list
+    honestly — with tasks where the answer must be derived, not followed.</p>
+    <p><strong>3 — Measurement is the control plane.</strong> As open and proprietary models
+    converge, “which logo” matters less than: what ran, what passed, what was verified, what was
+    a transport failure, and what can be routed cheaper next time. Ask the repo directly:</p>
+    <pre>python experiments/breadth/waterline.py --task task02_wildcard
+  class: judgment_residue
+  cheapest measured: claude-sonnet-5 @ low
+  evidence: model-ladder-task02-20260708
+  next allowed spend: cheap edge-family probes only</pre>
+  </section>
+
+  <section>
+    <h2>How we got here</h2>
+    <p>The measuring stick, PR&nbsp;#1 to now. The left column is the work; the right
+    column is the only number that matters — <strong>hidden-graded cells with a sealed
+    verdict</strong>. Note how long it stays at zero: most of this project was building
+    an instrument honest enough that its first real measurements could be trusted.</p>
+    <div id="progressSummary" class="figcap" style="margin:14px 0 4px"></div>
+    <div id="progressTimeline" style="margin-top:10px"></div>
+    <noscript><p class="muted small">Timeline requires JavaScript — the same record is in
+    <a href="progress.json">progress.json</a>.</p></noscript>
+    <style>
+      .ms{display:grid;grid-template-columns:70px 1fr 84px;gap:12px;padding:12px 0;border-top:1px solid var(--line);align-items:baseline}
+      .ms:first-child{border-top:none}
+      .ms .d{font-family:var(--mono);font-size:11.5px;color:var(--scope)}
+      .ms .t b{display:block;margin-bottom:2px}
+      .ms .t span{color:var(--muted);font-size:.88rem}
+      .ms .c{font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap}
+      .ms .c b{font-size:1.25rem;color:var(--ink)}
+      .ms .c.zero b{color:var(--muted)}
+    </style>
+    <script>
+    fetch("progress.json").then(r=>r.json()).then(p=>{
+      const s=p.summary;
+      document.getElementById("progressSummary").innerHTML =
+        `<span class="chip">${s.prs_merged} PRs merged</span> <span class="chip">${s.span}</span> `+
+        `<span class="chip">${s.hidden_graded_cells} hidden-graded cells</span> `+
+        `<span class="chip">${s.community_rows} public result rows</span> `+
+        `<span class="chip">$${s.frontier_spend_usd.toFixed(2)} total frontier spend</span>`;
+      document.getElementById("progressTimeline").innerHTML = p.milestones.map(m=>
+        `<div class="ms"><div class="d">${m.date}</div>`+
+        `<div class="t"><b>${m.title}</b><span>${m.detail}</span></div>`+
+        `<div class="c ${m.cells_settled?"":"zero"}"><b>${m.cells_settled}</b> cells</div></div>`
+      ).join("");
+    }).catch(()=>{
+      document.getElementById("progressTimeline").innerHTML =
+        '<p class="muted">Could not load progress.json — the record lives in the repo.</p>';
+    });
+    </script>
+  </section>
+
+  <section>
+    <h2>Methods, honestly</h2>
+    <details>
+      <summary>Hidden grading — why every number here is trusted</summary>
+      <p>Modern models are agentic: shown a test file, they iterate until green — which measures
+      the pipe, not the model. Every result on this page is graded by tests the solver never saw,
+      injected only after its answer was frozen. Our own first run made this mistake (“the floor
+      cleared everything!” — it was reading the answer key); the fix is in the harness now.</p>
+    </details>
+    <details>
+      <summary>Receipts vs. derived — and the transport failure that proved the point</summary>
+      <p>A result is a <em>receipt</em> only if the raw model output was captured and locally
+      graded. Three GPT-5.5 attempts arrived through a JSON pipeline that silently halved
+      backslashes, making the code unloadable. Those rows are recorded as <em>transport errors,
+      never model failures</em> — and mechanically-inverted repairs (which all pass) are labeled
+      <em>derived</em>, never receipts. Separating model failure from transport failure is most
+      of what makes cross-vendor numbers meaningful.</p>
+    </details>
+    <details>
+      <summary>Prices, frugality, and what we refused to spend</summary>
+      <p>Cheap-model trials are shadow-priced from exact token counts; sonnet and frontier trials
+      carry real billed cost per call. Total frontier spend for this entire result: <strong>$4.31</strong>,
+      and our own audit ruled even that avoidable — the standing rule is that no frontier token is
+      spent re-confirming work the floor already cleared. The frontier matrix (opus, fable, higher
+      efforts) is deliberately unmeasured until a task cracks: absence of data is a decision, not
+      an oversight.</p>
+    </details>
+    <details>
+      <summary>Scope — what these five tasks do and don’t claim</summary>
+      <p>Five hidden-graded tasks, K=3 (K=5 where unstable), one cheap model at the floor, three
+      model families total, single-digit dollars. This is the first sealed layer of a growing
+      record, not a leaderboard. Claims are scoped in
+      <a href="https://github.com/BigBirdReturns/tier-bench/blob/main/HYPOTHESES.md">HYPOTHESES.md</a>,
+      where each founding hypothesis is scored against the rows that test it — including the one
+      our data challenged.</p>
+    </details>
+  </section>
+
+  <footer class="wrap" style="padding-left:0;padding-right:0">
+    Every number regenerates from the repo:
+    <a href="https://github.com/BigBirdReturns/tier-bench/blob/main/experiments/breadth/run/WATERLINE.md">WATERLINE.md</a> ·
+    <a href="https://github.com/BigBirdReturns/tier-bench/blob/main/experiments/breadth/run/waterline.json">waterline.json</a> ·
+    <a href="https://github.com/BigBirdReturns/tier-bench/blob/main/HYPOTHESES.md">HYPOTHESES.md</a> ·
+    <a href="index.html">Tier Bench home</a> · <a href="uplift.html">uplift experiment</a> · <a href="tally.html">disposition tally</a>
+  </footer>
+</div>
+</body>
+</html>
