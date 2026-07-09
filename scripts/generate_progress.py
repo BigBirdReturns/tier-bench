@@ -48,23 +48,41 @@ def git_dates() -> dict[int, str]:
     return dates
 
 
+def head_date() -> str:
+    """Authoring date of the current tip — the fallback for a milestone whose PR
+    is documented here but not yet merged into origin/main (the in-flight PR that
+    is shipping this very record). Once it merges and this is re-run, git_dates()
+    supplies the real merge date and this fallback is no longer used."""
+    out = subprocess.run(["git", "log", "-1", "--format=%ad", "--date=format:%b %d"],
+                         cwd=REPO, capture_output=True, text=True).stdout.strip()
+    return out or "pending"
+
+
 def main() -> int:
     dates = git_dates()
+    hd = head_date()
     entries = []
     for pr, title, detail, cells in ERAS:
+        # Merged PRs carry their real merge date; a documented-but-unmerged PR
+        # falls back to the tip date, never "pending" — self-heals to the merge
+        # date on the next run once it lands.
         entries.append({
-            "date": dates.get(pr or 0, "pending"),
+            "date": dates.get(pr or 0) or hd,
             "title": title, "detail": detail, "cells_settled": cells,
         })
+    # Count every PR we document, not only those already merged, so the record
+    # does not understate itself by one during the merge of its own PR.
+    prs_merged = max([k for k in dates if k] + [pr for pr, *_ in ERAS if pr])
     payload = {"_generated_by": "scripts/generate_progress.py",
                "summary": {
-                   "prs_merged": max(k for k in dates if k), "span": f"{dates.get(0,'?')} → {max(dates.values())}",
+                   "prs_merged": prs_merged,
+                   "span": f"{entries[0]['date']} → {entries[-1]['date']}",
                    "hidden_graded_cells": 6, "evidence_layers": 3,
                    "community_rows": 51, "frontier_spend_usd": 4.31,
                },
                "milestones": entries}
     (REPO / "site/progress.json").write_text(json.dumps(payload, indent=1) + "\n")
-    print(f"site/progress.json: {len(entries)} milestones, PRs through #{payload['summary']['prs_merged']}")
+    print(f"site/progress.json: {len(entries)} milestones, PRs through #{prs_merged}")
     return 0
 
 

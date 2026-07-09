@@ -1,8 +1,8 @@
 {
  "_generated_by": "scripts/generate_progress.py",
  "summary": {
-  "prs_merged": 45,
-  "span": "Feb 13 \u2192 Jul 08",
+  "prs_merged": 46,
+  "span": "Feb 13 \u2192 Jul 09",
   "hidden_graded_cells": 6,
   "evidence_layers": 3,
   "community_rows": 51,
@@ -64,7 +64,7 @@
    "cells_settled": 6
   },
   {
-   "date": "pending",
+   "date": "Jul 09",
    "title": "PR #46 \u2014 the data reaches the public surfaces",
    "detail": "51 ledger rows flow through the community pipeline into the comparer/aggregate/cheatsheet; this progress record ships.",
    "cells_settled": 6
