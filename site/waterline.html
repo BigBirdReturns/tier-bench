@@ -5,44 +5,59 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Waterline — where the frontier actually is | Tier Bench</title>
 <meta name="description" content="Hidden-graded measurements of five coding tasks across cheap and frontier models. Everything spec-shaped settled at the cheapest model. The measured frontier is one named rule.">
+<!-- AXM house-style family thread: Barlow Condensed (display) + IBM Plex Sans (running) + IBM Plex Mono (evidence). System fallbacks keep it readable if the CDN is blocked. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script>document.documentElement.dataset.theme=localStorage.getItem("pta-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");</script>
 <style>
+  /* ── Frozen SCG tokens — source of truth: axm-tools identity/scg/source/scg.tokens.css
+     (Mark Constitution §1,§4). Four-token palette + the family type stack. Ember is
+     findings/flags ONLY; this whole surface is a findings surface, so tier-bench earns
+     ember as its signature accent (PROPERTY-FLAVORS registry). ── */
   :root{
-    --bg:#f0ebe0; --panel:#fbf8f1; --panel2:#efe9dc; --line:#b8afa0;
-    --ink:#0e0d0c; --ink2:#2c2a27; --muted:#5e5850; --scope:#5a5e52;
-    --green:#2d5a3d; --yellow:#8a6d1e; --red:#b01c18; --blue:#8a160f;
-    --water:#dfe6e4; --air:#f5efe2;
-    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    --serif:'Lora',Georgia,'Times New Roman',serif;
-    --imprint:'Playfair Display',Georgia,serif;
+    --scg-bone:#ECE7D8; --scg-olive:#7C7F57; --scg-void:#0D0C09; --scg-ember:#C24B2C;
+    --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --display:'Barlow Condensed','IBM Plex Sans',system-ui,sans-serif;
+
+    /* Cream Editorial (light family) — paper dressed around the frozen tokens */
+    --bg:#f0ebe0; --panel:#faf9f5; --panel2:#efe9dc; --line:#c9c0ae;
+    --ink:#1a1712; --ink2:#3a352b; --muted:#6b6459; --scope:var(--scg-olive);
+    --flag:var(--scg-ember); --blue:#7c4a2c;
+    --green:#3d6b4a; --yellow:#8a6d1e;
+    --water:#e6ece8; --air:#f6f1e6;
   }
   :root[data-theme="dark"]{
-    --bg:#0d0c09; --panel:#15130e; --panel2:#201c15; --line:#3a352b;
-    --ink:#ece7d8; --ink2:#c7c1b1; --muted:#8f8975; --scope:#9a9c78;
-    --green:#6fae72; --yellow:#c9a94e; --red:#d0623f; --blue:#d6a578;
+    /* Dark Ecosystem (warm-black family) — bone on void, the frozen pair */
+    --bg:var(--scg-void); --panel:#15130e; --panel2:#201c15; --line:#33302a;
+    --ink:var(--scg-bone); --ink2:#c7c1b1; --muted:#8f8975; --scope:#9a9c78;
+    --flag:#d0623f; --blue:#d6a578;  /* ember lifted for contrast on void — same hue */
+    --green:#6fae72; --yellow:#c9a94e;
     --water:#12181a; --air:#1a1710;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--ink);font:16px/1.6 var(--serif);-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);color:var(--ink);font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
   .wrap{max-width:880px;margin:0 auto;padding:0 20px}
   a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
   code{font-family:var(--mono);background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:.9em}
   pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.55;margin:14px 0;font-family:var(--mono)}
-  h1{font-family:var(--imprint);font-size:2.3rem;line-height:1.14;margin:0 0 14px;letter-spacing:-.01em}
-  h2{font-family:var(--imprint);font-size:1.45rem;margin:0 0 10px}
+  h1{font-family:var(--display);font-weight:600;font-size:2.9rem;line-height:1.06;margin:0 0 14px;letter-spacing:.005em}
+  h2{font-family:var(--display);font-weight:600;font-size:1.7rem;line-height:1.1;margin:0 0 10px;letter-spacing:.01em}
   section{padding:40px 0;border-top:1px solid var(--line)}
   .hero{padding:60px 0 40px;border-top:none}
   .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}
   .lede{color:var(--ink2);font-size:1.1rem;max-width:44em}
   .muted{color:var(--muted)} .small{font-size:.86rem}
   .chip{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap;background:var(--panel)}
-  .c-green{color:var(--green)} .c-yellow{color:var(--yellow)}
+  .c-green{color:var(--green)} .c-yellow{color:var(--yellow)} .c-ember{color:var(--flag)}
   #themeToggle{position:fixed;top:12px;right:14px;z-index:60;font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--scope);cursor:pointer}
 
   /* ---- fig 1: the waterline ---- */
   .waterfig{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:22px 0 6px}
   .band{padding:18px 20px}
   .band .bandlabel{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}
+  .band.air .bandlabel{color:var(--flag)}  /* ember: the tension band is the finding */
   .band.air{background:var(--air)}
   .band.water{background:var(--water);border-top:2px dashed var(--line)}
   .cells{display:flex;flex-wrap:wrap;gap:8px}
@@ -63,7 +78,7 @@
   .trackline{display:flex;align-items:center}
   @media(max-width:560px){.barrow{grid-template-columns:1fr}.barrow .who{margin-bottom:-6px}}
 
-  .rule{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--yellow);border-radius:8px;padding:14px 18px;margin:16px 0}
+  .rule{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--flag);border-radius:8px;padding:14px 18px;margin:16px 0}
   details{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:10px 0}
   summary{cursor:pointer;font-weight:600}
   details[open]{padding-bottom:16px}
@@ -103,7 +118,7 @@
       <div class="band air">
         <div class="bandlabel">Above the line — judgment residue (needs a stronger model)</div>
         <div class="cells">
-          <span class="cell"><b>wildcard matcher</b> <span class="st c-yellow">■ sonnet-5 @ low · $0.23/try</span></span>
+          <span class="cell"><b>wildcard matcher</b> <span class="st c-ember">■ sonnet-5 @ low · $0.23/try</span></span>
         </div>
       </div>
       <div class="band water">
