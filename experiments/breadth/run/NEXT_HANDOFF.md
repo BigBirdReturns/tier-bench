@@ -87,25 +87,28 @@ Lane self-test (no live model, $0): `python experiments/breadth/ui_capture_smoke
    where rows exist; tier_ceiling stays declared elsewhere.
 5. Fable medium→max: DO NOT RUN until a wall exists.
 
-## Fable runway (remaining frontier quota until the Friday reset)
+## Fable runway → see /ROADMAP.md (the say-go runway)
 
-Fable's tokens are for judgment work ONLY — everything below this list is
-already done or is Opus/Sonnet-class. Ordered by value:
+The full executable arc now lives in **`/ROADMAP.md`**. Turn high effort on, say
+**"go"**, and that file is the only thing to read — every next PR is specced
+there (files, schema, acceptance, and the Fable-vs-cheap spend split) so no
+frontier token is burned re-deriving the plan.
 
-1. **AXM provenance layer** (operator's AXM_provenance_ledger: §22 tasks) —
-   `docs/provenance.md`, `schemas/source_ledger.schema.json`, versioned
-   primitive registry with source_basis/derived_claim/not_source_claim
-   fields, tests that reject unsourced primitives. Architecture + judgment;
-   the repo is named in the ledger as AXM's measurement instrument.
-2. **Freeze the task02 edge-family invariant table** (run/task02_edge_family.md
-   → a reviewed verdict table) and **author the almanac synthetic hidden
-   vectors** (almanac/DESIGN.md "Next" list) — grader authoring is
-   driver-owned work.
-3. **Adjudications only**: any new evidence-class call (transport vs model,
-   receipt vs derived) that comes in from captures.
+Live state (mirror of ROADMAP STATE):
 
-NOT Fable work (done or cheap): site/data plumbing (PR #46), reruns of
-settled cells, effort-matrix filling (blocked by LESSONS rule 2), doc edits.
+1. **PR #47 — AXM provenance layer — DONE** (open PR
+   https://github.com/BigBirdReturns/tier-bench/pull/47): source ledger, 7-primitive
+   registry, `validate_primitives.py` guard wired into CI. The two model-authored
+   sources (gpt-5.5-high ledger, gpt-4o spectra) are recorded and author-named.
+2. **PR #48 — Frontier capture ledger — NEXT** (blocked until #47 merges; one
+   branch, serial). Spec in ROADMAP.
+3. **PR #49 — edge-family freeze + almanac hidden-knot corpus** — queued. Spec in
+   ROADMAP. Absorbs the old runway items 2 (edge-family/almanac) and 3
+   (adjudications).
+
+NOT Fable work (done or cheap): site/data plumbing, reruns of settled cells,
+effort-matrix filling (LESSONS rule 2), doc edits, and the JSON/test/CI plumbing
+inside each PR — route those to the floor per the ROADMAP spend split.
 
 ## Standing rules (short form — full text in LESSONS.md)
 

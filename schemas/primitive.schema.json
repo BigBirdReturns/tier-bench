@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/primitive.schema.json",
+  "title": "AXM primitive",
+  "description": "A named AXM primitive with a full source trail. Every primitive must map to sources (source_basis), state what it derives (derived_claim), and guard against overclaim (not_source_claim). scripts/validate_primitives.py enforces this schema AND referential integrity against the source ledger.",
+  "type": "object",
+  "required": ["primitive_id", "name", "status", "source_basis", "derived_claim", "not_source_claim", "verifier", "failure_mode"],
+  "additionalProperties": true,
+  "properties": {
+    "primitive_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "snake_case stable id."
+    },
+    "name": {"type": "string", "minLength": 1},
+    "status": {
+      "type": "string",
+      "enum": ["settled", "derived", "synthesis"],
+      "description": "settled = rests on a directly-cited external authority; derived = an architectural mapping from sources to an AXM claim; synthesis = AXM-native, resting on repo evidence or analogy only (most guarded)."
+    },
+    "source_basis": {
+      "type": "array",
+      "minItems": 1,
+      "description": "At least one source. A primitive with no source_basis is rejected — that is the whole point of the layer.",
+      "items": {
+        "type": "object",
+        "required": ["source_id", "support_type", "supports"],
+        "additionalProperties": false,
+        "properties": {
+          "source_id": {"type": "string", "description": "Must resolve to an entry in the source ledger."},
+          "support_type": {
+            "type": "string",
+            "enum": ["direct_fact", "baseline", "repo_evidence", "external_evidence", "analogy"],
+            "description": "direct_fact = source states the fact; baseline = source sets a requirement the primitive maps onto; repo_evidence = a measured artifact in this repo; external_evidence = supporting external doc; analogy = an explicitly non-literal mapping (requires a not_source_claim disclaiming literalness)."
+          },
+          "supports": {"type": "string", "minLength": 1, "description": "What, precisely, this source supports."}
+        }
+      }
+    },
+    "derived_claim": {"type": "string", "minLength": 1, "description": "The AXM claim derived from the basis. This is synthesis, not a source fact."},
+    "not_source_claim": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1},
+      "description": "Explicit guards: what the sources do NOT say, so synthesis is never laundered into fact."
+    },
+    "verifier": {"type": "string", "minLength": 1, "description": "The command or artifact that checks this primitive."},
+    "failure_mode": {"type": "string", "minLength": 1, "description": "How this primitive degrades if unpoliced."},
+    "next_baseline": {"type": "string", "description": "Optional: the next measurement that would sharpen or challenge it."}
+  }
+}
