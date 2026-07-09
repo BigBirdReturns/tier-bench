@@ -45,6 +45,23 @@ Once the shard is mounted in a local AXM store you can also query it in natural
 language (`axm chat query "which lenses catch boundary errors"`) — the same
 deterministic-SQL path the `memory/` decisions shard uses.
 
+
+### Environments without the AXM toolchain
+
+A fresh tier-bench-only clone has no `axm-verify`. Use the tiered check — it reports
+WHICH level it verified at (per `docs/burden-discipline.md`, an unnamed gap is a defect):
+
+```bash
+python -m capability_harness.lens_shard memory/lenses/shard
+# GOLD PASS    -> full cryptographic verification (Merkle + hybrid signature)
+# SIDECAR PASS -> toolchain absent: sha256 consistency vs the committed
+#                 shard.sha256 sidecar (anchored to a gold PASS at seal time,
+#                 authenticity riding on git). Cryptographic level: unmeasured.
+```
+
+The sidecar can only be (re)written after a gold PASS (`--write-sidecar` refuses
+otherwise), so re-sealing the shard stays gated on the real kernel.
+
 ## Rebuild / make it living
 
 The shard is **living**: it grows as the community adds validated lenses.

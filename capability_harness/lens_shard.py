@@ -48,6 +48,59 @@ def verify_shard(shard_dir: str | Path) -> bool:
     return True
 
 
+def sidecar_path(shard_dir: str | Path) -> Path:
+    return Path(shard_dir).parent / (Path(shard_dir).name + ".sha256")
+
+
+def write_sidecar(shard_dir: str | Path) -> Path:
+    """Record sha256 of every shard file. Generated only after a GOLD axm-verify
+    PASS, so the sidecar is anchored to a cryptographically verified state."""
+    import hashlib
+    shard = Path(shard_dir)
+    lines = []
+    for f in sorted(shard.rglob("*")):
+        if f.is_file():
+            h = hashlib.sha256(f.read_bytes()).hexdigest()
+            lines.append(f"{h}  {f.relative_to(shard)}")
+    out = sidecar_path(shard)
+    out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return out
+
+
+def check_sidecar(shard_dir: str | Path) -> bool:
+    """Stdlib consistency check: every shard file matches the committed sidecar.
+    WEAKER than axm-verify (relies on git for authenticity of the sidecar itself;
+    no signature or Merkle proof) — but real: any in-place byte change to the
+    shard that doesn't also rewrite the sidecar fails closed."""
+    import hashlib
+    shard = Path(shard_dir)
+    sc = sidecar_path(shard)
+    if not sc.exists():
+        raise FileNotFoundError(f"sidecar missing: {sc}")
+    want = {}
+    for line in sc.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            h, _, rel = line.partition("  ")
+            want[rel] = h
+    have = {str(f.relative_to(shard)): hashlib.sha256(f.read_bytes()).hexdigest()
+            for f in sorted(shard.rglob("*")) if f.is_file()}
+    if have != want:
+        diff = {k for k in set(want) | set(have) if want.get(k) != have.get(k)}
+        raise ValueError(f"sidecar mismatch on: {sorted(diff)}")
+    return True
+
+
+def check(shard_dir: str | Path) -> tuple[str, bool]:
+    """Tiered integrity check. Returns (level, ok):
+      ('gold', True)    — axm-verify cryptographic PASS (Merkle + signature)
+      ('sidecar', True) — toolchain absent; stdlib sha256 consistency PASS
+    Raises on any actual mismatch at either level. The level is part of the
+    result on purpose: 'verified' without saying HOW is an unnamed gap."""
+    if shutil.which("axm-verify"):
+        return ("gold", verify_shard(shard_dir))
+    return ("sidecar", check_sidecar(shard_dir))
+
+
 def load_lenses(shard_dir: str | Path, verify: bool = False) -> list[Lens]:
     """Reconstruct the lens list from a sealed shard's committed source.
 
@@ -66,3 +119,26 @@ def load_lenses(shard_dir: str | Path, verify: bool = False) -> list[Lens]:
             lenses.append(Lens(key, line[len(_INSTR):]))
             key = None
     return lenses
+
+
+if __name__ == "__main__":
+    import sys
+    shard = sys.argv[1] if len(sys.argv) > 1 else "memory/lenses/shard"
+    if "--write-sidecar" in sys.argv:
+        # only regenerate after a gold PASS — enforced here, not by convention
+        level, ok = ("gold", verify_shard(shard)) if __import__("shutil").which("axm-verify") else ("none", False)
+        if level != "gold" or not ok:
+            raise SystemExit("REFUSED: sidecar may only be written after a gold axm-verify PASS "
+                             "(toolchain missing or verification failed)")
+        p = write_sidecar(shard)
+        print(f"gold PASS -> sidecar written: {p}")
+        raise SystemExit(0)
+    level, ok = check(shard)
+    n = len(load_lenses(shard))
+    print(f"lens shard integrity: {level.upper()} {'PASS' if ok else 'FAIL'} · {n} lenses loaded")
+    if level == "sidecar":
+        print("note: cryptographic (Merkle+signature) verification UNMEASURED in this "
+              "environment — axm-verify not on PATH. Sidecar = sha256 consistency vs the "
+              "committed record, anchored to a gold PASS at seal time. Gap named per "
+              "docs/burden-discipline.md.")
+    raise SystemExit(0 if ok else 1)
