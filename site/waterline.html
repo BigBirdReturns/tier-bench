@@ -180,6 +180,46 @@
   </section>
 
   <section>
+    <h2>How we got here</h2>
+    <p>The measuring stick, PR&nbsp;#1 to now. The left column is the work; the right
+    column is the only number that matters — <strong>hidden-graded cells with a sealed
+    verdict</strong>. Note how long it stays at zero: most of this project was building
+    an instrument honest enough that its first real measurements could be trusted.</p>
+    <div id="progressSummary" class="figcap" style="margin:14px 0 4px"></div>
+    <div id="progressTimeline" style="margin-top:10px"></div>
+    <noscript><p class="muted small">Timeline requires JavaScript — the same record is in
+    <a href="progress.json">progress.json</a>.</p></noscript>
+    <style>
+      .ms{display:grid;grid-template-columns:70px 1fr 84px;gap:12px;padding:12px 0;border-top:1px solid var(--line);align-items:baseline}
+      .ms:first-child{border-top:none}
+      .ms .d{font-family:var(--mono);font-size:11.5px;color:var(--scope)}
+      .ms .t b{display:block;margin-bottom:2px}
+      .ms .t span{color:var(--muted);font-size:.88rem}
+      .ms .c{font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap}
+      .ms .c b{font-size:1.25rem;color:var(--ink)}
+      .ms .c.zero b{color:var(--muted)}
+    </style>
+    <script>
+    fetch("progress.json").then(r=>r.json()).then(p=>{
+      const s=p.summary;
+      document.getElementById("progressSummary").innerHTML =
+        `<span class="chip">${s.prs_merged} PRs merged</span> <span class="chip">${s.span}</span> `+
+        `<span class="chip">${s.hidden_graded_cells} hidden-graded cells</span> `+
+        `<span class="chip">${s.community_rows} public result rows</span> `+
+        `<span class="chip">$${s.frontier_spend_usd.toFixed(2)} total frontier spend</span>`;
+      document.getElementById("progressTimeline").innerHTML = p.milestones.map(m=>
+        `<div class="ms"><div class="d">${m.date}</div>`+
+        `<div class="t"><b>${m.title}</b><span>${m.detail}</span></div>`+
+        `<div class="c ${m.cells_settled?"":"zero"}"><b>${m.cells_settled}</b> cells</div></div>`
+      ).join("");
+    }).catch(()=>{
+      document.getElementById("progressTimeline").innerHTML =
+        '<p class="muted">Could not load progress.json — the record lives in the repo.</p>';
+    });
+    </script>
+  </section>
+
+  <section>
     <h2>Methods, honestly</h2>
     <details>
       <summary>Hidden grading — why every number here is trusted</summary>
