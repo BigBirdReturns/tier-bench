@@ -22,10 +22,14 @@ touch #50+ before #47–#49 have landed — the foundation must be hard first.
 
 ## STATE
 
+> **Firehose status: ARMED.** PR #47 is merged to `main`; the branch
+> `claude/setup-algstb` resets clean onto it. Bring the driver in with high
+> effort on and say **go** — #48 is unblocked and fully specced below.
+
 | PR | Title | Status |
 |----|-------|--------|
-| #47 | AXM provenance layer | **DONE** — https://github.com/BigBirdReturns/tier-bench/pull/47 |
-| #48 | Frontier capture ledger | **NEXT** (blocked until #47 merges) |
+| #47 | AXM provenance layer | **DONE / merged** — https://github.com/BigBirdReturns/tier-bench/pull/47 |
+| #48 | Frontier capture ledger | **NEXT — armed** (reset onto main, build) |
 | #49 | Edge-family + almanac hidden-knot corpus | queued |
 | #50 | Orchestration-pattern benchmark | not yet — needs #48 + #49 first |
 | #51 | OSS replay field | not yet |
