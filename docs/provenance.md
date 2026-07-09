@@ -7,6 +7,11 @@ to read as fact. This layer makes that impossible to do silently: **every
 primitive carries a source trail, and a verifier rejects any primitive that
 doesn't.**
 
+See also [`burden-discipline.md`](burden-discipline.md): the closure-packet
+lens that names who owes proof, who may close, and what happens when proof is
+missing. Provenance is the attribution trail; burden discipline is the closure
+rule.
+
 It is the tier-bench-side implementation of two things we already committed to:
 
 - the operator's provenance ledger, section 0 — *"Nothing below should be treated

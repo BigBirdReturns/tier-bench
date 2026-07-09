@@ -56,6 +56,13 @@ changed). Fix red CI before reporting done — that is part of the PR.
 
 ## BUDGET discipline — how not to blow the model limit
 
+**Firehose means dense demarcation, not uncontrolled spend.** Each run must make
+clear which model/effort owns which work: cheap floor for mechanical plumbing and
+settled cells, driver/Fable-class judgment for schema semantics and invariant
+freezes, and the Fable effort gradient (`low → medium → high → xhigh →
+ultracode/max`) only on residual work, walked bottom-up. A max-effort pass
+without lower-rung receipts maps a ceiling, not the frontier.
+
 This is the repo's own thesis applied to building the repo. **Fable's tokens are
 for the judgment residue only.** Every PR below is split:
 
@@ -73,6 +80,13 @@ model. **Never rerun settled cells.** **K-of-K is a ceiling; one miss is noise.*
 **Adapt freely, never self-grade** (adapt.py FREE/GATED gate). **Never fabricate
 a receipt** — broken pipelines mint neither PASS nor FAIL. **PII never enters the
 repo** — almanac vectors are synthetic only.
+
+**Burden discipline is first-class.** For any PR that introduces a new validator,
+ledger, result class, shard, or authorization path, include a closure packet (see
+`docs/burden-discipline.md`) naming the requested outcome, authority, predicates,
+burden holder, evidence, verifier, gap, closure decision, and failure default. If
+that packet cannot be answered, the state is `proposal`, `partial`, `unmeasured`,
+or another explicit non-closed status — never silently closed.
 
 ---
 
@@ -138,6 +152,10 @@ tests/test_capture_roi.py
 - ROI script computes break-even when old/new path costs exist.
 - Capture entries distinguish real-billed, shadow-estimated, subscription-derived,
   and repaired/transport-adjudicated evidence.
+- Capture entries include a burden packet: claimant, authority, predicates, burden
+  holder, evidence, verifier, gap, closure decision, and failure default.
+- `captured_not_yet_amortized` is a non-closed ROI state: missing replay evidence
+  defaults to `needs_replay`/`partial`, not accepted amortization.
 - Capture entries can link to waterline task IDs but do not mutate waterline automatically.
 - At least one worked example exists for task02.
 ```
@@ -195,6 +213,8 @@ tests/test_almanac_vectors.py
 **Acceptance criteria**
 ```
 - task02 edge-family table is frozen as reviewed invariants, not notes.
+- The invariant table names its closure authority/reviewer; disputed or unreviewed
+  verdicts remain proposal-only and cannot become hidden graders.
 - Almanac tasks have hidden graders and are listed by breadth_tasks.py as capability-valid.
 - At least three hidden-knot tasks exist, but NO model results are claimed yet.
 - Hidden graders are deterministic.
