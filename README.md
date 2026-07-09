@@ -51,12 +51,35 @@ Tasks are grouped by what can be validated deterministically.
 | T1 | Simple functions, unit tests, docstring specs. | 3 | compile, tests |
 | T2 | Bug fixes, API wiring, multi-file patches. | 3 | compile, tests, diff bounds |
 | T3 | Security fixes, god function refactors, cross-module debugging. | 3 | compile, tests, AST structural checks |
-| T4 | Planning, decomposition. | 0 | JSON plan validity (buildable, not built) |
+| T4 | Planning, decomposition. | 1 | JSON plan lint (visible) + hidden semantic judge |
 | T5 | Architectural judgment. | 0 | Not benchmarked. Human review. |
 
 Tier Bench is explicit about what it measures and what it does not.
 
-T0 through T3 have 12 deterministic tasks with objective pass/fail. T4 and T5 ceilings are assigned by frontier positioning. The README does not pretend otherwise.
+T0 through T3 have 13 deterministic tasks with objective pass/fail, and T4 has its first (plan validity: visible schema lint + hidden semantic judge). T5 ceilings are assigned by frontier positioning. The README does not pretend otherwise.
+
+## Current measured finding (the waterline)
+
+Tier Bench measures **the cheapest verified execution path** for hidden-graded
+tasks. As of the first sealed sediment layers (2026-07-08):
+
+- **Spec-following tasks are settled at the cheap floor** in the measured set —
+  hidden-graded, K=3, T0 through T4.
+- **The first measured model separation is a judgment-boundary residue, not a
+  task tier**: task02's escape-inside-class rule cracks haiku (3/5) and clears
+  at sonnet-5@low (hidden 10681/10681 ×3, ~$0.23/trial real-billed).
+- **The router should key on settled-vs-derived work, not declared tier
+  ceiling.** Ask the instrument: `python experiments/breadth/waterline.py
+  --task <task_id>` — settled routes cheap, residue is named and priced,
+  missing evidence says missing.
+
+**Measured update (2026-07-08):** with hidden grading (the solver never sees
+the deciding tests), the cheapest current model clears T0–T4 spec-following at
+3/3 — the difficulty ladder no longer separates 2026 models; the axis that
+does is settled (spec-following) vs. derived (judgment/counterexample) work.
+The original hypotheses are scored against the data in
+[HYPOTHESES.md](HYPOTHESES.md); the measured frontier residue so far is one
+nameable judgment edge (`experiments/breadth/run/task02_edge_family.md`).
 
 ## How it works
 

@@ -161,3 +161,18 @@ python experiments/breadth/escalate.py run/ledger.jsonl --tiers <ladder> --cost 
 python experiments/breadth/limit.py run/ledger.jsonl --breadth map.json \
     --quota-usd <Q> --top-rung claude-fable-5@max          # budget + decision packet
 ```
+
+## Runnable tooling (committed — no session scratch required)
+
+Phase 1/2 execute from `experiments/breadth/selfrun/`:
+
+```bash
+python experiments/breadth/selfrun/prep.py /tmp/breadth-scratch          # working copies, hidden files stripped, pre-edit baselines
+# ...solver of your choice writes each trial's target file (session subagent, CLI, or pasted candidate)...
+python experiments/breadth/selfrun/grade.py TASK_ID K --scratch /tmp/breadth-scratch [--model ... --tier ... --cost-usd ...]
+python experiments/breadth/selfrun/effort_trial.py TASK_ID --scratch /tmp/breadth-scratch --effort low   # nested-CLI rung, exact tokens + real billed USD
+```
+
+Other lanes: `xprovider_run.py` (API providers), `subscription_run.py`
+(subscription surfaces, candidates graded locally). All lanes append to the
+same ledger schema; `breadth_tasks.py` says which tasks are breadth-valid.

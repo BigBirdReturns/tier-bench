@@ -15,6 +15,14 @@ class Task:
     validate: dict[str, Any]  # flags for deterministic validators
     max_lines_changed: int
     allowed_files: list[str]
+    # Hidden grading (optional). An agentic solver iterates against any grader
+    # it can see, so tasks meant to discriminate keep their deciding tests out
+    # of the working copy: `hidden_files` are removed from the solver's copy
+    # (and thus from the rendered prompt) and injected back at grade time, when
+    # `hidden_run_command` must exit 0. Tasks without these fields grade
+    # exactly as before.
+    hidden_files: list[str] = None  # type: ignore[assignment]
+    hidden_run_command: list[str] | None = None
 
     @staticmethod
     def from_json(path: Path) -> "Task":
@@ -30,4 +38,7 @@ class Task:
             validate=dict(raw["validate"]),
             max_lines_changed=int(raw["max_lines_changed"]),
             allowed_files=list(raw["allowed_files"]),
+            hidden_files=list(raw.get("hidden_files", [])),
+            hidden_run_command=(list(raw["hidden_run_command"])
+                                if raw.get("hidden_run_command") else None),
         )

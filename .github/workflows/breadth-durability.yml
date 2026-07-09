@@ -1,0 +1,33 @@
+name: breadth-durability
+# The boring checks that keep the measurement layer from rotting.
+# No provider keys, no live model calls, $0.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  durability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: compile breadth + harness tooling
+        run: |
+          python -m py_compile experiments/breadth/*.py experiments/breadth/selfrun/*.py \
+            harness/*.py experiments/almanac/reference/*.py experiments/breadth/edge_family/*.py \
+            scripts/validate_primitives.py tests/test_validate_primitives.py
+      - name: valid task set prints (hidden-grader guard)
+        run: python experiments/breadth/breadth_tasks.py
+      - name: grade->ledger->map spine ($0)
+        run: python experiments/breadth/smoke.py
+      - name: UI-capture lane end-to-end ($0, temp files)
+        run: python experiments/breadth/ui_capture_smoke.py
+      - name: waterline schema + evidence-layer enforcement
+        run: python experiments/breadth/waterline.py --check
+      - name: AXM primitives are sourced (unsourced primitive fails the build)
+        run: python scripts/validate_primitives.py
+      - name: provenance guard tests bite
+        run: python tests/test_validate_primitives.py

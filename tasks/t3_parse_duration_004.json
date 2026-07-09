@@ -1,0 +1,18 @@
+{
+  "task_id": "t3_parse_duration_004",
+  "tier": "T3",
+  "prompt_template": "Task: Implement parse_duration() exactly to the spec in its docstring.\n\nRules:\n- Return ONLY the full updated content for {target_relpath}.\n- Do not add commentary.\n- Make the program print OK and exit 0 when run.\n- The docstring spec is the contract: EVERY rule in it is graded, including the ones the visible checks in main() do not exercise. Implement the spec, not just the sample checks.\n- Do not modify any file outside {target_relpath}.\n\nCurrent file content:\n{file_content}\n\nBaseline run (before edits):\nexit={baseline_rc}\nstdout:\n{baseline_stdout}\nstderr:\n{baseline_stderr}\n\nOther files in fixture (read-only context):\n{context_files}\n",
+  "fixture_dir": "fixtures/t3_parse_duration",
+  "target_relpath": "input.py",
+  "run_command": ["python", "input.py"],
+  "validate": {
+    "compile": true,
+    "ruff_imports": false,
+    "functional_equivalence": false,
+    "tests": true
+  },
+  "max_lines_changed": 250,
+  "allowed_files": ["input.py"],
+  "hidden_files": ["hidden_tests.py"],
+  "hidden_run_command": ["python", "hidden_tests.py"]
+}

@@ -46,14 +46,37 @@ def breadth_valid_tasks(root: Path = UPLIFT) -> list[dict]:
 
 
 def is_gameable(manifest_or_dir: str | Path) -> bool:
-    """True if the solver can see the deciding grader. The tasks/*.json format is
-    always gameable (target == the graded file)."""
+    """True if the solver can see the deciding grader.
+
+    tasks/*.json manifests are gameable UNLESS they declare hidden grading
+    (`hidden_files` + `hidden_run_command`): the harness strips those files from
+    the solver's working copy and prompt, and injects them only at grade time
+    (harness/task_schema.py + harness/attempt.py). Manifests without those
+    fields grade with the file the solver edits/runs — answer-key theatre."""
+    import json
     p = Path(manifest_or_dir)
     if p.suffix == ".json":
-        return True  # tasks/ manifests: solver edits the file the grader runs
+        try:
+            raw = json.loads(p.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return True
+        return not (raw.get("hidden_files") and raw.get("hidden_run_command"))
     if p.is_dir():
         return not any((p / n).exists() for n in HIDDEN_GRADER_NAMES)
     return True
+
+
+def breadth_valid_manifests(tasks_dir: Path = REPO / "tasks") -> list[dict]:
+    """tasks/*.json manifests that declare hidden grading — breadth-valid via the
+    harness's hidden_files mechanism."""
+    out = []
+    for mp in sorted(tasks_dir.glob("*.json")):
+        if not is_gameable(mp):
+            import json
+            raw = json.loads(mp.read_text(encoding="utf-8"))
+            out.append({"task": raw["task_id"], "manifest": str(mp.relative_to(REPO)),
+                        "hidden_grader": raw["hidden_files"][0]})
+    return out
 
 
 if __name__ == "__main__":
@@ -61,7 +84,11 @@ if __name__ == "__main__":
     print(f"breadth-valid (hidden-grader) tasks: {len(valid)}")
     for t in valid:
         print(f"  {t['task']:24s} hidden grader: {t['hidden_grader']}  ({t['dir']})")
+    hidden_manifests = breadth_valid_manifests()
+    print(f"\nbreadth-valid tasks/*.json manifests (hidden_files grading): {len(hidden_manifests)}")
+    for t in hidden_manifests:
+        print(f"  {t['task']:28s} hidden grader: {t['hidden_grader']}  ({t['manifest']})")
     print("\nNOT breadth-valid (visible grader — an agentic solver reads the answer key):")
-    print("  every tasks/*.json manifest  (solver edits input.py; grader is `python input.py`)")
+    print("  every tasks/*.json manifest WITHOUT hidden_files/hidden_run_command")
     print("  tier-uplift task03/04/05/07  (no hidden grader file)")
     print("\nMap on the valid set only. Grow it by authoring visible/hidden-daylight tasks.")

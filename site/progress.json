@@ -1,0 +1,73 @@
+{
+ "_generated_by": "scripts/generate_progress.py",
+ "summary": {
+  "prs_merged": 46,
+  "span": "Feb 13 \u2192 Jul 09",
+  "hidden_graded_cells": 6,
+  "evidence_layers": 3,
+  "community_rows": 51,
+  "frontier_spend_usd": 4.31
+ },
+ "milestones": [
+  {
+   "date": "Feb 13",
+   "title": "v0.1.0 \u2014 the router idea ships",
+   "detail": "Deterministic tasks, tier routing, cost guard. Zero capability measurements.",
+   "cells_settled": 0
+  },
+  {
+   "date": "Jul 06",
+   "title": "PRs #1\u20135 \u2014 the instrument gets built",
+   "detail": "Harness, one attempt path, site, contribution pipeline, driver control set. Still zero measured capability cells.",
+   "cells_settled": 0
+  },
+  {
+   "date": "Jul 07",
+   "title": "PR #6 \u2014 first measured data ever",
+   "detail": "70 graded disposition cells (control set). Disposition, not capability: flat across effort.",
+   "cells_settled": 0
+  },
+  {
+   "date": "Jul 07",
+   "title": "PRs #18\u201324 \u2014 tier-uplift: hidden grading is born",
+   "detail": "Cheap+harness reaches the tier above; visible/hidden daylight becomes the design; the 'taste residue' correction (#24) sets the honesty bar.",
+   "cells_settled": 0
+  },
+  {
+   "date": "Jul 07",
+   "title": "PRs #25\u201331 \u2014 the harness is packaged public",
+   "detail": "capability_harness, findings page, sealed lens shard.",
+   "cells_settled": 0
+  },
+  {
+   "date": "Jul 07",
+   "title": "PRs #32\u201337 \u2014 the breadth program + the catch",
+   "detail": "Self-run runbook, adaptive gate, and #37: visible graders are gameable \u2014 'cleared everything' was the answer key. The ruler gets honest.",
+   "cells_settled": 0
+  },
+  {
+   "date": "Jul 08",
+   "title": "PR #43 \u2014 LESSONS + first (provisional) corner",
+   "detail": "K=1 layer: 3 cells cleared-once. Below the settled bar by its own admission.",
+   "cells_settled": 3
+  },
+  {
+   "date": "Jul 08",
+   "title": "PR #42 \u2014 the K=3 floor is sealed",
+   "detail": "5 hidden-graded cells settled; the tier ladder falls (haiku clears T0\u2013T4); first model separation: sonnet-5@low clears the crack haiku can't. $4.31 total frontier spend.",
+   "cells_settled": 6
+  },
+  {
+   "date": "Jul 08",
+   "title": "PR #45 \u2014 waterline becomes the product",
+   "detail": "Measured routing registry + zero-spend CLI + CI durability. Ask it: settled routes cheap, residue is named and priced, missing says missing.",
+   "cells_settled": 6
+  },
+  {
+   "date": "Jul 09",
+   "title": "PR #46 \u2014 the data reaches the public surfaces",
+   "detail": "51 ledger rows flow through the community pipeline into the comparer/aggregate/cheatsheet; this progress record ships.",
+   "cells_settled": 6
+  }
+ ]
+}
