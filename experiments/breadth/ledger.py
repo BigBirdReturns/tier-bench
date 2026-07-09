@@ -55,9 +55,14 @@ class Call:
 
 
 def log_call(path: str | Path, **kw) -> Call:
-    """Append one call to the ledger and return it. Unknown keys go to `extra`."""
+    """Append one call to the ledger and return it. Unknown keys go to `extra`.
+    An explicit `extra={...}` kwarg is merged with the unknown-key routing rather
+    than colliding with it (the collision crashed the first cross-provider runner
+    on its very first logged call — a paid call must never die unlogged)."""
     known = {f for f in Call.__dataclass_fields__}  # noqa
+    explicit = kw.pop("extra", {}) or {}
     extra = {k: kw.pop(k) for k in list(kw) if k not in known}
+    extra.update(explicit)
     call = Call(extra=extra, **kw)
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
