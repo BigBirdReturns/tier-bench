@@ -5,11 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>The Waterline — where the frontier actually is | Tier Bench</title>
 <meta name="description" content="Hidden-graded measurements of five coding tasks across cheap and frontier models. Everything spec-shaped settled at the cheapest model. The measured frontier is one named rule.">
-<!-- AXM house-style family thread: Barlow Condensed (display) + IBM Plex Sans (running) + IBM Plex Mono (evidence). System fallbacks keep it readable if the CDN is blocked. -->
+<!-- SCG identity: IBM Plex Sans 600 (uppercase display) + IBM Plex Mono (body/evidence). Void-native — no theme toggle, per the mark constitution. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<script>document.documentElement.dataset.theme=localStorage.getItem("pta-theme")||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");</script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&display=swap" rel="stylesheet">
 <style>
   /* ── Frozen SCG tokens — source of truth: axm-tools identity/scg/source/scg.tokens.css
      (Mark Constitution §1,§4). Four-token palette + the family type stack. Ember is
@@ -19,49 +18,41 @@
     --scg-bone:#ECE7D8; --scg-olive:#7C7F57; --scg-void:#0D0C09; --scg-ember:#C24B2C;
     --sans:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
     --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-    --display:'Barlow Condensed','IBM Plex Sans',system-ui,sans-serif;
 
-    /* Cream Editorial (light family) — paper dressed around the frozen tokens */
-    --bg:#f0ebe0; --panel:#faf9f5; --panel2:#efe9dc; --line:#c9c0ae;
-    --ink:#1a1712; --ink2:#3a352b; --muted:#6b6459; --scope:var(--scg-olive);
-    --flag:var(--scg-ember); --blue:#7c4a2c;
-    --green:#3d6b4a; --yellow:#8a6d1e;
-    --water:#e6ece8; --air:#f6f1e6;
-  }
-  :root[data-theme="dark"]{
-    /* Dark Ecosystem (warm-black family) — bone on void, the frozen pair */
-    --bg:var(--scg-void); --panel:#15130e; --panel2:#201c15; --line:#33302a;
-    --ink:var(--scg-bone); --ink2:#c7c1b1; --muted:#8f8975; --scope:#9a9c78;
-    --flag:#d0623f; --blue:#d6a578;  /* ember lifted for contrast on void — same hue */
+    /* Void-native — bone on void, the frozen pair. One family, no toggle. */
+    --bg:var(--scg-void); --panel:#0F0E0B; --panel2:#17160f; --line:#232219;
+    --ink:var(--scg-bone); --ink2:#c7c1b1; --muted:#8f8975; --scope:var(--scg-olive);
+    --flag:var(--scg-ember); --blue:var(--scg-ember);
     --green:#6fae72; --yellow:#c9a94e;
     --water:#12181a; --air:#1a1710;
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  body{background:var(--bg);color:var(--ink);font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);color:var(--ink);font:15px/1.62 var(--mono);-webkit-font-smoothing:antialiased}
   .wrap{max-width:880px;margin:0 auto;padding:0 20px}
-  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
-  code{font-family:var(--mono);background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:.9em}
-  pre{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.55;margin:14px 0;font-family:var(--mono)}
-  h1{font-family:var(--display);font-weight:600;font-size:2.9rem;line-height:1.06;margin:0 0 14px;letter-spacing:.005em}
-  h2{font-family:var(--display);font-weight:600;font-size:1.7rem;line-height:1.1;margin:0 0 10px;letter-spacing:.01em}
+  a{color:var(--blue);text-decoration:none;border-bottom:1px solid #33322a} a:hover{border-bottom-color:var(--blue)}
+  code{font-family:var(--mono);background:var(--panel2);padding:1px 6px;font-size:.9em}
+  pre{background:var(--panel);border:1px solid var(--line);padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.55;margin:14px 0;font-family:var(--mono)}
+  h1{font-family:var(--sans);font-weight:600;text-transform:uppercase;font-size:2.05rem;line-height:1.16;margin:0 0 14px;letter-spacing:.02em}
+  h2{font-family:var(--sans);font-weight:600;text-transform:uppercase;font-size:1.12rem;line-height:1.2;margin:0 0 10px;letter-spacing:.09em}
   section{padding:40px 0;border-top:1px solid var(--line)}
-  .hero{padding:60px 0 40px;border-top:none}
-  .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}
-  .lede{color:var(--ink2);font-size:1.1rem;max-width:44em}
+  .hero{padding:56px 0 40px;border-top:none}
+  .brandrow{display:flex;align-items:flex-start;gap:16px;margin-bottom:18px}
+  #mark{line-height:0}
+  .kicker{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}
+  .lede{color:var(--ink2);font-size:1.02rem;max-width:46em}
   .muted{color:var(--muted)} .small{font-size:.86rem}
-  .chip{display:inline-block;font-family:var(--mono);font-size:11.5px;padding:2px 9px;border-radius:999px;border:1px solid var(--line);white-space:nowrap;background:var(--panel)}
+  .chip{display:inline-block;font-family:var(--mono);font-size:11px;padding:2px 9px;border:1px solid var(--line);white-space:nowrap;background:var(--panel);color:var(--scope)}
   .c-green{color:var(--green)} .c-yellow{color:var(--yellow)} .c-ember{color:var(--flag)}
-  #themeToggle{position:fixed;top:12px;right:14px;z-index:60;font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--panel);color:var(--scope);cursor:pointer}
 
   /* ---- fig 1: the waterline ---- */
-  .waterfig{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:22px 0 6px}
+  .waterfig{border:1px solid var(--line);overflow:hidden;margin:22px 0 6px}
   .band{padding:18px 20px}
   .band .bandlabel{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--scope);margin-bottom:10px}
   .band.air .bandlabel{color:var(--flag)}  /* ember: the tension band is the finding */
   .band.air{background:var(--air)}
   .band.water{background:var(--water);border-top:2px dashed var(--line)}
   .cells{display:flex;flex-wrap:wrap;gap:8px}
-  .cell{font-family:var(--mono);font-size:12px;padding:6px 10px;border-radius:6px;background:var(--panel);border:1px solid var(--line)}
+  .cell{font-family:var(--mono);font-size:12px;padding:6px 10px;background:var(--panel);border:1px solid var(--line)}
   .cell b{font-weight:600}
   .cell .st{margin-left:6px}
   .figcap{font-size:.85rem;color:var(--muted);margin:8px 2px 0;max-width:46em}
@@ -71,15 +62,15 @@
   .barrow{display:grid;grid-template-columns:210px 1fr;gap:12px;align-items:center}
   .barrow .who{font-family:var(--mono);font-size:12.5px;color:var(--ink2)}
   .barrow .who .sub{color:var(--muted);display:block;font-size:11px}
-  .track{position:relative;height:14px;background:var(--panel2);border-radius:4px}
-  .fill{position:absolute;inset:0 auto 0 0;border-radius:4px}
+  .track{position:relative;height:14px;background:var(--panel2);}
+  .fill{position:absolute;inset:0 auto 0 0;}
   .fill.ok{background:var(--green)} .fill.warn{background:var(--yellow)}
   .val{font-family:var(--mono);font-size:12px;color:var(--ink);margin-left:8px;white-space:nowrap}
   .trackline{display:flex;align-items:center}
   @media(max-width:560px){.barrow{grid-template-columns:1fr}.barrow .who{margin-bottom:-6px}}
 
-  .rule{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--flag);border-radius:8px;padding:14px 18px;margin:16px 0}
-  details{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 16px;margin:10px 0}
+  .rule{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--flag);padding:14px 18px;margin:16px 0}
+  details{background:var(--panel);border:1px solid var(--line);padding:12px 16px;margin:10px 0}
   summary{cursor:pointer;font-weight:600}
   details[open]{padding-bottom:16px}
   table{border-collapse:collapse;width:100%;font-size:.9rem;margin:10px 0}
@@ -89,11 +80,12 @@
 </style>
 </head>
 <body>
-<button id="themeToggle" onclick="const r=document.documentElement,n=r.dataset.theme==='dark'?'light':'dark';r.dataset.theme=n;localStorage.setItem('pta-theme',n)">theme</button>
 
 <div class="wrap">
   <header class="hero">
-    <div class="kicker">Tier Bench · Measured finding · July 8, 2026</div>
+    <div class="brandrow"><span id="mark" aria-hidden="true"></span>
+      <div class="kicker" style="margin-top:6px">Tier Bench · Measured finding · July 8, 2026</div>
+    </div>
     <h1>The waterline: where the frontier actually is</h1>
     <p class="lede">We gave the same coding tasks to cheap and frontier models and graded them
     with tests the models never saw. Everything spec-shaped settled at the cheapest model.
@@ -280,5 +272,7 @@
     <a href="index.html">Tier Bench home</a> · <a href="uplift.html">uplift experiment</a> · <a href="tally.html">disposition tally</a>
   </footer>
 </div>
+<script src="scg-pixel-mark.js"></script>
+<script>try{SCGPX.mount('mark',3);}catch(e){}</script>
 </body>
 </html>
