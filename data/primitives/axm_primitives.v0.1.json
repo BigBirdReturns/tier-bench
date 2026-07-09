@@ -1,0 +1,130 @@
+{
+  "_meta": {
+    "registry_version": "0.1",
+    "generated": "2026-07-09",
+    "schema": "schemas/primitive.schema.json",
+    "sources": "data/sources/source_ledger.v0.1.json",
+    "note": "Every primitive carries source_basis, derived_claim, and not_source_claim. status: settled (directly cited authority), derived (architectural mapping from sources), synthesis (AXM-native, repo-evidence/analogy only — most guarded). No entry here is a benchmark or capability claim."
+  },
+  "primitives": [
+    {
+      "primitive_id": "black_letter_axm",
+      "name": "Black-letter AXM",
+      "status": "derived",
+      "source_basis": [
+        {"source_id": "cornell_wex_blackletter", "support_type": "direct_fact", "supports": "definition of black-letter law as settled rule"},
+        {"source_id": "fre_901", "support_type": "baseline", "supports": "authentication/foundation requirement"}
+      ],
+      "derived_claim": "AXM should start where the rule is settled, the record exists, and the answer is not allowed to drift.",
+      "not_source_claim": [
+        "Cornell does not define AXM.",
+        "FRE 901 does not govern every AXM market.",
+        "This is an architectural mapping, not legal advice."
+      ],
+      "verifier": "scripts/validate_primitives.py",
+      "failure_mode": "primitive becomes metaphor without source trail"
+    },
+    {
+      "primitive_id": "waterline",
+      "name": "The waterline",
+      "status": "derived",
+      "source_basis": [
+        {"source_id": "tierbench_waterline", "support_type": "repo_evidence", "supports": "measured cheapest-clearing model per hidden-graded task, with UNMEASURED as a first-class answer"},
+        {"source_id": "tierbench_measured_rows", "support_type": "repo_evidence", "supports": "the 51 hidden-graded solve rows the routing rests on"}
+      ],
+      "derived_claim": "Routing authority is the cheapest model measured to clear a task under hidden grading: settled work routes to the floor, residue is named and priced, and an unmeasured cell answers 'unmeasured', never a guess.",
+      "not_source_claim": [
+        "The waterline is a routing metaphor, not hydrology.",
+        "The measured set is five tasks, not a leaderboard or a scale claim.",
+        "A cell with no evidence layer is unmeasured, not passing."
+      ],
+      "verifier": "experiments/breadth/waterline.py --check",
+      "failure_mode": "a cell is asserted routable with no evidence layer behind it",
+      "next_baseline": "the almanac hidden-knot corpus (PR #49) adds tasks that test the residue axis beyond task02"
+    },
+    {
+      "primitive_id": "hidden_grading",
+      "name": "Hidden grading",
+      "status": "derived",
+      "source_basis": [
+        {"source_id": "tierbench_hidden_grading", "support_type": "repo_evidence", "supports": "hidden_files / hidden_run_command inject the deciding tests only after the candidate is frozen"}
+      ],
+      "derived_claim": "A capability measurement is valid only if the deciding tests were never visible to the solver; agentic solvers iterate any visible grader into a pass, which measures the pipe, not the model.",
+      "not_source_claim": [
+        "Passing a visible test suite is not evidence of capability.",
+        "This does not claim the hidden tests are complete — only that they were unseen at solve time."
+      ],
+      "verifier": "experiments/breadth/breadth_tasks.py",
+      "failure_mode": "the answer key leaks into the solver's context and every cell 'passes'"
+    },
+    {
+      "primitive_id": "proof_knot",
+      "name": "Proof knot",
+      "status": "synthesis",
+      "source_basis": [
+        {"source_id": "merkle_1987", "support_type": "external_evidence", "supports": "the actual integrity / tamper-evidence guarantee (Merkle-tree hashing)"},
+        {"source_id": "axm_genesis_paper", "support_type": "external_evidence", "supports": "shard = signed knowledge artifact; any covered byte change flips the Merkle root"},
+        {"source_id": "inca_quipu", "support_type": "analogy", "supports": "the 'knot record' naming only — a sealed unit of recorded fact"}
+      ],
+      "derived_claim": "A proof knot is a sealed, independently verifiable unit of recorded fact: its integrity is checkable from the bytes alone, offline, with no trust in the producer.",
+      "not_source_claim": [
+        "The quipu is an analogy for the name, not a technical specification.",
+        "The integrity guarantee comes from BLAKE3 Merkle + ML-DSA-44 in axm-genesis, not from the metaphor.",
+        "A signature proves integrity and publisher identity, not that the source content is true (AXM Genesis paper, section 9)."
+      ],
+      "verifier": "scripts/validate_primitives.py",
+      "failure_mode": "the knot metaphor is used to imply a guarantee the crypto does not actually provide"
+    },
+    {
+      "primitive_id": "capture_ledger",
+      "name": "Frontier capture ledger",
+      "status": "synthesis",
+      "source_basis": [
+        {"source_id": "tierbench_measured_rows", "support_type": "repo_evidence", "supports": "real-billed vs shadow-estimated cost rows that a capture ROI must distinguish"},
+        {"source_id": "axm_genesis_paper", "support_type": "external_evidence", "supports": "the 'LLM at compile time, SQL at query time' cost-shift: inference moves off the runtime path"}
+      ],
+      "derived_claim": "Expensive frontier cognition is justified only when it is converted into reusable machinery (a grader, edge family, routing rule, or shard); the capture ledger records what was captured, what it cost, and when it breaks even against retired future frontier calls.",
+      "not_source_claim": [
+        "No break-even is proven yet — this names the object PR #48 builds; it is captured-not-yet-amortized.",
+        "A routing demo is not a capture; capture requires a durable artifact plus a replay count.",
+        "This is not a benchmark claim."
+      ],
+      "verifier": "scripts/validate_primitives.py",
+      "failure_mode": "frontier spend is called an 'investment' with no artifact and no measured amortization",
+      "next_baseline": "PR #48 implements capture_ledger.schema.json + capture_roi.py with a worked task02 example"
+    },
+    {
+      "primitive_id": "axm_provenance_layer",
+      "name": "AXM provenance layer",
+      "status": "synthesis",
+      "source_basis": [
+        {"source_id": "axm_genesis_paper", "support_type": "external_evidence", "supports": "section 8.3 — language models are compile-time extractors whose output can be reviewed, corrected, rejected, signed, and frozen; never runtime authority"},
+        {"source_id": "axm_provenance_ledger", "support_type": "external_evidence", "supports": "section 0 provenance rule: primitive -> source_basis -> derived_claim -> testable schema -> verifier -> failure_mode -> next_baseline"}
+      ],
+      "derived_claim": "Every AXM primitive must carry a source trail (source_basis), a stated synthesis (derived_claim), and explicit guards (not_source_claim), enforced by a verifier that rejects unsourced primitives — so persuasive prose cannot become fact by repetition.",
+      "not_source_claim": [
+        "This layer proves attribution and separates fact from synthesis; it does not prove any sourced claim is correct.",
+        "The provenance ledger it draws on is itself model-authored synthesis, recorded as such (source axm_provenance_ledger, gpt-5.5-high)."
+      ],
+      "verifier": "scripts/validate_primitives.py",
+      "failure_mode": "a coined term circulates as settled fact with no source trail behind it"
+    },
+    {
+      "primitive_id": "axm_ontology",
+      "name": "The AXM primitive ontology",
+      "status": "synthesis",
+      "source_basis": [
+        {"source_id": "axm_provenance_ledger", "support_type": "external_evidence", "supports": "the source map of AXM primitives (black-letter AXM, quipu, waterline, capture ledger, proof knot, terrain-divergence knot)"},
+        {"source_id": "spectra_origin", "support_type": "external_evidence", "supports": "the Spectra runtime concept named in the ecosystem, born on gpt-4o"}
+      ],
+      "derived_claim": "The AXM vocabulary is a starting ontology under active revision, not a fixed truth; each term earns its place only by carrying provenance.",
+      "not_source_claim": [
+        "This ontology was authored with gpt-5.5-high (and 'Spectra' with gpt-4o); it is a starting ontology, not revealed truth (per the ledger's own section 0).",
+        "No primitive in this registry is a benchmark or capability claim.",
+        "Naming a primitive does not build it — several here are architectural intent (e.g. capture_ledger) pending implementation."
+      ],
+      "verifier": "scripts/validate_primitives.py",
+      "failure_mode": "the model-generated vocabulary is mistaken for an established standard"
+    }
+  ]
+}

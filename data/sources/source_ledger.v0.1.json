@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "ledger_version": "0.1",
+    "generated": "2026-07-09",
+    "schema": "schemas/source_ledger.schema.json",
+    "note": "Sources AXM primitives may cite. Every primitive's source_basis.source_id must resolve here (scripts/validate_primitives.py enforces it). Anti-laundering rule: model_synthesis sources MUST name their author model — model-authored material is compile-time input, never runtime authority (AXM Genesis paper, section 8.3)."
+  },
+  "sources": [
+    {
+      "source_id": "cornell_wex_blackletter",
+      "title": "Black-letter law (Cornell Law School, Wex Legal Dictionary)",
+      "kind": "legal",
+      "locator": "https://www.law.cornell.edu/wex/black_letter_law",
+      "retrieved": "2026-07-09",
+      "basis_class": "primary",
+      "note": "Defines black-letter law as well-settled rules no longer subject to reasonable dispute."
+    },
+    {
+      "source_id": "fre_901",
+      "title": "Federal Rules of Evidence, Rule 901 — Authenticating or Identifying Evidence",
+      "kind": "legal",
+      "locator": "https://www.law.cornell.edu/rules/fre/rule_901",
+      "retrieved": "2026-07-09",
+      "basis_class": "baseline",
+      "note": "The foundation/authentication requirement: evidence must be shown to be what its proponent claims."
+    },
+    {
+      "source_id": "tierbench_waterline",
+      "title": "Tier Bench measured waterline registry",
+      "kind": "repo_artifact",
+      "locator": "experiments/breadth/run/waterline.json",
+      "retrieved": "2026-07-09",
+      "basis_class": "primary",
+      "license": "repo",
+      "note": "Measured cheapest-clearing model per hidden-graded task; answers UNMEASURED rather than guessing."
+    },
+    {
+      "source_id": "tierbench_measured_rows",
+      "title": "Tier Bench community-pipeline result rows",
+      "kind": "dataset",
+      "locator": "data/results/2026-07-09-bigbirdreturns-751ed083.jsonl",
+      "retrieved": "2026-07-09",
+      "basis_class": "primary",
+      "license": "repo",
+      "note": "51 hidden-graded solve rows (42 haiku, 9 fable@low), packaged via scripts/contribute.py."
+    },
+    {
+      "source_id": "tierbench_hidden_grading",
+      "title": "Hidden-grading mechanism (harness) and the PR #37 answer-key lesson",
+      "kind": "repo_artifact",
+      "locator": "harness/attempt.py",
+      "retrieved": "2026-07-09",
+      "basis_class": "primary",
+      "license": "repo",
+      "note": "hidden_files / hidden_run_command inject the deciding tests only after the candidate is frozen."
+    },
+    {
+      "source_id": "axm_genesis_paper",
+      "title": "AXM Genesis: A Frozen Cryptographic Kernel for Verified Knowledge Reconstruction (Draft v0.6)",
+      "kind": "academic",
+      "locator": "https://github.com/BigBirdReturns/axm-genesis/blob/main/papers/axm-genesis-frozen-cryptographic-kernel-v0.6.pdf",
+      "retrieved": "2026-07-09",
+      "basis_class": "secondary",
+      "note": "Draft v0.6, June 2026. Describes spec 1.0.0; superseded on some points by genesis RFC 0002 (the v1 reset: one axm-hybrid1 suite, canonical JSONL, gold shard v2). Cite with that erratum."
+    },
+    {
+      "source_id": "merkle_1987",
+      "title": "R. C. Merkle, A Digital Signature Based on a Conventional Encryption Function (CRYPTO 1987)",
+      "kind": "academic",
+      "locator": "https://link.springer.com/chapter/10.1007/3-540-48184-2_32",
+      "retrieved": "2026-07-09",
+      "basis_class": "primary",
+      "note": "The Merkle-tree integrity construction underlying AXM shard tamper-evidence."
+    },
+    {
+      "source_id": "inca_quipu",
+      "title": "Inca quipu — knotted-cord recording system (ethnographic / archaeological literature)",
+      "kind": "external_doc",
+      "locator": "https://en.wikipedia.org/wiki/Quipu",
+      "retrieved": "2026-07-09",
+      "basis_class": "secondary",
+      "note": "Source for the 'knot record' ANALOGY only. Not a technical integrity specification."
+    },
+    {
+      "source_id": "axm_provenance_ledger",
+      "title": "AXM provenance ledger (operator working doc)",
+      "kind": "model_synthesis",
+      "author": "gpt-5.5-high",
+      "locator": "operator working doc: AXM_provenance_ledger.md (not committed; PII-free synthesis)",
+      "retrieved": "2026-07-09",
+      "basis_class": "synthesis",
+      "note": "Authored with gpt-5.5-high. Its own section 0 states it is a starting ontology, not revealed truth. Recorded as model synthesis so nothing downstream treats it as fact."
+    },
+    {
+      "source_id": "spectra_origin",
+      "title": "Spectra runtime concept — original coinage",
+      "kind": "model_synthesis",
+      "author": "gpt-4o",
+      "locator": "axm-core: spectra/ (axiom_runtime)",
+      "retrieved": "2026-07-09",
+      "basis_class": "synthesis",
+      "note": "The 'Spectra' name and concept were born on gpt-4o. The deterministic-query guarantee comes from the axm-verify hard gate, not the name."
+    }
+  ]
+}

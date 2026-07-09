@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/source_ledger.schema.json",
+  "title": "AXM source ledger",
+  "description": "The set of sources that AXM primitives may cite. Every primitive's source_basis.source_id must resolve to an entry here. The anti-laundering rule: a source of kind 'model_synthesis' MUST name its author model — model-authored material is compile-time input, never runtime authority (AXM Genesis paper, section 8.3).",
+  "type": "object",
+  "required": ["sources"],
+  "additionalProperties": true,
+  "properties": {
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["source_id", "title", "kind", "locator", "retrieved", "basis_class"],
+        "additionalProperties": true,
+        "properties": {
+          "source_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "title": {"type": "string", "minLength": 1},
+          "kind": {
+            "type": "string",
+            "enum": ["legal", "standard", "academic", "repo_artifact", "external_doc", "model_synthesis", "dataset"],
+            "description": "model_synthesis = authored by a language model; it MUST carry an 'author' field naming the model."
+          },
+          "author": {"type": "string", "description": "Required when kind == model_synthesis: the model that authored it (e.g. gpt-5.5-high, gpt-4o)."},
+          "locator": {"type": "string", "minLength": 1, "description": "URL, repo path, or citation."},
+          "retrieved": {"type": "string", "description": "ISO date or 'n/a'."},
+          "basis_class": {
+            "type": "string",
+            "enum": ["primary", "secondary", "baseline", "synthesis"],
+            "description": "How much authority the source itself carries. model_synthesis sources are basis_class 'synthesis'."
+          },
+          "license": {"type": "string"},
+          "note": {"type": "string"}
+        }
+      }
+    }
+  }
+}
