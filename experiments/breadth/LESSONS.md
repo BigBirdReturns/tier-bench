@@ -70,6 +70,16 @@ drawing that waterline correctly — and proving which side each cell is on.
     DIFFs against the newest layer and only re-probes non-`settled` cells. Old
     sediment is never re-derived — you pay only to lay down what's new.
 
+11. **Focused lenses have tunnel vision — the sweep needs one open eye.** Measured
+    on a dense subject (`experiments/lens-proofs/dense_orders`): baseline general
+    pass 7/10, frozen-five sweep alone 9/10 (every lens missed the use-after-close
+    the plain pass caught), baseline ∪ lenses **10/10**. `review()` now runs a
+    general pass alongside the lenses by default. Corollary, corroborated three
+    times (two small subjects + one dense): `resource_lifetime` and `concurrency`
+    are NOT cheap-model blind spots — those candidates are permanently retired.
+    The lanes that actually recover baseline misses: `data_types` (float-money
+    equality) and `contracts` (silent-default holes).
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.

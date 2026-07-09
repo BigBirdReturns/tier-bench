@@ -99,8 +99,24 @@ def sweep(target: str,
     return res
 
 
-# `review` is the friendly name; today it's `sweep`, kept separate so the public
-# entry point can grow (dedupe, a verify pass) without changing the core.
+# A plain, no-checklist pass. NOT part of the frozen lens registry (a general pass
+# definitionally can't clear the lens bar — it IS the baseline). It exists because
+# focused apertures buy recall in their lanes and pay with blindness between lanes:
+# measured in experiments/lens-proofs/dense_orders, the five-lens sweep alone
+# unioned 9/10 while a plain pass caught the one it missed (a generator escaping
+# its `with` block). The sweep needs one open eye.
+GENERAL_PASS = Lens(
+    "general",
+    "GENERAL, no fixed checklist: a careful, whole-file review. Report every real "
+    "issue you find, especially anything that does not fit a named category.")
+
+
+# `review` is the friendly name; kept separate from `sweep` so the public entry
+# point can grow without changing the core. Since the dense_orders measurement it
+# runs the general open pass alongside the frozen lenses by default —
+# `include_general=False` restores the pure lens sweep.
 def review(target: str, call: Callable[[str], str],
-           lenses: list[Lens] = DEFAULT_LENSES) -> SweepResult:
-    return sweep(target, call, lenses)
+           lenses: list[Lens] = DEFAULT_LENSES,
+           include_general: bool = True) -> SweepResult:
+    run = ([GENERAL_PASS] + list(lenses)) if include_general else list(lenses)
+    return sweep(target, call, run)
