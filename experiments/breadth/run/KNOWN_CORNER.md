@@ -105,3 +105,8 @@ This accumulation strategy prevents unnecessary re-work and tracks the frontier 
   hidden-grader receipts exported hash-bound to
   `run/almanac_floor_20260710/` (correction1 layer).
 
+- **replays2-4-and-ab-20260710**: CLAUDE-2/3 sealed. A/B closes the crossing
+  event's wording confound (bare 3/5 vs packet 4/5, zero knot misses with the
+  packet). Replays 2–3 VALIDATED on distinct work items (capture ledger now
+  amortizing 3 of 4); replay04 PARTIAL — the knot regressed through the packet
+  at aggregate-count depth, the first measured limit of scaffold transfer.
