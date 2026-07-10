@@ -52,6 +52,8 @@ def load(data_dir: str):
         rows = [json.loads(l) for l in open(f, encoding="utf-8") if l.strip()]
         meta = rows[0]
         assert meta.get("_meta"), f"{f}: missing _meta row"
+        meta = dict(meta)
+        meta.setdefault("administration_id", Path(f).stem)
         runs.append((meta, rows[1:]))
     return runs
 
@@ -63,18 +65,34 @@ def aggregate(data_dir: str) -> dict:
     drift between the table and the tally."""
     runs = load(data_dir)
 
-    # cell key: (model, effort, probe_id) -> list of obs dicts
+    # cell key: (model, effort, probe_id) -> list of judgment dicts.
+    # Preserve repeated administrations by carrying an administration_id. Legacy
+    # records derive this stable ID from the filename stem when absent.
     cells = defaultdict(list)
     for meta, probes in runs:
         subj = meta["model"]
+        admin_id = meta["administration_id"]
         for p in probes:
-            cells[(subj, meta["effort"], p["probe_id"])].append({
+            base = {
                 "score": p["score"],
                 "contributor": meta["contributor"],
                 "grader": p["grader"],
                 "contaminated": p.get("contaminated", False),
                 "grader_independent": _lineage(p["grader"]) != _lineage(subj),
-            })
+                "administration_id": admin_id,
+                "judgment_layer": "original",
+            }
+            cells[(subj, meta["effort"], p["probe_id"])].append(base)
+            for ext in p.get("external_grades", []):
+                cells[(subj, meta["effort"], p["probe_id"])].append({
+                    "score": ext.get("score"),
+                    "contributor": meta["contributor"],
+                    "grader": ext.get("grader", "UNGRADED"),
+                    "contaminated": p.get("contaminated", False),
+                    "grader_independent": _lineage(ext.get("grader", "")) != _lineage(subj),
+                    "administration_id": admin_id,
+                    "judgment_layer": "external",
+                })
 
     out = {}
     for (model, effort, pid), obs in sorted(cells.items()):
@@ -95,8 +113,9 @@ def aggregate(data_dir: str) -> dict:
 
         out[f"{model}|{effort}|{pid}"] = {
             "model": model, "effort": effort, "probe": pid,
-            "n_runs": len(valid), "n_graded": len(graded),
+            "n_runs": len({o["administration_id"] for o in valid}), "n_judgments": len(valid), "n_graded": len(graded),
             "n_independent_graded": len(independent),
+            "administration_ids": sorted({o["administration_id"] for o in valid}),
             "scores": scores,
             "mean": round(sum(scores) / len(scores), 2) if scores else None,
             "evidence_class": evidence,
