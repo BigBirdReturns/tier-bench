@@ -36,6 +36,8 @@ task is claimed when a commit flips its `state`; a task is done when its
 
 | id | task | evidence |
 |----|------|----------|
+| PACKET-V2 | Supersede unavailable blind-control v1 with private-salted v2 | `docs/agents/BLIND_CONTROL_V2.md`; private delivery commit `6771868`; canonical in-git digest recorded above |
+| SOL-2 | Cross-lineage adversarial review of ARC-A capture + ARC-B almanac | `docs/agents/reviews/sol_arc_ab_review_20260710.md`; executable counterexamples; PR #63 |
 | — | ARC-B: edge-family freeze + almanac corpus | PR #59, layer + CI drift guard |
 | — | Crossing event: first validated replay (amortizing 1/4) | PR #58, `run/replays/task02_wildcard/` |
 | — | ARC-A: frontier capture ledger | PR #57 |
