@@ -34,8 +34,8 @@ be hard first.
 |-----|------|--------|
 | — | AXM provenance layer | **DONE / merged** — PR [#47](https://github.com/BigBirdReturns/tier-bench/pull/47) |
 | **ARC-A** | Frontier capture ledger | **DONE** — PR [#57](https://github.com/BigBirdReturns/tier-bench/pull/57) ( schemas + worked task02 row at $0.6805 real-billed, validator with closure rules, ROI: projected break-even 4 replays / needs_replay, 24 tests, CI-wired). Amortization stays open until the replay protocol runs (docs/frontier-capture.md). |
-| **ARC-B** | Edge-family freeze + almanac hidden-knot corpus | **NEXT** (spec below). Note: authoring batch 1 (PR #54, tier-uplift task08–10) added adjacent hidden-graded tasks but is NOT this item — the edge-family invariant freeze and the `tasks/almanac_*` manifests remain open. |
-| ARC-C | Orchestration-pattern benchmark | not yet — needs ARC-A + ARC-B first |
+| **ARC-B** | Edge-family freeze + almanac hidden-knot corpus | **DONE** (2026-07-10) — task02 edge-family verdicts frozen as reviewed invariants (mechanically derived from the settled oracle; authority: operator ARC-B go); three almanac knot tasks landed (`tasks/almanac_*.json`, hidden-graded, breadth-valid, vectors derived from the corroborated reference engine with a CI drift guard, key material verified naive-fails/reference-passes); NO model results claimed. |
+| **ARC-C** | Orchestration-pattern benchmark | **NEXT** — ARC-A and ARC-B have landed; the knot corpus and capture ledger it needs now exist |
 | ARC-D | OSS replay field | not yet |
 | ARC-E | proof-knot closure-packet demo | not yet — burden-discipline docs (PR #48, Jul 9) laid its doctrine; the demo remains open |
 | ARC-F | embodied AXM action-authorization schema | not yet |

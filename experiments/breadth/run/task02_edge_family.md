@@ -1,4 +1,46 @@
-# task02_wildcard — the measured crack, expanded into an edge family (PROPOSAL)
+# task02_wildcard — the edge family, FROZEN as reviewed invariants
+
+> **Freeze record (2026-07-10).** Closure authority: the operator's ARC-B
+> authorization; reviewer: the driver session of 2026-07-10. Verdict source:
+> every verdict below is derived MECHANICALLY from the settled tier-uplift
+> `hidden_oracle.py` reference implementation (hand-verified, sediment layer
+> k3-floor-20260708) — no verdict is anyone's opinion. Probes in the frozen
+> table may back future hidden graders; any probe or verdict NOT in the table
+> remains proposal-only and cannot become a grader (adapt.py discipline).
+
+## The frozen invariant table (pattern, text → oracle verdict)
+
+| Pattern | Text | Verdict | Invariant it pins |
+|---|---|---|---|
+| `[abc` | `a` | ValueError | unclosed class is malformed |
+| `[\]` | `]b` | False | in-class `\` is a literal member; class never closes on content — valid, non-matching |
+| `[\]` | `]]` | False | same |
+| `[\]` | `\` | True | the literal backslash member matches a backslash |
+| `[\*]` | `*` | True | `\` and `*` are two ordinary members inside a class |
+| `[\*]` | `\` | True | same |
+| `[\*]` | `a` | False | same |
+| `[a\-z]` | `-` | False | in-class `\` is a legal RANGE ENDPOINT: members are `a` + range `\`..`z`; `-` (0x2D) is outside |
+| `[a\-z]` | `b` | True | `b` is inside `\`..`z` |
+| `[a\-z]` | `\` | True | endpoint inclusive |
+| `a\` | `a` | ValueError | trailing escape (outside class) is malformed |
+| `[!]` | `x` | ValueError | `!` consumes the negation slot; the class is then unclosed |
+| `[!a]` | `b` | True | negation |
+| `[!a]` | `a` | False | negation |
+| `[-a]` | `-` | True | leading hyphen is literal |
+| `[a-]` | `-` | True | trailing hyphen is literal |
+| `[a-]` | `a` | True | same |
+| `[]a]` | `]` | True | first-position `]` is literal |
+| `[]a]` | `a` | True | same |
+| `[]a]` | `b` | False | same |
+
+One rule generates the whole backslash column — **inside a character class,
+`\` is a literal (and a legal range endpoint); outside, it is an escape
+prefix** — which is exactly the residue the capture ledger priced at $0.6805
+and the crossing event replayed at the floor 5/5.
+
+---
+
+## Original proposal record (measured basis, kept verbatim below)
 
 ## What was measured (layer k3-floor-20260708)
 
@@ -49,6 +91,6 @@ probing as a family, not a one-off.
 
 ## Status
 
-PROPOSAL — awaiting operator review. Measured basis: 5 trials in
+FROZEN (2026-07-10) — see the freeze record at the top. Historical basis: 5 trials in
 `run/ledger.jsonl` (task02_wildcard, 2026-07-08), sediment layer
 `k3-floor-20260708` in `run/known_corner.jsonl`.
