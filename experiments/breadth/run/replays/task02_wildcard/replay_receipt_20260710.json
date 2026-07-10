@@ -1,0 +1,12 @@
+{
+  "administration_id": "crossing-event-task02-20260710",
+  "artifact_sha256": "9012ad637bb86b62ed731c229f88244494e0b21e0ce068b6d529f8c5a48f1911",
+  "candidate_set_sha256": "c9606ad53ef2e00ffeffa194bcdf822e8d2049ded0d390aaa456afe3b99be26e",
+  "candidate_sha256": "55e78e748117ab26b0d7e3519683faa26f6cfbf14cceddc5635c7ab90c89a531",
+  "grader_id": "experiments/tier-uplift/task02_wildcard/hidden_oracle.py",
+  "grader_output_sha256": "00ee6635b590b48f2ab7c4cabe8785f4527ef5762dd48c8385ce8e8c143d118b",
+  "packet_sha256": "3ec412d73579750f67dd16d7f10881d0f163a275cca8d6cea4f784ed97e05be0",
+  "schema_version": "tier-bench/replay-receipt@1",
+  "verdict": "pass",
+  "work_item_id": "task02_wildcard@haiku+scaffold_packet/20260710"
+}

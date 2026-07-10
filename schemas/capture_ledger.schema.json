@@ -4,90 +4,406 @@
   "title": "AXM frontier capture ledger entry",
   "description": "One captured frontier move: expensive cognition converted into a reusable artifact. Rows live in data/capture/*.jsonl with record_type 'capture' (delta observations ride in the same files under delta_observation.schema.json). scripts/validate_capture_ledger.py enforces this schema plus the closure rules a schema can't express: a capture with zero validated replays may not claim amortization, and the captured artifact must actually exist in the repo.",
   "type": "object",
-  "required": ["record_type", "capture_id", "source_task_id", "driver_model", "driver_role",
-               "capture_cost_usd", "cost_basis", "captured_artifact", "old_path", "new_path",
-               "break_even_reuse_count", "validated_replays", "status", "burden"],
+  "required": [
+    "record_type",
+    "capture_id",
+    "source_task_id",
+    "driver_model",
+    "driver_role",
+    "capture_cost_usd",
+    "cost_basis",
+    "captured_artifact",
+    "old_path",
+    "new_path",
+    "break_even_reuse_count",
+    "validated_replays",
+    "status",
+    "burden"
+  ],
   "additionalProperties": true,
   "properties": {
-    "record_type": {"const": "capture"},
-    "capture_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-    "source_task_id": {"type": "string", "description": "The task whose residue was resolved. May link to a waterline cell; linking never mutates the waterline."},
-    "driver_model": {"type": "string"},
-    "driver_role": {"type": "string", "description": "e.g. residue_resolver, grader_author, adjudicator"},
-    "capture_cost_usd": {"type": "number", "minimum": 0},
+    "record_type": {
+      "const": "capture"
+    },
+    "capture_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "source_task_id": {
+      "type": "string",
+      "description": "The task whose residue was resolved. May link to a waterline cell; linking never mutates the waterline."
+    },
+    "driver_model": {
+      "type": "string"
+    },
+    "driver_role": {
+      "type": "string",
+      "description": "e.g. residue_resolver, grader_author, adjudicator"
+    },
+    "capture_cost_usd": {
+      "type": "number",
+      "minimum": 0
+    },
     "cost_basis": {
       "type": "string",
-      "enum": ["real-billed", "shadow-estimated", "subscription-derived", "repaired-transport-adjudicated"],
+      "enum": [
+        "real-billed",
+        "shadow-estimated",
+        "subscription-derived",
+        "repaired-transport-adjudicated"
+      ],
       "description": "Evidence class of the capture cost. Mixed-basis ROI must be labeled as such by capture_roi.py."
     },
     "captured_artifact": {
       "type": "object",
-      "required": ["type", "path", "description"],
+      "required": [
+        "type",
+        "path",
+        "description"
+      ],
       "properties": {
-        "type": {"type": "string", "description": "e.g. edge_family + routing_rule, hidden_grader, scaffold_packet, lens"},
-        "path": {"type": "string", "description": "Repo-relative path; must exist (validator-enforced)."},
-        "description": {"type": "string", "minLength": 1}
+        "type": {
+          "type": "string",
+          "description": "e.g. edge_family + routing_rule, hidden_grader, scaffold_packet, lens"
+        },
+        "path": {
+          "type": "string",
+          "description": "Repo-relative path; must exist (validator-enforced)."
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "old_path": {
       "type": "object",
-      "required": ["model", "status", "success"],
-      "description": "The floor path — what replays run on once the artifact carries the judgment.",
+      "required": [
+        "model",
+        "status",
+        "success"
+      ],
+      "description": "The floor path \u2014 what replays run on once the artifact carries the judgment.",
       "properties": {
-        "model": {"type": "string"},
-        "status": {"type": "string"},
-        "success": {"type": "string"},
-        "cost_usd_per_trial": {"type": "number", "minimum": 0},
-        "cost_basis": {"type": "string", "enum": ["real-billed", "shadow-estimated", "subscription-derived", "repaired-transport-adjudicated"]}
+        "model": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "success": {
+          "type": "string"
+        },
+        "cost_usd_per_trial": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cost_basis": {
+          "type": "string",
+          "enum": [
+            "real-billed",
+            "shadow-estimated",
+            "subscription-derived",
+            "repaired-transport-adjudicated"
+          ]
+        }
       }
     },
     "new_path": {
       "type": "object",
-      "required": ["model", "status", "success"],
-      "description": "The frontier call being retired — what each validated replay avoids.",
+      "required": [
+        "model",
+        "status",
+        "success"
+      ],
+      "description": "The frontier call being retired \u2014 what each validated replay avoids.",
       "properties": {
-        "model": {"type": "string"},
-        "status": {"type": "string"},
-        "success": {"type": "string"},
-        "cost_usd_per_trial": {"type": "number", "minimum": 0},
-        "cost_basis": {"type": "string", "enum": ["real-billed", "shadow-estimated", "subscription-derived", "repaired-transport-adjudicated"]}
+        "model": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "success": {
+          "type": "string"
+        },
+        "cost_usd_per_trial": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cost_basis": {
+          "type": "string",
+          "enum": [
+            "real-billed",
+            "shadow-estimated",
+            "subscription-derived",
+            "repaired-transport-adjudicated"
+          ]
+        }
       }
     },
     "break_even_reuse_count": {
-      "type": ["integer", "null"],
-      "description": "MEASURED break-even only — stays null until validated replays exist. Projections are computed by capture_roi.py at read time, never stored as fact."
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "null until closure. At closure it must EQUAL the threshold computed by scripts/capture_math.py from the cost evidence \u2014 it is validated against the computation, never trusted as an input."
     },
     "validated_replays": {
-      "type": "integer", "minimum": 0,
+      "type": "integer",
+      "minimum": 0,
       "description": "Count of hidden-graded solves that used the captured artifact on the floor path instead of a frontier call. Zero until the replay protocol runs."
     },
     "replay_evidence": {
-      "type": "array", "items": {"type": "string"},
-      "description": "Ledger rows / evidence layers backing validated_replays. Required non-empty when validated_replays > 0."
+      "type": "array",
+      "description": "Hash-bound replay events backing validated_replays. Each item is one DISTINCT unit of work done via the floor+artifact path. work_item_id must be unique in the row; the same receipt bytes may never be credited twice; candidate bytes are NOT identity (distinct work items may produce identical solutions). validate_capture_ledger.py verifies every declared hash against the committed bytes.",
+      "items": {
+        "type": "object",
+        "required": [
+          "work_item_id",
+          "receipt_path",
+          "receipt_sha256",
+          "candidate_path",
+          "candidate_sha256",
+          "grader_output_path",
+          "grader_output_sha256",
+          "packet_path",
+          "packet_sha256",
+          "artifact_sha256",
+          "grader_id",
+          "administration_id",
+          "description"
+        ],
+        "properties": {
+          "work_item_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "receipt_path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Path to a STRUCTURED replay-receipt object (schema_version 'tier-bench/replay-receipt@1') that re-attests the binding. It must be DISTINCT from packet_path/candidate_path/grader_output_path/artifact and must agree field-for-field with this event (work_item_id, administration_id, grader_id, packet/candidate/grader_output/artifact hashes, candidate_set, verdict='pass'). A committed file with a unique hash is NOT a receipt \u2014 the validator parses and cross-checks it (P1 masquerade fix)."
+          },
+          "receipt_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "candidate_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidate_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "grader_output_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "grader_output_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "packet_path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "packet_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "artifact_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "sha256 of the captured_artifact bytes this replay carried \u2014 binds the replay to THIS capture"
+          },
+          "trial_candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "path",
+                "sha256"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
+            "description": "Optional: per-trial candidates for multi-trial receipts (K>1 of one work item = still ONE replay)"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "grader_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "administration_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidate_set_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "human_receipt_path": {
+            "type": "string",
+            "description": "Optional human-readable narrative receipt; NOT the machine receipt."
+          }
+        }
+      }
     },
-    "waterline_effect": {"type": "string", "description": "Narrative of how the waterline moved. Descriptive only — this ledger never writes waterline.json."},
+    "waterline_effect": {
+      "type": "string",
+      "description": "Narrative of how the waterline moved. Descriptive only \u2014 this ledger never writes waterline.json."
+    },
     "status": {
       "type": "string",
-      "enum": ["captured_not_yet_amortized", "needs_replay", "partial", "amortized"],
+      "enum": [
+        "captured_not_yet_amortized",
+        "needs_replay",
+        "partial",
+        "amortized"
+      ],
       "description": "amortized is the ONLY closed state and requires validated_replays >= measured break-even with replay_evidence. Everything else is explicitly non-closed (burden-discipline failure default)."
     },
     "burden": {
       "type": "object",
       "description": "The closure packet (docs/burden-discipline.md): who owes proof, who may close, what happens when proof is missing.",
-      "required": ["requested_outcome", "claimant", "authority", "predicates", "burden_holder",
-                   "evidence", "verifier", "gap", "closure_decision", "failure_default"],
+      "required": [
+        "requested_outcome",
+        "claimant",
+        "authority",
+        "predicates",
+        "burden_holder",
+        "evidence",
+        "verifier",
+        "gap",
+        "closure_decision",
+        "failure_default"
+      ],
       "properties": {
-        "requested_outcome": {"type": "string", "minLength": 1},
-        "claimant": {"type": "string", "minLength": 1},
-        "authority": {"type": "string", "minLength": 1},
-        "predicates": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-        "burden_holder": {"type": "string", "minLength": 1},
-        "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}},
-        "verifier": {"type": "string", "minLength": 1},
-        "gap": {"type": "string", "minLength": 1, "description": "What remains missing/disputed/partial/unmeasured. 'none' only when truly closed."},
-        "closure_decision": {"type": "string", "enum": ["open", "needs_replay", "partial", "closed"],
-                             "description": "'closed' requires validated replays (validator-enforced)."},
-        "failure_default": {"type": "string", "minLength": 1}
+        "requested_outcome": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claimant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authority": {
+          "type": "string",
+          "minLength": 1
+        },
+        "predicates": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "burden_holder": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string"
+          }
+        },
+        "verifier": {
+          "type": "string",
+          "minLength": 1
+        },
+        "gap": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What remains missing/disputed/partial/unmeasured. 'none' only when truly closed."
+        },
+        "closure_decision": {
+          "type": "string",
+          "enum": [
+            "open",
+            "needs_replay",
+            "partial",
+            "closed"
+          ],
+          "description": "'closed' requires validated replays (validator-enforced)."
+        },
+        "failure_default": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "replay_receipt": {
+      "title": "tier-bench/replay-receipt@1",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "work_item_id",
+        "administration_id",
+        "grader_id",
+        "verdict",
+        "packet_sha256",
+        "candidate_sha256",
+        "candidate_set_sha256",
+        "grader_output_sha256",
+        "artifact_sha256"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "tier-bench/replay-receipt@1"
+        },
+        "work_item_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "administration_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grader_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "packet_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_set_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "grader_output_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "artifact_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
       }
     }
   }

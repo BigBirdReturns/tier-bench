@@ -29,9 +29,11 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from capture_math import projected_break_even, savings_per_replay  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 CAPTURE_DIR = REPO / "data/capture"
@@ -62,13 +64,13 @@ def roi_for(cap: dict) -> dict:
         out.update(roi_state="UNMEASURED",
                    note="old/new path costs missing — no projection; absence of data is the answer")
         return out
-    savings = new_c - old_c
+    savings = savings_per_replay(old_c, new_c)
     if savings <= 0:
         out.update(roi_state="NO_SAVINGS",
                    savings_per_replay_usd=round(savings, 6),
                    note="floor path is not cheaper than the retired call — capture cannot amortize on cost")
         return out
-    projected = math.ceil(cap["capture_cost_usd"] / savings)
+    projected = projected_break_even(cap["capture_cost_usd"], old_c, new_c)
     bases = {cap.get("cost_basis"),
              (cap.get("old_path") or {}).get("cost_basis"),
              (cap.get("new_path") or {}).get("cost_basis")} - {None}
