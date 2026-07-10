@@ -1,5 +1,10 @@
 # CLAUDE.md — Tier Bench
 
+> **Cross-engine rule:** Claude and Codex are independent measurement engines,
+> not interchangeable sessions. Before paired review, solving, grading, or
+> benchmark work, read and follow `docs/agents/CROSS_ENGINE_PROTOCOL.md`.
+> Preserve independent judgments and raw receipts before exchanging conclusions.
+
 ## ⭐ START HERE — the active mission (a fresh session reads THIS first)
 
 Tier Bench began as a model-routing benchmark (that is most of this file, below).

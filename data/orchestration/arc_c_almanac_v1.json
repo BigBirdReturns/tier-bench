@@ -1,0 +1,460 @@
+{
+  "schema_version": 1,
+  "run_id": "arc_c_almanac_v1",
+  "status": "partial",
+  "measurement_claim": false,
+  "engine": {
+    "engine_id": "codex_gpt_5_6_sol",
+    "model": "gpt-5.6-sol",
+    "lineage": "openai",
+    "surface": "codex-subscription",
+    "role": "independent_solver"
+  },
+  "pairing": {
+    "pair_id": "arc_c_almanac_cross_engine_v1",
+    "peer_engine_id": "claude_fable_5",
+    "peer_lineage": "anthropic",
+    "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+    "independent_before_exchange": true,
+    "state": "planned"
+  },
+  "task_set": [
+    "almanac_exception_class_001",
+    "almanac_record_binding_001",
+    "almanac_rule_boundary_001"
+  ],
+  "task_manifests": [
+    {
+      "task_id": "almanac_exception_class_001",
+      "path": "tasks/almanac_exception_class_001.json",
+      "sha256": "392dd0d1a5d4c2bff7e5d69b29a506f7816b10f106a14f490d47183df0b9fb4f"
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "path": "tasks/almanac_record_binding_001.json",
+      "sha256": "b9c20e5357d8aa7e46ca28cf99aef09e7cf836b4fe4db56c91aa5b08fefb2be1"
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "path": "tasks/almanac_rule_boundary_001.json",
+      "sha256": "0e7c6760c3c88e0501363fe1ea6dd9cfa0f8aed5cec7174f9f69b9571c8be446"
+    }
+  ],
+  "rungs": [
+    "floor",
+    "effort_medium",
+    "effort_high",
+    "effort_max"
+  ],
+  "rung_bindings": {
+    "floor": {
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "surface": "codex-subscription"
+    },
+    "effort_medium": {
+      "model": "gpt-5.6-sol",
+      "effort": "medium",
+      "surface": "codex-subscription"
+    },
+    "effort_high": {
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "surface": "codex-subscription"
+    },
+    "effort_max": {
+      "model": "gpt-5.6-sol",
+      "effort": "xhigh",
+      "surface": "codex-subscription"
+    }
+  },
+  "k": 3,
+  "trials": [
+    {
+      "trial_id": "codex_gpt_5_6_sol_almanac_exception_class_001_1",
+      "sequence": 1,
+      "task_id": "almanac_exception_class_001",
+      "rung": "floor",
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "trial": 1,
+      "solver_id": "codex_gpt_5_6_sol:019f4c99-cdbe-77e2-be7b-63aa9e2c7a57",
+      "executor_surface": "codex-subscription",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "route",
+        "decision_state": "unmeasured",
+        "reason": "start at the cheapest unmeasured rung",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 0,
+            "decisive": 0,
+            "passes": 0,
+            "failures": 0,
+            "window_size": 0,
+            "window_passes": 0,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "unmeasured"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-1/candidate.py",
+        "sha256": "ee40f484bc8c8e56b3c25ae6775a5c22da7490f8c394c92ece17096cb1a9edb3",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:current-thread",
+        "candidate_sha256": "ee40f484bc8c8e56b3c25ae6775a5c22da7490f8c394c92ece17096cb1a9edb3",
+        "hidden_grader_path": "fixtures/almanac_exception_class_001/hidden_tests.py",
+        "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-1/grader_outputs.json",
+        "grader_output_sha256": "e74796563e603a3ae49c2a14a01c0aa14e5e0e6c6de014bccc7aa94ff3ce2aa8"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 12168,
+        "output_tokens": 642,
+        "cache_read_tokens": 8960,
+        "reasoning_output_tokens": 71
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "232a4421e6b0af0815224154e9c6bbebb88fa911123ea93b6316a090c6e57ce5",
+        "prompt_sha256": "28da3e65d2e4c717961583f4de9666eda81aafa54b6bc8c1e78bad229c77dff2",
+        "solver_thread_id": "019f4c99-cdbe-77e2-be7b-63aa9e2c7a57",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-1/raw_response.txt",
+        "raw_response_sha256": "4950f8e011f5662d60f02f84eb54c133e3ea2415735dd10a508b88fcb2cb7468",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-1/events.jsonl",
+        "event_stream_sha256": "122e957a6c8f9e87a57fbb8b6e44964e26671abfe25ce3f2f05489d6f523e4d8"
+      }
+    },
+    {
+      "trial_id": "codex_gpt_5_6_sol_almanac_exception_class_001_2",
+      "sequence": 2,
+      "task_id": "almanac_exception_class_001",
+      "rung": "floor",
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "trial": 2,
+      "solver_id": "codex_gpt_5_6_sol:019f4c9b-5fc3-73d2-b615-400cda5bde85",
+      "executor_surface": "codex-subscription",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 1,
+            "decisive": 1,
+            "passes": 1,
+            "failures": 0,
+            "window_size": 1,
+            "window_passes": 1,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-2/candidate.py",
+        "sha256": "66d671846153fffbf152e10333ffa41f728b16fa076b947e6fcd7b27fc6b61c8",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:current-thread",
+        "candidate_sha256": "66d671846153fffbf152e10333ffa41f728b16fa076b947e6fcd7b27fc6b61c8",
+        "hidden_grader_path": "fixtures/almanac_exception_class_001/hidden_tests.py",
+        "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-2/grader_outputs.json",
+        "grader_output_sha256": "e74796563e603a3ae49c2a14a01c0aa14e5e0e6c6de014bccc7aa94ff3ce2aa8"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 12168,
+        "output_tokens": 683,
+        "cache_read_tokens": 8960,
+        "reasoning_output_tokens": 98
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "232a4421e6b0af0815224154e9c6bbebb88fa911123ea93b6316a090c6e57ce5",
+        "prompt_sha256": "28da3e65d2e4c717961583f4de9666eda81aafa54b6bc8c1e78bad229c77dff2",
+        "solver_thread_id": "019f4c9b-5fc3-73d2-b615-400cda5bde85",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-2/raw_response.txt",
+        "raw_response_sha256": "a2d426c78c287af15d06a458957e6847899dbb818c8806944d10031c80a908ad",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-2/events.jsonl",
+        "event_stream_sha256": "3c69739a440a31151eebed139ac3b5198b8fddafee589d862149df56d520d2d3"
+      }
+    },
+    {
+      "trial_id": "codex_gpt_5_6_sol_almanac_exception_class_001_3",
+      "sequence": 3,
+      "task_id": "almanac_exception_class_001",
+      "rung": "floor",
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "trial": 3,
+      "solver_id": "codex_gpt_5_6_sol:019f4c9b-5cc2-7442-b394-2e95ab1b0a91",
+      "executor_surface": "codex-subscription",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 2,
+            "decisive": 2,
+            "passes": 2,
+            "failures": 0,
+            "window_size": 2,
+            "window_passes": 2,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-3/candidate.py",
+        "sha256": "219f9d2459972497e20ca2d9def56527c7aedcc179071e95f7b337c953a7ba3c",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:current-thread",
+        "candidate_sha256": "219f9d2459972497e20ca2d9def56527c7aedcc179071e95f7b337c953a7ba3c",
+        "hidden_grader_path": "fixtures/almanac_exception_class_001/hidden_tests.py",
+        "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-3/grader_outputs.json",
+        "grader_output_sha256": "e74796563e603a3ae49c2a14a01c0aa14e5e0e6c6de014bccc7aa94ff3ce2aa8"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 12168,
+        "output_tokens": 683,
+        "cache_read_tokens": 8960,
+        "reasoning_output_tokens": 91
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "232a4421e6b0af0815224154e9c6bbebb88fa911123ea93b6316a090c6e57ce5",
+        "prompt_sha256": "28da3e65d2e4c717961583f4de9666eda81aafa54b6bc8c1e78bad229c77dff2",
+        "solver_thread_id": "019f4c9b-5cc2-7442-b394-2e95ab1b0a91",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-3/raw_response.txt",
+        "raw_response_sha256": "dd2f0d8bac74a69079a1147e64f1ded1fbbadf2445bb2b040a3e240d4d0c51be",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-3/events.jsonl",
+        "event_stream_sha256": "e942f7a4828e1593dc36b2e4b7b8120ae309a0ca762b62862e66d92b4ca2c860"
+      }
+    },
+    {
+      "trial_id": "codex_gpt_5_6_sol_almanac_record_binding_001_1",
+      "sequence": 4,
+      "task_id": "almanac_record_binding_001",
+      "rung": "floor",
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "trial": 1,
+      "solver_id": "codex_gpt_5_6_sol:019f4c9b-5e52-7880-9ca0-f1297af64d4e",
+      "executor_surface": "codex-subscription",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "route",
+        "decision_state": "unmeasured",
+        "reason": "start at the cheapest unmeasured rung",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 0,
+            "decisive": 0,
+            "passes": 0,
+            "failures": 0,
+            "window_size": 0,
+            "window_passes": 0,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "unmeasured"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-1/candidate.py",
+        "sha256": "f4b02065ff2bfd982115b70e47faec9ad44a79fbff603e73fcaa56e8f86dd0b7",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:current-thread",
+        "candidate_sha256": "f4b02065ff2bfd982115b70e47faec9ad44a79fbff603e73fcaa56e8f86dd0b7",
+        "hidden_grader_path": "fixtures/almanac_record_binding_001/hidden_tests.py",
+        "hidden_grader_sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-1/grader_outputs.json",
+        "grader_output_sha256": "f35ca05adcbecae87b9b333e703b7818f6ce100e247ccbded5ab8e255cad11c0"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 12707,
+        "output_tokens": 1559,
+        "cache_read_tokens": 8960,
+        "reasoning_output_tokens": 560
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "412f97b37b96c9ddcce558db3befabef6045fbc831e60a339c5db990edd51ee2",
+        "prompt_sha256": "d01cec5ae6900d9596ef65e077e8e63a32cf0f149d6ce9295e375fd3d41b5b66",
+        "solver_thread_id": "019f4c9b-5e52-7880-9ca0-f1297af64d4e",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-1/raw_response.txt",
+        "raw_response_sha256": "064e73045247cf731aa7dd18f8b8ab978aa299678cfca30c38de8541839c8ca7",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-1/events.jsonl",
+        "event_stream_sha256": "1324b0931bf5e915cabd98575d0c59981c40705b5318df710c59f791f48e662c"
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "task_id": "almanac_exception_class_001",
+      "state": "cleared",
+      "action": "seal",
+      "route_to": "floor",
+      "escalation_from": null,
+      "abstained": false,
+      "reason": "K-of-K decisive receipts clear this rung",
+      "evidence": [
+        {
+          "rung": "floor",
+          "observations": 3,
+          "decisive": 3,
+          "passes": 3,
+          "failures": 0,
+          "window_size": 3,
+          "window_passes": 3,
+          "window_failures": 0,
+          "required_k": 3,
+          "state": "clears"
+        }
+      ]
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "state": "collecting",
+      "action": "collect_more",
+      "route_to": "floor",
+      "escalation_from": null,
+      "abstained": false,
+      "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+      "evidence": [
+        {
+          "rung": "floor",
+          "observations": 1,
+          "decisive": 1,
+          "passes": 1,
+          "failures": 0,
+          "window_size": 1,
+          "window_passes": 1,
+          "window_failures": 0,
+          "required_k": 3,
+          "state": "collecting"
+        }
+      ]
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "state": "unmeasured",
+      "action": "route",
+      "route_to": "floor",
+      "escalation_from": null,
+      "abstained": false,
+      "reason": "start at the cheapest unmeasured rung",
+      "evidence": [
+        {
+          "rung": "floor",
+          "observations": 0,
+          "decisive": 0,
+          "passes": 0,
+          "failures": 0,
+          "window_size": 0,
+          "window_passes": 0,
+          "window_failures": 0,
+          "required_k": 3,
+          "state": "unmeasured"
+        }
+      ]
+    }
+  ],
+  "burden": {
+    "requested_outcome": "Treat an ARC-C run as evidence that the orchestration pattern routes real hidden almanac knots at the cheapest measured sufficient rung.",
+    "claimant": "ARC-C run coordinator",
+    "authority": "Manifest-declared hidden graders plus the floor-first K-of-K residue broker policy",
+    "predicates": [
+      "every decisive candidate is sealed before grading",
+      "the deciding grader is absent from the solver packet and independently re-run by the coordinator",
+      "no escalation occurs before a 0/K wall at the previous rung",
+      "route, spend, replay, abstention and verdict provenance are complete",
+      "every task reaches a final broker decision"
+    ],
+    "burden_holder": "whoever asserts a routing, capability or cost conclusion from this run",
+    "evidence": [
+      "tasks/almanac_exception_class_001.json",
+      "tasks/almanac_record_binding_001.json",
+      "tasks/almanac_rule_boundary_001.json",
+      "docs/residue-broker.md"
+    ],
+    "verifier": "scripts/validate_orchestration_run.py plus each manifest-declared hidden grader",
+    "gap": "1/3 tasks final; continue only broker-authorized trials",
+    "closure_decision": "partial",
+    "failure_default": "remain_unmeasured; do not route, escalate, price or claim success"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_exception_class_001",
+  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "packet_sha256": "232a4421e6b0af0815224154e9c6bbebb88fa911123ea93b6316a090c6e57ce5",
+  "prompt_sha256": "28da3e65d2e4c717961583f4de9666eda81aafa54b6bc8c1e78bad229c77dff2",
+  "candidate_sha256": "66d671846153fffbf152e10333ffa41f728b16fa076b947e6fcd7b27fc6b61c8",
+  "raw_response_sha256": "a2d426c78c287af15d06a458957e6847899dbb818c8806944d10031c80a908ad",
+  "thread_id": "019f4c9b-5fc3-73d2-b615-400cda5bde85",
+  "usage": {
+    "input_tokens": 12168,
+    "cached_input_tokens": 8960,
+    "output_tokens": 683,
+    "reasoning_output_tokens": 98
+  },
+  "coordinator_id": "current-thread",
+  "solver_equals_grader": false,
+  "grader_output_sha256": "e74796563e603a3ae49c2a14a01c0aa14e5e0e6c6de014bccc7aa94ff3ce2aa8",
+  "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+  "hidden_grader_runs": 2,
+  "hidden_grader_deterministic": true,
+  "outcome": "pass",
+  "visible_returncode": 0,
+  "hidden_returncodes": [
+    0,
+    0
+  ],
+  "cost_basis": "subscription-derived",
+  "cost_usd": 0.0
+}
