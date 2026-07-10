@@ -47,3 +47,18 @@ agreement reports): `e1a1dc6bfcee26a435e23107d08019870153ceb1cf6e646b46317663ad8
 
 Reported private by the coordinator and by GitHub at add time; not
 independently re-verifiable from inside a session that has been granted access.
+
+## Standards note (operator call, 2026-07-10)
+
+v2 stands as delivered — it works, it's verified, SOL-1 grades against it. No
+churn. But it imported a foreign convention: axm-genesis (the house standard)
+derives identity from canonical bytes with **no salt** ("identity is derived,
+never stored", spec §9), and gets blindness from **lane custody** (the
+instrument never holds the corpus), not from secret material. Genesis's
+canonical-byte-encoding rule (§5–6) also makes serialization-dependent digests
+— the one real v2 defect — impossible by construction.
+
+**For any packet v3+:** conform to genesis — deterministic IDs from
+canonicalized bytes, digest over canonical bytes, blindness by lane, no
+coordinator-held secrets. We are a prototype: manual adjustments to records are
+fine when noted, like this one. The shape stays true; the stones can move.
