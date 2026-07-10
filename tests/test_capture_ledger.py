@@ -154,27 +154,75 @@ def test_validator_never_writes_waterline():
     assert "write_text" not in src and "json.dump(" not in src
 
 
+# ---- receipt rules (Codex P2 on PR #55: receipts are validated, not counted) ----
+
+def test_dummy_receipts_cannot_buy_amortization():
+    row = _capture()
+    row["status"] = "amortized"
+    row["validated_replays"] = 4
+    row["replay_evidence"] = [{} for _ in range(4)]
+    errs = vc.validate_capture(row, vc.waterline_task_ids())
+    assert _has(errs, "bare counter is not a receipt")
+
+
+def test_receipt_pointing_at_nothing_fails():
+    row = _capture()
+    row["validated_replays"] = 1
+    row["replay_evidence"] = [{"path": "experiments/breadth/run/DOES_NOT_EXIST_receipt.md",
+                               "description": "a receipt that points at nothing"}]
+    errs = vc.validate_capture(row, vc.waterline_task_ids())
+    assert _has(errs, "validates nothing")
+
+
+def test_receipt_count_must_match_replays():
+    row = _capture()
+    row["validated_replays"] = 2
+    row["replay_evidence"] = [{"path": "experiments/breadth/run/ledger.jsonl",
+                               "description": "one real receipt"}]
+    errs = vc.validate_capture(row, vc.waterline_task_ids())
+    assert _has(errs, "exactly one receipt")
+
+
 # ---- delta rules ----
 
 def test_valid_delta_passes():
     d = {"record_type": "delta_observation", "from_model": "a", "to_model": "b",
          "task_id": "t", "delta_types": ["edge_delta"], "what_lower_missed": "x",
-         "what_higher_added": "y", "capturable": True, "captured_as": "edge_family"}
+         "what_higher_added": "y", "capturable": True, "captured_as": "edge_family",
+         "measured": False}
     assert vc.validate_delta(d) == []
 
 
 def test_capturable_without_captured_as_fails():
     d = {"record_type": "delta_observation", "from_model": "a", "to_model": "b",
          "task_id": "t", "delta_types": ["edge_delta"], "what_lower_missed": "x",
-         "what_higher_added": "y", "capturable": True}
+         "what_higher_added": "y", "capturable": True, "measured": False}
     assert _has(vc.validate_delta(d), "captured_as")
 
 
 def test_invalid_delta_type_fails():
     d = {"record_type": "delta_observation", "from_model": "a", "to_model": "b",
          "task_id": "t", "delta_types": ["vibes_delta"], "what_lower_missed": "x",
-         "what_higher_added": "y", "capturable": False}
+         "what_higher_added": "y", "capturable": False, "measured": False}
     assert _has(vc.validate_delta(d), "invalid delta_type")
+
+
+def test_delta_without_measured_flag_fails():
+    d = {"record_type": "delta_observation", "from_model": "a", "to_model": "b",
+         "task_id": "t", "delta_types": ["edge_delta"], "what_lower_missed": "x",
+         "what_higher_added": "y", "capturable": False}
+    assert _has(vc.validate_delta(d), "measured")
+
+
+def test_measured_delta_requires_resolvable_evidence_layer():
+    d = {"record_type": "delta_observation", "from_model": "a", "to_model": "b",
+         "task_id": "t", "delta_types": ["edge_delta"], "what_lower_missed": "x",
+         "what_higher_added": "y", "capturable": False, "measured": True}
+    assert _has(vc.validate_delta(d), "evidence_layer")
+    d["evidence_layer"] = "no-such-layer"
+    assert _has(vc.validate_delta(d, vc.corner_layers()), "does not resolve")
+    d["evidence_layer"] = "model-ladder-task02-20260708"
+    assert vc.validate_delta(d, vc.corner_layers()) == []
 
 
 def _run_standalone() -> int:

@@ -52,7 +52,7 @@ CAPTURE_REQUIRED = ("capture_id", "source_task_id", "driver_model", "driver_role
 BURDEN_REQUIRED = ("requested_outcome", "claimant", "authority", "predicates", "burden_holder",
                    "evidence", "verifier", "gap", "closure_decision", "failure_default")
 DELTA_REQUIRED = ("from_model", "to_model", "task_id", "delta_types",
-                  "what_lower_missed", "what_higher_added", "capturable")
+                  "what_lower_missed", "what_higher_added", "capturable", "measured")
 PATH_REQUIRED = ("model", "status", "success")
 
 
@@ -117,6 +117,19 @@ def validate_capture(row: dict, waterline_ids: set[str], repo: Path = REPO) -> l
     if replays > 0 and not evidence:
         errs.append(f"capture {cid}: validated_replays={replays} with empty replay_evidence — "
                     f"a count without rows is a fabricated receipt")
+    # ...and receipts must be real, not just counted: a dummy {} row or a bogus
+    # path must not tick a replay toward amortization (Codex P2 on PR #55).
+    if isinstance(evidence, list):
+        for i, rec in enumerate(evidence):
+            if not isinstance(rec, dict) or not all(_nonempty(rec.get(k)) for k in ("path", "description")):
+                errs.append(f"capture {cid}: replay_evidence[{i}] must carry non-empty path and "
+                            f"description — a bare counter is not a receipt")
+            elif not (repo / rec["path"]).exists():
+                errs.append(f"capture {cid}: replay_evidence[{i}].path '{rec['path']}' does not exist — "
+                            f"a receipt that points at nothing validates nothing")
+        if isinstance(replays, int) and 0 < len(evidence) != replays:
+            errs.append(f"capture {cid}: validated_replays={replays} but {len(evidence)} replay_evidence "
+                        f"row(s) — every validated replay needs exactly one receipt")
 
     # Closure discipline: zero replays can never close.
     if replays == 0:
@@ -153,12 +166,32 @@ def validate_capture(row: dict, waterline_ids: set[str], repo: Path = REPO) -> l
     return errs
 
 
-def validate_delta(row: dict) -> list[str]:
+def corner_layers(path: Path = REPO / "experiments/breadth/run/known_corner.jsonl") -> set[str]:
+    try:
+        return {json.loads(x)["layer"] for x in path.read_text(encoding="utf-8").splitlines() if x.strip()}
+    except OSError:
+        return set()
+
+
+def validate_delta(row: dict, layers: set[str] | None = None) -> list[str]:
     errs: list[str] = []
     tid = row.get("task_id", "<no task>")
     for key in DELTA_REQUIRED:
         if key not in row:
             errs.append(f"delta({tid}): missing required field '{key}'")
+    # Measured and hypothesis are different words (constitution invariant 2),
+    # at the delta level: a measured delta must cite the sealed evidence layer
+    # that carries its graded trials; anything else is a hypothesis and says so.
+    if not isinstance(row.get("measured"), bool):
+        errs.append(f"delta({tid}): 'measured' must be a boolean — a delta is either backed by "
+                    f"graded trials in a sealed layer or it is a hypothesis; it must say which")
+    elif row["measured"] is True:
+        layer = row.get("evidence_layer")
+        if not _nonempty(layer):
+            errs.append(f"delta({tid}): measured=true requires evidence_layer naming the "
+                        f"known_corner.jsonl layer that carries the graded trials")
+        elif layers and layer not in layers:
+            errs.append(f"delta({tid}): evidence_layer '{layer}' does not resolve in known_corner.jsonl")
     dts = row.get("delta_types")
     if not isinstance(dts, list) or not dts:
         errs.append(f"delta({tid}): delta_types must be a non-empty list")
@@ -179,6 +212,7 @@ def validate_delta(row: dict) -> list[str]:
 def validate_file(path: Path, waterline_ids: set[str]) -> tuple[list[str], int, int]:
     """Returns (errors, n_captures, n_deltas)."""
     errs: list[str] = []
+    layers = corner_layers()
     n_cap = n_delta = 0
     for i, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         if not line.strip():
@@ -194,7 +228,7 @@ def validate_file(path: Path, waterline_ids: set[str]) -> tuple[list[str], int, 
             errs.extend(validate_capture(row, waterline_ids))
         elif rt == "delta_observation":
             n_delta += 1
-            errs.extend(validate_delta(row))
+            errs.extend(validate_delta(row, layers))
         else:
             errs.append(f"{path.name}:{i}: unknown record_type '{rt}' "
                         f"(allowed: capture, delta_observation)")

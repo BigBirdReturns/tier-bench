@@ -14,7 +14,22 @@
 
 This document tracks the classification of tasks across the breadth test suite as they accumulate through layers.
 
-### Current Layer: k3-floor-authored-tasks-20260710
+### Current Layer: crossing-event-task02-20260710
+
+**THE CROSSING EVENT — capability transferred as an artifact, not a bigger
+model.** The $0.68 captured rule commitment (task02's in-class-backslash
+boundary), carried as an `emit_scaffold.py` packet, moves the haiku floor from
+**unstable 3/5 (bare)** to **settled 5/5 (with packet)** — 10681/10681 on the
+hidden oracle, every grade re-run by the driver, all five trials. Receipt +
+candidates: `run/replays/task02_wildcard/`. Counted as **1 validated replay**
+in the capture ledger (five trials of one instance = one reuse); the capture is
+now `amortizing`, 1 of a projected 4 replays to break even — the remaining 3
+must be distinct task02-class work items (ARC-B supplies them). Caveat: the
+bare baseline's prompt wording (Jul 8) is not byte-identical; the designed
+difference is the scaffold block only, and a same-session A/B is the named
+next sharpening.
+
+### Previous Layer: k3-floor-authored-tasks-20260710
 
 **Settled Cells: 2 new** (K=3, hidden grades re-run by the driver)
 - task09_pattern_class (3/3, hidden 24/24 incl. all 7 inverted-range knot vectors)
@@ -74,4 +89,8 @@ This accumulation strategy prevents unnecessary re-work and tracks the frontier 
   (task08/09/10) floored at K=3 (K=5 on task08): task09/task10 settled,
   task08 unstable 4/5 with a procedural (domain-bounds) miss. No wall; Fable
   never turned on for solving.
+- **crossing-event-task02-20260710**: the replay protocol's first run —
+  haiku + the captured scaffold packet settles task02 5/5 where bare haiku
+  was 3/5; the capture ledger records its first validated replay
+  (amortizing, 1 of 4).
 
