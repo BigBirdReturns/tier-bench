@@ -42,6 +42,11 @@ jobs:
           python -m py_compile scripts/validate_capture_ledger.py scripts/capture_roi.py
           python scripts/validate_capture_ledger.py
           python scripts/capture_roi.py --json | python -c "import json,sys; r={x['capture_id']:x for x in json.load(sys.stdin)}['task02_escape_class_boundary']; assert r['projected_break_even_replays']==4 and r['roi_state']=='amortizing' and r['validated_replays']==1 and r['replays_remaining_to_break_even']==3"
+      - name: almanac corpus — vectors match the reference; graders bite; no leaks
+        run: |
+          python -m py_compile experiments/almanac/generate_vectors.py tests/test_almanac_vectors.py
+          python experiments/almanac/generate_vectors.py --check
+          python tests/test_almanac_vectors.py
       - name: capture guard tests bite
         run: |
           python tests/test_capture_ledger.py
