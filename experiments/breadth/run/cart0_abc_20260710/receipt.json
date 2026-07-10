@@ -21,13 +21,17 @@
     "primary_confound": "uncontrolled target-rule articulation during planning \u2014 every planner (A, B, C alike) restated the boot-loaded target rule in its turn-1 plan, a second activation before the registered boundary manipulation; the boot-only and recency-control arms self-administered the treatment"
   },
   "correct_rerun": {
-    "principle": "preserve common boot exposure; remove the uncontrolled self-resurfacing. Do NOT switch to bare-boot first-time injection \u2014 that tests just-in-time instruction, a different mechanism.",
-    "A": "target present at boot | planning PROHIBITED from restating it | neutral length-matched boundary",
-    "B": "target present at boot | planning PROHIBITED from restating it | exact applicable constraint at boundary",
-    "C": "target present at boot | planning PROHIBITED from restating it | irrelevant valid length-matched constraint at boundary",
-    "contamination_check": "before grading, inspect each planning output; if the planner quotes or materially paraphrases the target constraint before the boundary message, mark the trial 'contaminated' \u2014 neither pass nor fail, causally ineligible",
-    "blocking": "run balanced blocks (A1 B1 C1, A2 B2 C2, ...) so an early credit stop yields complete blocks, not A=5 B=3 C=1",
-    "separate_second_experiment": "the planner-self-resurfacing observation ('does self-generated articulation reactivate a boot-loaded constraint?') is worth testing, but as a SEPARATE run after the clean external-resurfacing run \u2014 not as another arm now"
+    "principle": "preserve common boot exposure; remove the uncontrolled self-resurfacing STRUCTURALLY, not by asking a planner not to mention the rule (that creates an unnatural compliance subtask and wastes trials).",
+    "protocol": [
+      "identical common boot map in every arm (target rule present \u2014 the registered control)",
+      "a fixed-format first response that cannot carry free prose: exactly `READY` (no planning turn, so no self-rehearsal of the rule)",
+      "the registered A/B/C boundary message",
+      "implementation",
+      "raw preservation of every message and response (see ADMINISTRATION v2 mandate)"
+    ],
+    "balanced_blocks": "run A1 B1 C1, A2 B2 C2, ... so an early credit stop yields complete blocks, not A=5 B=3 C=1",
+    "superseded_contamination_check": "the earlier 'quotes or materially paraphrases the target' gate is a JUDGMENT rule, not deterministic, and can drift after outputs are seen; the READY-token design PREVENTS rehearsal structurally instead of detecting it. If a planning turn is ever reintroduced, contamination must be adjudicated by a frozen classifier or human protocol, never ad hoc.",
+    "separate_second_experiment": "'does self-generated articulation reactivate a boot-loaded constraint?' is tested AFTER the clean external-resurfacing run, as its own experiment \u2014 not folded in as another arm."
   },
   "incidental_signal_hypothesis_only": "same item, single-turn spec+scaffold (CLAUDE-2 replay04) = 1/3 vs two-turn plan-first here = 5/5. Consistent with self-articulation-during-planning reactivating the rule \u2014 this is the separate second experiment above, not a result.",
   "items": [
