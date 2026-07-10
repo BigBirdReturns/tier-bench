@@ -1,0 +1,70 @@
+{
+  "run": "ab-bare-vs-packet-20260710",
+  "design": "same session, same solver (haiku subagent, fresh instance/trial), byte-identical prompt except the scaffold rule-commitment block in the packet arm",
+  "result": {
+    "bare": "3/5",
+    "packet": "4/5 (single miss is the \\[ escape edge, not the captured knot; knot misses: bare 2, packet 0)"
+  },
+  "items": [
+    {
+      "arm": "bare",
+      "trial": 0,
+      "outcome": "fail",
+      "candidate_sha256": "dcf52a612f4f8fdd52c80bcb686abc5c7211a28f414a4f7af567631243dfaeb0"
+    },
+    {
+      "arm": "bare",
+      "trial": 1,
+      "outcome": "pass",
+      "candidate_sha256": "52d4837e9bcaabb1b499b68937b1504282087d2ce69f14ace0131c9111657785"
+    },
+    {
+      "arm": "bare",
+      "trial": 2,
+      "outcome": "pass",
+      "candidate_sha256": "5e420dc6415ff4643b32c1b5407d0fe8d65f6528354ee13d1045c101dcd67a3f"
+    },
+    {
+      "arm": "bare",
+      "trial": 3,
+      "outcome": "fail",
+      "candidate_sha256": "06e8be7e8afec2bdfb7c719add7c701063a36cbf411df36e2ef3fe56558ebbc7"
+    },
+    {
+      "arm": "bare",
+      "trial": 4,
+      "outcome": "pass",
+      "candidate_sha256": "aabf75b9d79ee36c1637a6be6413f9ba04f1fe7e0bb808f442c23791919149b3"
+    },
+    {
+      "arm": "packet",
+      "trial": 0,
+      "outcome": "pass",
+      "candidate_sha256": "c9147f1d3ecc965e4fd70e0100944bccd4bcb45f4962feeebaa1381fde84fde4"
+    },
+    {
+      "arm": "packet",
+      "trial": 1,
+      "outcome": "pass",
+      "candidate_sha256": "02ef4b29e63d6a72083bbdb0f439cdaa8bb28a32eea729eed3e81be86d4191bf"
+    },
+    {
+      "arm": "packet",
+      "trial": 2,
+      "outcome": "pass",
+      "candidate_sha256": "fb7a2c795f510f9dcb250cda2a97a8808c8c0c646094ef5189d08225dc8d1de7"
+    },
+    {
+      "arm": "packet",
+      "trial": 3,
+      "outcome": "pass",
+      "candidate_sha256": "6c89d5ffefed0c508c64af19df3ee5c4724943acdf48770dab9f75aec89c9e53"
+    },
+    {
+      "arm": "packet",
+      "trial": 4,
+      "outcome": "fail",
+      "candidate_sha256": "e38be071a79b3f44c42df57ee94782d98f109552da79e4a826457b980ac605d8"
+    }
+  ]
+}

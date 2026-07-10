@@ -1,0 +1,6 @@
+== trial0 ==
+SCORE 17/17
+== trial1 ==
+SCORE 17/17
+== trial2 ==
+SCORE 17/17

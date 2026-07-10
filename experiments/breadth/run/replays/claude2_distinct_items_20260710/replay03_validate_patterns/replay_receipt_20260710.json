@@ -1,0 +1,12 @@
+{
+  "administration_id": "claude2-distinct-replays-20260710",
+  "artifact_sha256": "9012ad637bb86b62ed731c229f88244494e0b21e0ce068b6d529f8c5a48f1911",
+  "candidate_set_sha256": "be8f49eae1691d84f26b52516c81acad78748a7f7b5bc5413305daa9c255e42c",
+  "candidate_sha256": "1566ab361ea4a43c5f5b150fb70d0ebfa22bd70f3f00d9bfa8be26630b691653",
+  "grader_id": "experiments/breadth/run/replays/claude2_distinct_items_20260710/hidden_grade.py::replay03_validate_patterns",
+  "grader_output_sha256": "de05b32611727a760f0126064581a2923c74a06e2d187a8309395341411b382a",
+  "packet_sha256": "bc3d9e9a83afc8ff802858c09b05bb61892f6ea1c97bb46a4edb45c6f3db79e1",
+  "schema_version": "tier-bench/replay-receipt@1",
+  "verdict": "pass",
+  "work_item_id": "replay03_validate_patterns@haiku+scaffold_packet/20260710"
+}

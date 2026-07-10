@@ -1,0 +1,111 @@
+{
+  "run": "cart0-abc-20260710",
+  "disposition": "INCOMPLETE + CONFOUNDED \u2014 NOT SEALED. Mints neither pass nor fail for the resurfacing hypothesis. No comparative verdict.",
+  "correction_note": "Supersedes the earlier framing in this file's history: common boot exposure of the target rule in all three arms was the REGISTERED CONTROL, not a confound. The intended estimand is whether reactivating an already-boot-loaded rule at the consequential boundary beats boot exposure alone (A) and generic recency (C). The sole confound was the planning turn, not the boot map.",
+  "registered_design": {
+    "estimand": "After a rule is loaded at boot, does reactivating the applicable rule at the consequential boundary outperform boot exposure alone and generic recency?",
+    "A": "common boot map (target rule present) + neutral length-matched boundary",
+    "B": "common boot map (target rule present) + exact applicable constraint at boundary",
+    "C": "common boot map (target rule present) + irrelevant valid length-matched constraint at boundary",
+    "item": "count_matches (the depth-regression item)",
+    "protocol": "two-turn: plan, then implement on go signal; K=5/condition"
+  },
+  "causal_status": {
+    "administration_status": "incomplete",
+    "completed_candidates": "9 of 15",
+    "aborted_candidates": "6, missing rather than failed (provider credit exhaustion)",
+    "completed_outcomes": "9 of 9 pass (10/10 hidden grader, graded deterministically by the opus main loop; solver off scoring path)",
+    "cells": "A=5, B=3, C=1",
+    "causal_status": "confounded",
+    "comparative_verdict": "none",
+    "primary_confound": "uncontrolled target-rule articulation during planning \u2014 every planner (A, B, C alike) restated the boot-loaded target rule in its turn-1 plan, a second activation before the registered boundary manipulation; the boot-only and recency-control arms self-administered the treatment"
+  },
+  "correct_rerun": {
+    "principle": "preserve common boot exposure; remove the uncontrolled self-resurfacing STRUCTURALLY, not by asking a planner not to mention the rule (that creates an unnatural compliance subtask and wastes trials).",
+    "protocol": [
+      "identical common boot map in every arm (target rule present \u2014 the registered control)",
+      "a fixed-format first response that cannot carry free prose: exactly `READY` (no planning turn, so no self-rehearsal of the rule)",
+      "the registered A/B/C boundary message",
+      "implementation",
+      "raw preservation of every message and response (see ADMINISTRATION v2 mandate)"
+    ],
+    "balanced_blocks": "run A1 B1 C1, A2 B2 C2, ... so an early credit stop yields complete blocks, not A=5 B=3 C=1",
+    "superseded_contamination_check": "the earlier 'quotes or materially paraphrases the target' gate is a JUDGMENT rule, not deterministic, and can drift after outputs are seen; the READY-token design PREVENTS rehearsal structurally instead of detecting it. If a planning turn is ever reintroduced, contamination must be adjudicated by a frozen classifier or human protocol, never ad hoc.",
+    "separate_second_experiment": "'does self-generated articulation reactivate a boot-loaded constraint?' is tested AFTER the clean external-resurfacing run, as its own experiment \u2014 not folded in as another arm."
+  },
+  "incidental_signal_hypothesis_only": "same item, single-turn spec+scaffold (CLAUDE-2 replay04) = 1/3 vs two-turn plan-first here = 5/5. Consistent with self-articulation-during-planning reactivating the rule \u2014 this is the separate second experiment above, not a result.",
+  "items": [
+    {
+      "condition": "A",
+      "trial": 0,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "b8d0fa2bad653df94c9370134b926b93a12c0b551f27df40d05b528416ba95de",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "A",
+      "trial": 1,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "3fade7c1a49087f8e54e985434d879f8b26d7ac6f3cde5021c79849e5f43f082",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "A",
+      "trial": 2,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "cf6ffe35db6a41d49c22be3bcca1dc18460edb4fac0e78968116dcf586d3eda0",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "A",
+      "trial": 3,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "637100a5c6f9a9eb03e75cdc8df9fba8cbb8399e28885b5aec5a3ad482e5116d",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "A",
+      "trial": 4,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "d7cec8964b82a0164358b9612b89dec39ce6fdbaf1779ae015c18541ff8c750f",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "B",
+      "trial": 0,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "d7d4cf3ba4fb3361fd5eebe968521d3d93c9a9328168ac68b000179d6b67531d",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "B",
+      "trial": 1,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "23065c29de292774dc4be69aebdea2be6068c0fb33b6625dfaa2305140dacd09",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "B",
+      "trial": 2,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "9fb7f8b7291e57248dcdd9a88849adb3ea8e646ca129991e9e35e80b65d3fc5e",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "C",
+      "trial": 0,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "0f112d225ab1a1db755aa5a11f85b2bca8510768ff82c8be747278385d60dbf6",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    }
+  ]
+}

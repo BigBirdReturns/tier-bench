@@ -1,0 +1,79 @@
+{
+  "run": "k3-floor-almanac-20260710",
+  "solver": "claude-haiku-4-5 (Agent-tool subagent)",
+  "grading": "selfrun/grade.py, hidden files injected at grade time",
+  "items": [
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "trial": 0,
+      "candidate_sha256": "1ba439df20dcff4f48b4b1af1e4fe375e284547f153c7418dd16ef06ef6a9e93",
+      "hidden_rc": 0,
+      "hidden_output_sha256": "45ce3d95eb234904a710ede4e7063921bfffcc52f60293009e3a261a311c8827",
+      "outcome": "pass"
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "trial": 1,
+      "candidate_sha256": "0404761bd84879b7bb63c15a2256dfb6121be901d45005611faff184f6cb6fee",
+      "hidden_rc": 1,
+      "hidden_output_sha256": "3b39dcd00d7088cc12c377c3b2b05df3d7619f279fe2437ce838beee0384bc60",
+      "outcome": "fail"
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "trial": 2,
+      "candidate_sha256": "1c052842e6c2e6702d5a46dc9fb4c6f50a34a0976c7fa4f060e186ada7c1a44d",
+      "hidden_rc": 1,
+      "hidden_output_sha256": "81d9cfb7aff4f9c1c8eebc6b0a507ec736d1ce1a4f23928f54dbc7a308be3630",
+      "outcome": "fail"
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "trial": 0,
+      "candidate_sha256": "4be1a31cdf72f5c024a3e65c8d7c9b23f41276a4f452b09c0f28cbc83e6efa04",
+      "hidden_rc": 0,
+      "hidden_output_sha256": "45ce3d95eb234904a710ede4e7063921bfffcc52f60293009e3a261a311c8827",
+      "outcome": "pass"
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "trial": 1,
+      "candidate_sha256": "d70567815eddbce6adbad5d77e5f090e8bf8fa0c50b4a6fbc370ebdec7f0dcd9",
+      "hidden_rc": 0,
+      "hidden_output_sha256": "45ce3d95eb234904a710ede4e7063921bfffcc52f60293009e3a261a311c8827",
+      "outcome": "pass"
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "trial": 2,
+      "candidate_sha256": "0c58255e00c8b2ea5ed93f3b41f4a9a723125cf06917d1d5239b7cca733bf308",
+      "hidden_rc": 0,
+      "hidden_output_sha256": "45ce3d95eb234904a710ede4e7063921bfffcc52f60293009e3a261a311c8827",
+      "outcome": "pass"
+    },
+    {
+      "task_id": "almanac_exception_class_001",
+      "trial": 0,
+      "candidate_sha256": "3826490cb78899a2ac51d8462ff8aacf5ca773c2130ec6a4bf4cfc3ed7283289",
+      "hidden_rc": 0,
+      "hidden_output_sha256": "fb3d522a00af827c7b43f209e487d5fb351f7d402707e1fb5a7234b7514bf975",
+      "outcome": "pass"
+    },
+    {
+      "task_id": "almanac_exception_class_001",
+      "trial": 1,
+      "candidate_sha256": "1c79fe104421d38dfed4a8f604b9e0ff603dd3821debd704e7e000fcd8efaafb",
+      "hidden_rc": 0,
+      "hidden_output_sha256": "fb3d522a00af827c7b43f209e487d5fb351f7d402707e1fb5a7234b7514bf975",
+      "outcome": "pass"
+    },
+    {
+      "task_id": "almanac_exception_class_001",
+      "trial": 2,
+      "candidate_sha256": "aefc49ef3c6890d262b15910ac54ef621ee09e32a1a141d39ffd1a18b0e9b1fb",
+      "hidden_rc": 0,
+      "hidden_output_sha256": "fb3d522a00af827c7b43f209e487d5fb351f7d402707e1fb5a7234b7514bf975",
+      "outcome": "pass"
+    }
+  ]
+}

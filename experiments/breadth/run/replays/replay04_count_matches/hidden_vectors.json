@@ -1,0 +1,96 @@
+[
+ {
+  "pattern": "[\\]",
+  "words": [
+   "\\",
+   "]",
+   "a",
+   "\\\\"
+  ],
+  "result": 1
+ },
+ {
+  "pattern": "[\\*]",
+  "words": [
+   "*",
+   "\\",
+   "a",
+   ""
+  ],
+  "result": 2
+ },
+ {
+  "pattern": "[a\\-z]",
+  "words": [
+   "-",
+   "b",
+   "\\",
+   "z",
+   "A"
+  ],
+  "result": 3
+ },
+ {
+  "pattern": "*[\\]*",
+  "words": [
+   "a\\b",
+   "ab",
+   "\\",
+   "]"
+  ],
+  "result": 2
+ },
+ {
+  "pattern": "a?[!b]",
+  "words": [
+   "axc",
+   "axb",
+   "ab",
+   "axx"
+  ],
+  "result": 2
+ },
+ {
+  "pattern": "[z-a]",
+  "words": [
+   "a"
+  ],
+  "error": "ValueError"
+ },
+ {
+  "pattern": "x\\",
+  "words": [
+   "x"
+  ],
+  "error": "ValueError"
+ },
+ {
+  "pattern": "[]a]*",
+  "words": [
+   "]x",
+   "ax",
+   "bx"
+  ],
+  "result": 2
+ },
+ {
+  "pattern": "[-a][a-]",
+  "words": [
+   "-a",
+   "a-",
+   "--",
+   "aa",
+   "ab"
+  ],
+  "result": 4
+ },
+ {
+  "pattern": "*",
+  "words": [
+   "",
+   "a",
+   "abc"
+  ],
+  "result": 3
+ }
+]

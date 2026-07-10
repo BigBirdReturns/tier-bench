@@ -1,0 +1,2 @@
+SCORE 9/10
+  FAIL ('[]a]*', {'result': 0}, {'result': 2})
