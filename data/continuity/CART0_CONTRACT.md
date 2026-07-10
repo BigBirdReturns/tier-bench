@@ -91,3 +91,29 @@ prohibition at the moment it matters.
 > version-pinned gate and resurfaces that constraint for the authorized actor
 > at the moment of action. The model does not have to keep remembering; the
 > protocol has to keep refusing to forget.
+
+## Placement
+
+CART0 is a cross-cutting continuity protocol, not an AXM spoke.
+
+- **Research and validation:** Tier Bench owns the experimental corpus, reducers,
+  projections, gates, receipts, and hidden grading until the minimum sufficient
+  continuity residue is empirically established.
+- **Normative custody contract:** once stable, canonical serialization, identity,
+  sealing, and conformance requirements may graduate into an AXM Genesis profile.
+  Genesis verifies the artifact; it does not determine the lawful next action.
+- **Runtime:** reusable reduction, retrieval, and projection machinery may live in
+  AXM Core, while project-specific transition rules and gates remain project-local.
+- **Instances:** each project stores its own continuity event ledger and projections
+  beside the work they govern.
+- **Spoke relationship:** AXM spokes, including axm-hinge, emit consequential state
+  transitions that CART0 may preserve. They do not contain CART0, and CART0 does
+  not replace their domain objects.
+
+> Correction on record (2026-07-10): do NOT put the reducer into Genesis merely
+> because the artifact is Genesis-shaped. The reducer is epistemic authority; Genesis
+> is custody. Genesis owns the sealable wire format (a `continuity-event@1` / `cart0@1`
+> profile: canonical serialization, identifiers, projection-digest construction,
+> conformance vectors, seal/verify rules). The reducer/projection runtime is Core or
+> project-local. Conflating them makes the custody kernel the universal project-state
+> interpreter — the centralization CART0 exists to refuse.
