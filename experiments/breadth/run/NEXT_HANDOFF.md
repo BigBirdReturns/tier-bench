@@ -101,9 +101,12 @@ sessions and got consumed, #48–#54, on Jul 9):
 1. **AXM provenance layer — DONE / merged** (PR #47): source ledger, 7-primitive
    registry, `validate_primitives.py` guard wired into CI. The two model-authored
    sources (gpt-5.5-high ledger, gpt-4o spectra) are recorded and author-named.
-2. **ARC-A — Frontier capture ledger — NEXT, armed** (one branch, serial). Spec
-   in ROADMAP.
-3. **ARC-B — edge-family freeze + almanac hidden-knot corpus** — queued. Spec in
+2. **ARC-A — Frontier capture ledger — DONE, PR open**: capture + delta schemas,
+   worked task02 row ($0.6805 real-billed capture, projected break-even 4
+   replays, honestly `needs_replay`), validator enforcing closure discipline
+   (no amortization without validated replays), ROI projection-vs-fact split.
+   The replay protocol (docs/frontier-capture.md) is the open follow-through.
+3. **ARC-B — edge-family freeze + almanac hidden-knot corpus — NEXT**. Spec in
    ROADMAP. Absorbs the old runway items 2 (edge-family/almanac) and 3
    (adjudications). Authoring batch 1 (PR #54) is adjacent, not this item.
 

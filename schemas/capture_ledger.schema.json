@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/capture_ledger.schema.json",
+  "title": "AXM frontier capture ledger entry",
+  "description": "One captured frontier move: expensive cognition converted into a reusable artifact. Rows live in data/capture/*.jsonl with record_type 'capture' (delta observations ride in the same files under delta_observation.schema.json). scripts/validate_capture_ledger.py enforces this schema plus the closure rules a schema can't express: a capture with zero validated replays may not claim amortization, and the captured artifact must actually exist in the repo.",
+  "type": "object",
+  "required": ["record_type", "capture_id", "source_task_id", "driver_model", "driver_role",
+               "capture_cost_usd", "cost_basis", "captured_artifact", "old_path", "new_path",
+               "break_even_reuse_count", "validated_replays", "status", "burden"],
+  "additionalProperties": true,
+  "properties": {
+    "record_type": {"const": "capture"},
+    "capture_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "source_task_id": {"type": "string", "description": "The task whose residue was resolved. May link to a waterline cell; linking never mutates the waterline."},
+    "driver_model": {"type": "string"},
+    "driver_role": {"type": "string", "description": "e.g. residue_resolver, grader_author, adjudicator"},
+    "capture_cost_usd": {"type": "number", "minimum": 0},
+    "cost_basis": {
+      "type": "string",
+      "enum": ["real-billed", "shadow-estimated", "subscription-derived", "repaired-transport-adjudicated"],
+      "description": "Evidence class of the capture cost. Mixed-basis ROI must be labeled as such by capture_roi.py."
+    },
+    "captured_artifact": {
+      "type": "object",
+      "required": ["type", "path", "description"],
+      "properties": {
+        "type": {"type": "string", "description": "e.g. edge_family + routing_rule, hidden_grader, scaffold_packet, lens"},
+        "path": {"type": "string", "description": "Repo-relative path; must exist (validator-enforced)."},
+        "description": {"type": "string", "minLength": 1}
+      }
+    },
+    "old_path": {
+      "type": "object",
+      "required": ["model", "status", "success"],
+      "description": "The floor path — what replays run on once the artifact carries the judgment.",
+      "properties": {
+        "model": {"type": "string"},
+        "status": {"type": "string"},
+        "success": {"type": "string"},
+        "cost_usd_per_trial": {"type": "number", "minimum": 0},
+        "cost_basis": {"type": "string", "enum": ["real-billed", "shadow-estimated", "subscription-derived", "repaired-transport-adjudicated"]}
+      }
+    },
+    "new_path": {
+      "type": "object",
+      "required": ["model", "status", "success"],
+      "description": "The frontier call being retired — what each validated replay avoids.",
+      "properties": {
+        "model": {"type": "string"},
+        "status": {"type": "string"},
+        "success": {"type": "string"},
+        "cost_usd_per_trial": {"type": "number", "minimum": 0},
+        "cost_basis": {"type": "string", "enum": ["real-billed", "shadow-estimated", "subscription-derived", "repaired-transport-adjudicated"]}
+      }
+    },
+    "break_even_reuse_count": {
+      "type": ["integer", "null"],
+      "description": "MEASURED break-even only — stays null until validated replays exist. Projections are computed by capture_roi.py at read time, never stored as fact."
+    },
+    "validated_replays": {
+      "type": "integer", "minimum": 0,
+      "description": "Count of hidden-graded solves that used the captured artifact on the floor path instead of a frontier call. Zero until the replay protocol runs."
+    },
+    "replay_evidence": {
+      "type": "array", "items": {"type": "string"},
+      "description": "Ledger rows / evidence layers backing validated_replays. Required non-empty when validated_replays > 0."
+    },
+    "waterline_effect": {"type": "string", "description": "Narrative of how the waterline moved. Descriptive only — this ledger never writes waterline.json."},
+    "status": {
+      "type": "string",
+      "enum": ["captured_not_yet_amortized", "needs_replay", "partial", "amortized"],
+      "description": "amortized is the ONLY closed state and requires validated_replays >= measured break-even with replay_evidence. Everything else is explicitly non-closed (burden-discipline failure default)."
+    },
+    "burden": {
+      "type": "object",
+      "description": "The closure packet (docs/burden-discipline.md): who owes proof, who may close, what happens when proof is missing.",
+      "required": ["requested_outcome", "claimant", "authority", "predicates", "burden_holder",
+                   "evidence", "verifier", "gap", "closure_decision", "failure_default"],
+      "properties": {
+        "requested_outcome": {"type": "string", "minLength": 1},
+        "claimant": {"type": "string", "minLength": 1},
+        "authority": {"type": "string", "minLength": 1},
+        "predicates": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "burden_holder": {"type": "string", "minLength": 1},
+        "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "verifier": {"type": "string", "minLength": 1},
+        "gap": {"type": "string", "minLength": 1, "description": "What remains missing/disputed/partial/unmeasured. 'none' only when truly closed."},
+        "closure_decision": {"type": "string", "enum": ["open", "needs_replay", "partial", "closed"],
+                             "description": "'closed' requires validated replays (validator-enforced)."},
+        "failure_default": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}
