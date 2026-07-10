@@ -69,7 +69,8 @@ review; an engine may not silently change what counts as passing.
 
 - SOL-1 blind control grading remains packet-only and pending its delivery
   vehicle. A repo-aware driver must never perform that grade.
-- SOL-2, the Codex adversarial review of ARC-A/ARC-B, is the active driver task.
+- SOL-2, the Codex adversarial review of ARC-A/ARC-B, is complete with findings
+  at `docs/agents/reviews/sol_arc_ab_review_20260710.md`; remediation is open.
 - PR #63 contains operator-directed partial ARC-C work. It does not close ARC-C
   and does not retroactively satisfy a blind independent-architect pass.
 - The capture ledger remains *amortizing, 1 of 4*, never "amortized."
