@@ -27,6 +27,18 @@ The `orchestrator.py` router/benchmark documented below is the **original founda
 layer** — real and keyed, but NOT today's task unless you are explicitly asked to
 benchmark model routing.
 
+## Two-agent coordination (Claude + Sol)
+
+This repo is worked by **two model lineages**: Claude (you) and Sol (GPT-5.6 via
+Codex, which auto-loads `/AGENTS.md` the way you load this file). The shared
+assignment authority is **`docs/agents/QUEUE.md`** — read it before picking work;
+claim a row (commit flipping `state`) before starting. Binding rules, both
+lineages: **two-lane law** (a session is either `driver` with the repo, or
+`subject`/`instrument` with a generated packet only — never both in one
+context); branch namespaces (`claude/*` vs `codex/*`, PRs the only merge
+point); graders/pass-criteria/ledger-closure GATED for everyone. Full pairing
+context: `docs/agents/SOL_HANDOFF.md`.
+
 ---
 
 ## What This Repo Does
