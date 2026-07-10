@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import hmac
 import json
 import random
+import secrets
 import subprocess
 from pathlib import Path
 
@@ -52,12 +54,18 @@ def load_jsonl(path: Path):
     return rows[0], rows[1:]
 
 
-def opaque_id(source_commit: str, admin_id: str, probe_id: str, response: str) -> str:
+def secret_commitment(label: str, secret: str) -> str:
+    return hashlib.sha256(f"{label}\0{secret}".encode("utf-8")).hexdigest()
+
+
+def opaque_id(id_salt: str, source_commit: str, admin_id: str,
+              probe_id: str, response: str) -> str:
     payload = f"{source_commit}\0{admin_id}\0{probe_id}\0{response}".encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()[:24]
+    return hmac.new(id_salt.encode("utf-8"), payload, hashlib.sha256).hexdigest()[:24]
 
 
-def build_packet(data_dir: Path, rubric_path: Path, source: str, seed: str):
+def build_packet(data_dir: Path, rubric_path: Path, source: str, seed: str,
+                 id_salt: str):
     rubric = rubric_path.read_text(encoding="utf-8")
     packet_rows = []
     key = {}
@@ -65,7 +73,7 @@ def build_packet(data_dir: Path, rubric_path: Path, source: str, seed: str):
         meta, rows = load_jsonl(path)
         admin_id = administration_id(path, meta)
         for row in sorted(rows, key=lambda r: PROBE_ORDER.index(r["probe_id"])):
-            oid = opaque_id(source, admin_id, row["probe_id"], row["response"])
+            oid = opaque_id(id_salt, source, admin_id, row["probe_id"], row["response"])
             item = {
                 "id": oid,
                 "probe_id": row["probe_id"],
@@ -91,9 +99,10 @@ def build_packet(data_dir: Path, rubric_path: Path, source: str, seed: str):
     random.Random(seed).shuffle(packet_rows)
     packet = {
         "_meta": {
-            "packet_schema": "tier-bench.control_blind_packet.v1",
+            "packet_schema": "tier-bench.control_blind_packet.v2",
             "source_commit": source,
-            "permutation_seed": seed,
+            "id_salt_commitment": secret_commitment("id-salt", id_salt),
+            "permutation_commitment": secret_commitment("permutation", seed),
             "item_count": len(packet_rows),
             "instructions": "Return exactly one JSON object per item as an array of {id, score, rationale}. Score only from this packet's rubric and verbatim responses. Do not infer subject model identity.",
         },
@@ -112,6 +121,25 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def load_private_secrets(path: Path) -> tuple[str, str]:
+    obj = json.loads(path.read_text(encoding="utf-8"))
+    meta = obj.get("_meta", obj)
+    try:
+        return str(meta["id_salt"]), str(meta["permutation_seed"])
+    except KeyError as e:
+        raise ValueError(f"{path}: missing private secret {e.args[0]!r}") from e
+
+
+def load_id_salt(path: Path) -> str:
+    text = path.read_text(encoding="utf-8").strip()
+    if text.startswith("{"):
+        obj = json.loads(text)
+        text = str(obj.get("id_salt") or obj.get("_meta", {}).get("id_salt") or "")
+    if not text:
+        raise ValueError(f"{path}: empty id salt")
+    return text
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", default="data/control-results")
@@ -119,22 +147,43 @@ def main() -> None:
     ap.add_argument("--packet", required=True)
     ap.add_argument("--key", required=True)
     ap.add_argument("--source-commit", default=None)
-    ap.add_argument("--seed", default="control-blind-v1")
+    ap.add_argument("--seed", default=None,
+                    help="Private permutation seed. Omit to generate 256 bits; never publish it.")
+    ap.add_argument("--id-salt-file", default=None,
+                    help="Private salt file for deterministic regeneration. Omit to generate 256 bits.")
+    ap.add_argument("--secrets-from-key", default=None,
+                    help="Regenerate using id_salt and permutation_seed from an existing private key.")
     args = ap.parse_args()
 
     source = args.source_commit or source_commit()
+    if args.secrets_from_key:
+        if args.seed or args.id_salt_file:
+            ap.error("--secrets-from-key cannot be combined with --seed or --id-salt-file")
+        id_salt, seed = load_private_secrets(Path(args.secrets_from_key))
+    else:
+        id_salt = (load_id_salt(Path(args.id_salt_file))
+                   if args.id_salt_file else secrets.token_hex(32))
+        seed = args.seed or secrets.token_hex(32)
+    if len(id_salt) < 32:
+        ap.error("id salt must contain at least 32 characters")
+    if len(seed) < 16:
+        ap.error("permutation seed must contain at least 16 characters")
     packet_path = Path(args.packet)
     key_path = Path(args.key)
-    packet, key = build_packet(Path(args.data), Path(args.rubric), source, args.seed)
+    packet, key = build_packet(Path(args.data), Path(args.rubric), source, seed, id_salt)
     write_json(packet_path, packet)
     digest = sha256_file(packet_path)
     key_obj = {
         "_meta": {
-            "key_schema": "tier-bench.control_blind_key.v1",
+            "key_schema": "tier-bench.control_blind_key.v2",
+            "packet_schema": "tier-bench.control_blind_packet.v2",
             "source_commit": source,
             "packet_path": str(packet_path),
             "packet_sha256": digest,
-            "permutation_seed": args.seed,
+            "id_salt": id_salt,
+            "id_salt_commitment": secret_commitment("id-salt", id_salt),
+            "permutation_seed": seed,
+            "permutation_commitment": secret_commitment("permutation", seed),
         },
         "items": key,
     }

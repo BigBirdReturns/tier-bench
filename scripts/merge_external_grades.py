@@ -129,7 +129,9 @@ def main() -> None:
         "packet_sha256": packet_sha,
         "packet_source_commit": source_commit,
         "key_schema": key_meta.get("key_schema"),
-        "permutation_seed": key_meta.get("permutation_seed"),
+        "packet_schema": key_meta.get("packet_schema"),
+        "id_salt_commitment": key_meta.get("id_salt_commitment"),
+        "permutation_commitment": key_meta.get("permutation_commitment"),
     }
     write_raw_artifact(grades_path, out_dir, args.grade_run_id, run_meta)
 
