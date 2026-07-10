@@ -31,9 +31,13 @@ their own door and never flow through contribute.py.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from capture_math import projected_break_even  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 CAPTURE_DIR = REPO / "data/capture"
@@ -54,6 +58,15 @@ BURDEN_REQUIRED = ("requested_outcome", "claimant", "authority", "predicates", "
 DELTA_REQUIRED = ("from_model", "to_model", "task_id", "delta_types",
                   "what_lower_missed", "what_higher_added", "capturable", "measured")
 PATH_REQUIRED = ("model", "status", "success")
+REPLAY_EVIDENCE_REQUIRED = ("work_item_id", "receipt_path", "receipt_sha256",
+                            "candidate_path", "candidate_sha256",
+                            "grader_output_path", "grader_output_sha256",
+                            "packet_path", "packet_sha256", "artifact_sha256",
+                            "description")
+REPLAY_HASH_BINDINGS = (("receipt_path", "receipt_sha256"),
+                        ("candidate_path", "candidate_sha256"),
+                        ("grader_output_path", "grader_output_sha256"),
+                        ("packet_path", "packet_sha256"))
 
 
 def _nonempty(v) -> bool:
@@ -117,28 +130,111 @@ def validate_capture(row: dict, waterline_ids: set[str], repo: Path = REPO) -> l
     if replays > 0 and not evidence:
         errs.append(f"capture {cid}: validated_replays={replays} with empty replay_evidence — "
                     f"a count without rows is a fabricated receipt")
-    # ...and receipts must be real, not just counted: a dummy {} row or a bogus
-    # path must not tick a replay toward amortization (Codex P2 on PR #55).
-    if isinstance(evidence, list):
-        for i, rec in enumerate(evidence):
-            if not isinstance(rec, dict) or not all(_nonempty(rec.get(k)) for k in ("path", "description")):
-                errs.append(f"capture {cid}: replay_evidence[{i}] must carry non-empty path and "
-                            f"description — a bare counter is not a receipt")
-            elif not (repo / rec["path"]).exists():
-                errs.append(f"capture {cid}: replay_evidence[{i}].path '{rec['path']}' does not exist — "
-                            f"a receipt that points at nothing validates nothing")
-        if isinstance(replays, int) and 0 < len(evidence) != replays:
-            errs.append(f"capture {cid}: validated_replays={replays} but {len(evidence)} replay_evidence "
-                        f"row(s) — every validated replay needs exactly one receipt")
 
-    # Closure discipline: zero replays can never close.
-    if replays == 0:
-        if status in CLOSED_STATUSES:
-            errs.append(f"capture {cid}: status '{status}' with zero validated replays — "
-                        f"missing replay evidence defaults to needs_replay/partial, never amortized")
+    # P1 remediation (2026-07-10): closure depends on DISTINCT, HASH-BOUND replay
+    # events, never on list length or the row's own integers. Each evidence item
+    # must bind a unique work item to receipt/candidate/grader/packet bytes; the
+    # validator checks the bytes, counts unique events itself, and treats the
+    # declared validated_replays as a redundant assertion that must agree.
+    unique_events = 0
+    if isinstance(evidence, list):
+        seen_work_items: set = set()
+        seen_receipt_hashes: set = set()
+        for i, rec in enumerate(evidence):
+            if not isinstance(rec, dict):
+                errs.append(f"capture {cid}: replay_evidence[{i}] must be a structured object — "
+                            f"a bare counter is not a receipt")
+                continue
+            item_errs = []
+            for key in REPLAY_EVIDENCE_REQUIRED:
+                if not _nonempty(rec.get(key)):
+                    item_errs.append(f"capture {cid}: replay_evidence[{i}].{key} must be a "
+                                     f"non-empty string — a bare counter is not a receipt")
+            if item_errs:
+                errs.extend(item_errs)
+                continue
+            # bytes, not paths: every declared hash must match the committed bytes
+            hash_ok = True
+            for path_key, hash_key in REPLAY_HASH_BINDINGS:
+                fp = repo / rec[path_key]
+                if not fp.exists():
+                    errs.append(f"capture {cid}: replay_evidence[{i}].{path_key} "
+                                f"'{rec[path_key]}' does not exist — a receipt that points "
+                                f"at nothing validates nothing")
+                    hash_ok = False
+                    continue
+                actual = hashlib.sha256(fp.read_bytes()).hexdigest()
+                if actual != rec[hash_key]:
+                    errs.append(f"capture {cid}: replay_evidence[{i}].{hash_key} does not match "
+                                f"the bytes at {rec[path_key]} (declared {rec[hash_key][:12]}…, "
+                                f"actual {actual[:12]}…) — hash-bound means the bytes decide")
+                    hash_ok = False
+            # the artifact hash binds the replay to the capture's own artifact
+            art_path = (row.get("captured_artifact") or {}).get("path")
+            if _nonempty(art_path) and (repo / art_path).exists():
+                actual_art = hashlib.sha256((repo / art_path).read_bytes()).hexdigest()
+                if rec.get("artifact_sha256") != actual_art:
+                    errs.append(f"capture {cid}: replay_evidence[{i}].artifact_sha256 does not "
+                                f"match the captured artifact bytes — the replay must prove it "
+                                f"carried THIS artifact")
+                    hash_ok = False
+            # optional per-trial candidates (multi-trial receipts) are verified too
+            for j, tc in enumerate(rec.get("trial_candidates") or []):
+                fp = repo / tc.get("path", "")
+                if not fp.exists() or hashlib.sha256(fp.read_bytes()).hexdigest() != tc.get("sha256"):
+                    errs.append(f"capture {cid}: replay_evidence[{i}].trial_candidates[{j}] "
+                                f"missing or hash-mismatched")
+                    hash_ok = False
+            # identity rules: unique work item, unique receipt bytes. candidate
+            # bytes are deliberately NOT identity — distinct work items may
+            # legitimately produce identical solutions.
+            wid = rec["work_item_id"]
+            if wid in seen_work_items:
+                errs.append(f"capture {cid}: duplicate work_item_id '{wid}' — the same work "
+                            f"item cannot be credited twice")
+                continue
+            seen_work_items.add(wid)
+            if rec["receipt_sha256"] in seen_receipt_hashes:
+                errs.append(f"capture {cid}: receipt hash {rec['receipt_sha256'][:12]}… already "
+                            f"credited — the same receipt cannot buy two replays under "
+                            f"different paths or labels")
+                continue
+            seen_receipt_hashes.add(rec["receipt_sha256"])
+            if hash_ok:
+                unique_events += 1
+
+    if isinstance(replays, int) and evidence and replays != unique_events:
+        errs.append(f"capture {cid}: validated_replays={replays} but {unique_events} unique, "
+                    f"hash-verified replay event(s) — the declared integer is a redundant "
+                    f"assertion and may not create evidence")
+
+    # Closure discipline: break-even is COMPUTED from cost evidence (one shared
+    # calculation, capture_math.py); the row's own break_even_reuse_count and
+    # validated_replays are never inputs to the decision.
+    computed_be = projected_break_even(
+        row.get("capture_cost_usd"),
+        (row.get("old_path") or {}).get("cost_usd_per_trial"),
+        (row.get("new_path") or {}).get("cost_usd_per_trial"))
+    closed = status in CLOSED_STATUSES or (row.get("burden") or {}).get("closure_decision") == "closed"
+    if closed:
+        if computed_be is None:
+            errs.append(f"capture {cid}: closure claimed but no break-even threshold is computable "
+                        f"from the cost evidence — unmeasurable savings cannot amortize")
+        elif unique_events < computed_be:
+            errs.append(f"capture {cid}: closure claimed with {unique_events} unique validated "
+                        f"replay(s) against a computed break-even of {computed_be} — "
+                        f"closure requires unique_validated_replays >= computed break-even")
+        if row.get("break_even_reuse_count") != computed_be:
+            errs.append(f"capture {cid}: at closure break_even_reuse_count must equal the computed "
+                        f"threshold ({computed_be}); it is validated against capture_math.py, "
+                        f"never trusted as input")
+    else:
         if row.get("break_even_reuse_count") is not None:
-            errs.append(f"capture {cid}: break_even_reuse_count must be null until validated "
-                        f"replays exist — projections belong to capture_roi.py output, not the ledger")
+            errs.append(f"capture {cid}: break_even_reuse_count must be null until closure — "
+                        f"projections belong to capture_roi.py output, not the ledger")
+    if replays == 0 and status in CLOSED_STATUSES:
+        errs.append(f"capture {cid}: status '{status}' with zero validated replays — "
+                    f"missing replay evidence defaults to needs_replay/partial, never amortized")
 
     burden = row.get("burden")
     if not isinstance(burden, dict):

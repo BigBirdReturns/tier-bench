@@ -1,0 +1,10 @@
+== replay01_candidate.py
+SCORE 10681/10681  (100%)
+== replay02_candidate.py
+SCORE 10681/10681  (100%)
+== replay03_candidate.py
+SCORE 10681/10681  (100%)
+== replay04_candidate.py
+SCORE 10681/10681  (100%)
+== replay05_candidate.py
+SCORE 10681/10681  (100%)
