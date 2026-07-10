@@ -93,4 +93,13 @@ This accumulation strategy prevents unnecessary re-work and tracks the frontier 
   haiku + the captured scaffold packet settles task02 5/5 where bare haiku
   was 3/5; the capture ledger records its first validated replay
   (amortizing, 1 of 4).
+- **k3-floor-almanac-20260710**: first model results on the ARC-B almanac
+  knot corpus (haiku K=3, hidden-graded, shadow-cost): exception_class and
+  record_binding settled 3/3; **rule_boundary unstable 1/3** — every miss is
+  the lichun solar-longitude boundary while all visible checks pass, the
+  first almanac knot to bite (task02-shape judgment residue). Not a wall
+  (1/3); Fable never turned on. Cross-engine note: exception_class agrees
+  with the Codex lineage's independent floor (PR #63 draft, 3/3=3/3);
+  record_binding disagrees (3/3 here vs 1/3 there) — left to the comparator,
+  never merged by hand.
 
