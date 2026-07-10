@@ -31,3 +31,9 @@ jobs:
         run: python scripts/validate_primitives.py
       - name: provenance guard tests bite
         run: python tests/test_validate_primitives.py
+      - name: scaffold packet emits from sediment ($0, both formats + unmeasured path)
+        run: |
+          python -m py_compile scripts/emit_scaffold.py
+          python scripts/emit_scaffold.py > /dev/null
+          python scripts/emit_scaffold.py --format json | python -c "import json,sys; p=json.load(sys.stdin); assert p['residue_commitments'] and p['routing_floor'] and p['evidence_layers']"
+          python scripts/emit_scaffold.py --task no_such_task --format json | python -c "import json,sys; assert json.load(sys.stdin)['status']=='UNMEASURED'"
