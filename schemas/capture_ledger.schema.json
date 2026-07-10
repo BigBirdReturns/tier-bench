@@ -170,6 +170,8 @@
           "packet_path",
           "packet_sha256",
           "artifact_sha256",
+          "grader_id",
+          "administration_id",
           "description"
         ],
         "properties": {
@@ -179,7 +181,8 @@
           },
           "receipt_path": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "Path to a STRUCTURED replay-receipt object (schema_version 'tier-bench/replay-receipt@1') that re-attests the binding. It must be DISTINCT from packet_path/candidate_path/grader_output_path/artifact and must agree field-for-field with this event (work_item_id, administration_id, grader_id, packet/candidate/grader_output/artifact hashes, candidate_set, verdict='pass'). A committed file with a unique hash is NOT a receipt \u2014 the validator parses and cross-checks it (P1 masquerade fix)."
           },
           "receipt_sha256": {
             "type": "string",
@@ -237,6 +240,22 @@
           "description": {
             "type": "string",
             "minLength": 1
+          },
+          "grader_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "administration_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidate_set_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "human_receipt_path": {
+            "type": "string",
+            "description": "Optional human-readable narrative receipt; NOT the machine receipt."
           }
         }
       }
@@ -323,6 +342,67 @@
         "failure_default": {
           "type": "string",
           "minLength": 1
+        }
+      }
+    }
+  },
+  "$defs": {
+    "replay_receipt": {
+      "title": "tier-bench/replay-receipt@1",
+      "type": "object",
+      "required": [
+        "schema_version",
+        "work_item_id",
+        "administration_id",
+        "grader_id",
+        "verdict",
+        "packet_sha256",
+        "candidate_sha256",
+        "candidate_set_sha256",
+        "grader_output_sha256",
+        "artifact_sha256"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "tier-bench/replay-receipt@1"
+        },
+        "work_item_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "administration_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "grader_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail"
+          ]
+        },
+        "packet_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "candidate_set_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "grader_output_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "artifact_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
         }
       }
     }

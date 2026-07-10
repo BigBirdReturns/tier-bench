@@ -76,3 +76,29 @@ planning turn's uncontrolled articulation. Receipt (9 graded candidates, 6
 aborts, corrected causal analysis, the clean rerun that preserves common boot)
 preserved at `experiments/breadth/run/cart0_abc_20260710/` on the
 driving-assistance branch (PR #65).
+
+## EP-008 — a file with a unique hash was accepted as a replay receipt (EP-001 not yet closed)
+
+```
+failure: EP-001's hardening bound each replay to evidence hashes but never
+verified that receipt_path resolved to a RECEIPT — any committed file with a
+unique hash (grader output, packet, candidate, artifact) could pose as an
+independent receipt and buy replay credit; the test suite had no negative
+control, so CI was green over a live masquerade exploit
+residue: a receipt must be a structured object that RE-ATTESTS the binding
+(schema tier-bench/replay-receipt@1), parsed and cross-checked field-for-field
+against the ledger event, with a path DISTINCT from every evidence file; and the
+suite must carry the exact adversarial control (four arbitrary unique files must
+not buy closure)
+future consequence test: replay credit requires a parseable, distinct,
+field-agreeing receipt whose verdict is pass; anything that is merely a unique
+committed file mints zero events, and "green CI" without the negative control
+does not count as closed
+```
+
+Fix (PR #64): structured `replay-receipt@1` object; validator parses + cross-checks
+work_item_id / administration_id / grader_id / packet / candidate / candidate-set /
+grader-output / artifact hashes and verdict, and rejects a receipt path that reuses
+an evidence file; adversarial regression test `test_four_arbitrary_files_as_receipts_cannot_buy_closure`.
+This is what actually closes EP-001. "CI green" earlier meant "no negative control
+existed" — itself an instance of the recurring defect.

@@ -62,7 +62,22 @@ REPLAY_EVIDENCE_REQUIRED = ("work_item_id", "receipt_path", "receipt_sha256",
                             "candidate_path", "candidate_sha256",
                             "grader_output_path", "grader_output_sha256",
                             "packet_path", "packet_sha256", "artifact_sha256",
-                            "description")
+                            "grader_id", "administration_id", "description")
+# A receipt_path must resolve to a STRUCTURED replay-receipt object that
+# re-attests the binding, not just any committed file with a unique hash
+# (else arbitrary files masquerade as independent receipts and buy replay
+# credit — the P1 masquerade exploit). The receipt is parsed and cross-checked.
+REPLAY_RECEIPT_SCHEMA = "tier-bench/replay-receipt@1"
+# fields the receipt must AGREE on, field-for-field, with the ledger event
+RECEIPT_AGREEMENT_FIELDS = ("work_item_id", "administration_id", "grader_id",
+                            "packet_sha256", "candidate_sha256",
+                            "grader_output_sha256", "artifact_sha256")
+
+
+def _candidate_set_sha256(trial_candidates) -> str:
+    """Deterministic hash over a replay's trial-candidate set (sorted hashes)."""
+    hashes = sorted(tc.get("sha256", "") for tc in (trial_candidates or []))
+    return hashlib.sha256(("\n".join(hashes) + "\n").encode()).hexdigest()
 REPLAY_HASH_BINDINGS = (("receipt_path", "receipt_sha256"),
                         ("candidate_path", "candidate_sha256"),
                         ("grader_output_path", "grader_output_sha256"),
@@ -185,6 +200,55 @@ def validate_capture(row: dict, waterline_ids: set[str], repo: Path = REPO) -> l
                     errs.append(f"capture {cid}: replay_evidence[{i}].trial_candidates[{j}] "
                                 f"missing or hash-mismatched")
                     hash_ok = False
+            # RECEIPT AUTHENTICITY (P1 masquerade fix): the receipt must be a
+            # structured replay-receipt object that re-attests the binding, and
+            # its path must be DISTINCT from every evidence path — otherwise an
+            # arbitrary committed file (grader output, packet, candidate) can pose
+            # as an independent receipt and inflate the replay count.
+            evidence_paths = {rec.get(k) for k in
+                              ("packet_path", "candidate_path", "grader_output_path")}
+            evidence_paths.add((row.get("captured_artifact") or {}).get("path"))
+            for tc in (rec.get("trial_candidates") or []):
+                evidence_paths.add(tc.get("path"))
+            if rec["receipt_path"] in evidence_paths:
+                errs.append(f"capture {cid}: replay_evidence[{i}].receipt_path "
+                            f"'{rec['receipt_path']}' reuses an evidence file as its own "
+                            f"receipt — the receipt must be a distinct structured object")
+                hash_ok = False
+            else:
+                rp = repo / rec["receipt_path"]
+                try:
+                    receipt = json.loads(rp.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    receipt = None
+                    errs.append(f"capture {cid}: replay_evidence[{i}].receipt_path is not a "
+                                f"parseable replay-receipt object — a file with a unique hash "
+                                f"is not a receipt")
+                    hash_ok = False
+                if isinstance(receipt, dict):
+                    if receipt.get("schema_version") != REPLAY_RECEIPT_SCHEMA:
+                        errs.append(f"capture {cid}: replay_evidence[{i}] receipt schema_version "
+                                    f"must be '{REPLAY_RECEIPT_SCHEMA}'")
+                        hash_ok = False
+                    if receipt.get("verdict") != "pass":
+                        errs.append(f"capture {cid}: replay_evidence[{i}] receipt verdict must be "
+                                    f"'pass' to count as a validated replay")
+                        hash_ok = False
+                    for f in RECEIPT_AGREEMENT_FIELDS:
+                        if receipt.get(f) != rec.get(f):
+                            errs.append(f"capture {cid}: replay_evidence[{i}] receipt.{f} does not "
+                                        f"agree with the ledger event — receipt and event must "
+                                        f"bind field-for-field")
+                            hash_ok = False
+                    # the receipt must bind the exact candidate SET, recomputed
+                    expect_set = _candidate_set_sha256(rec.get("trial_candidates")
+                                                       or [{"sha256": rec.get("candidate_sha256")}])
+                    if receipt.get("candidate_set_sha256") != expect_set:
+                        errs.append(f"capture {cid}: replay_evidence[{i}] receipt.candidate_set_sha256 "
+                                    f"does not match the event's candidate set — the receipt must "
+                                    f"bind the exact candidates graded")
+                        hash_ok = False
+
             # identity rules: unique work item, unique receipt bytes. candidate
             # bytes are deliberately NOT identity — distinct work items may
             # legitimately produce identical solutions.
