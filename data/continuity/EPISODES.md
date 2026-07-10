@@ -1,7 +1,7 @@
-# Continuity episodes — raw corpus for CARTO-0 (evidence preservation ONLY)
+# Continuity episodes — raw corpus for CART0 (evidence preservation ONLY)
 
 *No schema, no reducer, no projections yet — per the operator's steering
-(2026-07-10), CARTO-0 stays at the evidence-preservation stage until ARC-C
+(2026-07-10), CART0 stays at the evidence-preservation stage until ARC-C
 closes. This file preserves episodes in the triple form the future consequence
 tests will grade against. Append; never rewrite.*
 
