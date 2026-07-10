@@ -67,8 +67,9 @@ review; an engine may not silently change what counts as passing.
 
 ## Current standing state (mirror — QUEUE.md is authoritative)
 
-- SOL-1 blind control grading remains packet-only and pending its delivery
-  vehicle. A repo-aware driver must never perform that grade.
+- SOL-1 blind control grading remains packet-only. Its empty private delivery
+  repository now exists; the prepared packet push is pending Claude-side access.
+  A repo-aware driver must never perform that grade.
 - SOL-2, the Codex adversarial review of ARC-A/ARC-B, is complete with findings
   at `docs/agents/reviews/sol_arc_ab_review_20260710.md`; remediation is open.
 - PR #63 contains operator-directed partial ARC-C work. It does not close ARC-C
