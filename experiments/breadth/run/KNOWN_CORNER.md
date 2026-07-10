@@ -14,26 +14,41 @@
 
 This document tracks the classification of tasks across the breadth test suite as they accumulate through layers.
 
-### Current Layer: k3-floor-20260708
+### Current Layer: k3-floor-authored-tasks-20260710
 
-**Settled Cells: 4** (K=3, hidden grades re-run by the driver)
-- task01_parse_duration (3/3, hidden 38/38)
-- task06_select (3/3, verified counterexamples — search-shaped framing caveat stands)
-- t3_parse_duration_004 (3/3, tasks/ manifest via hidden_files mechanism)
-- t4_plan_decomposition_001 (3/3, incl. hidden semantic judge)
+**Settled Cells: 2 new** (K=3, hidden grades re-run by the driver)
+- task09_pattern_class (3/3, hidden 24/24 incl. all 7 inverted-range knot vectors)
+- task10_topo_endmin (3/3, hidden 14/14; all three trials independently
+  derived the backward smallest-sink construction)
 
-These tasks are settled (cleared by the cheap hidden-graded floor → sealed-and-forget, commoditized). All three were resolved without requiring escalation to a stronger model.
+**Unstable Cells: 1 new**
+- task08_select_exchange — 4/5 at the haiku floor. The four passes span BOTH flaw
+  classes the task was built around (greedy-suboptimality and the
+  ≥2-displacement repair-insufficiency). The single miss found the right flaw
+  class but returned a value outside the stated domain bound (51 > 50) — a
+  PROCEDURAL constraint-compliance slip, not the reasoning knot. Not a wall
+  (never 0/K), so escalation is unjustified.
 
-**Unstable Cells: 1**
-- task02_wildcard — 3/5 at the haiku floor. Both failures are the SAME edge:
-  escape-inside-character-class, judged malformed (ValueError) where the oracle
-  says non-matching (False). Not a wall (never 0/K), so escalation is
-  unjustified; this is the first measured *reliability* residue at the floor,
-  and it is a judgment edge, not a spec-coverage edge.
+**Headline finding of this layer:** all three tasks were purpose-built as
+novel-reasoning discriminators (counterexample construction, a task02-isomorphic
+rule-boundary knot, an anti-pattern-match derivation objective) — and the haiku
+floor cleared or near-cleared every one at K=3/K=5 with trimmed packets. The
+counterexample-construction hypothesis did NOT wall haiku (consistent with the
+task06 search-shaped-framing result). Suspected defusal on task09: the spec
+guarantee "you never need to reject a pattern" telegraphs the
+malformed-vs-unsatisfiable resolution — see the authoring lesson in
+`../LESSONS.md`. Fable was never turned on for solving; run cost was ~$0.52
+shadow (subagent estimates), $0 real-billed.
 
-**Open Cells: 0**
+### Cumulative state (all layers)
 
-No tasks currently classified as open (still a wall → the frontier residue). All probed tasks have been resolved.
+**Settled: 7** — task01_parse_duration, task06_select, t3_parse_duration_004,
+t4_plan_decomposition_001, task02_wildcard (at sonnet-5@low — the one measured
+model-separation), task09_pattern_class, task10_topo_endmin.
+
+**Unstable: 1** — task08_select_exchange (4/5 at the haiku floor, procedural miss).
+
+**Open (walls): 0**
 
 ## Re-run Protocol
 
@@ -52,4 +67,11 @@ This accumulation strategy prevents unnecessary re-work and tracks the frontier 
   promoted: task01/task06 settled; task02 demoted to unstable (3/5, single
   repeating judgment edge); the two hidden-graded tasks/ manifests sealed
   settled. Fable was never turned on — no wall appeared (LESSONS rule 2).
+- **model-ladder-task02-20260708**: the one unstable cell walked up the model
+  ladder; task02 settled at sonnet-5@low 3/3 (real-billed ~$0.23/trial) — the
+  first measured model-separation (H6 confirmed once).
+- **k3-floor-authored-tasks-20260710**: the three newly authored tasks
+  (task08/09/10) floored at K=3 (K=5 on task08): task09/task10 settled,
+  task08 unstable 4/5 with a procedural (domain-bounds) miss. No wall; Fable
+  never turned on for solving.
 

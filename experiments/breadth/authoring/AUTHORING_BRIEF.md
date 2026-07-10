@@ -1,5 +1,13 @@
 # Authoring brief — 3 new novel-reasoning hidden-graded tasks
 
+> **Round 1 complete (2026-07-09).** Slots `t_novel_01..03` were authored,
+> passed all five acceptance criteria, and were promoted (operator-authorized)
+> into `experiments/tier-uplift/` as `task08_select_exchange`,
+> `task09_pattern_class`, and `task10_topo_endmin` — they are now listed
+> by `breadth_tasks.py`. This brief and `acceptance.py` stay for the next
+> authoring round: create fresh slot directories per round; the bar below is
+> unchanged.
+
 **Who this is for:** the driver (Fable, effort HIGH) authoring task content. This
 document is the bar; `acceptance.py` is the mechanical check against that bar.
 Sonnet prep built the scaffold so Fable spends its tokens on the one thing that

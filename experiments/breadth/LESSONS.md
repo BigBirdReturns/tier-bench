@@ -70,7 +70,21 @@ drawing that waterline correctly — and proving which side each cell is on.
     DIFFs against the newest layer and only re-probes non-`settled` cells. Old
     sediment is never re-derived — you pay only to lay down what's new.
 
-11. **Focused lenses have tunnel vision — the sweep needs one open eye.** Measured
+11. **Authoring lesson: your own spec wording can defuse the knot, and "find a
+    counterexample" framing makes derivation search-shaped.** Measured on the first
+    purpose-built discriminator tasks (task08/09/10, 2026-07-10): all three cleared or
+    near-cleared the haiku floor. task09 was built as a task02-isomorphic
+    malformed-vs-unsatisfiable knot — but its input guarantee ("you never need to
+    reject a pattern") telegraphed the resolution, so the trap never bit. task08's
+    counterexample construction was cracked 4/5 (the only miss was a domain-bounds
+    slip): once the ask is "return an input that breaks this," a competent cheap
+    solver builds its own brute-force oracle and sweeps — the same search-shaped
+    lifting task06 measured. To wall the floor, the knot must stay embedded in a
+    larger judgment (as in task02, where the degenerate case arrives unannounced
+    mid-implementation), and the spec must not carry a guarantee that resolves it.
+    *(Mistake: authored three "novel-reasoning" tasks and the floor ate them.)*
+
+12. **Focused lenses have tunnel vision — the sweep needs one open eye.** Measured
     on a dense subject (`experiments/lens-proofs/dense_orders`): baseline general
     pass 7/10, frozen-five sweep alone 9/10 (every lens missed the use-after-close
     the plain pass caught), baseline ∪ lenses **10/10**. `review()` now runs a
