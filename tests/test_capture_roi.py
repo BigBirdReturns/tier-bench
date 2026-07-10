@@ -86,11 +86,12 @@ def test_committed_ledger_loads_and_reports():
     by_id = {r["capture_id"]: r for r in reports}
     r = by_id["task02_escape_class_boundary"]
     assert r["projected_break_even_replays"] == 4
-    # First validated replay landed 2026-07-10 (the crossing event): the row is
-    # amortizing, 1 of 4, and stays NON-CLOSED until 3 more distinct replays.
+    # Two validated replays landed 2026-07-10 — the crossing event and replay03
+    # (validate_patterns), each a distinct hash-bound replay-receipt@1. The row is
+    # amortizing, 2 of 4, and stays NON-CLOSED until 2 more distinct replays.
     assert r["roi_state"] == "amortizing"
-    assert r["validated_replays"] == 1
-    assert r["replays_remaining_to_break_even"] == 3
+    assert r["validated_replays"] == 2
+    assert r["replays_remaining_to_break_even"] == 2
 
 
 def _run_standalone() -> int:

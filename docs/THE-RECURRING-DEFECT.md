@@ -9,7 +9,7 @@ reads first — bind it to a freshness commitment, don't file it as an essay.*
 
 ```yaml
 freshness:
-  reconciles_through: "<PR-64 merge commit>"   # set to the merge SHA when #64 lands
+  reconciles_through: "3e6aa2e86f55b1e24346748f28a50cdfcda13332"  # PR #64 merge
   projection_profile: "whole-project-control-map@0"
   reducer: null
   reducer_state: "not implemented; evidence-preservation stage (no reducer by doctrine until ARC-C closes)"
