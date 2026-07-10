@@ -20,7 +20,9 @@ from validate_orchestration_run import validate_run  # noqa: E402
 def ingest(run_path: Path, packet_receipt_path: Path, grade_receipt_path: Path,
            candidate_path: Path, raw_response_path: Path, grader_outputs_path: Path,
            events_path: Path, rung: str, trial_number: int, repo: Path = REPO) -> dict:
-    run = json.loads(run_path.read_text(encoding="utf-8"))
+    run_bytes = run_path.read_bytes()
+    run = json.loads(run_bytes.decode("utf-8"))
+    run_newline = "\r\n" if run_bytes.count(b"\r\n") > 0 else "\n"
     packet = json.loads(packet_receipt_path.read_text(encoding="utf-8"))
     grade = json.loads(grade_receipt_path.read_text(encoding="utf-8"))
     task_id = packet.get("task_id")
@@ -109,6 +111,9 @@ def ingest(run_path: Path, packet_receipt_path: Path, grade_receipt_path: Path,
                 "output_tokens": int(usage.get("output_tokens", 0) or 0),
                 "cache_read_tokens": int(usage.get("cached_input_tokens", 0) or 0),
                 "reasoning_output_tokens": int(usage.get("reasoning_output_tokens", 0) or 0),
+                "usage_available": grade.get("usage_available", bool(usage)),
+                "usage_note": ("" if grade.get("usage_available", bool(usage)) else
+                               "execution surface did not expose token telemetry; zero token fields are schema sentinels"),
             },
             "replay": {"is_replay": False},
             "abstention": {"abstained": outcome not in {"pass", "fail"},
@@ -122,6 +127,8 @@ def ingest(run_path: Path, packet_receipt_path: Path, grade_receipt_path: Path,
                 "raw_response_sha256": grade["raw_response_sha256"],
                 "event_stream_path": rel("events.jsonl"),
                 "event_stream_sha256": sha256(artifact_dir / "events.jsonl"),
+                "event_stream_capture_kind": grade.get(
+                    "event_stream_capture_kind", "provider-raw-jsonl"),
             },
         }
         run.setdefault("trials", []).append(trial)
@@ -139,7 +146,8 @@ def ingest(run_path: Path, packet_receipt_path: Path, grade_receipt_path: Path,
         if errors:
             raise ValueError("ingested run failed validation: " + "; ".join(errors))
         temp_run = run_path.with_suffix(run_path.suffix + ".tmp")
-        temp_run.write_text(json.dumps(run, indent=2) + "\n", encoding="utf-8")
+        temp_run.write_text(json.dumps(run, indent=2) + "\n", encoding="utf-8",
+                            newline=run_newline)
         temp_run.replace(run_path)
         return trial
     except Exception:

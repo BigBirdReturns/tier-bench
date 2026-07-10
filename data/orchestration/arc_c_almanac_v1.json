@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "run_id": "arc_c_almanac_v1",
-  "status": "partial",
-  "measurement_claim": false,
+  "status": "sealed",
+  "measurement_claim": true,
   "engine": {
     "engine_id": "codex_gpt_5_6_sol",
     "model": "gpt-5.6-sol",
@@ -16,7 +16,7 @@
     "peer_lineage": "anthropic",
     "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
     "independent_before_exchange": true,
-    "state": "planned"
+    "state": "independent_run_sealed"
   },
   "task_set": [
     "almanac_exception_class_001",
@@ -361,6 +361,386 @@
         "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-1/events.jsonl",
         "event_stream_sha256": "1324b0931bf5e915cabd98575d0c59981c40705b5318df710c59f791f48e662c"
       }
+    },
+    {
+      "trial_id": "codex_gpt_5_6_sol_almanac_record_binding_001_2",
+      "sequence": 5,
+      "task_id": "almanac_record_binding_001",
+      "rung": "floor",
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "trial": 2,
+      "solver_id": "codex_gpt_5_6_sol:019f4d6f-9568-7293-96b6-ab00644cc747",
+      "executor_surface": "codex-subscription",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 1,
+            "decisive": 1,
+            "passes": 1,
+            "failures": 0,
+            "window_size": 1,
+            "window_passes": 1,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-2/candidate.py",
+        "sha256": "508c2b7c25627525742071a0df7c52d6fe812b5b2e58f785ec7662d353eae0a3",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:codex-coordinator-019f4adf-8b5e-7c81-8bd5-e20ea1507b71",
+        "candidate_sha256": "508c2b7c25627525742071a0df7c52d6fe812b5b2e58f785ec7662d353eae0a3",
+        "hidden_grader_path": "fixtures/almanac_record_binding_001/hidden_tests.py",
+        "hidden_grader_sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-2/grader_outputs.json",
+        "grader_output_sha256": "f35ca05adcbecae87b9b333e703b7818f6ce100e247ccbded5ab8e255cad11c0"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": false,
+        "usage_note": "execution surface did not expose token telemetry; zero token fields are schema sentinels"
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "412f97b37b96c9ddcce558db3befabef6045fbc831e60a339c5db990edd51ee2",
+        "prompt_sha256": "d01cec5ae6900d9596ef65e077e8e63a32cf0f149d6ce9295e375fd3d41b5b66",
+        "solver_thread_id": "019f4d6f-9568-7293-96b6-ab00644cc747",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-2/raw_response.txt",
+        "raw_response_sha256": "654f074ac4d86b053b54476eee647e91c9c047a72e567d5e4f653dba7f4ee113",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-2/events.jsonl",
+        "event_stream_sha256": "f3c0f0302868b7267319b584c03c8ef136fcd92b382a2f2d8b9751a1505a5e90",
+        "event_stream_capture_kind": "coordinator-derived-codex-app-thread-snapshot"
+      }
+    },
+    {
+      "trial_id": "codex_gpt_5_6_sol_almanac_record_binding_001_3",
+      "sequence": 6,
+      "task_id": "almanac_record_binding_001",
+      "rung": "floor",
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "trial": 3,
+      "solver_id": "codex_gpt_5_6_sol:019f4d72-4a65-7063-b4a0-f35ea32a82c3",
+      "executor_surface": "codex-subscription",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 2,
+            "decisive": 2,
+            "passes": 2,
+            "failures": 0,
+            "window_size": 2,
+            "window_passes": 2,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-3/candidate.py",
+        "sha256": "508c2b7c25627525742071a0df7c52d6fe812b5b2e58f785ec7662d353eae0a3",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:codex-coordinator-019f4adf-8b5e-7c81-8bd5-e20ea1507b71",
+        "candidate_sha256": "508c2b7c25627525742071a0df7c52d6fe812b5b2e58f785ec7662d353eae0a3",
+        "hidden_grader_path": "fixtures/almanac_record_binding_001/hidden_tests.py",
+        "hidden_grader_sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-3/grader_outputs.json",
+        "grader_output_sha256": "f35ca05adcbecae87b9b333e703b7818f6ce100e247ccbded5ab8e255cad11c0"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": false,
+        "usage_note": "execution surface did not expose token telemetry; zero token fields are schema sentinels"
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "412f97b37b96c9ddcce558db3befabef6045fbc831e60a339c5db990edd51ee2",
+        "prompt_sha256": "d01cec5ae6900d9596ef65e077e8e63a32cf0f149d6ce9295e375fd3d41b5b66",
+        "solver_thread_id": "019f4d72-4a65-7063-b4a0-f35ea32a82c3",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-3/raw_response.txt",
+        "raw_response_sha256": "654f074ac4d86b053b54476eee647e91c9c047a72e567d5e4f653dba7f4ee113",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-3/events.jsonl",
+        "event_stream_sha256": "0fae5cf4079a393598b19364104509e921b12b3135354aab4c6081b2f8586ceb",
+        "event_stream_capture_kind": "coordinator-derived-codex-app-thread-snapshot"
+      }
+    },
+    {
+      "trial_id": "codex_gpt_5_6_sol_almanac_rule_boundary_001_1",
+      "sequence": 7,
+      "task_id": "almanac_rule_boundary_001",
+      "rung": "floor",
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "trial": 1,
+      "solver_id": "codex_gpt_5_6_sol:019f4d74-d6ff-7683-9804-b667539ef265",
+      "executor_surface": "codex-subscription",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "route",
+        "decision_state": "unmeasured",
+        "reason": "start at the cheapest unmeasured rung",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 0,
+            "decisive": 0,
+            "passes": 0,
+            "failures": 0,
+            "window_size": 0,
+            "window_passes": 0,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "unmeasured"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-1/candidate.py",
+        "sha256": "f98addbc243169e55b6ca1b6dd6131d36794b6c95ebe9438192201bf9e927612",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:codex-coordinator-019f4adf-8b5e-7c81-8bd5-e20ea1507b71",
+        "candidate_sha256": "f98addbc243169e55b6ca1b6dd6131d36794b6c95ebe9438192201bf9e927612",
+        "hidden_grader_path": "fixtures/almanac_rule_boundary_001/hidden_tests.py",
+        "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-1/grader_outputs.json",
+        "grader_output_sha256": "f35ca05adcbecae87b9b333e703b7818f6ce100e247ccbded5ab8e255cad11c0"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": false,
+        "usage_note": "execution surface did not expose token telemetry; zero token fields are schema sentinels"
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "27a9f0d72a4de9966a1f8f18e6dfbd3f62ed5cbb84145dccb42903c579175a26",
+        "prompt_sha256": "a3b67acb1870fc2908173fadfe0e71795405941582fc61f30cf985e272dab60d",
+        "solver_thread_id": "019f4d74-d6ff-7683-9804-b667539ef265",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-1/raw_response.txt",
+        "raw_response_sha256": "5de09663dd6a95bd70699d8e638d4a269452ea3f21316bde54c9757e6fb406ff",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-1/events.jsonl",
+        "event_stream_sha256": "4ed2d5943c49369731c476cf1b73001b0e1fd496ab7297976a00005c3bdbf0a3",
+        "event_stream_capture_kind": "coordinator-derived-codex-app-thread-snapshot"
+      }
+    },
+    {
+      "trial_id": "codex_gpt_5_6_sol_almanac_rule_boundary_001_2",
+      "sequence": 8,
+      "task_id": "almanac_rule_boundary_001",
+      "rung": "floor",
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "trial": 2,
+      "solver_id": "codex_gpt_5_6_sol:019f4d76-beb7-7ed0-95d9-e72218b65039",
+      "executor_surface": "codex-subscription",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 1,
+            "decisive": 1,
+            "passes": 1,
+            "failures": 0,
+            "window_size": 1,
+            "window_passes": 1,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-2/candidate.py",
+        "sha256": "6bd298994ada4120f46b996dff104b7b413011dfef63613d21fbf4fdaae3d063",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:codex-coordinator-019f4adf-8b5e-7c81-8bd5-e20ea1507b71",
+        "candidate_sha256": "6bd298994ada4120f46b996dff104b7b413011dfef63613d21fbf4fdaae3d063",
+        "hidden_grader_path": "fixtures/almanac_rule_boundary_001/hidden_tests.py",
+        "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-2/grader_outputs.json",
+        "grader_output_sha256": "f35ca05adcbecae87b9b333e703b7818f6ce100e247ccbded5ab8e255cad11c0"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": false,
+        "usage_note": "execution surface did not expose token telemetry; zero token fields are schema sentinels"
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "27a9f0d72a4de9966a1f8f18e6dfbd3f62ed5cbb84145dccb42903c579175a26",
+        "prompt_sha256": "a3b67acb1870fc2908173fadfe0e71795405941582fc61f30cf985e272dab60d",
+        "solver_thread_id": "019f4d76-beb7-7ed0-95d9-e72218b65039",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-2/raw_response.txt",
+        "raw_response_sha256": "efab4a1aee5613855b7c14f3330e782e91345b20db893e6fa26e2fea9b2c3ae7",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-2/events.jsonl",
+        "event_stream_sha256": "9139357cea9192bd4a894ce3a607ee9e2bd3ea0a26c45e888e76fae75842aebf",
+        "event_stream_capture_kind": "coordinator-derived-codex-app-thread-snapshot"
+      }
+    },
+    {
+      "trial_id": "codex_gpt_5_6_sol_almanac_rule_boundary_001_3",
+      "sequence": 9,
+      "task_id": "almanac_rule_boundary_001",
+      "rung": "floor",
+      "model": "gpt-5.6-sol",
+      "effort": "low",
+      "trial": 3,
+      "solver_id": "codex_gpt_5_6_sol:019f4d78-59e9-7e62-ae06-b87d3e88fbce",
+      "executor_surface": "codex-subscription",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 2,
+            "decisive": 2,
+            "passes": 2,
+            "failures": 0,
+            "window_size": 2,
+            "window_passes": 2,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-3/candidate.py",
+        "sha256": "2f6f94d9bf5b7019fac21fc03022ddae8bf07d71b0acbeb9a5d138625b9d177f",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:codex-coordinator-019f4adf-8b5e-7c81-8bd5-e20ea1507b71",
+        "candidate_sha256": "2f6f94d9bf5b7019fac21fc03022ddae8bf07d71b0acbeb9a5d138625b9d177f",
+        "hidden_grader_path": "fixtures/almanac_rule_boundary_001/hidden_tests.py",
+        "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-3/grader_outputs.json",
+        "grader_output_sha256": "f35ca05adcbecae87b9b333e703b7818f6ce100e247ccbded5ab8e255cad11c0"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": false,
+        "usage_note": "execution surface did not expose token telemetry; zero token fields are schema sentinels"
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "27a9f0d72a4de9966a1f8f18e6dfbd3f62ed5cbb84145dccb42903c579175a26",
+        "prompt_sha256": "a3b67acb1870fc2908173fadfe0e71795405941582fc61f30cf985e272dab60d",
+        "solver_thread_id": "019f4d78-59e9-7e62-ae06-b87d3e88fbce",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-3/raw_response.txt",
+        "raw_response_sha256": "960cd3889a455fc7c080481154707aff3987f2f541d867147064defeb75ff8a2",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_rule_boundary_001/trial-3/events.jsonl",
+        "event_stream_sha256": "3cbf4a51358088c3b786ff898fd6ec692738ab2ac7231be041add0045eb37cb3",
+        "event_stream_capture_kind": "coordinator-derived-codex-app-thread-snapshot"
+      }
     }
   ],
   "decisions": [
@@ -389,47 +769,47 @@
     },
     {
       "task_id": "almanac_record_binding_001",
-      "state": "collecting",
-      "action": "collect_more",
+      "state": "cleared",
+      "action": "seal",
       "route_to": "floor",
       "escalation_from": null,
       "abstained": false,
-      "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+      "reason": "K-of-K decisive receipts clear this rung",
       "evidence": [
         {
           "rung": "floor",
-          "observations": 1,
-          "decisive": 1,
-          "passes": 1,
+          "observations": 3,
+          "decisive": 3,
+          "passes": 3,
           "failures": 0,
-          "window_size": 1,
-          "window_passes": 1,
+          "window_size": 3,
+          "window_passes": 3,
           "window_failures": 0,
           "required_k": 3,
-          "state": "collecting"
+          "state": "clears"
         }
       ]
     },
     {
       "task_id": "almanac_rule_boundary_001",
-      "state": "unmeasured",
-      "action": "route",
+      "state": "cleared",
+      "action": "seal",
       "route_to": "floor",
       "escalation_from": null,
       "abstained": false,
-      "reason": "start at the cheapest unmeasured rung",
+      "reason": "K-of-K decisive receipts clear this rung",
       "evidence": [
         {
           "rung": "floor",
-          "observations": 0,
-          "decisive": 0,
-          "passes": 0,
+          "observations": 3,
+          "decisive": 3,
+          "passes": 3,
           "failures": 0,
-          "window_size": 0,
-          "window_passes": 0,
+          "window_size": 3,
+          "window_passes": 3,
           "window_failures": 0,
           "required_k": 3,
-          "state": "unmeasured"
+          "state": "clears"
         }
       ]
     }
@@ -456,8 +836,8 @@
       "tests/test_orchestration_clone_integrity.py"
     ],
     "verifier": "scripts/validate_orchestration_run.py plus each manifest-declared hidden grader",
-    "gap": "1/3 tasks final; continue only broker-authorized trials",
-    "closure_decision": "partial",
+    "gap": "none for this engine run; peer comparison remains separate",
+    "closure_decision": "sealed",
     "failure_default": "remain_unmeasured; do not route, escalate, price or claim success"
   }
 }

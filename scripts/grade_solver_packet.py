@@ -24,7 +24,8 @@ def _run(command: list[str], cwd: Path) -> dict:
 
 
 def _events(path: Path | None) -> dict:
-    data = {"thread_id": None, "usage": {}}
+    data = {"thread_id": None, "usage": {},
+            "capture_kind": "provider-raw-jsonl"}
     if path is None or not path.is_file():
         return data
     raw = path.read_bytes()
@@ -34,6 +35,8 @@ def _events(path: Path | None) -> dict:
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
+        if event.get("capture_kind"):
+            data["capture_kind"] = event["capture_kind"]
         if event.get("type") == "thread.started":
             data["thread_id"] = event.get("thread_id")
         if event.get("type") == "turn.completed":
@@ -88,6 +91,8 @@ def grade(receipt_path: Path, solver: Path, raw_response: Path, out_dir: Path,
             "candidate_sha256": candidate_hash,
             "raw_response_sha256": sha256(raw_response),
             "thread_id": event_data["thread_id"], "usage": event_data["usage"],
+            "usage_available": bool(event_data["usage"]),
+            "event_stream_capture_kind": event_data["capture_kind"],
             "coordinator_id": coordinator_id,
             "solver_equals_grader": event_data["thread_id"] == coordinator_id,
             "grader_output_sha256": sha256(outputs_path),

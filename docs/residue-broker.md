@@ -26,10 +26,11 @@ narration is never a verdict.
 
 ## Run artifact
 
-`data/orchestration/arc_c_almanac_v1.json` is a partial result, not a completion
-claim. It contains four sealed floor trials: the exception-class task has three
-passing observations and is sealed; record-binding has one passing observation
-toward K=3 (one observed, two not yet run); rule-boundary remains unmeasured.
+`data/orchestration/arc_c_almanac_v1.json` is a sealed single-engine result, not
+a cross-engine completion claim. It contains nine decisive floor trials: each of
+exception-class, record-binding and rule-boundary has three passing observations
+and is sealed at the floor. No task produced a 0/K wall, so no escalation was
+authorized or attempted.
 `rung_bindings` maps shared rung roles to this engine's actual model, effort and
 surface, so Claude and Codex can compare routing decisions without pretending their
 model ladders are identical. Trial rows preserve:
@@ -37,7 +38,8 @@ model ladders are identical. Trial rows preserve:
 - route rationale and the evidence available before dispatch;
 - candidate and grader hashes, with the hidden grader absent from the solver packet;
 - model, effort, tokens, cost and cost basis (`subscription-derived` for Sol/Codex
-  subscription runs);
+subscription runs; desktop-thread trials explicitly mark token telemetry
+unavailable rather than presenting zero sentinels as measurements);
 - replay source, captured artifact and distinct work-item identity;
 - explicit abstention for errors, partials and unstable evidence;
 - manifest, prompt and solver-packet provenance.
@@ -76,9 +78,10 @@ referenced receipt artifact was not committed.
    independently; only that result may become `pass` or `fail`.
 5. Append the receipt, recompute broker decisions, validate the whole run, then
    dispatch the next allowed action. Never edit a prior receipt.
-6. A sealed benchmark claim requires all three tasks to leave the
-   unmeasured/collecting states and the burden packet to close. Until then ARC-C
-   remains in progress.
+6. A sealed engine-run claim requires all three tasks to leave the
+   unmeasured/collecting states and the engine burden packet to close. A paired
+   ARC-C conclusion additionally requires compatible Claude receipts and the
+   comparator; that cross-engine claim remains open.
 
 Recompute the deterministic decision section after appending a receipt:
 
@@ -101,7 +104,7 @@ burden_holder: Whoever asserts a routing or cost conclusion from the run.
 evidence: The validated run artifact, candidate files, hashes, raw solver records,
   hidden-grader outputs and spend receipts.
 verifier: scripts/validate_orchestration_run.py plus the manifest hidden graders.
-gap: One of three tasks is final; continue only broker-authorized trials.
-closure_decision: partial.
+gap: None for the Codex engine run; compatible peer comparison remains separate.
+closure_decision: sealed for this engine run; paired ARC-C conclusion remains open.
 failure_default: remain_unmeasured; do not route, escalate, price or claim success.
 ```

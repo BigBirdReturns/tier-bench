@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_rule_boundary_001",
+  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "packet_sha256": "27a9f0d72a4de9966a1f8f18e6dfbd3f62ed5cbb84145dccb42903c579175a26",
+  "prompt_sha256": "a3b67acb1870fc2908173fadfe0e71795405941582fc61f30cf985e272dab60d",
+  "candidate_sha256": "f98addbc243169e55b6ca1b6dd6131d36794b6c95ebe9438192201bf9e927612",
+  "raw_response_sha256": "5de09663dd6a95bd70699d8e638d4a269452ea3f21316bde54c9757e6fb406ff",
+  "thread_id": "019f4d74-d6ff-7683-9804-b667539ef265",
+  "usage": {},
+  "coordinator_id": "codex-coordinator-019f4adf-8b5e-7c81-8bd5-e20ea1507b71",
+  "solver_equals_grader": false,
+  "grader_output_sha256": "f35ca05adcbecae87b9b333e703b7818f6ce100e247ccbded5ab8e255cad11c0",
+  "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+  "hidden_grader_runs": 2,
+  "hidden_grader_deterministic": true,
+  "outcome": "pass",
+  "visible_returncode": 0,
+  "hidden_returncodes": [
+    0,
+    0
+  ],
+  "cost_basis": "subscription-derived",
+  "cost_usd": 0.0,
+  "usage_available": false,
+  "event_stream_capture_kind": "coordinator-derived-codex-app-thread-snapshot"
+}

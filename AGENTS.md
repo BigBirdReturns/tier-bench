@@ -74,6 +74,8 @@ review; an engine may not silently change what counts as passing.
   benchmark verdict follows from that agreement report.
 - SOL-2, the Codex adversarial review of ARC-A/ARC-B, is complete with findings
   at `docs/agents/reviews/sol_arc_ab_review_20260710.md`; remediation is open.
-- PR #63 contains operator-directed partial ARC-C work. It does not close ARC-C
-  and does not retroactively satisfy a blind independent-architect pass.
+- PR #63 contains a sealed nine-trial Codex ARC-C floor run: all three almanac
+  cells are 3/3 at the floor with no escalation. ARC-C remains partial at the
+  cross-engine level until compatible Claude receipts and comparator output
+  exist; this does not retroactively satisfy an independent-architect pass.
 - The capture ledger remains *amortizing, 1 of 4*, never "amortized."

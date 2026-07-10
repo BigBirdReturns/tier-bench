@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_rule_boundary_001",
+  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "manifest_path": "tasks/almanac_rule_boundary_001.json",
+  "manifest_sha256": "0e7c6760c3c88e0501363fe1ea6dd9cfa0f8aed5cec7174f9f69b9571c8be446",
+  "packet_sha256": "27a9f0d72a4de9966a1f8f18e6dfbd3f62ed5cbb84145dccb42903c579175a26",
+  "prompt_sha256": "a3b67acb1870fc2908173fadfe0e71795405941582fc61f30cf985e272dab60d",
+  "hidden_graders": [
+    {
+      "path": "fixtures/almanac_rule_boundary_001/hidden_tests.py",
+      "sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304"
+    }
+  ],
+  "solver_scope": "C:\\Users\\BAM-Gram\\Documents\\Tier-Bench\\arc-c-instrument-work\\almanac_rule_boundary_001\\trial-3\\solver",
+  "peer_conclusions_included": false
+}

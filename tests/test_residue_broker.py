@@ -77,15 +77,19 @@ def _sync(run: dict) -> None:
     run["decisions"] = decisions_for_run(run)
 
 
-def test_committed_partial_run_is_valid_and_names_the_gap():
+def test_committed_codex_run_is_sealed_and_peer_gap_stays_separate():
     run = json.loads(PLAN.read_text(encoding="utf-8"))
-    assert run["status"] == "partial" and run["measurement_claim"] is False
-    assert len(run["trials"]) == 4
-    assert validator.validate_run(run) == []
+    assert run["status"] == "sealed" and run["measurement_claim"] is True
+    assert run["pairing"]["state"] == "independent_run_sealed"
+    assert len(run["trials"]) == 9
+    remaining = validator.validate_run(run)
+    assert remaining == [], remaining
     decisions = {d["task_id"]: d for d in run["decisions"]}
-    assert decisions["almanac_exception_class_001"]["action"] == "seal"
-    assert decisions["almanac_record_binding_001"]["action"] == "collect_more"
-    assert decisions["almanac_rule_boundary_001"]["state"] == "unmeasured"
+    assert set(decisions) == set(run["task_set"])
+    assert all(d["action"] == "seal" and d["route_to"] == "floor"
+               for d in decisions.values())
+    assert run["burden"]["closure_decision"] == "sealed"
+    assert "peer comparison remains separate" in run["burden"]["gap"]
 
 
 def test_three_passes_seal_the_floor():
@@ -163,6 +167,30 @@ def test_codex_subscription_basis_is_named():
     run["trials"] = [trial]
     _sync(run)
     assert any("subscription-derived" in e for e in validator.validate_run(run))
+
+
+def test_unavailable_desktop_usage_and_capture_kind_are_honest():
+    run = _plan()
+    run["status"] = "running"
+    trial = _trial(run, "pass", 1)
+    trial["spend"].update({
+        "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0, "usage_available": False,
+        "usage_note": "",
+    })
+    trial["provenance"]["event_stream_capture_kind"] = "invented-stream"
+    run["trials"] = [trial]
+    _sync(run)
+    errors = validator.validate_run(run)
+    assert any("usage_note" in e for e in errors)
+    assert any("event_stream_capture_kind" in e for e in errors)
+
+    trial["spend"]["usage_note"] = "token telemetry unavailable; zero fields are sentinels"
+    trial["provenance"]["event_stream_capture_kind"] = (
+        "coordinator-derived-codex-app-thread-snapshot"
+    )
+    remaining = validator.validate_run(run)
+    assert remaining == [], remaining
 
 
 def test_replay_requires_distinct_work_item_and_artifact():

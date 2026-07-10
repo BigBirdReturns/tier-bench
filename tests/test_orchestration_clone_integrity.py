@@ -112,6 +112,27 @@ def verify_packet_receipts(clone: Path) -> int:
     return checked
 
 
+def verify_excluded_observations(clone: Path) -> int:
+    checked = 0
+    exclusions = sorted(
+        (clone / "data" / "orchestration" / "excluded").glob("**/exclusion.json")
+    )
+    for exclusion_path in exclusions:
+        exclusion = json.loads(exclusion_path.read_text(encoding="utf-8"))
+        assert exclusion["counts_as_trial"] is False
+        assert exclusion["counts_toward_broker"] is False
+        label = str(exclusion_path.relative_to(clone))
+        for prefix in ("raw_response", "thread_snapshot"):
+            assert_hash(
+                clone,
+                exclusion[f"{prefix}_path"],
+                exclusion[f"{prefix}_sha256"],
+                label,
+            )
+            checked += 1
+    return checked
+
+
 def main() -> int:
     TEST_TMP.mkdir(exist_ok=True)
     parent = Path(tempfile.mkdtemp(prefix="clone-integrity-", dir=TEST_TMP))
@@ -130,7 +151,11 @@ def main() -> int:
             ],
             check=True,
         )
-        checked = verify_run_receipts(clone) + verify_packet_receipts(clone)
+        checked = (
+            verify_run_receipts(clone)
+            + verify_packet_receipts(clone)
+            + verify_excluded_observations(clone)
+        )
         print(f"OK — {checked} path-backed receipt hashes survive a fresh clone")
         return 0
     finally:

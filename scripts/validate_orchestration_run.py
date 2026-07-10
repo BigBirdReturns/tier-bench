@@ -217,6 +217,10 @@ def _check_trial(run: dict, trial: dict, manifests: dict[str, dict], repo: Path,
                                 f"{label}: provenance.event_stream_path", errors)
         _check_hash(provenance.get("event_stream_sha256"), event_path,
                     f"{label}: provenance.event_stream_sha256", errors)
+    capture_kind = provenance.get("event_stream_capture_kind")
+    if capture_kind is not None and capture_kind not in {
+            "provider-raw-jsonl", "coordinator-derived-codex-app-thread-snapshot"}:
+        errors.append(f"{label}: invalid provenance.event_stream_capture_kind")
 
     spend = trial.get("spend")
     if not isinstance(spend, dict):
@@ -231,6 +235,16 @@ def _check_trial(run: dict, trial: dict, manifests: dict[str, dict], repo: Path,
             value = spend.get(token_key)
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 errors.append(f"{label}: spend.{token_key} must be a non-negative integer")
+        usage_available = spend.get("usage_available")
+        if usage_available is not None and not isinstance(usage_available, bool):
+            errors.append(f"{label}: spend.usage_available must be boolean")
+        if usage_available is False:
+            if any(spend.get(key) != 0 for key in (
+                    "input_tokens", "output_tokens", "cache_read_tokens",
+                    "reasoning_output_tokens")):
+                errors.append(f"{label}: unavailable usage requires zero token sentinels")
+            if not _nonempty(spend.get("usage_note")):
+                errors.append(f"{label}: unavailable usage requires spend.usage_note")
         if trial.get("executor_surface") == "codex-subscription" and spend.get("cost_basis") != "subscription-derived":
             errors.append(f"{label}: Codex subscription trials require cost_basis subscription-derived")
 
