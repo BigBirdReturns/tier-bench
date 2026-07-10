@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/delta_observation.schema.json",
+  "title": "AXM delta observation",
+  "description": "What a higher rung did that a lower rung missed, observed on one task — the raw material of frontier capture. Rows live in data/capture/*.jsonl with record_type 'delta_observation', usually alongside the capture entry they justify. A delta is an observation, never a claim of general superiority; it is scoped to its task_id.",
+  "type": "object",
+  "required": ["record_type", "from_model", "to_model", "task_id", "delta_types",
+               "what_lower_missed", "what_higher_added", "capturable"],
+  "additionalProperties": true,
+  "properties": {
+    "record_type": {"const": "delta_observation"},
+    "from_model": {"type": "string", "minLength": 1},
+    "to_model": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "delta_types": {
+      "type": "array", "minItems": 1,
+      "items": {"type": "string", "enum": ["edge_delta", "framing_delta", "routing_delta", "spec_delta", "transport_delta"]},
+      "description": "edge_delta = a rule-boundary commitment; framing_delta = task presentation changed the outcome; routing_delta = the model choice itself; spec_delta = spec reading divergence; transport_delta = serialization damage, not capability (adjudicate, never count as model failure)."
+    },
+    "what_lower_missed": {"type": "string", "minLength": 1},
+    "what_higher_added": {"type": "string", "minLength": 1},
+    "capturable": {"type": "boolean", "description": "Can this delta be frozen into a reusable artifact?"},
+    "captured_as": {"type": "string", "description": "Required non-empty when capturable is true: the artifact class (edge_family, hidden_grader, scaffold_packet, routing_rule, lens)."},
+    "evidence": {"type": "array", "items": {"type": "string"}, "description": "Ledger rows / evidence layers behind the observation."}
+  }
+}

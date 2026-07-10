@@ -33,8 +33,8 @@ be hard first.
 | Arc | Item | Status |
 |-----|------|--------|
 | — | AXM provenance layer | **DONE / merged** — PR [#47](https://github.com/BigBirdReturns/tier-bench/pull/47) |
-| **ARC-A** | Frontier capture ledger | **NEXT — armed** (reset onto main, build; spec below) |
-| **ARC-B** | Edge-family freeze + almanac hidden-knot corpus | queued (spec below). Note: authoring batch 1 (PR #54, tier-uplift task08–10) added adjacent hidden-graded tasks but is NOT this item — the edge-family invariant freeze and the `tasks/almanac_*` manifests remain open. |
+| **ARC-A** | Frontier capture ledger | **DONE — PR open** (number recorded at open; schemas + worked task02 row at $0.6805 real-billed, validator with closure rules, ROI: projected break-even 4 replays / needs_replay, 24 tests, CI-wired). Amortization stays open until the replay protocol runs (docs/frontier-capture.md). |
+| **ARC-B** | Edge-family freeze + almanac hidden-knot corpus | **NEXT** (spec below). Note: authoring batch 1 (PR #54, tier-uplift task08–10) added adjacent hidden-graded tasks but is NOT this item — the edge-family invariant freeze and the `tasks/almanac_*` manifests remain open. |
 | ARC-C | Orchestration-pattern benchmark | not yet — needs ARC-A + ARC-B first |
 | ARC-D | OSS replay field | not yet |
 | ARC-E | proof-knot closure-packet demo | not yet — burden-discipline docs (PR #48, Jul 9) laid its doctrine; the demo remains open |

@@ -37,3 +37,12 @@ jobs:
           python scripts/emit_scaffold.py > /dev/null
           python scripts/emit_scaffold.py --format json | python -c "import json,sys; p=json.load(sys.stdin); assert p['residue_commitments'] and p['routing_floor'] and p['evidence_layers']"
           python scripts/emit_scaffold.py --task no_such_task --format json | python -c "import json,sys; assert json.load(sys.stdin)['status']=='UNMEASURED'"
+      - name: capture ledger validates (closure discipline; no amortization without replays)
+        run: |
+          python -m py_compile scripts/validate_capture_ledger.py scripts/capture_roi.py
+          python scripts/validate_capture_ledger.py
+          python scripts/capture_roi.py --json | python -c "import json,sys; r={x['capture_id']:x for x in json.load(sys.stdin)}['task02_escape_class_boundary']; assert r['projected_break_even_replays']==4 and r['roi_state']=='needs_replay'"
+      - name: capture guard tests bite
+        run: |
+          python tests/test_capture_ledger.py
+          python tests/test_capture_roi.py
