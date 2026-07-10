@@ -100,6 +100,8 @@ This accumulation strategy prevents unnecessary re-work and tracks the frontier 
   first almanac knot to bite (task02-shape judgment residue). Not a wall
   (1/3); Fable never turned on. Cross-engine note: exception_class agrees
   with the Codex lineage's independent floor (PR #63 draft, 3/3=3/3);
-  record_binding disagrees (3/3 here vs 1/3 there) — left to the comparator,
-  never merged by hand.
+  record_binding: no disagreement (corrected — Codex's '1/3' was collection
+  progress, 1 pass of 1 run; consistent with 3/3 here). Raw candidates +
+  hidden-grader receipts exported hash-bound to
+  `run/almanac_floor_20260710/` (correction1 layer).
 
