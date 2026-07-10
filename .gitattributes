@@ -8,3 +8,4 @@ experiments/breadth/run/xprovider_ledger.jsonl merge=union
 tasks/** -text -whitespace
 fixtures/** -text -whitespace
 data/orchestration/** -text -whitespace
+data/control-results/** -text -whitespace

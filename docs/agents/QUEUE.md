@@ -21,7 +21,7 @@ task is claimed when a commit flips its `state`; a task is done when its
 
 | id | task | owner | lane | state | evidence when done | note |
 |----|------|-------|------|-------|--------------------|------|
-| SOL-1 | Blind-grade control packet (80 items, **v2**): return `[{id, score, rationale}]` per packet instructions | sol | **instrument** | **ready** — v2 delivered + independently verified; grade against canonical digest `e1a1dc6…` | grades merged via `scripts/merge_external_grades.py`; agreement report vs baseline | Grade from the packet ONLY. Never grade in a session that has this repo open. |
+| SOL-1 | Blind-grade control packet (80 items, **v2**): return `[{id, score, rationale}]` per packet instructions | sol | **instrument** | **done** — one sealed v2 run, 2026-07-10 | `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`; raw artifact + session record under `data/control-results/_external_grade_runs/sol-1-v2-019f4d56-c26f-7ec0-9d3e-67819c2270ec/` | Exact baseline agreement 48/80; 32 off by one; zero off by two. Operator reported a second attempt, but no second thread/artifact was discoverable, so it is not counted. |
 | SOL-2 | Adversarial review of the capture ledger (`data/capture/`, validator, ROI) + almanac corpus (`tasks/almanac_*`, vectors, graders) — hunt the defect class same-lineage review missed | sol | driver (read-only) | **done** — 2026-07-10 | `docs/agents/reviews/sol_arc_ab_review_20260710.md` | Two P1 closure holes and four P2 durability defects recorded; remediation remains gated and open. |
 | SOL-3 | Independent-architect pass on the Residue Broker (ARC-C) | sol | driver | **superseded / independence precondition lost** | PR #63 plus explicit contamination note | Operator-directed ARC-C implementation began before the coordination merge. This repo-aware author context cannot honestly recreate an independent-before-conclusions architecture pass. |
 | ~~CLAUDE-1~~ | ~~Push blind packet to temp repo~~ — superseded: v1 bytes unavailable, SHA `64e33f2a…` irreproducible from any committed state (100-commit sweep, Claude 2026-07-10) | claude | driver | **superseded by CLAUDE-1b** | — | v1 packet existed only in the original session's working copy. |
@@ -36,6 +36,7 @@ task is claimed when a commit flips its `state`; a task is done when its
 
 | id | task | evidence |
 |----|------|----------|
+| SOL-1 | Non-Anthropic blind grade of the preserved control packet | `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`; thread `019f4d56-c26f-7ec0-9d3e-67819c2270ec`; raw artifact SHA-256 `da69f26d…16af04c` |
 | PACKET-V2 | Supersede unavailable blind-control v1 with private-salted v2 | `docs/agents/BLIND_CONTROL_V2.md`; private delivery commit `6771868`; canonical in-git digest recorded above |
 | SOL-2 | Cross-lineage adversarial review of ARC-A capture + ARC-B almanac | `docs/agents/reviews/sol_arc_ab_review_20260710.md`; executable counterexamples; PR #63 |
 | — | ARC-B: edge-family freeze + almanac corpus | PR #59, layer + CI drift guard |

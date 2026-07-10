@@ -67,11 +67,11 @@ review; an engine may not silently change what counts as passing.
 
 ## Current standing state (mirror — QUEUE.md is authoritative)
 
-- SOL-1 blind control grading remains packet-only. Blind-control packet v2 is
-  published as the sole file in the private delivery repository at commit
-  `6771868bbdff156382796190271404fd72576936`; its SHA-256 is
-  `98997bf9d9e43d85052e6ff0107476735cf35aeccfd7c4509dc4762ff48d7b11`.
-  A repo-aware driver must never perform that grade.
+- SOL-1 blind control grading is sealed from fresh desktop thread
+  `019f4d56-c26f-7ec0-9d3e-67819c2270ec` and merged additively. Exact baseline
+  agreement is 48/80, with 32 off by one and zero off by two; see
+  `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`. No aggregate
+  benchmark verdict follows from that agreement report.
 - SOL-2, the Codex adversarial review of ARC-A/ARC-B, is complete with findings
   at `docs/agents/reviews/sol_arc_ab_review_20260710.md`; remediation is open.
 - PR #63 contains operator-directed partial ARC-C work. It does not close ARC-C

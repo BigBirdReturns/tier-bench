@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -180,19 +181,31 @@ def test_merge_is_complete_additive_idempotent_and_preserves_fable_administratio
     merged = (out_dir / 'fable-5__high__bigbird__20260707.jsonl').read_text(encoding='utf-8').splitlines()
     orig_meta, orig_p1 = json.loads(original[0]), json.loads(original[1])
     merged_meta, merged_p1 = json.loads(merged[0]), json.loads(merged[1])
+    assert merged_meta == orig_meta
     assert merged_meta['grader'] == orig_meta['grader']
     assert merged_meta['score_total'] == orig_meta['score_total']
     assert merged_p1['score'] == orig_p1['score']
     assert merged_p1['grader'] == orig_p1['grader']
     assert merged_p1['grade_note'] == orig_p1['grade_note']
-    assert len(merged_p1['external_grades']) == 1
-    ext = merged_p1['external_grades'][0]
+    merged_baseline = dict(merged_p1)
+    merged_baseline.pop('external_grades')
+    original_baseline = dict(orig_p1)
+    original_baseline.pop('external_grades', None)
+    assert merged_baseline == original_baseline
+    assert b'\r\n' not in (out_dir / 'fable-5__high__bigbird__20260707.jsonl').read_bytes()
+    assert '\\' not in manifest['raw_artifact_file']
+    prior_external = orig_p1.get('external_grades', [])
+    assert [x for x in merged_p1['external_grades'] if x['grade_run_id'] != 'run-1'] == prior_external
+    added = [x for x in merged_p1['external_grades'] if x['grade_run_id'] == 'run-1']
+    assert len(added) == 1
+    ext = added[0]
     assert ext['score'] == 1
     assert ext['grader'] == 'external-gpt-lineage-unverified'
     assert ext['grade_run_id'] == 'run-1'
     assert ext['packet_sha256'] == manifest['packet_sha256']
     assert ext['packet_source_commit'] == 'TESTCOMMIT'
 
+    source_agg = aggregate('data/control-results')
     agg = aggregate(str(out_dir))
     fable_p1 = agg['fable-5|high|P1']
     assert fable_p1['n_runs'] == 2
@@ -200,7 +213,7 @@ def test_merge_is_complete_additive_idempotent_and_preserves_fable_administratio
         'fable-5__high__bigbird__20260707',
         'fable-5__high__bigbird__20260707__b',
     ]
-    assert fable_p1['n_judgments'] == 4
+    assert fable_p1['n_judgments'] == source_agg['fable-5|high|P1']['n_judgments'] + 2
 
     conflicting = [dict(g) for g in grades]
     conflicting[0]['score'] = 2
@@ -239,6 +252,7 @@ def _run_standalone() -> int:
         except Exception as e:  # noqa: BLE001
             failed += 1
             print(f'FAIL  {fn.__name__}: {e}')
+            traceback.print_exc()
         finally:
             shutil.rmtree(tmp, ignore_errors=True)
     print(f'\n{len(tests) - failed}/{len(tests)} passed')
