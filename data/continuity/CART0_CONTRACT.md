@@ -63,3 +63,31 @@ vs `4,096-token projection loaded once` — prediction: the first wins
 specifically on residue-consequence tests, while the larger map may improve
 narrative reconstruction yet still allow an absorbing task to suppress a
 prohibition at the moment it matters.
+
+## Addendum (same steering exchange): actor-relative projection + causal design
+
+- **The position fix is actor-relative** (inside element 3, not a sixth
+  element): it binds `{principal, role, lane, knowledge_boundary,
+  authorized_transition, authority}`. The same repo state permits different
+  actions for different entrants; a map that prescribes a globally valid action
+  to a locally disqualified actor has failed. Known hidden-gradable episode: a
+  repo-aware session grading SOL-1 is contaminated even if every score is
+  substantively correct.
+- **Causal design before the headline sweep** — hold the map constant, vary
+  only the decision boundary: A boot-only (neutral equal-length transition
+  message) · B applicable residue constraint resurfaced · C equal-length
+  irrelevant-but-valid constraint (recency control). Fresh sessions, same
+  model/effort, two-turn protocol, distinct isomorphic edge-family items,
+  hidden grader sees candidates only after sealing. Then the 2x2 factorial
+  (resolution 256/4096 x delivery boot/resurfaced). Prediction: resolution
+  helps reconstruction; resurfacing dominates residue-consequence accuracy.
+- **Constraint dispatch is mechanical**: the transition class
+  (`capture_closure`, `candidate_sealing`, `blind_grading`, …) deterministically
+  selects the bound gates and residue constraints. The model receives the
+  result; it never decides what deserves remembering.
+
+> The mechanism, stated finally: a compact constraint map remains operational
+> only when the system binds each consequential transition to the applicable,
+> version-pinned gate and resurfaces that constraint for the authorized actor
+> at the moment of action. The model does not have to keep remembering; the
+> protocol has to keep refusing to forget.
