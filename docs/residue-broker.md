@@ -26,11 +26,13 @@ narration is never a verdict.
 
 ## Run artifact
 
-`data/orchestration/arc_c_almanac_v1.json` is a plan, not a result. Its status is
-`unmeasured`, its trial list is empty, and its three initial broker decisions route
-to normalized rung `floor`. `rung_bindings` maps those shared rung roles to this
-engine's actual model, effort and surface, so Claude and Codex can compare routing
-decisions without pretending their model ladders are identical. Future trial rows preserve:
+`data/orchestration/arc_c_almanac_v1.json` is a partial result, not a completion
+claim. It contains four sealed floor trials: the exception-class task has three
+passing observations and is sealed; record-binding has one passing observation
+toward K=3 (one observed, two not yet run); rule-boundary remains unmeasured.
+`rung_bindings` maps shared rung roles to this engine's actual model, effort and
+surface, so Claude and Codex can compare routing decisions without pretending their
+model ladders are identical. Trial rows preserve:
 
 - route rationale and the evidence available before dispatch;
 - candidate and grader hashes, with the hidden grader absent from the solver packet;
@@ -46,8 +48,22 @@ Validate the contract and all committed receipts with:
 python scripts/validate_orchestration_run.py
 python tests/test_residue_broker.py
 python tests/test_export_solver_packet.py
+python tests/test_grade_solver_packet.py
 python tests/test_compare_engine_runs.py
+python tests/test_orchestration_clone_integrity.py
 ```
+
+## Byte-stable evidence
+
+Hash-bound task manifests, fixtures/graders, packet receipts and orchestration
+artifacts are marked `-text` in `.gitattributes`. Git must preserve their exact
+bytes across Windows and Linux checkouts. Curated orchestration `events.jsonl`
+streams are explicitly exempted from the repository's blanket scratch ignore.
+
+`tests/test_orchestration_clone_integrity.py` makes a fresh local clone with
+`core.autocrlf=true` and recomputes every path-backed SHA-256 in the run and
+packet/grade receipts. CI fails if checkout changes even one sealed byte or if a
+referenced receipt artifact was not committed.
 
 ## Execution sequence
 
@@ -85,7 +101,7 @@ burden_holder: Whoever asserts a routing or cost conclusion from the run.
 evidence: The validated run artifact, candidate files, hashes, raw solver records,
   hidden-grader outputs and spend receipts.
 verifier: scripts/validate_orchestration_run.py plus the manifest hidden graders.
-gap: No isolated floor trials are committed yet.
-closure_decision: open.
+gap: One of three tasks is final; continue only broker-authorized trials.
+closure_decision: partial.
 failure_default: remain_unmeasured; do not route, escalate, price or claim success.
 ```

@@ -443,6 +443,7 @@
       "the deciding grader is absent from the solver packet and independently re-run by the coordinator",
       "no escalation occurs before a 0/K wall at the previous rung",
       "route, spend, replay, abstention and verdict provenance are complete",
+      "every path-backed receipt hash survives a fresh-clone checkout byte-for-byte",
       "every task reaches a final broker decision"
     ],
     "burden_holder": "whoever asserts a routing, capability or cost conclusion from this run",
@@ -450,7 +451,9 @@
       "tasks/almanac_exception_class_001.json",
       "tasks/almanac_record_binding_001.json",
       "tasks/almanac_rule_boundary_001.json",
-      "docs/residue-broker.md"
+      "docs/residue-broker.md",
+      ".gitattributes",
+      "tests/test_orchestration_clone_integrity.py"
     ],
     "verifier": "scripts/validate_orchestration_run.py plus each manifest-declared hidden grader",
     "gap": "1/3 tasks final; continue only broker-authorized trials",
