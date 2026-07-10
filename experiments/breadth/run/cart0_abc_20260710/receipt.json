@@ -1,0 +1,96 @@
+{
+  "run": "cart0-abc-20260710",
+  "disposition": "INCOMPLETE + CONFOUNDED \u2014 NOT SEALED as a CART0 result (mints neither pass nor fail for the resurfacing hypothesis)",
+  "intended_design": "A/B/C: hold map constant, vary only the decision-boundary message (A neutral, B applicable rule resurfaced, C irrelevant-but-valid rule). Two-turn: plan, then implement on go signal. K=5/condition, item=count_matches (the depth-regression item).",
+  "what_happened": {
+    "completed": "9 of 15 turn-2 implementers wrote solution.py before a shared Fable credit exhaustion aborted the rest; A=5/5, B=3/5, C=1/5",
+    "aborted": "6 trials terminated on 'out of usage credits' \u2014 these are ABORTS (broken pipeline), not task failures (EP-001 residue / LESSONS: an abort mints neither pass nor fail)",
+    "grades": "every one of the 9 written candidates scored 10/10 on the hidden grader (graded deterministically by the opus main loop; solver off the scoring path)"
+  },
+  "why_it_does_not_test_the_hypothesis": [
+    "CONFOUND 1 (boot-availability): the boot spec carried the scaffold rule in ALL arms, so condition A is 'rule-at-boot + neutral-boundary', not a rule-absent control; no arm delivers the rule ONLY at the boundary",
+    "CONFOUND 2 (self-resurfacing): the plan-first turn made all 15 planners (A, B and C alike) restate the backslash-in-class rule in their own words before the boundary message \u2014 every arm self-resurfaced",
+    "SATURATION: with the rule present twice pre-boundary in every arm, all completed cells hit 10/10 \u2014 no headroom for B to beat A even if the effect were real"
+  ],
+  "incidental_signal_hypothesis_only": "same item, single-turn spec+scaffold (CLAUDE-2 replay04) = 1/3; two-turn plan-then-implement, neutral boundary (this run, cond A) = 5/5. Suggests the PLANNING turn's self-articulation \u2014 not the boundary nudge \u2014 is what defeats the depth regression. Cross-run, n=3 vs 5: a hypothesis to test cleanly, not a measured result.",
+  "clean_redesign": [
+    "boot content = BARE spec, NO scaffold (leave headroom; reproduce the 1/3-class regression first)",
+    "deliver the rule ONLY at the boundary in B; A gets neutral, C gets irrelevant-valid",
+    "either drop the planning turn or forbid the plan from restating the rule (else every arm self-resurfaces)",
+    "balance K across arms; pre-register that a floor with no measured regression cannot show a resurfacing lift"
+  ],
+  "items": [
+    {
+      "condition": "A",
+      "trial": 0,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "b8d0fa2bad653df94c9370134b926b93a12c0b551f27df40d05b528416ba95de",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "A",
+      "trial": 1,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "3fade7c1a49087f8e54e985434d879f8b26d7ac6f3cde5021c79849e5f43f082",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "A",
+      "trial": 2,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "cf6ffe35db6a41d49c22be3bcca1dc18460edb4fac0e78968116dcf586d3eda0",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "A",
+      "trial": 3,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "637100a5c6f9a9eb03e75cdc8df9fba8cbb8399e28885b5aec5a3ad482e5116d",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "A",
+      "trial": 4,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "d7cec8964b82a0164358b9612b89dec39ce6fdbaf1779ae015c18541ff8c750f",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "B",
+      "trial": 0,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "d7d4cf3ba4fb3361fd5eebe968521d3d93c9a9328168ac68b000179d6b67531d",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "B",
+      "trial": 1,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "23065c29de292774dc4be69aebdea2be6068c0fb33b6625dfaa2305140dacd09",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "B",
+      "trial": 2,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "9fb7f8b7291e57248dcdd9a88849adb3ea8e646ca129991e9e35e80b65d3fc5e",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    {
+      "condition": "C",
+      "trial": 0,
+      "score": "SCORE 10/10",
+      "outcome": "pass",
+      "candidate_sha256": "0f112d225ab1a1db755aa5a11f85b2bca8510768ff82c8be747278385d60dbf6",
+      "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    }
+  ]
+}
