@@ -47,3 +47,32 @@ its source; listed here so the corpus knows where its receipts live):
 - EP-006 a cross-engine "disagreement" that was a units mismatch (1-of-3
   collected read as 1-pass-2-fail) → correction layer appended, originals
   retained (`known_corner.jsonl` k3-floor-almanac-20260710-correction1).
+
+## EP-007 — planning self-resurfaced the target constraint across all treatment arms
+
+```
+failure: the CART0 A/B/C run became causally non-discriminating when every
+planner restated the boot-loaded target constraint before the registered
+decision-boundary treatment; 6 of 15 administrations also aborted on provider
+credit exhaustion, leaving imbalanced cells A=5, B=3, C=1
+residue: a resurfacing experiment must preserve common boot exposure while
+preventing uncontrolled pre-boundary articulation of the target constraint;
+administrations must run in balanced blocks, and aborted or contaminated trials
+mint neither pass nor fail
+future consequence test: the applicable constraint may appear before the
+decision boundary only where the frozen treatment manifest permits it; any
+unregistered target-rule articulation invalidates that administration for the
+causal comparison
+```
+
+Nine candidates were produced and deterministically graded 10/10. This is
+candidate-performance evidence under repeated pre-boundary activation, not
+evidence that boundary resurfacing outperforms boot-only exposure. The run is
+incomplete and confounded; no comparative conclusion is sealed.
+
+Disposition: NOT sealed. Common boot exposure of the target rule in all arms was
+the **registered control, not the confound** — the sole confound was the
+planning turn's uncontrolled articulation. Receipt (9 graded candidates, 6
+aborts, corrected causal analysis, the clean rerun that preserves common boot)
+preserved at `experiments/breadth/run/cart0_abc_20260710/` on the
+driving-assistance branch (PR #65).
