@@ -94,17 +94,18 @@ The full executable arc now lives in **`/ROADMAP.md`**. Turn high effort on, say
 there (files, schema, acceptance, and the Fable-vs-cheap spend split) so no
 frontier token is burned re-deriving the plan.
 
-Live state (mirror of ROADMAP STATE):
+Live state (mirror of ROADMAP STATE — arc items are keyed by content, ARC-x,
+never by predicted GitHub PR number; the counter is shared with parallel
+sessions and got consumed, #48–#54, on Jul 9):
 
-1. **PR #47 — AXM provenance layer — DONE** (open PR
-   https://github.com/BigBirdReturns/tier-bench/pull/47): source ledger, 7-primitive
+1. **AXM provenance layer — DONE / merged** (PR #47): source ledger, 7-primitive
    registry, `validate_primitives.py` guard wired into CI. The two model-authored
    sources (gpt-5.5-high ledger, gpt-4o spectra) are recorded and author-named.
-2. **PR #48 — Frontier capture ledger — NEXT** (blocked until #47 merges; one
-   branch, serial). Spec in ROADMAP.
-3. **PR #49 — edge-family freeze + almanac hidden-knot corpus** — queued. Spec in
+2. **ARC-A — Frontier capture ledger — NEXT, armed** (one branch, serial). Spec
+   in ROADMAP.
+3. **ARC-B — edge-family freeze + almanac hidden-knot corpus** — queued. Spec in
    ROADMAP. Absorbs the old runway items 2 (edge-family/almanac) and 3
-   (adjudications).
+   (adjudications). Authoring batch 1 (PR #54) is adjacent, not this item.
 
 NOT Fable work (done or cheap): site/data plumbing, reruns of settled cells,
 effort-matrix filling (LESSONS rule 2), doc edits, and the JSON/test/CI plumbing

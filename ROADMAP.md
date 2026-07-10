@@ -8,34 +8,44 @@ already decided. Do not re-litigate the ordering; it is set.
 
 ## The "go" protocol
 
-1. Read **STATE** below. Find the first PR marked `NEXT`.
-2. If the previous PR's branch (`claude/setup-algstb`) is still an open PR
-   (unmerged), that PR must merge first — see EXECUTION. State is
-   `BLOCKED-UNTIL-MERGE`; report that and stop. One branch, serial PRs.
-3. Otherwise build that one PR to a **pushed PR with green CI**, then **STOP and
-   report**. One "go" = one PR unless the operator says "keep going".
-4. Update STATE (flip the finished PR to `DONE`, the next to `NEXT`) as part of
-   the PR. The record is the plan.
+1. Read **STATE** below. Find the first arc item marked `NEXT`.
+2. If the driver branch (`claude/setup-algstb`) still has an open, unmerged PR,
+   that PR must merge first — see EXECUTION. State is `BLOCKED-UNTIL-MERGE`;
+   report that and stop. One branch, serial PRs.
+3. Otherwise build that one item to a **pushed PR with green CI**, then **STOP
+   and report**. One "go" = one item unless the operator says "keep going".
+4. Update STATE (flip the finished item to `DONE`, the next to `NEXT`) as part
+   of the PR. The record is the plan.
 
-Do not free-run past a merge boundary. Do not start two PRs at once. Do not
-touch #50+ before #47–#49 have landed — the foundation must be hard first.
+Do not free-run past a merge boundary. Do not start two items at once. Do not
+touch ARC-C or later before ARC-A and ARC-B have landed — the foundation must
+be hard first.
 
 ## STATE
 
-> **Firehose status: ARMED.** PR #47 is merged to `main`; the branch
-> `claude/setup-algstb` resets clean onto it. Bring the driver in with high
-> effort on and say **go** — #48 is unblocked and fully specced below.
+> **Firehose status: ARMED.** Arc items are keyed by content (ARC-x), **not** by
+> GitHub PR number — the PR counter is shared with parallel sessions and gets
+> consumed out from under any plan (the numbers this file once predicted, #48–#54,
+> were taken on Jul 9 by burden-discipline/dense-mint/site/front-door/shard-check/
+> authoring-batch PRs). A PR number is assigned at open time and recorded here
+> after the fact.
 
-| PR | Title | Status |
-|----|-------|--------|
-| #47 | AXM provenance layer | **DONE / merged** — https://github.com/BigBirdReturns/tier-bench/pull/47 |
-| #48 | Frontier capture ledger | **NEXT — armed** (reset onto main, build) |
-| #49 | Edge-family + almanac hidden-knot corpus | queued |
-| #50 | Orchestration-pattern benchmark | not yet — needs #48 + #49 first |
-| #51 | OSS replay field | not yet |
-| #52 | proof-knot closure-packet demo | not yet |
-| #53 | embodied AXM action-authorization schema | not yet |
-| #54 | terrain-divergence simulation packet | not yet |
+| Arc | Item | Status |
+|-----|------|--------|
+| — | AXM provenance layer | **DONE / merged** — PR [#47](https://github.com/BigBirdReturns/tier-bench/pull/47) |
+| **ARC-A** | Frontier capture ledger | **NEXT — armed** (reset onto main, build; spec below) |
+| **ARC-B** | Edge-family freeze + almanac hidden-knot corpus | queued (spec below). Note: authoring batch 1 (PR #54, tier-uplift task08–10) added adjacent hidden-graded tasks but is NOT this item — the edge-family invariant freeze and the `tasks/almanac_*` manifests remain open. |
+| ARC-C | Orchestration-pattern benchmark | not yet — needs ARC-A + ARC-B first |
+| ARC-D | OSS replay field | not yet |
+| ARC-E | proof-knot closure-packet demo | not yet — burden-discipline docs (PR #48, Jul 9) laid its doctrine; the demo remains open |
+| ARC-F | embodied AXM action-authorization schema | not yet |
+| ARC-G | terrain-divergence simulation packet | not yet |
+
+Landed alongside the arc (context for the next driver, merged Jul 9): burden
+discipline docs (#48), ledger `extra=` crash fix (#49), dense-subject mint (#50),
+SCG identity on the site (#51), front-door routing (#52), tiered lens-shard
+integrity check + `memory/lenses/` sovereign lens shard (#53), authoring batch 1
+— three novel-reasoning hidden-graded tasks (#54).
 
 ## EXECUTION mechanics (one branch, serial)
 
@@ -90,7 +100,7 @@ or another explicit non-closed status — never silently closed.
 
 ---
 
-## PR #48 — Frontier capture ledger
+## ARC-A — Frontier capture ledger
 
 **Title:** `Add frontier capture ledger: measure when expensive cognition becomes reusable machinery`
 
@@ -166,7 +176,7 @@ ROI arithmetic, the tests, the task02 row (data already exists in `ledger.jsonl`
 
 ---
 
-## PR #49 — Edge-family + almanac hidden-knot corpus
+## ARC-B — Edge-family + almanac hidden-knot corpus
 
 **Title:** `Freeze task02 edge-family invariants and add almanac hidden-knot vectors`
 
@@ -232,18 +242,18 @@ the synthetic PII-free vectors' mechanical bits.
 ## The arc, and why this order
 
 ```
-#47 provenance      -> makes AXM attributable (no unsourced sprawl)
-#48 capture ledger  -> makes frontier capture measurable (spend -> machinery)
-#49 almanac corpus  -> makes the next benchmark family real (the new ruler)
-#50 orchestration-pattern benchmark -> tests pilotfish/Anthropic-style routing against REAL knots
+provenance (merged, PR #47) -> makes AXM attributable (no unsourced sprawl)
+ARC-A capture ledger        -> makes frontier capture measurable (spend -> machinery)
+ARC-B almanac corpus        -> makes the next benchmark family real (the new ruler)
+ARC-C orchestration-pattern benchmark -> tests pilotfish/Anthropic-style routing against REAL knots
 ```
 
-Orchestration (#50) is not next: without #48 and #49 it degenerates into another
-"frontier orchestrator + cheap workers seems cheaper" routing demo. The measured
-version — *frontier captured this knot grammar; cheap workers replayed it;
-verifier caught failures; waterline moved; capture ledger computed amortization* —
-requires the capture ledger and the knot corpus to exist first.
+Orchestration (ARC-C) is not next: without ARC-A and ARC-B it degenerates into
+another "frontier orchestrator + cheap workers seems cheaper" routing demo. The
+measured version — *frontier captured this knot grammar; cheap workers replayed
+it; verifier caught failures; waterline moved; capture ledger computed
+amortization* — requires the capture ledger and the knot corpus to exist first.
 
-#51 OSS replay field · #52 proof-knot closure-packet demo · #53 embodied AXM
-action-authorization schema · #54 terrain-divergence simulation packet — all
-after the foundation is hard. Do not jump.
+ARC-D OSS replay field · ARC-E proof-knot closure-packet demo · ARC-F embodied
+AXM action-authorization schema · ARC-G terrain-divergence simulation packet —
+all after the foundation is hard. Do not jump.
