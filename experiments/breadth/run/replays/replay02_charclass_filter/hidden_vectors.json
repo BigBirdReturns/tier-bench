@@ -1,0 +1,72 @@
+[
+ {
+  "cls": "[abc]",
+  "chars": "ab-z*\\]0159!",
+  "result": "ab"
+ },
+ {
+  "cls": "[a-z]",
+  "chars": "ab-z*\\]0159!",
+  "result": "abz"
+ },
+ {
+  "cls": "[!abc]",
+  "chars": "ab-z*\\]0159!",
+  "result": "-z*\\]0159!"
+ },
+ {
+  "cls": "[]a]",
+  "chars": "ab-z*\\]0159!",
+  "result": "a]"
+ },
+ {
+  "cls": "[-a]",
+  "chars": "ab-z*\\]0159!",
+  "result": "a-"
+ },
+ {
+  "cls": "[a-]",
+  "chars": "ab-z*\\]0159!",
+  "result": "a-"
+ },
+ {
+  "cls": "[\\]",
+  "chars": "ab-z*\\]0159!",
+  "result": "\\"
+ },
+ {
+  "cls": "[\\*]",
+  "chars": "ab-z*\\]0159!",
+  "result": "*\\"
+ },
+ {
+  "cls": "[a\\-z]",
+  "chars": "ab-z*\\]0159!",
+  "result": "abz\\]"
+ },
+ {
+  "cls": "[!a]",
+  "chars": "ab-z*\\]0159!",
+  "result": "b-z*\\]0159!"
+ },
+ {
+  "cls": "[0-9]",
+  "chars": "ab-z*\\]0159!",
+  "result": "0159"
+ },
+ {
+  "cls": "[z-a]",
+  "chars": "ab-z*\\]0159!",
+  "error": "ValueError"
+ },
+ {
+  "cls": "[abc",
+  "chars": "ab-z*\\]0159!",
+  "error": "ValueError"
+ },
+ {
+  "cls": "[!]",
+  "chars": "ab-z*\\]0159!",
+  "error": "ValueError"
+ }
+]

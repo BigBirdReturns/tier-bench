@@ -1,0 +1,70 @@
+[
+ {
+  "pattern": "a*c",
+  "wellformed": true
+ },
+ {
+  "pattern": "[abc]",
+  "wellformed": true
+ },
+ {
+  "pattern": "[abc",
+  "wellformed": false
+ },
+ {
+  "pattern": "a\\",
+  "wellformed": false
+ },
+ {
+  "pattern": "[\\]",
+  "wellformed": true
+ },
+ {
+  "pattern": "[\\*]",
+  "wellformed": true
+ },
+ {
+  "pattern": "[a\\-z]",
+  "wellformed": true
+ },
+ {
+  "pattern": "[!]",
+  "wellformed": false
+ },
+ {
+  "pattern": "[!a]",
+  "wellformed": true
+ },
+ {
+  "pattern": "[]a]",
+  "wellformed": true
+ },
+ {
+  "pattern": "[z-a]",
+  "wellformed": false
+ },
+ {
+  "pattern": "\\a",
+  "wellformed": true
+ },
+ {
+  "pattern": "*?",
+  "wellformed": true
+ },
+ {
+  "pattern": "[a-]b",
+  "wellformed": true
+ },
+ {
+  "pattern": "x[\\]y",
+  "wellformed": true
+ },
+ {
+  "pattern": "[a",
+  "wellformed": false
+ },
+ {
+  "pattern": "]",
+  "wellformed": true
+ }
+]
