@@ -1,0 +1,5 @@
+SCORE 6/10
+  FAIL ('[\\]', {'error': 'ValueError'}, {'result': 1})
+  FAIL ('[\\*]', {'result': 1}, {'result': 2})
+  FAIL ('[a\\-z]', {'result': 2}, {'result': 3})
+  FAIL ('*[\\]*', {'error': 'ValueError'}, {'result': 2})
