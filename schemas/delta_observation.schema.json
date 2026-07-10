@@ -5,7 +5,7 @@
   "description": "What a higher rung did that a lower rung missed, observed on one task — the raw material of frontier capture. Rows live in data/capture/*.jsonl with record_type 'delta_observation', usually alongside the capture entry they justify. A delta is an observation, never a claim of general superiority; it is scoped to its task_id.",
   "type": "object",
   "required": ["record_type", "from_model", "to_model", "task_id", "delta_types",
-               "what_lower_missed", "what_higher_added", "capturable"],
+               "what_lower_missed", "what_higher_added", "capturable", "measured"],
   "additionalProperties": true,
   "properties": {
     "record_type": {"const": "delta_observation"},
@@ -21,6 +21,8 @@
     "what_higher_added": {"type": "string", "minLength": 1},
     "capturable": {"type": "boolean", "description": "Can this delta be frozen into a reusable artifact?"},
     "captured_as": {"type": "string", "description": "Required non-empty when capturable is true: the artifact class (edge_family, hidden_grader, scaffold_packet, routing_rule, lens)."},
+    "measured": {"type": "boolean", "description": "true = backed by graded trials in a sealed known_corner.jsonl layer (evidence_layer required and must resolve); false = hypothesis. Measured and hypothesis are different words — a delta must say which it is."},
+    "evidence_layer": {"type": "string", "description": "The known_corner.jsonl layer carrying the graded trials. Required (and resolved by the validator) when measured is true."},
     "evidence": {"type": "array", "items": {"type": "string"}, "description": "Ledger rows / evidence layers behind the observation."}
   }
 }
