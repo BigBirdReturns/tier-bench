@@ -7,6 +7,23 @@ CART0 projection**: its control question is the invariant objective, its twenty
 defect→artifact table is the retrieval index. Treat it as the map a cold driver
 reads first — bind it to a freshness commitment, don't file it as an essay.*
 
+```yaml
+freshness:
+  reconciles_through: "<PR-64 merge commit>"   # set to the merge SHA when #64 lands
+  projection_profile: "whole-project-control-map@0"
+  reducer: null
+  reducer_state: "not implemented; evidence-preservation stage (no reducer by doctrine until ARC-C closes)"
+  retrieval_index:
+    - data/continuity/CART0_CONTRACT.md
+    - data/continuity/EPISODES.md
+```
+
+*This is an honest provisional freshness commitment: CART0 has no reducer yet by
+explicit doctrine, so the full `event_head || reducer_digest || projection_profile`
+digest is not faked. It makes staleness detectable — reconcile this map to the
+PR #64 merge commit once it lands — without pretending machinery that does not
+exist.*
+
 ---
 
 We solved it by repeatedly refusing to let an insight remain a sentence. Every

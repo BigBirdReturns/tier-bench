@@ -1,24 +1,35 @@
 {
   "run": "cart0-abc-20260710",
-  "disposition": "INCOMPLETE + CONFOUNDED \u2014 NOT SEALED as a CART0 result (mints neither pass nor fail for the resurfacing hypothesis)",
-  "intended_design": "A/B/C: hold map constant, vary only the decision-boundary message (A neutral, B applicable rule resurfaced, C irrelevant-but-valid rule). Two-turn: plan, then implement on go signal. K=5/condition, item=count_matches (the depth-regression item).",
-  "what_happened": {
-    "completed": "9 of 15 turn-2 implementers wrote solution.py before a shared Fable credit exhaustion aborted the rest; A=5/5, B=3/5, C=1/5",
-    "aborted": "6 trials terminated on 'out of usage credits' \u2014 these are ABORTS (broken pipeline), not task failures (EP-001 residue / LESSONS: an abort mints neither pass nor fail)",
-    "grades": "every one of the 9 written candidates scored 10/10 on the hidden grader (graded deterministically by the opus main loop; solver off the scoring path)"
+  "disposition": "INCOMPLETE + CONFOUNDED \u2014 NOT SEALED. Mints neither pass nor fail for the resurfacing hypothesis. No comparative verdict.",
+  "correction_note": "Supersedes the earlier framing in this file's history: common boot exposure of the target rule in all three arms was the REGISTERED CONTROL, not a confound. The intended estimand is whether reactivating an already-boot-loaded rule at the consequential boundary beats boot exposure alone (A) and generic recency (C). The sole confound was the planning turn, not the boot map.",
+  "registered_design": {
+    "estimand": "After a rule is loaded at boot, does reactivating the applicable rule at the consequential boundary outperform boot exposure alone and generic recency?",
+    "A": "common boot map (target rule present) + neutral length-matched boundary",
+    "B": "common boot map (target rule present) + exact applicable constraint at boundary",
+    "C": "common boot map (target rule present) + irrelevant valid length-matched constraint at boundary",
+    "item": "count_matches (the depth-regression item)",
+    "protocol": "two-turn: plan, then implement on go signal; K=5/condition"
   },
-  "why_it_does_not_test_the_hypothesis": [
-    "CONFOUND 1 (boot-availability): the boot spec carried the scaffold rule in ALL arms, so condition A is 'rule-at-boot + neutral-boundary', not a rule-absent control; no arm delivers the rule ONLY at the boundary",
-    "CONFOUND 2 (self-resurfacing): the plan-first turn made all 15 planners (A, B and C alike) restate the backslash-in-class rule in their own words before the boundary message \u2014 every arm self-resurfaced",
-    "SATURATION: with the rule present twice pre-boundary in every arm, all completed cells hit 10/10 \u2014 no headroom for B to beat A even if the effect were real"
-  ],
-  "incidental_signal_hypothesis_only": "same item, single-turn spec+scaffold (CLAUDE-2 replay04) = 1/3; two-turn plan-then-implement, neutral boundary (this run, cond A) = 5/5. Suggests the PLANNING turn's self-articulation \u2014 not the boundary nudge \u2014 is what defeats the depth regression. Cross-run, n=3 vs 5: a hypothesis to test cleanly, not a measured result.",
-  "clean_redesign": [
-    "boot content = BARE spec, NO scaffold (leave headroom; reproduce the 1/3-class regression first)",
-    "deliver the rule ONLY at the boundary in B; A gets neutral, C gets irrelevant-valid",
-    "either drop the planning turn or forbid the plan from restating the rule (else every arm self-resurfaces)",
-    "balance K across arms; pre-register that a floor with no measured regression cannot show a resurfacing lift"
-  ],
+  "causal_status": {
+    "administration_status": "incomplete",
+    "completed_candidates": "9 of 15",
+    "aborted_candidates": "6, missing rather than failed (provider credit exhaustion)",
+    "completed_outcomes": "9 of 9 pass (10/10 hidden grader, graded deterministically by the opus main loop; solver off scoring path)",
+    "cells": "A=5, B=3, C=1",
+    "causal_status": "confounded",
+    "comparative_verdict": "none",
+    "primary_confound": "uncontrolled target-rule articulation during planning \u2014 every planner (A, B, C alike) restated the boot-loaded target rule in its turn-1 plan, a second activation before the registered boundary manipulation; the boot-only and recency-control arms self-administered the treatment"
+  },
+  "correct_rerun": {
+    "principle": "preserve common boot exposure; remove the uncontrolled self-resurfacing. Do NOT switch to bare-boot first-time injection \u2014 that tests just-in-time instruction, a different mechanism.",
+    "A": "target present at boot | planning PROHIBITED from restating it | neutral length-matched boundary",
+    "B": "target present at boot | planning PROHIBITED from restating it | exact applicable constraint at boundary",
+    "C": "target present at boot | planning PROHIBITED from restating it | irrelevant valid length-matched constraint at boundary",
+    "contamination_check": "before grading, inspect each planning output; if the planner quotes or materially paraphrases the target constraint before the boundary message, mark the trial 'contaminated' \u2014 neither pass nor fail, causally ineligible",
+    "blocking": "run balanced blocks (A1 B1 C1, A2 B2 C2, ...) so an early credit stop yields complete blocks, not A=5 B=3 C=1",
+    "separate_second_experiment": "the planner-self-resurfacing observation ('does self-generated articulation reactivate a boot-loaded constraint?') is worth testing, but as a SEPARATE run after the clean external-resurfacing run \u2014 not as another arm now"
+  },
+  "incidental_signal_hypothesis_only": "same item, single-turn spec+scaffold (CLAUDE-2 replay04) = 1/3 vs two-turn plan-first here = 5/5. Consistent with self-articulation-during-planning reactivating the rule \u2014 this is the separate second experiment above, not a result.",
   "items": [
     {
       "condition": "A",
