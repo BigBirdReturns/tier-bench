@@ -17,8 +17,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
-import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -27,6 +25,7 @@ REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
 
 from experiments.breadth.ledger import log_call  # noqa: E402
+from harness.hidden_grading import run_hidden_grader  # noqa: E402
 from harness.task_schema import Task  # noqa: E402
 from harness.validators import capture_behavior, validate_all  # noqa: E402
 
@@ -70,20 +69,19 @@ def main() -> int:
     )
 
     hidden_ok = True
+    hidden_timed_out = False
     if task.hidden_run_command:
-        for hf in (task.hidden_files or []):
-            shutil.copy2(REPO / task.fixture_dir / hf, repo / hf)
-        h = subprocess.run(task.hidden_run_command, cwd=str(repo), capture_output=True, text=True)
+        h = run_hidden_grader(task, repo, fixture_dir=REPO / task.fixture_dir)
         hidden_ok = (h.returncode == 0)
-        for hf in (task.hidden_files or []):
-            (repo / hf).unlink(missing_ok=True)
+        hidden_timed_out = h.timed_out
 
     outcome = "pass" if (v.pass_all and hidden_ok) else "fail"
     detail = {"compile_ok": v.compile_ok, "ruff_imports_ok": v.ruff_imports_ok,
               "functional_equivalence": v.functional_equivalence, "diff_lines": v.diff_lines,
               "changed_files": v.changed_files, "allowed_files_ok": v.allowed_files_ok,
               "max_lines_ok": v.max_lines_ok, "tests_ok": v.tests_ok,
-              "hidden_ok": hidden_ok, "after_rc": after[0]}
+              "hidden_ok": hidden_ok, "hidden_timed_out": hidden_timed_out,
+              "after_rc": after[0]}
     log_call(
         a.ledger,
         ts=datetime.now(timezone.utc).isoformat(timespec="seconds"),

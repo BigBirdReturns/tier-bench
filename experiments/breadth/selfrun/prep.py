@@ -22,6 +22,7 @@ REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
 
 from harness.prompting import render_prompt  # noqa: E402
+from harness.hidden_grading import fixture_copy_ignore  # noqa: E402
 from harness.task_schema import Task  # noqa: E402
 from harness.util_git import ensure_git_repo, git_commit_all  # noqa: E402
 from harness.validators import capture_behavior  # noqa: E402
@@ -47,7 +48,7 @@ def main() -> int:
             if tdir.exists():
                 shutil.rmtree(tdir)
             repo.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copytree(REPO / task.fixture_dir, repo)
+            shutil.copytree(REPO / task.fixture_dir, repo, ignore=fixture_copy_ignore)
             for hf in (task.hidden_files or []):
                 (repo / hf).unlink(missing_ok=True)
             ensure_git_repo(repo)
