@@ -1,0 +1,108 @@
+"""solution.py — wildcard pattern matcher.
+
+Rule commitment held from the scaffold packet (task02_wildcard):
+inside a character class, a backslash is a literal character, not an
+escape prefix. Escaping applies only outside classes.
+"""
+
+
+def _parse_class(pattern: str, i: int):
+    """Parse a character class starting just after '['.
+
+    Returns (chars_frozenset, negated, next_index).
+    Raises ValueError on unclosed class or a range with low > high.
+    """
+    n = len(pattern)
+    negated = False
+    chars = set()
+
+    if i < n and pattern[i] == "!":
+        negated = True
+        i += 1
+
+    first = True  # ']' as the first member is a literal
+    while True:
+        if i >= n:
+            raise ValueError("unclosed character class")
+        c = pattern[i]
+        if c == "]" and not first:
+            return frozenset(chars), negated, i + 1
+        first = False
+
+        # Range: current char, '-', and a following char that is not the
+        # closing ']' (a '-' at the edge is a literal).
+        if i + 2 < n and pattern[i + 1] == "-" and pattern[i + 2] != "]":
+            lo, hi = c, pattern[i + 2]
+            if ord(lo) > ord(hi):
+                raise ValueError(
+                    "malformed range %r-%r in character class" % (lo, hi)
+                )
+            for o in range(ord(lo), ord(hi) + 1):
+                chars.add(chr(o))
+            i += 3
+        else:
+            # Note: backslash lands here and is added as a literal member.
+            chars.add(c)
+            i += 1
+
+
+def _tokenize(pattern: str):
+    """Convert pattern to tokens; raises ValueError on any malformation."""
+    tokens = []
+    i, n = 0, len(pattern)
+    while i < n:
+        c = pattern[i]
+        if c == "\\":
+            if i + 1 >= n:
+                raise ValueError("trailing backslash in pattern")
+            tokens.append(("lit", pattern[i + 1]))
+            i += 2
+        elif c == "*":
+            # Collapse consecutive stars; they are equivalent to one.
+            if not tokens or tokens[-1][0] != "star":
+                tokens.append(("star", None))
+            i += 1
+        elif c == "?":
+            tokens.append(("one", None))
+            i += 1
+        elif c == "[":
+            chars, negated, i = _parse_class(pattern, i + 1)
+            tokens.append(("cls", (chars, negated)))
+        else:
+            tokens.append(("lit", c))
+            i += 1
+    return tokens
+
+
+def _match(tokens, word: str) -> bool:
+    """Full-string match of token list against word via bottom-up DP."""
+    m, n = len(tokens), len(word)
+    # dp[i][j] is True iff tokens[i:] matches word[j:]
+    dp = [[False] * (n + 1) for _ in range(m + 1)]
+    dp[m][n] = True
+
+    for i in range(m - 1, -1, -1):
+        kind, val = tokens[i]
+        for j in range(n, -1, -1):
+            if kind == "star":
+                # Match empty, or consume one char and stay on the star.
+                dp[i][j] = dp[i + 1][j] or (j < n and dp[i][j + 1])
+            elif j < n:
+                ch = word[j]
+                if kind == "lit":
+                    ok = ch == val
+                elif kind == "one":
+                    ok = True
+                else:  # 'cls'
+                    chars, negated = val
+                    ok = (ch in chars) != negated
+                dp[i][j] = ok and dp[i + 1][j + 1]
+            # else: pattern token remains but word exhausted -> False
+            # (only a star can match empty, handled above)
+    return dp[0][0]
+
+
+def count_matches(pattern: str, words: list[str]) -> int:
+    # Tokenize first: a malformed pattern must raise before any counting.
+    tokens = _tokenize(pattern)
+    return sum(1 for w in words if _match(tokens, w))

@@ -1,0 +1,105 @@
+```python
+def count_matches(pattern: str, words: list[str]) -> int:
+    tokens = _parse(pattern)
+    return sum(1 for w in words if _match(tokens, w))
+
+
+def _parse(pattern: str):
+    """Tokenize pattern; raise ValueError on any malformed pattern."""
+    tokens = []
+    i = 0
+    n = len(pattern)
+    while i < n:
+        c = pattern[i]
+        if c == '\\':
+            # escape applies OUTSIDE character classes only
+            if i + 1 >= n:
+                raise ValueError("trailing backslash")
+            tokens.append(('lit', pattern[i + 1]))
+            i += 2
+        elif c == '*':
+            tokens.append(('star',))
+            i += 1
+        elif c == '?':
+            tokens.append(('any',))
+            i += 1
+        elif c == '[':
+            i += 1
+            negated = False
+            if i < n and pattern[i] == '!':
+                negated = True
+                i += 1
+            # collect raw class content; ']' literal if first member;
+            # backslash inside a class is a LITERAL char, never an escape
+            content_start = i
+            if i < n and pattern[i] == ']':
+                i += 1  # literal ']' as first member
+            while i < n and pattern[i] != ']':
+                i += 1
+            if i >= n:
+                raise ValueError("unclosed character class")
+            content = pattern[content_start:i]
+            i += 1  # skip closing ']'
+            tokens.append(('class', negated, _parse_class(content)))
+        else:
+            tokens.append(('lit', c))
+            i += 1
+    return tokens
+
+
+def _parse_class(content: str) -> frozenset:
+    """Parse class body into a set of member chars. '-' literal at edges;
+    ranges by ASCII, low > high is malformed."""
+    members = set()
+    i = 0
+    n = len(content)
+    while i < n:
+        # range: X-Y where '-' is not at either edge
+        if i + 2 < n or (i + 2 == n and i + 1 < n and content[i + 1] == '-'):
+            pass  # (placeholder, logic below)
+        if i + 1 < n and content[i + 1] == '-' and i + 2 < n:
+            lo, hi = content[i], content[i + 2]
+            if ord(lo) > ord(hi):
+                raise ValueError("malformed range: low > high")
+            for code in range(ord(lo), ord(hi) + 1):
+                members.add(chr(code))
+            i += 3
+        else:
+            members.add(content[i])  # includes literal '\', '-' at edges
+            i += 1
+    return frozenset(members)
+
+
+def _match(tokens, word: str) -> bool:
+    """Recursive matching with memoization; '*' matches any sequence."""
+    from functools import lru_cache
+
+    @lru_cache(maxsize=None)
+    def rec(ti: int, wi: int) -> bool:
+        if ti == len(tokens):
+            return wi == len(word)
+        tok = tokens[ti]
+        kind = tok[0]
+        if kind == 'star':
+            # zero chars, or consume one char and stay on the star
+            if rec(ti + 1, wi):
+                return True
+            if wi < len(word) and rec(ti, wi + 1):
+                return True
+            return False
+        if wi >= len(word):
+            return False
+        ch = word[wi]
+        if kind == 'lit':
+            return ch == tok[1] and rec(ti + 1, wi + 1)
+        if kind == 'any':
+            return rec(ti + 1, wi + 1)
+        # character class
+        _, negated, members = tok
+        in_class = ch in members
+        if negated:
+            in_class = not in_class
+        return in_class and rec(ti + 1, wi + 1)
+
+    return rec(0, 0)
+```

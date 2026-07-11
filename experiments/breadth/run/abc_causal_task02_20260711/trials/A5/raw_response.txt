@@ -1,0 +1,120 @@
+```python
+"""solution.py — count how many words a wildcard pattern matches entirely.
+
+Rule commitment (held, not re-derived): inside a character class a backslash
+is a LITERAL character, not an escape prefix. Escapes apply only outside
+classes. All malformed-pattern detection happens at parse time, so a bad
+pattern raises ValueError before any word is examined.
+"""
+
+
+def _parse_class(pattern: str, i: int):
+    """Parse a character class starting just after '['.
+
+    Returns ((negate, frozenset_of_chars), index_after_closing_bracket).
+    Raises ValueError on unclosed class or a reversed range.
+    """
+    n = len(pattern)
+    negate = False
+    if i < n and pattern[i] == "!":
+        negate = True
+        i += 1
+
+    chars = set()
+    first = True  # ']' as the very first member is a literal
+    while True:
+        if i >= n:
+            raise ValueError("unclosed character class")
+        c = pattern[i]
+        if c == "]" and not first:
+            return (negate, frozenset(chars)), i + 1
+        first = False
+        # Range: c '-' d, where the '-' is not the trailing edge (next char
+        # not ']') and the range end exists inside the pattern.
+        if i + 2 < n and pattern[i + 1] == "-" and pattern[i + 2] != "]":
+            lo, hi = c, pattern[i + 2]
+            if ord(lo) > ord(hi):
+                raise ValueError(
+                    "malformed range %r-%r in character class" % (lo, hi)
+                )
+            for o in range(ord(lo), ord(hi) + 1):
+                chars.add(chr(o))
+            i += 3
+        else:
+            # Plain member. Covers literal '-' at either edge and literal
+            # backslash (in-class backslash is NOT an escape).
+            chars.add(c)
+            i += 1
+
+
+def _compile(pattern: str):
+    """Tokenize the pattern; raise ValueError if it is malformed.
+
+    Tokens: ('STAR',), ('Q',), ('LIT', ch), ('CLASS', negate, frozenset)
+    """
+    tokens = []
+    i = 0
+    n = len(pattern)
+    while i < n:
+        c = pattern[i]
+        if c == "*":
+            # Collapse runs of '*' — equivalent and keeps matching cheap.
+            if not (tokens and tokens[-1][0] == "STAR"):
+                tokens.append(("STAR",))
+            i += 1
+        elif c == "?":
+            tokens.append(("Q",))
+            i += 1
+        elif c == "\\":
+            if i + 1 >= n:
+                raise ValueError("trailing backslash in pattern")
+            tokens.append(("LIT", pattern[i + 1]))
+            i += 2
+        elif c == "[":
+            (negate, chars), i = _parse_class(pattern, i + 1)
+            tokens.append(("CLASS", negate, chars))
+        else:
+            tokens.append(("LIT", c))
+            i += 1
+    return tokens
+
+
+def _single_char_match(tok, ch: str) -> bool:
+    kind = tok[0]
+    if kind == "Q":
+        return True
+    if kind == "LIT":
+        return ch == tok[1]
+    if kind == "CLASS":
+        return (ch in tok[2]) != tok[1]
+    return False  # STAR is never a single-char matcher
+
+
+def _match(tokens, word: str) -> bool:
+    """Greedy star-backtracking match of the whole word."""
+    ti = wi = 0
+    star_ti = -1
+    star_wi = -1
+    tn, wn = len(tokens), len(word)
+    while wi < wn:
+        if ti < tn and tokens[ti][0] == "STAR":
+            star_ti, star_wi = ti, wi
+            ti += 1
+        elif ti < tn and _single_char_match(tokens[ti], word[wi]):
+            ti += 1
+            wi += 1
+        elif star_ti != -1:
+            star_wi += 1
+            wi = star_wi
+            ti = star_ti + 1
+        else:
+            return False
+    while ti < tn and tokens[ti][0] == "STAR":
+        ti += 1
+    return ti == tn
+
+
+def count_matches(pattern: str, words: list[str]) -> int:
+    tokens = _compile(pattern)  # ValueError propagates before any counting
+    return sum(1 for w in words if _match(tokens, w))
+```

@@ -1,0 +1,86 @@
+def _parse(pattern: str):
+    """Tokenize the wildcard pattern; raise ValueError on malformed input."""
+    tokens = []
+    i, n = 0, len(pattern)
+    while i < n:
+        c = pattern[i]
+        if c == '\\':
+            # Escape applies OUTSIDE character classes: next char is literal.
+            if i + 1 >= n:
+                raise ValueError("trailing backslash")
+            tokens.append(('lit', pattern[i + 1]))
+            i += 2
+        elif c == '*':
+            tokens.append(('star', None))
+            i += 1
+        elif c == '?':
+            tokens.append(('any', None))
+            i += 1
+        elif c == '[':
+            i += 1
+            neg = False
+            if i < n and pattern[i] == '!':
+                neg = True
+                i += 1
+            chars = set()
+            first = True
+            closed = False
+            while i < n:
+                ch = pattern[i]
+                if ch == ']' and not first:
+                    closed = True
+                    i += 1
+                    break
+                # Inside a class, backslash is a LITERAL member, never an
+                # escape prefix (committed rule interpretation).
+                if i + 2 < n and pattern[i + 1] == '-' and pattern[i + 2] != ']':
+                    low, high = ch, pattern[i + 2]
+                    if ord(low) > ord(high):
+                        raise ValueError("malformed range: low > high")
+                    for o in range(ord(low), ord(high) + 1):
+                        chars.add(chr(o))
+                    i += 3
+                else:
+                    # Covers ']' as first member, '-' at either edge,
+                    # backslash-as-literal, and plain members.
+                    chars.add(ch)
+                    i += 1
+                first = False
+            if not closed:
+                raise ValueError("unclosed character class")
+            tokens.append(('cls', (neg, frozenset(chars))))
+        else:
+            tokens.append(('lit', c))
+            i += 1
+    return tokens
+
+
+def _match(tokens, word: str) -> bool:
+    """Iterative DP: does tokens match word ENTIRELY?"""
+    nt, nw = len(tokens), len(word)
+    # dp[ti][wi] == True iff tokens[ti:] matches word[wi:]
+    dp = [[False] * (nw + 1) for _ in range(nt + 1)]
+    dp[nt][nw] = True
+    for ti in range(nt - 1, -1, -1):
+        kind, val = tokens[ti]
+        for wi in range(nw, -1, -1):
+            if kind == 'star':
+                r = dp[ti + 1][wi] or (wi < nw and dp[ti][wi + 1])
+            elif wi >= nw:
+                r = False
+            elif kind == 'any':
+                r = dp[ti + 1][wi + 1]
+            elif kind == 'lit':
+                r = (word[wi] == val) and dp[ti + 1][wi + 1]
+            else:  # 'cls'
+                neg, chars = val
+                r = ((word[wi] in chars) != neg) and dp[ti + 1][wi + 1]
+            dp[ti][wi] = r
+    return dp[0][0]
+
+
+def count_matches(pattern: str, words: list[str]) -> int:
+    # Parse once up front: a malformed pattern raises ValueError and
+    # never returns a count.
+    tokens = _parse(pattern)
+    return sum(1 for w in words if _match(tokens, w))

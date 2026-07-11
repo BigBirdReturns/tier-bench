@@ -1,0 +1,8 @@
+{
+ "label": "A3",
+ "candidate_sha256": "1700cc5787327168287b39be3e635963fd261166a1c5dbd0ab1c2a07f953fb2e",
+ "raw_sha256": "8dd570bda41bab4ecb422db654c22a6422841ddb791664426eb509442016a3fb",
+ "grade": "SCORE 10/10",
+ "deterministic": true,
+ "grader_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+}
