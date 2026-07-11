@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -24,6 +23,7 @@ REPO = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(REPO))
 
 from experiments.breadth.ledger import log_call  # noqa: E402
+from harness.hidden_grading import run_hidden_grader  # noqa: E402
 from harness.task_schema import Task  # noqa: E402
 from harness.validators import capture_behavior, validate_all  # noqa: E402
 
@@ -85,13 +85,11 @@ def main() -> int:
             before=(b["rc"], b["stdout"], b["stderr"]), after=after,
         )
         hidden_ok = True
+        hidden_timed_out = False
         if task.hidden_run_command:
-            for hf in (task.hidden_files or []):
-                shutil.copy2(REPO / task.fixture_dir / hf, repo / hf)
-            h = subprocess.run(task.hidden_run_command, cwd=str(repo), capture_output=True, text=True)
+            h = run_hidden_grader(task, repo, fixture_dir=REPO / task.fixture_dir)
             hidden_ok = (h.returncode == 0)
-            for hf in (task.hidden_files or []):
-                (repo / hf).unlink(missing_ok=True)
+            hidden_timed_out = h.timed_out
 
         outcome = "error" if r.get("is_error") else ("pass" if (v.pass_all and hidden_ok) else "fail")
         row = log_call(
@@ -107,7 +105,8 @@ def main() -> int:
             latency_ms=float(r.get("duration_ms", 0.0)), trial=k,
             note="nested claude CLI solve; cost_usd is REAL billed cost, tokens exact incl. cache splits",
             validators={"diff_lines": v.diff_lines, "tests_ok": v.tests_ok,
-                        "hidden_ok": hidden_ok, "after_rc": after[0]},
+                        "hidden_ok": hidden_ok, "hidden_timed_out": hidden_timed_out,
+                        "after_rc": after[0]},
             cli={"num_turns": r.get("num_turns"), "stop_reason": r.get("stop_reason")},
         )
         print(json.dumps({"task_id": a.task_id, "trial": k, "outcome": outcome,

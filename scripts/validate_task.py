@@ -27,6 +27,14 @@ VALID_VALIDATE_FLAGS = {"compile", "ruff_imports", "functional_equivalence", "te
 TEMPLATE_VARS = {"{target_relpath}", "{file_content}", "{baseline_rc}",
                  "{baseline_stdout}", "{baseline_stderr}", "{context_files}"}
 
+# These landed before the tier-prefix contribution rule and already have sealed
+# receipts keyed by their opaque-stable IDs. New tasks still must use tN_*.
+LEGACY_STABLE_TASK_IDS = {
+    "almanac_exception_class_001",
+    "almanac_record_binding_001",
+    "almanac_rule_boundary_001",
+}
+
 
 def validate_task(path: Path) -> list[str]:
     """Returns list of problems. Empty list = valid."""
@@ -55,7 +63,7 @@ def validate_task(path: Path) -> list[str]:
     # 4. Task ID convention: must start with tier prefix
     task_id = raw["task_id"]
     expected_prefix = tier.lower() + "_"
-    if not task_id.startswith(expected_prefix):
+    if not task_id.startswith(expected_prefix) and task_id not in LEGACY_STABLE_TASK_IDS:
         problems.append(f"task_id '{task_id}' should start with '{expected_prefix}'")
 
     # 5. Fixture directory exists
@@ -142,12 +150,12 @@ def main():
     for f in files:
         problems = validate_task(f)
         if problems:
-            print(f"\n❌ {f.name}")
+            print(f"\nFAIL {f.name}")
             for p in problems:
                 print(f"   {p}")
             total_problems += len(problems)
         else:
-            print(f"✓ {f.name}")
+            print(f"OK   {f.name}")
 
     print(f"\n{len(files)} tasks checked, {total_problems} problems found.")
     return 1 if total_problems > 0 else 0

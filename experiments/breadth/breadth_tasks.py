@@ -31,6 +31,61 @@ UPLIFT = REPO / "experiments" / "tier-uplift"
 HIDDEN_GRADER_NAMES = ("hidden_tests.py", "hidden_oracle.py", "grader.py")
 
 
+def hidden_grading_problems(manifest: str | Path, repo_root: Path = REPO) -> list[str]:
+    """Return contract defects that prevent a manifest being called hidden-graded.
+
+    Declarations are not evidence by themselves: the withheld files must be real,
+    outside the solver-editable surface, and consumed by the deciding command.
+    """
+    import json
+
+    path = Path(manifest)
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return [f"manifest cannot be read: {exc}"]
+
+    hidden_files = raw.get("hidden_files")
+    hidden_command = raw.get("hidden_run_command")
+    if not isinstance(hidden_files, list) or not hidden_files:
+        return ["hidden_files must be a non-empty list"]
+    if not isinstance(hidden_command, list) or not hidden_command:
+        return ["hidden_run_command must be a non-empty list"]
+    if not all(isinstance(value, str) and value for value in hidden_files):
+        return ["every hidden_files entry must be a non-empty string"]
+    if not all(isinstance(value, str) and value for value in hidden_command):
+        return ["every hidden_run_command entry must be a non-empty string"]
+
+    fixture = Path(raw.get("fixture_dir", ""))
+    if not fixture.is_absolute():
+        fixture = repo_root / fixture
+    fixture = fixture.resolve()
+    problems: list[str] = []
+    normalized_hidden: set[str] = set()
+    for value in hidden_files:
+        hidden_path = (fixture / value).resolve()
+        try:
+            relative = hidden_path.relative_to(fixture).as_posix()
+        except ValueError:
+            problems.append(f"hidden file escapes fixture_dir: {value}")
+            continue
+        normalized_hidden.add(relative)
+        if not hidden_path.is_file():
+            problems.append(f"hidden file is not a regular file: {value}")
+
+    target = Path(str(raw.get("target_relpath", ""))).as_posix().lstrip("./")
+    editable = {Path(str(value)).as_posix().lstrip("./")
+                for value in raw.get("allowed_files", []) if isinstance(value, str)}
+    for relative in normalized_hidden:
+        if relative == target or relative in editable:
+            problems.append(f"hidden file is solver-editable: {relative}")
+
+    command_paths = {Path(value).as_posix().lstrip("./") for value in hidden_command}
+    if normalized_hidden and normalized_hidden.isdisjoint(command_paths):
+        problems.append("hidden_run_command does not consume a declared hidden file")
+    return problems
+
+
 def breadth_valid_tasks(root: Path = UPLIFT) -> list[dict]:
     """Tier-uplift tasks that ship a hidden grader — the only ones valid for
     capability breadth-mapping."""
@@ -53,14 +108,9 @@ def is_gameable(manifest_or_dir: str | Path) -> bool:
     the solver's working copy and prompt, and injects them only at grade time
     (harness/task_schema.py + harness/attempt.py). Manifests without those
     fields grade with the file the solver edits/runs — answer-key theatre."""
-    import json
     p = Path(manifest_or_dir)
     if p.suffix == ".json":
-        try:
-            raw = json.loads(p.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return True
-        return not (raw.get("hidden_files") and raw.get("hidden_run_command"))
+        return bool(hidden_grading_problems(p))
     if p.is_dir():
         return not any((p / n).exists() for n in HIDDEN_GRADER_NAMES)
     return True

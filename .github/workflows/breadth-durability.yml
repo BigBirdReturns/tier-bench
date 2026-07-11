@@ -20,7 +20,9 @@ jobs:
             harness/*.py experiments/almanac/reference/*.py experiments/breadth/edge_family/*.py \
             scripts/validate_primitives.py tests/test_validate_primitives.py
       - name: valid task set prints (hidden-grader guard)
-        run: python experiments/breadth/breadth_tasks.py
+        run: |
+          python experiments/breadth/breadth_tasks.py
+          python scripts/validate_task.py tasks
       - name: grade->ledger->map spine ($0)
         run: python experiments/breadth/smoke.py
       - name: UI-capture lane end-to-end ($0, temp files)

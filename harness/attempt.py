@@ -7,6 +7,7 @@ from typing import Optional
 
 from cost_guard import Tier
 from harness.canonical import compare_to_canonical, save_canonical
+from harness.hidden_grading import fixture_copy_ignore, run_hidden_grader
 from harness.model_call import call_with_guard
 from harness.prompting import render_prompt
 from harness.task_schema import Task
@@ -36,7 +37,8 @@ def run_attempt(
     """
     with tempfile.TemporaryDirectory(prefix=f"{task.task_id}__") as td:
         work = Path(td)
-        shutil.copytree(task.fixture_dir, work / "repo", dirs_exist_ok=True)
+        shutil.copytree(task.fixture_dir, work / "repo", dirs_exist_ok=True,
+                        ignore=fixture_copy_ignore)
         repo = work / "repo"
 
         # Hidden graders never enter the solver's copy (or the rendered prompt):
@@ -129,14 +131,11 @@ def run_attempt(
         # iterate-until-green against a visible grader.
         hidden_ok = True
         if task.hidden_run_command:
-            import subprocess
-            for hf in (task.hidden_files or []):
-                shutil.copy2(task.fixture_dir / hf, repo / hf)
-            h = subprocess.run(task.hidden_run_command, cwd=str(repo),
-                               capture_output=True, text=True)
+            h = run_hidden_grader(task, repo)
             hidden_ok = (h.returncode == 0)
             row["hidden_ok"] = hidden_ok
             row["hidden_rc"] = h.returncode
+            row["hidden_timed_out"] = h.timed_out
 
         # Pass criteria: deterministic checks + (canonical only enforced for T0)
         if _tier_requires_canonical(tier):
