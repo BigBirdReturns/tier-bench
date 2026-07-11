@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_exception_class_001",
+  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "manifest_path": "tasks/almanac_exception_class_001.json",
+  "manifest_sha256": "392dd0d1a5d4c2bff7e5d69b29a506f7816b10f106a14f490d47183df0b9fb4f",
+  "packet_sha256": "6d933131198f1bdec555d8f0c3ee9dcb507a3e6d980376bc43016f60bd5fbfb4",
+  "prompt_sha256": "b43f74c08b2678c1295145ea97361ce51ca9db15103c4aa0588d999a955815e6",
+  "hidden_graders": [
+    {
+      "path": "fixtures/almanac_exception_class_001/hidden_tests.py",
+      "sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc"
+    }
+  ],
+  "solver_scope": "/tmp/claude-0/-home-user-tier-bench/ee416fa5-6990-5bbb-9752-cd11ec67233d/scratchpad/claude_floor_run/almanac_exception_class_001/solver",
+  "peer_conclusions_included": false
+}

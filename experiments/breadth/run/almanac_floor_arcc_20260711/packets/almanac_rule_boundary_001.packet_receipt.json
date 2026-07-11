@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_rule_boundary_001",
+  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "manifest_path": "tasks/almanac_rule_boundary_001.json",
+  "manifest_sha256": "0e7c6760c3c88e0501363fe1ea6dd9cfa0f8aed5cec7174f9f69b9571c8be446",
+  "packet_sha256": "1d5d3745c6ecd3c365473d41b81a970a76f3b2f508734ace8754593761276d9e",
+  "prompt_sha256": "063a6f3ef827c894254c97bac64de6717ba431ff1a749b32dbb49ccf125db5f8",
+  "hidden_graders": [
+    {
+      "path": "fixtures/almanac_rule_boundary_001/hidden_tests.py",
+      "sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304"
+    }
+  ],
+  "solver_scope": "/tmp/claude-0/-home-user-tier-bench/ee416fa5-6990-5bbb-9752-cd11ec67233d/scratchpad/claude_floor_run/almanac_rule_boundary_001/solver",
+  "peer_conclusions_included": false
+}
