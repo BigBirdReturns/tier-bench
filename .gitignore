@@ -51,3 +51,7 @@ Thumbs.db
 # Generated cheatsheet (rebuilt by CI)
 cheatsheet.html
 /index.html
+
+# Local-only working area — holds the private blind-grade control key
+# (tmp/blind-control-runs/.../control_key.json) that must never be committed.
+tmp/
