@@ -125,6 +125,41 @@ identity is reconciled and Sol's broker lands.
 - **No waterline or capture-ledger writes.** This is a run record under
   `experiments/breadth/run/`, not a settled-tier or amortization claim.
 
+## Addendum (2026-07-12) — fable-low escalation clears the residual
+
+Per the roadmap's own rule ("one attempt per tier; if it fails, escalate; do
+not retry") and the residue-broker's effort ladder, `almanac_rule_boundary_001`
+was escalated one rung from the haiku floor (2/3, did not clear) to
+**fable-low** (K=3, same sealed packet, same hidden grader, same worktree
+pinned at `e416462`).
+
+**Result: 3/3 — clears K-of-K.** See
+`escalation_fable_low/almanac_rule_boundary_001/{f1,f2,f3}/` and
+`escalation_fable_low/receipt.json`. All three candidates handle the lichun
+boundary correctly (each with a different, independently-derived boundary
+test), unlike the haiku floor's r3, which used a civil-month proxy. Sealed
+(sha256) before grading; all three seals match their graded hashes; hidden
+grader run twice per candidate, fully deterministic.
+
+**This closes the one open task-level gap from the floor run**, purely at the
+Claude-lineage effort-ladder level: `exception_class` and `record_binding`
+clear at floor, `rule_boundary` clears at fable-low. It does **not** change
+either protocol finding above (packet non-reproducibility; the Sol pairing
+still names `claude_fable_5` as the peer, and the ARC-C schema/broker/
+comparator still only exist on `codex/arc-c-residue-broker`) — those are
+identity/tooling gaps, not capability gaps, and this run doesn't touch them.
+
+**Secondary purpose:** this batch was also run to put real Fable token data
+into `experiments/breadth/quota.py`'s gauge, which previously had haiku-only
+numbers. Measured: ~15.4k new tokens/trial for fable-low on this task (first
+call pays a ~46k cache-write, the other two hit cache-read on the same prompt
+— so amortized cost per trial after the first is small). Logged to
+`escalation_fable_low/ledger.jsonl` and appended to
+`experiments/breadth/run/burn_log.jsonl`. The combined haiku+fable burn log
+still contains **zero recorded `limit_hit` events**, so the quota gauge
+honestly remains `UNMEASURED` — this adds real per-trial cost data, not a
+quota number, which per `quota.py`'s design can only come from an actual wall.
+
 ## Burden note (docs/burden-discipline.md)
 
 ```text
@@ -135,7 +170,7 @@ predicates: candidates sealed before grading (9/9 seal==graded); hidden graders 
 burden_holder: this directory (experiments/breadth/run/almanac_floor_arcc_20260711)
 evidence: receipt.json, trials/*/{candidate.py,grader_outputs.json,grade_receipt.json}, seals reproduced per grade_receipt
 verifier: scripts/grade_solver_packet.py (rerun-verifiable at e416462); cross-check against experiments/breadth/run/almanac_floor_20260710 (prior Claude haiku floor, rule_boundary 1/3)
-gap: not a schema-sealed pair — Claude peer identity (haiku vs Sol's declared claude_fable_5) unreconciled AND rule_boundary escalates at floor (partial, not sealed); comparator would return unpaired
+gap: not a schema-sealed pair — Claude peer identity (haiku vs Sol's declared claude_fable_5) unreconciled; comparator would return unpaired. Task-level gap (rule_boundary not clearing K-of-K) is CLOSED by the 2026-07-12 addendum — fable-low clears 3/3 — but that escalation ran outside the ARC-C schema/broker (which only exists on codex/arc-c-residue-broker) so it does not itself produce a sealable orchestration_run.json row
 closure_decision: partial
-failure_default: keep_open — the pair does not seal until the reserved fable-5 floor run lands and Sol's ARC-C broker is merged
+failure_default: keep_open — the pair does not seal until Sol's ARC-C broker merges and a schema-valid run (fable-5, per the declared peer identity) is produced against it
 ```
