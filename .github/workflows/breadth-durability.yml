@@ -60,6 +60,12 @@ jobs:
         run: |
           python -m py_compile tests/test_quota.py
           python tests/test_quota.py
+      - name: OSS replay field — licenses, vendored bytes, hidden grading, distinct-instance rule; vectors match vendored upstream
+        run: |
+          python -m py_compile scripts/validate_oss_replay_field.py experiments/oss_replay/generate_vectors.py tests/test_oss_replay_field.py
+          python scripts/validate_oss_replay_field.py
+          python experiments/oss_replay/generate_vectors.py --check
+          python tests/test_oss_replay_field.py
       - name: ARC-C residue broker contract (floor-first; no self-grading)
         run: |
           python -m py_compile experiments/breadth/residue_broker.py scripts/validate_orchestration_run.py scripts/export_solver_packet.py scripts/extract_codex_rollout_response.py scripts/grade_solver_packet.py scripts/ingest_engine_trial.py scripts/compare_engine_runs.py tests/test_residue_broker.py tests/test_export_solver_packet.py tests/test_extract_codex_rollout_response.py tests/test_grade_solver_packet.py tests/test_compare_engine_runs.py tests/test_orchestration_clone_integrity.py

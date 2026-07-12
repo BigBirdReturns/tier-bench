@@ -1,0 +1,49 @@
+{
+  "task_id": "t2_ossrf_fnmatch_charclass",
+  "tier": "T2",
+  "prompt_template": "Task: Implement the function specified in the docstring of {target_relpath} exactly.\n\nRules:\n- Return ONLY the full updated content for {target_relpath}.\n- Do not add commentary.\n- Make the program print OK and exit 0 when run.\n- The docstring spec is the contract: EVERY rule in it is graded, including cases the visible checks in main() do not exercise. Implement the spec, not just the sample checks.\n- Do not modify any file outside {target_relpath}.\n\nCurrent file content:\n{file_content}\n\nBaseline run (before edits):\nexit={baseline_rc}\nstdout:\n{baseline_stdout}\nstderr:\n{baseline_stderr}\n\nOther files in fixture (read-only context):\n{context_files}\n",
+  "fixture_dir": "fixtures/t2_ossrf_fnmatch_charclass",
+  "target_relpath": "input.py",
+  "run_command": [
+    "python",
+    "input.py"
+  ],
+  "validate": {
+    "compile": true,
+    "ruff_imports": false,
+    "functional_equivalence": false,
+    "tests": true
+  },
+  "max_lines_changed": 250,
+  "allowed_files": [
+    "input.py"
+  ],
+  "hidden_files": [
+    "hidden_tests.py"
+  ],
+  "hidden_run_command": [
+    "python",
+    "hidden_tests.py"
+  ],
+  "knot_type": "escape_class_boundary",
+  "description": "OSS replay field entry: CPython v3.12.0 fnmatch.translate character-class rules (the task02 escape-class grammar in the wild) — backslash-literal-in-class, literal-first ']', unterminated fallback, hyphen chunking, invalid-range merging",
+  "source_basis": [
+    {
+      "primitive_id": "black_letter_axm",
+      "supports": "the spec is a complete transcription of shipping upstream rules; the knot is exact APPLICATION, not missing rules"
+    },
+    {
+      "primitive_id": "proof_knot",
+      "supports": "backslash-inside-class and the '[!]'-is-unterminated interaction feel underdetermined; the rules determine them; hidden vectors decide"
+    },
+    {
+      "primitive_id": "hidden_grading",
+      "supports": "deciding vectors are stripped from the solver's working copy and prompt"
+    },
+    {
+      "primitive_id": "capture_ledger",
+      "supports": "distinct real-world instance of the captured task02 escape-class grammar; see data/oss_replay/field.jsonl entry ossrf_fnmatch_charclass_001"
+    }
+  ],
+  "vector_provenance": "expected values derived from the vendored CPython v3.12.0 Lib/fnmatch.py (data/oss_replay/upstream/cpython_fnmatch_v3.12.0/, PSF-2.0, tag commit 0fb6e700c2f9) by experiments/oss_replay/generate_vectors.py; CI --check proves splice equivalence with upstream translate on a 38-pattern corpus, proves the naive escape-inside-class implementation still fails, and guards baked-vector drift"
+}

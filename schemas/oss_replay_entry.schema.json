@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/oss_replay_entry.schema.json",
+  "title": "OSS replay field entry",
+  "description": "One real-world work item admitted to the OSS replay field: a task derived from pinned open-source code where a captured knot grammar can be replayed for capture-ledger credit. scripts/validate_oss_replay_field.py enforces the cross-file rules (license allowlist, vendored-byte hashes, hidden grading, capture linkage, distinct-instance uniqueness, replay receipts).",
+  "type": "object",
+  "required": ["record_type", "entry_id", "status", "upstream", "task_manifest", "capture_links", "admission", "replays"],
+  "additionalProperties": false,
+  "properties": {
+    "record_type": {"const": "oss_replay_entry"},
+    "entry_id": {"type": "string", "pattern": "^ossrf_[a-z0-9_]+$"},
+    "status": {"enum": ["candidate", "admitted", "replayed", "retired"]},
+    "upstream": {
+      "type": "object",
+      "required": ["project", "repo_url", "file", "ref", "ref_commit", "license", "vendored_dir", "sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "project": {"type": "string", "minLength": 1},
+        "repo_url": {"type": "string", "pattern": "^https://"},
+        "file": {"type": "string", "minLength": 1},
+        "ref": {"type": "string", "minLength": 1},
+        "ref_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "license": {"type": "string", "minLength": 1},
+        "vendored_dir": {"type": "string", "minLength": 1},
+        "sha256": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "task_manifest": {"type": "string", "pattern": "^tasks/.+\\.json$"},
+    "capture_links": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["capture_id", "relation", "distinct_work_item_id"],
+        "additionalProperties": false,
+        "properties": {
+          "capture_id": {"type": "string", "minLength": 1},
+          "relation": {"type": "string", "minLength": 1},
+          "distinct_work_item_id": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "admission": {
+      "type": "object",
+      "required": ["license_allowlisted", "pii", "determinism", "vendored_bytes_verified"],
+      "additionalProperties": false,
+      "properties": {
+        "license_allowlisted": {"type": "boolean"},
+        "pii": {"type": "string", "minLength": 1},
+        "determinism": {"type": "string", "minLength": 1},
+        "vendored_bytes_verified": {"type": "boolean"}
+      }
+    },
+    "replays": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["receipt_path", "outcome"],
+        "additionalProperties": false,
+        "properties": {
+          "receipt_path": {"type": "string", "minLength": 1},
+          "outcome": {"enum": ["validated", "spoiled", "partial"]}
+        }
+      }
+    },
+    "note": {"type": "string"}
+  }
+}

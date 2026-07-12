@@ -1,0 +1,19 @@
+{
+  "project": "cpython",
+  "upstream_repo": "https://github.com/python/cpython",
+  "file": "Lib/fnmatch.py",
+  "ref": "v3.12.0",
+  "ref_kind": "release tag",
+  "tag_commit": "0fb6e700c2f94ae0717ee1be7d4e50b2dd480d14",
+  "tag_commit_source": "git ls-remote https://github.com/python/cpython.git refs/tags/v3.12.0 (2026-07-12)",
+  "fetched_from": "https://raw.githubusercontent.com/python/cpython/v3.12.0/Lib/fnmatch.py",
+  "fetched_on": "2026-07-12",
+  "sha256": {
+    "fnmatch.py": "6683da36e47af523f3f41e18ad244d837783e19e98911cc0b7415dea81494ebc",
+    "LICENSE": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+  },
+  "license": "PSF-2.0",
+  "license_file": "LICENSE (fetched from https://raw.githubusercontent.com/python/cpython/v3.12.0/LICENSE)",
+  "purpose": "reference implementation for the ossrf_fnmatch_charclass_001 OSS replay entry; vector source for the hidden grader via experiments/oss_replay/generate_vectors.py (CI drift guard). Never shipped inside a solver packet.",
+  "modifications": "none — exact upstream bytes"
+}
