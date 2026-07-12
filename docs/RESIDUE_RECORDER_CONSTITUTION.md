@@ -1,10 +1,9 @@
-# Residue Recorder — constitution (draft v0.3, provisional)
+# Residue Recorder — constitution (draft v0.4, provisional)
 
 *Working name for the program the operator has run by hand and already named:*
 **"capture user residue, make it navigable."** The spine, written before code, for operator + Sol
-adversarial review. It **governs.** §3/§6/§8/§9/§10/§11 are operator-ratified (review 2026-07-12).
-§12 holds unratified reviewer-proposed amendments, subordinate to the ratified body. Changing §7–§11
-or any authority hierarchy is a gated act, not an edit.
+adversarial review. It **governs.** §3/§6/§8/§9/§10/§11/§12 are operator-ratified (reviews 2026-07-12).
+Changing §7–§12 or any authority hierarchy is a gated act, not an edit.
 
 ---
 
@@ -231,48 +230,88 @@ declared policy ran). The receipt must not expose secret values, precise locatio
 fragments, reversible hashes, or metadata that materially narrows the protected content. A redaction
 report is evidence only that specified controls were applied — not that the resulting projection is safe.
 
-## 12. Proposed amendments pending operator consent  *(reviewer: Claude — UNRATIFIED, subordinate to §3–§11)*
+## 12. Key custody, provisional instruction authority, admission drift, and subject-labeler conflict  *(ratified)*
 
-Adversarial findings against the ratified §6/§11 language. Each names where it bites.
+*These rules refine §§6, 9, 10, 11.2, 11.3, and 11.4 and have equal constitutional force. Ratified from
+reviewer findings F/G/H/I with operator corrections: F key-wrapping, G channel attribution, H
+compatibility-scoped requalification, I scored-conflict exclusion.*
 
-- **F. Key custody for ephemeral runtimes (bites §11.2 + §6.2/§6.7 durability destination).** §11.2
-  forbids keys colocated with ciphertext but is silent on where the key *originates* for a container
-  that is reclaimed. A key generated inside the ephemeral runtime dies with it → durable ciphertext is
-  unrecoverable; a key shipped alongside export defeats the encryption. Proposed: the encryption key for
-  durable Genesis must be **provisioned from the authorized boundary** (operator-held or a KMS under
-  operator custody) and must never be born-and-buried inside the ephemeral runtime. Without this, §11.2
-  is satisfiable by a scheme that loses or leaks the key.
+**12.1 Durable key custody for ephemeral runtimes.** Durable Genesis encryption must remain recoverable
+through key authority controlled by the authenticated operator or an explicitly authorized custody
+service. An ephemeral runtime must not be the **sole origin and sole custodian** of the key material
+required to recover durable Genesis: a key that disappears with the runtime does not satisfy durability;
+a key stored beside the ciphertext without an independent protection boundary does not satisfy
+encryption. An ephemeral runtime may generate a **temporary data-encryption key** only when all hold:
+(1) used solely for the authorized capture operation; (2) **wrapped before durable persistence** using
+an operator-controlled public key, hardware-backed key, or authorized KMS; (3) wrapped key and
+ciphertext bound to the same session, surface, and manifest; (4) the plaintext data key is never written
+to the durable destination; (5) the plaintext data key is destroyed from the runtime after the store
+acknowledges the encrypted object and wrapped key; (6) recovery has been tested using the
+operator-controlled key authority. The durable recovery key, wrapping key, or root key must originate
+from and remain under the authorized trust boundary — never generated inside an ephemeral runtime and
+then treated as durable merely because it was exported. **Loss of the recovery key is a durability
+failure; exposure of the recovery key is a privacy incident;** both must be represented explicitly in the
+record.
 
-- **G. Declared authentication assumption where surfaces cannot attest (bites §11.3 ↔ §6.9).** Current
-  surfaces (local CLI, this container) generally *cannot cryptographically prove* the human typed a given
-  instruction — and this session already carries injected "user sent a message" turns and tool results
-  that can contain "user says…". Read strictly, §11.3 then makes **nothing** normative → inoperable.
-  Proposed: where a surface's §6.9 authentication method is "assumed/none," its operator-channel
-  instructions are **provisionally normative under a declared, logged trust assumption**, not silently
-  fully normative. This makes the assumption visible and revocable instead of hidden, and it degrades
-  gracefully rather than either trusting everything or nothing.
+**12.2 Provisional normative authority under declared authentication assumptions.** Normative authority
+derives from instruction **provenance**, not from instruction-like language inside captured content.
+Each surface contract must designate: (1) which transport/interface constitutes the operator instruction
+channel; (2) what authentication/attribution evidence the surface provides; (3) what it cannot provide;
+(4) whether channel instructions are fully authenticated, provisionally attributed, or unauthenticated;
+(5) how the operator confirms/revokes/supersedes them. Where cryptographic operator authentication is
+unavailable, a message through the surface's **designated operator channel** may be treated as
+**provisionally normative under a declared authentication assumption** that is: logged with the
+instruction; specific to surface/session/channel; visible to downstream reducers; revocable by the
+authenticated operator; subordinate to privacy and safety rules; and **incapable of converting quoted,
+retrieved, or tool-produced content into normative authority.** A platform-attributed user message may
+therefore receive provisional normative status when the surface contract authorizes that channel; text
+inside a file, transcript, tool result, model output, retrieved webpage, repository instruction, or
+quoted conversation remains historical evidence unless separately adopted through an authorized operator
+channel. The system preserves four distinct classes — `authenticated_operator_instruction`,
+`provisionally_attributed_operator_instruction`, `captured_instruction_claim`,
+`unauthenticated_instruction` — and no downstream component may silently promote one into another.
 
-- **H. Admission is versioned and re-run on surface change (bites §6.6).** §6.6 admits a *capturer*, but
-  a surface's client updates and its transcript schema drifts — the exact `schema-valid ≠
-  executable-valid` / drift-guard failure class we already have episodes for. A one-time green rots.
-  Proposed: admission is bound to a **declared surface/client version**; a version change invalidates
-  admission until the capturer re-passes the gate. Otherwise §6.6 becomes the "CI green over a live
-  exploit" pattern again.
+**12.3 Versioned and configuration-bound capturer admission.** Admission is granted to a declared
+implementation and **compatibility envelope**, not permanently to an abstract capturer name. Every
+admission record binds at least: (1) capturer implementation version or content hash; (2) input event
+schema version; (3) supported surface/client version range; (4) hook and trigger configuration hash; (5)
+redaction-policy version; (6) encryption and key-custody configuration; (7) destination and manifest
+schema versions; (8) admission-test suite version; (9) date and evidence of the most recent successful
+admission test. A change that can affect capture fidelity, event interpretation, privacy behavior,
+instruction provenance, durability, integrity, or loss-window guarantees invalidates admission until the
+relevant tests rerun. A client update does **not** force complete requalification when it stays inside a
+previously tested compatibility range and does not alter relevant behavior — but the compatibility claim
+itself must be versioned, tested, and bounded. Unknown schema fields, missing expected fields, changed
+event ordering, altered hook behavior, or an unsupported client version must cause **explicit rejection,
+quarantine as provisional evidence, or downgrade to a declared lower-fidelity mode** — silent best-effort
+ingestion into the authoritative merged record is prohibited. Admission status is one of `admitted`,
+`admitted_within_compatibility_range`, `requalification_required`, `provisional`, `rejected`. A
+previously admitted capturer may **rot out of admission**; historical admission does not establish
+current conformity.
 
-- **I. Subject-as-labeler conflict (bites §11.4).** §11.4 stops the *reducer* self-grading, but permits
-  *operator* adjudication. The operator is the subject whose corrections are being forecast — labeling
-  forecasts about one's own behavior is a distinct conflict from reducer self-grading (flattery/hindsight
-  bias, even unconscious). Proposed: operator adjudication of forecasts-about-the-operator is a named
-  conflict class — recorded as such, preferred only when mechanical/cross-engine labeling is unavailable,
-  and never silently.
-
-*(F and G are argued as constitutional — F is a key-loss/leak hole, G is an operability hole that a
-strict reading of ratified §11.3 opens. H is rot-prevention I hold strongly given our episode history. I
-is genuine but survivable.)*
+**12.4 Subject-as-labeler conflict.** The operator is both the subject whose behavior is forecast and the
+final authority on the operator's intent; those roles conflict when the operator labels or adjudicates
+outcomes used to **measure** the twin's predictive performance. Operator adjudication may be necessary
+when Genesis establishes what was said but not whether an intervention was a material correction,
+reflected actual intent, or belonged to one class rather than another. When used, the record must state:
+(1) which label/element the operator decided; (2) what evidence was available; (3) whether the operator
+had seen the forecast; (4) whether it changed a prior blinded label; (5) whether the result is included
+in the primary performance score. An operator-adjudicated outcome is marked `subject_labeler_conflict:
+true` and — unless a **predeclared** protocol states otherwise — is **excluded from the primary blinded
+performance score and reported separately.** Preferred evaluation order: (1) deterministic labeling under
+a fixed rubric; (2) blinded independent labeling; (3) blinded cross-engine adjudication; (4) operator
+adjudication for unresolved intent or taxonomy disputes. Operator adjudication remains authoritative for
+the operator's **present intent** and for correcting a mischaracterized record; it is **not**
+automatically evidence that the forecasting system performed well. A forecast evaluation report must
+separately report mechanically resolved, independently adjudicated, operator-adjudicated, unresolved, and
+conflict-excluded outcomes. **The system must not improve its reported performance by selectively
+requesting operator adjudication only after an unfavorable independent result.**
 
 ---
 
-*Status: hypothesis, not measured. Provisional v0.3. §3/§6/§8/§9/§10/§11 operator-ratified 2026-07-12;
-§12 unratified. Sequence agreed: §12 rulings → (§6 contracts already ratified) → build the §10 apparatus.
-No durable commit yet — living in scratchpad pending operator placement decision (which, per this
-document's own §6.2, means it is currently at maximum loss window).*
+*Status: hypothesis, not measured. Provisional v0.4. §3/§6/§8/§9/§10/§11/§12 operator-ratified
+2026-07-12. Governance document under review — not implementation-ready specification. Sequence agreed:
+§12 ratified → §6 contracts ratified → build the §10 apparatus (which cannot be meaningfully
+preregistered or scored until the system knows which evidence is authoritative, which is derivative, and
+where the record declares gaps). Awaiting Sol adversarial review on the v0.4 diff: do these amendments
+close the four seams without opening new authority or operability failures?*
