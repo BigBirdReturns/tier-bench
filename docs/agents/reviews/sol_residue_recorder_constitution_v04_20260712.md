@@ -1,10 +1,14 @@
 # SOL-4 adversarial review — Residue Recorder constitution v0.3 → v0.4
 
-Date: 2026-07-12  
-Reviewer: Codex/OpenAI lineage, repo-aware driver lane  
+Date: 2026-07-12
+
+Reviewer: Codex/OpenAI lineage, repo-aware driver lane
+
 Scope: `4affafe33d3b422ee5436b268f1a46dca8139f29` →
-`7d93e872fb6ed4890b06ed17c0c2fc005d9802cf`, specifically §§12.1–12.4  
-Governance target: draft PR #72  
+`7d93e872fb6ed4890b06ed17c0c2fc005d9802cf`, specifically §§12.1–12.4
+
+Governance target: draft PR #72
+
 Disposition: **CHANGES_REQUESTED_BEFORE_MERGE**; review complete, remediation
 gated and open; no constitutional text or authority hierarchy changed
 
@@ -320,4 +324,3 @@ downgrade, post-disclosure subject-label inclusion, and denominator selection.
   disposition and authenticated ratification evidence
 - failure_default: PR #72 remains governance under review and not
   implementation-authorizing; no twin measurement or authority claim follows
-
