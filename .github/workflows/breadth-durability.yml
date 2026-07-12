@@ -62,10 +62,11 @@ jobs:
           python tests/test_quota.py
       - name: ARC-C residue broker contract (floor-first; no self-grading)
         run: |
-          python -m py_compile experiments/breadth/residue_broker.py scripts/validate_orchestration_run.py scripts/export_solver_packet.py scripts/grade_solver_packet.py scripts/ingest_engine_trial.py scripts/compare_engine_runs.py tests/test_residue_broker.py tests/test_export_solver_packet.py tests/test_grade_solver_packet.py tests/test_compare_engine_runs.py tests/test_orchestration_clone_integrity.py
+          python -m py_compile experiments/breadth/residue_broker.py scripts/validate_orchestration_run.py scripts/export_solver_packet.py scripts/extract_codex_rollout_response.py scripts/grade_solver_packet.py scripts/ingest_engine_trial.py scripts/compare_engine_runs.py tests/test_residue_broker.py tests/test_export_solver_packet.py tests/test_extract_codex_rollout_response.py tests/test_grade_solver_packet.py tests/test_compare_engine_runs.py tests/test_orchestration_clone_integrity.py
           python scripts/validate_orchestration_run.py
           python tests/test_residue_broker.py
           python tests/test_export_solver_packet.py
+          python tests/test_extract_codex_rollout_response.py
           python tests/test_grade_solver_packet.py
           python tests/test_compare_engine_runs.py
           python tests/test_orchestration_clone_integrity.py

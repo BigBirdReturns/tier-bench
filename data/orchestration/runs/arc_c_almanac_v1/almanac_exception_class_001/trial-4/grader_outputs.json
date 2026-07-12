@@ -1,0 +1,48 @@
+{
+  "compile": {
+    "command": [
+      "C:\\Python314\\python.exe",
+      "-m",
+      "py_compile",
+      "input.py"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "visible": {
+    "command": [
+      "python",
+      "input.py"
+    ],
+    "returncode": 0,
+    "stdout": "OK\n",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "hidden_1": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 0,
+    "stdout": "SCORE 12/12\n",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "hidden_2": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 0,
+    "stdout": "SCORE 12/12\n",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  }
+}

@@ -16,7 +16,7 @@
     "peer_lineage": "openai",
     "source_commit": "3d3837165ac9e046acf2cecc27e01f9c41c302e5",
     "independent_before_exchange": true,
-    "state": "independent_run_sealed"
+    "state": "pair_sealed"
   },
   "task_set": [
     "almanac_exception_class_001",
@@ -845,7 +845,7 @@
       "experiments/breadth/run/arcc_claude_fable_ledger.jsonl (token telemetry)"
     ],
     "verifier": "scripts/validate_orchestration_run.py + manifest hidden graders + scripts/compare_engine_runs.py",
-    "gap": "none for this engine run; peer comparison remains separate",
+    "gap": "none; the sealed peer comparison is preserved as a separate artifact",
     "closure_decision": "sealed",
     "failure_default": "remain unmeasured; do not route, escalate, price, or claim success"
   }

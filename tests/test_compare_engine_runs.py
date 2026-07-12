@@ -78,6 +78,18 @@ def test_unsealed_peer_stays_unpaired():
     assert compare.compare_runs(left, right)["status"] == "unpaired"
 
 
+def test_committed_comparison_is_reproducible_from_sealed_runs():
+    left = json.loads((REPO / "data/orchestration/arc_c_almanac_v1.json").read_text())
+    right = json.loads(
+        (REPO / "data/orchestration/arc_c_almanac_claude_v1.json").read_text()
+    )
+    committed = json.loads(
+        (REPO / "data/orchestration/comparisons/arc_c_almanac_cross_engine_v1.json")
+        .read_text()
+    )
+    assert compare.compare_runs(left, right) == committed
+
+
 def _run_standalone() -> int:
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

@@ -19,7 +19,9 @@ from validate_orchestration_run import validate_run  # noqa: E402
 
 def ingest(run_path: Path, packet_receipt_path: Path, grade_receipt_path: Path,
            candidate_path: Path, raw_response_path: Path, grader_outputs_path: Path,
-           events_path: Path, rung: str, trial_number: int, repo: Path = REPO) -> dict:
+           events_path: Path, rung: str, trial_number: int,
+           administration_receipt_path: Path | None = None,
+           repo: Path = REPO) -> dict:
     run_bytes = run_path.read_bytes()
     run = json.loads(run_bytes.decode("utf-8"))
     run_newline = "\r\n" if run_bytes.count(b"\r\n") > 0 else "\n"
@@ -67,6 +69,8 @@ def ingest(run_path: Path, packet_receipt_path: Path, grade_receipt_path: Path,
             "grade_receipt.json": grade_receipt_path,
             "events.jsonl": events_path,
         }
+        if administration_receipt_path is not None:
+            copies["administration_receipt.json"] = administration_receipt_path
         for name, source in copies.items():
             shutil.copy2(source, tmp / name)
         tmp.replace(artifact_dir)
@@ -131,6 +135,13 @@ def ingest(run_path: Path, packet_receipt_path: Path, grade_receipt_path: Path,
                     "event_stream_capture_kind", "provider-raw-jsonl"),
             },
         }
+        if administration_receipt_path is not None:
+            trial["provenance"].update({
+                "administration_receipt_path": rel("administration_receipt.json"),
+                "administration_receipt_sha256": sha256(
+                    artifact_dir / "administration_receipt.json"
+                ),
+            })
         run.setdefault("trials", []).append(trial)
         run["decisions"] = decisions_for_run(run)
         finished = all(d["action"] in {"seal", "abstain"} for d in run["decisions"])
@@ -167,12 +178,13 @@ def main() -> int:
     parser.add_argument("--raw-response", type=Path, required=True)
     parser.add_argument("--grader-outputs", type=Path, required=True)
     parser.add_argument("--events", type=Path, required=True)
+    parser.add_argument("--administration-receipt", type=Path)
     parser.add_argument("--rung", required=True)
     parser.add_argument("--trial", type=int, required=True)
     args = parser.parse_args()
     trial = ingest(args.run, args.packet_receipt, args.grade_receipt, args.candidate,
                    args.raw_response, args.grader_outputs, args.events, args.rung,
-                   args.trial)
+                   args.trial, args.administration_receipt)
     print(json.dumps(trial, indent=2))
     return 0
 

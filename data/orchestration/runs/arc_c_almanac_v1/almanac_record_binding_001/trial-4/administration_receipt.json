@@ -1,0 +1,24 @@
+{
+  "schema": "tier-bench/codex-packet-subject-extraction@2",
+  "thread_id": "019f571c-9f55-7080-bed1-1e263e323669",
+  "turn_id": "019f571c-bb2f-73f3-a512-21343bb1b099",
+  "model": "gpt-5.6-sol",
+  "effort": "low",
+  "prompt_sha256": "d01cec5ae6900d9596ef65e077e8e63a32cf0f149d6ce9295e375fd3d41b5b66",
+  "delivered_envelope_sha256": "31882cbd998188d91f68d8a1fe4c64d9f5cb6b7bb511dc358c1ebf39c234abd7",
+  "response_sha256": "31de7178e55bb37333cc52d8357b7473445cc6b5146cda3175e7aaa65df002d4",
+  "event_snapshot_sha256": "102afa9841d662ec11c92871c6b4fbc2c5c3c972d6f3f109be3d4ade3991c6a9",
+  "event_stream_capture_kind": "coordinator-derived-codex-app-thread-snapshot",
+  "source_rollout_sha256": "fd1f8a67419cff48a69c3e5f66af150089e435af844ec3e1a52f3adc74e2fd71",
+  "task_started_timestamp": "2026-07-12T16:15:28.901Z",
+  "task_completed_timestamp": "2026-07-12T16:15:43.554Z",
+  "duration_ms": 14971,
+  "usage": {
+    "input_tokens": 18541,
+    "cached_input_tokens": 9984,
+    "output_tokens": 998,
+    "reasoning_output_tokens": 0,
+    "total_tokens": 19539
+  },
+  "tool_calls": 0
+}

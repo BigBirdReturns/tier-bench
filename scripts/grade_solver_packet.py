@@ -59,10 +59,9 @@ def _run(command: list[str], cwd: Path,
 def _events(path: Path | None) -> dict:
     """Extract thread identity + token telemetry from a raw event stream.
 
-    Two capture formats are recognized: Codex provider JSONL
-    (thread.started / turn.completed events, cumulative usage) and Claude Code
-    subagent transcripts (assistant rows carrying per-call message.usage and an
-    agentId thread identity; usage is summed across rows)."""
+    Recognized captures include provider/safe-snapshot JSONL
+    (thread.started / turn.completed events), full Codex desktop rollouts, and
+    Claude Code subagent transcripts (assistant rows carrying per-call usage)."""
     data = {"thread_id": None, "usage": {},
             "capture_kind": "provider-raw-jsonl"}
     if path is None or not path.is_file():
@@ -83,6 +82,20 @@ def _events(path: Path | None) -> dict:
             data["thread_id"] = event.get("thread_id")
         if event.get("type") == "turn.completed":
             data["usage"] = event.get("usage", {})
+        if event.get("type") == "session_meta":
+            payload = event.get("payload") or {}
+            if payload.get("id"):
+                data["thread_id"] = payload["id"]
+                data["capture_kind"] = "codex-desktop-rollout-jsonl"
+        if event.get("type") == "event_msg":
+            payload = event.get("payload") or {}
+            if payload.get("type") == "token_count":
+                total = (payload.get("info") or {}).get("total_token_usage")
+                if isinstance(total, dict):
+                    # Desktop token_count events are cumulative; retain the
+                    # final total rather than summing intermediate snapshots.
+                    data["usage"] = total
+                    data["capture_kind"] = "codex-desktop-rollout-jsonl"
         if event.get("agentId") and event.get("isSidechain") is True:
             data["thread_id"] = data["thread_id"] or event["agentId"]
             data["capture_kind"] = "claude-code-subagent-transcript"
@@ -101,7 +114,8 @@ def _events(path: Path | None) -> dict:
 def grade(receipt_path: Path, solver: Path, raw_response: Path, out_dir: Path,
           coordinator_id: str, events_path: Path | None = None,
           repo: Path = REPO,
-          timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> dict:
+          timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+          candidate_out: Path | None = None) -> dict:
     if timeout_seconds <= 0:
         raise ValueError("timeout_seconds must be positive")
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -123,6 +137,14 @@ def grade(receipt_path: Path, solver: Path, raw_response: Path, out_dir: Path,
         target = work / manifest["target_relpath"]
         target.write_text(raw_response.read_text(encoding="utf-8"), encoding="utf-8")
         candidate_hash = sha256(target)
+        if candidate_out is not None:
+            candidate_out = candidate_out.resolve()
+            if candidate_out.exists():
+                raise FileExistsError(f"sealed candidate already exists: {candidate_out}")
+            candidate_out.parent.mkdir(parents=True, exist_ok=True)
+            candidate_out.write_bytes(target.read_bytes())
+            if sha256(candidate_out) != candidate_hash:
+                raise ValueError("sealed candidate copy does not match grading candidate")
 
         compile_result = _run(
             [sys.executable, "-m", "py_compile", manifest["target_relpath"]],
@@ -192,10 +214,12 @@ def main() -> int:
     parser.add_argument("--events", type=Path)
     parser.add_argument("--coordinator-id", required=True)
     parser.add_argument("--timeout-seconds", type=float, default=DEFAULT_TIMEOUT_SECONDS)
+    parser.add_argument("--candidate-out", type=Path)
     args = parser.parse_args()
     result = grade(args.receipt, args.solver, args.raw_response, args.out,
                    args.coordinator_id, args.events,
-                   timeout_seconds=args.timeout_seconds)
+                   timeout_seconds=args.timeout_seconds,
+                   candidate_out=args.candidate_out)
     print(json.dumps(result, indent=2))
     return 0 if result["outcome"] == "pass" else 1
 

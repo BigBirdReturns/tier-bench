@@ -74,9 +74,10 @@ review; an engine may not silently change what counts as passing.
   benchmark verdict follows from that agreement report.
 - SOL-2, the Codex adversarial review of ARC-A/ARC-B, is complete with findings
   at `docs/agents/reviews/sol_arc_ab_review_20260710.md`; remediation is open.
-- PR #63 contains a partial Codex ARC-C run. Source-custody review excluded six
-  observations: four predated the first exact source commit and two depended on
-  an excluded predecessor. Only `almanac_rule_boundary_001` retains a valid 3/3
-  floor seal. ARC-C remains partial until fresh compatible observations and
-  cross-engine comparison exist.
+- ARC-C is pair-sealed. Codex gpt-5.6-sol@low and Claude fable-5@low each clear
+  all three almanac knots 3/3 at floor against source `3d38371`; the committed
+  comparator admits the pair with 3/3 task-decision agreement. The result is a
+  paired orchestration measurement, not a universal capability claim.
+- SOL-4, the residue-recorder constitution review, remains open. ARC-D is the
+  next roadmap arc; the queue remains authoritative for who may claim it.
 - The capture ledger remains *amortizing, 1 of 4*, never "amortized."

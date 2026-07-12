@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_exception_class_001",
+  "source_commit": "3d3837165ac9e046acf2cecc27e01f9c41c302e5",
+  "manifest_path": "tasks/almanac_exception_class_001.json",
+  "manifest_sha256": "392dd0d1a5d4c2bff7e5d69b29a506f7816b10f106a14f490d47183df0b9fb4f",
+  "packet_sha256": "452c8ed1faf378b2e20544405c3aa7b3de98f89fd63f293dfb7e57fdf9263212",
+  "prompt_sha256": "28da3e65d2e4c717961583f4de9666eda81aafa54b6bc8c1e78bad229c77dff2",
+  "hidden_graders": [
+    {
+      "path": "fixtures/almanac_exception_class_001/hidden_tests.py",
+      "sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc"
+    }
+  ],
+  "solver_scope": "<SOLVER_SCOPE>",
+  "peer_conclusions_included": false
+}
