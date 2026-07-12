@@ -41,6 +41,7 @@ task is claimed when a commit flips its `state`; a task is done when its
 
 | id | task | evidence |
 |----|------|----------|
+| ARC-D (foundation) | OSS replay field admission layer + first real entry (CPython fnmatch character classes ← task02 capture grammar) | `docs/oss-replay-field.md`, `data/oss_replay/field.jsonl`, vendored upstream + provenance, `scripts/validate_oss_replay_field.py` (11 tests, CI), splice-equivalence vector guard; zero replays run, no credit claimed. NOTE: complements the ARC-D-PILOT buffalo lane (`data/oss-replay/`, hyphen — distinct dir, Sol's hash-bound evidence, do not rename); the two lanes converge when the HARVEST gate is ratified |
 | SOL-4 | Cross-lineage adversarial review of Residue Recorder constitution v0.4 | `docs/agents/reviews/sol_residue_recorder_constitution_v04_20260712.md`; review commit `f78c726`; 7/7 executable witnesses; attached to PR #72 |
 | SOL-5 / ARC-C | Refill Codex custody gap and seal the cross-engine pair | Codex + Claude runs 3/3/3; comparator comparable with 3/3 agreement; source `3d38371` |
 | SOL-1 | Non-Anthropic blind grade of the preserved control packet | `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`; thread `019f4d56-c26f-7ec0-9d3e-67819c2270ec`; raw artifact SHA-256 `da69f26d…16af04c` |
