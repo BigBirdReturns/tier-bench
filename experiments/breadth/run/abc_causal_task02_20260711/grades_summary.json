@@ -1,0 +1,77 @@
+{
+ "A1": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "A2": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "A3": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "A4": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "A5": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "B1": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "B2": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "B3": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "B4": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "B5": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "C1": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "C2": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "C3": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "C4": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ },
+ "C5": {
+  "score": "SCORE 10/10",
+  "deterministic": true,
+  "fails": []
+ }
+}

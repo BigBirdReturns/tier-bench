@@ -1,0 +1,53 @@
+You are a solver working on one small Python task. This conversation has exactly two turns. IMPORTANT: do not use any tools, do not read or write any files, do not browse any repository — work entirely from the text in this conversation and answer in plain text.
+
+=== CONTEXT PACKET (boot) ===
+## Scaffold packet — captured judgment from the tier-bench sediment
+
+Source: `experiments/breadth/run/waterline.json` (generated 2026-07-08); evidence layers: `model-ladder-task02-20260708`.
+Honesty rule: Only measured claims appear here. Anything not present is unmeasured. Evidence layers live in known_corner.jsonl; rows in ledger.jsonl / subscription_ledger.jsonl.
+
+### Rule commitments (hold these; do not re-derive)
+
+- **task02_wildcard** — escape-inside-class malformed-vs-non-match boundary (in-class backslash is a literal, not an escape prefix).
+  Floor instability without this commitment: claude-haiku-4-5 3/5; both failures the same rule commitment (edge_family/RESULTS.md).
+  Cleared by claude-sonnet-5 @ low ($0.227/trial, real-billed).
+  Caveat: GPT-5.5 derived repairs also 10681/10681 x3 — derived class, not receipts (pr44_trial2_adjudication.md)
+
+### Usage discipline (travels with the packet)
+
+1. Trust only what the packet cites: a claim without an evidence layer is unmeasured, not false and not true.
+2. DO NOT ESCALATE past the cheapest listed model for a settled cell; the floor is measured, not guessed.
+3. Hold the listed residue commitments as fixed rule interpretations — do not re-derive or second-guess them mid-solve.
+4. If your task is not listed, the sediment says nothing about it: route by your own judgment and say so.
+
+
+=== TASK SPEC ===
+# count_matches
+
+Write a single Python function in `solution.py`:
+
+```python
+def count_matches(pattern: str, words: list[str]) -> int:
+    ...
+```
+
+Return how many of `words` the wildcard `pattern` matches ENTIRELY. Syntax:
+`*` any sequence (incl. empty); `?` exactly one char; `[...]` one char from a
+class (ranges by ASCII, low > high malformed → ValueError; leading `!` negates;
+`]` literal as first member; `-` literal at the edges; unclosed class malformed
+→ ValueError); `\` escapes the next character making it literal (trailing `\`
+malformed → ValueError; escaping applies outside character classes). A
+malformed pattern raises ValueError (never returns a count).
+
+=== VISIBLE TESTS (your final code must pass these) ===
+```python
+from solution import count_matches
+assert count_matches("a*c", ["abc","ac","ab"]) == 2
+assert count_matches("[a-c]?", ["ax","cx","dx","a"]) == 2
+try:
+    count_matches("x[ab", ["x"]); raise SystemExit("expected ValueError")
+except ValueError: pass
+print("OK")
+```
+
+TURN 1 — PLAN ONLY: describe your implementation approach for solution.py (parsing strategy, character-class handling, error handling, matching algorithm). Do NOT write the final code in this turn. End your reply with the single line: PLAN COMPLETE.

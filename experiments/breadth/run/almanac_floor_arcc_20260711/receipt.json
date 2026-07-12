@@ -1,0 +1,216 @@
+{
+  "run": "claude-floor-arcc-almanac-20260711",
+  "record_type": "floor_run",
+  "engine": {
+    "engine_id": "claude_haiku_4_5",
+    "model": "claude-haiku-4-5",
+    "lineage": "anthropic",
+    "role": "independent_solver",
+    "surface": "agent-tool-subagent"
+  },
+  "coordinator": {
+    "model": "claude-opus-4-8",
+    "surface": "claude-code-web",
+    "role": "coordinator"
+  },
+  "pairing_context": {
+    "pair_id": "arc_c_almanac_cross_engine_v1",
+    "peer_run": "arc_c_almanac_v1 (data/orchestration/, origin/codex/arc-c-residue-broker)",
+    "peer_engine_id": "codex_gpt_5_6_sol",
+    "peer_lineage": "openai",
+    "peer_declared_this_side_as": "claude_fable_5",
+    "note": "Sol sealed the pair expecting the Claude peer to be claude_fable_5 (fable at low effort). This floor run used the breadth FLOOR solver claude-haiku-4-5. This is a floor-vs-floor capability contrast, NOT a schema-sealed orchestration pair; see RESULTS.md findings 1 and 2."
+  },
+  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "grading": "scripts/grade_solver_packet.py in a worktree pinned at source_commit; hidden files injected only at grade time; each candidate graded twice (determinism check); sealed (sha256) before grading",
+  "k": 3,
+  "task_manifests": [
+    {
+      "task_id": "almanac_exception_class_001",
+      "path": "tasks/almanac_exception_class_001.json",
+      "sha256": "392dd0d1a5d4c2bff7e5d69b29a506f7816b10f106a14f490d47183df0b9fb4f"
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "path": "tasks/almanac_record_binding_001.json",
+      "sha256": "b9c20e5357d8aa7e46ca28cf99aef09e7cf836b4fe4db56c91aa5b08fefb2be1"
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "path": "tasks/almanac_rule_boundary_001.json",
+      "sha256": "0e7c6760c3c88e0501363fe1ea6dd9cfa0f8aed5cec7174f9f69b9571c8be446"
+    }
+  ],
+  "per_task": {
+    "almanac_exception_class_001": {
+      "passes": 3,
+      "k": 3,
+      "clears_floor_k_of_k": true,
+      "broker_decision": "seal@floor"
+    },
+    "almanac_record_binding_001": {
+      "passes": 3,
+      "k": 3,
+      "clears_floor_k_of_k": true,
+      "broker_decision": "seal@floor"
+    },
+    "almanac_rule_boundary_001": {
+      "passes": 2,
+      "k": 3,
+      "clears_floor_k_of_k": false,
+      "broker_decision": "escalate@floor(next rung effort_medium)"
+    }
+  },
+  "totals": {
+    "candidates": 9,
+    "passed": 8,
+    "failed": 1,
+    "tasks_clearing_floor": 2
+  },
+  "items": [
+    {
+      "task_id": "almanac_exception_class_001",
+      "trial": 1,
+      "trial_label": "r1",
+      "candidate_sha256": "b0b161d6248f7596eb533e377cafef51634d382d20f4412e617155b5aeb25225",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "grader_output_sha256": "349ad62e4d53ca5bfd5ac0dbeab3dbf58c293d6d372d22ab99e673bfbe5b5f10",
+      "outcome": "pass",
+      "artifact_dir": "trials/almanac_exception_class_001/r1"
+    },
+    {
+      "task_id": "almanac_exception_class_001",
+      "trial": 2,
+      "trial_label": "r2",
+      "candidate_sha256": "db0aae6faf982137859e650a30f2669d9a6d6e4623b3452ca283c09959098753",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "grader_output_sha256": "349ad62e4d53ca5bfd5ac0dbeab3dbf58c293d6d372d22ab99e673bfbe5b5f10",
+      "outcome": "pass",
+      "artifact_dir": "trials/almanac_exception_class_001/r2"
+    },
+    {
+      "task_id": "almanac_exception_class_001",
+      "trial": 3,
+      "trial_label": "r3",
+      "candidate_sha256": "9924f6425b6f7ab3a999dc61872988c0573a4e33fbb043ed76b0b1014ede62ea",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "grader_output_sha256": "349ad62e4d53ca5bfd5ac0dbeab3dbf58c293d6d372d22ab99e673bfbe5b5f10",
+      "outcome": "pass",
+      "artifact_dir": "trials/almanac_exception_class_001/r3"
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "trial": 1,
+      "trial_label": "r1",
+      "candidate_sha256": "4cfeca4aeeb4a86d1f380942079d9597ca620c0b1b119c808c422eae31ac9c8c",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "grader_output_sha256": "de438d4aa90663e8e8d4dbf408ff44ecb96def557e233772593e372e97fc7078",
+      "outcome": "pass",
+      "artifact_dir": "trials/almanac_record_binding_001/r1"
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "trial": 2,
+      "trial_label": "r2",
+      "candidate_sha256": "e58a5de009256725ee322b9a0e6fb3745c0a83da242ebc28a71982c542a39cd2",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "grader_output_sha256": "de438d4aa90663e8e8d4dbf408ff44ecb96def557e233772593e372e97fc7078",
+      "outcome": "pass",
+      "artifact_dir": "trials/almanac_record_binding_001/r2"
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "trial": 3,
+      "trial_label": "r3",
+      "candidate_sha256": "a9577d768a9a4bb2c5e4be845ea122f5d9f8f1fdb3b3c7c1955ac991a17515af",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "grader_output_sha256": "de438d4aa90663e8e8d4dbf408ff44ecb96def557e233772593e372e97fc7078",
+      "outcome": "pass",
+      "artifact_dir": "trials/almanac_record_binding_001/r3"
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "trial": 1,
+      "trial_label": "r1",
+      "candidate_sha256": "b3e9be643573b89b98b8439435f498224133f1ae6b86bb20ab790590fc746287",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "grader_output_sha256": "de438d4aa90663e8e8d4dbf408ff44ecb96def557e233772593e372e97fc7078",
+      "outcome": "pass",
+      "artifact_dir": "trials/almanac_rule_boundary_001/r1"
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "trial": 2,
+      "trial_label": "r2",
+      "candidate_sha256": "bcf581b4b6a98a82b5697a93454482791b66f58dbe0783a91afde01507ebc6e3",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "grader_output_sha256": "de438d4aa90663e8e8d4dbf408ff44ecb96def557e233772593e372e97fc7078",
+      "outcome": "pass",
+      "artifact_dir": "trials/almanac_rule_boundary_001/r2"
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "trial": 3,
+      "trial_label": "r3",
+      "candidate_sha256": "5d5673276cd06de21687b47967085a5dc9e0b25050c832cd1364dab4ea4b07e8",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+      "hidden_returncodes": [
+        1,
+        1
+      ],
+      "hidden_grader_deterministic": true,
+      "grader_output_sha256": "b94d7af636f8d49972312ec40e0ff8f60d5150683934bab7237f95bf793d895f",
+      "outcome": "fail",
+      "artifact_dir": "trials/almanac_rule_boundary_001/r3"
+    }
+  ]
+}

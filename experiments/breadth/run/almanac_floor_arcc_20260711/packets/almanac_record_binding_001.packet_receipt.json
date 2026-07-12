@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_record_binding_001",
+  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "manifest_path": "tasks/almanac_record_binding_001.json",
+  "manifest_sha256": "b9c20e5357d8aa7e46ca28cf99aef09e7cf836b4fe4db56c91aa5b08fefb2be1",
+  "packet_sha256": "a7e556f208c400dbe2ce78dc61abc835bb56547f0de9b796c4092bcf4b5e264a",
+  "prompt_sha256": "0be7a00168a7870e690bc9c20ef30bf7cfa085c4d964fc4e6dde7212c867d4d0",
+  "hidden_graders": [
+    {
+      "path": "fixtures/almanac_record_binding_001/hidden_tests.py",
+      "sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d"
+    }
+  ],
+  "solver_scope": "/tmp/claude-0/-home-user-tier-bench/ee416fa5-6990-5bbb-9752-cd11ec67233d/scratchpad/claude_floor_run/almanac_record_binding_001/solver",
+  "peer_conclusions_included": false
+}

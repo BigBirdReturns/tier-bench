@@ -1,0 +1,1 @@
+TURN 2 — GO: one standing constraint before you implement: never spend a frontier token re-confirming an already-cleared floor — settled cells are never rerun, and one miss at K-of-K is noise, never a wall that would justify escalation. Now write the complete solution.py. Reply with ONLY one python code block containing the full file.

@@ -1,0 +1,40 @@
+{
+  "compile": {
+    "command": [
+      "/usr/local/bin/python3",
+      "-m",
+      "py_compile",
+      "input.py"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "visible": {
+    "command": [
+      "python",
+      "input.py"
+    ],
+    "returncode": 0,
+    "stdout": "OK\n",
+    "stderr": ""
+  },
+  "hidden_1": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 1,
+    "stdout": "SCORE 11/14\n  FAIL (2020, 2, 3, 12.0, 0.0): got ('庚子', '己丑'), want ('己亥', '丁丑')\n  FAIL (2020, 2, 4, 3.0, 0.0): got ('庚子', '己丑'), want ('己亥', '丁丑')\n  FAIL (2020, 2, 4, 12.0, 8.0): got ('庚子', '己丑'), want ('己亥', '丁丑')\n",
+    "stderr": ""
+  },
+  "hidden_2": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 1,
+    "stdout": "SCORE 11/14\n  FAIL (2020, 2, 3, 12.0, 0.0): got ('庚子', '己丑'), want ('己亥', '丁丑')\n  FAIL (2020, 2, 4, 3.0, 0.0): got ('庚子', '己丑'), want ('己亥', '丁丑')\n  FAIL (2020, 2, 4, 12.0, 8.0): got ('庚子', '己丑'), want ('己亥', '丁丑')\n",
+    "stderr": ""
+  }
+}

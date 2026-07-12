@@ -1,0 +1,72 @@
+{
+  "run": "claude-escalation-fable-low-rule-boundary-20260712",
+  "record_type": "escalation_run",
+  "escalates": "experiments/breadth/run/almanac_floor_arcc_20260711/receipt.json (almanac_rule_boundary_001, haiku floor 2/3, did not clear)",
+  "engine": {
+    "engine_id": "claude_fable_5",
+    "model": "claude-fable-5",
+    "lineage": "anthropic",
+    "role": "independent_solver",
+    "effort": "low",
+    "surface": "agent-tool-subagent"
+  },
+  "coordinator": {
+    "model": "claude-sonnet-5",
+    "surface": "claude-code-web",
+    "role": "coordinator"
+  },
+  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "task_manifest": {
+    "task_id": "almanac_rule_boundary_001",
+    "path": "tasks/almanac_rule_boundary_001.json",
+    "sha256": "0e7c6760c3c88e0501363fe1ea6dd9cfa0f8aed5cec7174f9f69b9571c8be446"
+  },
+  "packet_receipt": "experiments/breadth/run/almanac_floor_arcc_20260711/packets/almanac_rule_boundary_001.packet_receipt.json (reused unchanged — same task, same sealed prompt)",
+  "grading": "scripts/grade_solver_packet.py in the same worktree pinned at source_commit; hidden files injected only at grade time; each candidate graded twice (determinism check); sealed (sha256) before grading",
+  "k": 3,
+  "passes": 3,
+  "clears_k_of_k": true,
+  "broker_decision": "seal@effort_low (K-of-K clears; roadmap rule: one attempt per tier, escalate on failure — floor failed, next rung cleared, stop escalating this task)",
+  "items": [
+    {
+      "trial_label": "f1",
+      "candidate_sha256": "061156e66803047445c3f741891f81249cff945e6159f4b48d643bdaa46a6298",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "outcome": "pass",
+      "artifact_dir": "f1"
+    },
+    {
+      "trial_label": "f2",
+      "candidate_sha256": "a20c875224d29bc2b870d0f9f56c0ee7f6e8145abc33deb9f9147f89d599a620",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "outcome": "pass",
+      "artifact_dir": "f2"
+    },
+    {
+      "trial_label": "f3",
+      "candidate_sha256": "0ae99a9486551e2117556213816d3bc370d18ee31632c17444f920a50f92a86f",
+      "candidate_sealed_before_grading": true,
+      "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+      "hidden_returncodes": [
+        0,
+        0
+      ],
+      "hidden_grader_deterministic": true,
+      "outcome": "pass",
+      "artifact_dir": "f3"
+    }
+  ],
+  "purpose": "operator-requested test: run one real quarter-sized batch (K=3) with Fable to (a) verify the escalation ladder actually clears the residue the haiku floor left, and (b) feed real Fable per-trial token data into the quota gauge, which previously had haiku-only data."
+}

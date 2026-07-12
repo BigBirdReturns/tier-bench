@@ -1,0 +1,1 @@
+TURN 2 — GO: one applicable constraint before you implement: inside a character class a backslash is a LITERAL character, never an escape prefix — the pattern [\] is a valid class matching the backslash character, not a malformed pattern. Now write the complete solution.py. Reply with ONLY one python code block containing the full file.

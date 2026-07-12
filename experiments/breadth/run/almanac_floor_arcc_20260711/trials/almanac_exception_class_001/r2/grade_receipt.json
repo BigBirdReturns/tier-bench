@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_exception_class_001",
+  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "packet_sha256": "6d933131198f1bdec555d8f0c3ee9dcb507a3e6d980376bc43016f60bd5fbfb4",
+  "prompt_sha256": "b43f74c08b2678c1295145ea97361ce51ca9db15103c4aa0588d999a955815e6",
+  "candidate_sha256": "db0aae6faf982137859e650a30f2669d9a6d6e4623b3452ca283c09959098753",
+  "raw_response_sha256": "db0aae6faf982137859e650a30f2669d9a6d6e4623b3452ca283c09959098753",
+  "thread_id": null,
+  "usage": {},
+  "usage_available": false,
+  "event_stream_capture_kind": "provider-raw-jsonl",
+  "coordinator_id": "claude-floor-run-driver-20260711",
+  "solver_equals_grader": false,
+  "grader_output_sha256": "349ad62e4d53ca5bfd5ac0dbeab3dbf58c293d6d372d22ab99e673bfbe5b5f10",
+  "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+  "hidden_grader_runs": 2,
+  "hidden_grader_deterministic": true,
+  "outcome": "pass",
+  "visible_returncode": 0,
+  "hidden_returncodes": [
+    0,
+    0
+  ],
+  "cost_basis": "subscription-derived",
+  "cost_usd": 0.0
+}
