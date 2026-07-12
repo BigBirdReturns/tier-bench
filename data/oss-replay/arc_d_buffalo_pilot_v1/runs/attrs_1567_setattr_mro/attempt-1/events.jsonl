@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f57ff-5914-74c0-a4ed-3853abe8f8c2","timestamp":"2026-07-12T20:23:05.0000000Z","host_id":"local","model":"provider-default-unreported","thinking_requested":"high"}
+{"type":"turn.started","thread_id":"019f57ff-5914-74c0-a4ed-3853abe8f8c2","turn_id":"019f57ff-6f5a-7460-99ec-4c37572902cc","timestamp":"2026-07-12T20:23:05.0000000Z"}
+{"type":"turn.completed","thread_id":"019f57ff-5914-74c0-a4ed-3853abe8f8c2","turn_id":"019f57ff-6f5a-7460-99ec-4c37572902cc","timestamp":"2026-07-12T20:23:07.0000000Z","duration_ms":1775,"status":"systemError","assistant_response_present":false,"tool_calls":0,"usage":null,"provider_error_detail":null}
+{"type":"thread.completed","thread_id":"019f57ff-5914-74c0-a4ed-3853abe8f8c2","timestamp":"2026-07-12T20:23:07.0000000Z","status":"systemError"}

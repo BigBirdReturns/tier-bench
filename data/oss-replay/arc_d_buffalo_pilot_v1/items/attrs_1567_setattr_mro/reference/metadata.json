@@ -1,0 +1,11 @@
+{
+  "authority_class": "OPEN_UNMERGED_UNREVIEWED_PROPOSAL",
+  "url": "https://github.com/python-attrs/attrs/pull/1567",
+  "base_sha": "d2fbfccc1ce77dcc927a86eae9521c95dc4e289c",
+  "head_sha": "b5198824a628d9f78d68846f9c0868ca2fe701ad",
+  "state_observed": "open",
+  "merged": false,
+  "submitted_reviews": 0,
+  "may_serve_as_ground_truth": false,
+  "note": "Comparator hypothesis only. The base already coaches an MRO direction; subtle ownership resolution remains the useful target."
+}

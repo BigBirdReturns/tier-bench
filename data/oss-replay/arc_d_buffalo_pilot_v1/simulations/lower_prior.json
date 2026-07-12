@@ -1,0 +1,185 @@
+{
+  "claim_boundary": [
+    "No capability, amortization, return-on-investment, or upstream-fix claim.",
+    "Parameters are preregistered illustrative assumptions, not fitted observations.",
+    "Only sealed distinct-transfer evidence may replace this projection with measurement."
+  ],
+  "compounding": {
+    "artifact_assisted_hunts": {
+      "fraction_zero": 0.0654,
+      "maximum": 65,
+      "mean": 16.5576,
+      "minimum": 0,
+      "monte_carlo_standard_error_of_mean": 0.153763,
+      "quantiles_nearest_rank": {
+        "p05": 0,
+        "p50": 16,
+        "p95": 36
+      },
+      "sample_standard_deviation": 10.872678
+    },
+    "cap_binding_hunts": {
+      "fraction_zero": 1.0,
+      "maximum": 0,
+      "mean": 0.0,
+      "minimum": 0,
+      "monte_carlo_standard_error_of_mean": 0.0,
+      "quantiles_nearest_rank": {
+        "p05": 0,
+        "p50": 0,
+        "p95": 0
+      },
+      "sample_standard_deviation": 0.0
+    },
+    "raw_candidates_and_transfer_attempts": {
+      "fraction_zero": 0.0,
+      "maximum": 25,
+      "mean": 9.8708,
+      "minimum": 1,
+      "monte_carlo_standard_error_of_mean": 0.05035,
+      "quantiles_nearest_rank": {
+        "p05": 4,
+        "p50": 10,
+        "p95": 16
+      },
+      "sample_standard_deviation": 3.560259
+    },
+    "transfer_failures": {
+      "fraction_zero": 0.0016,
+      "maximum": 17,
+      "mean": 6.3984,
+      "minimum": 0,
+      "monte_carlo_standard_error_of_mean": 0.035416,
+      "quantiles_nearest_rank": {
+        "p05": 3,
+        "p50": 6,
+        "p95": 11
+      },
+      "sample_standard_deviation": 2.504263
+    },
+    "validated_harvests": {
+      "fraction_zero": 0.0518,
+      "maximum": 15,
+      "mean": 3.4724,
+      "minimum": 0,
+      "monte_carlo_standard_error_of_mean": 0.030383,
+      "quantiles_nearest_rank": {
+        "p05": 0,
+        "p50": 3,
+        "p95": 7
+      },
+      "sample_standard_deviation": 2.148432
+    }
+  },
+  "control": {
+    "raw_candidates_and_transfer_attempts": {
+      "fraction_zero": 0.0,
+      "maximum": 21,
+      "mean": 8.5528,
+      "minimum": 1,
+      "monte_carlo_standard_error_of_mean": 0.039705,
+      "quantiles_nearest_rank": {
+        "p05": 4,
+        "p50": 8,
+        "p95": 13
+      },
+      "sample_standard_deviation": 2.807559
+    },
+    "transfer_failures": {
+      "fraction_zero": 0.004,
+      "maximum": 15,
+      "mean": 5.5488,
+      "minimum": 0,
+      "monte_carlo_standard_error_of_mean": 0.032555,
+      "quantiles_nearest_rank": {
+        "p05": 2,
+        "p50": 5,
+        "p95": 10
+      },
+      "sample_standard_deviation": 2.301973
+    },
+    "validated_harvests": {
+      "fraction_zero": 0.0518,
+      "maximum": 13,
+      "mean": 3.004,
+      "minimum": 0,
+      "monte_carlo_standard_error_of_mean": 0.024414,
+      "quantiles_nearest_rank": {
+        "p05": 0,
+        "p50": 3,
+        "p95": 6
+      },
+      "sample_standard_deviation": 1.72632
+    }
+  },
+  "derived_assumptions": {
+    "baseline_raw_candidate_probability": 0.085714,
+    "control_expected_validated_harvests_analytic": 3.0,
+    "control_variance_validated_harvests_analytic": 2.91,
+    "nominal_same_family_probability": 0.125,
+    "raw_candidate_probability_cap": 0.571429,
+    "transfer_item_is_distinct": true,
+    "transfer_item_may_validate_but_does_not_mint_a_second_artifact": true
+  },
+  "empirical": false,
+  "evidence_class": "ILLUSTRATIVE_PROJECTION",
+  "failure_default": "REMAIN_UNMEASURED",
+  "paired_delta_validated_harvests": {
+    "fraction_positive": 0.3164,
+    "fraction_zero": 0.6836,
+    "interval_scope": "Monte Carlo error of the paired mean, not outcome uncertainty",
+    "maximum": 7,
+    "mean": 0.4684,
+    "mean_95_percent_monte_carlo_interval": [
+      0.44527,
+      0.49153
+    ],
+    "minimum": 0,
+    "monte_carlo_standard_error_of_mean": 0.011801,
+    "pathwise_monotonicity_violations": 0,
+    "quantiles_nearest_rank": {
+      "p05": 0,
+      "p50": 0,
+      "p95": 2
+    },
+    "sample_standard_deviation": 0.83447
+  },
+  "parameters": {
+    "baseline_validated_probability": 0.03,
+    "family_count": 8,
+    "hunts": 100,
+    "max_applicable_artifacts": 3,
+    "odds_multiplier_per_artifact": 1.8,
+    "portfolios": 5000,
+    "seed": 20260712,
+    "transfer_validation_probability": 0.35,
+    "validated_probability_cap": 0.2
+  },
+  "randomness": {
+    "component_seed_derivation": "first 64 bits of SHA-256(seed:portfolio_index:component)",
+    "coupling_note": "Common random numbers reduce comparison noise; they are not empirical pairing.",
+    "generator": "Python random.Random (MT19937)",
+    "python_version": "3.14.2",
+    "seed": 20260712,
+    "shared_components": [
+      "family",
+      "candidate",
+      "transfer"
+    ]
+  },
+  "work_accounting": {
+    "compounding_mean_distinct_transfer_items": 9.8708,
+    "compounding_mean_total_distinct_items": 109.8708,
+    "control_mean_distinct_transfer_items": 8.5528,
+    "control_mean_total_distinct_items": 108.5528,
+    "cost": {
+      "note": "No price or billing basis was supplied.",
+      "state": "UNMEASURED"
+    },
+    "hunt_work_items_per_portfolio": 100,
+    "tokens": {
+      "note": "No token-per-hunt or token-per-transfer value was guessed.",
+      "state": "UNMEASURED"
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "builder": "scripts/build_buffalo_packets.py",
+  "delivered_envelope_bytes": 6401,
+  "delivered_envelope_sha256": "9bf7e2e0c3528bf83bdf8079997e02391028ad1749126a6d66f1164cc25dcc8a",
+  "item_id": "httpx_3614_base_url_query",
+  "line_endings": "LF",
+  "problem_sha256": "d8c896cd850fe9d7c434d98628ba2e11345cac1ec4030e5e3fc545fcca1517a5",
+  "prompt_bytes": 6254,
+  "prompt_sha256": "d81a12a66e96c6a9eaaa9af82d6ca8903d8a8a6f93ffb07466a42dea1c1bd8fe",
+  "schema": "tier-bench/arc-d-packet-build@1",
+  "source_excerpt_sha256": "01f737bac7168376d52db07393096d894a02f7fe328a6412a4a70d6f2393e783",
+  "source_thread_id": "019f4fdc-f3f9-7b52-87f3-3452d231d67e",
+  "transport_transform": "html.escape(prompt, quote=False)"
+}

@@ -1,0 +1,14 @@
+{
+  "builder": "scripts/build_buffalo_packets.py",
+  "delivered_envelope_bytes": 6346,
+  "delivered_envelope_sha256": "37b6fe9fb31a3401c2a96328775bcfd7743f29fb91a81ee1f0fd35f26ae32233",
+  "item_id": "attrs_1567_setattr_mro",
+  "line_endings": "LF",
+  "problem_sha256": "2d44eb11e5664f884e6d8136654aa9ad2054ccfc6843a90cc612b2e6a548c5c4",
+  "prompt_bytes": 6214,
+  "prompt_sha256": "f9c554fb1d5094b90d5c7037db8192e017325289779a85ca396f96b7997ffbe9",
+  "schema": "tier-bench/arc-d-packet-build@1",
+  "source_excerpt_sha256": "1ad73e4c19e8cae3f4c71852fbd8ca1b9b8a58ef93769acb59835d9cae2979e3",
+  "source_thread_id": "019f4fdc-f3f9-7b52-87f3-3452d231d67e",
+  "transport_transform": "html.escape(prompt, quote=False)"
+}

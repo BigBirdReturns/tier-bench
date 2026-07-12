@@ -1,0 +1,34 @@
+{
+  "schema": "tier-bench/arc-d-packet-leakage-scan@1",
+  "scan_state": "PASS_NO_MATCHES",
+  "scanned_glob": "items/*/packet/PROMPT.md",
+  "scan_command": "rg -n -g PROMPT.md '3221|3741|3614|3760|3766|1567|github\\.com|83d203a|b2adc529|18927fa|b519882' data/oss-replay/arc_d_buffalo_pilot_v1/items",
+  "forbidden_fragments": [
+    "3221",
+    "3741",
+    "3614",
+    "3760",
+    "3766",
+    "1567",
+    "github.com",
+    "83d203a",
+    "b2adc529",
+    "18927fa",
+    "b519882"
+  ],
+  "prompt_receipts": [
+    {
+      "item_id": "httpx_3221_ipv6_no_proxy",
+      "prompt_sha256": "a5ee77e4991f2bddae9b7281aa5e1a6c2aca857ccfc3383e5af612136c796fd4"
+    },
+    {
+      "item_id": "httpx_3614_base_url_query",
+      "prompt_sha256": "d81a12a66e96c6a9eaaa9af82d6ca8903d8a8a6f93ffb07466a42dea1c1bd8fe"
+    },
+    {
+      "item_id": "attrs_1567_setattr_mro",
+      "prompt_sha256": "f9c554fb1d5094b90d5c7037db8192e017325289779a85ca396f96b7997ffbe9"
+    }
+  ],
+  "limitation": "A no-string-match scan does not exclude public-corpus memorization; these are cold-context, not contamination-free, observations."
+}

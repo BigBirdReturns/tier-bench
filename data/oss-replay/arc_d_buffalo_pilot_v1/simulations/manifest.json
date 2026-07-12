@@ -1,0 +1,59 @@
+{
+  "schema": "tier-bench/arc-d-buffalo-simulation-grid@1",
+  "evidence_class": "ILLUSTRATIVE_PROJECTION",
+  "empirical": false,
+  "script": "scripts/simulate_buffalo_field.py",
+  "script_sha256": "8e761e6abe0e4aef14657d435b4dcb57773490bb08bf18c4bf08bfa2e61bd9f1",
+  "test_sha256": "c1b7ea619586905307836ee59e605013263e23b3d9e0b7907b07c4fa549ad4b3",
+  "seed": 20260712,
+  "scenarios": [
+    {
+      "file": "baseline.json",
+      "sha256": "0fa1571b99787fe663362409c387f81f0e8d246d7183b505e27c62a5f8b40862",
+      "p0": 0.08,
+      "families": 8,
+      "odds_multiplier": 1.8,
+      "portfolios": 10000,
+      "control_mean": 8.022,
+      "compounded_mean": 10.4065,
+      "paired_delta_mean": 2.3845
+    },
+    {
+      "file": "lower_prior.json",
+      "sha256": "75fd5beb953110475801002c2ad7253f46d5b3944c067a80e470bad03f3d4189",
+      "p0": 0.03,
+      "families": 8,
+      "odds_multiplier": 1.8,
+      "portfolios": 5000,
+      "control_mean": 3.004,
+      "compounded_mean": 3.4724,
+      "paired_delta_mean": 0.4684
+    },
+    {
+      "file": "clustered.json",
+      "sha256": "9cb435471b6b6e81f239633f58633b26927167a45795ff0d37580d9a9306f38e",
+      "p0": 0.08,
+      "families": 2,
+      "odds_multiplier": 1.8,
+      "portfolios": 5000,
+      "control_mean": 8.0128,
+      "compounded_mean": 15.5414,
+      "paired_delta_mean": 7.5286
+    },
+    {
+      "file": "null.json",
+      "sha256": "7339894f904ba39628ba8ae29f3ca6a77bc01d6838f05880b1a8e5275ad582d1",
+      "p0": 0.08,
+      "families": 8,
+      "odds_multiplier": 1.0,
+      "portfolios": 5000,
+      "control_mean": 8.0128,
+      "compounded_mean": 8.0128,
+      "paired_delta_mean": 0.0
+    }
+  ],
+  "modeled_channels": ["positive lift", "null lift", "family clustering"],
+  "unmodeled_channels": ["harmful transfer", "decay", "maintenance cost"],
+  "claim_boundary": "Scenario outputs show model consequences of assumptions only; they do not estimate field yield or demonstrate compounding.",
+  "cost": "UNMEASURED"
+}

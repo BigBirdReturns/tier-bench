@@ -1,0 +1,20 @@
+{
+  "schema": "tier-bench/arc-d-administration-manifest@1",
+  "protocol_id": "arc_d_buffalo_pilot_v1",
+  "state": "PARTIAL_SYSTEM_ERROR",
+  "git_seal_state_at_manifest_creation": "pending",
+  "git_blocker_at_manifest_creation": "Shared worktree index write required escalation; approval review was unavailable at the then-current usage limit.",
+  "artifacts": [
+    {"path": "docs/arc-d-buffalo-field.md", "sha256": "fa4eba07a6e4257daa17b62063eeec91417812897959d057fccce46ad1ce6678"},
+    {"path": "scripts/build_buffalo_packets.py", "sha256": "ddbe58bf61d33f31d98ddf2660d574a5e3dd49af1aa06a864a089e936fdc9f0e"},
+    {"path": "scripts/simulate_buffalo_field.py", "sha256": "8e761e6abe0e4aef14657d435b4dcb57773490bb08bf18c4bf08bfa2e61bd9f1"},
+    {"path": "tests/test_buffalo_pilot.py", "sha256": "96beac5a8125c77b4e862997b3b1db6e1a61eef40a5469555a1a2b27f08d4e7e"},
+    {"path": "tests/test_simulate_buffalo_field.py", "sha256": "c1b7ea619586905307836ee59e605013263e23b3d9e0b7907b07c4fa549ad4b3"},
+    {"path": "data/oss-replay/arc_d_buffalo_pilot_v1/contract.json", "sha256": "328452e1fbefd5f721b96a59dd3b14d08cf855707ad19ce5e49d79c55ddd117c"},
+    {"path": "data/oss-replay/arc_d_buffalo_pilot_v1/proposed_harvest_gate.json", "sha256": "6f93f317d81a531d78993e30c55b04e113fd838159f43d6783bd4f649a7d8a69"},
+    {"path": "data/oss-replay/arc_d_buffalo_pilot_v1/packet_leakage_scan.json", "sha256": "dcf23a497423cd6d2646902c6606977b7d7036f2f8657fe40b7ce2dcf9063276"},
+    {"path": "data/oss-replay/arc_d_buffalo_pilot_v1/runs/manifest.json", "sha256": "c50e1a2baf285f9aa87d7735e242d71e9be1bfc8f3a295dbc269455a9cc35660"},
+    {"path": "data/oss-replay/arc_d_buffalo_pilot_v1/simulations/manifest.json", "sha256": "0e2beddb80a96c99027fd9524db1d1ac9f10ab29f98c369d7f10b6767cb210f2"}
+  ],
+  "result_boundary": "Four deterministic projections completed. Three packet-only provider attempts produced no assistant response and remain PARTIAL. No HARVEST gate was applied."
+}

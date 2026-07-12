@@ -1,0 +1,9 @@
+{
+  "state": "PARTIAL_SYSTEM_ERROR",
+  "response_bytes": 0,
+  "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "scientific_observation": false,
+  "retry_permitted": false,
+  "cause": "provider_error_detail_unreported",
+  "coordinator_inference": "A simultaneous usage-limit failure is correlated context but does not prove the thread failure cause."
+}

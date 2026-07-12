@@ -1,0 +1,100 @@
+{
+  "schema": "tier-bench/arc-d-buffalo-pilot@1",
+  "protocol_id": "arc_d_buffalo_pilot_v1",
+  "protocol_state": "exploratory",
+  "freeze_timestamp": "2026-07-12T20:04:04.2019694Z",
+  "tier_bench_source_commit": "cbd5453099f8d9cc9f3109219ec885571364aaaf",
+  "operator_instruction": "so imagine, run some simulations, burn some tokens on some buffalos you can only reasonably expect to harvest less than 10%, but that 10% compounds, desisn the next rungs then run a few",
+  "authority": {
+    "exploratory_spend": "operator_authorized",
+    "task_definition": "exploratory_not_benchmark_adopted",
+    "harvest_gate": "proposed_not_operator_adopted",
+    "grading": "forbidden_until_gate_adoption"
+  },
+  "claim_boundaries": [
+    "No capability claim",
+    "No empirical claim that harvest probability is at or below 0.10",
+    "No capture-amortization or economic claim",
+    "No upstream correctness or fix claim",
+    "No HARVEST verdict from these source-case responses"
+  ],
+  "estimand_proposal": "Probability that a unique residue artifact survives a prospectively frozen, distinct, within-family transfer A/B per eligible public work item",
+  "scenario_prior": {
+    "kind": "illustrative_not_empirical",
+    "baseline_validated_harvest_probability": 0.08,
+    "upper_scenario_bound": 0.10,
+    "pilot_updates_prior": false
+  },
+  "selection": {
+    "sampling_preregistered": false,
+    "method": "convenience_adversarial",
+    "selector_saw_hidden_reference_proposals": true,
+    "representative_sample": false,
+    "repo_clusters": {
+      "encode/httpx": 2,
+      "python-attrs/attrs": 1
+    },
+    "sample_size": 3,
+    "stopping_rule": "exactly three sealed exploratory subjects",
+    "rate_inference_allowed": false
+  },
+  "subject_contract": {
+    "surface": "Codex projectless thread",
+    "fresh_context": true,
+    "packet_only": true,
+    "repository_checkout": false,
+    "tools_allowed": false,
+    "network_allowed": false,
+    "peer_answers_included": false,
+    "reference_proposals_included": false,
+    "responses_preserved_even_if_malformed": true
+  },
+  "status_vocabulary": [
+    "SEALED_RESPONSE",
+    "CANDIDATE_RESIDUE",
+    "REFERENCE_ALIGNED",
+    "REFERENCE_AMBIGUOUS",
+    "ARTIFACTIZED",
+    "WITHIN_FAMILY_TRANSFER",
+    "CROSS_REPO_REPLICATION",
+    "ECONOMIC_CLOSURE"
+  ],
+  "successful_pilot_terminal_status": "SEALED_RESPONSE_UNADJUDICATED",
+  "observed_run_summary": {
+    "attempts": 3,
+    "assistant_responses": 0,
+    "partial_system_errors": 3,
+    "adjudicated_observations": 0,
+    "retry_permitted_under_frozen_stopping_rule": false,
+    "interpretation": "Provider error details were unreported. Simultaneous usage-limit failure is correlated context, not proof of cause."
+  },
+  "failure_default": "Any missing, malformed, contaminated, unverifiable, or authority-ambiguous observation remains preserved and unadjudicated; it never mints HARVEST.",
+  "reference_policy": {
+    "open_pull_requests_are_ground_truth": false,
+    "competing_or_unaccepted_references_default": "REFERENCE_AMBIGUOUS",
+    "alternative_correct_solutions_admissible": true,
+    "required_for_future_adjudication": "deterministic executable evidence or merged/released/maintainer-adopted authority"
+  },
+  "items": [
+    {
+      "item_id": "httpx_3221_ipv6_no_proxy",
+      "prompt_sha256": "a5ee77e4991f2bddae9b7281aa5e1a6c2aca857ccfc3383e5af612136c796fd4",
+      "prompt_bytes": 8268,
+      "blindness": "BODY_ONLY_COLD_CONTEXT"
+    },
+    {
+      "item_id": "httpx_3614_base_url_query",
+      "prompt_sha256": "d81a12a66e96c6a9eaaa9af82d6ca8903d8a8a6f93ffb07466a42dea1c1bd8fe",
+      "prompt_bytes": 6254,
+      "blindness": "BODY_ONLY_COLD_CONTEXT"
+    },
+    {
+      "item_id": "attrs_1567_setattr_mro",
+      "prompt_sha256": "f9c554fb1d5094b90d5c7037db8192e017325289779a85ca396f96b7997ffbe9",
+      "prompt_bytes": 6214,
+      "blindness": "HIGH_HINT_CALIBRATION"
+    }
+  ],
+  "cost_basis": "subscription-derived",
+  "usd_cost": "UNMEASURED"
+}

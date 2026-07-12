@@ -1,0 +1,18 @@
+{
+  "item_id": "attrs_1567_setattr_mro",
+  "blindness": "HIGH_HINT_CALIBRATION",
+  "public_selection_source": "https://github.com/python-attrs/attrs/pull/1567",
+  "source_repository": "python-attrs/attrs",
+  "source_commit": "d2fbfccc1ce77dcc927a86eae9521c95dc4e289c",
+  "problem_snapshot_mode": "neutral_coordinator_summary",
+  "packet_source_mode": "curated_allowlisted_excerpts",
+  "exact_full_blob_included": false,
+  "source_blobs": {
+    "src/attr/_make.py": "793bfd89d6cd51f194dbc7ca9062f502ac172f09",
+    "tests/test_setattr.py": "f44abf65847a433b83ad13e197d2a59ccc66c38a"
+  },
+  "hint_density_note": "The base source names the immediate-base limitation and xfails the confused slotted chain.",
+  "selector_reference_exposure": true,
+  "subject_reference_exposure": false,
+  "pilot_status": "PARTIAL_SYSTEM_ERROR_NO_RESPONSE"
+}
