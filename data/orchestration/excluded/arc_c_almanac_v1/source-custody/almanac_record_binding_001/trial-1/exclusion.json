@@ -1,0 +1,14 @@
+{
+  "schema": "tier-bench.excluded_engine_observation.v1",
+  "thread_id": "019f4c9b-5e52-7880-9ca0-f1297af64d4e",
+  "task_id": "almanac_record_binding_001",
+  "trial_id": "codex_gpt_5_6_sol_almanac_record_binding_001_1",
+  "excluded_after_review": true,
+  "reason": "source manifest bytes were not committed before solver execution",
+  "counts_as_trial": false,
+  "counts_toward_broker": false,
+  "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-1/raw_response.txt",
+  "raw_response_sha256": "064e73045247cf731aa7dd18f8b8ab978aa299678cfca30c38de8541839c8ca7",
+  "thread_snapshot_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_record_binding_001/trial-1/events.jsonl",
+  "thread_snapshot_sha256": "1324b0931bf5e915cabd98575d0c59981c40705b5318df710c59f791f48e662c"
+}

@@ -1,0 +1,15 @@
+{
+  "schema": "tier-bench.external_grade_session.v1",
+  "thread_id": "019f4d56-c26f-7ec0-9d3e-67819c2270ec",
+  "host_id": "local",
+  "turn_id": "019f4d56-dfb9-7913-896f-345bad70e645",
+  "started_at": 1783708966,
+  "completed_at": 1783709279,
+  "duration_ms": 313048,
+  "response_character_count": 19102,
+  "artifact_sha256": "da69f26df5d9bcf55391b7a3deaf00505125aafd00bd6a961aed4eab016af04c",
+  "packet_commit": "6771868bbdff156382796190271404fd72576936",
+  "packet_sha256": "98997bf9d9e43d85052e6ff0107476735cf35aeccfd7c4509dc4762ff48d7b11",
+  "executor_attestation": "operator identified the fresh task as SOL-1 using gpt-5.6-sol; desktop thread metadata does not independently expose the model field",
+  "isolation_observation": "the recorded task trace fetched only the pinned private-repository commit and control_packet.json; it did not read the Tier Bench checkout or peer conclusions"
+}

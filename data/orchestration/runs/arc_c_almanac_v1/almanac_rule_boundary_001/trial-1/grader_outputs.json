@@ -1,0 +1,40 @@
+{
+  "compile": {
+    "command": [
+      "C:\\Python314\\python.exe",
+      "-m",
+      "py_compile",
+      "input.py"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "visible": {
+    "command": [
+      "python",
+      "input.py"
+    ],
+    "returncode": 0,
+    "stdout": "OK\n",
+    "stderr": ""
+  },
+  "hidden_1": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 0,
+    "stdout": "SCORE 14/14\n",
+    "stderr": ""
+  },
+  "hidden_2": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 0,
+    "stdout": "SCORE 14/14\n",
+    "stderr": ""
+  }
+}
