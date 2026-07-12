@@ -51,3 +51,7 @@ jobs:
         run: |
           python tests/test_capture_ledger.py
           python tests/test_capture_roi.py
+      - name: quota gauge — infers allotment from limit-hit intervals; refuses to size against a guess
+        run: |
+          python -m py_compile tests/test_quota.py
+          python tests/test_quota.py

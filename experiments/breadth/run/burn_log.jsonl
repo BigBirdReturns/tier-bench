@@ -1,0 +1,9 @@
+{"type": "spend", "calls": 1, "tokens": 22, "task_id": "almanac_exception_class_001", "trial": 1}
+{"type": "spend", "calls": 1, "tokens": 26, "task_id": "almanac_exception_class_001", "trial": 2}
+{"type": "spend", "calls": 1, "tokens": 42318, "task_id": "almanac_exception_class_001", "trial": 3}
+{"type": "spend", "calls": 1, "tokens": 12510, "task_id": "almanac_record_binding_001", "trial": 1}
+{"type": "spend", "calls": 1, "tokens": 24, "task_id": "almanac_record_binding_001", "trial": 2}
+{"type": "spend", "calls": 1, "tokens": 22, "task_id": "almanac_record_binding_001", "trial": 3}
+{"type": "spend", "calls": 1, "tokens": 30241, "task_id": "almanac_rule_boundary_001", "trial": 1}
+{"type": "spend", "calls": 1, "tokens": 22, "task_id": "almanac_rule_boundary_001", "trial": 2}
+{"type": "spend", "calls": 1, "tokens": 28, "task_id": "almanac_rule_boundary_001", "trial": 3}
