@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_rule_boundary_001",
+  "source_commit": "3d3837165ac9e046acf2cecc27e01f9c41c302e5",
+  "packet_sha256": "26d370a28564094f96f36df0277c068d09f526c10e8d103ea906843e99f26328",
+  "prompt_sha256": "063a6f3ef827c894254c97bac64de6717ba431ff1a749b32dbb49ccf125db5f8",
+  "candidate_sha256": "6fc38a70358647f4e842e394eed205179327d34ac4f43f15ffa9d65e7d8e1bcf",
+  "raw_response_sha256": "6fc38a70358647f4e842e394eed205179327d34ac4f43f15ffa9d65e7d8e1bcf",
+  "thread_id": "aa774229e08ee828c",
+  "usage": {
+    "input_tokens": 4,
+    "output_tokens": 6,
+    "cached_input_tokens": 46290,
+    "cache_write_tokens": 0
+  },
+  "usage_available": true,
+  "event_stream_capture_kind": "claude-code-subagent-transcript",
+  "coordinator_id": "claude_fable_5_coordinator_20260712",
+  "solver_equals_grader": false,
+  "grader_output_sha256": "f1712c8acd69e18bdc6782bfdc542ec8d572342196faa64eaad307fe0f77fa14",
+  "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+  "hidden_grader_runs": 2,
+  "hidden_grader_deterministic": true,
+  "outcome": "pass",
+  "timed_out": false,
+  "timeout_seconds": 30.0,
+  "visible_returncode": 0,
+  "hidden_returncodes": [
+    0,
+    0
+  ],
+  "cost_basis": "subscription-derived",
+  "cost_usd": 0.0
+}

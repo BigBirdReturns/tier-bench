@@ -1,0 +1,852 @@
+{
+  "schema_version": 1,
+  "run_id": "arc_c_almanac_claude_v1",
+  "status": "sealed",
+  "measurement_claim": true,
+  "engine": {
+    "engine_id": "claude_fable_5",
+    "model": "claude-fable-5",
+    "lineage": "anthropic",
+    "surface": "claude-code-agent-tool",
+    "role": "independent_solver"
+  },
+  "pairing": {
+    "pair_id": "arc_c_almanac_cross_engine_v1",
+    "peer_engine_id": "codex_gpt_5_6_sol",
+    "peer_lineage": "openai",
+    "source_commit": "3d3837165ac9e046acf2cecc27e01f9c41c302e5",
+    "independent_before_exchange": true,
+    "state": "independent_run_sealed"
+  },
+  "task_set": [
+    "almanac_exception_class_001",
+    "almanac_record_binding_001",
+    "almanac_rule_boundary_001"
+  ],
+  "task_manifests": [
+    {
+      "task_id": "almanac_exception_class_001",
+      "path": "tasks/almanac_exception_class_001.json",
+      "sha256": "392dd0d1a5d4c2bff7e5d69b29a506f7816b10f106a14f490d47183df0b9fb4f"
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "path": "tasks/almanac_record_binding_001.json",
+      "sha256": "b9c20e5357d8aa7e46ca28cf99aef09e7cf836b4fe4db56c91aa5b08fefb2be1"
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "path": "tasks/almanac_rule_boundary_001.json",
+      "sha256": "0e7c6760c3c88e0501363fe1ea6dd9cfa0f8aed5cec7174f9f69b9571c8be446"
+    }
+  ],
+  "rungs": [
+    "floor",
+    "effort_medium",
+    "effort_high",
+    "effort_max"
+  ],
+  "rung_bindings": {
+    "floor": {
+      "model": "claude-fable-5",
+      "effort": "low",
+      "surface": "claude-code-agent-tool"
+    },
+    "effort_medium": {
+      "model": "claude-fable-5",
+      "effort": "medium",
+      "surface": "claude-code-agent-tool"
+    },
+    "effort_high": {
+      "model": "claude-fable-5",
+      "effort": "high",
+      "surface": "claude-code-agent-tool"
+    },
+    "effort_max": {
+      "model": "claude-fable-5",
+      "effort": "max",
+      "surface": "claude-code-agent-tool"
+    }
+  },
+  "k": 3,
+  "trials": [
+    {
+      "trial_id": "claude_fable_5_almanac_exception_class_001_1",
+      "sequence": 1,
+      "task_id": "almanac_exception_class_001",
+      "rung": "floor",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "trial": 1,
+      "solver_id": "claude_fable_5:acc88bdf54052f649",
+      "executor_surface": "claude-code-agent-tool",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "route",
+        "decision_state": "unmeasured",
+        "reason": "start at the cheapest unmeasured rung",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 0,
+            "decisive": 0,
+            "passes": 0,
+            "failures": 0,
+            "window_size": 0,
+            "window_passes": 0,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "unmeasured"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-1/candidate.py",
+        "sha256": "880ac4d87ba775613818825d5a691848bf216b1e7ceed6fae4a39ea133ef0ec7",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:claude_fable_5_coordinator_20260712",
+        "candidate_sha256": "880ac4d87ba775613818825d5a691848bf216b1e7ceed6fae4a39ea133ef0ec7",
+        "hidden_grader_path": "fixtures/almanac_exception_class_001/hidden_tests.py",
+        "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-1/grader_outputs.json",
+        "grader_output_sha256": "34a6d5f54209dc89a7dc14be814f76add6abef27777c8590643037bc56d0416e"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 4,
+        "output_tokens": 6,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "20af4f02daae24acbf900b0245e9f46f5dc331b60a17086e58cd2391481c1285",
+        "prompt_sha256": "b43f74c08b2678c1295145ea97361ce51ca9db15103c4aa0588d999a955815e6",
+        "solver_thread_id": "acc88bdf54052f649",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-1/raw_response.txt",
+        "raw_response_sha256": "880ac4d87ba775613818825d5a691848bf216b1e7ceed6fae4a39ea133ef0ec7",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-1/events.jsonl",
+        "event_stream_sha256": "6d906feece8731f30b94bfb51f91e87522d2ed79149a8fe1645ad05433a8f44f",
+        "event_stream_capture_kind": "claude-code-subagent-transcript"
+      }
+    },
+    {
+      "trial_id": "claude_fable_5_almanac_exception_class_001_2",
+      "sequence": 2,
+      "task_id": "almanac_exception_class_001",
+      "rung": "floor",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "trial": 2,
+      "solver_id": "claude_fable_5:a38391200eefffa7c",
+      "executor_surface": "claude-code-agent-tool",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 1,
+            "decisive": 1,
+            "passes": 1,
+            "failures": 0,
+            "window_size": 1,
+            "window_passes": 1,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-2/candidate.py",
+        "sha256": "ac877b69b2dfdf2363f900875452cf9cd43b36ed3add2b38672e0bf16a7a8b3f",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:claude_fable_5_coordinator_20260712",
+        "candidate_sha256": "ac877b69b2dfdf2363f900875452cf9cd43b36ed3add2b38672e0bf16a7a8b3f",
+        "hidden_grader_path": "fixtures/almanac_exception_class_001/hidden_tests.py",
+        "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-2/grader_outputs.json",
+        "grader_output_sha256": "34a6d5f54209dc89a7dc14be814f76add6abef27777c8590643037bc56d0416e"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 4,
+        "output_tokens": 6,
+        "cache_read_tokens": 44024,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "20af4f02daae24acbf900b0245e9f46f5dc331b60a17086e58cd2391481c1285",
+        "prompt_sha256": "b43f74c08b2678c1295145ea97361ce51ca9db15103c4aa0588d999a955815e6",
+        "solver_thread_id": "a38391200eefffa7c",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-2/raw_response.txt",
+        "raw_response_sha256": "ac877b69b2dfdf2363f900875452cf9cd43b36ed3add2b38672e0bf16a7a8b3f",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-2/events.jsonl",
+        "event_stream_sha256": "d269b58b3216a6578596d0cf4476fd6a36c49dbcc80e3f55de91dbcd519f45e3",
+        "event_stream_capture_kind": "claude-code-subagent-transcript"
+      }
+    },
+    {
+      "trial_id": "claude_fable_5_almanac_exception_class_001_3",
+      "sequence": 3,
+      "task_id": "almanac_exception_class_001",
+      "rung": "floor",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "trial": 3,
+      "solver_id": "claude_fable_5:af722d0a5020cc313",
+      "executor_surface": "claude-code-agent-tool",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 2,
+            "decisive": 2,
+            "passes": 2,
+            "failures": 0,
+            "window_size": 2,
+            "window_passes": 2,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-3/candidate.py",
+        "sha256": "0eac32bc002c8a199be802fe13ffd077122fbae5322545cf2c2f03afbe8fa267",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:claude_fable_5_coordinator_20260712",
+        "candidate_sha256": "0eac32bc002c8a199be802fe13ffd077122fbae5322545cf2c2f03afbe8fa267",
+        "hidden_grader_path": "fixtures/almanac_exception_class_001/hidden_tests.py",
+        "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-3/grader_outputs.json",
+        "grader_output_sha256": "34a6d5f54209dc89a7dc14be814f76add6abef27777c8590643037bc56d0416e"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 4,
+        "output_tokens": 4,
+        "cache_read_tokens": 44024,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "20af4f02daae24acbf900b0245e9f46f5dc331b60a17086e58cd2391481c1285",
+        "prompt_sha256": "b43f74c08b2678c1295145ea97361ce51ca9db15103c4aa0588d999a955815e6",
+        "solver_thread_id": "af722d0a5020cc313",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-3/raw_response.txt",
+        "raw_response_sha256": "0eac32bc002c8a199be802fe13ffd077122fbae5322545cf2c2f03afbe8fa267",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_exception_class_001/trial-3/events.jsonl",
+        "event_stream_sha256": "74dd140c9ca7e103b0a1b70c2cff7b8e9ff090ab1fc151a3bc11a22c8c0296f8",
+        "event_stream_capture_kind": "claude-code-subagent-transcript"
+      }
+    },
+    {
+      "trial_id": "claude_fable_5_almanac_record_binding_001_1",
+      "sequence": 4,
+      "task_id": "almanac_record_binding_001",
+      "rung": "floor",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "trial": 1,
+      "solver_id": "claude_fable_5:ae97d7b2ba9fddde0",
+      "executor_surface": "claude-code-agent-tool",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "route",
+        "decision_state": "unmeasured",
+        "reason": "start at the cheapest unmeasured rung",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 0,
+            "decisive": 0,
+            "passes": 0,
+            "failures": 0,
+            "window_size": 0,
+            "window_passes": 0,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "unmeasured"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-1/candidate.py",
+        "sha256": "0f85c19296a833a3f7de2eed0a3a41908a08a7c523c79d7ca8d4442ea8511885",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:claude_fable_5_coordinator_20260712",
+        "candidate_sha256": "0f85c19296a833a3f7de2eed0a3a41908a08a7c523c79d7ca8d4442ea8511885",
+        "hidden_grader_path": "fixtures/almanac_record_binding_001/hidden_tests.py",
+        "hidden_grader_sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-1/grader_outputs.json",
+        "grader_output_sha256": "f1712c8acd69e18bdc6782bfdc542ec8d572342196faa64eaad307fe0f77fa14"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 4,
+        "output_tokens": 6,
+        "cache_read_tokens": 30150,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "91bb2a6099da7044dbda5aaae98ddfa68849d5ffaa7f3f75d7ce5816b801e9fe",
+        "prompt_sha256": "0be7a00168a7870e690bc9c20ef30bf7cfa085c4d964fc4e6dde7212c867d4d0",
+        "solver_thread_id": "ae97d7b2ba9fddde0",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-1/raw_response.txt",
+        "raw_response_sha256": "0f85c19296a833a3f7de2eed0a3a41908a08a7c523c79d7ca8d4442ea8511885",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-1/events.jsonl",
+        "event_stream_sha256": "66f74d73045e77e2d8caf7cedc40790e87816edc85daeb3dfc3e80121d402c92",
+        "event_stream_capture_kind": "claude-code-subagent-transcript"
+      }
+    },
+    {
+      "trial_id": "claude_fable_5_almanac_record_binding_001_2",
+      "sequence": 5,
+      "task_id": "almanac_record_binding_001",
+      "rung": "floor",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "trial": 2,
+      "solver_id": "claude_fable_5:a5f70af6777b8f084",
+      "executor_surface": "claude-code-agent-tool",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 1,
+            "decisive": 1,
+            "passes": 1,
+            "failures": 0,
+            "window_size": 1,
+            "window_passes": 1,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-2/candidate.py",
+        "sha256": "83bc688642f1fd79003d6a954108968f46bb2133e827ef3145ef6b0f86db4b46",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:claude_fable_5_coordinator_20260712",
+        "candidate_sha256": "83bc688642f1fd79003d6a954108968f46bb2133e827ef3145ef6b0f86db4b46",
+        "hidden_grader_path": "fixtures/almanac_record_binding_001/hidden_tests.py",
+        "hidden_grader_sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-2/grader_outputs.json",
+        "grader_output_sha256": "f1712c8acd69e18bdc6782bfdc542ec8d572342196faa64eaad307fe0f77fa14"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 4,
+        "output_tokens": 6,
+        "cache_read_tokens": 45610,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "91bb2a6099da7044dbda5aaae98ddfa68849d5ffaa7f3f75d7ce5816b801e9fe",
+        "prompt_sha256": "0be7a00168a7870e690bc9c20ef30bf7cfa085c4d964fc4e6dde7212c867d4d0",
+        "solver_thread_id": "a5f70af6777b8f084",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-2/raw_response.txt",
+        "raw_response_sha256": "83bc688642f1fd79003d6a954108968f46bb2133e827ef3145ef6b0f86db4b46",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-2/events.jsonl",
+        "event_stream_sha256": "ea5876363e1314c788d1b75d9da6f45971774f2966444d51cac3d714163b01ef",
+        "event_stream_capture_kind": "claude-code-subagent-transcript"
+      }
+    },
+    {
+      "trial_id": "claude_fable_5_almanac_record_binding_001_3",
+      "sequence": 6,
+      "task_id": "almanac_record_binding_001",
+      "rung": "floor",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "trial": 3,
+      "solver_id": "claude_fable_5:af1978d5d8c7cfe66",
+      "executor_surface": "claude-code-agent-tool",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 2,
+            "decisive": 2,
+            "passes": 2,
+            "failures": 0,
+            "window_size": 2,
+            "window_passes": 2,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-3/candidate.py",
+        "sha256": "0f85c19296a833a3f7de2eed0a3a41908a08a7c523c79d7ca8d4442ea8511885",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:claude_fable_5_coordinator_20260712",
+        "candidate_sha256": "0f85c19296a833a3f7de2eed0a3a41908a08a7c523c79d7ca8d4442ea8511885",
+        "hidden_grader_path": "fixtures/almanac_record_binding_001/hidden_tests.py",
+        "hidden_grader_sha256": "fec244b9ae4fbf47631b4165ca5a49d00df7a066c939baac6a17053ca7fbdf4d",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-3/grader_outputs.json",
+        "grader_output_sha256": "f1712c8acd69e18bdc6782bfdc542ec8d572342196faa64eaad307fe0f77fa14"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 4,
+        "output_tokens": 6,
+        "cache_read_tokens": 45610,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "91bb2a6099da7044dbda5aaae98ddfa68849d5ffaa7f3f75d7ce5816b801e9fe",
+        "prompt_sha256": "0be7a00168a7870e690bc9c20ef30bf7cfa085c4d964fc4e6dde7212c867d4d0",
+        "solver_thread_id": "af1978d5d8c7cfe66",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-3/raw_response.txt",
+        "raw_response_sha256": "0f85c19296a833a3f7de2eed0a3a41908a08a7c523c79d7ca8d4442ea8511885",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_record_binding_001/trial-3/events.jsonl",
+        "event_stream_sha256": "1089aef87bbc9c780ee555b1fb688032a67f85291c9482cf2e34ad1ce68a858c",
+        "event_stream_capture_kind": "claude-code-subagent-transcript"
+      }
+    },
+    {
+      "trial_id": "claude_fable_5_almanac_rule_boundary_001_1",
+      "sequence": 7,
+      "task_id": "almanac_rule_boundary_001",
+      "rung": "floor",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "trial": 1,
+      "solver_id": "claude_fable_5:a6981c5cb95cbe0ae",
+      "executor_surface": "claude-code-agent-tool",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "route",
+        "decision_state": "unmeasured",
+        "reason": "start at the cheapest unmeasured rung",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 0,
+            "decisive": 0,
+            "passes": 0,
+            "failures": 0,
+            "window_size": 0,
+            "window_passes": 0,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "unmeasured"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-1/candidate.py",
+        "sha256": "061156e66803047445c3f741891f81249cff945e6159f4b48d643bdaa46a6298",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:claude_fable_5_coordinator_20260712",
+        "candidate_sha256": "061156e66803047445c3f741891f81249cff945e6159f4b48d643bdaa46a6298",
+        "hidden_grader_path": "fixtures/almanac_rule_boundary_001/hidden_tests.py",
+        "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-1/grader_outputs.json",
+        "grader_output_sha256": "f1712c8acd69e18bdc6782bfdc542ec8d572342196faa64eaad307fe0f77fa14"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 4,
+        "output_tokens": 10,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "26d370a28564094f96f36df0277c068d09f526c10e8d103ea906843e99f26328",
+        "prompt_sha256": "063a6f3ef827c894254c97bac64de6717ba431ff1a749b32dbb49ccf125db5f8",
+        "solver_thread_id": "a6981c5cb95cbe0ae",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-1/raw_response.txt",
+        "raw_response_sha256": "061156e66803047445c3f741891f81249cff945e6159f4b48d643bdaa46a6298",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-1/events.jsonl",
+        "event_stream_sha256": "b094e6c15830d7156195c289f4cc523d569e09c36bc6842e349271556a007080",
+        "event_stream_capture_kind": "claude-code-subagent-transcript"
+      }
+    },
+    {
+      "trial_id": "claude_fable_5_almanac_rule_boundary_001_2",
+      "sequence": 8,
+      "task_id": "almanac_rule_boundary_001",
+      "rung": "floor",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "trial": 2,
+      "solver_id": "claude_fable_5:aa774229e08ee828c",
+      "executor_surface": "claude-code-agent-tool",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 1,
+            "decisive": 1,
+            "passes": 1,
+            "failures": 0,
+            "window_size": 1,
+            "window_passes": 1,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-2/candidate.py",
+        "sha256": "6fc38a70358647f4e842e394eed205179327d34ac4f43f15ffa9d65e7d8e1bcf",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:claude_fable_5_coordinator_20260712",
+        "candidate_sha256": "6fc38a70358647f4e842e394eed205179327d34ac4f43f15ffa9d65e7d8e1bcf",
+        "hidden_grader_path": "fixtures/almanac_rule_boundary_001/hidden_tests.py",
+        "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-2/grader_outputs.json",
+        "grader_output_sha256": "f1712c8acd69e18bdc6782bfdc542ec8d572342196faa64eaad307fe0f77fa14"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 4,
+        "output_tokens": 6,
+        "cache_read_tokens": 46290,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "26d370a28564094f96f36df0277c068d09f526c10e8d103ea906843e99f26328",
+        "prompt_sha256": "063a6f3ef827c894254c97bac64de6717ba431ff1a749b32dbb49ccf125db5f8",
+        "solver_thread_id": "aa774229e08ee828c",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-2/raw_response.txt",
+        "raw_response_sha256": "6fc38a70358647f4e842e394eed205179327d34ac4f43f15ffa9d65e7d8e1bcf",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-2/events.jsonl",
+        "event_stream_sha256": "e3c2829ce477ec26217c0a8321d9b41e2a988d3d329f192eac5ac9ea9bfa82a3",
+        "event_stream_capture_kind": "claude-code-subagent-transcript"
+      }
+    },
+    {
+      "trial_id": "claude_fable_5_almanac_rule_boundary_001_3",
+      "sequence": 9,
+      "task_id": "almanac_rule_boundary_001",
+      "rung": "floor",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "trial": 3,
+      "solver_id": "claude_fable_5:a71bbbb4d82f32f0b",
+      "executor_surface": "claude-code-agent-tool",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "floor",
+            "observations": 2,
+            "decisive": 2,
+            "passes": 2,
+            "failures": 0,
+            "window_size": 2,
+            "window_passes": 2,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-3/candidate.py",
+        "sha256": "0ae99a9486551e2117556213816d3bc370d18ee31632c17444f920a50f92a86f",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "pass",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:claude_fable_5_coordinator_20260712",
+        "candidate_sha256": "0ae99a9486551e2117556213816d3bc370d18ee31632c17444f920a50f92a86f",
+        "hidden_grader_path": "fixtures/almanac_rule_boundary_001/hidden_tests.py",
+        "hidden_grader_sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304",
+        "grader_output_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-3/grader_outputs.json",
+        "grader_output_sha256": "f1712c8acd69e18bdc6782bfdc542ec8d572342196faa64eaad307fe0f77fa14"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "subscription-derived",
+        "input_tokens": 4,
+        "output_tokens": 6,
+        "cache_read_tokens": 46290,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "26d370a28564094f96f36df0277c068d09f526c10e8d103ea906843e99f26328",
+        "prompt_sha256": "063a6f3ef827c894254c97bac64de6717ba431ff1a749b32dbb49ccf125db5f8",
+        "solver_thread_id": "a71bbbb4d82f32f0b",
+        "raw_response_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-3/raw_response.txt",
+        "raw_response_sha256": "0ae99a9486551e2117556213816d3bc370d18ee31632c17444f920a50f92a86f",
+        "event_stream_path": "data/orchestration/runs/arc_c_almanac_claude_v1/almanac_rule_boundary_001/trial-3/events.jsonl",
+        "event_stream_sha256": "bd22127c7262a9d78f9b42d0abe69a7e6cc6bc17d0f6a7a047f5c53a1f2af844",
+        "event_stream_capture_kind": "claude-code-subagent-transcript"
+      }
+    }
+  ],
+  "decisions": [
+    {
+      "task_id": "almanac_exception_class_001",
+      "state": "cleared",
+      "action": "seal",
+      "route_to": "floor",
+      "escalation_from": null,
+      "abstained": false,
+      "reason": "K-of-K decisive receipts clear this rung",
+      "evidence": [
+        {
+          "rung": "floor",
+          "observations": 3,
+          "decisive": 3,
+          "passes": 3,
+          "failures": 0,
+          "window_size": 3,
+          "window_passes": 3,
+          "window_failures": 0,
+          "required_k": 3,
+          "state": "clears"
+        }
+      ]
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "state": "cleared",
+      "action": "seal",
+      "route_to": "floor",
+      "escalation_from": null,
+      "abstained": false,
+      "reason": "K-of-K decisive receipts clear this rung",
+      "evidence": [
+        {
+          "rung": "floor",
+          "observations": 3,
+          "decisive": 3,
+          "passes": 3,
+          "failures": 0,
+          "window_size": 3,
+          "window_passes": 3,
+          "window_failures": 0,
+          "required_k": 3,
+          "state": "clears"
+        }
+      ]
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "state": "cleared",
+      "action": "seal",
+      "route_to": "floor",
+      "escalation_from": null,
+      "abstained": false,
+      "reason": "K-of-K decisive receipts clear this rung",
+      "evidence": [
+        {
+          "rung": "floor",
+          "observations": 3,
+          "decisive": 3,
+          "passes": 3,
+          "failures": 0,
+          "window_size": 3,
+          "window_passes": 3,
+          "window_failures": 0,
+          "required_k": 3,
+          "state": "clears"
+        }
+      ]
+    }
+  ],
+  "burden": {
+    "requested_outcome": "the Claude-lineage half of the ARC-C almanac cross-engine pairing: route real hidden almanac knots at the cheapest measured sufficient rung of the fable-5 effort ladder",
+    "claimant": "ARC-C Claude run coordinator (driver session 2026-07-12)",
+    "authority": "manifest-declared hidden graders at source commit 3d38371 plus the floor-first K-of-K residue broker",
+    "predicates": [
+      "candidates extracted mechanically from raw solver transcripts and sha256-sealed before grading",
+      "hidden graders absent from every solver packet and every solver context",
+      "each decisive verdict from a coordinator rerun with two deterministic hidden-grader executions",
+      "no escalation before a broker-authorized wall",
+      "route, spend, replay, abstention and verdict provenance complete per trial",
+      "raw solver event streams (claude-code subagent transcripts) preserved and hash-bound"
+    ],
+    "burden_holder": "whoever asserts a routing, capability, or cost conclusion from this run",
+    "evidence": [
+      "data/orchestration/runs/arc_c_almanac_claude_v1/*/trial-*/",
+      "tasks/almanac_*.json manifests at 3d38371 (byte-identical on current main)",
+      "experiments/breadth/run/arcc_claude_fable_ledger.jsonl (token telemetry)"
+    ],
+    "verifier": "scripts/validate_orchestration_run.py + manifest hidden graders + scripts/compare_engine_runs.py",
+    "gap": "none for this engine run; peer comparison remains separate",
+    "closure_decision": "sealed",
+    "failure_default": "remain unmeasured; do not route, escalate, price, or claim success"
+  }
+}

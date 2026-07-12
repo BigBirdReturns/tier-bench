@@ -10,3 +10,10 @@
 {"type": "spend", "calls": 1, "tokens": 46304, "task_id": "almanac_rule_boundary_001", "trial": 1, "model": "claude-fable-5"}
 {"type": "spend", "calls": 1, "tokens": 10, "task_id": "almanac_rule_boundary_001", "trial": 2, "model": "claude-fable-5"}
 {"type": "spend", "calls": 1, "tokens": 10, "task_id": "almanac_rule_boundary_001", "trial": 3, "model": "claude-fable-5"}
+{"type": "spend", "calls": 1, "tokens": 44034, "task_id": "almanac_exception_class_001", "trial": 1, "model": "claude-fable-5"}
+{"type": "spend", "calls": 1, "tokens": 10, "task_id": "almanac_exception_class_001", "trial": 2, "model": "claude-fable-5"}
+{"type": "spend", "calls": 1, "tokens": 8, "task_id": "almanac_exception_class_001", "trial": 3, "model": "claude-fable-5"}
+{"type": "spend", "calls": 1, "tokens": 15470, "task_id": "almanac_record_binding_001", "trial": 1, "model": "claude-fable-5"}
+{"type": "spend", "calls": 1, "tokens": 10, "task_id": "almanac_record_binding_001", "trial": 2, "model": "claude-fable-5"}
+{"type": "spend", "calls": 1, "tokens": 10, "task_id": "almanac_record_binding_001", "trial": 3, "model": "claude-fable-5"}
+{"type": "limit_hit", "model": "claude-fable-5", "note": "session interrupted mid-drive 2026-07-12 (operator returned with 'continue from where you left off'); first observed wall since gauge seeding"}

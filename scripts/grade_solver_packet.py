@@ -57,12 +57,21 @@ def _run(command: list[str], cwd: Path,
 
 
 def _events(path: Path | None) -> dict:
+    """Extract thread identity + token telemetry from a raw event stream.
+
+    Two capture formats are recognized: Codex provider JSONL
+    (thread.started / turn.completed events, cumulative usage) and Claude Code
+    subagent transcripts (assistant rows carrying per-call message.usage and an
+    agentId thread identity; usage is summed across rows)."""
     data = {"thread_id": None, "usage": {},
             "capture_kind": "provider-raw-jsonl"}
     if path is None or not path.is_file():
         return data
     raw = path.read_bytes()
     encoding = "utf-16" if raw.startswith((b"\xff\xfe", b"\xfe\xff")) else "utf-8-sig"
+    claude_usage = {"input_tokens": 0, "output_tokens": 0,
+                    "cached_input_tokens": 0, "cache_write_tokens": 0}
+    claude_rows = 0
     for line in raw.decode(encoding).splitlines():
         try:
             event = json.loads(line)
@@ -74,6 +83,18 @@ def _events(path: Path | None) -> dict:
             data["thread_id"] = event.get("thread_id")
         if event.get("type") == "turn.completed":
             data["usage"] = event.get("usage", {})
+        if event.get("agentId") and event.get("isSidechain") is True:
+            data["thread_id"] = data["thread_id"] or event["agentId"]
+            data["capture_kind"] = "claude-code-subagent-transcript"
+            if event.get("type") == "assistant":
+                usage = (event.get("message") or {}).get("usage") or {}
+                claude_rows += 1
+                claude_usage["input_tokens"] += int(usage.get("input_tokens", 0) or 0)
+                claude_usage["output_tokens"] += int(usage.get("output_tokens", 0) or 0)
+                claude_usage["cached_input_tokens"] += int(usage.get("cache_read_input_tokens", 0) or 0)
+                claude_usage["cache_write_tokens"] += int(usage.get("cache_creation_input_tokens", 0) or 0)
+    if claude_rows:
+        data["usage"] = claude_usage
     return data
 
 

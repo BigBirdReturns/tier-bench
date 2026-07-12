@@ -206,6 +206,19 @@ pairing names as peer), and the haiku floor is a cheaper sub-floor rung with
 no Codex counterpart — a real asymmetry the paired run manifest must state
 rather than paper over.
 
+## Addendum 3 (2026-07-12) — superseded for pairing purposes by the sealed ARC-C run
+
+The schema-valid Claude engine run this file said was still needed now exists
+and is **sealed**: `data/orchestration/arc_c_almanac_claude_v1.json` — engine
+`claude_fable_5`, floor = fable-5@low, source-pinned at `3d38371`, all nine
+trials broker-authorized and hidden-graded (3/3 on every task), raw solver
+event streams committed per trial. This directory remains the historical
+record of the haiku sub-floor measurement (2-of-3-tasks floor clear, the
+lichun-knot miss) and of the escalation that first showed fable-low absorbing
+that knot — plus one custody correction found during mechanical re-extraction
+(`escalation_fable_low/CORRECTION_f2_transcription.md`). Cross-engine pairing
+state lives in the ARC-C artifacts, not here.
+
 ## Burden note (docs/burden-discipline.md)
 
 ```text
