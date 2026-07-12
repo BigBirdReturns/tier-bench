@@ -31,6 +31,10 @@ to the original conversational draft are marked.
   packet-only B2 rubric and the prospective B4 0/3 to 3/3 transfer gate. Its
   exact bytes are proposal-only off the default branch and operator-adopted
   when merged. Adoption does not grade a response or satisfy B4.
+- `ARC-D-B2-PACKETS` adds a canonical-Git, one-response-only exporter and
+  fail-closed validator. The exporter may construct official packets only when
+  its exact source is on the default branch; tests may build ephemeral packets
+  without disclosure, but no grader dispatch is authorized before merge.
 
 ## Settled assets (with exact figures)
 
