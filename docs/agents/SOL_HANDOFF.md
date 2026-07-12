@@ -10,7 +10,11 @@ to the original conversational draft are marked.
 
 - ARC-B merged: PR [#59](https://github.com/BigBirdReturns/tier-bench/pull/59),
   commit `f779ecf`, `breadth-durability` green on main.
-- Runway: ARC-C (orchestration-pattern benchmark) is NEXT (`ROADMAP.md`).
+- ARC-C is pair-sealed (2026-07-12): both lineages clear the three almanac
+  knots 3/3 at floor against source `3d38371`, and the committed comparator
+  reports a comparable pair with 3/3 task-decision agreement.
+- Runway: ARC-D (OSS replay field) is NEXT in `ROADMAP.md`; assignment remains
+  governed by `docs/agents/QUEUE.md`.
 
 ## Settled assets (with exact figures)
 

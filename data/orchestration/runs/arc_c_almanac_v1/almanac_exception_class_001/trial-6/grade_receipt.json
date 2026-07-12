@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_exception_class_001",
+  "source_commit": "3d3837165ac9e046acf2cecc27e01f9c41c302e5",
+  "packet_sha256": "452c8ed1faf378b2e20544405c3aa7b3de98f89fd63f293dfb7e57fdf9263212",
+  "prompt_sha256": "28da3e65d2e4c717961583f4de9666eda81aafa54b6bc8c1e78bad229c77dff2",
+  "candidate_sha256": "1a596706afdcec0fb668648d0127723f79638650ba8159fa13f9f94ac68ea7ba",
+  "raw_response_sha256": "1a364101fb641823229fcaec0c56c7cf66f313fa670ce87f9e239044d1cd8a28",
+  "thread_id": "019f571c-76ee-79f0-9728-522fa9df4540",
+  "usage": {
+    "input_tokens": 17956,
+    "cached_input_tokens": 9984,
+    "output_tokens": 636,
+    "reasoning_output_tokens": 56,
+    "total_tokens": 18592
+  },
+  "usage_available": true,
+  "event_stream_capture_kind": "coordinator-derived-codex-app-thread-snapshot",
+  "coordinator_id": "019f4fdc-f3f9-7b52-87f3-3452d231d67e",
+  "solver_equals_grader": false,
+  "grader_output_sha256": "da8b3b408b512dcce97500eec1f5aa56aed0e538aecdf65833773d7d289edd16",
+  "hidden_grader_sha256": "fcc7c8301991450c1315e57c2610d068d656d2e3b0e13043a2a87748ef44a1cc",
+  "hidden_grader_runs": 2,
+  "hidden_grader_deterministic": true,
+  "outcome": "pass",
+  "timed_out": false,
+  "timeout_seconds": 30.0,
+  "visible_returncode": 0,
+  "hidden_returncodes": [
+    0,
+    0
+  ],
+  "cost_basis": "subscription-derived",
+  "cost_usd": 0.0
+}

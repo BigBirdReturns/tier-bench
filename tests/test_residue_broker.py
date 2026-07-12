@@ -77,21 +77,22 @@ def _sync(run: dict) -> None:
     run["decisions"] = decisions_for_run(run)
 
 
-def test_committed_codex_run_is_partial_after_source_custody_exclusions():
+def test_committed_codex_run_is_sealed_after_source_bound_refill():
     run = json.loads(PLAN.read_text(encoding="utf-8"))
-    assert run["status"] == "partial" and run["measurement_claim"] is False
-    assert run["pairing"]["state"] == "incomparable"
+    assert run["status"] == "sealed" and run["measurement_claim"] is True
+    assert run["pairing"]["state"] == "pair_sealed"
     assert run["pairing"]["source_commit"] == "3d3837165ac9e046acf2cecc27e01f9c41c302e5"
-    assert len(run["trials"]) == 3
+    assert len(run["trials"]) == 9
+    assert all(decision["action"] == "seal" for decision in run["decisions"])
     remaining = validator.validate_run(run)
     assert remaining == [], remaining
     decisions = {d["task_id"]: d for d in run["decisions"]}
     assert set(decisions) == set(run["task_set"])
-    assert decisions["almanac_rule_boundary_001"]["action"] == "seal"
-    assert decisions["almanac_exception_class_001"]["action"] == "route"
-    assert decisions["almanac_record_binding_001"]["action"] == "route"
-    assert run["burden"]["closure_decision"] == "partial"
-    assert "six observations excluded" in run["burden"]["gap"]
+    assert all(decision["action"] == "seal" for decision in decisions.values())
+    assert run["burden"]["closure_decision"] == "sealed"
+    assert run["burden"]["gap"] == (
+        "none; the sealed peer comparison is preserved as a separate artifact"
+    )
 
 
 def test_validator_hashes_manifests_at_pinned_source_commit_not_checkout():

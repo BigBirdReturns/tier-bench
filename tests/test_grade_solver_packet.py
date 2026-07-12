@@ -46,6 +46,25 @@ def test_reference_passes_two_independent_grades():
         assert result["hidden_grader_deterministic"] is True
 
 
+def test_grade_preserves_exact_sealed_candidate_when_requested():
+    with _scratch() as parent:
+        solver = parent / "solver"
+        receipt = parent / "receipt.json"
+        exporter.export_packet(MANIFEST, solver, receipt)
+        raw = REPO / f"experiments/almanac/key/{TASK}/REFERENCE.py"
+        sealed = parent / "sealed" / "candidate.py"
+        result = grader.grade(
+            receipt,
+            solver,
+            raw,
+            parent / "grade",
+            "coordinator-test",
+            candidate_out=sealed,
+        )
+        assert sealed.is_file()
+        assert exporter.sha256(sealed) == result["candidate_sha256"]
+
+
 def test_naive_school_fails_hidden_grader():
     with _scratch() as parent:
         result = _case(parent, "NAIVE")
@@ -103,6 +122,28 @@ def test_grade_timeout_mints_error_receipt_not_capability_failure():
         assert result["timed_out"] is True
         preserved = json.loads((out / "grader-outputs.json").read_text(encoding="utf-8"))
         assert any(item["timed_out"] for item in preserved.values())
+
+
+def test_codex_desktop_rollout_preserves_thread_and_final_cumulative_usage():
+    with _scratch() as parent:
+        events = parent / "rollout.jsonl"
+        rows = [
+            {"type": "session_meta", "payload": {"id": "thread-sol5"}},
+            {"type": "event_msg", "payload": {"type": "token_count", "info": {
+                "total_token_usage": {"input_tokens": 10, "output_tokens": 2,
+                                      "cached_input_tokens": 3,
+                                      "reasoning_output_tokens": 1}}}},
+            {"type": "event_msg", "payload": {"type": "token_count", "info": {
+                "total_token_usage": {"input_tokens": 14, "output_tokens": 5,
+                                      "cached_input_tokens": 4,
+                                      "reasoning_output_tokens": 2}}}},
+        ]
+        events.write_text("".join(json.dumps(row) + "\n" for row in rows),
+                          encoding="utf-8")
+        parsed = grader._events(events)
+        assert parsed["thread_id"] == "thread-sol5"
+        assert parsed["capture_kind"] == "codex-desktop-rollout-jsonl"
+        assert parsed["usage"] == rows[-1]["payload"]["info"]["total_token_usage"]
 
 
 def _run_standalone() -> int:

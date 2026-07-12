@@ -86,6 +86,14 @@ def verify_run_receipts(clone: Path) -> int:
                 trial_id,
             )
             checked += 5
+            if "administration_receipt_path" in provenance:
+                assert_hash(
+                    clone,
+                    provenance["administration_receipt_path"],
+                    provenance["administration_receipt_sha256"],
+                    trial_id,
+                )
+                checked += 1
 
     return checked
 

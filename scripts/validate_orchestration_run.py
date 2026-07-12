@@ -255,10 +255,39 @@ def _check_trial(run: dict, trial: dict, manifests: dict[str, dict], repo: Path,
                                 f"{label}: provenance.event_stream_path", errors)
         _check_hash(provenance.get("event_stream_sha256"), event_path,
                     f"{label}: provenance.event_stream_sha256", errors)
+    if ("administration_receipt_path" in provenance or
+            "administration_receipt_sha256" in provenance):
+        admin_path = _repo_file(
+            provenance.get("administration_receipt_path"), repo,
+            f"{label}: provenance.administration_receipt_path", errors)
+        _check_hash(
+            provenance.get("administration_receipt_sha256"), admin_path,
+            f"{label}: provenance.administration_receipt_sha256", errors)
+        if admin_path:
+            try:
+                admin = json.loads(admin_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+                errors.append(f"{label}: invalid administration receipt: {exc}")
+            else:
+                bindings = {
+                    "thread_id": provenance.get("solver_thread_id"),
+                    "prompt_sha256": provenance.get("prompt_sha256"),
+                    "response_sha256": provenance.get("raw_response_sha256"),
+                    "event_snapshot_sha256": provenance.get("event_stream_sha256"),
+                    "event_stream_capture_kind": provenance.get(
+                        "event_stream_capture_kind"),
+                }
+                for key, expected in bindings.items():
+                    if admin.get(key) != expected:
+                        errors.append(
+                            f"{label}: administration receipt {key} does not bind provenance")
+                if admin.get("tool_calls") != 0:
+                    errors.append(
+                        f"{label}: packet-only administration receipt must record zero tool calls")
     capture_kind = provenance.get("event_stream_capture_kind")
     if capture_kind is not None and capture_kind not in {
             "provider-raw-jsonl", "coordinator-derived-codex-app-thread-snapshot",
-            "claude-code-subagent-transcript"}:
+            "claude-code-subagent-transcript", "codex-desktop-rollout-jsonl"}:
         errors.append(f"{label}: invalid provenance.event_stream_capture_kind")
 
     spend = trial.get("spend")

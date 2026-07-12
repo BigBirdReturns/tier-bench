@@ -1,0 +1,24 @@
+{
+  "schema": "tier-bench/codex-packet-subject-extraction@2",
+  "thread_id": "019f571c-d753-7a51-82e5-57298a89280d",
+  "turn_id": "019f571c-ecce-7600-8ba6-4f982389480f",
+  "model": "gpt-5.6-sol",
+  "effort": "low",
+  "prompt_sha256": "d01cec5ae6900d9596ef65e077e8e63a32cf0f149d6ce9295e375fd3d41b5b66",
+  "delivered_envelope_sha256": "31882cbd998188d91f68d8a1fe4c64d9f5cb6b7bb511dc358c1ebf39c234abd7",
+  "response_sha256": "31de7178e55bb37333cc52d8357b7473445cc6b5146cda3175e7aaa65df002d4",
+  "event_snapshot_sha256": "4eeb63f6c67d71978cc7df2f09635b196dede8558bd02325ff3aad9b4b747b27",
+  "event_stream_capture_kind": "coordinator-derived-codex-app-thread-snapshot",
+  "source_rollout_sha256": "db843bccb4a95c1ab1540cc87605245c2b7914b2fa11756ed9c363b11dea6723",
+  "task_started_timestamp": "2026-07-12T16:15:44.739Z",
+  "task_completed_timestamp": "2026-07-12T16:15:58.275Z",
+  "duration_ms": 16980,
+  "usage": {
+    "input_tokens": 18547,
+    "cached_input_tokens": 9984,
+    "output_tokens": 1028,
+    "reasoning_output_tokens": 28,
+    "total_tokens": 19575
+  },
+  "tool_calls": 0
+}

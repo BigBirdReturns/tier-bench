@@ -1,0 +1,34 @@
+{
+  "pair_id": "arc_c_almanac_cross_engine_v1",
+  "left_engine": "codex_gpt_5_6_sol",
+  "right_engine": "claude_fable_5",
+  "status": "comparable",
+  "reasons": [],
+  "tasks": [
+    {
+      "task_id": "almanac_exception_class_001",
+      "agreement": true,
+      "left_decision": {"state": "cleared", "action": "seal", "route_to": "floor", "escalation_from": null, "abstained": false},
+      "right_decision": {"state": "cleared", "action": "seal", "route_to": "floor", "escalation_from": null, "abstained": false},
+      "left_spend": {"cost_usd": 0.0, "cost_bases": ["subscription-derived"], "trials": 3},
+      "right_spend": {"cost_usd": 0.0, "cost_bases": ["subscription-derived"], "trials": 3}
+    },
+    {
+      "task_id": "almanac_record_binding_001",
+      "agreement": true,
+      "left_decision": {"state": "cleared", "action": "seal", "route_to": "floor", "escalation_from": null, "abstained": false},
+      "right_decision": {"state": "cleared", "action": "seal", "route_to": "floor", "escalation_from": null, "abstained": false},
+      "left_spend": {"cost_usd": 0.0, "cost_bases": ["subscription-derived"], "trials": 3},
+      "right_spend": {"cost_usd": 0.0, "cost_bases": ["subscription-derived"], "trials": 3}
+    },
+    {
+      "task_id": "almanac_rule_boundary_001",
+      "agreement": true,
+      "left_decision": {"state": "cleared", "action": "seal", "route_to": "floor", "escalation_from": null, "abstained": false},
+      "right_decision": {"state": "cleared", "action": "seal", "route_to": "floor", "escalation_from": null, "abstained": false},
+      "left_spend": {"cost_usd": 0.0, "cost_bases": ["subscription-derived"], "trials": 3},
+      "right_spend": {"cost_usd": 0.0, "cost_bases": ["subscription-derived"], "trials": 3}
+    }
+  ],
+  "agreement": {"tasks": 3, "agree": 3, "rate": 1.0}
+}
