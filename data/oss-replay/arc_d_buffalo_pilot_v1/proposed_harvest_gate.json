@@ -1,0 +1,42 @@
+{
+  "schema": "tier-bench/arc-d-harvest-gate-proposal@1",
+  "gate_state": "proposed",
+  "adoption_required": "operator review of these exact bytes",
+  "driver_may_apply": false,
+  "source_case_progression": {
+    "SEALED_RESPONSE": "Complete prompt and response bytes plus provider identity and event receipt are hash-bound.",
+    "CANDIDATE_RESIDUE": "A falsifiable rule and bounded applicability predicate are extractable without adding coordinator conclusions.",
+    "REFERENCE_ALIGNED": "Deterministic tests or accepted authority support the diagnosis; an open PR alone is insufficient.",
+    "REFERENCE_AMBIGUOUS": "References conflict, remain unaccepted, or cannot exclude alternative correct solutions.",
+    "ARTIFACTIZED": "A unique, deduplicated, versioned residue artifact is frozen before transfer target disclosure."
+  },
+  "harvest_event_proposal": {
+    "name": "WITHIN_FAMILY_TRANSFER",
+    "replicates_per_arm": 3,
+    "crossing_rule": "arm A 0/3 and arm B 3/3",
+    "required": [
+      "distinct target frozen before residue artifact creation",
+      "matched A/B with identical target, model, effort, and packet except residue in B",
+      "hidden executable grader frozen before both arms",
+      "B passes the primary metric",
+      "B improves over A by the preregistered delta",
+      "no preregistered harm or negative-transfer boundary is breached"
+    ],
+    "mixed_window": "TRANSFER_AMBIGUOUS",
+    "arm_a_passes": "NO_INCREMENTAL_EFFECT",
+    "arm_b_zero_of_three": "NO_TRANSFER",
+    "failure_default": "UNADJUDICATED_OR_REMAIN_OPEN",
+    "one_transfer_implies_compounding": false,
+    "one_transfer_implies_amortization": false
+  },
+  "adjudication": {
+    "same_lineage_fresh_thread": "procedurally_isolated_not_independent",
+    "allowed_authority": [
+      "deterministic hidden executable grader",
+      "operator adjudication",
+      "compatible cross-lineage sealed adjudication"
+    ],
+    "driver_override": false,
+    "disagreement_default": "REFERENCE_AMBIGUOUS"
+  }
+}

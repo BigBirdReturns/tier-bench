@@ -1,0 +1,241 @@
+<codex_delegation>
+  <source_thread_id>019f4fdc-f3f9-7b52-87f3-3452d231d67e</source_thread_id>
+  <input>You are a cold OSS diagnostic subject. This packet is complete.
+Do not browse, call tools, inspect a repository, or assume unseen files. Analyze only
+the public problem report and pinned source excerpt below. Do not claim that you ran
+tests. This is an exploratory observation, not a benchmark or an upstream verdict.
+
+Return exactly these five Markdown sections:
+
+1. `## Diagnosis` — the concrete execution path and root cause, including uncertainty.
+2. `## Minimal change design` — the smallest coherent change surface and its invariants.
+3. `## Regression matrix` — tests, inputs, and expected results, including boundaries.
+4. `## Candidate residue` — one falsifiable reusable rule plus its applicability limit.
+5. `## Confidence and disconfirmation` — confidence from 0 to 1 and evidence that would
+   disprove or materially change the answer.
+
+## Public problem report
+
+Example environment value: `no_proxy=fe11::/16`.
+
+Reproduction:
+
+```console
+no_proxy=fe11::/16 python -c 'import httpx; c = httpx.Client()'
+```
+
+With HTTPX 0.27.0 this raises while constructing the client's proxy mounts:
+
+```text
+ValueError: invalid literal for int() with base 10: ':'
+...
+httpx.InvalidURL: Invalid port: ':'
+```
+
+The intended behavior is that an IPv6 prefix-style `no_proxy` value is accepted
+and bypasses the proxy for addresses within that network, without regressing the
+existing hostname, IPv4, IPv6-address, wildcard, scheme, port, or mount ordering
+behavior.
+
+## Pinned source excerpt
+
+```python
+# encode/httpx @ b5addb64f0161ff6bfe94c124ef76f6a1fba5254
+# Curated allowlisted excerpts derived from httpx/_utils.py.
+# Unrelated lines and some prose are elided; this packet is not a byte slice.
+# The complete delivered PROMPT hash, not this upstream blob hash, is the subject authority.
+# 7fe827da4d071b32ea6da44328629699d6fc88ce
+
+import ipaddress
+import re
+import typing
+from urllib.request import getproxies
+
+if typing.TYPE_CHECKING:
+    from ._urls import URL
+
+
+def get_environment_proxies() -&gt; dict[str, str | None]:
+    """Gets proxy information from the environment"""
+
+    # urllib.request.getproxies() falls back on System
+    # Registry and Config for proxies on Windows and macOS.
+    # We don't want to propagate non-HTTP proxies into
+    # our configuration such as 'TRAVIS_APT_PROXY'.
+    proxy_info = getproxies()
+    mounts: dict[str, str | None] = {}
+
+    for scheme in ("http", "https", "all"):
+        if proxy_info.get(scheme):
+            hostname = proxy_info[scheme]
+            mounts[f"{scheme}://"] = (
+                hostname if "://" in hostname else f"http://{hostname}"
+            )
+
+    no_proxy_hosts = [host.strip() for host in proxy_info.get("no", "").split(",")]
+    for hostname in no_proxy_hosts:
+        # See curl's CURLOPT_NOPROXY documentation for details
+        # on how names in `NO_PROXY` are handled.
+        if hostname == "*":
+            return {}
+        elif hostname:
+            # NO_PROXY can include domains, IPv6, IPv4 addresses and "localhost"
+            #   NO_PROXY=example.com,::1,localhost,192.168.0.0/16
+            if "://" in hostname:
+                mounts[hostname] = None
+            elif is_ipv4_hostname(hostname):
+                mounts[f"all://{hostname}"] = None
+            elif is_ipv6_hostname(hostname):
+                mounts[f"all://[{hostname}]"] = None
+            elif hostname.lower() == "localhost":
+                mounts[f"all://{hostname}"] = None
+            else:
+                mounts[f"all://*{hostname}"] = None
+
+    return mounts
+
+
+class URLPattern:
+    """A utility class used for making lookups against proxy keys."""
+
+    def __init__(self, pattern: str) -&gt; None:
+        from ._urls import URL
+
+        if pattern and ":" not in pattern:
+            raise ValueError(
+                f"Proxy keys should use proper URL forms rather "
+                f"than plain scheme strings. "
+                f'Instead of "{pattern}", use "{pattern}://"'
+            )
+
+        url = URL(pattern)
+        self.pattern = pattern
+        self.scheme = "" if url.scheme == "all" else url.scheme
+        self.host = "" if url.host == "*" else url.host
+        self.port = url.port
+        if not url.host or url.host == "*":
+            self.host_regex: typing.Pattern[str] | None = None
+        elif url.host.startswith("*."):
+            domain = re.escape(url.host[2:])
+            self.host_regex = re.compile(f"^.+\\.{domain}$")
+        elif url.host.startswith("*"):
+            domain = re.escape(url.host[1:])
+            self.host_regex = re.compile(f"^(.+\\.)?{domain}$")
+        else:
+            domain = re.escape(url.host)
+            self.host_regex = re.compile(f"^{domain}$")
+
+    def matches(self, other: URL) -&gt; bool:
+        if self.scheme and self.scheme != other.scheme:
+            return False
+        if (
+            self.host
+            and self.host_regex is not None
+            and not self.host_regex.match(other.host)
+        ):
+            return False
+        if self.port is not None and self.port != other.port:
+            return False
+        return True
+
+    @property
+    def priority(self) -&gt; tuple[int, int, int]:
+        port_priority = 0 if self.port is not None else 1
+        host_priority = -len(self.host)
+        scheme_priority = -len(self.scheme)
+        return (port_priority, host_priority, scheme_priority)
+
+    def __hash__(self) -&gt; int:
+        return hash(self.pattern)
+
+    def __lt__(self, other: URLPattern) -&gt; bool:
+        return self.priority &lt; other.priority
+
+    def __eq__(self, other: typing.Any) -&gt; bool:
+        return isinstance(other, URLPattern) and self.pattern == other.pattern
+
+
+def is_ipv4_hostname(hostname: str) -&gt; bool:
+    try:
+        ipaddress.IPv4Address(hostname.split("/")[0])
+    except Exception:
+        return False
+    return True
+
+
+def is_ipv6_hostname(hostname: str) -&gt; bool:
+    try:
+        ipaddress.IPv6Address(hostname.split("/")[0])
+    except Exception:
+        return False
+    return True
+
+
+# Curated allowlisted excerpts derived from httpx/_client.py.
+# 13cd9336732a0854dae25b53b34e4b2e749b5897
+from ._urls import URL, QueryParams
+from ._utils import URLPattern, get_environment_proxies
+
+# Sync Client.__init__ excerpt
+self._mounts: dict[URLPattern, BaseTransport | None] = {
+    URLPattern(key): None
+    if proxy is None
+    else self._init_proxy_transport(proxy, verify=verify, cert=cert)
+    for key, proxy in proxy_map.items()
+}
+if mounts is not None:
+    self._mounts.update(
+        {URLPattern(key): transport for key, transport in mounts.items()}
+    )
+self._mounts = dict(sorted(self._mounts.items()))
+
+
+def _transport_for_url(self, url: URL) -&gt; BaseTransport:
+    for pattern, transport in self._mounts.items():
+        if pattern.matches(url):
+            return self._transport if transport is None else transport
+    return self._transport
+
+
+# AsyncClient.__init__ uses the same URLPattern construction and sorting:
+self._mounts: dict[URLPattern, AsyncBaseTransport | None] = {
+    URLPattern(key): None
+    if proxy is None
+    else self._init_proxy_transport(proxy, verify=verify, cert=cert)
+    for key, proxy in proxy_map.items()
+}
+if mounts is not None:
+    self._mounts.update(
+        {URLPattern(key): transport for key, transport in mounts.items()}
+    )
+self._mounts = dict(sorted(self._mounts.items()))
+
+
+# Curated behavioral cases derived from tests/test_utils.py.
+# f9c215f65a131e9a96cf3be6002e0117a1f59050
+PROXY_CASES = [
+    ({"no_proxy": "127.0.0.1"}, {"all://127.0.0.1": None}),
+    ({"no_proxy": "192.168.0.0/16"}, {"all://192.168.0.0/16": None}),
+    ({"no_proxy": "::1"}, {"all://[::1]": None}),
+    ({"no_proxy": "localhost"}, {"all://localhost": None}),
+]
+
+URL_MATCH_CASES = [
+    ("http://example.com", "http://example.com", True),
+    ("http://example.com", "https://example.com", False),
+    ("http://example.com:123", "http://example.com:123", True),
+    ("http://example.com:123", "http://example.com:456", False),
+    ("all://example.com", "https://example.com", True),
+    ("http://", "https://example.com", False),
+    ("all://", "https://example.com:123", True),
+]
+
+EXPECTED_PRIORITY = [
+    URLPattern("http://example.com:123"),
+    URLPattern("http://example.com"),
+    URLPattern("http://"),
+    URLPattern("all://"),
+]
+```
+</input>
+</codex_delegation>

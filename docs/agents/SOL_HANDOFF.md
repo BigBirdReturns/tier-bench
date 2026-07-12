@@ -15,6 +15,12 @@ to the original conversational draft are marked.
   reports a comparable pair with 3/3 task-decision agreement.
 - Runway: ARC-D (OSS replay field) is NEXT in `ROADMAP.md`; assignment remains
   governed by `docs/agents/QUEUE.md`.
+- ARC-D-PILOT is partial (2026-07-12): the field contract, proposed-but-unadopted
+  HARVEST gate, three packet receipts, and four illustrative projections exist.
+  Three fresh projectless dispatches each ended provider `systemError` with no
+  assistant bytes, so the ledger contains 3 `PARTIAL` rows and zero scientific
+  observations. The frozen stopping rule forbids an undeclared retry; a future
+  retry needs fresh operator authority after provider capacity is available.
 
 ## Settled assets (with exact figures)
 

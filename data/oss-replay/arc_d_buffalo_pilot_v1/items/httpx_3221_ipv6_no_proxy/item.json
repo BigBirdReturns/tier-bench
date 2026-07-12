@@ -1,0 +1,20 @@
+{
+  "item_id": "httpx_3221_ipv6_no_proxy",
+  "blindness": "BODY_ONLY_COLD_CONTEXT",
+  "public_issue": "https://github.com/encode/httpx/issues/3221",
+  "issue_opened": "2024-06-12",
+  "issue_snapshot_fetched": "2026-07-12",
+  "source_repository": "encode/httpx",
+  "source_commit": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+  "problem_snapshot_mode": "body_only_transcription",
+  "packet_source_mode": "curated_allowlisted_excerpts",
+  "exact_full_blob_included": false,
+  "source_blobs": {
+    "httpx/_utils.py": "7fe827da4d071b32ea6da44328629699d6fc88ce",
+    "httpx/_client.py": "13cd9336732a0854dae25b53b34e4b2e749b5897",
+    "tests/test_utils.py": "f9c215f65a131e9a96cf3be6002e0117a1f59050"
+  },
+  "selector_reference_exposure": true,
+  "subject_reference_exposure": false,
+  "pilot_status": "PARTIAL_SYSTEM_ERROR_NO_RESPONSE"
+}

@@ -1,0 +1,30 @@
+{
+  "schema": "tier-bench/arc-d-run-manifest@1",
+  "protocol_id": "arc_d_buffalo_pilot_v1",
+  "state": "PARTIAL_SYSTEM_ERROR",
+  "attempts": 3,
+  "responses": 0,
+  "scientific_observations": 0,
+  "administration_receipts": [
+    {
+      "item_id": "httpx_3221_ipv6_no_proxy",
+      "thread_id": "019f57ff-0338-77c3-b9e8-7dae40010485",
+      "path": "runs/httpx_3221_ipv6_no_proxy/attempt-1/administration_receipt.json",
+      "sha256": "6db66ad6640459338a90a2f5197cfe13e5e2ecdffc90135e314107d24c3e41e7"
+    },
+    {
+      "item_id": "httpx_3614_base_url_query",
+      "thread_id": "019f57ff-2e65-7f00-8eb9-40e02bea848b",
+      "path": "runs/httpx_3614_base_url_query/attempt-1/administration_receipt.json",
+      "sha256": "8afeae738f54286d15efc30a278e4046f80e8578d1c8c6beb2a39fd5feefdbde"
+    },
+    {
+      "item_id": "attrs_1567_setattr_mro",
+      "thread_id": "019f57ff-5914-74c0-a4ed-3853abe8f8c2",
+      "path": "runs/attrs_1567_setattr_mro/attempt-1/administration_receipt.json",
+      "sha256": "e7f529131e3c4ad4361866ea1a14bf887e0fbada7f5ccd650832042864a8096b"
+    }
+  ],
+  "failure_preservation": "All three attempts remain in the denominator. No retry, substitution, grading, or harvest claim was made.",
+  "cause_boundary": "The provider reported only systemError. A simultaneous usage-limit error elsewhere is correlated context, not a proven cause."
+}
