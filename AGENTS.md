@@ -78,6 +78,9 @@ review; an engine may not silently change what counts as passing.
   all three almanac knots 3/3 at floor against source `3d38371`; the committed
   comparator admits the pair with 3/3 task-decision agreement. The result is a
   paired orchestration measurement, not a universal capability claim.
-- SOL-4, the residue-recorder constitution review, remains open. ARC-D is the
-  next roadmap arc; the queue remains authoritative for who may claim it.
+- SOL-4, the residue-recorder constitution review, is complete at
+  `docs/agents/reviews/sol_residue_recorder_constitution_v04_20260712.md`:
+  disposition `CHANGES_REQUESTED_BEFORE_MERGE`, seven P1 and four P2 findings,
+  with 7/7 executable witnesses. ARC-D is the next roadmap arc but has no queue
+  row; the queue remains authoritative for who may claim it.
 - The capture ledger remains *amortizing, 1 of 4*, never "amortized."
