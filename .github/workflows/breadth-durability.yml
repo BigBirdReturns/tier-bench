@@ -70,3 +70,8 @@ jobs:
           python tests/test_grade_solver_packet.py
           python tests/test_compare_engine_runs.py
           python tests/test_orchestration_clone_integrity.py
+      - name: ARC-D B2 charter (ratified bytes, sealed inputs, no response disclosure)
+        run: |
+          python -m py_compile scripts/validate_arc_d_harvest_charter.py tests/test_arc_d_harvest_charter.py
+          python scripts/validate_arc_d_harvest_charter.py
+          python tests/test_arc_d_harvest_charter.py

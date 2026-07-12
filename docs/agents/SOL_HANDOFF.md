@@ -27,6 +27,10 @@ to the original conversational draft are marked.
   timestamps, and snapshots are hash-bound under
   `data/oss-replay/arc_d_buffalo_pilot_v2/`. All three remain
   `SEALED_RESPONSE_UNADJUDICATED`: no grader or HARVEST gate was applied.
+- The separately versioned `harvest_charter.json` freezes a two-lineage,
+  packet-only B2 rubric and the prospective B4 0/3 to 3/3 transfer gate. Its
+  exact bytes are proposal-only off the default branch and operator-adopted
+  when merged. Adoption does not grade a response or satisfy B4.
 
 ## Settled assets (with exact figures)
 

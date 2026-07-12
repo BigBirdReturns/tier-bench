@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_grade_receipt.schema.json",
+  "title": "ARC-D B2 packet-only grade receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "protocol_id",
+    "charter_sha256",
+    "packet_sha256",
+    "item_id",
+    "prompt_sha256",
+    "response_sha256",
+    "grader",
+    "exposure",
+    "raw_grade_sha256",
+    "atomic_findings",
+    "response_disposition",
+    "validator_result"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-grade-receipt@1"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "charter_sha256": {"$ref": "#/$defs/sha256"},
+    "packet_sha256": {"$ref": "#/$defs/sha256"},
+    "item_id": {
+      "enum": [
+        "attrs_1567_setattr_mro",
+        "httpx_3614_base_url_query",
+        "httpx_3221_ipv6_no_proxy"
+      ]
+    },
+    "prompt_sha256": {"$ref": "#/$defs/sha256"},
+    "response_sha256": {"$ref": "#/$defs/sha256"},
+    "grader": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grade_id", "provider_lineage", "model", "effort", "surface", "session_id", "started_at", "sealed_at"],
+      "properties": {
+        "grade_id": {"enum": ["grade_a", "grade_b"]},
+        "provider_lineage": {"enum": ["openai", "anthropic"]},
+        "model": {"type": "string", "minLength": 1},
+        "effort": {"type": "string", "minLength": 1},
+        "surface": {"type": "string", "minLength": 1},
+        "session_id": {"type": "string", "minLength": 1},
+        "started_at": {"type": "string", "format": "date-time"},
+        "sealed_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "exposure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["peer_grade_seen_before_seal", "repository_context_seen", "other_response_seen"],
+      "properties": {
+        "peer_grade_seen_before_seal": {"const": false},
+        "repository_context_seen": {"const": false},
+        "other_response_seen": {"const": false}
+      }
+    },
+    "raw_grade_sha256": {"$ref": "#/$defs/sha256"},
+    "atomic_findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "response_disposition": {
+      "enum": [
+        "B2_CANDIDATE_RESIDUE",
+        "B2_REFERENCE_AMBIGUOUS",
+        "B2_NO_EXTRACTABLE_CANDIDATE",
+        "B2_PARTIAL"
+      ]
+    },
+    "validator_result": {"const": "PASS"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"grader": {"properties": {"grade_id": {"const": "grade_a"}}}}},
+      "then": {
+        "properties": {
+          "grader": {
+            "properties": {
+              "provider_lineage": {"const": "openai"},
+              "model": {"const": "gpt-5.6-sol"},
+              "effort": {"const": "high"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"grader": {"properties": {"grade_id": {"const": "grade_b"}}}}},
+      "then": {
+        "properties": {
+          "grader": {
+            "properties": {
+              "provider_lineage": {"const": "anthropic"},
+              "model": {"const": "fable-5"},
+              "effort": {"const": "high"}
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"response_disposition": {"const": "B2_CANDIDATE_RESIDUE"}}},
+      "then": {
+        "properties": {
+          "atomic_findings": {
+            "minItems": 1,
+            "contains": {
+              "type": "object",
+              "required": ["disposition"],
+              "properties": {"disposition": {"const": "B2_CANDIDATE_RESIDUE"}}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_byte", "end_byte_exclusive"],
+      "properties": {
+        "start_byte": {"type": "integer", "minimum": 0},
+        "end_byte_exclusive": {"type": "integer", "minimum": 1}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "sha256", "authority_status"],
+      "properties": {
+        "kind": {"enum": ["source", "test", "released_behavior", "other_executable"]},
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "authority_status": {"enum": ["AUTHORITATIVE", "CONFLICTING", "INSUFFICIENT"]}
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "response_spans",
+        "behavior_claim",
+        "regression_test",
+        "residue",
+        "applicability_predicate",
+        "exclusions",
+        "distinctness",
+        "evidence",
+        "disposition"
+      ],
+      "properties": {
+        "candidate_id": {"type": "string", "minLength": 1},
+        "response_spans": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/span"}},
+        "behavior_claim": {"type": "string", "minLength": 1},
+        "regression_test": {"type": "string", "minLength": 1},
+        "residue": {"type": "string", "minLength": 1},
+        "applicability_predicate": {"type": "string", "minLength": 1},
+        "exclusions": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "distinctness": {"enum": ["UNIQUE", "DUPLICATE", "AMBIGUOUS"]},
+        "evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+        "disposition": {
+          "enum": ["B2_CANDIDATE_RESIDUE", "B2_REFERENCE_AMBIGUOUS", "B2_REJECTED_CANDIDATE"]
+        }
+      }
+    }
+  }
+}
