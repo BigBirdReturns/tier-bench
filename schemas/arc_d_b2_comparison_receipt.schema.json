@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_comparison_receipt.schema.json",
+  "title": "ARC-D B2 cross-lineage comparison receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "protocol_id",
+    "charter_sha256",
+    "item_id",
+    "grade_a_receipt_sha256",
+    "grade_b_receipt_sha256",
+    "disposition_agreement",
+    "evidence_compatible",
+    "final_disposition",
+    "operator_adjudication",
+    "binding_state",
+    "validator_result"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-comparison-receipt@1"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "charter_sha256": {"$ref": "#/$defs/sha256"},
+    "item_id": {
+      "enum": [
+        "attrs_1567_setattr_mro",
+        "httpx_3614_base_url_query",
+        "httpx_3221_ipv6_no_proxy"
+      ]
+    },
+    "grade_a_receipt_sha256": {"$ref": "#/$defs/sha256"},
+    "grade_b_receipt_sha256": {"$ref": "#/$defs/sha256"},
+    "disposition_agreement": {"type": "boolean"},
+    "evidence_compatible": {"type": "boolean"},
+    "final_disposition": {
+      "enum": [
+        "B2_CANDIDATE_RESIDUE",
+        "B2_REFERENCE_AMBIGUOUS",
+        "B2_NO_EXTRACTABLE_CANDIDATE",
+        "B2_PARTIAL"
+      ]
+    },
+    "operator_adjudication": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authority", "rationale", "evidence_sha256"],
+          "properties": {
+            "authority": {"const": "operator"},
+            "rationale": {"type": "string", "minLength": 1},
+            "evidence_sha256": {"$ref": "#/$defs/sha256"}
+          }
+        }
+      ]
+    },
+    "binding_state": {"const": "PROPOSED_UNTIL_MERGED"},
+    "validator_result": {"const": "PASS"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "not": {
+          "properties": {
+            "disposition_agreement": {"const": true},
+            "evidence_compatible": {"const": true}
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "operator_adjudication": {"type": "object"}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

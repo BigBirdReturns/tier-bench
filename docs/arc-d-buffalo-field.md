@@ -1,12 +1,16 @@
 # ARC-D buffalo field — exploratory contract
 
-Status: **proposal-only protocol; pilot subjects remain unadjudicated**
+Status: **pilot subjects remain unadjudicated; B2/B4 charter activates only on
+maintainer merge**
 
 Authority: `docs/agents/QUEUE.md` authorizes the bounded `ARC-D-PILOT` spend. It
 does not adopt a grader or pass criterion. Under `AGENTS.md` and
 `experiments/breadth/adapt.py`, the rubric and every `HARVEST` gate below are
 GATED. A model may propose them, but only an explicit operator adoption bound to
-the exact protocol bytes may activate them.
+the exact protocol bytes may activate them. The separately versioned
+`arc_d_buffalo_pilot_v2/harvest_charter.json` becomes that adoption only when
+its exact bytes are merged to the default branch; before merge it remains a
+ratification candidate.
 
 ## Question and unit
 
@@ -72,7 +76,7 @@ provider `systemError` with no assistant bytes. Each is `PARTIAL`, not a
 `SEALED_RESPONSE`; there are zero scientific observations to compare or
 adjudicate. They cannot mint B2 or later states.
 
-## Proposed gate — not adopted
+## Source-case gate — proposed here; adopted only by the v2 charter merge
 
 If the operator later adopts this exact gate, B2 requires all of the following:
 
@@ -97,7 +101,7 @@ an authorized human, or a genuinely cross-lineage adjudicator must supply any
 closing verdict. Unsupported or disagreeing adjudication defaults to ambiguity;
 the driver cannot override it.
 
-## Proposed prospective A/B gate
+## Prospective A/B gate — proposed here; adopted only by the v2 charter merge
 
 `HARVEST` may be emitted only after explicit operator adoption and B4 evidence:
 

@@ -1,0 +1,195 @@
+{
+  "schema": "tier-bench/arc-d-harvest-adjudication-charter@1",
+  "charter_id": "arc_d_buffalo_pilot_v2_b2_charter_v1",
+  "state": "ratification_candidate",
+  "activation": {
+    "event": "these exact bytes become reachable from the repository default branch by maintainer merge",
+    "before_event": "proposal_only",
+    "after_event": "operator_adopted",
+    "amendment_rule": "any byte change creates a new version and requires a new maintainer merge before use"
+  },
+  "scope": {
+    "protocol_id": "arc_d_buffalo_pilot_v2",
+    "rung": "B2_SOURCE_CASE_REVIEW",
+    "permits": [
+      "authoritative B2 dispositions under this charter",
+      "extraction of candidate residue for separately authorized B3 artifactization",
+      "prospective B4 HARVEST adjudication after every frozen prerequisite is satisfied"
+    ],
+    "forbids": [
+      "treating a B2 disposition or charter adoption as HARVEST or TRANSFER_VALIDATED",
+      "cross-project generality claims",
+      "harvest-rate or calibrated-prior updates",
+      "compounding, amortization, or waterline claims",
+      "post-disclosure rubric changes"
+    ]
+  },
+  "sealed_evidence": {
+    "evidence_commit": "ba38e040b7c4ab5933d7f7c62d7b1bb6cdca500c",
+    "merge_commit": "e8c3be5f82ef2aa3e0474b8390bea6fc19c6c77e",
+    "responses": [
+      {
+        "item_id": "attrs_1567_setattr_mro",
+        "prompt_sha256": "f9c554fb1d5094b90d5c7037db8192e017325289779a85ca396f96b7997ffbe9",
+        "response_sha256": "804aa2cdf06c0ad7379487fefe2d7f3684b8b2b49526f3988380233e5d74b898",
+        "response_bytes": 7345,
+        "administration_receipt": "data/oss-replay/arc_d_buffalo_pilot_v2/runs/attrs_1567_setattr_mro/attempt-1/administration_receipt.json",
+        "administration_receipt_sha256": "843d1158fd457244001c8bdd628623324bcf681aa4a9097a2cb7e23c59540666"
+      },
+      {
+        "item_id": "httpx_3614_base_url_query",
+        "prompt_sha256": "d81a12a66e96c6a9eaaa9af82d6ca8903d8a8a6f93ffb07466a42dea1c1bd8fe",
+        "response_sha256": "5c6308ef99649def522eb97dd0171a5076c628ce942ee585ae3d95eda971f60c",
+        "response_bytes": 5933,
+        "administration_receipt": "data/oss-replay/arc_d_buffalo_pilot_v2/runs/httpx_3614_base_url_query/attempt-1/administration_receipt.json",
+        "administration_receipt_sha256": "8b085e1dcdc68da88c5d5203e2f55f564338d5a469f5609f2e3fc6435e0be199"
+      },
+      {
+        "item_id": "httpx_3221_ipv6_no_proxy",
+        "prompt_sha256": "a5ee77e4991f2bddae9b7281aa5e1a6c2aca857ccfc3383e5af612136c796fd4",
+        "response_sha256": "3f0f2b1e423d9230fa4663302ca81f1eeb46022eb21cea444358bc1977f0c3c1",
+        "response_bytes": 5933,
+        "administration_receipt": "data/oss-replay/arc_d_buffalo_pilot_v2/runs/httpx_3221_ipv6_no_proxy/attempt-1/administration_receipt.json",
+        "administration_receipt_sha256": "c9769ae33108596be7411f30b380b64bacc924f54f4cda12855e1da7b05e4cc4"
+      }
+    ]
+  },
+  "rubric_author": {
+    "provider_lineage": "openai",
+    "surface": "codex_desktop",
+    "model_family": "gpt-5",
+    "task_id": "019f582b-714e-7420-9863-7c5d890ef30c",
+    "role": "rubric_author_only",
+    "response_text_seen_before_freeze": false,
+    "may_grade_under_this_charter": false
+  },
+  "grading_instruments": [
+    {
+      "grade_id": "grade_a",
+      "provider_lineage": "openai",
+      "model": "gpt-5.6-sol",
+      "effort": "high",
+      "context": "fresh_projectless_packet_only",
+      "independence": "procedurally_isolated_not_cross_lineage"
+    },
+    {
+      "grade_id": "grade_b",
+      "provider_lineage": "anthropic",
+      "model": "fable-5",
+      "effort": "high",
+      "context": "fresh_projectless_packet_only",
+      "independence": "cross_lineage"
+    }
+  ],
+  "packet_allowlist": [
+    "this ratified charter and its SHA-256",
+    "the one item's exact original prompt packet and hashes",
+    "the one item's sealed response bytes and administration receipt",
+    "pinned authoritative source and executable-test evidence needed for that item",
+    "the grade receipt schema and literal grading instructions"
+  ],
+  "packet_denylist": [
+    "repository checkout or development history",
+    "queue, handoff, roadmap, or governance discussion",
+    "peer grade or coordinator conclusion",
+    "another item's response",
+    "unmerged upstream proposal presented as ground truth"
+  ],
+  "rubric": {
+    "unit": "one atomic candidate residue; a response may contain zero or more units",
+    "required_findings": [
+      "exact response byte spans supporting the diagnosis and proposed residue",
+      "a concrete behavior claim supported by authoritative executable evidence",
+      "a proposed regression test with an explicit expected result and no invented API or contract",
+      "a falsifiable residue statement",
+      "a bounded applicability predicate and explicit exclusions",
+      "a distinctness decision against already-counted artifacts",
+      "exact hashes and locations for every cited source, test, prompt, response, and receipt"
+    ],
+    "authority_rules": [
+      "accepted upstream source, released behavior, project tests, or independently executable evidence may support correctness",
+      "an open or unmerged PR may locate evidence but cannot close correctness",
+      "competing or contract-disputed references default to B2_REFERENCE_AMBIGUOUS",
+      "alternative implementations remain admissible when authoritative behavior and tests support them",
+      "grader narration cannot substitute for cited executable evidence"
+    ],
+    "atomic_dispositions": {
+      "B2_CANDIDATE_RESIDUE": "all required findings and authority rules are satisfied",
+      "B2_REFERENCE_AMBIGUOUS": "a plausible residue exists but authoritative evidence conflicts or cannot close correctness",
+      "B2_REJECTED_CANDIDATE": "the proposed residue is false, invented, unbounded, non-falsifiable, duplicate, or unsupported"
+    },
+    "response_dispositions": {
+      "B2_CANDIDATE_RESIDUE": "at least one atomic candidate receives that disposition and none of its required evidence is missing",
+      "B2_REFERENCE_AMBIGUOUS": "no candidate closes, but at least one remains reference-ambiguous",
+      "B2_NO_EXTRACTABLE_CANDIDATE": "all proposed candidates are rejected or the response proposes none",
+      "B2_PARTIAL": "custody, packet, receipt, or required grading evidence is missing or malformed"
+    },
+    "no_numeric_score": true,
+    "no_harvest_at_b2": true
+  },
+  "prospective_harvest_gate": {
+    "state_after_activation": "adopted_not_satisfied",
+    "rung": "B4_PROSPECTIVE_WITHIN_FAMILY_TRANSFER",
+    "prerequisites": [
+      "a B2_CANDIDATE_RESIDUE disposition is binding",
+      "one unique deduplicated B3 artifact is frozen with its applicability predicate, exclusions, provenance, and content hash",
+      "the distinct transfer target was selected and sealed before artifact creation or exposure",
+      "the hidden executable grader and harm boundaries were frozen before either arm",
+      "the B4 run has separate queue authorization and preserves all failures"
+    ],
+    "design": {
+      "arms": "matched A/B; identical target, model, effort, surface, instructions, and packet except that only arm B receives the frozen artifact",
+      "replicates_per_arm": 3,
+      "coordinator_reruns_hidden_grader": true,
+      "candidate_and_grader_hashes_required": true
+    },
+    "decision_rule": {
+      "arm_a_0_of_3_and_arm_b_3_of_3": "TRANSFER_VALIDATED_AND_ONE_HARVEST",
+      "arm_a_any_pass": "NO_INCREMENTAL_EFFECT",
+      "arm_b_0_of_3": "NO_TRANSFER",
+      "any_other_window": "TRANSFER_AMBIGUOUS"
+    },
+    "limits": [
+      "one transfer validates only the unique artifact within the frozen applicability family",
+      "B5 is required for cross-project generality",
+      "B6 is required for compounding or amortization",
+      "mixed windows require more same-rung evidence and never favorable interpretation"
+    ]
+  },
+  "procedure": [
+    "after activation, deterministically export one packet per item from the allowlist without displaying response bytes to the driver",
+    "record the charter SHA-256, packet SHA-256, exact model, effort, surface, session identity, and disclosure time before grading",
+    "run grade_a and grade_b independently; neither receives the peer grade",
+    "preserve each raw grader response and structured receipt before comparison",
+    "validate hashes, required citations, dispositions, and lane separation",
+    "exact disposition agreement plus compatible cited evidence becomes the proposed authoritative B2 result",
+    "a maintainer merge of the validated comparison receipt makes the B2 result binding",
+    "only a separately authorized B4 run satisfying the prospective_harvest_gate may later emit one HARVEST event"
+  ],
+  "disagreement": {
+    "automatic_averaging": false,
+    "driver_override": false,
+    "default": "B2_REFERENCE_AMBIGUOUS",
+    "escalation": "operator reviews the two sealed receipts and cited executable evidence; any operator disposition and rationale must be hash-bound in the comparison receipt",
+    "rubric_change_after_disclosure": "forbidden; version a new charter and regrade all affected items"
+  },
+  "receipt_requirements": [
+    "charter_sha256",
+    "packet_sha256",
+    "item_id",
+    "prompt_sha256",
+    "response_sha256",
+    "grader provider, model, effort, surface, session and timestamps",
+    "peer_grade_seen_before_seal=false",
+    "repository_context_seen=false",
+    "raw_grade_sha256",
+    "atomic findings with exact byte spans and evidence hashes",
+    "response disposition",
+    "validator result"
+  ],
+  "receipt_schemas": {
+    "grade": "schemas/arc_d_b2_grade_receipt.schema.json",
+    "comparison": "schemas/arc_d_b2_comparison_receipt.schema.json"
+  },
+  "failure_default": "missing, malformed, contaminated, uncorroborated, or authority-ambiguous work remains B2_PARTIAL or B2_REFERENCE_AMBIGUOUS and mints no CANDIDATE_RESIDUE, HARVEST, transfer, rate, compounding, or amortization claim"
+}
