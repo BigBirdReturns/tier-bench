@@ -2,6 +2,7 @@
 """Coordinator grading pipeline tests with the frozen almanac key material."""
 from __future__ import annotations
 
+import json
 import sys
 import shutil
 import uuid
@@ -66,6 +67,42 @@ def test_packet_drift_is_rejected_before_grading():
             assert "packet hash drifted" in str(exc)
         else:
             raise AssertionError("tampered packet should be rejected")
+
+
+def test_untrusted_subprocess_timeout_is_bounded_and_recorded_as_error():
+    with _scratch() as parent:
+        work = parent / "work"
+        work.mkdir()
+        result = grader._run(
+            [sys.executable, "-c", "import time; time.sleep(10)"],
+            work,
+            timeout_seconds=0.05,
+        )
+        assert result["returncode"] == 124
+        assert result["timed_out"] is True
+        assert result["timeout_seconds"] == 0.05
+
+
+def test_grade_timeout_mints_error_receipt_not_capability_failure():
+    with _scratch() as parent:
+        solver = parent / "solver"
+        receipt = parent / "receipt.json"
+        exporter.export_packet(MANIFEST, solver, receipt)
+        raw = parent / "candidate.py"
+        raw.write_text("import time\ntime.sleep(10)\n", encoding="utf-8")
+        out = parent / "grade-timeout"
+        result = grader.grade(
+            receipt,
+            solver,
+            raw,
+            out,
+            "coordinator-test",
+            timeout_seconds=0.05,
+        )
+        assert result["outcome"] == "error"
+        assert result["timed_out"] is True
+        preserved = json.loads((out / "grader-outputs.json").read_text(encoding="utf-8"))
+        assert any(item["timed_out"] for item in preserved.values())
 
 
 def _run_standalone() -> int:

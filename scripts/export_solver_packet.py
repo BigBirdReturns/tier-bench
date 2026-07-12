@@ -24,6 +24,7 @@ from harness.task_schema import Task  # noqa: E402
 from harness.validators import capture_behavior  # noqa: E402
 
 FORBIDDEN_NAMES = {"REFERENCE.py", "NAIVE.py", "control_key.json"}
+REDACTED_SOLVER_SCOPE = "<SOLVER_SCOPE>"
 
 
 def sha256(path: Path) -> str:
@@ -143,7 +144,9 @@ def export_packet(manifest_path: Path, out: Path, receipt_path: Path,
                  "sha256": sha256(fixture / name)}
                 for name in task.hidden_files
             ],
-            "solver_scope": str(out),
+            # The coordinator needs the isolation claim, not a workstation path.
+            # Absolute paths leak operator identity and make receipts non-portable.
+            "solver_scope": REDACTED_SOLVER_SCOPE,
             "peer_conclusions_included": False,
         }
         receipt_path.parent.mkdir(parents=True, exist_ok=True)

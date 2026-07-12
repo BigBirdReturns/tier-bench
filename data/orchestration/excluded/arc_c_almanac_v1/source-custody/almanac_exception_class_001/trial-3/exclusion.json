@@ -1,0 +1,14 @@
+{
+  "schema": "tier-bench.excluded_engine_observation.v1",
+  "thread_id": "019f4c9b-5cc2-7442-b394-2e95ab1b0a91",
+  "task_id": "almanac_exception_class_001",
+  "trial_id": "codex_gpt_5_6_sol_almanac_exception_class_001_3",
+  "excluded_after_review": true,
+  "reason": "source manifest bytes were not committed before solver execution",
+  "counts_as_trial": false,
+  "counts_toward_broker": false,
+  "raw_response_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-3/raw_response.txt",
+  "raw_response_sha256": "dd2f0d8bac74a69079a1147e64f1ded1fbbadf2445bb2b040a3e240d4d0c51be",
+  "thread_snapshot_path": "data/orchestration/runs/arc_c_almanac_v1/almanac_exception_class_001/trial-3/events.jsonl",
+  "thread_snapshot_sha256": "e942f7a4828e1593dc36b2e4b7b8120ae309a0ca762b62862e66d92b4ca2c860"
+}

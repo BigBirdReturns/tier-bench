@@ -1,7 +1,9 @@
 {
   "schema_version": 1,
   "task_id": "almanac_rule_boundary_001",
-  "source_commit": "e416462fdf36c711faf06717212d8de19cd07216",
+  "source_commit": "3d3837165ac9e046acf2cecc27e01f9c41c302e5",
+  "source_commit_original": "e416462fdf36c711faf06717212d8de19cd07216",
+  "source_commit_adjudication": "exact source bytes committed before execution; supersedes dirty-worktree label; see sol_arc_c_source_custody_correction_20260712.md",
   "packet_sha256": "27a9f0d72a4de9966a1f8f18e6dfbd3f62ed5cbb84145dccb42903c579175a26",
   "prompt_sha256": "a3b67acb1870fc2908173fadfe0e71795405941582fc61f30cf985e272dab60d",
   "candidate_sha256": "6bd298994ada4120f46b996dff104b7b413011dfef63613d21fbf4fdaae3d063",

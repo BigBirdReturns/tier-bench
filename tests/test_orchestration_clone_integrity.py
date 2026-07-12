@@ -19,6 +19,16 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def git_blob_sha256(root: Path, commit: str, relative: str) -> str:
+    result = subprocess.run(
+        ["git", "cat-file", "blob", f"{commit}:{relative}"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+    )
+    return hashlib.sha256(result.stdout).hexdigest()
+
+
 def assert_hash(root: Path, relative: str, expected: str, label: str) -> None:
     path = root / relative
     assert path.is_file(), f"{label}: missing from fresh clone: {relative}"
@@ -36,9 +46,12 @@ def verify_run_receipts(clone: Path) -> int:
 
     for run_path in run_files:
         run = json.loads(run_path.read_text(encoding="utf-8"))
+        source_commit = run["pairing"]["source_commit"]
         for manifest in run["task_manifests"]:
-            assert_hash(
-                clone, manifest["path"], manifest["sha256"], "task manifest"
+            actual = git_blob_sha256(clone, source_commit, manifest["path"])
+            assert actual == manifest["sha256"], (
+                f"task manifest: pinned source {source_commit} does not contain "
+                f"the declared bytes for {manifest['path']}"
             )
             checked += 1
 
@@ -88,6 +101,9 @@ def verify_packet_receipts(clone: Path) -> int:
     for packet_path in packet_paths:
         label = str(packet_path.relative_to(clone))
         packet = json.loads(packet_path.read_text(encoding="utf-8"))
+        assert packet["solver_scope"] == "<SOLVER_SCOPE>", (
+            f"{label}: solver scope must not expose an absolute workstation path"
+        )
         assert_hash(
             clone, packet["manifest_path"], packet["manifest_sha256"], label
         )

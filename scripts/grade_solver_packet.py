@@ -16,11 +16,44 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 from export_solver_packet import packet_digest, sha256  # noqa: E402
 
+DEFAULT_TIMEOUT_SECONDS = 30.0
 
-def _run(command: list[str], cwd: Path) -> dict:
-    result = subprocess.run(command, cwd=cwd, capture_output=True, text=True)
-    return {"command": command, "returncode": result.returncode,
-            "stdout": result.stdout, "stderr": result.stderr}
+
+def _captured_text(value: str | bytes | None) -> str:
+    if isinstance(value, bytes):
+        return value.decode("utf-8", errors="replace")
+    return value or ""
+
+
+def _run(command: list[str], cwd: Path,
+         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> dict:
+    if timeout_seconds <= 0:
+        raise ValueError("timeout_seconds must be positive")
+    try:
+        result = subprocess.run(
+            command,
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            timeout=timeout_seconds,
+        )
+        return {
+            "command": command,
+            "returncode": result.returncode,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "timed_out": False,
+            "timeout_seconds": timeout_seconds,
+        }
+    except subprocess.TimeoutExpired as exc:
+        return {
+            "command": command,
+            "returncode": 124,
+            "stdout": _captured_text(exc.stdout),
+            "stderr": _captured_text(exc.stderr),
+            "timed_out": True,
+            "timeout_seconds": timeout_seconds,
+        }
 
 
 def _events(path: Path | None) -> dict:
@@ -46,7 +79,10 @@ def _events(path: Path | None) -> dict:
 
 def grade(receipt_path: Path, solver: Path, raw_response: Path, out_dir: Path,
           coordinator_id: str, events_path: Path | None = None,
-          repo: Path = REPO) -> dict:
+          repo: Path = REPO,
+          timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> dict:
+    if timeout_seconds <= 0:
+        raise ValueError("timeout_seconds must be positive")
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     if packet_digest(solver) != receipt.get("packet_sha256"):
         raise ValueError("solver packet hash drifted after export")
@@ -67,13 +103,21 @@ def grade(receipt_path: Path, solver: Path, raw_response: Path, out_dir: Path,
         target.write_text(raw_response.read_text(encoding="utf-8"), encoding="utf-8")
         candidate_hash = sha256(target)
 
-        compile_result = _run([sys.executable, "-m", "py_compile", manifest["target_relpath"]], work)
-        visible_result = _run(list(manifest["run_command"]), work)
+        compile_result = _run(
+            [sys.executable, "-m", "py_compile", manifest["target_relpath"]],
+            work,
+            timeout_seconds,
+        )
+        visible_result = _run(list(manifest["run_command"]), work, timeout_seconds)
         for hidden in manifest["hidden_files"]:
             shutil.copy2(repo / manifest["fixture_dir"] / hidden, work / hidden)
-        hidden_one = _run(list(manifest["hidden_run_command"]), work)
-        hidden_two = _run(list(manifest["hidden_run_command"]), work)
+        hidden_one = _run(list(manifest["hidden_run_command"]), work, timeout_seconds)
+        hidden_two = _run(list(manifest["hidden_run_command"]), work, timeout_seconds)
         deterministic = hidden_one == hidden_two
+        timed_out = any(
+            result["timed_out"]
+            for result in (compile_result, visible_result, hidden_one, hidden_two)
+        )
         passed = (compile_result["returncode"] == 0 and visible_result["returncode"] == 0
                   and hidden_one["returncode"] == 0 and hidden_two["returncode"] == 0
                   and deterministic)
@@ -98,7 +142,10 @@ def grade(receipt_path: Path, solver: Path, raw_response: Path, out_dir: Path,
             "grader_output_sha256": sha256(outputs_path),
             "hidden_grader_sha256": receipt["hidden_graders"][0]["sha256"],
             "hidden_grader_runs": 2, "hidden_grader_deterministic": deterministic,
-            "outcome": "pass" if passed else "fail",
+            # A timeout is a custody/runtime failure, not a capability FAIL.
+            "outcome": "error" if timed_out else ("pass" if passed else "fail"),
+            "timed_out": timed_out,
+            "timeout_seconds": timeout_seconds,
             "visible_returncode": visible_result["returncode"],
             "hidden_returncodes": [hidden_one["returncode"], hidden_two["returncode"]],
             "cost_basis": "subscription-derived", "cost_usd": 0.0,
@@ -123,9 +170,11 @@ def main() -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--events", type=Path)
     parser.add_argument("--coordinator-id", required=True)
+    parser.add_argument("--timeout-seconds", type=float, default=DEFAULT_TIMEOUT_SECONDS)
     args = parser.parse_args()
     result = grade(args.receipt, args.solver, args.raw_response, args.out,
-                   args.coordinator_id, args.events)
+                   args.coordinator_id, args.events,
+                   timeout_seconds=args.timeout_seconds)
     print(json.dumps(result, indent=2))
     return 0 if result["outcome"] == "pass" else 1
 

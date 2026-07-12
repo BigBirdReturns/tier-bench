@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Orchestration receipts bind manifests to an exact historical source
+          # commit. The validator must be able to read that Git object rather
+          # than silently substituting the current checkout.
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"

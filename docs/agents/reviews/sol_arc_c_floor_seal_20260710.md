@@ -1,5 +1,14 @@
 # Codex ARC-C floor-run seal — 2026-07-10
 
+> **SUPERSEDED 2026-07-12 — source-custody review.** The validator originally
+> compared manifest hashes to the current checkout instead of the declared
+> source commit. Four observations predated the first commit containing their
+> exact source bytes, and two later observations depended on an excluded
+> predecessor. This historical seal is retained as provenance but no longer
+> authorizes the nine-trial/three-cell claim. The active run retains only the
+> independently source-bound rule-boundary 3/3 observations; see
+> `sol_arc_c_source_custody_correction_20260712.md`.
+
 Status: the Codex engine run is sealed. The cross-engine ARC-C claim remains
 partial because no compatible sealed Claude run has been ingested or compared.
 

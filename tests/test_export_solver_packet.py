@@ -46,6 +46,8 @@ def test_packet_excludes_hidden_and_key_material():
                        for p in out.rglob("*") if p.is_file())
         assert receipt.parent == out.parent and receipt not in out.parents
         assert data["peer_conclusions_included"] is False
+        assert data["solver_scope"] == exporter.REDACTED_SOLVER_SCOPE
+        assert "BAM-Gram" not in json.dumps(data)
 
 
 def test_solver_manifest_is_safe_and_coordinator_receipt_holds_grader_hash():

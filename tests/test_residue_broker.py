@@ -77,19 +77,28 @@ def _sync(run: dict) -> None:
     run["decisions"] = decisions_for_run(run)
 
 
-def test_committed_codex_run_is_sealed_and_peer_gap_stays_separate():
+def test_committed_codex_run_is_partial_after_source_custody_exclusions():
     run = json.loads(PLAN.read_text(encoding="utf-8"))
-    assert run["status"] == "sealed" and run["measurement_claim"] is True
-    assert run["pairing"]["state"] == "independent_run_sealed"
-    assert len(run["trials"]) == 9
+    assert run["status"] == "partial" and run["measurement_claim"] is False
+    assert run["pairing"]["state"] == "incomparable"
+    assert run["pairing"]["source_commit"] == "3d3837165ac9e046acf2cecc27e01f9c41c302e5"
+    assert len(run["trials"]) == 3
     remaining = validator.validate_run(run)
     assert remaining == [], remaining
     decisions = {d["task_id"]: d for d in run["decisions"]}
     assert set(decisions) == set(run["task_set"])
-    assert all(d["action"] == "seal" and d["route_to"] == "floor"
-               for d in decisions.values())
-    assert run["burden"]["closure_decision"] == "sealed"
-    assert "peer comparison remains separate" in run["burden"]["gap"]
+    assert decisions["almanac_rule_boundary_001"]["action"] == "seal"
+    assert decisions["almanac_exception_class_001"]["action"] == "route"
+    assert decisions["almanac_record_binding_001"]["action"] == "route"
+    assert run["burden"]["closure_decision"] == "partial"
+    assert "six observations excluded" in run["burden"]["gap"]
+
+
+def test_validator_hashes_manifests_at_pinned_source_commit_not_checkout():
+    run = _plan()
+    run["pairing"]["source_commit"] = "e416462fdf36c711faf06717212d8de19cd07216"
+    errors = validator.validate_run(run)
+    assert any("pairing.source_commit" in error for error in errors), errors
 
 
 def test_three_passes_seal_the_floor():

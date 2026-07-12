@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -62,8 +63,39 @@ def _check_hash(value, path: Path | None, label: str, errors: list[str]) -> None
         errors.append(f"{label} does not match {path.name}")
 
 
+def _git_blob(repo: Path, commit: str, relpath: str, label: str,
+              errors: list[str]) -> bytes | None:
+    """Read exact committed bytes; never substitute the current checkout."""
+    if not _nonempty(relpath):
+        errors.append(f"{label} must be a non-empty repo-relative path")
+        return None
+    path = Path(relpath)
+    if path.is_absolute() or ".." in path.parts or "\\" in relpath:
+        errors.append(f"{label} must be a canonical repo-relative POSIX path")
+        return None
+    try:
+        return subprocess.run(
+            ["git", "cat-file", "blob", f"{commit}:{relpath}"],
+            cwd=repo,
+            check=True,
+            capture_output=True,
+        ).stdout
+    except (OSError, subprocess.CalledProcessError):
+        errors.append(f"{label} does not exist at pinned source commit {commit}")
+        return None
+
+
+def _check_hash_bytes(value, data: bytes | None, label: str,
+                      errors: list[str]) -> None:
+    if not isinstance(value, str) or not HEX64.fullmatch(value):
+        errors.append(f"{label} must be a lowercase SHA-256 hex digest")
+    elif data is not None and hashlib.sha256(data).hexdigest() != value:
+        errors.append(f"{label} does not match bytes at pairing.source_commit")
+
+
 def _manifest_info(run: dict, repo: Path, errors: list[str]) -> dict[str, dict]:
     result: dict[str, dict] = {}
+    source_commit = (run.get("pairing") or {}).get("source_commit", "")
     manifests = run.get("task_manifests")
     if not isinstance(manifests, list):
         errors.append("task_manifests must be a list")
@@ -73,24 +105,30 @@ def _manifest_info(run: dict, repo: Path, errors: list[str]) -> dict[str, dict]:
             errors.append(f"task_manifests[{i}] must be an object")
             continue
         tid = item.get("task_id")
-        path = _repo_file(item.get("path"), repo, f"task_manifests[{i}].path", errors)
-        _check_hash(item.get("sha256"), path, f"task_manifests[{i}].sha256", errors)
+        relpath = item.get("path")
+        blob = _git_blob(repo, source_commit, relpath,
+                         f"task_manifests[{i}].path", errors)
+        _check_hash_bytes(item.get("sha256"), blob,
+                          f"task_manifests[{i}].sha256", errors)
         if not _nonempty(tid) or tid in result:
             errors.append(f"task_manifests[{i}].task_id must be non-empty and unique")
             continue
-        if path:
+        if blob is not None:
             try:
-                manifest = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError) as exc:
-                errors.append(f"task manifest {path}: {exc}")
+                manifest = json.loads(blob.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                errors.append(f"task manifest {relpath} at {source_commit}: {exc}")
                 continue
             if manifest.get("task_id") != tid:
-                errors.append(f"task manifest {path.name} declares {manifest.get('task_id')!r}, expected {tid!r}")
+                errors.append(
+                    f"task manifest {relpath} declares {manifest.get('task_id')!r}, "
+                    f"expected {tid!r}"
+                )
             if not manifest.get("hidden_files") or not manifest.get("hidden_run_command"):
                 errors.append(f"task {tid}: ARC-C admits hidden-graded manifests only")
-            if not str(path.relative_to(repo)).replace("\\", "/").startswith("tasks/almanac_"):
+            if not relpath.startswith("tasks/almanac_"):
                 errors.append(f"task {tid}: ARC-C v1 admits the real almanac knot corpus only")
-            result[tid] = {"path": path, "manifest": manifest}
+            result[tid] = {"path": repo / relpath, "manifest": manifest}
     return result
 
 

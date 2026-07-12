@@ -26,11 +26,13 @@ narration is never a verdict.
 
 ## Run artifact
 
-`data/orchestration/arc_c_almanac_v1.json` is a sealed single-engine result, not
-a cross-engine completion claim. It contains nine decisive floor trials: each of
-exception-class, record-binding and rule-boundary has three passing observations
-and is sealed at the floor. No task produced a 0/K wall, so no escalation was
-authorized or attempted.
+`data/orchestration/arc_c_almanac_v1.json` is a partial single-engine record, not
+a cross-engine completion claim. A source-custody review found that four early
+observations ran before their exact manifest bytes existed in a commit; two later
+record-binding observations depended on one of those excluded predecessors.
+Those six observations are preserved under `data/orchestration/excluded/` but
+count toward neither broker decisions nor capability claims. Only the three
+rule-boundary observations remain active and seal that task at the floor.
 `rung_bindings` maps shared rung roles to this engine's actual model, effort and
 surface, so Claude and Codex can compare routing decisions without pretending their
 model ladders are identical. Trial rows preserve:
@@ -104,7 +106,8 @@ burden_holder: Whoever asserts a routing or cost conclusion from the run.
 evidence: The validated run artifact, candidate files, hashes, raw solver records,
   hidden-grader outputs and spend receipts.
 verifier: scripts/validate_orchestration_run.py plus the manifest hidden graders.
-gap: None for the Codex engine run; compatible peer comparison remains separate.
-closure_decision: sealed for this engine run; paired ARC-C conclusion remains open.
+gap: Exception-class and record-binding lack admissible K=3 source-bound receipts;
+  compatible peer comparison remains separate.
+closure_decision: partial; only rule-boundary is sealed at the floor.
 failure_default: remain_unmeasured; do not route, escalate, price or claim success.
 ```
