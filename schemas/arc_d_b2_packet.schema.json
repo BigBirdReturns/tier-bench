@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_packet.schema.json",
+  "title": "ARC-D B2 one-response grading packet manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "protocol_id",
+    "packet_id",
+    "item_id",
+    "source_commit",
+    "charter_sha256",
+    "prompt_sha256",
+    "response_sha256",
+    "response_bytes",
+    "files",
+    "isolation"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-packet@1"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "packet_id": {"type": "string", "pattern": "^arc_d_b2_[a-z0-9_]+_v1$"},
+    "item_id": {
+      "enum": [
+        "attrs_1567_setattr_mro",
+        "httpx_3614_base_url_query",
+        "httpx_3221_ipv6_no_proxy"
+      ]
+    },
+    "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "charter_sha256": {"$ref": "#/$defs/sha256"},
+    "prompt_sha256": {"$ref": "#/$defs/sha256"},
+    "response_sha256": {"$ref": "#/$defs/sha256"},
+    "response_bytes": {"type": "integer", "minimum": 1},
+    "files": {
+      "type": "array",
+      "minItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "role", "sha256", "bytes"],
+        "properties": {
+          "path": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+          "role": {
+            "enum": [
+              "instructions",
+              "charter",
+              "payload_schema",
+              "receipt_schema",
+              "item_metadata",
+              "prompt",
+              "prompt_receipt",
+              "problem",
+              "source_evidence",
+              "reference_status",
+              "response",
+              "administration_receipt"
+            ]
+          },
+          "sha256": {"$ref": "#/$defs/sha256"},
+          "bytes": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "isolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["one_response_only", "peer_grade_included", "repository_checkout_included", "reference_is_ground_truth"],
+      "properties": {
+        "one_response_only": {"const": true},
+        "peer_grade_included": {"const": false},
+        "repository_checkout_included": {"const": false},
+        "reference_is_ground_truth": {"const": false}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

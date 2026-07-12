@@ -79,6 +79,42 @@ result. A validated comparison receipt must then be merged before that result
 is binding. Disagreement defaults to `B2_REFERENCE_AMBIGUOUS` and escalates to
 the operator with both sealed grades and executable evidence preserved.
 
+## Packet administration
+
+`scripts/export_arc_d_b2_packets.py` is the sole packet constructor. Its public
+CLI refuses execution unless the source ref is the exact default-branch commit
+and the charter adoption merge is an ancestor. It reads canonical Git blobs,
+not checkout-rendered text; verifies the charter, prompt, response, and
+administration hashes; refuses existing output paths; and writes through a
+temporary directory.
+
+Every packet contains exactly one response, the ratified charter, literal
+grading instructions, strict payload/receipt schemas, the original prompt and
+source-case excerpts, and reference metadata explicitly marked as
+non-authoritative. The coordinator receipt remains outside grader scope.
+`scripts/validate_arc_d_b2_packet.py` rechecks the complete allowlist and all
+hash bindings without printing response content. Exporter merge authorizes
+packet construction only; no model dispatch or grade exists until separate raw
+session and receipt evidence is sealed.
+
+```text
+requested_outcome: Deterministically transport each sealed response into two
+  mutually blind packet-only grading sessions without driver disclosure.
+claimant: ARC-D-B2-PACKETS coordinator.
+authority: operator `do it`, ratified charter merge 12bfd61, and maintainer
+  merge of the exporter bytes.
+predicates: exact default-branch source, canonical blob reads, one response per
+  packet, strict allowlist, outside-scope coordinator receipt, no overwrite,
+  and validator success before dispatch.
+burden_holder: the coordinator claiming a packet is safe to dispatch.
+evidence: packet manifest/hash, export receipt, charter/prompt/response/admin
+  hashes, validator output, and later thread disclosure receipts.
+verifier: deterministic packet validator; never driver inspection of content.
+gap: no official packets or grading sessions exist before exporter merge.
+closure_decision: exporter proposal complete; dispatch remains closed.
+failure_default: reject the packet and preserve B2 as unadjudicated.
+```
+
 ## Burden packet
 
 ```text

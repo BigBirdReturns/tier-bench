@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_grade_payload.schema.json",
+  "title": "ARC-D B2 packet-only grader payload",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "item_id", "attestations", "atomic_findings", "response_disposition"],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-grade-payload@1"},
+    "item_id": {
+      "enum": [
+        "attrs_1567_setattr_mro",
+        "httpx_3614_base_url_query",
+        "httpx_3221_ipv6_no_proxy"
+      ]
+    },
+    "attestations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["peer_grade_seen_before_seal", "repository_context_seen", "other_response_seen"],
+      "properties": {
+        "peer_grade_seen_before_seal": {"const": false},
+        "repository_context_seen": {"const": false},
+        "other_response_seen": {"const": false}
+      }
+    },
+    "atomic_findings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    },
+    "response_disposition": {
+      "enum": [
+        "B2_CANDIDATE_RESIDUE",
+        "B2_REFERENCE_AMBIGUOUS",
+        "B2_NO_EXTRACTABLE_CANDIDATE",
+        "B2_PARTIAL"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"response_disposition": {"const": "B2_CANDIDATE_RESIDUE"}}},
+      "then": {
+        "properties": {
+          "atomic_findings": {
+            "minItems": 1,
+            "contains": {
+              "type": "object",
+              "required": ["disposition"],
+              "properties": {"disposition": {"const": "B2_CANDIDATE_RESIDUE"}}
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_byte", "end_byte_exclusive"],
+      "properties": {
+        "start_byte": {"type": "integer", "minimum": 0},
+        "end_byte_exclusive": {"type": "integer", "minimum": 1}
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "path", "sha256", "authority_status"],
+      "properties": {
+        "kind": {"enum": ["source", "test", "released_behavior", "other_executable"]},
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "authority_status": {"enum": ["AUTHORITATIVE", "CONFLICTING", "INSUFFICIENT"]}
+      }
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "candidate_id",
+        "response_spans",
+        "behavior_claim",
+        "regression_test",
+        "residue",
+        "applicability_predicate",
+        "exclusions",
+        "distinctness",
+        "evidence",
+        "disposition"
+      ],
+      "properties": {
+        "candidate_id": {"type": "string", "minLength": 1},
+        "response_spans": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/span"}},
+        "behavior_claim": {"type": "string", "minLength": 1},
+        "regression_test": {"type": "string", "minLength": 1},
+        "residue": {"type": "string", "minLength": 1},
+        "applicability_predicate": {"type": "string", "minLength": 1},
+        "exclusions": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "distinctness": {"enum": ["UNIQUE", "DUPLICATE", "AMBIGUOUS"]},
+        "evidence": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/evidence"}},
+        "disposition": {
+          "enum": ["B2_CANDIDATE_RESIDUE", "B2_REFERENCE_AMBIGUOUS", "B2_REJECTED_CANDIDATE"]
+        }
+      }
+    }
+  }
+}
