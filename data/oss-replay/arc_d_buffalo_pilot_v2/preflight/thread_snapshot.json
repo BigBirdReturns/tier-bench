@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "thread": {
+    "id": "019f581c-0f12-7570-bddd-3c739f7cb828",
+    "hostId": "local",
+    "title": "Return CAPACITY_OK",
+    "preview": "<codex_delegation>\n  <source_thread_id>019f4fdc-f3f9-7b52-87f3-3452d231d67e</source_thread_id>\n  <input>Return exactly CAPACITY_OK and nothing else.</input>\n</codex_delegation>",
+    "status": {
+      "type": "idle"
+    },
+    "createdAt": 1783889666,
+    "updatedAt": 1783889666
+  },
+  "page": {
+    "order": "newest_first",
+    "limit": 3,
+    "nextCursor": null,
+    "hasMore": false
+  },
+  "turns": [
+    {
+      "id": "019f581c-7b57-74a1-9f16-431af52d060d",
+      "status": "completed",
+      "error": null,
+      "startedAt": 1783889689,
+      "completedAt": 1783889694,
+      "durationMs": 4527,
+      "items": [
+        {
+          "type": "userMessage",
+          "id": "item-1",
+          "content": [
+            {
+              "type": "text",
+              "text": "<codex_delegation>\n  <source_thread_id>019f4fdc-f3f9-7b52-87f3-3452d231d67e</source_thread_id>\n  <input>Return exactly CAPACITY_OK and nothing else.</input>\n</codex_delegation>",
+              "codexDelegation": {
+                "sourceThreadId": "019f4fdc-f3f9-7b52-87f3-3452d231d67e",
+                "input": "Return exactly CAPACITY_OK and nothing else."
+              }
+            }
+          ]
+        },
+        {
+          "type": "agentMessage",
+          "id": "item-2",
+          "text": "CAPACITY_OK",
+          "phase": "final_answer"
+        }
+      ]
+    }
+  ]
+}

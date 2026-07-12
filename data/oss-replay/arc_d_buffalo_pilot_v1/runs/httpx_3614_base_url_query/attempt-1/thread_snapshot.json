@@ -1,0 +1,15 @@
+{
+  "schema": "tier-bench/codex-thread-snapshot@1",
+  "item_id": "httpx_3614_base_url_query",
+  "thread_id": "019f57ff-2e65-7f00-8eb9-40e02bea848b",
+  "turn_id": "019f57ff-4467-7033-bb38-2b3c75f892d1",
+  "host_id": "local",
+  "thread_status": "systemError",
+  "turn_status": "completed",
+  "started_at": "2026-07-12T20:22:54.0000000Z",
+  "completed_at": "2026-07-12T20:22:59.0000000Z",
+  "duration_ms": 4539,
+  "item_types": ["userMessage"],
+  "assistant_response_present": false,
+  "provider_error_detail": null
+}

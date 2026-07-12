@@ -23,6 +23,8 @@ llm_costs.jsonl
 !data/control-results/*.jsonl
 # Raw orchestration event streams are sealed evidence, not disposable telemetry.
 !data/orchestration/**/*.jsonl
+# OSS replay event snapshots are likewise hash-bound administration evidence.
+!data/oss-replay/**/*.jsonl
 # The frontier capture ledger is a deliverable ledger, not run scratch.
 !data/capture/*.jsonl
 # Sealed memory shards are the deliverable too — their claim/evidence/ext tables

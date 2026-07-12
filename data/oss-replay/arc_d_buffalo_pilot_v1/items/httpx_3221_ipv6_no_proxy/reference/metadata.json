@@ -1,0 +1,11 @@
+{
+  "authority_class": "OPEN_UNMERGED_UNREVIEWED_PROPOSAL",
+  "url": "https://github.com/encode/httpx/pull/3741",
+  "base_sha": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+  "head_sha": "83d203a86d955b7695613df6378b56f9003112ce",
+  "state_observed": "open",
+  "merged": false,
+  "submitted_reviews": 0,
+  "may_serve_as_ground_truth": false,
+  "note": "Comparator hypothesis only; even the discussion distinguishes crash avoidance from network membership semantics."
+}

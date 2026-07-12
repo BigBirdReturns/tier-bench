@@ -1,0 +1,15 @@
+{
+  "schema": "tier-bench/codex-thread-snapshot@1",
+  "item_id": "attrs_1567_setattr_mro",
+  "thread_id": "019f57ff-5914-74c0-a4ed-3853abe8f8c2",
+  "turn_id": "019f57ff-6f5a-7460-99ec-4c37572902cc",
+  "host_id": "local",
+  "thread_status": "systemError",
+  "turn_status": "completed",
+  "started_at": "2026-07-12T20:23:05.0000000Z",
+  "completed_at": "2026-07-12T20:23:07.0000000Z",
+  "duration_ms": 1775,
+  "item_types": ["userMessage"],
+  "assistant_response_present": false,
+  "provider_error_detail": null
+}

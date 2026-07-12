@@ -1,0 +1,23 @@
+{
+  "authority_class": "COMPETING_OPEN_UNMERGED_UNREVIEWED_PROPOSALS",
+  "proposals": [
+    {
+      "url": "https://github.com/encode/httpx/pull/3760",
+      "base_sha": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+      "head_sha": "b2adc529e7c3ccb75965a29a35bb339198c0baff",
+      "scope_observation": "changes construction-time trailing-slash enforcement"
+    },
+    {
+      "url": "https://github.com/encode/httpx/pull/3766",
+      "base_sha": "ae1b9f66238f75ced3ced5e4485408435de10768",
+      "head_sha": "18927fa8e80fcf650d2c47cfe370a7d92c18bd83",
+      "scope_observation": "changes construction-time enforcement and relative merge"
+    }
+  ],
+  "state_observed": "open",
+  "merged": false,
+  "submitted_reviews": 0,
+  "may_serve_as_ground_truth": false,
+  "issue_contract_allows": ["preserve base query", "deliberately drop base query"],
+  "note": "The competing diffs are useful differential comparators, not correctness authority."
+}

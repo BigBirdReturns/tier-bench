@@ -15,6 +15,18 @@ to the original conversational draft are marked.
   reports a comparable pair with 3/3 task-decision agreement.
 - Runway: ARC-D (OSS replay field) is NEXT in `ROADMAP.md`; assignment remains
   governed by `docs/agents/QUEUE.md`.
+- ARC-D-PILOT is partial (2026-07-12): the field contract, proposed-but-unadopted
+  HARVEST gate, three packet receipts, and four illustrative projections exist.
+  Three fresh projectless dispatches each ended provider `systemError` with no
+  assistant bytes, so the ledger contains 3 `PARTIAL` rows and zero scientific
+  observations. That v1 record remains immutable and is not superseded.
+- ARC-D-PILOT-R1 received fresh operator authority after v1 merged. Its excluded
+  capacity preflight returned exact `CAPACITY_OK`; three new projectless subjects
+  then completed sequentially from the exact v1 prompt blobs with zero tool calls.
+  Their 7,345 / 5,933 / 5,933 UTF-8 response bytes, thread/turn identities, event
+  timestamps, and snapshots are hash-bound under
+  `data/oss-replay/arc_d_buffalo_pilot_v2/`. All three remain
+  `SEALED_RESPONSE_UNADJUDICATED`: no grader or HARVEST gate was applied.
 
 ## Settled assets (with exact figures)
 

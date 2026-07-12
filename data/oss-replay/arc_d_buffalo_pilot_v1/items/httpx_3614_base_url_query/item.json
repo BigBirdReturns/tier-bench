@@ -1,0 +1,19 @@
+{
+  "item_id": "httpx_3614_base_url_query",
+  "blindness": "BODY_ONLY_COLD_CONTEXT",
+  "public_issue": "https://github.com/encode/httpx/issues/3614",
+  "issue_opened": "2025-07-27",
+  "issue_snapshot_fetched": "2026-07-12",
+  "source_repository": "encode/httpx",
+  "source_commit": "ae1b9f66238f75ced3ced5e4485408435de10768",
+  "problem_snapshot_mode": "body_only_transcription",
+  "packet_source_mode": "curated_allowlisted_excerpts",
+  "exact_full_blob_included": false,
+  "source_blobs": {
+    "httpx/_client.py": "13cd9336732a0854dae25b53b34e4b2e749b5897",
+    "tests/client/test_client.py": "657839018ab3ded203937f970eeeb23f26561775"
+  },
+  "selector_reference_exposure": true,
+  "subject_reference_exposure": false,
+  "pilot_status": "PARTIAL_SYSTEM_ERROR_NO_RESPONSE"
+}
