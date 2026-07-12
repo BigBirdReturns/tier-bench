@@ -19,8 +19,14 @@ to the original conversational draft are marked.
   HARVEST gate, three packet receipts, and four illustrative projections exist.
   Three fresh projectless dispatches each ended provider `systemError` with no
   assistant bytes, so the ledger contains 3 `PARTIAL` rows and zero scientific
-  observations. The frozen stopping rule forbids an undeclared retry; a future
-  retry needs fresh operator authority after provider capacity is available.
+  observations. That v1 record remains immutable and is not superseded.
+- ARC-D-PILOT-R1 received fresh operator authority after v1 merged. Its excluded
+  capacity preflight returned exact `CAPACITY_OK`; three new projectless subjects
+  then completed sequentially from the exact v1 prompt blobs with zero tool calls.
+  Their 7,345 / 5,933 / 5,933 UTF-8 response bytes, thread/turn identities, event
+  timestamps, and snapshots are hash-bound under
+  `data/oss-replay/arc_d_buffalo_pilot_v2/`. All three remain
+  `SEALED_RESPONSE_UNADJUDICATED`: no grader or HARVEST gate was applied.
 
 ## Settled assets (with exact figures)
 

@@ -1,0 +1,17 @@
+{
+  "schema": "tier-bench/codex-thread-event-receipt@1",
+  "source": "codex_app.read_thread",
+  "thread_id": "019f5821-9140-70f1-8a8b-b4156973861e",
+  "turn_id": "019f5821-a7bf-7db2-830f-ebef26ef3dbd",
+  "status": "completed",
+  "error": null,
+  "started_at_unix_s": 1783890028,
+  "completed_at_unix_s": 1783890086,
+  "duration_ms": 57654,
+  "agent_message_item_id": "item-3",
+  "agent_message_phase": "final_answer",
+  "response_encoding": "UTF-8 serialized as RFC 4648 base64",
+  "response_bytes": 5933,
+  "tool_calls": 0,
+  "scientific_state": "SEALED_RESPONSE_UNADJUDICATED"
+}
