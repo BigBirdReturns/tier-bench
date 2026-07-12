@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/orchestration_run.schema.json",
+  "title": "ARC-C orchestration-pattern benchmark run",
+  "description": "A sealed run plan plus trial receipts. scripts/validate_orchestration_run.py enforces cross-row routing, hash, hidden-grading, replay, spend, abstention, and closure rules.",
+  "type": "object",
+  "required": ["schema_version", "run_id", "status", "measurement_claim", "engine", "pairing", "task_set", "task_manifests", "rungs", "rung_bindings", "k", "trials", "decisions", "burden"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": 1},
+    "run_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "status": {"enum": ["unmeasured", "running", "partial", "sealed"]},
+    "measurement_claim": {"type": "boolean"},
+    "engine": {"$ref": "#/$defs/engine"},
+    "pairing": {"$ref": "#/$defs/pairing"},
+    "task_set": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "task_manifests": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["task_id", "path", "sha256"], "additionalProperties": false,
+        "properties": {
+          "task_id": {"type": "string"}, "path": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "rungs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+    "rung_bindings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object", "required": ["model", "effort", "surface"], "additionalProperties": false,
+        "properties": {"model": {"type": "string"}, "effort": {"type": "string"}, "surface": {"type": "string"}}
+      }
+    },
+    "k": {"type": "integer", "minimum": 1},
+    "trials": {"type": "array", "items": {"$ref": "#/$defs/trial"}},
+    "decisions": {"type": "array", "items": {"type": "object"}},
+    "burden": {"$ref": "#/$defs/burden"}
+  },
+  "$defs": {
+    "engine": {
+      "type": "object", "required": ["engine_id", "model", "lineage", "surface", "role"], "additionalProperties": false,
+      "properties": {
+        "engine_id": {"type": "string"}, "model": {"type": "string"}, "lineage": {"type": "string"},
+        "surface": {"type": "string"}, "role": {"enum": ["independent_solver", "author", "reviewer", "grader", "coordinator"]}
+      }
+    },
+    "pairing": {
+      "type": "object", "required": ["pair_id", "peer_engine_id", "peer_lineage", "source_commit", "independent_before_exchange", "state"], "additionalProperties": false,
+      "properties": {
+        "pair_id": {"type": "string"}, "peer_engine_id": {"type": "string"}, "peer_lineage": {"type": "string"},
+        "source_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "independent_before_exchange": {"type": "boolean"},
+        "state": {"enum": ["planned", "independent_run_sealed", "pair_sealed", "contaminated", "incomparable"]}
+      }
+    },
+    "trial": {
+      "type": "object",
+      "required": ["trial_id", "sequence", "task_id", "rung", "model", "effort", "trial", "solver_id", "executor_surface", "route", "verdict", "spend", "replay", "abstention", "provenance"],
+      "properties": {
+        "trial_id": {"type": "string"}, "sequence": {"type": "integer", "minimum": 1},
+        "task_id": {"type": "string"}, "rung": {"type": "string"}, "model": {"type": "string"},
+        "effort": {"type": "string"}, "trial": {"type": "integer", "minimum": 1},
+        "solver_id": {"type": "string"}, "executor_surface": {"type": "string"},
+        "route": {"type": "object"}, "candidate": {"type": "object"}, "verdict": {"type": "object"},
+        "spend": {"type": "object"}, "replay": {"type": "object"},
+        "abstention": {"type": "object"}, "provenance": {"type": "object"}
+      }
+    },
+    "burden": {
+      "type": "object",
+      "required": ["requested_outcome", "claimant", "authority", "predicates", "burden_holder", "evidence", "verifier", "gap", "closure_decision", "failure_default"],
+      "properties": {
+        "requested_outcome": {"type": "string", "minLength": 1}, "claimant": {"type": "string", "minLength": 1},
+        "authority": {"type": "string", "minLength": 1},
+        "predicates": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "burden_holder": {"type": "string", "minLength": 1},
+        "evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "verifier": {"type": "string", "minLength": 1}, "gap": {"type": "string", "minLength": 1},
+        "closure_decision": {"enum": ["open", "partial", "sealed"]},
+        "failure_default": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

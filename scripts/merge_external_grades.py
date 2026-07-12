@@ -42,10 +42,10 @@ def read_jsonl(path: Path):
 
 def write_jsonl(path: Path, meta: dict, rows: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
-        f.write(json.dumps(meta, ensure_ascii=False) + "\n")
+    with path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(meta, ensure_ascii=True) + "\n")
         for row in rows:
-            f.write(json.dumps(row, ensure_ascii=False) + "\n")
+            f.write(json.dumps(row, ensure_ascii=True) + "\n")
 
 
 def sha256_file(path: Path) -> str:
@@ -92,14 +92,19 @@ def write_raw_artifact(grades_path: Path, out_dir: Path, grade_run_id: str, run_
     raw_sha = sha256_file(grades_path)
     manifest_path = run_dir / "manifest.json"
     artifact_path = run_dir / "grades.raw.json"
-    manifest = {**run_meta, "raw_artifact_sha256": raw_sha, "raw_artifact_file": str(artifact_path.relative_to(out_dir))}
+    manifest = {
+        **run_meta,
+        "raw_artifact_sha256": raw_sha,
+        "raw_artifact_file": artifact_path.relative_to(out_dir).as_posix(),
+    }
     if manifest_path.exists():
         old = json.loads(manifest_path.read_text(encoding="utf-8"))
         if old != manifest:
             sys.exit(f"Conflicting artifact for existing grade_run_id: {grade_run_id}")
     if artifact_path.exists() and sha256_file(artifact_path) != raw_sha:
         sys.exit(f"Conflicting raw artifact for existing grade_run_id: {grade_run_id}")
-    shutil.copyfile(grades_path, artifact_path)
+    if grades_path.resolve() != artifact_path.resolve():
+        shutil.copyfile(grades_path, artifact_path)
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
@@ -129,7 +134,9 @@ def main() -> None:
         "packet_sha256": packet_sha,
         "packet_source_commit": source_commit,
         "key_schema": key_meta.get("key_schema"),
-        "permutation_seed": key_meta.get("permutation_seed"),
+        "packet_schema": key_meta.get("packet_schema"),
+        "id_salt_commitment": key_meta.get("id_salt_commitment"),
+        "permutation_commitment": key_meta.get("permutation_commitment"),
     }
     write_raw_artifact(grades_path, out_dir, args.grade_run_id, run_meta)
 
@@ -145,10 +152,10 @@ def main() -> None:
         src = Path(source_file)
         meta, rows = read_jsonl(src)
         meta = dict(meta)
-        meta.setdefault("administration_id", src.stem)
+        administration_id = meta.get("administration_id", src.stem)
         lookup = {(m["administration_id"], m["probe_id"]): oid for oid, m in oid_metas}
         for row in rows:
-            oid = lookup.get((meta["administration_id"], row["probe_id"])) or lookup.get((src.stem, row["probe_id"]))
+            oid = lookup.get((administration_id, row["probe_id"])) or lookup.get((src.stem, row["probe_id"]))
             if not oid:
                 continue
             grade = grades[oid]

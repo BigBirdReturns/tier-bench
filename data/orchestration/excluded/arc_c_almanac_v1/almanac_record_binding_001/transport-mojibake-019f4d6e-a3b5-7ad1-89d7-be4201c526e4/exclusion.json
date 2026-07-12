@@ -1,0 +1,14 @@
+{
+  "schema": "tier-bench.excluded_engine_observation.v1",
+  "thread_id": "019f4d6e-a3b5-7ad1-89d7-be4201c526e4",
+  "turn_id": "019f4d6e-bb6e-7023-b1b2-330498f58492",
+  "task_id": "almanac_record_binding_001",
+  "excluded_before_grading": true,
+  "reason": "UTF-8 prompt transport was decoded as mojibake by the first app handoff; the packet prompt seen by the solver was not byte/character compatible",
+  "counts_as_trial": false,
+  "counts_toward_broker": false,
+  "raw_response_path": "data/orchestration/excluded/arc_c_almanac_v1/almanac_record_binding_001/transport-mojibake-019f4d6e-a3b5-7ad1-89d7-be4201c526e4/raw_response.txt",
+  "raw_response_sha256": "654f074ac4d86b053b54476eee647e91c9c047a72e567d5e4f653dba7f4ee113",
+  "thread_snapshot_path": "data/orchestration/excluded/arc_c_almanac_v1/almanac_record_binding_001/transport-mojibake-019f4d6e-a3b5-7ad1-89d7-be4201c526e4/thread_snapshot.json",
+  "thread_snapshot_sha256": "5f9a8a0ea9663120e8c40b92480dd50e9cb04355c20ad3f9f5c10db2e2994949"
+}

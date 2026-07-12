@@ -1,0 +1,12 @@
+{
+  "grade_run_id": "sol-1-v2-019f4d56-c26f-7ec0-9d3e-67819c2270ec",
+  "grader": "openai-gpt-5.6-sol-desktop-thread-019f4d56-c26f-7ec0-9d3e-67819c2270ec",
+  "packet_sha256": "98997bf9d9e43d85052e6ff0107476735cf35aeccfd7c4509dc4762ff48d7b11",
+  "packet_source_commit": "623cb1ed1672e04fecba48f04294067f78eaf02e",
+  "key_schema": "tier-bench.control_blind_key.v2",
+  "packet_schema": "tier-bench.control_blind_packet.v2",
+  "id_salt_commitment": "bc1f120eaac52a823ecbcf78ec4e41062ee64c354a5e8e5a53228c32b7486009",
+  "permutation_commitment": "9d31777b05bece389d2f9801475787dbedb694c5633f63fee4764b742f20a34a",
+  "raw_artifact_sha256": "da69f26df5d9bcf55391b7a3deaf00505125aafd00bd6a961aed4eab016af04c",
+  "raw_artifact_file": "_external_grade_runs/sol-1-v2-019f4d56-c26f-7ec0-9d3e-67819c2270ec/grades.raw.json"
+}

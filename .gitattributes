@@ -2,3 +2,12 @@ experiments/breadth/run/ledger.jsonl merge=union
 experiments/breadth/run/known_corner.jsonl merge=union
 experiments/breadth/run/subscription_ledger.jsonl merge=union
 experiments/breadth/run/xprovider_ledger.jsonl merge=union
+
+# Hash-bound benchmark inputs, graders, and orchestration receipts are evidence.
+# Preserve their exact bytes across checkout platforms; never normalize newlines.
+tasks/** -text -whitespace
+fixtures/** -text -whitespace
+data/orchestration/** -text -whitespace
+data/control-results/** -text -whitespace
+experiments/breadth/run/replays/** -text -whitespace
+experiments/breadth/run/task02_edge_family.md -text -whitespace
