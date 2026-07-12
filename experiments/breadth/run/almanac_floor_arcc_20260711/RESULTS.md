@@ -160,6 +160,52 @@ still contains **zero recorded `limit_hit` events**, so the quota gauge
 honestly remains `UNMEASURED` — this adds real per-trial cost data, not a
 quota number, which per `quota.py`'s design can only come from an actual wall.
 
+## Addendum 2 (2026-07-12) — source-custody rebind; Sol's retraction supersedes the contrast table
+
+PR #63's cleanup landed a **source-custody correction**
+(`docs/agents/reviews/sol_arc_c_source_custody_correction_20260712.md`): the
+validator had compared manifest hashes against the current checkout rather
+than the declared source commit, and `e416462`'s almanac manifest bytes do
+**not** hash to the declared values. Sol rebound their run to
+`3d3837165ac9e046acf2cecc27e01f9c41c302e5` (the first commit containing the
+exact bytes), excluded six of their nine observations for execution-time
+custody violations, and downgraded the run to `partial` /
+`measurement_claim: false`.
+
+**Effect on this run's declaration (labeling defect, same class as Sol's):**
+the packet receipts here declare `source_commit: e416462`, but the bytes
+actually exported and graded were the codex-branch overlays — which are the
+`3d38371` bytes exactly (manifests `392dd0d1…`/`b9c20e53…`/`0e7c6760…`,
+hidden graders `fcc7c830…`/`fec244b9…`/`cccea756…`, all verified matching
+`3d38371`). Under Sol's own adjudication standard this run's declaration is
+hereby **rebound to `3d38371`**. Custody chronology: `3d38371` was authored
+2026-07-10T16:09Z; every trial here (haiku floor 2026-07-11T06:51–53Z,
+fable-low escalation 2026-07-12) executed after it, against those exact
+bytes, with no broker-route dependence on any excluded observation. All 12
+observations remain admissible. This also *confirms* Finding 1: the manifest
+and grader hashes were the binding custody objects all along; the commit
+label was the weak link on both lineages independently.
+
+**Effect on the cross-lineage contrast (the table above is superseded):**
+Sol's "cleared all three 3/3" is retracted for two tasks. The admissible
+state after the correction:
+
+| Task | Sol (admissible) | Claude (this run) |
+|---|---|---|
+| `exception_class` | **unmeasured** (3 obs excluded, pre-source-commit) | cleared 3/3 @ haiku floor |
+| `record_binding` | **unmeasured** (1 excluded + 2 route-dependent) | cleared 3/3 @ haiku floor |
+| `rule_boundary` | cleared 3/3 @ floor (gpt-5.6@low) | 2/3 @ haiku floor → **3/3 @ fable-low** |
+
+The only surviving comparable cell is `rule_boundary`, where the genuine
+divergence stands: GPT-5.6's cheapest rung absorbed the lichun knot; the
+Claude ladder needed one rung above haiku. On the other two tasks the
+lineages now hold **complementary evidence** — Claude has admissible floor
+clears exactly where Sol has holes. Note the ladder alignment: Sol's "floor"
+is gpt-5.6@**low**, so its Claude mirror is fable-5@low (the rung Sol's
+pairing names as peer), and the haiku floor is a cheaper sub-floor rung with
+no Codex counterpart — a real asymmetry the paired run manifest must state
+rather than paper over.
+
 ## Burden note (docs/burden-discipline.md)
 
 ```text
@@ -170,7 +216,7 @@ predicates: candidates sealed before grading (9/9 seal==graded); hidden graders 
 burden_holder: this directory (experiments/breadth/run/almanac_floor_arcc_20260711)
 evidence: receipt.json, trials/*/{candidate.py,grader_outputs.json,grade_receipt.json}, seals reproduced per grade_receipt
 verifier: scripts/grade_solver_packet.py (rerun-verifiable at e416462); cross-check against experiments/breadth/run/almanac_floor_20260710 (prior Claude haiku floor, rule_boundary 1/3)
-gap: not a schema-sealed pair — Claude peer identity (haiku vs Sol's declared claude_fable_5) unreconciled; comparator would return unpaired. Task-level gap (rule_boundary not clearing K-of-K) is CLOSED by the 2026-07-12 addendum — fable-low clears 3/3 — but that escalation ran outside the ARC-C schema/broker (which only exists on codex/arc-c-residue-broker) so it does not itself produce a sealable orchestration_run.json row
+gap: not a schema-sealed pair — comparator would return unpaired. Task-level gap (rule_boundary K-of-K) CLOSED by addendum 1 (fable-low 3/3). Declaration gap (wrong source_commit label) CLOSED by addendum 2 (rebound to 3d38371; bytes verified). Remaining: Sol's broker/schema must merge (PR #63), and a schema-valid Claude run at the fable-5@low floor rung needs K=3 fable-low cells for exception_class and record_binding (rule_boundary's fable-low cell already exists)
 closure_decision: partial
-failure_default: keep_open — the pair does not seal until Sol's ARC-C broker merges and a schema-valid run (fable-5, per the declared peer identity) is produced against it
+failure_default: keep_open — the pair does not seal until Sol's ARC-C broker merges and a schema-valid fable-5 run is produced against it
 ```
