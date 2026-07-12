@@ -102,3 +102,65 @@ grader-output / artifact hashes and verdict, and rejects a receipt path that reu
 an evidence file; adversarial regression test `test_four_arbitrary_files_as_receipts_cannot_buy_closure`.
 This is what actually closes EP-001. "CI green" earlier meant "no negative control
 existed" — itself an instance of the recurring defect.
+
+## EP-009 — the CI workflow carried its own inline assertion the local suite could not see
+
+```
+failure: PR #65 passed the entire local test suite but failed GitHub CI, because
+the durability workflow hardcoded an inline ROI check (validated_replays==1)
+invisible to any local runner; "local green" was mistaken for "the gate passes"
+residue: reproduce EVERY workflow step's literal command locally before declaring
+ready — a check that lives only in the YAML is still part of the gate, and the
+local suite is a subset of it, never the whole
+future consequence test: a change that alters a ledger quantity must update the
+inline workflow assertion in the SAME diff, and the exact `python -c` one-liner
+from the YAML must be run locally and shown green before the PR is called ready
+```
+
+Fix (PR #65): edited `.github/workflows/breadth-durability.yml`'s inline ROI
+assertion to `validated_replays==2` and reran the literal one-liner locally.
+Distinction: local-green ≠ CI-green (`docs/DISTINCTIONS.md`).
+
+## EP-010 — a render path labeled authority it never validated
+
+```
+failure: axm-hinge `impact render` printed an authority label whenever a reviewer
+dict was merely present, without running the validator — presentation could
+assert a seam the gate had not checked, so a schema-shaped record rendered as
+authoritative regardless of whether the authority binding held
+residue: a render/presentation path must run the fail-closed validator FIRST and
+exit nonzero on any error; the authority label is gated behind an explicit
+authority_verified flag (default false), so a reviewer dict's mere presence never
+produces the label
+future consequence test: rendering an impact record with an unverified reviewer
+must exit nonzero and must NOT emit the authority label; only a bytes-bound,
+validated reviewer seam earns it
+```
+
+Fix (axm-hinge PR #2): `render_impact` gained `authority_verified` (default
+false); `cli.py impact render` runs `validate_impact` first and exits nonzero on
+error. Distinctions: presentation ≠ gate; attribution ≠ authority
+(`docs/DISTINCTIONS.md`).
+
+## EP-011 — a frozen manifest nothing checks drifts into prose (schema-valid ≠ executable-valid)
+
+```
+failure: the CART0 v2 design was frozen as Markdown (PR #66) with no machine
+check; a human-authored freeze can silently drift — a control arm could acquire
+the target rule, the READY gate could be dropped, the blocks could unbalance —
+and nothing would bite, exactly the A=5/B=3/C=1 imbalance a prose freeze once hid
+residue: a frozen experimental design must have an executable manifest and a
+fail-closed validator asserting its invariants (three arms, boundary message as
+the ONLY manipulation, B resurfaces / A,C do not, READY first-response and no
+planning turn, balanced blocks K>=1, mandatory preservation set, gated grading),
+plus a keyless runner that captures custody and refuses a verdict on incomplete
+or contaminated blocks
+future consequence test: `validate_manifest.py` must reject a control arm that
+resurfaces the rule, a dropped READY gate, K=0, and a missing preservation field;
+the runner must contaminate (mint neither) a rehearsed first turn without losing
+the transcript, and return NO_VERDICT on any incomplete balanced block
+```
+
+Fix (this PR): `experiments/breadth/cart0_abc_v2/{manifest.json,validate_manifest.py,runner.py}`
+plus `tests/test_cart0_v2_harness.py`, wired into CI. Distinction:
+schema-valid ≠ executable-valid (`docs/DISTINCTIONS.md`).

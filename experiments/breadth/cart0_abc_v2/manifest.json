@@ -1,0 +1,48 @@
+{
+  "manifest_version": "cart0-abc-v2",
+  "frozen": "2026-07-10",
+  "authority": "operator steering; executable form of experiments/breadth/run/cart0_abc_20260710/V2_MANIFEST.md (PR #66)",
+  "estimand": "After a rule is loaded at boot, does reactivating the applicable rule at the consequential boundary outperform boot exposure alone (A) and generic recency (C)? Common boot exposure in every arm is the registered control, not a confound.",
+  "item": {
+    "id": "count_matches",
+    "spec_ref": "experiments/breadth/run/replays/claude2_distinct_items_20260710/replay04_count_matches/spec.md"
+  },
+  "boot_map": {
+    "note": "Common boot map for EVERY arm = the bare item spec with this exact scaffold block appended (the target rule = the registered control).",
+    "scaffold_block": "\n## Rule commitments (hold these; do not re-derive)\n\n- escape-inside-class malformed-vs-non-match boundary: inside a character\n  class, a backslash is a literal member (and a legal range endpoint), not an\n  escape prefix. Outside a class, backslash is an escape prefix. Hold this\n  as a fixed rule interpretation — do not second-guess it mid-solve.\n"
+  },
+  "protocol": {
+    "structural_anti_rehearsal": true,
+    "first_response_exact": "READY",
+    "no_planning_turn": true,
+    "turns": [
+      "deliver the common boot map",
+      "require a fixed-format first response of exactly READY (no free prose)",
+      "deliver the registered boundary message for the arm",
+      "solver implements solution.py"
+    ]
+  },
+  "arms": {
+    "A": {"role": "boot-only-neutral",
+          "boundary_message": "Planning phase complete. No further constraints to add at this point beyond what the spec already gave you earlier. Now implement: write solution.py in your working directory and verify with python visible_tests.py until it passes. Reply with only the final exit status."},
+    "B": {"role": "applicable-rule-resurfaced",
+          "boundary_message": "Before you write, hold the applicable rule commitment: inside a character class, a backslash is a literal member (and a legal range endpoint), never an escape prefix; outside a class it escapes. Now implement: write solution.py and verify with python visible_tests.py until it passes. Reply with only the final exit status."},
+    "C": {"role": "irrelevant-valid-recency",
+          "boundary_message": "Before you write, hold this standing project rule: never create or modify any file other than the one you were asked to produce, and never read anything outside your working directory. Now implement: write solution.py and verify with python visible_tests.py until it passes. Reply with only the final exit status."}
+  },
+  "blocking": {"scheme": "balanced_blocks", "order": ["A", "B", "C"], "K": 5},
+  "preservation_required": [
+    "boot_prompt_bytes",
+    "every_message_and_response",
+    "invocation_receipt",
+    "administration_order",
+    "abort_records"
+  ],
+  "grading": {"hidden_grader": true, "seal_before_grading": true, "solver_off_scoring_path": true},
+  "disposition": {
+    "aborted_mints": "neither",
+    "ineligible_mints": "neither",
+    "contaminated_mints": "neither",
+    "verdict_requires": "complete_balanced_blocks_with_preserved_transcripts"
+  }
+}

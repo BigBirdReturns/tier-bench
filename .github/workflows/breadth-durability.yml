@@ -18,6 +18,7 @@ jobs:
         run: |
           python -m py_compile experiments/breadth/*.py experiments/breadth/selfrun/*.py \
             harness/*.py experiments/almanac/reference/*.py experiments/breadth/edge_family/*.py \
+            experiments/breadth/cart0_abc_v2/*.py tests/test_cart0_v2_harness.py \
             scripts/validate_primitives.py tests/test_validate_primitives.py
       - name: valid task set prints (hidden-grader guard)
         run: python experiments/breadth/breadth_tasks.py
@@ -51,3 +52,7 @@ jobs:
         run: |
           python tests/test_capture_ledger.py
           python tests/test_capture_roi.py
+      - name: CART0 v2 manifest holds its frozen invariants + harness captures custody
+        run: |
+          python experiments/breadth/cart0_abc_v2/validate_manifest.py
+          python tests/test_cart0_v2_harness.py
