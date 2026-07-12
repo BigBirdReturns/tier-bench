@@ -1,0 +1,39 @@
+{
+  "schema": "tier-bench/arc-d-administration-manifest@2",
+  "protocol_id": "arc_d_buffalo_pilot_v2",
+  "state": "SEALED_RESPONSES_UNADJUDICATED",
+  "source_commit": "066f9de3b4eb25416c833ecdea017d3dd8fa5406",
+  "queue_claim_commit": "d0ff0f0",
+  "artifacts": [
+    {
+      "path": "contract.json",
+      "sha256": "158d7f974688d4d0918e405887ccb232fb1ca665c1f72e7e653c8420757623bc"
+    },
+    {
+      "path": "README.md",
+      "sha256": "de529c50a5f29029876a6ce86e1e23857c091e8be8782aa386f63f48cb526cd5"
+    },
+    {
+      "path": "preflight/administration_receipt.json",
+      "sha256": "74b48b9d0eaba5e4d61c58543db2d4917d9910e1d2ded3351cfb9ac94bc76a53"
+    },
+    {
+      "path": "runs/attrs_1567_setattr_mro/attempt-1/administration_receipt.json",
+      "sha256": "843d1158fd457244001c8bdd628623324bcf681aa4a9097a2cb7e23c59540666"
+    },
+    {
+      "path": "runs/httpx_3614_base_url_query/attempt-1/administration_receipt.json",
+      "sha256": "8b085e1dcdc68da88c5d5203e2f55f564338d5a469f5609f2e3fc6435e0be199"
+    },
+    {
+      "path": "runs/httpx_3221_ipv6_no_proxy/attempt-1/administration_receipt.json",
+      "sha256": "c9769ae33108596be7411f30b380b64bacc924f54f4cda12855e1da7b05e4cc4"
+    },
+    {
+      "path": "runs/manifest.json",
+      "sha256": "051f6cadd55ab75abc42db1dc3b4aac8046f35e94b6b673f3644732fabb17d8c"
+    }
+  ],
+  "transitive_binding": "Each administration receipt binds the decoded UTF-8 response, its base64 carrier, normalized event receipt, and safe thread snapshot. Only thread.cwd provider-host paths were removed before hashing; exact prompts, responses, identities, statuses, and timestamps remain. The Git commit binds this manifest.",
+  "result_boundary": "The capacity check passed and three packet-only responses were sealed. The HARVEST gate was not applied; no response was graded or adjudicated."
+}

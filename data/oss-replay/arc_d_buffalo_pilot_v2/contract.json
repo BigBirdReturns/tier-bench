@@ -1,0 +1,81 @@
+{
+  "schema": "tier-bench/arc-d-buffalo-retry@2",
+  "protocol_id": "arc_d_buffalo_pilot_v2",
+  "extends_protocol_id": "arc_d_buffalo_pilot_v1",
+  "supersedes_v1": false,
+  "protocol_state": "sealed_responses_unadjudicated",
+  "tier_bench_source_commit": "066f9de3b4eb25416c833ecdea017d3dd8fa5406",
+  "queue_claim_commit": "d0ff0f0",
+  "operator_authority": {
+    "source_thread_id": "019f4fdc-f3f9-7b52-87f3-3452d231d67e",
+    "exact_text": "ok, so, what is stopping you from merging it and moving the fuck on?"
+  },
+  "immutable_v1": {
+    "evidence_commit": "8517e3f56dd1228bf0efd007fcd8f48ec4c619a2",
+    "tree": "3f7987cadfadfc9d266a30e33b6c2344f860f381",
+    "contract_sha256": "328452e1fbefd5f721b96a59dd3b14d08cf855707ad19ce5e49d79c55ddd117c",
+    "administration_manifest_sha256": "e5209f2a978005c0a30e2b7c53a2b1b9c3fa86ed3b3a5135edf8ab322cb3648e",
+    "run_manifest_sha256": "c50e1a2baf285f9aa87d7735e242d71e9be1bfc8f3a295dbc269455a9cc35660",
+    "proposed_gate_sha256": "6f93f317d81a531d78993e30c55b04e113fd838159f43d6783bd4f649a7d8a69",
+    "state": "PARTIAL_SYSTEM_ERROR",
+    "scientific_observations": 0
+  },
+  "authority": {
+    "retry": "operator_authorized",
+    "harvest_gate": "proposed_not_operator_adopted",
+    "grading": "forbidden_until_gate_adoption"
+  },
+  "capacity_preflight": {
+    "scientific_observation": false,
+    "prompt": "Return exactly CAPACITY_OK and nothing else.",
+    "prompt_bytes": 44,
+    "prompt_sha256": "af2c23af9134079dd84c82dc307633cb8363698cfd9eddc5207edaccfe9c9b03",
+    "pass_response": "CAPACITY_OK",
+    "pass_response_bytes": 11,
+    "pass_response_sha256": "e3145ae0cc931d80beb0147d3b89c814de4d0ce43f0ecdc035d643c38af07036",
+    "failure_default": "PREFLIGHT_BLOCKED with zero subject dispatches"
+  },
+  "dispatch": {
+    "order": [
+      "attrs_1567_setattr_mro",
+      "httpx_3614_base_url_query",
+      "httpx_3221_ipv6_no_proxy"
+    ],
+    "maximum_subject_dispatches": 3,
+    "fresh_projectless_thread_per_item": true,
+    "exact_v1_prompt_bytes_required": true,
+    "automatic_retries": 0,
+    "replacement_subjects": 0,
+    "stop_rule": "Stop immediately after the first provider failure that supplies no assistant response bytes; later items become NOT_DISPATCHED_BY_STOP_RULE."
+  },
+  "items": [
+    {
+      "item_id": "attrs_1567_setattr_mro",
+      "v1_prompt_sha256": "f9c554fb1d5094b90d5c7037db8192e017325289779a85ca396f96b7997ffbe9",
+      "v1_prompt_bytes": 6214
+    },
+    {
+      "item_id": "httpx_3614_base_url_query",
+      "v1_prompt_sha256": "d81a12a66e96c6a9eaaa9af82d6ca8903d8a8a6f93ffb07466a42dea1c1bd8fe",
+      "v1_prompt_bytes": 6254
+    },
+    {
+      "item_id": "httpx_3221_ipv6_no_proxy",
+      "v1_prompt_sha256": "a5ee77e4991f2bddae9b7281aa5e1a6c2aca857ccfc3383e5af612136c796fd4",
+      "v1_prompt_bytes": 8268
+    }
+  ],
+  "completed_response_state": "SEALED_RESPONSE_UNADJUDICATED",
+  "observed_run_summary": {
+    "capacity_preflight": "passed",
+    "subject_dispatches": 3,
+    "assistant_responses": 3,
+    "provider_failures_without_response": 0,
+    "sealed_responses_unadjudicated": 3,
+    "graded_observations": 0,
+    "harvest_verdicts": 0
+  },
+  "failure_default": "Preserve every dispatched outcome. Missing or malformed evidence never becomes HARVEST, PASS, or FAIL.",
+  "cost_basis": "subscription-derived",
+  "usd_cost": "UNMEASURED"
+}

@@ -143,6 +143,20 @@ agreement, reusable generality, compounding, capture amortization, or a
 waterline move. Until an adopted gate and its required evidence exist, the
 failure default is `UNADJUDICATED` and all closure remains open.
 
+### Separately versioned retry
+
+After v1 was merged as an immutable three-error partial, the operator authorized
+continuation. `arc_d_buffalo_pilot_v2` first ran an excluded exact-response
+capacity preflight, then dispatched at most one fresh projectless thread for each
+v1 prompt in the preregistered order. All three completed without tools. Their
+responses, normalized event receipts, thread snapshots, timestamps, and hashes
+are preserved under `data/oss-replay/arc_d_buffalo_pilot_v2/`.
+
+The retry changes only administration capacity and attempt identity. It does not
+change the source cases, prompt bytes, gate, grading authority, or claim boundary.
+The three v2 rows therefore stop at `SEALED_RESPONSE_UNADJUDICATED`; they are not
+HARVEST observations and do not update the illustrative prior or projections.
+
 ## Burden packet
 
 ```text

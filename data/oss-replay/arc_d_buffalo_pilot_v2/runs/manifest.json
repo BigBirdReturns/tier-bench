@@ -1,0 +1,22 @@
+{
+  "schema": "tier-bench/arc-d-run-manifest@2",
+  "protocol_id": "arc_d_buffalo_pilot_v2",
+  "state": "SEALED_RESPONSES_UNADJUDICATED",
+  "capacity_preflight": "PASS_EXCLUDED",
+  "subject_dispatches": 3,
+  "responses": 3,
+  "provider_failures_without_response": 0,
+  "graded_observations": 0,
+  "harvest_verdicts": 0,
+  "dispatch_order": [
+    "attrs_1567_setattr_mro",
+    "httpx_3614_base_url_query",
+    "httpx_3221_ipv6_no_proxy"
+  ],
+  "receipts": [
+    "runs/attrs_1567_setattr_mro/attempt-1/administration_receipt.json",
+    "runs/httpx_3614_base_url_query/attempt-1/administration_receipt.json",
+    "runs/httpx_3221_ipv6_no_proxy/attempt-1/administration_receipt.json"
+  ],
+  "interpretation_boundary": "Three responses exist and are preserved. No correctness, residue, transfer, HARVEST, or benchmark conclusion has been adjudicated."
+}
