@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "almanac_rule_boundary_001",
+  "source_commit": "3d3837165ac9e046acf2cecc27e01f9c41c302e5",
+  "manifest_path": "tasks/almanac_rule_boundary_001.json",
+  "manifest_sha256": "0e7c6760c3c88e0501363fe1ea6dd9cfa0f8aed5cec7174f9f69b9571c8be446",
+  "packet_sha256": "26d370a28564094f96f36df0277c068d09f526c10e8d103ea906843e99f26328",
+  "prompt_sha256": "063a6f3ef827c894254c97bac64de6717ba431ff1a749b32dbb49ccf125db5f8",
+  "hidden_graders": [
+    {
+      "path": "fixtures/almanac_rule_boundary_001/hidden_tests.py",
+      "sha256": "cccea7560bed98b674a0e52001ab655d53f2aeaa10275ac9885efc4104ded304"
+    }
+  ],
+  "solver_scope": "<SOLVER_SCOPE>",
+  "peer_conclusions_included": false
+}
