@@ -1,0 +1,68 @@
+{
+  "schema": "tier-bench/arc-d-b2-grade-payload@1",
+  "item_id": "httpx_3221_ipv6_no_proxy",
+  "attestations": {
+    "peer_grade_seen_before_seal": false,
+    "repository_context_seen": false,
+    "other_response_seen": false
+  },
+  "atomic_findings": [
+    {
+      "candidate_id": "httpx_3221_ipv6_no_proxy::cidr_semantics_in_url_shaped_dispatch_key",
+      "response_spans": [
+        {
+          "start_byte": 0,
+          "end_byte_exclusive": 1145
+        },
+        {
+          "start_byte": 1147,
+          "end_byte_exclusive": 2650
+        },
+        {
+          "start_byte": 2652,
+          "end_byte_exclusive": 4753
+        },
+        {
+          "start_byte": 4777,
+          "end_byte_exclusive": 5181
+        },
+        {
+          "start_byte": 5183,
+          "end_byte_exclusive": 5933
+        }
+      ],
+      "behavior_claim": "The response claims that with no_proxy=fe11::/16, get_environment_proxies() classifies the token as IPv6 because is_ipv6_hostname() validates only the substring before '/', emits the mount key all://[fe11::/16] with the CIDR suffix inside the brackets, and URLPattern's URL(pattern) call then raises httpx.InvalidURL: Invalid port ':' during Client/AsyncClient construction. This crash claim is closed by packet evidence: SOURCE_EXCERPT.py (sha256 9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210, pinned to encode/httpx b5addb64f0161ff6bfe94c124ef76f6a1fba5254) shows is_ipv6_hostname splitting on '/' and the f-string all://[{hostname}], and PROBLEM.md (sha256 fe714658c80597bbb7540091b1b909e29f54a04cf3030609811db48f8163e04b) records the released HTTPX 0.27.0 traceback with exactly that error. The response's further claims — that CIDR network-membership matching is the required contract, and that the existing IPv4 case all://192.168.0.0/16 latently matches only the literal address — are not closed by any packet authority: the curated tests assert only mount-key construction, not membership, and REFERENCE_STATUS.json (sha256 4a1290243604d934237b3703d0001acbda669113ef71cca73c087ea89544c9d0) records that the only reference is an open, unmerged, unreviewed proposal (encode/httpx PR 3741) whose own discussion distinguishes crash avoidance from network-membership semantics. Sealed response cited: SEALED_RESPONSE.txt sha256 3f0f2b1e423d9230fa4663302ca81f1eeb46022eb21cea444358bc1977f0c3c1 (5933 bytes); prompt ORIGINAL_PROMPT.md sha256 a5ee77e4991f2bddae9b7281aa5e1a6c2aca857ccfc3383e5af612136c796fd4; receipt ADMINISTRATION_RECEIPT.json sha256 c9769ae33108596be7411f30b380b64bacc924f54f4cda12855e1da7b05e4cc4.",
+      "regression_test": "The response's regression matrix (bytes 2652-4753) gives explicit expected results per input, e.g. no_proxy=fe11::/16 must allow client construction to succeed; fe11::/16 must bypass http://[fe11::1]/ and proxy http://[fe12::1]/, http://fe11.example/, and http://192.168.1.1/; existing 127.0.0.1, ::1, localhost, wildcard, scheme, port, and ordering behavior must be preserved; Client and AsyncClient must behave identically. No invented API is used — all rows exercise environment-driven client construction and mount selection shown in the excerpt. However, the membership-semantics expected results (Bypass for in-network, non-listed addresses, including the IPv4 row 192.168.255.255) encode a contract stated only in the public issue body and not established by any accepted upstream source, released behavior, or project test in the packet; the upstream PROXY_CASES test asserts only that no_proxy=192.168.0.0/16 produces the mount key all://192.168.0.0/16.",
+      "residue": "Response bytes 4777-5181 state the reusable rule: when a configuration token embeds non-URL semantics (such as a CIDR) inside a URL-shaped dispatch key, making the key parseable is insufficient; the dispatcher must explicitly preserve and evaluate those semantics. The rule is falsifiable (bytes 5183-5933 list disconfirming evidence: the unseen URL class treating CIDR paths as network selectors, another layer converting CIDRs before URLPattern.matches(), or IPv4 CIDRs already matching in-network addresses). Its normative core — that the dispatcher must evaluate network membership — is precisely the contract the upstream reference discussion leaves unsettled (REFERENCE_STATUS.json: crash avoidance is distinguished from network-membership semantics; the sole proposal is open, unmerged, unreviewed, may_serve_as_ground_truth=false), so packet authority cannot close correctness of the residue as stated.",
+      "applicability_predicate": "Applies when CIDR or similar selector tokens are encoded into proxy/mount dispatch keys that are parsed as URLs (response bytes 5060-5181 state this limit); response confidence 0.91 with explicit disconfirmation conditions.",
+      "exclusions": [
+        "The response excludes cases where the downstream URL abstraction is documented to retain and match the embedded selector natively (bytes 5060-5181).",
+        "This grade excludes any HARVEST, transfer, generality, rate, compounding, amortization, or waterline claim per charter forbids list.",
+        "The unmerged proposal in REFERENCE_STATUS.json is used only to locate the contract dispute, never as ground truth."
+      ],
+      "distinctness": "UNIQUE",
+      "evidence": [
+        {
+          "kind": "source",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "released_behavior",
+          "path": "PROBLEM.md",
+          "sha256": "fe714658c80597bbb7540091b1b909e29f54a04cf3030609811db48f8163e04b",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "test",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210",
+          "authority_status": "INSUFFICIENT"
+        }
+      ],
+      "disposition": "B2_REFERENCE_AMBIGUOUS"
+    }
+  ],
+  "response_disposition": "B2_REFERENCE_AMBIGUOUS"
+}

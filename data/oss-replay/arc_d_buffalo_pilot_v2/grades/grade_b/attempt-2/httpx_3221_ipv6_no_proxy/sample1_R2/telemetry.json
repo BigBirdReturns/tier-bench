@@ -1,0 +1,16 @@
+{
+  "item_id": "httpx_3221_ipv6_no_proxy",
+  "neutral_cwd_token": "item-r",
+  "session_id": "f0bbf604-efdd-46b3-ad00-be6cdded6b15",
+  "assigned_session_id": "f0bbf604-efdd-46b3-ad00-be6cdded6b15",
+  "total_cost_usd": 1.815777,
+  "duration_ms": 198901,
+  "num_turns": 17,
+  "is_error": false,
+  "input_tokens": 21,
+  "output_tokens": 13039,
+  "cache_read": 419858,
+  "cache_write": 37154,
+  "started_at": "2026-07-13T02:45:21+00:00",
+  "sealed_at": "2026-07-13T02:48:41+00:00"
+}

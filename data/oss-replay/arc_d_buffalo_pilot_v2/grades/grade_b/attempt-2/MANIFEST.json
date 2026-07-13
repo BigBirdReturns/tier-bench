@@ -1,0 +1,67 @@
+{
+  "record": "arc_d_b2_grade_b_attempt2_manifest",
+  "sealed_time_utc": "2026-07-13T02:55:59+00:00",
+  "charter_sha256": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e",
+  "grade_id": "grade_b",
+  "instrument": {
+    "provider_lineage": "anthropic",
+    "model": "fable-5",
+    "effort": "high",
+    "surface": "physically projectless nested claude CLI (-p) sessions; cwd = an isolated directory containing only that item's validated packet; no repository path, no --add-dir, fresh assigned session UUID per dispatch; runtime model id claude-fable-5"
+  },
+  "packets": "identical validated packets from the attempt-1 export (same packet_sha256 set; exporter source origin/main 4687bd8); packet re-validation unchanged",
+  "items": {
+    "attrs_1567_setattr_mro": {
+      "state": "ADMISSIBLE",
+      "response_disposition": "B2_CANDIDATE_RESIDUE",
+      "atomic_findings": 1,
+      "grade_receipt_sha256": "5d44c87a35dec921c5f9ed72e22d4089d5783bc519bcf169be62558aed71394c",
+      "raw_grade_sha256": "c9c18c6663fc6fb9834f26e133a1762c3a3f07c6af329d2a7c7a4efeaa2d24e1",
+      "session_id": "746bed04-0782-4dd1-bbb9-e9e70521aafc",
+      "cost_usd_real_billed": 2.567972,
+      "note": "the one grade_b receipt pairable for B2 comparison"
+    },
+    "httpx_3614_base_url_query": {
+      "state": "PROVIDER_REFUSAL_WALL",
+      "response_disposition": null,
+      "note": "4/4 dispatches safety-flagged before a grade existed (2x turn-1 on loaded cwd names, 2x mid-read at num_turns=3 under neutral names). Not a grading outcome (constitution rule 7: provider-unreachable is a skip). See WALL.json for the event trail incl. request IDs and the admitted administration defects (accidental 4th dispatch via a retry-script import bug; dispatch-3 raw record overwritten by it).",
+      "wall_record_sha256": "e990505ee5d110dbf7892ab0c7f8e04ae7a06174700aceb1d9bc75482954f1bb"
+    },
+    "httpx_3221_ipv6_no_proxy": {
+      "state": "NO_ADMISSIBLE_RECEIPT — intra-instrument disposition instability; escalated to operator",
+      "response_disposition": null,
+      "samples": [
+        {
+          "id": "sample1_R2",
+          "session_id": "f0bbf604-efdd-46b3-ad00-be6cdded6b15",
+          "disposition": "B2_CANDIDATE_RESIDUE",
+          "atomic_findings": 1,
+          "cost_usd": 1.815777,
+          "defect": "reply wrapped the payload in fence/prose against GRADING_TASK.md's bare-object rule",
+          "payload_sha256": "3cf6a2f8ba432fc91e3478710b42f65db92557a91041a3189cf46c5fc922c3c4",
+          "raw_grade_sha256": "80131a80ebc873d2eabd38c5704e8d4d21b01820498cd9c932cfe0d1835af4cd"
+        },
+        {
+          "id": "sample2_R3b",
+          "session_id": "07825344-9780-4759-8139-10233fafe36e",
+          "disposition": "B2_REFERENCE_AMBIGUOUS",
+          "atomic_findings": 1,
+          "cost_usd": 1.554385,
+          "defect": "same bare-object deviation (2/2 for this item)",
+          "payload_sha256": "75e97757fbf1026a711571bff59578deb45406db82f89a11a7617e60c77b6814",
+          "raw_grade_sha256": "477713ee112f04d4030147c4fe18ed9aa17d635fff93062b8dd07a22c9cd6f54"
+        }
+      ],
+      "why_no_receipt": "both content-complete samples violated the packet's output-discipline rule, and their response dispositions DISAGREE (B2_CANDIDATE_RESIDUE vs B2_REFERENCE_AMBIGUOUS). The administrator does not repair discipline violations into admissibility and does not sample until a preferred disposition appears. Conservative reading per the charter's disagreement default: B2_REFERENCE_AMBIGUOUS — but that is an OPERATOR call, not minted here.",
+      "schema_and_authority": "both samples' payloads PASS schema + authority validation; the sole mechanical defect each time was the non-bare reply"
+    }
+  },
+  "totals": {
+    "content_runs_usd": 5.938134,
+    "flagged_dispatches_usd": 0.848381,
+    "real_billed_usd_this_attempt": 6.786515,
+    "note": "every dispatch real-billed via nested CLI total_cost_usd; flagged dispatches are part of the instrument's real price (constitution rule 7)"
+  },
+  "outcome_for_comparator": "exactly one pairable grade_b receipt (attrs_1567_setattr_mro). httpx_3614 is unpaired (provider wall); httpx_3221 is unpaired pending operator adjudication of the instability record.",
+  "protocol_bounds_honored": "dispatch cap respected after the accidental 4th 3614 dispatch (disclosed); no grader saw a peer grade, another response, or repository context; the driver never displayed SEALED_RESPONSE or raw-grade content (hashing and field extraction only)"
+}
