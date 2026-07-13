@@ -62,6 +62,7 @@ Minimal manifest shape:
   },
   "tool_versions": {
     "claude_code": "<exact `claude --version` output>",
+    "claude_help_sha256": "<sha256 from adapter `_help_surface('claude')`>",
     "tier_claude_adapter": "1"
   },
   "prompt_templates": {
@@ -91,6 +92,7 @@ Minimal manifest shape:
           "--effort", "low",
           "--account", "<same account label>",
           "--claude-version", "<same exact version>",
+          "--claude-help-sha256", "<same frozen help-surface sha256>",
           "--cost-basis", "subscription-derived"
         ]
       }
@@ -113,6 +115,20 @@ backends implement the same adapter contract: edit only the disposable worktree 
 `tier-bench/tier-backend-result@1` result containing exactly one complete
 `ledger.Call` row.
 
+For the subscription surface, the adapter strips API-key and alternate-provider
+environment variables before launching Claude Code, pins the exact CLI version,
+and hashes the `--help` surface after proving every required isolation flag is
+present. If a process dies while holding `.git/tier-session-registry.lock`, first
+confirm no `tier` process is active, then delete only that lock file; never delete
+or rewrite `tier-session-registry.jsonl`.
+
+The flag/version preflight establishes that the configured surface exists; it
+does not prove the provider's implementation semantics. Before any pilot task is
+disclosed, a separately authorized activation canary must confirm that safe mode
+does not load user/project memory or instructions, and its receipt must bind the
+same CLI version, help hash, adapter version, and manifest hash. Until then the
+vehicle may merge, but pilot execution remains unauthorized.
+
 ## Receipts and failure behavior
 
 Every run preserves:
@@ -125,7 +141,9 @@ Every run preserves:
 
 The acceptance command is a verifier, not an author: if it changes any tracked
 or non-ignored candidate byte, the run becomes `ERROR`. The emitted patch is
-therefore the exact candidate tree on which acceptance ran.
+therefore the exact candidate tree on which acceptance ran. Writes confined to
+Git-ignored paths (for example bytecode or test caches) are intentionally outside
+this mutation check because they cannot enter the emitted patch.
 
 Recompute all artifact hashes and the dispatch→prompt→ledger→receipt bindings:
 
@@ -163,3 +181,8 @@ an invalid/out-of-order timestamp, a broken hash-chain link, or an unclosed
 interval fails validation. `verify-interventions` prints the final head hash;
 commit or otherwise seal that head with the pilot evidence so later whole-log
 replacement cannot masquerade as append-only history.
+
+“Global” requires one canonical log path for the entire pilot, frozen before task
+disclosure and used by every task and arm. Splitting events across multiple
+`--log` files violates the protocol and voids every affected task; the CLI's path
+option exists for non-pilot use, not for partitioning a pilot ledger.

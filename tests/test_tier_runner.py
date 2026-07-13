@@ -16,6 +16,7 @@ sys.path.insert(0, str(REPO))
 
 from tier_runner.core import RunError, run_task, verify_run  # noqa: E402
 from tier_runner.adapters.claude_code import (  # noqa: E402
+    _subscription_env,
     _runtime_model,
     _usage,
     _usage_evidenced,
@@ -52,6 +53,11 @@ if any(key.startswith("TIER_") for key in os.environ):
 if (root / ".git").exists() or (root / "AGENTS.md").exists() or (root / "CLAUDE.md").exists():
     raise SystemExit(3)
 task_id = dispatch["task_id"]
+session_seed = (
+    "voided-session"
+    if task_id in {"voided-session-error", "voided-session-pass"}
+    else task_id
+)
 (root / "app.py").write_text("def value():\n    return 2\n", encoding="utf-8")
 if task_id == "prompt-tamper":
     Path(a.prompt).write_text("tampered\n", encoding="utf-8")
@@ -68,7 +74,7 @@ extra = {
     ).hexdigest(),
     "prompt_template_sha256": dispatch["prompt_template_sha256"],
     "runtime_model_id": "fake-haiku",
-    "session_id": str(uuid.uuid5(uuid.NAMESPACE_URL, task_id)),
+    "session_id": str(uuid.uuid5(uuid.NAMESPACE_URL, session_seed)),
     "telemetry_complete": True,
     "tool_versions": {"fake_backend": "1"},
 }
@@ -79,7 +85,7 @@ call = {
     "tier": "cheap",
     "task_id": "wrong-task" if task_id == "task-id-bad" else task_id,
     "phase": a.arm,
-    "outcome": "pass",
+    "outcome": "error" if task_id == "voided-session-error" else "pass",
     "effort": "low",
     "input_tokens": 10,
     "output_tokens": 5,
@@ -345,6 +351,56 @@ def test_task_id_and_session_freshness_fail_closed(parent: Path) -> None:
     assert any("reused a session_id" in error for error in second["errors"])
 
 
+def test_voided_call_still_consumes_its_session(parent: Path) -> None:
+    repo = make_repo(parent)
+    first = run_task(
+        repo=repo,
+        task_id="voided-session-error",
+        task="provider call errors after allocating a session",
+        files=["app.py"],
+        acceptance=acceptance(2),
+        manifest=repo / "pilot_backends.json",
+        arm="arm_b",
+        output_dir=parent / "voided-session-error",
+    )
+    assert first["state"] == "ERROR"
+    assert any("outcome is 'error'" in error for error in first["errors"])
+
+    second = run_task(
+        repo=repo,
+        task_id="voided-session-pass",
+        task="backend attempts to reuse the voided call's session",
+        files=["app.py"],
+        acceptance=acceptance(2),
+        manifest=repo / "pilot_backends.json",
+        arm="arm_b",
+        output_dir=parent / "voided-session-pass",
+    )
+    assert second["state"] == "ERROR"
+    assert any("reused a session_id" in error for error in second["errors"])
+
+
+def test_prompt_values_cannot_inject_or_trip_template_markers(parent: Path) -> None:
+    repo = make_repo(parent)
+    task = "keep this operator text literal: {{ACCEPTANCE}}"
+    command = acceptance(2) + " {{TASK}}"
+    out = parent / "marker-values"
+    receipt = run_task(
+        repo=repo,
+        task_id="marker-values",
+        task=task,
+        files=["app.py"],
+        acceptance=command,
+        manifest=repo / "pilot_backends.json",
+        arm="arm_b",
+        output_dir=out,
+    )
+    assert receipt["state"] == "ACCEPTED", receipt
+    prompt = (out / "prompt.txt").read_text(encoding="utf-8")
+    assert task in prompt
+    assert command in prompt
+
+
 def test_output_and_verifier_bindings_fail_closed(parent: Path) -> None:
     repo = make_repo(parent)
     try:
@@ -503,6 +559,17 @@ def test_claude_receipt_parser_requires_provider_model_evidence(parent: Path) ->
     }
     assert _usage_evidenced(data) is True
     assert _usage_evidenced({"usage": {}}) is False
+    sanitized = _subscription_env({
+        "ANTHROPIC_API_KEY": "must-not-reach-subscription-cli",
+        "AWS_ACCESS_KEY_ID": "must-not-switch-to-bedrock",
+        "CLAUDE_CODE_OAUTH_TOKEN": "subscription-auth-is-allowed",
+        "PATH": "kept",
+        "TIER_RUN_DIR": "must-not-reach-model",
+    })
+    assert sanitized == {
+        "CLAUDE_CODE_OAUTH_TOKEN": "subscription-auth-is-allowed",
+        "PATH": "kept",
+    }
 
 
 def main() -> int:
@@ -516,6 +583,8 @@ def main() -> int:
         test_acceptance_cannot_mutate_the_tested_patch,
         test_backend_cannot_mutate_precall_evidence,
         test_task_id_and_session_freshness_fail_closed,
+        test_voided_call_still_consumes_its_session,
+        test_prompt_values_cannot_inject_or_trip_template_markers,
         test_output_and_verifier_bindings_fail_closed,
         test_working_template_drift_cannot_change_pinned_prompt,
         test_instruction_file_cannot_be_model_scope,

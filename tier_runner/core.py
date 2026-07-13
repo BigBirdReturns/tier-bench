@@ -165,12 +165,12 @@ def _render_prompt(backend: Backend, task: str, scopes: list[tuple[str, bool]], 
     absent = [marker for marker in replacements if marker not in template]
     if absent:
         raise RunError(f"prompt template is missing required markers: {absent}")
-    rendered = template
-    for marker, value in replacements.items():
-        rendered = rendered.replace(marker, value)
-    missing = [marker for marker in replacements if marker in rendered]
-    if missing:
-        raise RunError(f"unexpanded prompt markers: {missing}")
+    template_markers = set(re.findall(r"\{\{[A-Z_]+\}\}", template))
+    unknown = template_markers - set(replacements)
+    if unknown:
+        raise RunError(f"prompt template has unknown markers: {sorted(unknown)}")
+    marker_pattern = re.compile("|".join(re.escape(marker) for marker in replacements))
+    rendered = marker_pattern.sub(lambda match: replacements[match.group(0)], template)
     return rendered.encode("utf-8")
 
 
@@ -250,6 +250,13 @@ def _validate_nonnegative_number(value: Any, label: str, *, integer: bool = Fals
         raise RunError(f"backend call {label} must be a non-negative number")
     if not math.isfinite(float(value)) or value < 0:
         raise RunError(f"backend call {label} must be finite and non-negative")
+
+
+def _reported_session_id(call: Any) -> str | None:
+    if not isinstance(call, dict) or not isinstance(call.get("extra"), dict):
+        return None
+    session_id = call["extra"].get("session_id")
+    return session_id if isinstance(session_id, str) and session_id else None
 
 
 def _validate_call(
@@ -547,20 +554,22 @@ def run_task(
         calls = backend_result.get("calls")
         if not isinstance(calls, list) or len(calls) != 1:
             raise RunError("one tier run dispatch must produce exactly one model-call receipt")
+        reported_session = _reported_session_id(calls[0])
+        if reported_session is not None:
+            _register_session(
+                common_git,
+                session_id=reported_session,
+                run_id=run_id,
+                task_id=task_id,
+                arm=arm,
+                dispatch_hash=dispatch_hash,
+            )
         call = _validate_call(calls[0], backend, dispatch_hash, task_id)
         ledger_path.write_bytes(_canonical(call))
         if call["extra"].get("telemetry_complete") is not True:
             raise RunError("backend call telemetry is incomplete")
         if call["outcome"] != "pass":
             raise RunError(f"backend model call outcome is {call['outcome']!r}")
-        _register_session(
-            common_git,
-            session_id=call["extra"]["session_id"],
-            run_id=run_id,
-            task_id=task_id,
-            arm=arm,
-            dispatch_hash=dispatch_hash,
-        )
         for name, (path, digest) in _backend_artifacts(backend_result, run_dir).items():
             receipt["artifacts"][f"backend_{name}"] = {
                 "path": path.relative_to(run_dir).as_posix(),

@@ -12,6 +12,28 @@ import time
 
 
 SCHEMA = "tier-bench/tier-backend-result@1"
+REQUIRED_CLAUDE_FLAGS = {
+    "--disable-slash-commands",
+    "--effort",
+    "--mcp-config",
+    "--no-chrome",
+    "--no-session-persistence",
+    "--permission-mode",
+    "--safe-mode",
+    "--strict-mcp-config",
+    "--tools",
+}
+NON_SUBSCRIPTION_ENV_KEYS = {
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_CUSTOM_HEADERS",
+    "CLAUDE_CODE_USE_BEDROCK",
+    "CLAUDE_CODE_USE_FOUNDRY",
+    "CLAUDE_CODE_USE_VERTEX",
+    "GOOGLE_APPLICATION_CREDENTIALS",
+}
+NON_SUBSCRIPTION_ENV_PREFIXES = ("AWS_", "AZURE_", "BEDROCK_", "GOOGLE_", "VERTEX_")
 
 
 def _sha(path: Path) -> str:
@@ -23,6 +45,27 @@ def _version(binary: str) -> str:
     if result.returncode:
         raise RuntimeError(f"cannot read Claude Code version: {result.stderr.strip()}")
     return result.stdout.strip()
+
+
+def _help_surface(binary: str) -> str:
+    result = subprocess.run([binary, "--help"], capture_output=True, text=True)
+    if result.returncode:
+        raise RuntimeError(f"cannot read Claude Code help: {result.stderr.strip()}")
+    missing = sorted(flag for flag in REQUIRED_CLAUDE_FLAGS if flag not in result.stdout)
+    if missing:
+        raise RuntimeError(f"Claude Code isolation flags are unavailable: {missing}")
+    return hashlib.sha256(result.stdout.encode("utf-8")).hexdigest()
+
+
+def _subscription_env(environment: dict[str, str]) -> dict[str, str]:
+    return {
+        key: value
+        for key, value in environment.items()
+        if not key.startswith("TIER_")
+        and key not in {"GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "OLDPWD", "PWD"}
+        and key not in NON_SUBSCRIPTION_ENV_KEYS
+        and not key.startswith(NON_SUBSCRIPTION_ENV_PREFIXES)
+    }
 
 
 def _usage(data: dict) -> dict:
@@ -68,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--worktree", type=Path, required=True)
     parser.add_argument("--claude-bin", default="claude")
     parser.add_argument("--claude-version", required=True)
+    parser.add_argument("--claude-help-sha256", required=True)
     parser.add_argument("--adapter-version", default="1")
     parser.add_argument("--model", required=True)
     parser.add_argument("--effort", required=True)
@@ -81,6 +125,12 @@ def main(argv: list[str] | None = None) -> int:
     if actual_version != args.claude_version:
         raise RuntimeError(
             f"Claude Code version drift: expected {args.claude_version!r}, got {actual_version!r}"
+        )
+    actual_help_hash = _help_surface(args.claude_bin)
+    if actual_help_hash != args.claude_help_sha256:
+        raise RuntimeError(
+            "Claude Code help-surface drift: "
+            f"expected {args.claude_help_sha256}, got {actual_help_hash}"
         )
     dispatch = json.loads(args.dispatch.read_text(encoding="utf-8"))
     prompt = args.prompt.read_text(encoding="utf-8")
@@ -102,12 +152,7 @@ def main(argv: list[str] | None = None) -> int:
         "--mcp-config", "{}",
         "--tools", "Read,Edit,Write",
     ]
-    child_env = {
-        key: value
-        for key, value in os.environ.items()
-        if not key.startswith("TIER_")
-        and key not in {"GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "OLDPWD", "PWD"}
-    }
+    child_env = _subscription_env(dict(os.environ))
     started = time.monotonic()
     process = subprocess.run(
         command,
@@ -161,6 +206,7 @@ def main(argv: list[str] | None = None) -> int:
             "telemetry_complete": telemetry_complete,
             "tool_versions": {
                 "claude_code": actual_version,
+                "claude_help_sha256": actual_help_hash,
                 "tier_claude_adapter": args.adapter_version,
             },
             "raw_result_sha256": _sha(raw_path),
