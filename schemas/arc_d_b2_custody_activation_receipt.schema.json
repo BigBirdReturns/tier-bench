@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_custody_activation_receipt.schema.json",
+  "title": "ARC-D B2 default-branch custody activation receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "protocol_id",
+    "state",
+    "authority",
+    "custody_profile",
+    "preflight",
+    "components",
+    "activation_rule"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-custody-activation-receipt@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "state": {"const": "PROPOSED_FOR_DEFAULT_BRANCH_ACTIVATION"},
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["amendment_path", "amendment_sha256", "amendment_adoption_commit"],
+      "properties": {
+        "amendment_path": {"const": "data/oss-replay/arc_d_buffalo_pilot_v2/harvest_charter_v2.json"},
+        "amendment_sha256": {"const": "5c6cec7469732d0a614b5b45ef2ef5c7aa495c0ff6f31e53657da2f28b1740c9"},
+        "amendment_adoption_commit": {"const": "e7201e1debd38a86839e0661d7c3b5f6cf21d94f"}
+      }
+    },
+    "custody_profile": {"$ref": "#/$defs/file_binding"},
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "result", "content_used"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "result": {"const": "PASS"},
+        "content_used": {"const": "NON_GRADER_SENTINELS_ONLY"}
+      }
+    },
+    "components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "custody_profile_schema",
+        "custody_preflight_schema",
+        "custody_activation_schema",
+        "attempt_preregistration_schema",
+        "dispatch_ledger_schema",
+        "private_bundle_schema",
+        "audit_receipt_schema",
+        "public_receipt_schema",
+        "batch_receipt_schema",
+        "grade_payload_schema",
+        "grade_receipt_schema",
+        "packet_validator",
+        "custody_validator",
+        "audit_authenticator"
+      ],
+      "properties": {
+        "custody_profile_schema": {"$ref": "#/$defs/component_binding"},
+        "custody_preflight_schema": {"$ref": "#/$defs/component_binding"},
+        "custody_activation_schema": {"$ref": "#/$defs/component_binding"},
+        "attempt_preregistration_schema": {"$ref": "#/$defs/component_binding"},
+        "dispatch_ledger_schema": {"$ref": "#/$defs/component_binding"},
+        "private_bundle_schema": {"$ref": "#/$defs/component_binding"},
+        "audit_receipt_schema": {"$ref": "#/$defs/component_binding"},
+        "public_receipt_schema": {"$ref": "#/$defs/component_binding"},
+        "batch_receipt_schema": {"$ref": "#/$defs/component_binding"},
+        "grade_payload_schema": {"$ref": "#/$defs/component_binding"},
+        "grade_receipt_schema": {"$ref": "#/$defs/component_binding"},
+        "packet_validator": {"$ref": "#/$defs/component_binding"},
+        "custody_validator": {"$ref": "#/$defs/component_binding"},
+        "audit_authenticator": {"$ref": "#/$defs/component_binding"}
+      }
+    },
+    "activation_rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["default_branch", "event", "dispatch_before_event", "active_state"],
+      "properties": {
+        "default_branch": {"const": "main"},
+        "event": {"const": "MAINTAINER_MERGE_OF_THIS_RECEIPT_AND_BOUND_COMPONENTS"},
+        "dispatch_before_event": {"const": false},
+        "active_state": {"const": "ACTIVE_FOR_FRESH_V2_GRADING"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"},
+    "file_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "component_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "git_blob_sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "git_blob_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

@@ -48,9 +48,12 @@ AMENDMENT_SECTION_DIGESTS = {
 SCHEMAS = {
     "arc_d_b2_admission_amendment.schema.json": "https://tier-bench.local/schemas/arc_d_b2_admission_amendment.schema.json",
     "arc_d_b2_custody_profile.schema.json": "https://tier-bench.local/schemas/arc_d_b2_custody_profile.schema.json",
+    "arc_d_b2_custody_preflight_receipt.schema.json": "https://tier-bench.local/schemas/arc_d_b2_custody_preflight_receipt.schema.json",
+    "arc_d_b2_custody_activation_receipt.schema.json": "https://tier-bench.local/schemas/arc_d_b2_custody_activation_receipt.schema.json",
     "arc_d_b2_attempt_preregistration.schema.json": "https://tier-bench.local/schemas/arc_d_b2_attempt_preregistration.schema.json",
     "arc_d_b2_dispatch_ledger.schema.json": "https://tier-bench.local/schemas/arc_d_b2_dispatch_ledger.schema.json",
     "arc_d_b2_private_bundle_manifest.schema.json": "https://tier-bench.local/schemas/arc_d_b2_private_bundle_manifest.schema.json",
+    "arc_d_b2_audit_receipt.schema.json": "https://tier-bench.local/schemas/arc_d_b2_audit_receipt.schema.json",
     "arc_d_b2_public_admission_receipt.schema.json": "https://tier-bench.local/schemas/arc_d_b2_public_admission_receipt.schema.json",
     "arc_d_b2_batch_admission_receipt.schema.json": "https://tier-bench.local/schemas/arc_d_b2_batch_admission_receipt.schema.json",
 }

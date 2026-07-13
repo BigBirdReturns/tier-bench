@@ -4,13 +4,16 @@
   "title": "ARC-D B2 admission-v2 public dispatch and failure ledger",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "protocol_id", "attempt_id", "preregistration_manifest_sha256", "preregistration_commit", "cells", "state"],
+  "required": ["schema", "protocol_id", "attempt_id", "preregistration_manifest_sha256", "preregistration_commit", "revision", "previous_ledger_sha256", "previous_ledger_commit", "cells", "state"],
   "properties": {
     "schema": {"const": "tier-bench/arc-d-b2-dispatch-ledger@2"},
     "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
     "attempt_id": {"type": "string", "pattern": "^arc-d-b2-v2-[a-z0-9][a-z0-9._-]{2,63}$"},
     "preregistration_manifest_sha256": {"$ref": "#/$defs/sha256"},
     "preregistration_commit": {"$ref": "#/$defs/gitsha"},
+    "revision": {"type": "integer", "minimum": 0},
+    "previous_ledger_sha256": {"$ref": "#/$defs/sha256"},
+    "previous_ledger_commit": {"$ref": "#/$defs/gitsha"},
     "cells": {
       "type": "object",
       "additionalProperties": false,

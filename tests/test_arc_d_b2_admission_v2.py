@@ -199,6 +199,9 @@ def test_public_dispatch_ledger_represents_failed_attempts():
         "attempt_id": "arc-d-b2-v2-failed",
         "preregistration_manifest_sha256": "b" * 64,
         "preregistration_commit": "c" * 40,
+        "revision": 1,
+        "previous_ledger_sha256": "d" * 64,
+        "previous_ledger_commit": "e" * 40,
         "cells": {"grade_a": lane, "grade_b": lane},
         "state": "SEALED_PARTIAL_UNPAIRED",
     }

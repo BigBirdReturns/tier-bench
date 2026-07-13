@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_audit_receipt.schema.json",
+  "title": "ARC-D B2 authenticated private audit receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "protocol_id",
+    "attempt_id",
+    "lane",
+    "item_id",
+    "custody_profile_sha256",
+    "activation_commit",
+    "preregistration_manifest_sha256",
+    "dispatch_ledger_sha256",
+    "private_object",
+    "validator",
+    "verifier_id",
+    "authentication",
+    "raw_bytes_accessed",
+    "error_commitment_sha256",
+    "audited_at",
+    "result"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-audit-receipt@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "attempt_id": {"type": "string", "pattern": "^arc-d-b2-v2-[a-z0-9][a-z0-9._-]{2,63}$"},
+    "lane": {"enum": ["grade_a", "grade_b"]},
+    "item_id": {"enum": ["attrs_1567_setattr_mro", "httpx_3614_base_url_query", "httpx_3221_ipv6_no_proxy"]},
+    "custody_profile_sha256": {"$ref": "#/$defs/sha256"},
+    "activation_commit": {"$ref": "#/$defs/gitsha"},
+    "preregistration_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "dispatch_ledger_sha256": {"$ref": "#/$defs/sha256"},
+    "private_object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["opaque_venue_id", "commit_id", "tree_id", "manifest_path_sha256", "manifest_sha256"],
+      "properties": {
+        "opaque_venue_id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{8,128}$"},
+        "commit_id": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "tree_id": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "manifest_path_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "validator": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "commit", "sha256"],
+      "properties": {
+        "path": {"const": "scripts/validate_arc_d_b2_custody_v2.py"},
+        "commit": {"$ref": "#/$defs/gitsha"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "verifier_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]{2,127}$"},
+    "authentication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "identity", "subject_commit", "subject_path", "evidence_path_sha256", "evidence_sha256", "verified_at"],
+      "properties": {
+        "method": {"enum": ["github_actions_oidc", "signed_commit"]},
+        "identity": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/+\\-]{2,255}$"},
+        "subject_commit": {"$ref": "#/$defs/gitsha"},
+        "subject_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"},
+        "evidence_path_sha256": {"$ref": "#/$defs/sha256"},
+        "evidence_sha256": {"$ref": "#/$defs/sha256"},
+        "verified_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "raw_bytes_accessed": {"type": "boolean"},
+    "error_commitment_sha256": {"$ref": "#/$defs/sha256"},
+    "audited_at": {"type": "string", "format": "date-time"},
+    "result": {"enum": ["PASS", "FAIL"]}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitsha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+  }
+}
