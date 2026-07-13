@@ -15,6 +15,7 @@ SCHEMA = "tier-bench/tier-backend-result@1"
 EMPTY_MCP_CONFIG = '{"mcpServers":{}}'
 REQUIRED_CLAUDE_FLAGS = {
     "--add-dir",
+    "--allowedTools",
     "--disable-slash-commands",
     "--effort",
     "--mcp-config",
@@ -81,6 +82,14 @@ def _packet_access_args(worktree: Path) -> list[str]:
     return ["--add-dir", str(worktree)]
 
 
+def _packet_permission_args(files: list[str]) -> list[str]:
+    rules: list[str] = []
+    for path in files:
+        normalized = path.replace("\\", "/")
+        rules.extend((f"Read(/{normalized})", f"Edit(/{normalized})"))
+    return ["--permission-mode", "dontAsk", "--allowedTools", *rules]
+
+
 def _usage(data: dict) -> dict:
     usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
     return {
@@ -125,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--claude-bin", default="claude")
     parser.add_argument("--claude-version", required=True)
     parser.add_argument("--claude-help-sha256", required=True)
-    parser.add_argument("--adapter-version", default="3")
+    parser.add_argument("--adapter-version", default="4")
     parser.add_argument("--model", required=True)
     parser.add_argument("--effort", required=True)
     parser.add_argument("--account", required=True)
@@ -156,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
         "--output-format", "json",
         "--model", args.model,
         "--effort", args.effort,
-        "--permission-mode", "acceptEdits",
+        *_packet_permission_args(dispatch["files"]),
         "--safe-mode",
         "--no-session-persistence",
         "--disable-slash-commands",

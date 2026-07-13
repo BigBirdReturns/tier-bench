@@ -20,6 +20,7 @@ from tier_runner.adapters.claude_code import (  # noqa: E402
     REQUIRED_CLAUDE_FLAGS,
     _help_surface_bytes,
     _packet_access_args,
+    _packet_permission_args,
     _subscription_env,
     _runtime_model,
     _usage,
@@ -594,6 +595,19 @@ def test_claude_explicitly_allows_only_packet_path(parent: Path) -> None:
     assert _packet_access_args(packet) == ["--add-dir", str(packet)]
 
 
+def test_claude_permissions_are_scoped_to_dispatched_files(parent: Path) -> None:
+    del parent
+    assert _packet_permission_args(["src/a.py", "docs\\b.md"]) == [
+        "--permission-mode",
+        "dontAsk",
+        "--allowedTools",
+        "Read(/src/a.py)",
+        "Edit(/src/a.py)",
+        "Read(/docs/b.md)",
+        "Edit(/docs/b.md)",
+    ]
+
+
 def main() -> int:
     TEST_TMP.mkdir(exist_ok=True)
     parent = Path(tempfile.mkdtemp(prefix="tier-runner-", dir=TEST_TMP))
@@ -616,6 +630,7 @@ def main() -> int:
         test_claude_help_hash_binds_raw_bytes,
         test_claude_empty_mcp_config_has_required_shape,
         test_claude_explicitly_allows_only_packet_path,
+        test_claude_permissions_are_scoped_to_dispatched_files,
     ]
     try:
         for index, test in enumerate(tests):
