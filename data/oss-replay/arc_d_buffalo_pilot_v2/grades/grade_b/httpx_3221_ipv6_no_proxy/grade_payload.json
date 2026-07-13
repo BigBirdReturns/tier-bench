@@ -1,0 +1,60 @@
+{
+  "schema": "tier-bench/arc-d-b2-grade-payload@1",
+  "item_id": "httpx_3221_ipv6_no_proxy",
+  "attestations": {
+    "peer_grade_seen_before_seal": false,
+    "repository_context_seen": false,
+    "other_response_seen": false
+  },
+  "atomic_findings": [
+    {
+      "candidate_id": "httpx_3221_ipv6_no_proxy::cand-1::url-shaped-dispatch-key-semantics",
+      "response_spans": [
+        {"start_byte": 0, "end_byte_exclusive": 571},
+        {"start_byte": 573, "end_byte_exclusive": 1145},
+        {"start_byte": 1147, "end_byte_exclusive": 2650},
+        {"start_byte": 2743, "end_byte_exclusive": 2845},
+        {"start_byte": 4755, "end_byte_exclusive": 5181},
+        {"start_byte": 5183, "end_byte_exclusive": 5933}
+      ],
+      "behavior_claim": "At encode/httpx commit b5addb64f0161ff6bfe94c124ef76f6a1fba5254 (released as 0.27.0 per the problem report), get_environment_proxies() classifies the no_proxy entry 'fe11::/16' as IPv6 because is_ipv6_hostname() validates only hostname.split('/')[0], and emits the mount key 'all://[fe11::/16]' with the CIDR suffix inside the brackets; URLPattern then passes that malformed pattern to URL(), which raises httpx.InvalidURL (\"Invalid port: ':'\") during Client()/AsyncClient() construction before any request. Additionally, URLPattern.matches() as pinned compares only scheme, exact-host regex, and port, so a merely syntactically-parseable CIDR key would not by itself implement network-membership bypass.",
+      "regression_test": "With environment no_proxy=fe11::/16, construct httpx.Client() (and httpx.AsyncClient()): expected result is successful construction producing a valid network-aware all:// bypass mount (no InvalidURL). Membership rows: pattern fe11::/16 must bypass http://[fe11::1]/ and https://[fe11:ffff::1]/, and must proxy http://[fe12::1]/, http://fe11.example/, and http://192.168.1.1/. Non-regression rows restate the pinned PROXY_CASES: no_proxy=127.0.0.1 -> {'all://127.0.0.1': None} still bypasses http://127.0.0.1/, ::1 -> {'all://[::1]': None} still bypasses http://[::1]/, localhost still bypasses, no_proxy='*' still yields an empty proxy map, and scheme-, port-, and priority-sensitive behavior from URL_MATCH_CASES/EXPECTED_PRIORITY is unchanged. Uses only the existing public surface (no_proxy env var, httpx.Client/AsyncClient); network-bypass expectation is the problem report's stated intended behavior, not an invented contract.",
+      "residue": "When a configuration token embeds non-URL semantics (such as a CIDR network selector) inside a URL-shaped dispatch key, making the key syntactically parseable is insufficient; the dispatch layer must explicitly preserve the embedded selector and evaluate its semantics (e.g., network membership) at match time.",
+      "applicability_predicate": "Applies when CIDR or similar selector tokens are encoded into URL-shaped proxy/mount dispatch keys whose matcher evaluates only scheme, host-literal/regex, and port, as in the pinned httpx URLPattern mount mechanism.",
+      "exclusions": [
+        "Does not apply when the downstream URL abstraction is documented to retain and natively match the embedded selector",
+        "No claim about dispatch layers other than the pinned excerpt's mount mechanism (get_environment_proxies -> URLPattern -> _transport_for_url)",
+        "No cross-project generality, transfer, harvest, rate, compounding, amortization, or waterline claim at B2"
+      ],
+      "distinctness": "UNIQUE",
+      "evidence": [
+        {
+          "kind": "source",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "released_behavior",
+          "path": "PROBLEM.md",
+          "sha256": "fe714658c80597bbb7540091b1b909e29f54a04cf3030609811db48f8163e04b",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "test",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "source",
+          "path": "ORIGINAL_PROMPT.md",
+          "sha256": "a5ee77e4991f2bddae9b7281aa5e1a6c2aca857ccfc3383e5af612136c796fd4",
+          "authority_status": "AUTHORITATIVE"
+        }
+      ],
+      "disposition": "B2_CANDIDATE_RESIDUE"
+    }
+  ],
+  "response_disposition": "B2_CANDIDATE_RESIDUE"
+}

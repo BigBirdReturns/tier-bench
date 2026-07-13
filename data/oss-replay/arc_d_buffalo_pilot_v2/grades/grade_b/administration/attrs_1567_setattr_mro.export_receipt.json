@@ -1,0 +1,15 @@
+{
+  "charter_sha256": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e",
+  "item_id": "attrs_1567_setattr_mro",
+  "official_dispatch_permitted": true,
+  "packet_id": "arc_d_b2_attrs_1567_setattr_mro_v1",
+  "packet_scope": "<PACKET_SCOPE>",
+  "packet_sha256": "0c3632ad746698fbd3f61d6a5ff7b3a34e97a48d69115ad45f9d94ab7a5982bc",
+  "prompt_sha256": "f9c554fb1d5094b90d5c7037db8192e017325289779a85ca396f96b7997ffbe9",
+  "protocol_id": "arc_d_buffalo_pilot_v2",
+  "response_bytes": 7345,
+  "response_sha256": "804aa2cdf06c0ad7379487fefe2d7f3684b8b2b49526f3988380233e5d74b898",
+  "response_text_displayed_to_driver": false,
+  "schema": "tier-bench/arc-d-b2-packet-export-receipt@1",
+  "source_commit": "4687bd888cc3c4246c653196604e10b9331aefa5"
+}

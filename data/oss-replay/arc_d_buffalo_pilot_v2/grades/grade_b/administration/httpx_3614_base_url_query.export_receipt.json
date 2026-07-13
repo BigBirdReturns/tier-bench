@@ -1,0 +1,15 @@
+{
+  "charter_sha256": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e",
+  "item_id": "httpx_3614_base_url_query",
+  "official_dispatch_permitted": true,
+  "packet_id": "arc_d_b2_httpx_3614_base_url_query_v1",
+  "packet_scope": "<PACKET_SCOPE>",
+  "packet_sha256": "bbad09fea82ffd9c5111f5564ebac52556da644cb2d1ba03f498bb640b253631",
+  "prompt_sha256": "d81a12a66e96c6a9eaaa9af82d6ca8903d8a8a6f93ffb07466a42dea1c1bd8fe",
+  "protocol_id": "arc_d_buffalo_pilot_v2",
+  "response_bytes": 5933,
+  "response_sha256": "5c6308ef99649def522eb97dd0171a5076c628ce942ee585ae3d95eda971f60c",
+  "response_text_displayed_to_driver": false,
+  "schema": "tier-bench/arc-d-b2-packet-export-receipt@1",
+  "source_commit": "4687bd888cc3c4246c653196604e10b9331aefa5"
+}

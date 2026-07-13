@@ -1,0 +1,57 @@
+{
+  "schema": "tier-bench/arc-d-b2-grade-payload@1",
+  "item_id": "httpx_3614_base_url_query",
+  "attestations": {
+    "peer_grade_seen_before_seal": false,
+    "repository_context_seen": false,
+    "other_response_seen": false
+  },
+  "atomic_findings": [
+    {
+      "candidate_id": "httpx_3614_component_boundary_rule",
+      "response_spans": [
+        {"start_byte": 167, "end_byte_exclusive": 454},
+        {"start_byte": 456, "end_byte_exclusive": 802},
+        {"start_byte": 1386, "end_byte_exclusive": 1586},
+        {"start_byte": 1657, "end_byte_exclusive": 2473},
+        {"start_byte": 2696, "end_byte_exclusive": 4557},
+        {"start_byte": 4581, "end_byte_exclusive": 4784},
+        {"start_byte": 4786, "end_byte_exclusive": 5003},
+        {"start_byte": 5288, "end_byte_exclusive": 5417}
+      ],
+      "behavior_claim": "At encode/httpx commit ae1b9f66238f75ced3ced5e4485408435de10768, URL.raw_path serializes the query component, so BaseClient._enforce_trailing_slash appends b'/' after the serialized query of a base_url that carries one (b'/get?data=1' -> b'/get?data=1/'), silently mutating the query value to data=1/ as reported (b'data=1/', {'data': ['1/']}); _merge_url's raw_path concatenation crosses the same path/query component boundary, so a coherent fix must establish a query-free base-URL invariant (or component-aware handling) covering both the base_url setter and _merge_url, and _merge_queryparams cannot repair the corruption. The observed b'data=1/' output discriminates this mechanism: were raw_path query-free, the printed query would remain b'data=1'.",
+      "regression_test": "Response bytes 2696-4557: an explicit 16-row matrix conditioned on policy B (deliberately drop base query, one of the two policies the problem report declares acceptable). Core assertions: httpx.Client(base_url='https://httpbingo.org/get?data=1').base_url.query == b'' with normalized path ending in '/'; build_request('GET','') yields path /get/ with no query; request-owned query and params channels retained (child?y=2 -> /base/child?y=2, params={'y':'2'} -> y=2 present, x absent); absolute request URLs bypass unchanged; %2F and %3F stay encoded path data; empty query value ?x= removed rather than mutated to x=/; setter reassignment normalizes identically; all pinned query-free merge tests (blob 657839018ab3ded203937f970eeeb23f26561775) keep their expected URLs. No invented API: the response abstains from naming the unseen copy_with sentinel (bytes 1386-1586) and states the semantic operation only.",
+      "residue": "Never perform path normalization or concatenation on a serialized URL field that may also contain a query; first isolate the path component or establish and test a query-free invariant (response bytes 4581-4784). Falsifiable: it predicts query corruption whenever path-level byte operations act on a serialized field that can carry a query component.",
+      "applicability_predicate": "Code that mutates or concatenates a serialized URL path representation (e.g. raw_path-style fields) which may include a query component, such as trailing-slash enforcement at base-URL construction and relative-URL raw-path merging (response bytes 4786-5003).",
+      "exclusions": [
+        "Does not dictate the API policy of whether base-URL queries are inherited, replaced, or discarded (policy A vs policy B remains an upstream decision; response bytes 4786-5003)",
+        "Absolute request URLs, which bypass base merging entirely (response bytes 1657-2473)",
+        "Percent-encoded path delimiters (%2F, %3F), which must remain encoded path data and are not split by the rule (response bytes 1657-2473)",
+        "Client- or request-level params merging via _merge_queryparams, a separate channel not confused with discarded base-URL queries (response bytes 1657-2473)"
+      ],
+      "distinctness": "UNIQUE",
+      "evidence": [
+        {
+          "kind": "source",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "01f737bac7168376d52db07393096d894a02f7fe328a6412a4a70d6f2393e783",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "test",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "01f737bac7168376d52db07393096d894a02f7fe328a6412a4a70d6f2393e783",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "released_behavior",
+          "path": "PROBLEM.md",
+          "sha256": "d8c896cd850fe9d7c434d98628ba2e11345cac1ec4030e5e3fc545fcca1517a5",
+          "authority_status": "AUTHORITATIVE"
+        }
+      ],
+      "disposition": "B2_CANDIDATE_RESIDUE"
+    }
+  ],
+  "response_disposition": "B2_CANDIDATE_RESIDUE"
+}
