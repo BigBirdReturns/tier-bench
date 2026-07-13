@@ -17,9 +17,13 @@ sys.path.insert(0, str(REPO))
 
 from tier_runner.core import RunError, _packet_temp_root, run_task, verify_run  # noqa: E402
 from tier_runner.adapters.claude_code import (  # noqa: E402
+    ADAPTER_VERSION,
+    CLAUDE_TOOLS,
     EMPTY_MCP_CONFIG,
     REQUIRED_CLAUDE_FLAGS,
     _absolute_permission_path,
+    _claude_command,
+    _escape_permission_pattern,
     _help_surface_bytes,
     _packet_access_args,
     _packet_permission_args,
@@ -28,6 +32,7 @@ from tier_runner.adapters.claude_code import (  # noqa: E402
     _usage,
     _usage_evidenced,
 )
+from tier_runner.adapters.claude_code import main as claude_adapter_main  # noqa: E402
 from tier_runner.events import (  # noqa: E402
     InterventionError,
     event_hash,
@@ -623,6 +628,52 @@ def test_claude_permissions_are_scoped_to_dispatched_files(parent: Path) -> None
     ]
 
 
+def test_claude_command_exposes_discovery_tools_and_scoped_rules(parent: Path) -> None:
+    packet = parent / "packet"
+    command = _claude_command("claude", "fake-haiku", "low", packet, ["src/"])
+    directory = _absolute_permission_path(packet / "src")
+    assert command.count("--tools") == 1
+    assert command[command.index("--tools") + 1] == CLAUDE_TOOLS
+    assert set(CLAUDE_TOOLS.split(",")) == {"Read", "Edit", "Write", "Glob", "Grep"}
+    assert "Bash" not in CLAUDE_TOOLS
+    assert command[command.index("--allowedTools") + 1] == f"Read({directory}/**)"
+    assert command[command.index("--mcp-config") + 1] == EMPTY_MCP_CONFIG
+    for flag in ("--safe-mode", "--no-session-persistence", "--print"):
+        assert flag in command
+
+
+def test_claude_adapter_rejects_version_relabeling(parent: Path) -> None:
+    assert ADAPTER_VERSION == "9"
+    try:
+        claude_adapter_main([
+            "--arm", "arm_b",
+            "--dispatch", str(parent / "missing-dispatch.json"),
+            "--prompt", str(parent / "missing-prompt.txt"),
+            "--result", str(parent / "unused-result.json"),
+            "--worktree", str(parent),
+            "--claude-bin", str(parent / "no-such-claude"),
+            "--claude-version", "irrelevant",
+            "--claude-help-sha256", "irrelevant",
+            "--adapter-version", "8",
+            "--model", "fake-haiku",
+            "--effort", "low",
+            "--account", "fixture",
+        ])
+    except RuntimeError as exc:
+        assert "adapter version drift" in str(exc)
+    else:
+        raise AssertionError("stale --adapter-version must be rejected before dispatch")
+
+
+def test_claude_permission_rules_escape_gitignore_metacharacters(parent: Path) -> None:
+    assert _escape_permission_pattern("//p/a[b]*?.py") == r"//p/a\[b\]\*\?.py"
+    packet = parent / "packet"
+    literal = _absolute_permission_path(packet / "fixtures" / "[case]")
+    args = _packet_permission_args(packet, ["fixtures/[case]/"])
+    escaped = literal.replace("[", "\\[").replace("]", "\\]")
+    assert args[args.index("--allowedTools") + 1] == f"Read({escaped}/**)"
+
+
 def test_claude_directory_scopes_get_recursive_permissions(parent: Path) -> None:
     directory = _absolute_permission_path(parent / "packet" / "src")
     assert _packet_permission_args(parent / "packet", ["src/"]) == [
@@ -668,6 +719,9 @@ def main() -> int:
         test_claude_explicitly_allows_only_packet_path,
         test_claude_permissions_are_scoped_to_dispatched_files,
         test_claude_directory_scopes_get_recursive_permissions,
+        test_claude_command_exposes_discovery_tools_and_scoped_rules,
+        test_claude_adapter_rejects_version_relabeling,
+        test_claude_permission_rules_escape_gitignore_metacharacters,
         test_windows_packet_root_avoids_legacy_temp_alias,
     ]
     try:
