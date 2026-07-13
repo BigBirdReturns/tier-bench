@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_private_bundle_manifest.schema.json",
+  "title": "ARC-D B2 admission-v2 private grade bundle manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_id", "attempt_id", "lane", "item_id", "parent_charter_sha256", "amendment_sha256", "custody_profile_sha256", "activation_commit", "preregistration_manifest_sha256", "preregistration_commit", "dispatch_ledger_sha256", "dispatch_ledger_commit", "packet_sha256", "prompt_sha256", "response_sha256", "response_bytes", "dispatch_index", "instrument", "chronology", "exposure", "paths", "artifacts", "bundle_state"],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-private-bundle-manifest@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "attempt_id": {"type": "string", "pattern": "^arc-d-b2-v2-[a-z0-9][a-z0-9._-]{2,63}$"},
+    "lane": {"enum": ["grade_a", "grade_b"]},
+    "item_id": {"enum": ["attrs_1567_setattr_mro", "httpx_3614_base_url_query", "httpx_3221_ipv6_no_proxy"]},
+    "parent_charter_sha256": {"const": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e"},
+    "amendment_sha256": {"$ref": "#/$defs/sha256"},
+    "custody_profile_sha256": {"$ref": "#/$defs/sha256"},
+    "activation_commit": {"$ref": "#/$defs/gitsha"},
+    "preregistration_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "preregistration_commit": {"$ref": "#/$defs/gitsha"},
+    "dispatch_ledger_sha256": {"$ref": "#/$defs/sha256"},
+    "dispatch_ledger_commit": {"$ref": "#/$defs/gitsha"},
+    "packet_sha256": {"$ref": "#/$defs/sha256"},
+    "prompt_sha256": {"$ref": "#/$defs/sha256"},
+    "response_sha256": {"$ref": "#/$defs/sha256"},
+    "response_bytes": {"type": "integer", "minimum": 1},
+    "dispatch_index": {"const": 1},
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_lineage", "model", "effort", "surface", "session_id_sha256"],
+      "properties": {
+        "provider_lineage": {"enum": ["openai", "anthropic"]},
+        "model": {"enum": ["gpt-5.6-sol", "fable-5"]},
+        "effort": {"const": "high"},
+        "surface": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{2,127}$"},
+        "session_id_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "chronology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dispatched_at", "started_at", "sealed_at"],
+      "properties": {
+        "dispatched_at": {"type": "string", "format": "date-time"},
+        "started_at": {"type": "string", "format": "date-time"},
+        "sealed_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "exposure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["peer_grade_seen_before_seal", "prior_grade_seen", "repository_context_seen", "other_response_seen"],
+      "properties": {
+        "peer_grade_seen_before_seal": {"const": false},
+        "prior_grade_seen": {"const": false},
+        "repository_context_seen": {"const": false},
+        "other_response_seen": {"const": false}
+      }
+    },
+    "paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packet_manifest", "export_receipt", "raw_grade", "grade_payload", "grade_receipt", "session_evidence"],
+      "properties": {
+        "packet_manifest": {"$ref": "#/$defs/path"},
+        "export_receipt": {"$ref": "#/$defs/path"},
+        "raw_grade": {"$ref": "#/$defs/path"},
+        "grade_payload": {"$ref": "#/$defs/path"},
+        "grade_receipt": {"$ref": "#/$defs/path"},
+        "session_evidence": {"$ref": "#/$defs/path"}
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": {"$ref": "#/$defs/path"},
+          "sha256": {"$ref": "#/$defs/sha256"},
+          "bytes": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "bundle_state": {"enum": ["PRIVATE_SEALED", "INADMISSIBLE"]}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitsha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"}
+  }
+}
