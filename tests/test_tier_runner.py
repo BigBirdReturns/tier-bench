@@ -601,10 +601,10 @@ def test_claude_permissions_are_scoped_to_dispatched_files(parent: Path) -> None
         "--permission-mode",
         "dontAsk",
         "--allowedTools",
-        "Read(/src/a.py)",
-        "Edit(/src/a.py)",
-        "Read(/docs/b.md)",
-        "Edit(/docs/b.md)",
+        "Read(src/a.py)",
+        "Edit(src/a.py)",
+        "Read(docs/b.md)",
+        "Edit(docs/b.md)",
     ]
 
 
