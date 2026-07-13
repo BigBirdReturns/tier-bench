@@ -14,7 +14,20 @@
 
 This document tracks the classification of tasks across the breadth test suite as they accumulate through layers.
 
-### Current Layer: fanout-floor-20260713
+### Current Layer: authoring2-floor-20260713
+
+**Authoring batch 2 floored — the floor ate all three embedded knots.**
+`t3_billing_anchor_001`, `t3_window_limit_001`, `t3_due_date_shift_001`: each
+settled 3/3 (haiku, hidden vectors 9/9 · 10/10 · 10/10 per trial, nine
+independent candidates, every grade re-run directly by the driver). The knots
+provably exist — each paired naive passes the visible checks and fails the knot
+vectors — but haiku-as-spec-reader does not drift where a careless implementer
+does. **Rule 11 corollary sealed into LESSONS.md:** embedded-unannounced is
+necessary but not sufficient; the knots that actually bite are the ones whose
+edge *feels contradictory* to the rule text (task02) or whose deciding quantity
+must be *derived*, not applied (almanac lichun). Cost: $0 real-billed.
+
+### Previous Layer: fanout-floor-20260713
 
 **THE CORNER IS FULLY MAPPED — every breadth-valid task now settled.** The
 operator's fan-out ran six parallel haiku solvers over the only two non-settled

@@ -84,6 +84,19 @@ drawing that waterline correctly — and proving which side each cell is on.
     mid-implementation), and the spec must not carry a guarantee that resolves it.
     *(Mistake: authored three "novel-reasoning" tasks and the floor ate them.)*
 
+11b. **Corollary (measured 2026-07-13, authoring batch 2): embedded-unannounced is
+    necessary but not sufficient.** Three rule-11-shaped tasks (anchor-vs-cascade,
+    words-stated window endpoint, modified-following reversal) — each with verified
+    naive-fails/reference-passes daylight, no defusing guarantees, knots arriving
+    mid-implementation — ALL settled 3/3 at the haiku floor on first flooring
+    (9/9 trials, hidden vectors included). A crisply stated rule gets implemented,
+    however deep it is buried: the naive that drifts is a *careless* implementer,
+    and the floor is not careless. The two knots that actually bit
+    (task02 backslash-in-class, almanac lichun) share what these lack: the edge
+    *feels contradictory* to the rule text, or the deciding quantity must be
+    *derived* (bisection-class), not just applied. Author THOSE shapes next;
+    stop authoring crisply-determined boundary rules and expecting them to wall.
+
 12. **Focused lenses have tunnel vision — the sweep needs one open eye.** Measured
     on a dense subject (`experiments/lens-proofs/dense_orders`): baseline general
     pass 7/10, frozen-five sweep alone 9/10 (every lens missed the use-after-close
