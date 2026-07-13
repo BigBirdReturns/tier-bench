@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -29,6 +30,8 @@ PARENT_CHARTER_SHA256 = "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf14
 AMENDMENT_PATH = "data/oss-replay/arc_d_buffalo_pilot_v2/harvest_charter_v2.json"
 AMENDMENT_SHA256 = "5c6cec7469732d0a614b5b45ef2ef5c7aa495c0ff6f31e53657da2f28b1740c9"
 AMENDMENT_ADOPTION_COMMIT = "e7201e1debd38a86839e0661d7c3b5f6cf21d94f"
+CANONICAL_REPOSITORY_URL = "https://github.com/BigBirdReturns/tier-bench.git"
+CANONICAL_MAIN_REF = "refs/heads/main"
 EMPTY_SHA256 = hashlib.sha256(b"").hexdigest()
 ZERO_SHA256 = "0" * 64
 ZERO_GITSHA = "0" * 40
@@ -149,6 +152,76 @@ def _git(repo: Path, *args: str) -> subprocess.CompletedProcess:
     )
 
 
+def canonical_main_commit(*, runner=subprocess.run) -> str:
+    """Resolve main from the pinned GitHub repository, never a local remote."""
+    environment = dict(os.environ)
+    environment.update({
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CONFIG_GLOBAL": os.devnull,
+        "GIT_CEILING_DIRECTORIES": str(ROOT.parent),
+    })
+    proc = runner(
+        ["git", "ls-remote", "--exit-code", CANONICAL_REPOSITORY_URL, CANONICAL_MAIN_REF],
+        check=False,
+        capture_output=True,
+        cwd=ROOT.parent,
+        env=environment,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError("canonical GitHub main is unavailable")
+    fields = proc.stdout.decode("ascii").strip().split()
+    if len(fields) != 2 or fields[1] != CANONICAL_MAIN_REF or re.fullmatch(r"[0-9a-f]{40}", fields[0]) is None:
+        raise ValueError("canonical GitHub main response is malformed")
+    return fields[0]
+
+
+def _commit_blob_errors(repo: Path, commit: str, rel: str, expected: bytes, label: str) -> list[str]:
+    try:
+        actual = git_bytes(repo, commit, rel)
+    except Exception:
+        return [f"{label}: committed bytes are unavailable"]
+    if actual != expected:
+        return [f"{label}: commit does not contain the exact declared bytes"]
+    return []
+
+
+def _ancestor_errors(repo: Path, ancestor: str, descendant: str, label: str) -> list[str]:
+    if re.fullmatch(r"[0-9a-f]{40}", ancestor or "") is None or re.fullmatch(r"[0-9a-f]{40}", descendant or "") is None:
+        return [f"{label}: commit identity is malformed"]
+    if _git(repo, "merge-base", "--is-ancestor", ancestor, descendant).returncode != 0:
+        return [f"{label}: required Git ancestry is absent"]
+    return []
+
+
+def _successor_hashes_on_canonical_main(
+    repo: Path,
+    canonical_commit: str,
+    parent_commit: str,
+    ledger_path: str,
+    ledger: dict[str, Any],
+) -> set[str]:
+    """Return distinct canonical successor contents for one declared parent."""
+    proc = _git(repo, "rev-list", canonical_commit, f"^{parent_commit}", "--", ledger_path)
+    if proc.returncode != 0:
+        raise RuntimeError("canonical ledger history is unavailable")
+    hashes: set[str] = set()
+    for raw_commit in proc.stdout.decode("ascii").splitlines():
+        commit = raw_commit.strip()
+        try:
+            data = git_bytes(repo, commit, ledger_path)
+            candidate = loads(data)
+        except Exception:
+            continue
+        if (
+            candidate.get("attempt_id") == ledger.get("attempt_id")
+            and candidate.get("revision") == ledger.get("revision")
+            and candidate.get("previous_ledger_commit") == ledger.get("previous_ledger_commit")
+            and candidate.get("previous_ledger_sha256") == ledger.get("previous_ledger_sha256")
+        ):
+            hashes.add(sha256(data))
+    return hashes
+
+
 def git_bytes(repo: Path, commit: str, rel: str) -> bytes:
     _safe_rel(rel)
     if re.fullmatch(r"[0-9a-f]{40}", commit) is None:
@@ -245,6 +318,7 @@ def validate_activation(
     *,
     component_ref: str | None = None,
     official: bool = False,
+    canonical_commit: str | None = None,
 ) -> tuple[list[str], str]:
     errors = admission.schema_errors(receipt, _schema("activation"), label="activation")
     authority = receipt.get("authority", {})
@@ -315,12 +389,16 @@ def validate_activation(
     state = "COMPONENTS_VALID_PENDING_DEFAULT_BRANCH_MERGE"
     if official:
         head = _git(ROOT, "rev-parse", "HEAD")
-        remote = _git(ROOT, "rev-parse", "refs/remotes/origin/main")
         branch = _git(ROOT, "branch", "--show-current")
-        if head.returncode or remote.returncode or branch.returncode:
+        try:
+            trusted_main = canonical_commit or canonical_main_commit()
+        except Exception as exc:
+            errors.append(f"activation official mode cannot resolve pinned GitHub authority: {type(exc).__name__}")
+            trusted_main = ""
+        if head.returncode or branch.returncode:
             errors.append("activation official mode cannot resolve Git authority")
-        elif head.stdout != remote.stdout or branch.stdout.decode().strip() != "main":
-            errors.append("activation official mode requires exact origin/main checkout")
+        elif head.stdout.decode("ascii").strip() != trusted_main or branch.stdout.decode().strip() != "main":
+            errors.append("activation official mode requires the exact pinned GitHub main commit")
         elif component_ref != "HEAD":
             errors.append("activation official mode requires HEAD-bound components")
         else:
@@ -330,6 +408,8 @@ def validate_activation(
 
 def validate_preregistration(value: dict[str, Any], *, repo: Path = ROOT) -> list[str]:
     errors = admission.schema_errors(value, _schema("preregistration"), label="preregistration")
+    if value.get("amendment_sha256") != AMENDMENT_SHA256:
+        errors.append("preregistration: amendment hash differs from adopted authority")
     charter = load(ROOT / "data/oss-replay/arc_d_buffalo_pilot_v2/harvest_charter.json")
     rows = {row["item_id"]: row for row in charter["sealed_evidence"]["responses"]}
     for item in ITEMS:
@@ -352,18 +432,43 @@ def validate_dispatch(
     preregistration: dict[str, Any],
     preregistration_bytes: bytes,
     *,
+    ledger_bytes: bytes,
+    repository: Path,
+    ledger_commit: str,
+    canonical_commit: str,
     previous_ledger: dict[str, Any] | None = None,
     previous_ledger_bytes: bytes | None = None,
 ) -> list[str]:
     errors = admission.schema_errors(ledger, _schema("dispatch"), label="dispatch")
+    errors.extend(validate_preregistration(preregistration, repo=repository))
     if ledger.get("attempt_id") != preregistration.get("attempt_id"):
         errors.append("dispatch: attempt differs from preregistration")
     if ledger.get("preregistration_manifest_sha256") != sha256(preregistration_bytes):
         errors.append("dispatch: preregistration hash mismatch")
+    preregistration_commit = ledger.get("preregistration_commit", "")
+    preregistration_path = ledger.get("preregistration_path", "")
+    ledger_path = ledger.get("ledger_path", "")
+    errors.extend(_commit_blob_errors(
+        repository, preregistration_commit, preregistration_path,
+        preregistration_bytes, "dispatch preregistration binding"))
+    errors.extend(_commit_blob_errors(
+        repository, ledger_commit, ledger_path, ledger_bytes,
+        "dispatch current-ledger binding"))
+    errors.extend(_ancestor_errors(
+        repository, preregistration_commit, ledger_commit,
+        "dispatch preregistration-to-ledger"))
+    errors.extend(_ancestor_errors(
+        repository, preregistration.get("source_commit", ""), ledger_commit,
+        "dispatch packet-source-to-ledger"))
+    errors.extend(_ancestor_errors(
+        repository, ledger_commit, canonical_commit,
+        "dispatch ledger-to-canonical-main"))
     outcomes = [ledger.get("cells", {}).get(lane, {}).get(item, {}).get("outcome")
                 for lane in LANES for item in ITEMS]
     state = ledger.get("state")
     revision = ledger.get("revision")
+    if isinstance(revision, int) and revision > 6:
+        errors.append("dispatch: revision exceeds the six-cell attempt bound")
     if revision == 0:
         if ledger.get("previous_ledger_sha256") != ZERO_SHA256 or ledger.get("previous_ledger_commit") != ZERO_GITSHA:
             errors.append("dispatch: revision zero must use zero previous-ledger bindings")
@@ -375,6 +480,17 @@ def validate_dispatch(
         else:
             if ledger.get("previous_ledger_sha256") != sha256(previous_ledger_bytes):
                 errors.append("dispatch: previous ledger hash mismatch")
+            previous_commit = ledger.get("previous_ledger_commit", "")
+            if previous_ledger.get("ledger_path") != ledger_path:
+                errors.append("dispatch: ledger path changed across revisions")
+            if previous_ledger.get("preregistration_path") != preregistration_path:
+                errors.append("dispatch: preregistration path changed across revisions")
+            errors.extend(_commit_blob_errors(
+                repository, previous_commit, ledger_path, previous_ledger_bytes,
+                "dispatch previous-ledger binding"))
+            errors.extend(_ancestor_errors(
+                repository, previous_commit, ledger_commit,
+                "dispatch previous-to-current ledger"))
             if previous_ledger.get("attempt_id") != ledger.get("attempt_id"):
                 errors.append("dispatch: previous ledger attempt mismatch")
             if previous_ledger.get("revision") != revision - 1:
@@ -392,6 +508,21 @@ def validate_dispatch(
                         errors.append(f"dispatch: terminal cell was rewritten: {lane}/{item}")
             if changed == 0:
                 errors.append("dispatch: append-only revision changes no cell")
+    try:
+        successor_hashes = _successor_hashes_on_canonical_main(
+            repository,
+            canonical_commit,
+            preregistration_commit if revision == 0 else ledger.get("previous_ledger_commit", ""),
+            ledger_path,
+            ledger,
+        )
+    except Exception as exc:
+        errors.append(f"dispatch: canonical successor history unavailable: {type(exc).__name__}")
+    else:
+        if sha256(ledger_bytes) not in successor_hashes:
+            errors.append("dispatch: ledger is not the canonical successor content")
+        if len(successor_hashes) > 1:
+            errors.append("dispatch: competing canonical successor contents void the attempt")
     if state == "SEALED_COMPLETE" and any(outcome != "COMPLETED" for outcome in outcomes):
         errors.append("dispatch: SEALED_COMPLETE requires six completed cells")
     if state == "SEALED_PARTIAL_UNPAIRED":
@@ -725,14 +856,102 @@ def verify_audit_authentication(
     return ["unsupported audit authentication method"]
 
 
-def validate_batch(value: dict[str, Any], receipt_root: Path) -> list[str]:
+def validate_dispatch_chain(
+    ledger: dict[str, Any],
+    ledger_bytes: bytes,
+    preregistration: dict[str, Any],
+    preregistration_bytes: bytes,
+    *,
+    repository: Path,
+    ledger_commit: str,
+    canonical_commit: str,
+) -> list[str]:
+    errors: list[str] = []
+    current = ledger
+    current_bytes = ledger_bytes
+    current_commit = ledger_commit
+    seen: set[str] = set()
+    while True:
+        if current_commit in seen:
+            return errors + ["dispatch chain: commit cycle detected"]
+        seen.add(current_commit)
+        revision = current.get("revision")
+        if revision == 0:
+            errors.extend(validate_dispatch(
+                current, preregistration, preregistration_bytes,
+                ledger_bytes=current_bytes,
+                repository=repository,
+                ledger_commit=current_commit,
+                canonical_commit=canonical_commit,
+            ))
+            return errors
+        if not isinstance(revision, int) or revision < 1 or revision > 6:
+            return errors + ["dispatch chain: revision is outside the six-cell bound"]
+        previous_commit = current.get("previous_ledger_commit", "")
+        ledger_path = current.get("ledger_path", "")
+        try:
+            previous_bytes = git_bytes(repository, previous_commit, ledger_path)
+            previous = loads(previous_bytes)
+        except Exception as exc:
+            return errors + [f"dispatch chain: previous ledger unavailable: {type(exc).__name__}"]
+        errors.extend(validate_dispatch(
+            current, preregistration, preregistration_bytes,
+            ledger_bytes=current_bytes,
+            repository=repository,
+            ledger_commit=current_commit,
+            canonical_commit=canonical_commit,
+            previous_ledger=previous,
+            previous_ledger_bytes=previous_bytes,
+        ))
+        current = previous
+        current_bytes = previous_bytes
+        current_commit = previous_commit
+
+
+def validate_batch(
+    value: dict[str, Any],
+    receipt_root: Path,
+    preregistration: dict[str, Any],
+    preregistration_bytes: bytes,
+    dispatch_ledger: dict[str, Any],
+    dispatch_ledger_bytes: bytes,
+    *,
+    repository: Path,
+    canonical_commit: str,
+) -> list[str]:
     errors = admission.schema_errors(value, _schema("batch"), label="batch")
+    if value.get("amendment_sha256") != AMENDMENT_SHA256:
+        errors.append("batch: amendment hash differs from adopted authority")
     common = (
         "attempt_id", "amendment_sha256", "custody_profile_sha256", "activation_commit",
         "preregistration_manifest_sha256", "preregistration_commit",
         "dispatch_ledger_sha256", "dispatch_ledger_commit",
     )
+    if value.get("preregistration_manifest_sha256") != sha256(preregistration_bytes):
+        errors.append("batch: preregistration hash mismatch")
+    if value.get("dispatch_ledger_sha256") != sha256(dispatch_ledger_bytes):
+        errors.append("batch: dispatch ledger hash mismatch")
+    if value.get("preregistration_path") != dispatch_ledger.get("preregistration_path"):
+        errors.append("batch: preregistration path differs from dispatch ledger")
+    if value.get("dispatch_ledger_path") != dispatch_ledger.get("ledger_path"):
+        errors.append("batch: dispatch ledger path mismatch")
+    if value.get("preregistration_commit") != dispatch_ledger.get("preregistration_commit"):
+        errors.append("batch: preregistration commit differs from dispatch ledger")
+    if value.get("attempt_id") != preregistration.get("attempt_id") or value.get("attempt_id") != dispatch_ledger.get("attempt_id"):
+        errors.append("batch: attempt identity differs across preregistration or dispatch")
+    if dispatch_ledger.get("state") != "SEALED_COMPLETE":
+        errors.append("batch: final dispatch ledger is not SEALED_COMPLETE")
+    errors.extend(validate_dispatch_chain(
+        dispatch_ledger,
+        dispatch_ledger_bytes,
+        preregistration,
+        preregistration_bytes,
+        repository=repository,
+        ledger_commit=value.get("dispatch_ledger_commit", ""),
+        canonical_commit=canonical_commit,
+    ))
     seen: set[str] = set()
+    packet_by_lane: dict[str, dict[str, str]] = {lane: {} for lane in LANES}
     for lane in LANES:
         for item in ITEMS:
             row = value.get("receipts", {}).get(lane, {}).get(item, {})
@@ -758,6 +977,14 @@ def validate_batch(value: dict[str, Any], receipt_root: Path) -> list[str]:
             for key in common:
                 if receipt.get(key) != value.get(key):
                     errors.append(f"batch: common binding mismatch for {lane}/{item}: {key}")
+            preregistered = preregistration.get("items", {}).get(item, {})
+            for key in ("packet_sha256", "prompt_sha256", "response_sha256"):
+                if receipt.get(key) != preregistered.get(key):
+                    errors.append(f"batch: {key} differs from preregistration for {lane}/{item}")
+            packet_by_lane[lane][item] = receipt.get("packet_sha256", "")
+    for item in ITEMS:
+        if packet_by_lane["grade_a"].get(item) != packet_by_lane["grade_b"].get(item):
+            errors.append(f"batch: lane packet hashes differ for {item}")
     try:
         seal = value["seal"]
         if _datetime(seal["first_public_disclosure_at"]) <= _datetime(seal["last_private_sealed_at"]):
@@ -794,6 +1021,8 @@ def main() -> int:
     dispatch_cmd.add_argument("ledger", type=Path)
     dispatch_cmd.add_argument("--preregistration", type=Path, required=True)
     dispatch_cmd.add_argument("--previous-ledger", type=Path)
+    dispatch_cmd.add_argument("--repository", type=Path, default=ROOT)
+    dispatch_cmd.add_argument("--ledger-commit", required=True)
     public_cmd = sub.add_parser("public-receipt")
     public_cmd.add_argument("receipt", type=Path)
     private_cmd = sub.add_parser("private-bundle")
@@ -813,6 +1042,9 @@ def main() -> int:
     batch_cmd = sub.add_parser("batch")
     batch_cmd.add_argument("receipt", type=Path)
     batch_cmd.add_argument("--receipt-root", type=Path, required=True)
+    batch_cmd.add_argument("--preregistration", type=Path, required=True)
+    batch_cmd.add_argument("--dispatch-ledger", type=Path, required=True)
+    batch_cmd.add_argument("--repository", type=Path, default=ROOT)
 
     args = parser.parse_args()
     mode = args.mode or "components"
@@ -837,13 +1069,22 @@ def main() -> int:
         return _print(validate_preregistration(load(args.receipt)), "PREREGISTRATION_VALID")
     if mode == "dispatch":
         prereg_bytes = args.preregistration.read_bytes()
+        ledger_bytes = args.ledger.read_bytes()
         previous_bytes = args.previous_ledger.read_bytes() if args.previous_ledger else None
         previous = loads(previous_bytes) if previous_bytes is not None else None
+        try:
+            trusted_main = canonical_main_commit()
+        except Exception as exc:
+            return _print([f"dispatch cannot resolve pinned GitHub authority: {type(exc).__name__}"], "")
         return _print(
             validate_dispatch(
-                load(args.ledger),
+                loads(ledger_bytes),
                 loads(prereg_bytes),
                 prereg_bytes,
+                ledger_bytes=ledger_bytes,
+                repository=args.repository,
+                ledger_commit=args.ledger_commit,
+                canonical_commit=trusted_main,
                 previous_ledger=previous,
                 previous_ledger_bytes=previous_bytes,
             ),
@@ -909,7 +1150,22 @@ def main() -> int:
             private_errors + auth_errors + audit_errors + binding_errors,
             "AUTHENTICATED_PRIVATE_AUDIT_VALID",
         )
-    return _print(validate_batch(load(args.receipt), args.receipt_root), "PUBLIC_BATCH_COMMITMENT_SHAPE_VALID")
+    try:
+        preregistration_bytes = args.preregistration.read_bytes()
+        dispatch_ledger_bytes = args.dispatch_ledger.read_bytes()
+        trusted_main = canonical_main_commit()
+    except Exception as exc:
+        return _print([f"batch inputs or pinned GitHub authority unavailable: {type(exc).__name__}"], "")
+    return _print(validate_batch(
+        load(args.receipt),
+        args.receipt_root,
+        loads(preregistration_bytes),
+        preregistration_bytes,
+        loads(dispatch_ledger_bytes),
+        dispatch_ledger_bytes,
+        repository=args.repository,
+        canonical_commit=trusted_main,
+    ), "PUBLIC_BATCH_COMMITMENT_SHAPE_VALID")
 
 
 if __name__ == "__main__":

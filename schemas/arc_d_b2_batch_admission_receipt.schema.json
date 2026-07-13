@@ -4,7 +4,7 @@
   "title": "ARC-D B2 six-bundle atomic admission receipt",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "protocol_id", "attempt_id", "amendment_sha256", "custody_profile_sha256", "activation_commit", "preregistration_manifest_sha256", "preregistration_commit", "dispatch_ledger_sha256", "dispatch_ledger_commit", "required_receipt_count", "receipts", "seal", "attempt_failures", "state"],
+  "required": ["schema", "protocol_id", "attempt_id", "amendment_sha256", "custody_profile_sha256", "activation_commit", "preregistration_manifest_sha256", "preregistration_commit", "preregistration_path", "dispatch_ledger_sha256", "dispatch_ledger_commit", "dispatch_ledger_path", "required_receipt_count", "receipts", "seal", "attempt_failures", "state"],
   "properties": {
     "schema": {"const": "tier-bench/arc-d-b2-batch-admission-receipt@2"},
     "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
@@ -14,8 +14,10 @@
     "activation_commit": {"$ref": "#/$defs/gitsha"},
     "preregistration_manifest_sha256": {"$ref": "#/$defs/sha256"},
     "preregistration_commit": {"$ref": "#/$defs/gitsha"},
+    "preregistration_path": {"$ref": "#/$defs/path"},
     "dispatch_ledger_sha256": {"$ref": "#/$defs/sha256"},
     "dispatch_ledger_commit": {"$ref": "#/$defs/gitsha"},
+    "dispatch_ledger_path": {"$ref": "#/$defs/path"},
     "required_receipt_count": {"const": 6},
     "receipts": {
       "type": "object",
@@ -42,6 +44,7 @@
   "$defs": {
     "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "gitsha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"},
     "receipt_ref": {
       "type": "object",
       "additionalProperties": false,

@@ -209,6 +209,8 @@ def _dispatch(
         "attempt_id": prereg["attempt_id"],
         "preregistration_manifest_sha256": _sha(prereg_bytes),
         "preregistration_commit": "3" * 40,
+        "preregistration_path": "attempt/preregistration.json",
+        "ledger_path": "attempt/dispatch-ledger.json",
         "revision": revision,
         "previous_ledger_sha256": previous_sha256,
         "previous_ledger_commit": previous_commit,
@@ -256,39 +258,92 @@ def test_activation_binds_every_exact_component_and_preflight():
 
 
 def test_preregistration_and_dispatch_state_machine_fail_closed():
-    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-    prereg = _preregistration(head)
-    prereg_bytes = (json.dumps(prereg, indent=2) + "\n").encode()
-    assert validator.validate_preregistration(prereg) == []
+    with tempfile.TemporaryDirectory() as td:
+        repo, activation = _init_public_repo(Path(td))
+        prereg = _preregistration(activation)
+        prereg_bytes, prereg_commit = _commit_json(
+            repo, "attempt/preregistration.json", prereg, "preregister")
+        assert validator.validate_preregistration(prereg, repo=repo) == []
 
-    initial = _dispatch(
-        prereg_bytes, prereg, "NOT_DISPATCHED", "IN_PROGRESS_APPEND_ONLY",
-        revision=0, previous_sha256=validator.ZERO_SHA256, previous_commit=validator.ZERO_GITSHA)
-    initial_bytes = (json.dumps(initial, indent=2) + "\n").encode()
-    assert validator.validate_dispatch(initial, prereg, prereg_bytes) == []
+        initial = _dispatch(
+            prereg_bytes, prereg, "NOT_DISPATCHED", "IN_PROGRESS_APPEND_ONLY",
+            revision=0, previous_sha256=validator.ZERO_SHA256,
+            previous_commit=validator.ZERO_GITSHA)
+        initial["preregistration_commit"] = prereg_commit
+        initial_bytes, initial_commit = _commit_json(
+            repo, initial["ledger_path"], initial, "dispatch revision zero")
 
-    complete = _dispatch(
-        prereg_bytes, prereg, "COMPLETED", "SEALED_COMPLETE",
-        revision=1, previous_sha256=_sha(initial_bytes), previous_commit="a" * 40)
-    assert validator.validate_dispatch(
-        complete, prereg, prereg_bytes,
-        previous_ledger=initial, previous_ledger_bytes=initial_bytes) == []
+        complete = _dispatch(
+            prereg_bytes, prereg, "COMPLETED", "SEALED_COMPLETE",
+            revision=1, previous_sha256=_sha(initial_bytes), previous_commit=initial_commit)
+        complete["preregistration_commit"] = prereg_commit
+        complete_bytes, complete_commit = _commit_json(
+            repo, complete["ledger_path"], complete, "seal dispatch")
 
-    omitted = _dispatch(
-        prereg_bytes, prereg, "NOT_DISPATCHED", "SEALED_PARTIAL_UNPAIRED",
-        revision=1, previous_sha256=_sha(initial_bytes), previous_commit="a" * 40)
-    omitted_errors = validator.validate_dispatch(
-        omitted, prereg, prereg_bytes,
-        previous_ledger=initial, previous_ledger_bytes=initial_bytes)
-    assert any("may not omit" in e for e in omitted_errors)
+        assert validator.validate_dispatch(
+            initial, prereg, prereg_bytes,
+            ledger_bytes=initial_bytes, repository=repo,
+            ledger_commit=initial_commit, canonical_commit=complete_commit) == []
+        assert validator.validate_dispatch(
+            complete, prereg, prereg_bytes,
+            ledger_bytes=complete_bytes, repository=repo,
+            ledger_commit=complete_commit, canonical_commit=complete_commit,
+            previous_ledger=initial, previous_ledger_bytes=initial_bytes) == []
 
-    false_partial = _dispatch(
-        prereg_bytes, prereg, "COMPLETED", "SEALED_PARTIAL_UNPAIRED",
-        revision=1, previous_sha256=_sha(initial_bytes), previous_commit="a" * 40)
-    false_errors = validator.validate_dispatch(
-        false_partial, prereg, prereg_bytes,
-        previous_ledger=initial, previous_ledger_bytes=initial_bytes)
-    assert any("must contain a failure" in e for e in false_errors)
+        decorative = copy.deepcopy(complete)
+        decorative["previous_ledger_commit"] = "a" * 40
+        errors = validator.validate_dispatch(
+            decorative, prereg, prereg_bytes,
+            ledger_bytes=complete_bytes, repository=repo,
+            ledger_commit=complete_commit, canonical_commit=complete_commit,
+            previous_ledger=initial, previous_ledger_bytes=initial_bytes)
+        assert any("previous-ledger binding" in e or "ancestry" in e for e in errors)
+
+        omitted = copy.deepcopy(complete)
+        omitted["state"] = "SEALED_PARTIAL_UNPAIRED"
+        omitted["cells"]["grade_a"][validator.ITEMS[0]]["outcome"] = "NOT_DISPATCHED"
+        omitted_errors = validator.validate_dispatch(
+            omitted, prereg, prereg_bytes,
+            ledger_bytes=complete_bytes, repository=repo,
+            ledger_commit=complete_commit, canonical_commit=complete_commit,
+            previous_ledger=initial, previous_ledger_bytes=initial_bytes)
+        assert any("may not omit" in e for e in omitted_errors)
+
+
+def test_dispatch_canonical_history_voids_competing_successor_contents():
+    with tempfile.TemporaryDirectory() as td:
+        repo, activation = _init_public_repo(Path(td))
+        prereg = _preregistration(activation)
+        prereg_bytes, prereg_commit = _commit_json(
+            repo, "attempt/preregistration.json", prereg, "preregister")
+        initial = _dispatch(
+            prereg_bytes, prereg, "NOT_DISPATCHED", "IN_PROGRESS_APPEND_ONLY",
+            revision=0, previous_sha256=validator.ZERO_SHA256,
+            previous_commit=validator.ZERO_GITSHA)
+        initial["preregistration_commit"] = prereg_commit
+        initial_bytes, initial_commit = _commit_json(
+            repo, initial["ledger_path"], initial, "revision zero")
+        completed = _dispatch(
+            prereg_bytes, prereg, "COMPLETED", "SEALED_COMPLETE",
+            revision=1, previous_sha256=_sha(initial_bytes), previous_commit=initial_commit)
+        completed["preregistration_commit"] = prereg_commit
+        completed_bytes, completed_commit = _commit_json(
+            repo, completed["ledger_path"], completed, "first revision-one child")
+        refused = copy.deepcopy(completed)
+        refused["state"] = "SEALED_PARTIAL_UNPAIRED"
+        refused["cells"]["grade_a"][validator.ITEMS[0]]["outcome"] = "REFUSED"
+        refused_bytes, refused_commit = _commit_json(
+            repo, refused["ledger_path"], refused, "competing revision-one child")
+        for ledger, ledger_bytes, ledger_commit in (
+            (completed, completed_bytes, completed_commit),
+            (refused, refused_bytes, refused_commit),
+        ):
+            errors = validator.validate_dispatch(
+                ledger, prereg, prereg_bytes,
+                ledger_bytes=ledger_bytes, repository=repo,
+                ledger_commit=ledger_commit, canonical_commit=refused_commit,
+                previous_ledger=initial, previous_ledger_bytes=initial_bytes)
+            assert any("competing canonical successor" in e for e in errors)
 
 
 def test_authentication_helpers_fail_closed_and_pin_identity():
@@ -332,8 +387,50 @@ def test_authentication_helpers_fail_closed_and_pin_identity():
             Path(td), "b" * 40, "C" * 40, runner=signed_runner)
 
 
+def test_official_authority_queries_pinned_github_main_not_origin():
+    calls = []
+
+    def runner(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(
+            command, 0,
+            stdout=("a" * 40 + "\trefs/heads/main\n").encode("ascii"),
+            stderr=b"",
+        )
+
+    assert validator.canonical_main_commit(runner=runner) == "a" * 40
+    assert calls == [[
+        "git", "ls-remote", "--exit-code",
+        "https://github.com/BigBirdReturns/tier-bench.git",
+        "refs/heads/main",
+    ]]
+
+
 def _git(repo: Path, *args: str):
     subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
+
+
+def _git_output(repo: Path, *args: str) -> str:
+    return subprocess.check_output(["git", "-C", str(repo), *args], text=True).strip()
+
+
+def _commit_json(repo: Path, rel: str, value, message: str) -> tuple[bytes, str]:
+    data = _write_json(repo / rel, value)
+    _git(repo, "add", rel)
+    _git(repo, "commit", "-q", "-m", message)
+    return data, _git_output(repo, "rev-parse", "HEAD")
+
+
+def _init_public_repo(root: Path) -> tuple[Path, str]:
+    repo = root / "public"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _git(repo, "config", "user.email", "coordinator@example.invalid")
+    _git(repo, "config", "user.name", "Coordinator Fixture")
+    (repo / "README.md").write_text("fixture\n", encoding="utf-8")
+    _git(repo, "add", "README.md")
+    _git(repo, "commit", "-q", "-m", "activation seed")
+    return repo, _git_output(repo, "rev-parse", "HEAD")
 
 
 def _synthetic_private_bundle(root: Path, custody_profile_sha256: str = "1" * 64):
@@ -684,11 +781,44 @@ def test_public_receipt_never_accepts_content_bearing_fields():
 def test_batch_validator_requires_exact_six_cell_bindings_and_chronology():
     with tempfile.TemporaryDirectory() as td:
         _, _, _, base, _ = _synthetic_private_bundle(Path(td))
-        receipt_root = Path(td) / "public"
+        repo, activation = _init_public_repo(Path(td))
+        preregistration = _preregistration(activation)
+        preregistration["attempt_id"] = base["attempt_id"]
+        preregistration["custody_profile_sha256"] = base["custody_profile_sha256"]
+        preregistration_bytes, preregistration_commit = _commit_json(
+            repo, "attempt/preregistration.json", preregistration, "preregister batch")
+        initial = _dispatch(
+            preregistration_bytes, preregistration,
+            "NOT_DISPATCHED", "IN_PROGRESS_APPEND_ONLY",
+            revision=0, previous_sha256=validator.ZERO_SHA256,
+            previous_commit=validator.ZERO_GITSHA)
+        initial["preregistration_commit"] = preregistration_commit
+        initial_bytes, initial_commit = _commit_json(
+            repo, initial["ledger_path"], initial, "batch revision zero")
+        complete = _dispatch(
+            preregistration_bytes, preregistration,
+            "COMPLETED", "SEALED_COMPLETE",
+            revision=1, previous_sha256=_sha(initial_bytes), previous_commit=initial_commit)
+        complete["preregistration_commit"] = preregistration_commit
+        complete_bytes, complete_commit = _commit_json(
+            repo, complete["ledger_path"], complete, "batch sealed complete")
+
+        receipt_root = Path(td) / "receipts-root"
         grid = {lane: {} for lane in validator.LANES}
         for lane in validator.LANES:
             for item in validator.ITEMS:
                 receipt = copy.deepcopy(base)
+                receipt.update({
+                    "attempt_id": preregistration["attempt_id"],
+                    "activation_commit": activation,
+                    "preregistration_manifest_sha256": _sha(preregistration_bytes),
+                    "preregistration_commit": preregistration_commit,
+                    "dispatch_ledger_sha256": _sha(complete_bytes),
+                    "dispatch_ledger_commit": complete_commit,
+                    "packet_sha256": preregistration["items"][item]["packet_sha256"],
+                    "prompt_sha256": preregistration["items"][item]["prompt_sha256"],
+                    "response_sha256": preregistration["items"][item]["response_sha256"],
+                })
                 receipt["lane"] = lane
                 receipt["item_id"] = item
                 if lane == "grade_b":
@@ -704,14 +834,16 @@ def test_batch_validator_requires_exact_six_cell_bindings_and_chronology():
         batch = {
             "schema": "tier-bench/arc-d-b2-batch-admission-receipt@2",
             "protocol_id": validator.PROTOCOL_ID,
-            "attempt_id": base["attempt_id"],
+            "attempt_id": preregistration["attempt_id"],
             "amendment_sha256": base["amendment_sha256"],
             "custody_profile_sha256": base["custody_profile_sha256"],
-            "activation_commit": base["activation_commit"],
-            "preregistration_manifest_sha256": base["preregistration_manifest_sha256"],
-            "preregistration_commit": base["preregistration_commit"],
-            "dispatch_ledger_sha256": base["dispatch_ledger_sha256"],
-            "dispatch_ledger_commit": base["dispatch_ledger_commit"],
+            "activation_commit": activation,
+            "preregistration_manifest_sha256": _sha(preregistration_bytes),
+            "preregistration_commit": preregistration_commit,
+            "preregistration_path": "attempt/preregistration.json",
+            "dispatch_ledger_sha256": _sha(complete_bytes),
+            "dispatch_ledger_commit": complete_commit,
+            "dispatch_ledger_path": complete["ledger_path"],
             "required_receipt_count": 6,
             "receipts": grid,
             "seal": {
@@ -722,10 +854,32 @@ def test_batch_validator_requires_exact_six_cell_bindings_and_chronology():
             "attempt_failures": 0,
             "state": "PROPOSED_FOR_ATOMIC_ADMISSION",
         }
-        assert validator.validate_batch(batch, receipt_root) == []
+        args = (
+            batch, receipt_root, preregistration, preregistration_bytes,
+            complete, complete_bytes,
+        )
+        kwargs = {"repository": repo, "canonical_commit": complete_commit}
+        assert validator.validate_batch(*args, **kwargs) == []
+
+        shopped_rel = grid["grade_b"][validator.ITEMS[0]]["path"]
+        shopped_path = receipt_root / shopped_rel
+        shopped = json.loads(shopped_path.read_text())
+        shopped["packet_sha256"] = "a" * 64
+        shopped_bytes = _write_json(shopped_path, shopped)
+        batch["receipts"]["grade_b"][validator.ITEMS[0]]["sha256"] = _sha(shopped_bytes)
+        shopped_errors = validator.validate_batch(*args, **kwargs)
+        assert any("packet_sha256 differs from preregistration" in e for e in shopped_errors)
+
+        _write_json(shopped_path, {
+            **shopped,
+            "packet_sha256": preregistration["items"][validator.ITEMS[0]]["packet_sha256"],
+        })
+        restored_bytes = shopped_path.read_bytes()
+        batch["receipts"]["grade_b"][validator.ITEMS[0]]["sha256"] = _sha(restored_bytes)
         reversed_time = copy.deepcopy(batch)
         reversed_time["seal"]["first_public_disclosure_at"] = "2026-07-13T18:04:00Z"
-        assert any("did not follow" in error for error in validator.validate_batch(reversed_time, receipt_root))
+        reversed_args = (reversed_time,) + args[1:]
+        assert any("did not follow" in error for error in validator.validate_batch(*reversed_args, **kwargs))
 
 
 def _run_standalone() -> int:

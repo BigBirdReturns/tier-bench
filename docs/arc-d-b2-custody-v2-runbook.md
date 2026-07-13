@@ -53,9 +53,12 @@ fingerprint.
    ```
 
 7. Merge the profile, preflight, activation receipt, schemas, validator, and
-   authenticator atomically to `main`. On the exact `origin/main` checkout,
-   rerun activation with `--component-ref HEAD --official`. Only the exact
-   success state `ACTIVE_FOR_FRESH_V2_GRADING` opens fresh-v2 packet export.
+   authenticator atomically to `main`. On that exact checkout, rerun activation
+   with `--component-ref HEAD --official`. Official mode resolves
+   `refs/heads/main` directly from the pinned
+   `https://github.com/BigBirdReturns/tier-bench.git` authority; it never
+   trusts a local `origin` tracking ref. Only the exact success state
+   `ACTIVE_FOR_FRESH_V2_GRADING` opens fresh-v2 packet export.
 
 ## Fresh attempt sequence
 
@@ -66,8 +69,21 @@ After activation only:
 2. Maintain the content-free six-cell dispatch ledger as a hash-linked,
    append-only revision chain. Revision zero is the all-`NOT_DISPATCHED`
    grid; each later revision binds the previous ledger bytes and commit,
-   changes at least one cell, and never rewrites a terminal cell. Validate
-   each successor with `dispatch --previous-ledger PREVIOUS.json`. Every cell
+   changes at least one cell, and never rewrites a terminal cell. The
+   preregistration and every ledger revision must be committed at their
+   declared paths on canonical GitHub `main` before the next dispatch. Validate
+   each successor with:
+
+   ```text
+   python scripts/validate_arc_d_b2_custody_v2.py dispatch CURRENT.json \
+     --preregistration PREREGISTRATION.json \
+     --previous-ledger PREVIOUS.json \
+     --repository PUBLIC_REPO --ledger-commit CURRENT_COMMIT
+   ```
+
+   The validator scans canonical history for every successor declaring the
+   same parent. A second distinct child voids the whole attempt to
+   `PARTIAL_UNPAIRED`; it cannot become a fork-choice opportunity. Every cell
    receives exactly one outcome; a sealed attempt may not retain
    `NOT_DISPATCHED`.
 3. Seal each complete private bundle in its lane Git venue. Validate the exact
@@ -84,8 +100,20 @@ After activation only:
    designation, exact private object, validator, authentication evidence, and
    public commitment are cross-bound.
 5. Propose public receipts only after all six private seals. Validate the
-   exact keyed 3×2 batch. The result remains public commitment shape until one
-   later atomic default-branch admission merge.
+   exact keyed 3×2 batch against the actual preregistration and final ledger:
+
+   ```text
+   python scripts/validate_arc_d_b2_custody_v2.py batch BATCH.json \
+     --receipt-root PUBLIC_RECEIPT_ROOT \
+     --preregistration PREREGISTRATION.json \
+     --dispatch-ledger FINAL_LEDGER.json --repository PUBLIC_REPO
+   ```
+
+   Batch mode revalidates the full committed ledger chain and requires both
+   lanes' packet, prompt, and response hashes to equal the same per-item
+   preregistration, whose prompt/response hashes are checked against the
+   parent charter. The result remains public commitment shape until one later
+   atomic default-branch admission merge.
 
 Any missing, malformed, unavailable, mutable, contaminated, pre-activation,
 selectively reported, or unauthenticated input returns to `PARTIAL_UNPAIRED`.
