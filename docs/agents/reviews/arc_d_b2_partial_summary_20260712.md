@@ -43,3 +43,22 @@ gap: Grade A evidence cannot be admitted here; Grade B was never dispatched.
 closure_decision: PARTIAL_UNPAIRED; comparator forbidden.
 failure_default: no B2 result, candidate residue, or HARVEST claim.
 ```
+
+## Second attempt update
+
+A second OpenAI Grade A attempt ran three fresh projectless sessions against the
+same ratified packets. Its three payloads and receipt sets validate locally, but
+the underlying grading artifacts remain outside this public repository and are
+therefore not admitted public evidence.
+
+Grade B commit `f4d4962` was then imported and validated from its canonical Git
+blobs before comparison. Its recorded raw and payload hashes match those blobs,
+but the lane is not charter-admissible: the manifest records a non-projectless
+repository-container surface and a model id different from the frozen one; it
+does not supply the required per-item grade receipts, session identities,
+timestamps, and validator results; and only one of three payloads passes the
+authority rules. The other two mark explicitly non-authoritative packet
+material as authoritative.
+
+The comparator therefore remains forbidden. There are zero comparison receipts,
+binding B2 dispositions, candidate residues, or HARVEST claims.

@@ -42,6 +42,14 @@ to the original conversational draft are marked.
   treating non-authority issue material as authoritative. Anthropic Grade B was
   blocked before provider dispatch despite explicit operator approval: zero
   disclosures and zero outputs. No comparison or B2 result exists.
+- A second Grade A attempt used three fresh projectless `gpt-5.6-sol@high`
+  sessions and validates 3/3 locally, but its evidence remains unadmitted here.
+  Grade B commit `f4d4962` was imported and checked before comparison: canonical
+  Git blob hashes match its manifest, but 0/3 grade receipts are admissible.
+  The recorded non-projectless repository-container surface and model id do not
+  match the frozen instrument; required per-item receipts are absent; and two
+  payloads misuse explicitly non-authoritative packet material. The comparator
+  was therefore not run and ARC-D remains `PARTIAL_UNPAIRED` at B1.
 
 ## Settled assets (with exact figures)
 
