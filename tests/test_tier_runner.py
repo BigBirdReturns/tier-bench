@@ -18,6 +18,7 @@ from tier_runner.core import RunError, run_task, verify_run  # noqa: E402
 from tier_runner.adapters.claude_code import (  # noqa: E402
     EMPTY_MCP_CONFIG,
     REQUIRED_CLAUDE_FLAGS,
+    _absolute_permission_path,
     _help_surface_bytes,
     _packet_access_args,
     _packet_permission_args,
@@ -596,15 +597,19 @@ def test_claude_explicitly_allows_only_packet_path(parent: Path) -> None:
 
 
 def test_claude_permissions_are_scoped_to_dispatched_files(parent: Path) -> None:
-    del parent
-    assert _packet_permission_args(["src/a.py", "docs\\b.md"]) == [
+    first = _absolute_permission_path(parent / "packet" / "src" / "a.py")
+    second = _absolute_permission_path(parent / "packet" / "docs" / "b.md")
+    assert first.startswith("//")
+    assert _packet_permission_args(
+        parent / "packet", ["src/a.py", "docs\\b.md"]
+    ) == [
         "--permission-mode",
         "dontAsk",
         "--allowedTools",
-        "Read(src/a.py)",
-        "Edit(src/a.py)",
-        "Read(docs/b.md)",
-        "Edit(docs/b.md)",
+        f"Read({first})",
+        f"Edit({first})",
+        f"Read({second})",
+        f"Edit({second})",
     ]
 
 

@@ -82,11 +82,18 @@ def _packet_access_args(worktree: Path) -> list[str]:
     return ["--add-dir", str(worktree)]
 
 
-def _packet_permission_args(files: list[str]) -> list[str]:
+def _absolute_permission_path(path: Path) -> str:
+    posix = path.resolve().as_posix()
+    if len(posix) >= 3 and posix[1:3] == ":/":
+        return f"//{posix[0].lower()}{posix[2:]}"
+    return "//" + posix.lstrip("/")
+
+
+def _packet_permission_args(worktree: Path, files: list[str]) -> list[str]:
     rules: list[str] = []
     for path in files:
-        normalized = path.replace("\\", "/")
-        rules.extend((f"Read({normalized})", f"Edit({normalized})"))
+        absolute = _absolute_permission_path(worktree / path)
+        rules.extend((f"Read({absolute})", f"Edit({absolute})"))
     return ["--permission-mode", "dontAsk", "--allowedTools", *rules]
 
 
@@ -134,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--claude-bin", default="claude")
     parser.add_argument("--claude-version", required=True)
     parser.add_argument("--claude-help-sha256", required=True)
-    parser.add_argument("--adapter-version", default="5")
+    parser.add_argument("--adapter-version", default="6")
     parser.add_argument("--model", required=True)
     parser.add_argument("--effort", required=True)
     parser.add_argument("--account", required=True)
@@ -165,7 +172,7 @@ def main(argv: list[str] | None = None) -> int:
         "--output-format", "json",
         "--model", args.model,
         "--effort", args.effort,
-        *_packet_permission_args(dispatch["files"]),
+        *_packet_permission_args(args.worktree, dispatch["files"]),
         "--safe-mode",
         "--no-session-persistence",
         "--disable-slash-commands",

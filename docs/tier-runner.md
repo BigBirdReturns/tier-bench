@@ -63,7 +63,7 @@ Minimal manifest shape:
   "tool_versions": {
     "claude_code": "<exact `claude --version` output>",
     "claude_help_sha256": "<sha256 from adapter `_help_surface('claude')`>",
-    "tier_claude_adapter": "5"
+    "tier_claude_adapter": "6"
   },
   "prompt_templates": {
     "hands": {
@@ -93,7 +93,7 @@ Minimal manifest shape:
           "--account", "<same account label>",
           "--claude-version", "<same exact version>",
           "--claude-help-sha256", "<same frozen help-surface sha256>",
-          "--adapter-version", "5",
+          "--adapter-version", "6",
           "--cost-basis", "subscription-derived"
         ]
       }
@@ -113,7 +113,7 @@ mode can otherwise change the digest without any CLI-byte drift.
 
 The included Claude Code adapter starts one fresh safe-mode, non-persistent
 session, explicitly allow-lists only the disposable packet directory for tool
-access, pre-approves current-directory-relative `Read`/`Edit` only for the dispatch's declared files under
+access, pre-approves exact absolute-path `Read`/`Edit` only for the dispatch's declared files under
 `dontAsk` (all other tool uses are denied), disables
 customizations/MCP/browser integration and shell access, and
 records the raw provider JSON, stderr, token usage, and session identity as
