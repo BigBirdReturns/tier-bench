@@ -1,0 +1,83 @@
+{
+  "schema": "tier-bench/arc-d-b2-grade-receipt@1",
+  "protocol_id": "arc_d_buffalo_pilot_v2",
+  "charter_sha256": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e",
+  "packet_sha256": "0c3632ad746698fbd3f61d6a5ff7b3a34e97a48d69115ad45f9d94ab7a5982bc",
+  "item_id": "attrs_1567_setattr_mro",
+  "prompt_sha256": "f9c554fb1d5094b90d5c7037db8192e017325289779a85ca396f96b7997ffbe9",
+  "response_sha256": "804aa2cdf06c0ad7379487fefe2d7f3684b8b2b49526f3988380233e5d74b898",
+  "grader": {
+    "grade_id": "grade_b",
+    "provider_lineage": "anthropic",
+    "model": "fable-5",
+    "effort": "high",
+    "surface": "physically projectless nested claude CLI (-p) session; cwd contained only this packet under a neutral directory name (item-u); runtime model id claude-fable-5; no repository path, no --add-dir, fresh assigned session UUID",
+    "session_id": "568a1718-3bf7-40f3-9140-923dcbc9ae69",
+    "started_at": "2026-07-13T04:02:24+00:00",
+    "sealed_at": "2026-07-13T04:05:52+00:00"
+  },
+  "exposure": {
+    "peer_grade_seen_before_seal": false,
+    "repository_context_seen": false,
+    "other_response_seen": false
+  },
+  "raw_grade_sha256": "f0ee653ecbcb1c3dfff09b9ef8379ca45b978e96d433ea535e3bb595507d13c1",
+  "atomic_findings": [
+    {
+      "candidate_id": "attrs_1567_setattr_mro:effective-provider-ownership-rule:v1",
+      "response_spans": [
+        {
+          "start_byte": 14,
+          "end_byte_exclusive": 853
+        },
+        {
+          "start_byte": 855,
+          "end_byte_exclusive": 1300
+        },
+        {
+          "start_byte": 1788,
+          "end_byte_exclusive": 2361
+        },
+        {
+          "start_byte": 3307,
+          "end_byte_exclusive": 3548
+        },
+        {
+          "start_byte": 3873,
+          "end_byte_exclusive": 4054
+        },
+        {
+          "start_byte": 5614,
+          "end_byte_exclusive": 6334
+        }
+      ],
+      "behavior_claim": "For a slotted chain A(attrs, on_setattr=setters.frozen) -> B(non-attrs, no __setattr__) -> C(attrs, slots=True, mutable), _create_slots_class() at pinned commit d2fbfccc1ce77dcc927a86eae9521c95dc4e289c checks only immediate bases via base_cls.__dict__.get('__attrs_own_setattr__', False); B's own __dict__ carries neither __setattr__ nor the marker, so C is not reset to object.__setattr__ and C(1).x = 2 raises attr.exceptions.FrozenAttributeError. This is confirmed by the pinned project test test_slotted_confused, marked @pytest.mark.xfail(raises=attr.exceptions.FrozenAttributeError), whose docstring states the reset detection 'should still work, but currently doesn't', and by the XXX comment in _create_slots_class naming exactly this confused case; the dict-backed path _patch_original_class instead uses getattr(cls, '__attrs_own_setattr__', False), which sees the inherited marker. Executable evidence: SOURCE_EXCERPT.py sha256 1ad73e4c19e8cae3f4c71852fbd8ca1b9b8a58ef93769acb59835d9cae2979e3 (curated pinned excerpts of src/attr/_make.py blob 793bfd89d6cd51f194dbc7ca9062f502ac172f09 and tests/test_setattr.py blob f44abf65847a433b83ad13e197d2a59ccc66c38a). Custody locations and hashes: ORIGINAL_PROMPT.md sha256 f9c554fb1d5094b90d5c7037db8192e017325289779a85ca396f96b7997ffbe9; SEALED_RESPONSE.txt sha256 804aa2cdf06c0ad7379487fefe2d7f3684b8b2b49526f3988380233e5d74b898 (7345 bytes); ADMINISTRATION_RECEIPT.json sha256 843d1158fd457244001c8bdd628623324bcf681aa4a9097a2cb7e23c59540666; PROBLEM.md sha256 2d44eb11e5664f884e6d8136654aa9ad2054ccfc6843a90cc612b2e6a548c5c4; PACKET.json charter_sha256 44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e. REFERENCE_STATUS.json (sha256 96345b04f197404445d533534fee45055d21acd2c9208ca8b18cffd8a7a82b0f) is an open unmerged proposal used to locate the item only, not as correctness authority.",
+      "regression_test": "The response's 'Reported chain' matrix row (bytes 3307-3548) proposes: build A (attrs, frozen on_setattr), non-attrs B(A) with no setter, mutable attrs C(B), for both slots=False and slots=True; expected result is explicit: assignment to C.x succeeds, C.__setattr__ is object.__setattr__, and C.__attrs_own_setattr__ is false. This uses only APIs present in the pinned packet evidence (attr.s, attr.ib, on_setattr, setters.frozen, __attrs_own_setattr__, object.__setattr__) and its expected outcome is exactly the de-xfailed success condition of the pinned test_slotted_confused; the boundary row at bytes 3873-4054 (user-owned intermediate __setattr__ must be preserved) matches pinned test_setattr_inherited_do_not_reset. No invented API or contract.",
+      "residue": "When inherited behavior carries an ownership marker, decide whether to remove it by locating the effective method provider first (first class in MRO attribute-resolution order whose own __dict__ contains __setattr__), then read the ownership marker from that provider's own namespace; never keep searching past a user-owned provider. Falsifiable as stated at bytes 5614-6334: a hierarchy where the rule selects a different provider than Python's actual __setattr__ lookup, or where it replaces an effective user-owned setter, disproves it.",
+      "applicability_predicate": "Applies only to machinery where method ownership is reliably represented on the method-defining class's own namespace (e.g. attrs' __attrs_own_setattr__ marker on classes defining an attrs-generated __setattr__), for both slotted and dict-backed class construction paths, resolved by ordinary class-dictionary/MRO lookup.",
+      "exclusions": [
+        "Methods or ownership markers mutated independently after class creation",
+        "Methods supplied dynamically by a metaclass without an owning class-dictionary entry",
+        "Resolution mechanisms not represented by ordinary class-dictionary/MRO lookup"
+      ],
+      "distinctness": "UNIQUE",
+      "evidence": [
+        {
+          "kind": "source",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "1ad73e4c19e8cae3f4c71852fbd8ca1b9b8a58ef93769acb59835d9cae2979e3",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "test",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "1ad73e4c19e8cae3f4c71852fbd8ca1b9b8a58ef93769acb59835d9cae2979e3",
+          "authority_status": "AUTHORITATIVE"
+        }
+      ],
+      "disposition": "B2_CANDIDATE_RESIDUE"
+    }
+  ],
+  "response_disposition": "B2_CANDIDATE_RESIDUE",
+  "validator_result": "PASS"
+}

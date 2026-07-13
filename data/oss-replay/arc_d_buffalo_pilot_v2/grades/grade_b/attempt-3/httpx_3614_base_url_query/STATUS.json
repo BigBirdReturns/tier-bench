@@ -1,0 +1,11 @@
+{
+  "item": "httpx_3614_base_url_query",
+  "admissible": false,
+  "problems": [
+    "reply was not a bare JSON object"
+  ],
+  "response_disposition": "B2_REFERENCE_AMBIGUOUS",
+  "atomic_findings": 1,
+  "cost_usd": 1.688743,
+  "session_id": "0cbab4f9-c59a-47e2-96c8-3a999dc379df"
+}

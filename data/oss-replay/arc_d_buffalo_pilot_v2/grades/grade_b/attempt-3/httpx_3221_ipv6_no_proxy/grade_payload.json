@@ -1,0 +1,75 @@
+{
+  "schema": "tier-bench/arc-d-b2-grade-payload@1",
+  "item_id": "httpx_3221_ipv6_no_proxy",
+  "attestations": {
+    "peer_grade_seen_before_seal": false,
+    "repository_context_seen": false,
+    "other_response_seen": false
+  },
+  "atomic_findings": [
+    {
+      "candidate_id": "httpx_3221_ipv6_no_proxy::cidr_semantics_in_url_shaped_dispatch_key::1",
+      "response_spans": [
+        {
+          "start_byte": 14,
+          "end_byte_exclusive": 571
+        },
+        {
+          "start_byte": 573,
+          "end_byte_exclusive": 1145
+        },
+        {
+          "start_byte": 1147,
+          "end_byte_exclusive": 2652
+        },
+        {
+          "start_byte": 2652,
+          "end_byte_exclusive": 4755
+        },
+        {
+          "start_byte": 4777,
+          "end_byte_exclusive": 4984
+        },
+        {
+          "start_byte": 4986,
+          "end_byte_exclusive": 5181
+        },
+        {
+          "start_byte": 5183,
+          "end_byte_exclusive": 5933
+        }
+      ],
+      "behavior_claim": "The response (SEALED_RESPONSE.txt, sha256 3f0f2b1e423d9230fa4663302ca81f1eeb46022eb21cea444358bc1977f0c3c1, delivered under prompt sha256 a5ee77e4991f2bddae9b7281aa5e1a6c2aca857ccfc3383e5af612136c796fd4 per ADMINISTRATION_RECEIPT.json sha256 c9769ae33108596be7411f30b380b64bacc924f54f4cda12855e1da7b05e4cc4) claims at bytes 14-571 that get_environment_proxies() classifies 'fe11::/16' as IPv6 because is_ipv6_hostname() validates only the substring before '/', emits the mount key all://[fe11::/16] with the CIDR suffix inside the brackets, and URLPattern's URL(pattern) call then fails with InvalidURL during Client/AsyncClient mount construction. The classification and key-construction portion is directly supported by authoritative pinned source evidence SOURCE_EXCERPT.py (sha256 9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210; encode/httpx @ b5addb64f0161ff6bfe94c124ef76f6a1fba5254: is_ipv6_hostname tests ipaddress.IPv6Address(hostname.split('/')[0]) and the IPv6 branch formats all://[{hostname}]). However the asserted crash mechanism ('Invalid port' inside URL(pattern)) runs through httpx._urls.URL, whose parsing code is not included in the packet; it is attested only by the problem report (PROBLEM.md, sha256 fe714658c80597bbb7540091b1b909e29f54a04cf3030609811db48f8163e04b), which is context, not correctness authority. The response's proposed correct behavior — CIDR network-membership matching in URLPattern.matches(), plus a claimed latent defect that all://192.168.0.0/16 matches only the exact address (bytes 573-1145) — is a contract closed by no authoritative evidence in the packet: the curated project test cases in SOURCE_EXCERPT.py assert only mount-key construction ({'no_proxy': '192.168.0.0/16'} -> {'all://192.168.0.0/16': None}), not membership semantics, and the only fix-shaped reference is an open unmerged unreviewed proposal (REFERENCE_STATUS.json, sha256 4a1290243604d934237b3703d0001acbda669113ef71cca73c087ea89544c9d0, PR encode/httpx#3741, may_serve_as_ground_truth=false) whose own discussion distinguishes crash avoidance from network-membership semantics. Under the charter authority rules an unmerged PR may locate but cannot close correctness, and competing or contract-disputed references default to B2_REFERENCE_AMBIGUOUS.",
+      "regression_test": "The response proposes concrete regression tests with explicit expected results at bytes 2652-4755: construction succeeds under no_proxy=fe11::/16; http://[fe11::1]/ and https://[fe11:ffff::1]/ bypass while http://[fe12::1]/, http://fe11.example/, and http://192.168.1.1/ proxy; boundary prefixes /0, /32, /128; preservation cases for 127.0.0.1, ::1, localhost, wildcard '*', scheme- and port-qualified entries, mount-ordering, and Client/AsyncClient parity. No invented API is used — the tests exercise the existing environment-driven mount construction, URLPattern, and _transport_for_url surfaces shown in SOURCE_EXCERPT.py — but the expected bypass results encode the network-membership contract (including the inferred latent IPv4 CIDR defect) that no authoritative packet test or accepted upstream source establishes, so the expected results cannot be closed as correct from packet evidence.",
+      "residue": "Falsifiable reusable rule stated at bytes 4777-4984: when a configuration token embeds non-URL semantics (e.g. a CIDR selector) inside a URL-shaped dispatch key, making the key parseable is insufficient; the dispatcher must explicitly preserve and evaluate those semantics. Falsifiable per the response's own disconfirmation section (bytes 5183-5933): it is disproved if the downstream URL abstraction natively retains and matches CIDR selectors or if bypass occurs outside the shown mount mechanism.",
+      "applicability_predicate": "Applies when CIDR or similar non-URL selectors are encoded into proxy/mount URL-shaped dispatch keys whose matcher compares only scheme, host pattern, and port (bytes 4986-5181), as in httpx get_environment_proxies()/URLPattern at the pinned commit.",
+      "exclusions": [
+        "Does not apply when the downstream URL abstraction is documented to retain and natively match the embedded selector (SEALED_RESPONSE.txt bytes 4986-5181).",
+        "Does not apply to non-URL-shaped configuration tokens or to hostname, wildcard, scheme, port, and mount-ordering behavior the response explicitly preserves (bytes 1147-2652)."
+      ],
+      "distinctness": "UNIQUE",
+      "evidence": [
+        {
+          "kind": "source",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "test",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210",
+          "authority_status": "INSUFFICIENT"
+        },
+        {
+          "kind": "released_behavior",
+          "path": "PROBLEM.md",
+          "sha256": "fe714658c80597bbb7540091b1b909e29f54a04cf3030609811db48f8163e04b",
+          "authority_status": "INSUFFICIENT"
+        }
+      ],
+      "disposition": "B2_REFERENCE_AMBIGUOUS"
+    }
+  ],
+  "response_disposition": "B2_REFERENCE_AMBIGUOUS"
+}

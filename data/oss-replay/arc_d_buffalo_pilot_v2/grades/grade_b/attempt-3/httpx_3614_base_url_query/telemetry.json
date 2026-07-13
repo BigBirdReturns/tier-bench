@@ -1,0 +1,15 @@
+{
+  "item_id": "httpx_3614_base_url_query",
+  "neutral_cwd_token": "item-v",
+  "session_id": "0cbab4f9-c59a-47e2-96c8-3a999dc379df",
+  "assigned_session_id": "0cbab4f9-c59a-47e2-96c8-3a999dc379df",
+  "total_cost_usd": 1.688743,
+  "duration_ms": 186282,
+  "num_turns": 17,
+  "input_tokens": 23,
+  "output_tokens": 11564,
+  "cache_read": 454388,
+  "cache_write": 32758,
+  "started_at": "2026-07-13T04:06:52+00:00",
+  "sealed_at": "2026-07-13T04:10:00+00:00"
+}

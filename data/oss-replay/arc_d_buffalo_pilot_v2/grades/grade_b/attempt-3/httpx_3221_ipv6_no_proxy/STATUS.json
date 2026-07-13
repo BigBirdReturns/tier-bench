@@ -1,0 +1,11 @@
+{
+  "item": "httpx_3221_ipv6_no_proxy",
+  "admissible": false,
+  "problems": [
+    "reply was not a bare JSON object"
+  ],
+  "response_disposition": "B2_REFERENCE_AMBIGUOUS",
+  "atomic_findings": 1,
+  "cost_usd": 1.724523,
+  "session_id": "40101113-f520-4b31-bf54-5a95af8678c4"
+}

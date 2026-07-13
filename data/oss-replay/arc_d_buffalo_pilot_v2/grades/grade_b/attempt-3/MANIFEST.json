@@ -1,0 +1,52 @@
+{
+  "record": "arc_d_b2_grade_b_attempt3_manifest",
+  "sealed_time_utc": "2026-07-13T04:15:12+00:00",
+  "authorization": "operator `go` recorded in merged PR #83 (main 3489fec); unchanged charter; one fresh dispatch per item; prior outputs never repaired or selected",
+  "charter_sha256": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e",
+  "instrument": {
+    "provider_lineage": "anthropic",
+    "model": "fable-5",
+    "effort": "high",
+    "surface": "physically projectless nested claude CLI (-p); packet-only cwd under neutral names (item-u/v/w); fresh assigned session UUIDs; runtime id claude-fable-5"
+  },
+  "hardened_over_attempt2": [
+    "authority: AUTHORITATIVE valid ONLY for role=source_evidence (SOURCE_EXCERPT.py) — the attempt-2 attrs hole (ORIGINAL_PROMPT.md as authority) is closed fail-closed",
+    "bare-JSON rule stated mechanically in the wrapper (first byte '{', last byte '}')",
+    "neutral cwd names from the first dispatch"
+  ],
+  "items": {
+    "attrs_1567_setattr_mro": {
+      "state": "ADMISSIBLE",
+      "response_disposition": "B2_CANDIDATE_RESIDUE",
+      "atomic_findings": 1,
+      "session_id": "568a1718-3bf7-40f3-9140-923dcbc9ae69",
+      "grade_receipt_sha256": "2129ccce17809b23e21e412dcfe681ede1e18e79a11659f06682284b9f497cf4",
+      "raw_grade_sha256": "f0ee653ecbcb1c3dfff09b9ef8379ca45b978e96d433ea535e3bb595507d13c1",
+      "cost_usd": 2.19715,
+      "note": "passes the hardened source-evidence-only authority rule; the pairable grade_b receipt"
+    },
+    "httpx_3614_base_url_query": {
+      "state": "INADMISSIBLE — content-complete, non-bare reply",
+      "response_disposition_unofficial": "B2_REFERENCE_AMBIGUOUS",
+      "atomic_findings": 1,
+      "session_id": "0cbab4f9-c59a-47e2-96c8-3a999dc379df",
+      "raw_grade_sha256": "3ddaf636877d7386bc6229b16f001553b5983e6522090aa77cbedb703810ce7b",
+      "cost_usd": 1.688743,
+      "note": "FIRST content-complete grade ever for this item on the conforming surface (prior wall: 4/4 safety-flagged; the refusal was nondeterministic). Preserved unrepai­red; disposition is unofficial because the output violated the bare-object rule"
+    },
+    "httpx_3221_ipv6_no_proxy": {
+      "state": "INADMISSIBLE — content-complete, non-bare reply",
+      "response_disposition_unofficial": "B2_REFERENCE_AMBIGUOUS",
+      "atomic_findings": 1,
+      "session_id": "40101113-f520-4b31-bf54-5a95af8678c4",
+      "raw_grade_sha256": "dcfdfff8cac041747529dbbfa2bac64c1d0450405341ec9d582cbefec38c32c9",
+      "cost_usd": 1.724523,
+      "note": "third content-complete sample across attempts (never pooled; attempts stand alone). Preserved unrepaired"
+    }
+  },
+  "instrument_behavior_pattern": "on this surface fable-5@high returns a bare JSON object 2/2 times for the attrs packet but a fenced/prosed object 4/4 times across the two httpx packets (2x ipv6 attempt-2, 1x each httpx attempt-3) — despite an explicit first-byte/last-byte rule in attempt-3's wrapper. Recorded as measured instrument behavior; not repaired, not interpreted",
+  "totals": {
+    "real_billed_usd": 5.610416
+  },
+  "outcome_for_comparator": "exactly one admissible grade_b receipt (attrs, B2_CANDIDATE_RESIDUE) — same pairable item as attempt-2, now under the hardened authority rule. Both httpx items remain unpaired: content-complete but non-conforming outputs, preserved for operator adjudication"
+}
