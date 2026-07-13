@@ -52,14 +52,31 @@ def _usage_of(obj: dict) -> dict | None:
     return None
 
 
+def _num(v) -> int:
+    """A usage field as an int; anything non-numeric counts as 0 (telemetry
+    must tolerate malformed rows, never crash on them)."""
+    return int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else 0
+
+
+def _cache_write(u: dict) -> int:
+    """Cache-write tokens. The scalar `cache_creation_input_tokens` is the
+    total and is honored whenever PRESENT — including when it is 0. Only when
+    it is absent (or non-numeric) do we fall back to the `cache_creation`
+    breakdown object, summing its numeric values. (`0 or breakdown` would
+    select the dict and crash the arithmetic — the exact bug this replaces.)"""
+    v = u.get("cache_creation_input_tokens")
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
+        return int(v)
+    cc = u.get("cache_creation")
+    if isinstance(cc, dict):
+        return sum(_num(x) for x in cc.values())
+    return _num(cc)
+
+
 def _new_tokens(u: dict) -> int:
     """New tokens = input + output + cache_write. Cache READS are excluded
     (~0.1x bill; the gauge's established convention, per BURN_LOG_README)."""
-    return int(
-        (u.get("input_tokens") or 0)
-        + (u.get("output_tokens") or 0)
-        + (u.get("cache_creation_input_tokens") or u.get("cache_creation") or 0)
-    )
+    return _num(u.get("input_tokens")) + _num(u.get("output_tokens")) + _cache_write(u)
 
 
 def _scan_new(transcript: Path, offset: int) -> tuple[int, int, int]:
@@ -125,6 +142,14 @@ def _upsert(row: dict) -> None:
 
 
 def main() -> int:
+    try:
+        return _main()
+    except Exception as e:  # noqa: BLE001 — telemetry must never block the session
+        print(f"[session_burn_hook] suppressed: {e!r}", file=sys.stderr)
+        return 0
+
+
+def _main() -> int:
     try:
         payload = json.load(sys.stdin)
     except (ValueError, OSError):

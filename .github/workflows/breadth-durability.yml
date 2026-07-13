@@ -70,6 +70,8 @@ jobs:
         run: |
           python -m py_compile tests/test_quota.py
           python tests/test_quota.py
+          python -m py_compile experiments/breadth/hooks/session_burn_hook.py tests/test_session_burn_hook.py
+          python tests/test_session_burn_hook.py
       - name: OSS replay field — licenses, vendored bytes, hidden grading, distinct-instance rule; vectors match vendored upstream
         run: |
           python -m py_compile scripts/validate_oss_replay_field.py experiments/oss_replay/generate_vectors.py tests/test_oss_replay_field.py

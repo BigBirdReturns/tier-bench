@@ -18,8 +18,14 @@ This document tracks the classification of tasks across the breadth test suite a
 
 **Authoring batch 2 floored — the floor ate all three embedded knots.**
 `t3_billing_anchor_001`, `t3_window_limit_001`, `t3_due_date_shift_001`: each
-settled 3/3 (haiku, hidden vectors 9/9 · 10/10 · 10/10 per trial, nine
-independent candidates, every grade re-run directly by the driver). The knots
+settled 3/3 (haiku, hidden vectors 9/9 · 10/10 · 10/10 per trial), every grade
+re-run directly by the driver. **Evidence (hash-bound):
+`run/authoring2_floor_20260713/MANIFEST.json`** — nine distinct preserved
+candidates (sha256 ×9), each bound 1:1 to a distinct solver-subagent transcript
+(transcript sha256 ×9; per-provider session IDs were not captured at dispatch,
+the transcript hash is the identity retained), plus verbatim grader outputs and
+their hashes. After the PR #84 review hardened the graders to enforce declared
+return types, all nine candidates were **re-graded: 9/9 survives**. The knots
 provably exist — each paired naive passes the visible checks and fails the knot
 vectors — but haiku-as-spec-reader does not drift where a careless implementer
 does. **Rule 11 corollary sealed into LESSONS.md:** embedded-unannounced is
