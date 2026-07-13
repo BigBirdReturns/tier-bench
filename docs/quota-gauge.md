@@ -44,6 +44,27 @@ driver discipline: keep coordinator context lean (extract via targeted scripts,
 don't re-read giant transcripts), not capping solver count. The gauge measures
 whichever wall binds first — tokens or calls — and quarters against it.
 
+## Self-updating (the hook) + per-account gauging
+
+The burn rows no longer need hand-extraction. `experiments/breadth/hooks/session_burn_hook.py`
+is wired as a `Stop` + `SessionEnd` hook (`.claude/settings.json`): it reads the
+session's own transcript incrementally and UPSERTs one driver-lane `spend` row per
+session (idempotent, survives container reclaim). Something still has to record the
+`limit_hit` when a wall is actually hit — that stays a human-attested act.
+
+**Account tiers are different meters.** A Plus wall and a Max20x wall come at
+different burns; pooling them corrupts SAFE. Rows carry `account` (from
+`$TIER_BENCH_ACCOUNT`, set per-checkout in gitignored `.claude/settings.local.json`),
+and the gauge filters on it:
+
+```
+python -m experiments.breadth.quota burn.jsonl --account max20x   # one tier
+python -m experiments.breadth.quota burn.jsonl                    # all pooled (default)
+```
+
+A filtered gauge excludes untagged legacy rows rather than guess their tier, so it
+reads UNMEASURED until that account closes its own first window — honest, not broken.
+
 ## Status
 
 `quota.py` + `tests/test_quota.py` (10 tests, in `breadth-durability` CI).

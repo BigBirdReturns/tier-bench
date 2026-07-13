@@ -22,6 +22,7 @@ jobs:
       - name: compile breadth + harness tooling
         run: |
           python -m py_compile experiments/breadth/*.py experiments/breadth/selfrun/*.py \
+            experiments/breadth/hooks/*.py \
             harness/*.py experiments/almanac/reference/*.py experiments/breadth/edge_family/*.py \
             scripts/validate_primitives.py tests/test_validate_primitives.py
       - name: valid task set prints (hidden-grader guard)

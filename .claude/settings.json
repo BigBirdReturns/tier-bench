@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/experiments/breadth/hooks/session_burn_hook.py\"",
+            "timeout": 15,
+            "suppressOutput": true,
+            "statusMessage": "logging session burn"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/experiments/breadth/hooks/session_burn_hook.py\"",
+            "timeout": 15,
+            "suppressOutput": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -48,6 +48,20 @@ def _metric(row: dict, key: str) -> float:
     return float(row.get(key, 0) or 0)
 
 
+def filter_by_account(events: list[dict], account: str | None) -> list[dict]:
+    """Keep only events for one account tier (plus `limit_hit` markers, which are
+    account-agnostic wall attestations). A Plus wall and a Max20x wall are
+    different meters — pooling their windows makes SAFE meaningless, so gauge
+    per-account. `account=None` keeps everything (the default, unfiltered gauge —
+    back-compat). Under a specific account ONLY rows explicitly tagged with it
+    count: untagged legacy rows predate tagging (unknown lineage) and are excluded
+    rather than silently attributed, so a filtered gauge never inflates on a guess."""
+    if not account:
+        return events
+    return [ev for ev in events
+            if ev.get("type") == "limit_hit" or ev.get("account") == account]
+
+
 def windows_from_events(events: list[dict]) -> dict:
     """Split a flat burn log into completed windows (each ended by a limit_hit)
     plus the still-open current window. A window's burn is the sum of its spend
@@ -191,6 +205,10 @@ def _main() -> int:
     import argparse
     ap = argparse.ArgumentParser(description="Self-calibrating quota gauge + quarter planner.")
     ap.add_argument("burnlog", help="jsonl burn log: spend rows + limit_hit markers")
+    ap.add_argument("--account", default=None,
+                    help="gauge only this account tier (e.g. max20x, plus). A Plus wall "
+                         "and a Max20x wall are different meters; untagged legacy rows are "
+                         "excluded. Omit to gauge all rows pooled (the original behavior).")
     ap.add_argument("--warn-frac", type=float, default=0.8)
     ap.add_argument("--fit", type=int, metavar="N_TRIALS", default=None)
     ap.add_argument("--per-trial-tokens", type=float, default=None)
@@ -198,7 +216,10 @@ def _main() -> int:
     ap.add_argument("--quarters", type=int, default=4)
     a = ap.parse_args()
     events = [json.loads(x) for x in Path(a.burnlog).read_text(encoding="utf-8").splitlines() if x.strip()]
+    events = filter_by_account(events, a.account)
     g = gauge_from_events(events, a.warn_frac)
+    if a.account:
+        g["account"] = a.account
     print(json.dumps(g, indent=2))
     if a.fit is not None:
         qt = g["tokens"].get("safe") if g["tokens"].get("known") else None

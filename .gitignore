@@ -61,3 +61,10 @@ cheatsheet.html
 # Local-only working area — holds the private blind-grade control key
 # (tmp/blind-control-runs/.../control_key.json) that must never be committed.
 tmp/
+
+# Per-account Claude Code overrides (holds TIER_BENCH_ACCOUNT — the account tier
+# differs per checkout: a Plus wall and a Max20x wall are different meters).
+.claude/settings.local.json
+# Session-burn hook scratch: per-session byte-offset + running totals (ephemeral,
+# per-container). The committed deliverable is burn_log.jsonl, not this state.
+experiments/breadth/run/.burn_state/
