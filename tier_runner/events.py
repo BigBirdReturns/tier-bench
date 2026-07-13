@@ -106,4 +106,3 @@ def stop(path: Path, intervention_id: str) -> None:
         "task_id": current["task_id"],
         "ts": _now(),
     })
-
