@@ -14,9 +14,19 @@ REPO = Path(__file__).resolve().parents[1]
 TEST_TMP = REPO / ".test-tmp"
 sys.path.insert(0, str(REPO))
 
-from tier_runner.core import run_task, verify_run  # noqa: E402
-from tier_runner.adapters.claude_code import _runtime_model, _usage  # noqa: E402
-from tier_runner.events import InterventionError, start, stop, validate_events  # noqa: E402
+from tier_runner.core import RunError, run_task, verify_run  # noqa: E402
+from tier_runner.adapters.claude_code import (  # noqa: E402
+    _runtime_model,
+    _usage,
+    _usage_evidenced,
+)
+from tier_runner.events import (  # noqa: E402
+    InterventionError,
+    event_hash,
+    start,
+    stop,
+    validate_events,
+)
 
 
 FAKE_BACKEND = r'''
@@ -24,6 +34,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import uuid
 
@@ -36,10 +47,14 @@ p.add_argument("--worktree", required=True)
 a = p.parse_args()
 dispatch = json.loads(Path(a.dispatch).read_text(encoding="utf-8"))
 root = Path(a.worktree)
+if any(key.startswith("TIER_") for key in os.environ):
+    raise SystemExit(4)
 if (root / ".git").exists() or (root / "AGENTS.md").exists() or (root / "CLAUDE.md").exists():
     raise SystemExit(3)
 task_id = dispatch["task_id"]
 (root / "app.py").write_text("def value():\n    return 2\n", encoding="utf-8")
+if task_id == "prompt-tamper":
+    Path(a.prompt).write_text("tampered\n", encoding="utf-8")
 if task_id == "scope-bad":
     (root / "outside.py").write_text("bad = True\n", encoding="utf-8")
 if task_id == "telemetry-bad":
@@ -62,7 +77,7 @@ call = {
     "account": "fixture",
     "model": "fake-haiku",
     "tier": "cheap",
-    "task_id": task_id,
+    "task_id": "wrong-task" if task_id == "task-id-bad" else task_id,
     "phase": a.arm,
     "outcome": "pass",
     "effort": "low",
@@ -109,6 +124,11 @@ def make_repo(parent: Path) -> Path:
     (repo / "app.py").write_text("def value():\n    return 1\n", encoding="utf-8")
     (repo / "AGENTS.md").write_text("hidden repository instructions\n", encoding="utf-8")
     (repo / "fake_backend.py").write_text(FAKE_BACKEND, encoding="utf-8")
+    (repo / "accept_mutate.py").write_text(
+        "from pathlib import Path\n"
+        "Path('app.py').write_text('def value():\\n    return 3\\n', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
     (repo / "hands.prompt.txt").write_text(PROMPT, encoding="utf-8")
     _run(["git", "add", "-A"], repo)
     _run(["git", "commit", "-q", "-m", "fixture base"], repo)
@@ -253,6 +273,114 @@ def test_acceptance_rejection_is_preserved(parent: Path) -> None:
     assert (parent / "acceptance-bad-out" / "change.patch").exists()
 
 
+def test_acceptance_cannot_mutate_the_tested_patch(parent: Path) -> None:
+    repo = make_repo(parent)
+    receipt = run_task(
+        repo=repo,
+        task_id="acceptance-mutates",
+        task="make value return two",
+        files=["app.py"],
+        acceptance=f'"{sys.executable}" accept_mutate.py',
+        manifest=repo / "pilot_backends.json",
+        arm="arm_b",
+        output_dir=parent / "acceptance-mutates-out",
+    )
+    assert receipt["state"] == "ERROR"
+    assert any("acceptance command mutated" in error for error in receipt["errors"])
+
+
+def test_backend_cannot_mutate_precall_evidence(parent: Path) -> None:
+    repo = make_repo(parent)
+    receipt = run_task(
+        repo=repo,
+        task_id="prompt-tamper",
+        task="tamper with prompt",
+        files=["app.py"],
+        acceptance=acceptance(2),
+        manifest=repo / "pilot_backends.json",
+        arm="arm_b",
+        output_dir=parent / "prompt-tamper-out",
+    )
+    assert receipt["state"] == "ERROR"
+    assert any("immutable prompt" in error for error in receipt["errors"])
+
+
+def test_task_id_and_session_freshness_fail_closed(parent: Path) -> None:
+    repo = make_repo(parent)
+    bad = run_task(
+        repo=repo,
+        task_id="task-id-bad",
+        task="misbind task identity",
+        files=["app.py"],
+        acceptance=acceptance(2),
+        manifest=repo / "pilot_backends.json",
+        arm="arm_b",
+        output_dir=parent / "task-id-bad-out",
+    )
+    assert bad["state"] == "ERROR"
+    assert any("task_id contradicts" in error for error in bad["errors"])
+
+    first = run_task(
+        repo=repo,
+        task_id="reused-session",
+        task="first call",
+        files=["app.py"],
+        acceptance=acceptance(2),
+        manifest=repo / "pilot_backends.json",
+        arm="arm_b",
+        output_dir=parent / "reused-session-1",
+    )
+    assert first["state"] == "ACCEPTED"
+    second = run_task(
+        repo=repo,
+        task_id="reused-session",
+        task="second call",
+        files=["app.py"],
+        acceptance=acceptance(2),
+        manifest=repo / "pilot_backends.json",
+        arm="arm_b",
+        output_dir=parent / "reused-session-2",
+    )
+    assert second["state"] == "ERROR"
+    assert any("reused a session_id" in error for error in second["errors"])
+
+
+def test_output_and_verifier_bindings_fail_closed(parent: Path) -> None:
+    repo = make_repo(parent)
+    try:
+        run_task(
+            repo=repo,
+            task_id="bad-output",
+            task="write receipts into source",
+            files=["app.py"],
+            acceptance=acceptance(2),
+            manifest=repo / "pilot_backends.json",
+            arm="arm_b",
+            output_dir=repo / "runner-output",
+        )
+    except RunError as exc:
+        assert "operator's checkout" in str(exc)
+    else:
+        raise AssertionError("runner wrote output into the operator checkout")
+
+    out = parent / "verify-semantic-out"
+    receipt = run_task(
+        repo=repo,
+        task_id="verify-semantic",
+        task="make value return two",
+        files=["app.py"],
+        acceptance=acceptance(2),
+        manifest=repo / "pilot_backends.json",
+        arm="arm_b",
+        output_dir=out,
+    )
+    assert receipt["state"] == "ACCEPTED"
+    on_disk = json.loads((out / "receipt.json").read_text(encoding="utf-8"))
+    on_disk["arm"] = "arm_c"
+    (out / "receipt.json").write_text(json.dumps(on_disk), encoding="utf-8")
+    assert "dispatch arm does not bind the final receipt" in verify_run(out)
+
+
 def test_working_template_drift_cannot_change_pinned_prompt(parent: Path) -> None:
     repo = make_repo(parent)
     (repo / "hands.prompt.txt").write_text("drift\n", encoding="utf-8")
@@ -335,12 +463,23 @@ def test_interventions_are_global_and_paired(parent: Path) -> None:
     stop(log, first)
     rows = validate_events(log)
     assert [row["event"] for row in rows] == ["start", "stop"]
+    assert rows[1]["previous_event_sha256"] == rows[0]["event_sha256"]
     try:
         stop(log, first)
     except InterventionError:
         pass
     else:
         raise AssertionError("duplicate stop was accepted")
+    tampered = [dict(row) for row in rows]
+    tampered[1]["ts"] = "2000-01-01T00:00:00Z"
+    tampered[1]["event_sha256"] = event_hash(tampered[1])
+    log.write_text("".join(json.dumps(row) + "\n" for row in tampered), encoding="utf-8")
+    try:
+        validate_events(log)
+    except InterventionError as exc:
+        assert "out of order" in str(exc)
+    else:
+        raise AssertionError("out-of-order intervention timestamps were accepted")
 
 
 def test_claude_receipt_parser_requires_provider_model_evidence(parent: Path) -> None:
@@ -362,6 +501,8 @@ def test_claude_receipt_parser_requires_provider_model_evidence(parent: Path) ->
         "cache_read_tokens": 5,
         "cache_write_tokens": 3,
     }
+    assert _usage_evidenced(data) is True
+    assert _usage_evidenced({"usage": {}}) is False
 
 
 def main() -> int:
@@ -372,6 +513,10 @@ def main() -> int:
         test_scope_violation_fails_closed,
         test_missing_telemetry_fails_closed,
         test_acceptance_rejection_is_preserved,
+        test_acceptance_cannot_mutate_the_tested_patch,
+        test_backend_cannot_mutate_precall_evidence,
+        test_task_id_and_session_freshness_fail_closed,
+        test_output_and_verifier_bindings_fail_closed,
         test_working_template_drift_cannot_change_pinned_prompt,
         test_instruction_file_cannot_be_model_scope,
         test_prompt_must_bind_every_registered_input,

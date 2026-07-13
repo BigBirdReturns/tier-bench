@@ -15,7 +15,6 @@ PLACEHOLDERS = {
     "{backend_result}",
     "{dispatch_receipt}",
     "{prompt}",
-    "{run_dir}",
     "{task_id}",
     "{worktree}",
 }
@@ -62,6 +61,13 @@ def _need(obj: dict[str, Any], key: str, kind: type) -> Any:
     value = obj.get(key)
     if not isinstance(value, kind):
         raise ManifestError(f"{key} must be {kind.__name__}")
+    return value
+
+
+def _need_nonempty(obj: dict[str, Any], key: str) -> str:
+    value = _need(obj, key, str)
+    if not value:
+        raise ManifestError(f"{key} must be non-empty")
     return value
 
 
@@ -140,19 +146,19 @@ def load_backend(
             f"got {actual_template_hash}"
         )
 
-    cost_basis = _need(entry, "cost_basis", str)
+    cost_basis = _need_nonempty(entry, "cost_basis")
     if cost_basis not in COST_BASES:
         raise ManifestError(f"unsupported cost_basis {cost_basis!r}")
     adapter = _need(entry, "adapter", dict)
     command = _validate_command(_need(adapter, "command", list))
     return Backend(
         arm=arm,
-        model_id=_need(entry, "model_id", str),
-        effort=_need(entry, "effort", str),
-        surface=_need(entry, "surface", str),
+        model_id=_need_nonempty(entry, "model_id"),
+        effort=_need_nonempty(entry, "effort"),
+        surface=_need_nonempty(entry, "surface"),
         cost_basis=cost_basis,
-        account=_need(entry, "account", str),
-        tier=_need(entry, "tier", str),
+        account=_need_nonempty(entry, "account"),
+        tier=_need_nonempty(entry, "tier"),
         command=command,
         template_name=template_name,
         template_path=template_path,

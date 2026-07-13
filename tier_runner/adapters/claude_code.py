@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -32,6 +33,20 @@ def _usage(data: dict) -> dict:
         "cache_read_tokens": int(usage.get("cache_read_input_tokens", 0) or 0),
         "cache_write_tokens": int(usage.get("cache_creation_input_tokens", 0) or 0),
     }
+
+
+def _usage_evidenced(data: dict) -> bool:
+    usage = data.get("usage")
+    required = {
+        "input_tokens", "output_tokens", "cache_read_input_tokens",
+        "cache_creation_input_tokens",
+    }
+    return bool(
+        isinstance(usage, dict)
+        and required <= set(usage)
+        and all(isinstance(usage[key], int) and not isinstance(usage[key], bool) and usage[key] >= 0
+                for key in required)
+    )
 
 
 def _runtime_model(data: dict, requested: str) -> tuple[str, bool]:
@@ -85,8 +100,14 @@ def main(argv: list[str] | None = None) -> int:
         "--no-chrome",
         "--strict-mcp-config",
         "--mcp-config", "{}",
-        "--tools", "Read,Edit,Write,Bash",
+        "--tools", "Read,Edit,Write",
     ]
+    child_env = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith("TIER_")
+        and key not in {"GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "OLDPWD", "PWD"}
+    }
     started = time.monotonic()
     process = subprocess.run(
         command,
@@ -94,6 +115,7 @@ def main(argv: list[str] | None = None) -> int:
         input=prompt,
         capture_output=True,
         text=True,
+        env=child_env,
     )
     latency_ms = (time.monotonic() - started) * 1000
     raw_path.write_text(process.stdout or "", encoding="utf-8")
@@ -106,7 +128,11 @@ def main(argv: list[str] | None = None) -> int:
     runtime_model, runtime_model_evidenced = _runtime_model(data, args.model)
     session_id = data.get("session_id")
     telemetry_complete = bool(
-        data and isinstance(session_id, str) and session_id and runtime_model_evidenced
+        data
+        and isinstance(session_id, str)
+        and session_id
+        and runtime_model_evidenced
+        and _usage_evidenced(data)
     )
     outcome = "pass" if process.returncode == 0 and not data.get("is_error", False) else "error"
     note = f"{args.cost_basis}; claude_rc={process.returncode}"
@@ -142,7 +168,21 @@ def main(argv: list[str] | None = None) -> int:
         },
     }
     args.result.write_text(
-        json.dumps({"schema": SCHEMA, "calls": [call]}, sort_keys=True) + "\n",
+        json.dumps(
+            {
+                "schema": SCHEMA,
+                "calls": [call],
+                "artifacts": [
+                    {"name": "provider_raw", "path": raw_path.name, "sha256": _sha(raw_path)},
+                    {
+                        "name": "provider_stderr",
+                        "path": stderr_path.name,
+                        "sha256": _sha(stderr_path),
+                    },
+                ],
+            },
+            sort_keys=True,
+        ) + "\n",
         encoding="utf-8",
     )
     return 0

@@ -5,6 +5,8 @@ executes the operator's immutable acceptance command, and returns a patch plus
 hash-bound receipts. The model sees a Git-free packet containing only the
 declared `--files` scope; the runner syncs those edits into a hidden full
 worktree for acceptance. It never merges and never edits the operator's checkout.
+The live packet is created in a fresh OS temporary directory rather than beside
+other run receipts, and it is removed before `ACCEPTED` can be emitted.
 
 This is the implementation vehicle registered in
 `docs/driver-boundary-pilot.md`. Building and testing it does **not** authorize
@@ -34,7 +36,8 @@ Optional `--task-id`, `--arm`, `--backend-manifest`, and `--output-dir` flags
 support controlled experiments. Without `--task-id`, the runner derives a
 stable ID from the task text. Receipts default to the target repository's
 common Git directory under `.git/tier-runs/`; disposable worktrees live under
-`.git/tier-worktrees/` and are removed before the command returns.
+`.git/tier-worktrees/` and are removed before the command returns. An explicit
+`--output-dir` may not point into the operator checkout or arbitrary Git internals.
 
 `--acceptance` is an explicitly trusted operator-supplied shell command. Model
 output never supplies or changes it.
@@ -102,9 +105,11 @@ blob, then commit the manifest. `schemas/tier_run_backend_manifest.schema.json`
 is the portable shape; runtime checks additionally bind exact Git bytes.
 
 The included Claude Code adapter starts one fresh safe-mode, non-persistent
-session, disables customizations/MCP/browser integration, and records the raw
-provider JSON hashes and session identity. Other backends implement the same
-adapter contract: edit only the disposable worktree and write one
+session, disables customizations/MCP/browser integration and shell access, and
+records the raw provider JSON, stderr, token usage, and session identity as
+receipt artifacts. The runner keeps a local hash-only session registry under the
+target repository's common Git directory and rejects reuse across calls. Other
+backends implement the same adapter contract: edit only the disposable worktree and write one
 `tier-bench/tier-backend-result@1` result containing exactly one complete
 `ledger.Call` row.
 
@@ -118,16 +123,21 @@ Every run preserves:
 - a binary, full-index Git patch;
 - the final `ACCEPTED`, `REJECTED`, or `ERROR` receipt.
 
+The acceptance command is a verifier, not an author: if it changes any tracked
+or non-ignored candidate byte, the run becomes `ERROR`. The emitted patch is
+therefore the exact candidate tree on which acceptance ran.
+
 Recompute all artifact hashes and the dispatch→prompt→ledger→receipt bindings:
 
 ```console
 tier verify --run-dir C:\path\to\run
 ```
 
-Missing telemetry, manifest drift, runtime-model drift, out-of-scope packet
-edits, instruction-file/symlink injection, no changed files, or failed cleanup cannot produce
-`ACCEPTED`. Failed acceptance produces `REJECTED` while preserving the patch
-and diagnostics. The original checkout remains untouched.
+Missing telemetry, reused sessions, manifest drift, runtime-model drift,
+out-of-scope packet edits, instruction-file/symlink injection, mutable
+acceptance, no changed files, or failed cleanup cannot produce `ACCEPTED`.
+Failed acceptance produces `REJECTED` while preserving the patch and
+diagnostics. The original checkout remains untouched.
 
 Apply an accepted patch only after inspection:
 
@@ -138,7 +148,7 @@ git apply C:\path\to\run\change.patch
 
 ## Operator-time events
 
-The pilot's primary metric uses a globally non-overlapping append-only event
+The pilot's primary metric uses a globally non-overlapping, hash-chained event
 log:
 
 ```console
@@ -149,4 +159,7 @@ tier verify-interventions --log pilot/interventions.jsonl
 ```
 
 A second start while any intervention is open, a mismatched stop, a reused ID,
-or an unclosed interval fails validation.
+an invalid/out-of-order timestamp, a broken hash-chain link, or an unclosed
+interval fails validation. `verify-interventions` prints the final head hash;
+commit or otherwise seal that head with the pilot evidence so later whole-log
+replacement cannot masquerade as append-only history.

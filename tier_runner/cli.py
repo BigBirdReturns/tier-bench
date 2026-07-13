@@ -73,7 +73,11 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         if args.command == "verify-interventions":
             rows = validate_events(args.log)
-            print(json.dumps({"ok": True, "events": len(rows)}, sort_keys=True))
+            print(json.dumps({
+                "ok": True,
+                "events": len(rows),
+                "head_sha256": rows[-1]["event_sha256"] if rows else None,
+            }, sort_keys=True))
             return 0
         if args.command == "verify":
             errors = verify_run(args.run_dir)
