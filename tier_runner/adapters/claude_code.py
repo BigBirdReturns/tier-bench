@@ -6,12 +6,15 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import subprocess
 import sys
 import time
 
 
 SCHEMA = "tier-bench/tier-backend-result@1"
+ADAPTER_VERSION = "9"
+CLAUDE_TOOLS = "Read,Edit,Write,Glob,Grep"
 EMPTY_MCP_CONFIG = '{"mcpServers":{}}'
 REQUIRED_CLAUDE_FLAGS = {
     "--add-dir",
@@ -95,13 +98,49 @@ def _absolute_permission_path(path: Path) -> str:
     return "//" + posix.lstrip("/")
 
 
+def _escape_permission_pattern(path: str) -> str:
+    # Permission rules are gitignore patterns and are not escaped for us;
+    # a literal *, ?, [ or ] in a scope name must not act as a wildcard.
+    return re.sub(r"([*?\[\]])", r"\\\1", path)
+
+
 def _packet_permission_args(worktree: Path, files: list[str]) -> list[str]:
     rules: list[str] = []
     for path in files:
-        relative = Path(*PurePosixPath(path.replace("\\", "/")).parts)
-        absolute = _absolute_permission_path(worktree / relative)
-        rules.extend((f"Read({absolute})", f"Edit({absolute})"))
+        normalized = path.replace("\\", "/")
+        relative = Path(*PurePosixPath(normalized).parts)
+        absolute = _escape_permission_pattern(
+            _absolute_permission_path(worktree / relative)
+        )
+        # A trailing slash marks a directory scope in dispatch["files"]; an
+        # exact-path rule would deny every file beneath it under dontAsk.
+        target = f"{absolute}/**" if normalized.endswith("/") else absolute
+        rules.extend((f"Read({target})", f"Edit({target})", f"Write({target})"))
     return ["--permission-mode", "dontAsk", "--allowedTools", *rules]
+
+
+def _claude_command(
+    binary: str, model: str, effort: str, worktree: Path, files: list[str]
+) -> list[str]:
+    return [
+        binary,
+        "--print",
+        "--input-format", "text",
+        "--output-format", "json",
+        "--model", model,
+        "--effort", effort,
+        *_packet_permission_args(worktree, files),
+        "--safe-mode",
+        "--no-session-persistence",
+        "--disable-slash-commands",
+        "--no-chrome",
+        *_packet_access_args(worktree),
+        "--strict-mcp-config",
+        "--mcp-config", EMPTY_MCP_CONFIG,
+        # Glob/Grep give a directory-scoped task filename discovery without
+        # Bash; the Read permission rules above govern what they may touch.
+        "--tools", CLAUDE_TOOLS,
+    ]
 
 
 def _usage(data: dict) -> dict:
@@ -148,7 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--claude-bin", default="claude")
     parser.add_argument("--claude-version", required=True)
     parser.add_argument("--claude-help-sha256", required=True)
-    parser.add_argument("--adapter-version", default="8")
+    parser.add_argument("--adapter-version", default=ADAPTER_VERSION)
     parser.add_argument("--model", required=True)
     parser.add_argument("--effort", required=True)
     parser.add_argument("--account", required=True)
@@ -157,6 +196,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--cost-basis", default="subscription-derived")
     args = parser.parse_args(argv)
 
+    if args.adapter_version != ADAPTER_VERSION:
+        raise RuntimeError(
+            "adapter version drift: this code is adapter "
+            f"{ADAPTER_VERSION!r}, manifest requested {args.adapter_version!r}; "
+            "provenance would be mislabeled"
+        )
     actual_version = _version(args.claude_bin)
     if actual_version != args.claude_version:
         raise RuntimeError(
@@ -172,23 +217,9 @@ def main(argv: list[str] | None = None) -> int:
     prompt = args.prompt.read_text(encoding="utf-8")
     raw_path = args.result.with_name("claude-result.raw.json")
     stderr_path = args.result.with_name("claude-result.stderr.txt")
-    command = [
-        args.claude_bin,
-        "--print",
-        "--input-format", "text",
-        "--output-format", "json",
-        "--model", args.model,
-        "--effort", args.effort,
-        *_packet_permission_args(args.worktree, dispatch["files"]),
-        "--safe-mode",
-        "--no-session-persistence",
-        "--disable-slash-commands",
-        "--no-chrome",
-        *_packet_access_args(args.worktree),
-        "--strict-mcp-config",
-        "--mcp-config", EMPTY_MCP_CONFIG,
-        "--tools", "Read,Edit,Write",
-    ]
+    command = _claude_command(
+        args.claude_bin, args.model, args.effort, args.worktree, dispatch["files"]
+    )
     child_env = _subscription_env(dict(os.environ))
     started = time.monotonic()
     process = subprocess.run(
