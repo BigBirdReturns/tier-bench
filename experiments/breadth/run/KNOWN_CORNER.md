@@ -14,7 +14,28 @@
 
 This document tracks the classification of tasks across the breadth test suite as they accumulate through layers.
 
-### Current Layer: rule-boundary-escalation-fable-low-20260713
+### Current Layer: fanout-floor-20260713
+
+**THE CORNER IS FULLY MAPPED — every breadth-valid task now settled.** The
+operator's fan-out ran six parallel haiku solvers over the only two non-settled
+cells (sediment diffed first; nothing settled was re-derived):
+
+- **`t2_ossrf_fnmatch_charclass` settled 3/3 on its FIRST flooring** — the
+  ARC-D admission task (CPython fnmatch character-class grammar, the task02
+  escape-class knot in shipping code) is cheap-floor commodity. The task02
+  residue was the boundary *commitment*, not the grammar.
+- **`task08_select_exchange` settled 3/3** (lifetime 7/8) — three distinct
+  driver-verified counterexamples, all nailing the greedy-blocks-completion
+  flaw. The old 4/5 was a procedural bounds slip; an explicit bounds reminder
+  (FREE adapt: prompt wording) and it never recurred. Rule 3 held: more cheap
+  trials, never escalation on noise.
+
+Cost: $0 real-billed (shadow subagent tokens only). Every grade run by the
+driver against the hidden grader. Remaining non-settled rows are only the
+characterized non-frontier artifacts: replay02 (spoiled-by-authoring),
+replay04 (scaffold boot-load depth limit).
+
+### Previous Layer: rule-boundary-escalation-fable-low-20260713
 
 **THE ALMANAC RESIDUAL IS CLEARED — a second measured model-separation.** The one
 cell that bit the cheap floor, `almanac_rule_boundary_001` (haiku **1/3**, the
