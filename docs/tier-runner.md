@@ -63,7 +63,7 @@ Minimal manifest shape:
   "tool_versions": {
     "claude_code": "<exact `claude --version` output>",
     "claude_help_sha256": "<sha256 from adapter `_help_surface('claude')`>",
-    "tier_claude_adapter": "8"
+    "tier_claude_adapter": "9"
   },
   "prompt_templates": {
     "hands": {
@@ -93,7 +93,7 @@ Minimal manifest shape:
           "--account", "<same account label>",
           "--claude-version", "<same exact version>",
           "--claude-help-sha256", "<same frozen help-surface sha256>",
-          "--adapter-version", "8",
+          "--adapter-version", "9",
           "--cost-basis", "subscription-derived"
         ]
       }
@@ -117,8 +117,9 @@ and tool inputs bind the same bytes.
 
 The included Claude Code adapter starts one fresh safe-mode, non-persistent
 session, explicitly allow-lists only the disposable packet directory for tool
-access, pre-approves exact absolute-path `Read`/`Edit` only for the dispatch's declared files under
-`dontAsk` (all other tool uses are denied), disables
+access, pre-approves absolute-path `Read`/`Edit`/`Write` only for the dispatch's
+declared scope under `dontAsk` (exact paths for file scopes, recursive `/**`
+rules for directory scopes; all other tool uses are denied), disables
 customizations/MCP/browser integration and shell access, and
 records the raw provider JSON, stderr, token usage, and session identity as
 receipt artifacts. The runner keeps a local hash-only session registry under the

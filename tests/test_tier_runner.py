@@ -616,8 +616,22 @@ def test_claude_permissions_are_scoped_to_dispatched_files(parent: Path) -> None
         "--allowedTools",
         f"Read({first})",
         f"Edit({first})",
+        f"Write({first})",
         f"Read({second})",
         f"Edit({second})",
+        f"Write({second})",
+    ]
+
+
+def test_claude_directory_scopes_get_recursive_permissions(parent: Path) -> None:
+    directory = _absolute_permission_path(parent / "packet" / "src")
+    assert _packet_permission_args(parent / "packet", ["src/"]) == [
+        "--permission-mode",
+        "dontAsk",
+        "--allowedTools",
+        f"Read({directory}/**)",
+        f"Edit({directory}/**)",
+        f"Write({directory}/**)",
     ]
 
 
@@ -653,6 +667,7 @@ def main() -> int:
         test_claude_empty_mcp_config_has_required_shape,
         test_claude_explicitly_allows_only_packet_path,
         test_claude_permissions_are_scoped_to_dispatched_files,
+        test_claude_directory_scopes_get_recursive_permissions,
         test_windows_packet_root_avoids_legacy_temp_alias,
     ]
     try:

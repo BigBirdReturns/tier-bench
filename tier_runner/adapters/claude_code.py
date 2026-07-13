@@ -98,9 +98,13 @@ def _absolute_permission_path(path: Path) -> str:
 def _packet_permission_args(worktree: Path, files: list[str]) -> list[str]:
     rules: list[str] = []
     for path in files:
-        relative = Path(*PurePosixPath(path.replace("\\", "/")).parts)
+        normalized = path.replace("\\", "/")
+        relative = Path(*PurePosixPath(normalized).parts)
         absolute = _absolute_permission_path(worktree / relative)
-        rules.extend((f"Read({absolute})", f"Edit({absolute})"))
+        # A trailing slash marks a directory scope in dispatch["files"]; an
+        # exact-path rule would deny every file beneath it under dontAsk.
+        target = f"{absolute}/**" if normalized.endswith("/") else absolute
+        rules.extend((f"Read({target})", f"Edit({target})", f"Write({target})"))
     return ["--permission-mode", "dontAsk", "--allowedTools", *rules]
 
 
@@ -148,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--claude-bin", default="claude")
     parser.add_argument("--claude-version", required=True)
     parser.add_argument("--claude-help-sha256", required=True)
-    parser.add_argument("--adapter-version", default="8")
+    parser.add_argument("--adapter-version", default="9")
     parser.add_argument("--model", required=True)
     parser.add_argument("--effort", required=True)
     parser.add_argument("--account", required=True)
