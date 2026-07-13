@@ -1,4 +1,4 @@
-# Driver-boundary pilot — pre-registered protocol (v1.2, 2026-07-13)
+# Driver-boundary pilot — pre-registered protocol (v1.3, 2026-07-13)
 
 Status: **REGISTERED, not yet authorized to run.** This document is committed
 before any pilot task list exists. Per the adapt.py discipline, changing the
@@ -68,6 +68,23 @@ start an arm whose runtime configuration differs from the manifest, and any
 per-call row that contradicts the manifest voids the task. Configuration is
 therefore an input frozen up front — never an after-the-fact recording.
 
+The manifest also freezes the ISOLATION contract and the PROMPTS:
+
+- *Fresh sessions*: every model call in every arm runs in a fresh session
+  (new assigned session UUID, recorded per call in `extra.session_id` or its
+  sha256 where the surface requires opacity). No session is reused across
+  calls, tasks, or arms.
+- *Semantic-memory isolation*: driver and hands sessions run packet-only in
+  the disposable worktree — no repository CLAUDE.md/AGENTS.md loading, no
+  auto-memory, no `--add-dir`, no conversation carry-over (the B2 grader
+  discipline). The manifest names the exact flags/surface configuration that
+  achieves this per backend; the runner refuses to start otherwise.
+- *Prompt templates*: every prompt template (driver brief, hands brief,
+  escalation wrapper, Arm-C question format) is frozen in the manifest with
+  its sha256 BEFORE disclosure; each call echoes
+  `extra.prompt_template_sha256`. A call whose echoed hash is not in the
+  manifest voids the task.
+
 ## Arm order — seeded and counterbalanced
 
 Within a task, arms run sequentially (one operator), so operator familiarity
@@ -129,11 +146,16 @@ interruptions, clarification handling, and rescue work.
 - *Operator time*: an append-only EVENT log — two rows per touch, each
   appended at the moment it occurs (a single row carrying both start and end
   cannot be append-only; it would be written or edited after the fact):
-  `{"task_id", "arm", "event": "start"|"stop", "category", "ts"}` with
-  category in {brief, clarification, rescue, review, acceptance, other}.
-  Intervals are DERIVED by pairing each start with the next stop for the same
-  (task_id, arm); active minutes = sum of derived intervals. An unpaired
-  start at pilot close, out-of-order timestamps, or any edited row voids the
+  `{"task_id", "arm", "event": "start"|"stop", "intervention_id",
+  "category", "ts"}` with category in {brief, clarification, rescue, review,
+  acceptance, other}. Pairing is by `intervention_id` (assigned at start,
+  echoed by the matching stop), under a STRICT NO-OVERLAP invariant: the
+  operator is one person, so at most ONE intervention may be open at any
+  instant, globally across all tasks and arms — a start while any
+  intervention is open is invalid, as is a stop naming a non-open id. Active
+  minutes = sum of paired intervals; double-counting is structurally
+  impossible under the invariant. An unpaired start at pilot close,
+  out-of-order timestamps, an overlap, or any edited row voids the affected
   task. Untracked operator work discovered later likewise voids it.
 - *Model/backend usage*: one row per model call using the EXACT
   `experiments/breadth/ledger.py` `Call` dataclass fields: `ts`, `account`,
@@ -143,9 +165,17 @@ interruptions, clarification handling, and rescue work.
   the arm (`arm_a`|`arm_b`|`arm_c`); `extra` carries
   `{"backend_surface": <subscription-cli|api|agent-tool>,
   "runtime_model_id": <exact id>, "backend_manifest_sha256": <hash>}`;
-  `cost_usd` is real-billed where the surface reports it and the row's `note`
-  says `shadow-estimated` otherwise. Reconciliation (`ledger.reconcile`) runs
-  at pilot close; unreconciled books void the affected tasks.
+  every row's `extra.cost_basis` is one of `real-billed |
+  shadow-estimated | subscription-derived` (the capture ledger's established
+  evidence taxonomy). Verification at pilot close is PER BASIS:
+  dollar reconciliation (`ledger.reconcile`) runs over `real-billed` rows
+  only — subscription calls have no provider bill and MUST NOT enter dollar
+  tolerance; `subscription-derived` and `shadow-estimated` rows instead pass
+  a COMPLETENESS check: every dispatch event in the runner's receipt log has
+  exactly one matching ledger row (matched by task_id, arm, and the call's
+  receipt hash recorded in `extra.dispatch_receipt_sha256`), and no ledger
+  row lacks a receipt. Failed reconciliation or failed completeness voids
+  the affected tasks.
 
 Secondary: elapsed wall-clock; frontier tokens/$ (real-billed); cheap
 tokens/$; escaped defects (from the withheld audit + follow-up window);
@@ -180,6 +210,15 @@ as PARTIAL — never as evidence for any hypothesis.
   operator-time and model/backend accounting schemas. Recorded as blockers by
   the Sol lane on draft PR #90 before any task disclosure — pre-disclosure
   amendment is permitted; post-disclosure amendment remains GATED.
+- v1.3 (2026-07-13, pre-task-disclosure, Sol re-review round 3): per-basis
+  cost verification — dollar reconciliation over real-billed rows only;
+  subscription-derived/shadow rows verified by receipt-matched COMPLETENESS
+  instead (no provider bill exists to reconcile against); isolation contract
+  and prompt-template sha256 set frozen in the backend manifest (fresh
+  session per call, packet-only worktrees, no memory/instruction loading,
+  per-call template-hash echo); intervention log gains intervention_id
+  pairing under a strict global no-overlap invariant (one operator, one open
+  intervention) making double-counting structurally impossible.
 - v1.2 (2026-07-13, pre-task-disclosure, Sol re-review round 2): arm order
   now GUARANTEED balanced (3× Latin-square cycles + one seeded residual; max
   position imbalance 1 by construction — v1.1's hash draw was random, not
