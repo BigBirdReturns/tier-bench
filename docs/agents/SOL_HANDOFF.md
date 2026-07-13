@@ -50,6 +50,14 @@ to the original conversational draft are marked.
   match the frozen instrument; required per-item receipts are absent; and two
   payloads misuse explicitly non-authoritative packet material. The comparator
   was therefore not run and ARC-D remains `PARTIAL_UNPAIRED` at B1.
+- Grade B attempt 2 (`5008f3b`) corrected the physical surface and receipt
+  structure but still admits 0/3 under independent review. Its claimed attrs
+  receipt marks `ORIGINAL_PROMPT.md` authoritative; httpx-3614 is a provider
+  wall with disclosed administration defects; httpx-3221 has two non-bare,
+  disposition-disagreeing samples and no receipt. Operator `go` on 2026-07-13
+  authorizes a new versioned attempt 3 under the unchanged charter. Do not
+  repair or select among prior samples; preserve all outcomes and require exact
+  bare JSON, packet authority discipline, and complete per-item receipts.
 
 ## Settled assets (with exact figures)
 

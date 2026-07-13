@@ -62,3 +62,21 @@ material as authoritative.
 
 The comparator therefore remains forbidden. There are zero comparison receipts,
 binding B2 dispositions, candidate residues, or HARVEST claims.
+
+## Grade B attempt 2 and attempt 3 authority
+
+Grade B attempt 2 (`5008f3b`) moved to physically projectless `fable-5@high`
+sessions and added receipt machinery, but it still admits zero items. The attrs
+receipt marks `ORIGINAL_PROMPT.md` as authoritative even though the packet makes
+it non-authoritative. The httpx-3614 item reached a provider-refusal wall and
+records administration defects. The httpx-3221 item has two non-bare samples
+with conflicting dispositions and no admissible receipt. None may be repaired,
+selected, or converted into a comparison input.
+
+The operator said `go` on 2026-07-13, authorizing a new versioned Grade B
+attempt 3 under the unchanged charter. Each item requires one fresh physically
+projectless packet-only `fable-5@high` session, exact bare-JSON output, correct
+packet authority classification, and a complete validated per-item receipt.
+Every refusal, malformed output, and disagreement must remain preserved. Until
+all three receipts validate, comparison and every downstream B2/HARVEST claim
+remain forbidden.
