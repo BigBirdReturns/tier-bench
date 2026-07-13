@@ -1,0 +1,41 @@
+{
+  "t3_null_filter_001": {
+    "vectors": 10,
+    "knot_vectors": 7,
+    "reference_fails": 0,
+    "naive": {
+      "none_is_false": {
+        "fails": 3,
+        "knot_vector_fails": 3,
+        "failing_vector_indexes": [
+          4,
+          5,
+          9
+        ]
+      },
+      "skip_none": {
+        "fails": 1,
+        "knot_vector_fails": 1,
+        "failing_vector_indexes": [
+          6
+        ]
+      }
+    }
+  },
+  "t3_accrual_crossover_001": {
+    "vectors": 10,
+    "knot_vectors": 7,
+    "reference_fails": 0,
+    "naive": {
+      "float_formula": {
+        "fails": 3,
+        "knot_vector_fails": 3,
+        "failing_vector_indexes": [
+          3,
+          6,
+          9
+        ]
+      }
+    }
+  }
+}

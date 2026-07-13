@@ -1,0 +1,45 @@
+{
+  "task_id": "t3_null_filter_001",
+  "tier": "T3",
+  "prompt_template": "Task: Implement the function specified in the docstring of {target_relpath} exactly.\n\nRules:\n- Return ONLY the full updated content for {target_relpath}.\n- Do not add commentary.\n- Make the program print OK and exit 0 when run.\n- The docstring spec is the contract: EVERY rule in it is graded, including cases the visible checks in main() do not exercise. Implement the spec, not just the sample checks.\n- Do not modify any file outside {target_relpath}.\n\nCurrent file content:\n{file_content}\n\nBaseline run (before edits):\nexit={baseline_rc}\nstdout:\n{baseline_stdout}\nstderr:\n{baseline_stderr}\n\nOther files in fixture (read-only context):\n{context_files}\n",
+  "fixture_dir": "fixtures/t3_null_filter_001",
+  "target_relpath": "input.py",
+  "run_command": [
+    "python",
+    "input.py"
+  ],
+  "validate": {
+    "compile": true,
+    "ruff_imports": false,
+    "functional_equivalence": false,
+    "tests": true
+  },
+  "max_lines_changed": 250,
+  "allowed_files": [
+    "input.py"
+  ],
+  "hidden_files": [
+    "hidden_tests.py"
+  ],
+  "hidden_run_command": [
+    "python",
+    "hidden_tests.py"
+  ],
+  "knot_type": "felt_contradiction",
+  "description": "Three-valued (SQL-style) filter logic: NOT of UNKNOWN is UNKNOWN and '!=' of an unknown is UNKNOWN — the correct reading fights the boolean prior even after the rule is read",
+  "source_basis": [
+    {
+      "primitive_id": "black_letter_axm",
+      "supports": "Kleene three-valued logic is settled written rule text; the knot is APPLYING it against the boolean prior"
+    },
+    {
+      "primitive_id": "proof_knot",
+      "supports": "the edge (negation over UNKNOWN) feels wrong even after reading rule 3; hidden vectors decide"
+    },
+    {
+      "primitive_id": "hidden_grading",
+      "supports": "deciding vectors are stripped from the solver's working copy and prompt"
+    }
+  ],
+  "vector_provenance": "expected values derived mechanically from the reference implementation in experiments/breadth/authoring3/build_vectors.py (key material verified bidirectionally in both build and --check modes: reference passes visible + all hidden vectors; every paired naive passes the visible checks and fails knot vectors; graders enforce declared return types); CI --check guards drift; synthetic data only, no PII"
+}
