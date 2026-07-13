@@ -1,0 +1,75 @@
+{
+  "record": "authoring2_floor_evidence",
+  "sealed_time_utc": "2026-07-13T04:39:37+00:00",
+  "provenance": "the nine haiku K=3 floor candidates for authoring batch 2, preserved from the run scratch and re-graded by the driver under the HARDENED (type-enforcing) graders after PR #84 review finding 1; original-grader grades were 9/9 and the hardened re-grade is also 9/9 \u2014 the result survives the stricter rule",
+  "grader_versions": {
+    "original": "pre-review (container-normalizing)",
+    "hardened": "post-review (type-enforcing); fixtures/*/hidden_tests.py at this commit"
+  },
+  "trials": {
+    "t3_billing_anchor_001/trial0": {
+      "candidate_sha256": "7337f0586028c83fd9cdf7e71bb5acc2b7aa6ec9dbc7f33bf51161a6dc81dec3",
+      "candidate_bytes": 2578,
+      "hardened_grader_sha256": "9b1eafa8cd50db79ac723176e3b53c9ac5485b67a65454bf543e86fddfbc2be4",
+      "hardened_score_line": "SCORE 9/9",
+      "hardened_rc": 0
+    },
+    "t3_billing_anchor_001/trial1": {
+      "candidate_sha256": "ec990b35da40634419844cbfb5c2918b9d12fb1ba59643ac11ae378ff4965bb5",
+      "candidate_bytes": 2497,
+      "hardened_grader_sha256": "9b1eafa8cd50db79ac723176e3b53c9ac5485b67a65454bf543e86fddfbc2be4",
+      "hardened_score_line": "SCORE 9/9",
+      "hardened_rc": 0
+    },
+    "t3_billing_anchor_001/trial2": {
+      "candidate_sha256": "98513df38600ff7f8ee8c39494998d1eea44de400f84192a30c0230887aaac48",
+      "candidate_bytes": 2548,
+      "hardened_grader_sha256": "9b1eafa8cd50db79ac723176e3b53c9ac5485b67a65454bf543e86fddfbc2be4",
+      "hardened_score_line": "SCORE 9/9",
+      "hardened_rc": 0
+    },
+    "t3_window_limit_001/trial0": {
+      "candidate_sha256": "b19e268a2f9b0f97b896a683e962523bd9755579fac698061a995da9981d8fec",
+      "candidate_bytes": 1875,
+      "hardened_grader_sha256": "1ed3f06e6c52c3b68db081b9b2b0a171dd669763ab9f18abf4e66255b1c741cb",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0
+    },
+    "t3_window_limit_001/trial1": {
+      "candidate_sha256": "db70a9d09c9fa68323159968962bebf675072e8ca161ac9e97ab9666fad197fc",
+      "candidate_bytes": 1858,
+      "hardened_grader_sha256": "1ed3f06e6c52c3b68db081b9b2b0a171dd669763ab9f18abf4e66255b1c741cb",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0
+    },
+    "t3_window_limit_001/trial2": {
+      "candidate_sha256": "ea37f804d7ea17dda98326d5770586f01b3df2fb8f6a664ce58898f6be1e6a51",
+      "candidate_bytes": 1863,
+      "hardened_grader_sha256": "1ed3f06e6c52c3b68db081b9b2b0a171dd669763ab9f18abf4e66255b1c741cb",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0
+    },
+    "t3_due_date_shift_001/trial0": {
+      "candidate_sha256": "6e333aa27b21cad9e9ca275093bfc88e386edfee76a8d5504506908168ae23be",
+      "candidate_bytes": 3375,
+      "hardened_grader_sha256": "0f7f40c4fe6d9a4b7abecdc925bb3296b835e785937d199f85ae44eef7444618",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0
+    },
+    "t3_due_date_shift_001/trial1": {
+      "candidate_sha256": "6cc1262ae841be3801506f81c244919c79498c654822da2ba8c5f40d430dc916",
+      "candidate_bytes": 3220,
+      "hardened_grader_sha256": "0f7f40c4fe6d9a4b7abecdc925bb3296b835e785937d199f85ae44eef7444618",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0
+    },
+    "t3_due_date_shift_001/trial2": {
+      "candidate_sha256": "61d603b9e5cbd5d916cd5e04c4aff7b73129a4755bb61d20d44260e655cea0bd",
+      "candidate_bytes": 3124,
+      "hardened_grader_sha256": "0f7f40c4fe6d9a4b7abecdc925bb3296b835e785937d199f85ae44eef7444618",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0
+    }
+  },
+  "distinct_candidates": 9
+}

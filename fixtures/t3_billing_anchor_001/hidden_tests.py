@@ -23,7 +23,10 @@ VECTORS = [
 
 
 def _call(fn, args):
-    return [list(x) for x in fn(*args)]
+    got = fn(*args)
+    if not isinstance(got, list) or not all(isinstance(x, tuple) for x in got):
+        raise TypeError('billing_dates must return list[tuple[int, int, int]]')
+    return [list(x) for x in got]
 
 
 def main() -> int:

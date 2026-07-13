@@ -1,6 +1,6 @@
 # Setup Status — Ready for Upcoming Fable Runs
 
-**Date:** 2026-07-13  
+**Date:** 2026-07-13
 **Status:** ✅ READY FOR FABLE RUNS
 
 ## Sanity Checks (All Passing)
@@ -49,7 +49,7 @@ All required tools and docs are in place:
 - task08_select_exchange (haiku, 4/5 — procedural domain-bounds miss, cheap-trial territory)
 - replay04_count_matches (haiku+packet, 1/3 — characterized scaffold-transfer depth limit)
 
-**Open frontier residual: 0**  
+**Open frontier residual: 0**
 **Last Decision (2026-07-13):** DO NOT ESCALATE further — the one genuine judgment
 residue is now cleared at fable@low; nothing walls; access was never touched.
 
@@ -91,8 +91,8 @@ python experiments/breadth/breadth_tasks.py
 
 ---
 
-**Git state:** branch `claude/fable-runs-setup-wgph5h` is clean and ready.  
-**All tools:** verified working, sanity checks green.  
-**Ledger state:** reconciled, no missing receipts.  
+**Git state:** branch `claude/fable-runs-setup-wgph5h` is clean and ready.
+**All tools:** verified working, sanity checks green.
+**Ledger state:** reconciled, no missing receipts.
 
 ✅ This repo is ready for the upcoming Fable runs.

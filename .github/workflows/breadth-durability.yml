@@ -58,8 +58,10 @@ jobs:
           python -m py_compile experiments/breadth/authoring2/build_vectors.py \
             fixtures/t3_billing_anchor_001/hidden_tests.py \
             fixtures/t3_window_limit_001/hidden_tests.py \
-            fixtures/t3_due_date_shift_001/hidden_tests.py
+            fixtures/t3_due_date_shift_001/hidden_tests.py \
+            tests/test_authoring2_graders.py
           python experiments/breadth/authoring2/build_vectors.py --check
+          python tests/test_authoring2_graders.py
       - name: capture guard tests bite
         run: |
           python tests/test_capture_ledger.py

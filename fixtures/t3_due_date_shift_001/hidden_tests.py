@@ -25,7 +25,10 @@ VECTORS = [
 
 def _call(fn, args):
     nom, hol = args
-    return list(fn(nom[0], nom[1], nom[2], {tuple(h) for h in hol}))
+    got = fn(nom[0], nom[1], nom[2], {tuple(h) for h in hol})
+    if not isinstance(got, tuple):
+        raise TypeError('due_date must return tuple[int, int, int]')
+    return list(got)
 
 
 def main() -> int:

@@ -24,7 +24,10 @@ VECTORS = [
 
 
 def _call(fn, args):
-    return fn(args[0], args[1], args[2], args[3])
+    got = fn(args[0], args[1], args[2], args[3])
+    if not isinstance(got, bool):
+        raise TypeError('allow must return bool')
+    return got
 
 
 def main() -> int:

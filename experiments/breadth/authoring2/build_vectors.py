@@ -182,11 +182,26 @@ if __name__ == "__main__":
     raise SystemExit(main())
 '''
 
+# Each call body ENFORCES the declared return type before normalizing for
+# comparison — a wrong container (e.g. list[list] where list[tuple] is
+# declared) raises TypeError, which the grader records as a failed vector.
 CALL_BODIES = {
-    "t3_billing_anchor_001": "    return [list(x) for x in fn(*args)]",
-    "t3_window_limit_001": "    return fn(args[0], args[1], args[2], args[3])",
-    "t3_due_date_shift_001": ("    nom, hol = args\n"
-                              "    return list(fn(nom[0], nom[1], nom[2], {tuple(h) for h in hol}))"),
+    "t3_billing_anchor_001": (
+        "    got = fn(*args)\n"
+        "    if not isinstance(got, list) or not all(isinstance(x, tuple) for x in got):\n"
+        "        raise TypeError('billing_dates must return list[tuple[int, int, int]]')\n"
+        "    return [list(x) for x in got]"),
+    "t3_window_limit_001": (
+        "    got = fn(args[0], args[1], args[2], args[3])\n"
+        "    if not isinstance(got, bool):\n"
+        "        raise TypeError('allow must return bool')\n"
+        "    return got"),
+    "t3_due_date_shift_001": (
+        "    nom, hol = args\n"
+        "    got = fn(nom[0], nom[1], nom[2], {tuple(h) for h in hol})\n"
+        "    if not isinstance(got, tuple):\n"
+        "        raise TypeError('due_date must return tuple[int, int, int]')\n"
+        "    return list(got)"),
 }
 KNOT_NAMES = {
     "t3_billing_anchor_001": "anchor-restore boundary (clamp must not cascade)",
@@ -218,15 +233,22 @@ def main() -> int:
             if not gpath.exists() or gpath.read_text() != grader_src:
                 print(f"DRIFT: {gpath} does not match derived vectors")
                 all_ok = False
-            continue
-        gpath.write_text(grader_src)
+        else:
+            gpath.write_text(grader_src)
 
-        # bidirectional verification
+        # bidirectional verification runs in BOTH modes — --check without it
+        # would rubber-stamp key material nobody re-proved
         ref_fail = [v for v in vectors if json.dumps(cfg["call"](cfg["ref"], v[0])) != json.dumps(v[1])]
         naive_report = {}
         for nname, nfn in cfg["naives"].items():
-            fails = [i for i, v in enumerate(vectors)
-                     if json.dumps(cfg["call"](nfn, v[0])) != json.dumps(v[1])]
+            fails = []
+            for i, v in enumerate(vectors):
+                try:
+                    bad = json.dumps(cfg["call"](nfn, v[0])) != json.dumps(v[1])
+                except TypeError:
+                    bad = True
+                if bad:
+                    fails.append(i)
             knot_fails = [i for i in fails if i >= cfg["knot_from"]]
             naive_report[nname] = {"fails": len(fails), "knot_vector_fails": len(knot_fails)}
             if not knot_fails:
@@ -239,9 +261,15 @@ def main() -> int:
         if ref_fail:
             print(f"KEY MATERIAL INVALID: {task} reference fails its own vectors")
             all_ok = False
-    if not check:
-        (REPO / "experiments/breadth/authoring2/verification_receipt.json").write_text(
-            json.dumps(receipt, indent=2) + "\n")
+
+    rpath = REPO / "experiments/breadth/authoring2/verification_receipt.json"
+    expected = json.dumps(receipt, indent=2) + "\n"
+    if check:
+        if not rpath.exists() or rpath.read_text() != expected:
+            print(f"DRIFT: {rpath} does not match the recomputed verification receipt")
+            all_ok = False
+    else:
+        rpath.write_text(expected)
         print(json.dumps(receipt, indent=2))
     print("OK" if all_ok else "FAILED")
     return 0 if all_ok else 1

@@ -1,0 +1,89 @@
+"""Business-day due-date adjustment — the shift rules, applied exactly.
+
+Implement:
+
+    def due_date(y, m, day, holidays) -> tuple[int, int, int]
+
+The nominal due date is `(y, m, day)` — a valid Gregorian date, 1900 <= y <=
+2100. `holidays` is a set of `(year, month, day)` tuples (dates that are
+holidays; may be empty; may include weekend dates). Return the adjusted due
+date as a `(year, month, day)` tuple.
+
+The rules (complete — every sentence is normative):
+
+1. A BUSINESS DAY is a day that is neither a Saturday nor a Sunday nor listed
+   in `holidays`.
+
+2. If the nominal due date is a business day, it is the due date — return it
+   unchanged.
+
+3. Otherwise move FORWARD one calendar day at a time to the first business
+   day.
+
+4. EXCEPT: if the forward move of rule 3 would produce a date in a different
+   calendar month than the nominal due date, do not use it; instead move
+   BACKWARD one calendar day at a time from the nominal due date to the first
+   business day. (The backward result may itself be earlier in the same month;
+   in valid inputs a backward search always finds a business day inside the
+   nominal month.)
+
+Notes: pure calendar arithmetic, no timezone. The standard library (including
+`datetime`) is available; `datetime.date(y, m, d).weekday()` returns 5 for
+Saturday and 6 for Sunday.
+"""
+
+from datetime import date, timedelta
+
+
+def due_date(y: int, m: int, day: int, holidays: set) -> tuple[int, int, int]:
+    nominal = date(y, m, day)
+
+    def is_business_day(d):
+        # Saturday is 5, Sunday is 6
+        if d.weekday() in (5, 6):
+            return False
+        if (d.year, d.month, d.day) in holidays:
+            return False
+        return True
+
+    # Rule 2: If nominal is business day, return it
+    if is_business_day(nominal):
+        return (nominal.year, nominal.month, nominal.day)
+
+    # Rule 3/4: Try forward, but stop if month changes
+    current = nominal + timedelta(days=1)
+    while current.month == nominal.month:
+        if is_business_day(current):
+            # Found business day in same month
+            return (current.year, current.month, current.day)
+        current = current + timedelta(days=1)
+
+    # Rule 4: Forward would go to different month, so move backward
+    current = nominal - timedelta(days=1)
+    while True:
+        if is_business_day(current):
+            return (current.year, current.month, current.day)
+        current = current - timedelta(days=1)
+
+
+def main() -> int:
+    checks = [
+        # ordinary mid-month cases (no month boundary in play)
+        ((2024, 7, 15, set()), (2024, 7, 15)),            # Monday — already business
+        ((2024, 7, 13, set()), (2024, 7, 15)),            # Saturday -> forward to Monday
+        ((2024, 7, 15, {(2024, 7, 15)}), (2024, 7, 16)),  # holiday Monday -> Tuesday
+    ]
+    ok = True
+    for args, want in checks:
+        got = due_date(*args)
+        if tuple(got) != want:
+            print(f"FAIL {args}: got {got}, want {want}")
+            ok = False
+    if ok:
+        print("OK")
+        return 0
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
