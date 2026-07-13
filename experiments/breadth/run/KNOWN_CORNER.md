@@ -14,7 +14,24 @@
 
 This document tracks the classification of tasks across the breadth test suite as they accumulate through layers.
 
-### Current Layer: crossing-event-task02-20260710
+### Current Layer: rule-boundary-escalation-fable-low-20260713
+
+**THE ALMANAC RESIDUAL IS CLEARED — a second measured model-separation.** The one
+cell that bit the cheap floor, `almanac_rule_boundary_001` (haiku **1/3**, the
+lichun solar-longitude boundary), was walked up the effort ladder from the
+cheapest rung above the floor and **cleared 3/3 at `claude-fable-5@low`** —
+hidden 14/14 on every trial, including the Feb-3/4/5 2020 lichun year-boundary
+vectors and the timezone→UT conversion pair the visible checks never touch.
+Three genuinely independent derivations (distinct hashes; diffs 25/171/178
+lines). This joins `task02_wildcard` (haiku 3/5 → sonnet@low 3/3) as the second
+measured model×capability separation in the corner. **Effort-before-access held
+exactly as designed:** the *lowest* Fable rung cleared it — no effort step-up, no
+access escalation, no Opus solve. Driver (Opus) planned/delegated/graded only;
+hands (fable@low) solved; every grade re-run by the driver against the hidden
+oracle. Cost: unbilled shadow (keyless Agent-tool subagents). Receipts:
+`run/ledger.jsonl` (3 `escalate` rows), sediment line in `known_corner.jsonl`.
+
+### Previous Layer: crossing-event-task02-20260710
 
 **THE CROSSING EVENT — capability transferred as an artifact, not a bigger
 model.** The $0.68 captured rule commitment (task02's in-class-backslash
@@ -110,3 +127,12 @@ This accumulation strategy prevents unnecessary re-work and tracks the frontier 
   packet). Replays 2–3 VALIDATED on distinct work items (capture ledger now
   amortizing 3 of 4); replay04 PARTIAL — the knot regressed through the packet
   at aggregate-count depth, the first measured limit of scaffold transfer.
+- **rule-boundary-escalation-fable-low-20260713**: the ARC-B almanac residual
+  (`almanac_rule_boundary_001`, haiku 1/3) escalated. `fable@low` clears it 3/3
+  (hidden 14/14 x3, independent derivations) — second measured model-separation,
+  effort-before-access held (lowest Fable rung, no access spend). The corner now
+  has **no open frontier residual**: the haiku-floor `rule_boundary` unstable cell
+  is superseded by the `@fable-low` settled cell; the only remaining `unstable`
+  entries are `task08_select_exchange` (4/5 procedural, cheap-trial territory) and
+  `replay04_count_matches` (a characterized scaffold-transfer limit) — neither a
+  frontier wall.

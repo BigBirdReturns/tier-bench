@@ -40,12 +40,18 @@ All required tools and docs are in place:
 - almanac_exception_class_001 (haiku, 3/3)
 - almanac_record_binding_001 (haiku, 3/3)
 
-**Unstable (Non-Wall):**
-- task08_select_exchange (haiku, 4/5 — procedural miss, never 0/K)
-- almanac_rule_boundary_001 (haiku, 1/3 — judgment edge, not a wall)
+**Escalated & cleared (2026-07-13):**
+- almanac_rule_boundary_001 — haiku 1/3 → **fable@low 3/3** (hidden 14/14 ×3). The
+  lichun/jieqi solar-boundary residue, second measured model-separation (joins
+  task02). Effort-before-access held: lowest Fable rung, no access spend, no Opus solve.
 
-**Open Walls: 0**  
-**Last Decision:** DO NOT ESCALATE — no wall anywhere; ceiling floor is extremely capable.
+**Unstable (Non-Wall, non-frontier):**
+- task08_select_exchange (haiku, 4/5 — procedural domain-bounds miss, cheap-trial territory)
+- replay04_count_matches (haiku+packet, 1/3 — characterized scaffold-transfer depth limit)
+
+**Open frontier residual: 0**  
+**Last Decision (2026-07-13):** DO NOT ESCALATE further — the one genuine judgment
+residue is now cleared at fable@low; nothing walls; access was never touched.
 
 ## Historical Budget
 
