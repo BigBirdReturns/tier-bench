@@ -1,0 +1,145 @@
+{
+  "schema": "tier-bench/arc-d-harvest-admission-amendment@2",
+  "charter_id": "arc_d_buffalo_pilot_v2_b2_admission_v2",
+  "state": "ratification_candidate",
+  "parent_authority": {
+    "path": "data/oss-replay/arc_d_buffalo_pilot_v2/harvest_charter.json",
+    "canonical_git_blob_sha256": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e",
+    "adoption_merge": "12bfd61c3e1a3c0cd13e3ffaad066c5c25925843",
+    "imported_section_sha256": {
+      "sealed_evidence": "e0009163e4b7dbeef79772d5076c5a6ca32357e7c7a83096668fcc96d602f090",
+      "grading_instruments": "eaba26ba0f19516bd8b7c1517cf9b5a9c021f94debb9d4b287ee0464833683e9",
+      "packet_allowlist": "f91079aaaf411c7ce3a090e3390db67cdf532e205e59dbd472c44c3d1e289155",
+      "packet_denylist": "7daacd26e4618e432a976c5358c7645a51cad70173f0441e8a9f8c613d629d1e",
+      "rubric": "cfed83e68af612a0e799ed06fc4d0f9c0d64d546c74a55741ced83fb2eeb27ac",
+      "prospective_harvest_gate": "d400acae4cd8b987877d2a7eec212992a770b3673ee2c129f137a63190ca31e7",
+      "disagreement": "25bc81b08271ac3d5ba5de42de2fa875adb898597d6633e8d17bc1b0b5cef974"
+    },
+    "substantive_rules_changed": false,
+    "does_not_reclassify_prior_attempts": true
+  },
+  "scope": {
+    "changes_only": [
+      "where fresh grading evidence may be held",
+      "how private evidence is committed, audited, and admitted",
+      "when comparison may open"
+    ],
+    "unchanged_by_exact_parent_digest": [
+      "sealed responses and source evidence",
+      "grading instruments",
+      "packet content allowlist and denylist",
+      "B2 rubric",
+      "disagreement rule",
+      "prospective B4 HARVEST rule"
+    ],
+    "prospective_procedural_clarification": "the outside-scope validator may strip JSON whitespace only, then requires one object whose first and last non-whitespace bytes are { and }; fences, prose, duplicate keys, and repaired carriers remain invalid, preserving the v1 packet one-object/no-fence/no-prose rule",
+    "claim_limit": "publicly commitment-verifiable and independently audited; not publicly reproducible while raw custody bytes remain private"
+  },
+  "activation": {
+    "proposal_only_until": "these exact amendment and specification-validator bytes reach the default branch by maintainer merge",
+    "state_after_adoption": "ADOPTED_PENDING_CUSTODY",
+    "active_only_when": "a conforming custody profile, activation receipt, attempt-preregistration/dispatch ledger, authenticated audit verifier, and full private-to-public derivation validator later reach the default branch",
+    "state_when_active": "ACTIVE_FOR_FRESH_V2_GRADING",
+    "suspension_events": [
+      "private evidence is unavailable to the designated verifier",
+      "an immutable locator or committed hash fails verification",
+      "retention, access logging, or independent audit ceases",
+      "the platform or evidence owner refuses sanctioned custody"
+    ],
+    "state_after_suspension": "CUSTODY_SUSPENDED"
+  },
+  "versioning": {
+    "adopted_bytes": "the canonical Git blob of this amendment is immutable authority; companion custody/receipt schemas in this proposal are draft interfaces, not operational authority",
+    "downstream_binding": "the later activation receipt must bind the exact adopted amendment blob plus the final merged operational schema, validator, authenticator, and tool blob hashes",
+    "change_rule": "any byte change to this amendment requires a new amendment version and maintainer merge; draft operational schemas may change only before activation and become immutable when the activation receipt binds them"
+  },
+  "fresh_attempt": {
+    "required_sessions": 6,
+    "items_per_lane": 3,
+    "lanes": ["grade_a", "grade_b"],
+    "maximum_dispatches_per_lane_item": 1,
+    "all_sessions_must_start_after_activation": true,
+    "all_sessions_must_be_fresh_projectless_packet_only": true,
+    "peer_and_prior_grade_exposure_before_seal": false,
+    "prior_attempts_may_be_admitted": false,
+    "rerun_original_subject_responses": false,
+    "failure_rule": "any refusal, malformed output, custody defect, or missing lane item makes the batch PARTIAL_UNPAIRED; preserve it and require separate authorization for a new full attempt"
+  },
+  "packet_transport": {
+    "grader_visible_packet": "reuse the ratified v1 packet format, content allowlist, and one-object/no-fence/no-prose GRADING_TASK; after activation, preregister one exact exporter-produced packet hash per item from one default-branch source commit and use that same item hash in both lanes; do not add this governance amendment to grader scope",
+    "outside_scope_binding": "the preregistered attempt manifest and private bundle bind the unchanged packet hash to this amendment and custody profile",
+    "required_validation": "invoke scripts/validate_arc_d_b2_packet.py over the complete packet directory and outside-scope export receipt before dispatch and again from private custody",
+    "new_packet_exporter_required": false
+  },
+  "custody": {
+    "private_bundle_schema": "schemas/arc_d_b2_private_bundle_manifest.schema.json",
+    "custody_profile_schema": "schemas/arc_d_b2_custody_profile.schema.json",
+    "public_receipt_schema": "schemas/arc_d_b2_public_admission_receipt.schema.json",
+    "batch_receipt_schema": "schemas/arc_d_b2_batch_admission_receipt.schema.json",
+    "required_private_artifacts": [
+      "complete dispatched packet tree",
+      "outside-scope packet export receipt",
+      "exact raw grader response bytes",
+      "parsed grade payload",
+      "full grade receipt",
+      "session and event evidence",
+      "private bundle manifest"
+    ],
+    "requirements": [
+      "sanctioned private storage with immutable content-addressed commit or object identity",
+      "separate lane write venues until all six bundles seal",
+      "append-only preservation of every dispatch outcome",
+      "named custodian and a distinct mechanical verifier with raw read access",
+      "the verifier is not the v1 rubric-author task, either grading instrument, or the coordinator",
+      "access log, retention rule, recovery copy, and export procedure",
+      "hash and size binding for every private artifact",
+      "signed-commit or OIDC-authenticated audit receipt binding validator source and result"
+    ],
+    "public_receipts_must_exclude": [
+      "raw grader response",
+      "grade payload or finding prose",
+      "response disposition before the batch seal",
+      "plain session identity",
+      "credentials, private paths, or access tokens"
+    ]
+  },
+  "admission_state_machine": [
+    "UNSTARTED",
+    "DISPATCHED",
+    "PRIVATE_SEALED",
+    "SIX_PRIVATE_SEALED",
+    "PUBLIC_RECEIPTS_PROPOSED",
+    "ADMITTED_BY_DEFAULT_BRANCH_MERGE",
+    "COMPARABLE",
+    "INADMISSIBLE (terminal per bundle)",
+    "PARTIAL_UNPAIRED (terminal per attempt)"
+  ],
+  "comparison_gate": {
+    "opens_only_after": "six public admission receipts and one batch receipt validate and reach the default branch atomically",
+    "private_semantic_validation_required": true,
+    "public_hash_validation_alone_is_insufficient": true,
+    "decision_rule": "imported unchanged from the parent charter",
+    "binding_event": "a later maintainer merge of deterministic comparison receipts",
+    "failure_default": "PARTIAL_UNPAIRED or B2_REFERENCE_AMBIGUOUS; never favorable averaging or driver repair"
+  },
+  "implementation_gate": {
+    "state_at_amendment_merge": "SPECIFICATION_ONLY_NOT_OPERATIONAL",
+    "required_later_merged_components": [
+      "custody profile plus a separate default-branch activation receipt with canonical Git-blob proof",
+      "publicly preregistered six-cell attempt manifest and append-only dispatch/failure ledger",
+      "full exact-v1 packet-tree revalidation from private immutable Git objects",
+      "authenticated audit receipt and executable signature or OIDC verification",
+      "private-to-public derivation validator that reads exact private Git commit/tree/blob objects",
+      "public commitment-shape validator that can never report semantic admission",
+      "batch validator binding both lanes to the parent charter's exact per-item prompt/response hashes and identical packet hashes"
+    ],
+    "dispatch_before_all_components_merge": "FORBIDDEN"
+  },
+  "historical_attempts": {
+    "grade_a_v1": "preserved local/non-admitted history",
+    "grade_b_attempts_1_through_3": "preserved v1 history; no receipt may be grandfathered",
+    "existing_comparator_state": "not run",
+    "existing_claim_state": "zero binding B2 dispositions, candidate residues, or HARVEST events"
+  },
+  "failure_default": "missing, malformed, unavailable, mutable, contaminated, pre-activation, selectively reported, or unaudited evidence remains PARTIAL_UNPAIRED and cannot enter comparison, B3, B4, or HARVEST"
+}

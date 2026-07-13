@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_batch_admission_receipt.schema.json",
+  "title": "ARC-D B2 six-bundle atomic admission receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_id", "attempt_id", "amendment_sha256", "custody_profile_sha256", "activation_commit", "required_receipt_count", "receipts", "seal", "attempt_failures", "state"],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-batch-admission-receipt@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "attempt_id": {"type": "string", "pattern": "^arc-d-b2-v2-[a-z0-9][a-z0-9._-]{2,63}$"},
+    "amendment_sha256": {"$ref": "#/$defs/sha256"},
+    "custody_profile_sha256": {"$ref": "#/$defs/sha256"},
+    "activation_commit": {"$ref": "#/$defs/gitsha"},
+    "required_receipt_count": {"const": 6},
+    "receipts": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["lane", "item_id", "path", "sha256"],
+        "properties": {
+          "lane": {"enum": ["grade_a", "grade_b"]},
+          "item_id": {"enum": ["attrs_1567_setattr_mro", "httpx_3614_base_url_query", "httpx_3221_ipv6_no_proxy"]},
+          "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"},
+          "sha256": {"$ref": "#/$defs/sha256"}
+        }
+      }
+    },
+    "seal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["last_private_sealed_at", "first_public_disclosure_at", "all_private_before_public"],
+      "properties": {
+        "last_private_sealed_at": {"type": "string", "format": "date-time"},
+        "first_public_disclosure_at": {"type": "string", "format": "date-time"},
+        "all_private_before_public": {"const": true}
+      }
+    },
+    "attempt_failures": {"const": 0},
+    "state": {"const": "PROPOSED_FOR_ATOMIC_ADMISSION"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitsha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+  }
+}
