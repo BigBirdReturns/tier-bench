@@ -16,6 +16,7 @@ sys.path.insert(0, str(REPO))
 
 from tier_runner.core import RunError, run_task, verify_run  # noqa: E402
 from tier_runner.adapters.claude_code import (  # noqa: E402
+    EMPTY_MCP_CONFIG,
     REQUIRED_CLAUDE_FLAGS,
     _help_surface_bytes,
     _subscription_env,
@@ -582,6 +583,11 @@ def test_claude_help_hash_binds_raw_bytes(parent: Path) -> None:
     assert _help_surface_bytes(raw) == hashlib.sha256(raw).hexdigest()
 
 
+def test_claude_empty_mcp_config_has_required_shape(parent: Path) -> None:
+    del parent
+    assert json.loads(EMPTY_MCP_CONFIG) == {"mcpServers": {}}
+
+
 def main() -> int:
     TEST_TMP.mkdir(exist_ok=True)
     parent = Path(tempfile.mkdtemp(prefix="tier-runner-", dir=TEST_TMP))
@@ -602,6 +608,7 @@ def main() -> int:
         test_interventions_are_global_and_paired,
         test_claude_receipt_parser_requires_provider_model_evidence,
         test_claude_help_hash_binds_raw_bytes,
+        test_claude_empty_mcp_config_has_required_shape,
     ]
     try:
         for index, test in enumerate(tests):

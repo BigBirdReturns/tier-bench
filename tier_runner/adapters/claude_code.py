@@ -12,6 +12,7 @@ import time
 
 
 SCHEMA = "tier-bench/tier-backend-result@1"
+EMPTY_MCP_CONFIG = '{"mcpServers":{}}'
 REQUIRED_CLAUDE_FLAGS = {
     "--disable-slash-commands",
     "--effort",
@@ -156,7 +157,7 @@ def main(argv: list[str] | None = None) -> int:
         "--disable-slash-commands",
         "--no-chrome",
         "--strict-mcp-config",
-        "--mcp-config", "{}",
+        "--mcp-config", EMPTY_MCP_CONFIG,
         "--tools", "Read,Edit,Write",
     ]
     child_env = _subscription_env(dict(os.environ))
