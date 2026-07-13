@@ -19,6 +19,7 @@ from tier_runner.adapters.claude_code import (  # noqa: E402
     EMPTY_MCP_CONFIG,
     REQUIRED_CLAUDE_FLAGS,
     _help_surface_bytes,
+    _packet_access_args,
     _subscription_env,
     _runtime_model,
     _usage,
@@ -588,6 +589,11 @@ def test_claude_empty_mcp_config_has_required_shape(parent: Path) -> None:
     assert json.loads(EMPTY_MCP_CONFIG) == {"mcpServers": {}}
 
 
+def test_claude_explicitly_allows_only_packet_path(parent: Path) -> None:
+    packet = parent / "packet"
+    assert _packet_access_args(packet) == ["--add-dir", str(packet)]
+
+
 def main() -> int:
     TEST_TMP.mkdir(exist_ok=True)
     parent = Path(tempfile.mkdtemp(prefix="tier-runner-", dir=TEST_TMP))
@@ -609,6 +615,7 @@ def main() -> int:
         test_claude_receipt_parser_requires_provider_model_evidence,
         test_claude_help_hash_binds_raw_bytes,
         test_claude_empty_mcp_config_has_required_shape,
+        test_claude_explicitly_allows_only_packet_path,
     ]
     try:
         for index, test in enumerate(tests):

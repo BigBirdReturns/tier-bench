@@ -63,7 +63,7 @@ Minimal manifest shape:
   "tool_versions": {
     "claude_code": "<exact `claude --version` output>",
     "claude_help_sha256": "<sha256 from adapter `_help_surface('claude')`>",
-    "tier_claude_adapter": "2"
+    "tier_claude_adapter": "3"
   },
   "prompt_templates": {
     "hands": {
@@ -93,7 +93,7 @@ Minimal manifest shape:
           "--account", "<same account label>",
           "--claude-version", "<same exact version>",
           "--claude-help-sha256", "<same frozen help-surface sha256>",
-          "--adapter-version", "2",
+          "--adapter-version", "3",
           "--cost-basis", "subscription-derived"
         ]
       }
@@ -112,7 +112,8 @@ be calculated by decoding and re-encoding the text: on Windows, Python's UTF-8
 mode can otherwise change the digest without any CLI-byte drift.
 
 The included Claude Code adapter starts one fresh safe-mode, non-persistent
-session, disables customizations/MCP/browser integration and shell access, and
+session, explicitly allow-lists only the disposable packet directory for tool
+access, disables customizations/MCP/browser integration and shell access, and
 records the raw provider JSON, stderr, token usage, and session identity as
 receipt artifacts. The runner keeps a local hash-only session registry under the
 target repository's common Git directory and rejects reuse across calls. Other

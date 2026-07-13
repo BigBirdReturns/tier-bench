@@ -14,6 +14,7 @@ import time
 SCHEMA = "tier-bench/tier-backend-result@1"
 EMPTY_MCP_CONFIG = '{"mcpServers":{}}'
 REQUIRED_CLAUDE_FLAGS = {
+    "--add-dir",
     "--disable-slash-commands",
     "--effort",
     "--mcp-config",
@@ -76,6 +77,10 @@ def _subscription_env(environment: dict[str, str]) -> dict[str, str]:
     }
 
 
+def _packet_access_args(worktree: Path) -> list[str]:
+    return ["--add-dir", str(worktree)]
+
+
 def _usage(data: dict) -> dict:
     usage = data.get("usage") if isinstance(data.get("usage"), dict) else {}
     return {
@@ -120,7 +125,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--claude-bin", default="claude")
     parser.add_argument("--claude-version", required=True)
     parser.add_argument("--claude-help-sha256", required=True)
-    parser.add_argument("--adapter-version", default="2")
+    parser.add_argument("--adapter-version", default="3")
     parser.add_argument("--model", required=True)
     parser.add_argument("--effort", required=True)
     parser.add_argument("--account", required=True)
@@ -156,6 +161,7 @@ def main(argv: list[str] | None = None) -> int:
         "--no-session-persistence",
         "--disable-slash-commands",
         "--no-chrome",
+        *_packet_access_args(args.worktree),
         "--strict-mcp-config",
         "--mcp-config", EMPTY_MCP_CONFIG,
         "--tools", "Read,Edit,Write",
