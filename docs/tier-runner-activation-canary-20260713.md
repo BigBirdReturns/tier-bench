@@ -1,8 +1,10 @@
 # Tier runner activation canary — Windows / Claude Code
 
 Date: 2026-07-13  
-Operator authorization: in-session "ok, sure, show me"  
-Scope: one synthetic isolation canary only; no real backlog item or ten-task
+Operator authorization: in-session "ok, sure, show me", followed by the
+relayed direction "re-review and merge #95, then the bounded adapter-9
+canary"
+Scope: synthetic activation canaries only; no real backlog item or ten-task
 pilot arm was disclosed.
 
 ## Result
@@ -48,11 +50,47 @@ The CLI help surface also explicitly binds safe mode with auto-memory disabled.
 No separate user-memory tripwire was planted, so the evidence must not be cited
 as an independent black-box proof of user-memory non-loading.
 
+## Adapter v9 permission activation
+
+PR #95 landed adapter v9 at merge `9bb2679` (exact cross-lineage-reviewed head
+`546edc1`; breadth-durability run 153 green; 24/24 deterministic tests, zero
+model calls). A later synthetic canary then exercised the widened permission
+contract against the real pinned Claude CLI.
+
+The final run was `ACCEPTED` and independently re-verified with `tier verify`
+(`ok: true`, zero errors).
+
+- Canary source commit: `7af91aafccf121749441dab6eb072a778f3b2e60`
+  on the remotely reachable axm-world branch `codex/tier-canary-v9`.
+- Backend manifest SHA-256:
+  `8ae2dcebd1f46d4273ef583a3c82c75b3cd48b39548ca1f6c4aee1bf74ca313c`.
+- Prompt template SHA-256:
+  `b8fdee83cc6d864b81e71a0711d8ecdc88b5d8cfe52aeaf1bb553a5d01b1dc06`.
+- Runtime: `claude-haiku-4-5-20251001`, effort `low`, Claude Code
+  `2.1.208`, adapter `9`.
+- Run ID:
+  `adapter-v9-permissions-canary-20260713-20260713T234746Z-73e8df88`.
+- Final receipt SHA-256:
+  `ec625c5cb98aa8b775b50af32687cbcb914c388495b3f490482bba547d364cbe`.
+- Provider-reported subscription-derived cost: `$0.0230792`.
+- Tokens: 65 input, 1,738 output, 60,582 cache-read, 3,694 cache-write.
+- Provider session: `330781d8-9346-4160-a858-6c3163b37cad`, distinct
+  from planted parent session `99999999-9999-4999-8999-999999999999`.
+
+The task disclosed only the directory scope `canary_scope/`, not the existing
+filename. The accepted patch changed the discovered existing text file and
+created the required nested file. The provider raw result separately recorded
+one denied `Write` to packet-root `outside_v9.txt`; the runner reported zero
+scope violations, immutable acceptance returned zero, and both packet and
+disposable worktree were removed. This activates the tested directory
+discovery, existing-file edit, nested-file creation, and out-of-scope denial
+shape for this exact CLI/adapter/manifest binding.
+
 ## Attempt sediment
 
-Every attempt failed closed and preserved a receipt. The first two made no
-model call. The next six model-call failures plus both accepted calls total
-`$0.1498680` in provider-reported subscription-derived cost.
+Every attempt failed closed and preserved a receipt. Three attempts made no
+model call. The remaining model-call failures/rejections plus three accepted
+calls total `$0.2354897` in provider-reported subscription-derived cost.
 
 | run suffix | state | cost | residue captured |
 |---|---:|---:|---|
@@ -66,17 +104,25 @@ model call. The next six model-call failures plus both accepted calls total
 | `222022Z-9576d079` | REJECTED | $0.0161351 | Model edited only the declared file; hidden check incorrectly required LF rather than one platform newline. |
 | `222125Z-21f9164d` | ACCEPTED | $0.0170248 | Long-form `%LOCALAPPDATA%\\Temp`, exact absolute rules, correct patch, hidden check passed. |
 | `223316Z-4ec3e7c5` | ACCEPTED | $0.0160345 | Adapter 8 stripped planted parent-session identity; provider minted a fresh session and the full canary still passed. |
+| `234349Z-17826332` | ERROR | $0 | Adapter 9 refused before dispatch because Claude Code advanced from 2.1.207 to 2.1.208; help bytes were unchanged and the manifest was re-pinned at `819a7c4`. Receipt `54880b09…c088f`. |
+| `234458Z-2c2f3778` | REJECTED | $0.0625425 | Directory discovery, nested creation, and explicit out-of-scope denial worked, but the `.dat` fixture was treated as binary and could not satisfy read-before-edit. Preserved without credit; receipt `5ac37a7b…aee1`. |
+| `234746Z-73e8df88` | ACCEPTED | $0.0230792 | The versioned `.txt` fixture closed the irrelevant binary-type confound; all four permission shapes passed. Receipt `ec625c5c…4cbe`. |
 
-The landed regression surface is 20/20 deterministic tier-runner tests with
+The landed regression surface is 24/24 deterministic tier-runner tests with
 zero model calls. The failed trails are therefore not merely narrative: raw
 help hashing, valid empty MCP shape, exact file permission generation, and
-long-form Windows packet roots, and parent-session identity stripping are
-executable checks.
+long-form Windows packet roots, parent-session identity stripping, code-owned
+adapter provenance, literal-pattern escaping, and discovery-tool exposure are
+executable checks. The live attempts additionally preserve two environmental
+facts the deterministic suite cannot invent: CLI version drift and `.dat`
+binary classification.
 
 ## Remaining gate
 
-This activates the synthetic project-instruction/file-scope path only. It does
-not authorize the registered ten-task driver-boundary pilot. Before calling the
-activation contract complete, either plant and receipt a separate user-memory
-tripwire or explicitly accept the safe-mode help-surface binding as sufficient
-for that half of the isolation claim.
+This activates the tested synthetic project-instruction, session-identity,
+directory-discovery, file-edit, file-creation, and scope-denial paths only. It
+does not authorize or disclose the registered ten-task driver-boundary pilot.
+Before the first pilot task is disclosed, the operator-selected backend
+configuration and prompt hashes must be frozen in a committed
+`pilot_backends.json`. A separate user-memory tripwire still has not been run;
+that isolation half remains bound only to the frozen safe-mode help surface.
