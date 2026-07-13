@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_attempt_preregistration.schema.json",
+  "title": "ARC-D B2 admission-v2 six-cell attempt preregistration",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_id", "attempt_id", "amendment_sha256", "custody_profile_sha256", "activation_commit", "source_commit", "maximum_dispatches_per_lane_item", "items", "state"],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-attempt-preregistration@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "attempt_id": {"type": "string", "pattern": "^arc-d-b2-v2-[a-z0-9][a-z0-9._-]{2,63}$"},
+    "amendment_sha256": {"$ref": "#/$defs/sha256"},
+    "custody_profile_sha256": {"$ref": "#/$defs/sha256"},
+    "activation_commit": {"$ref": "#/$defs/gitsha"},
+    "source_commit": {"$ref": "#/$defs/gitsha"},
+    "maximum_dispatches_per_lane_item": {"const": 1},
+    "items": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attrs_1567_setattr_mro", "httpx_3614_base_url_query", "httpx_3221_ipv6_no_proxy"],
+      "properties": {
+        "attrs_1567_setattr_mro": {"$ref": "#/$defs/item"},
+        "httpx_3614_base_url_query": {"$ref": "#/$defs/item"},
+        "httpx_3221_ipv6_no_proxy": {"$ref": "#/$defs/item"}
+      }
+    },
+    "state": {"const": "PREREGISTERED_BEFORE_DISPATCH"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitsha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["packet_sha256", "prompt_sha256", "response_sha256", "same_packet_required_in_both_lanes"],
+      "properties": {
+        "packet_sha256": {"$ref": "#/$defs/sha256"},
+        "prompt_sha256": {"$ref": "#/$defs/sha256"},
+        "response_sha256": {"$ref": "#/$defs/sha256"},
+        "same_packet_required_in_both_lanes": {"const": true}
+      }
+    }
+  }
+}

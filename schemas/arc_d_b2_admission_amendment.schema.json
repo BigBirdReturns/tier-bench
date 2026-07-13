@@ -38,11 +38,12 @@
     "scope": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["changes_only", "unchanged_by_exact_parent_digest", "prospective_procedural_clarification", "claim_limit"],
+      "required": ["changes_only", "unchanged_by_exact_parent_digest", "prospective_procedural_clarification", "clarification_historical_effect", "claim_limit"],
       "properties": {
         "changes_only": {"$ref": "#/$defs/nonempty_strings"},
         "unchanged_by_exact_parent_digest": {"$ref": "#/$defs/nonempty_strings"},
         "prospective_procedural_clarification": {"type": "string", "minLength": 1},
+        "clarification_historical_effect": {"type": "string", "minLength": 1},
         "claim_limit": {"const": "publicly commitment-verifiable and independently audited; not publicly reproducible while raw custody bytes remain private"}
       }
     },
@@ -100,10 +101,12 @@
     "custody": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["private_bundle_schema", "custody_profile_schema", "public_receipt_schema", "batch_receipt_schema", "required_private_artifacts", "requirements", "public_receipts_must_exclude"],
+      "required": ["private_bundle_schema", "custody_profile_schema", "attempt_preregistration_schema", "dispatch_ledger_schema", "public_receipt_schema", "batch_receipt_schema", "required_private_artifacts", "requirements", "public_receipts_must_exclude"],
       "properties": {
         "private_bundle_schema": {"const": "schemas/arc_d_b2_private_bundle_manifest.schema.json"},
         "custody_profile_schema": {"const": "schemas/arc_d_b2_custody_profile.schema.json"},
+        "attempt_preregistration_schema": {"const": "schemas/arc_d_b2_attempt_preregistration.schema.json"},
+        "dispatch_ledger_schema": {"const": "schemas/arc_d_b2_dispatch_ledger.schema.json"},
         "public_receipt_schema": {"const": "schemas/arc_d_b2_public_admission_receipt.schema.json"},
         "batch_receipt_schema": {"const": "schemas/arc_d_b2_batch_admission_receipt.schema.json"},
         "required_private_artifacts": {"$ref": "#/$defs/nonempty_strings"},

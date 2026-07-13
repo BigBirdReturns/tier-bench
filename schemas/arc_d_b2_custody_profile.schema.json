@@ -22,11 +22,23 @@
     "roles": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["custodian_id", "verifier_id", "coordinator_id", "verifier_is_not_rubric_author", "verifier_is_not_grading_instrument", "verifier_is_administration_only"],
+      "required": ["custodian_id", "verifier_id", "coordinator_id", "verifier_lineage", "verifier_lineage_conflicts", "custodian_is_verifier", "coordinator_is_verifier", "verifier_is_not_rubric_author", "verifier_is_not_grading_instrument", "verifier_is_administration_only"],
       "properties": {
         "custodian_id": {"$ref": "#/$defs/identifier"},
         "verifier_id": {"$ref": "#/$defs/identifier"},
         "coordinator_id": {"$ref": "#/$defs/identifier"},
+        "verifier_lineage": {"enum": ["openai", "anthropic", "human", "other"]},
+        "verifier_lineage_conflicts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["grade_a", "grade_b"],
+          "properties": {
+            "grade_a": {"type": "boolean"},
+            "grade_b": {"type": "boolean"}
+          }
+        },
+        "custodian_is_verifier": {"const": false},
+        "coordinator_is_verifier": {"const": false},
         "verifier_is_not_rubric_author": {"const": true},
         "verifier_is_not_grading_instrument": {"const": true},
         "verifier_is_administration_only": {"const": true}

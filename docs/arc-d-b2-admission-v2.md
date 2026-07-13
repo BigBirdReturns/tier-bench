@@ -33,7 +33,9 @@ preregistration/dispatch ledger, full private-Git object validation, and an
 authenticated signed-commit or OIDC audit mechanism. A content-blind preflight
 must prove both venues work without placing grader content in the public
 repository. The verifier may not be the v1 rubric-author task, either grading
-instrument, or the coordinator.
+instrument, the custodian, or the coordinator. The activation profile must
+record the verifier's lineage and any conflict with either grading lane; role
+inequality is asserted explicitly rather than inferred from labels.
 
 No governance document can override a platform safety or publication denial.
 If sanctioned private custody cannot be established, the lawful state remains
@@ -44,13 +46,19 @@ adoption. The companion custody and receipt schemas in this proposal are draft
 interfaces, not operational authority. The later activation receipt must bind
 the exact final schema/tool/authenticator Git blobs. Any byte change to this
 amendment requires a new amendment version and maintainer merge.
+Static validation hashes decision-critical sections from canonical JSON. It
+compares the working copy with the committed amendment blob and emits a clear
+warning if Git-object lookup is unavailable or the working copy differs, so a
+filesystem fallback cannot silently masquerade as canonical Git authority.
 
 ## Attempt and admission sequence
 
 Each v2 attempt has exactly one dispatch for each of the three items in each
-lane. Every outcome—success, refusal, malformed output, or provider failure—is
-sealed. No per-item retry, repair, wrapper stripping, or favorable sampling is
-permitted inside the attempt.
+lane. Every outcome—success, refusal, malformed output, provider failure, or
+custody failure—is sealed privately and represented by a content-free event
+commitment in the append-only public dispatch ledger. Silence after a failed
+dispatch is not permitted. No per-item retry, repair, wrapper stripping, or
+favorable sampling is permitted inside the attempt.
 
 1. Reuse the ratified v1 grader-visible packet format and instructions. After
    activation, export from one default-branch source commit, preregister one
@@ -66,14 +74,19 @@ permitted inside the attempt.
    validates the payload and full receipt, checks spans and evidence authority,
    and attests exact model/surface/session chronology and lane separation.
 5. Only after all six private bundles seal may content-free public admission
-   receipts be proposed. One batch receipt proves 3×2 completeness and that
-   public disclosure followed the final private seal.
+   receipts be proposed. Every private manifest, public receipt, and batch
+   receipt binds the preregistration manifest and public dispatch ledger by
+   hash and immutable commit. The batch receipt uses an exact keyed 3×2 grid,
+   not an untyped six-element list, and proves public disclosure followed the
+   final private seal.
 6. One default-branch merge admits the six receipts atomically. Comparison then
    runs over the audited private semantic receipts. A later merge, not the
    admission merge, makes any comparison result binding.
 
 Any defect makes the whole attempt `PARTIAL_UNPAIRED`. A new full attempt needs
-separate authorization and preserves the failed attempt.
+separate authorization and preserves the failed attempt. Failed and incomplete
+attempts remain publicly visible through their content-free dispatch ledgers;
+only grader content stays private.
 
 ## Public receipt boundary
 
@@ -83,6 +96,9 @@ private object identity; artifact hashes and sizes; committed session-identity
 hash; exact instrument labels; chronology; validator provenance; and audit
 result. Before the six-bundle seal it carries no grader prose, payload,
 disposition, plain session identity, private path, credential, or token.
+Before dispatch it carries the exact three-item packet preregistration. After
+each dispatch it carries the content-free event commitment and outcome class,
+including refusal, provider failure, malformed output, and custody failure.
 
 The public validator can prove structural completeness and commitment
 consistency. It must label that result `PUBLIC_COMMITMENT_SHAPE_VALID`, never
@@ -111,8 +127,9 @@ predicates: parent substantive hashes unchanged; prospective activation; six
 burden_holder: whoever claims an admitted grade, binding B2 disposition, or
   downstream HARVEST event.
 evidence: parent/amendment hashes, custody preflight, private bundle manifests,
-  immutable locators, public receipts, audit receipts, batch seal, validator
-  provenance, and later comparison receipts.
+  immutable locators, packet preregistration, public dispatch/failure ledger,
+  public receipts, audit receipts, batch seal, validator provenance, and later
+  comparison receipts.
 verifier: deterministic private validator plus the named independent verifier;
   the public validator checks commitments only.
 gap: no custody profile, activation receipt, attempt preregistration/ledger,

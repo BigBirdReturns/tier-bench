@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_dispatch_ledger.schema.json",
+  "title": "ARC-D B2 admission-v2 public dispatch and failure ledger",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_id", "attempt_id", "preregistration_manifest_sha256", "preregistration_commit", "cells", "state"],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-dispatch-ledger@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "attempt_id": {"type": "string", "pattern": "^arc-d-b2-v2-[a-z0-9][a-z0-9._-]{2,63}$"},
+    "preregistration_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "preregistration_commit": {"$ref": "#/$defs/gitsha"},
+    "cells": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grade_a", "grade_b"],
+      "properties": {
+        "grade_a": {"$ref": "#/$defs/lane"},
+        "grade_b": {"$ref": "#/$defs/lane"}
+      }
+    },
+    "state": {"enum": ["IN_PROGRESS_APPEND_ONLY", "SEALED_COMPLETE", "SEALED_PARTIAL_UNPAIRED"]}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitsha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dispatch_index", "outcome", "event_commitment_sha256"],
+      "properties": {
+        "dispatch_index": {"const": 1},
+        "outcome": {"enum": ["NOT_DISPATCHED", "COMPLETED", "REFUSED", "PROVIDER_FAILURE", "MALFORMED_OUTPUT", "CUSTODY_FAILURE"]},
+        "event_commitment_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attrs_1567_setattr_mro", "httpx_3614_base_url_query", "httpx_3221_ipv6_no_proxy"],
+      "properties": {
+        "attrs_1567_setattr_mro": {"$ref": "#/$defs/cell"},
+        "httpx_3614_base_url_query": {"$ref": "#/$defs/cell"},
+        "httpx_3221_ipv6_no_proxy": {"$ref": "#/$defs/cell"}
+      }
+    }
+  }
+}

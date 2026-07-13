@@ -33,12 +33,12 @@ SECTION_DIGESTS = {
     "disagreement": "25bc81b08271ac3d5ba5de42de2fa875adb898597d6633e8d17bc1b0b5cef974",
 }
 AMENDMENT_SECTION_DIGESTS = {
-    "scope": "9b6f36c7f98e77c3c1249d8712f91ca443fbd27536c6f8ce66dcdea0d873250e",
+    "scope": "bb22f3c472261a08961beeee3247ec2335fcde4cddd4aca823a242314e99a855",
     "activation": "00c96238a0eefcd039a4a5b2e62d8f8c4ae6c6416affd4e439d8522aabc2b09e",
     "versioning": "35c46c8e0431747d2415a9f74d05e8bed928916749bf9c6d1ed009aebc6a7814",
     "fresh_attempt": "bc5c62795bff7725c8dfd6ac70200f27457b9d2401d3756a9fa17736b5b4a04b",
     "packet_transport": "75b290d58a849f85f03b418f57cec5e6c4ce5fcfc74b39fc7e14c6a596d6862d",
-    "custody": "754c48e03045bc9ac822d174f84998589f5e1e20b5da08bf8238b29c47f5d793",
+    "custody": "f9c8a3a24f9557a278c67d19862cbd7bc76e52c233ae28f51b04321771ebe817",
     "admission_state_machine": "76c26ce81877c0ad804d5d75bd66b3386359419a497b21c52e0f47d9dcb8e591",
     "comparison_gate": "2420369e6bcf6881a42ab13ab9b0c4098ae5e43aa087b94cba734e00d4f25903",
     "implementation_gate": "c67e2f7b10ebe6119d2c9b28dfcf49d27671fe820725889740a98dcb302329d4",
@@ -48,6 +48,8 @@ AMENDMENT_SECTION_DIGESTS = {
 SCHEMAS = {
     "arc_d_b2_admission_amendment.schema.json": "https://tier-bench.local/schemas/arc_d_b2_admission_amendment.schema.json",
     "arc_d_b2_custody_profile.schema.json": "https://tier-bench.local/schemas/arc_d_b2_custody_profile.schema.json",
+    "arc_d_b2_attempt_preregistration.schema.json": "https://tier-bench.local/schemas/arc_d_b2_attempt_preregistration.schema.json",
+    "arc_d_b2_dispatch_ledger.schema.json": "https://tier-bench.local/schemas/arc_d_b2_dispatch_ledger.schema.json",
     "arc_d_b2_private_bundle_manifest.schema.json": "https://tier-bench.local/schemas/arc_d_b2_private_bundle_manifest.schema.json",
     "arc_d_b2_public_admission_receipt.schema.json": "https://tier-bench.local/schemas/arc_d_b2_public_admission_receipt.schema.json",
     "arc_d_b2_batch_admission_receipt.schema.json": "https://tier-bench.local/schemas/arc_d_b2_batch_admission_receipt.schema.json",
@@ -84,7 +86,7 @@ def _canonical_json(value: Any) -> bytes:
     return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode("ascii")
 
 
-def _git_blob(rel: Path) -> bytes:
+def _git_blob(rel: Path, warnings: list[str] | None = None) -> bytes:
     proc = subprocess.run(
         ["git", "cat-file", "blob", f"HEAD:{rel.as_posix()}"],
         cwd=ROOT,
@@ -93,6 +95,8 @@ def _git_blob(rel: Path) -> bytes:
     )
     if proc.returncode == 0:
         return proc.stdout
+    if warnings is not None:
+        warnings.append(f"canonical Git blob unavailable; using LF-normalized working tree for {rel.as_posix()}")
     return (ROOT / rel).read_bytes().replace(b"\r\n", b"\n")
 
 
@@ -188,14 +192,21 @@ def schema_errors(value: Any, schema: dict[str, Any], *, label: str = "value") -
 
 def validate_static() -> list[str]:
     errors: list[str] = []
+    warnings: list[str] = []
     try:
-        parent_bytes = _git_blob(PARENT_REL)
+        parent_bytes = _git_blob(PARENT_REL, warnings)
         parent = _loads(parent_bytes)
-        amendment = _load(ROOT / AMENDMENT_REL)
+        amendment_worktree_bytes = (ROOT / AMENDMENT_REL).read_bytes().replace(b"\r\n", b"\n")
+        amendment_git_bytes = _git_blob(AMENDMENT_REL, warnings)
+        if amendment_worktree_bytes != amendment_git_bytes:
+            warnings.append("working-tree amendment differs from the canonical HEAD Git blob; development validation uses working-tree bytes")
+        amendment = _loads(amendment_worktree_bytes)
         amendment_schema = _load(AMENDMENT_SCHEMA)
     except Exception as exc:
+        validate_static.last_warnings = warnings
         return [f"governing JSON is malformed or duplicate-keyed: {type(exc).__name__}"]
     if _sha(parent_bytes) != PARENT_SHA256:
+        validate_static.last_warnings = warnings
         return ["parent charter canonical Git blob hash changed"]
     errors.extend(schema_errors(amendment, amendment_schema, label="amendment"))
     for section, expected in AMENDMENT_SECTION_DIGESTS.items():
@@ -235,7 +246,11 @@ def validate_static() -> list[str]:
     public_schema = _load(ROOT / "schemas" / "arc_d_b2_public_admission_receipt.schema.json")
     if PUBLIC_FORBIDDEN_KEYS.intersection(_walk_keys(public_schema.get("properties", {}))):
         errors.append("public receipt schema exposes content-bearing fields")
+    validate_static.last_warnings = warnings
     return errors
+
+
+validate_static.last_warnings = []
 
 
 def main() -> int:
@@ -246,6 +261,8 @@ def main() -> int:
         )
         return 2
     errors = validate_static()
+    for warning in validate_static.last_warnings:
+        print(f"WARNING: {warning}", file=sys.stderr)
     if errors:
         for error in errors:
             print(f"ERROR: {error}", file=sys.stderr)

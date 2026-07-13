@@ -110,7 +110,106 @@ def test_custody_profile_bars_rubric_author_and_instruments_by_attestation():
     ):
         assert key in roles["required"]
         assert roles["properties"][key]["const"] is True
+    for key in ("custodian_is_verifier", "coordinator_is_verifier"):
+        assert key in roles["required"]
+        assert roles["properties"][key]["const"] is False
+    assert "verifier_lineage" in roles["required"]
+    assert "verifier_lineage_conflicts" in roles["required"]
     assert roles["additionalProperties"] is False
+
+
+def test_all_receipts_bind_preregistration_and_dispatch_ledger():
+    required_bindings = {
+        "preregistration_manifest_sha256",
+        "preregistration_commit",
+        "dispatch_ledger_sha256",
+        "dispatch_ledger_commit",
+    }
+    for name in (
+        "arc_d_b2_private_bundle_manifest.schema.json",
+        "arc_d_b2_public_admission_receipt.schema.json",
+        "arc_d_b2_batch_admission_receipt.schema.json",
+    ):
+        schema = validator._load(ROOT / "schemas" / name)
+        assert required_bindings.issubset(schema["required"])
+
+
+def test_batch_receipt_is_an_exact_keyed_three_by_two_grid():
+    schema = validator._load(ROOT / "schemas" / "arc_d_b2_batch_admission_receipt.schema.json")
+    receipt_ref = {"path": "receipts/a.json", "sha256": "a" * 64}
+    lane = {
+        "attrs_1567_setattr_mro": receipt_ref,
+        "httpx_3614_base_url_query": receipt_ref,
+        "httpx_3221_ipv6_no_proxy": receipt_ref,
+    }
+    receipt = {
+        "schema": "tier-bench/arc-d-b2-batch-admission-receipt@2",
+        "protocol_id": "arc_d_buffalo_pilot_v2",
+        "attempt_id": "arc-d-b2-v2-test",
+        "amendment_sha256": "a" * 64,
+        "custody_profile_sha256": "b" * 64,
+        "activation_commit": "c" * 40,
+        "preregistration_manifest_sha256": "d" * 64,
+        "preregistration_commit": "e" * 40,
+        "dispatch_ledger_sha256": "f" * 64,
+        "dispatch_ledger_commit": "1" * 40,
+        "required_receipt_count": 6,
+        "receipts": {"grade_a": lane, "grade_b": lane},
+        "seal": {
+            "last_private_sealed_at": "2026-07-13T00:00:00Z",
+            "first_public_disclosure_at": "2026-07-13T00:01:00Z",
+            "all_private_before_public": True,
+        },
+        "attempt_failures": 0,
+        "state": "PROPOSED_FOR_ATOMIC_ADMISSION",
+    }
+    assert validator.schema_errors(receipt, schema) == []
+    duplicated_six = copy.deepcopy(receipt)
+    duplicated_six["receipts"] = [receipt_ref] * 6
+    assert any("type mismatch" in error for error in validator.schema_errors(duplicated_six, schema))
+    missing_cell = copy.deepcopy(receipt)
+    del missing_cell["receipts"]["grade_b"]["httpx_3221_ipv6_no_proxy"]
+    assert any("required fields missing" in error for error in validator.schema_errors(missing_cell, schema))
+
+
+def test_preregistration_fixes_one_packet_per_item_before_dispatch():
+    schema = validator._load(ROOT / "schemas" / "arc_d_b2_attempt_preregistration.schema.json")
+    items = schema["properties"]["items"]
+    assert items["additionalProperties"] is False
+    assert set(items["required"]) == {
+        "attrs_1567_setattr_mro",
+        "httpx_3614_base_url_query",
+        "httpx_3221_ipv6_no_proxy",
+    }
+    assert schema["properties"]["maximum_dispatches_per_lane_item"]["const"] == 1
+    assert schema["$defs"]["item"]["properties"]["same_packet_required_in_both_lanes"]["const"] is True
+
+
+def test_public_dispatch_ledger_represents_failed_attempts():
+    schema = validator._load(ROOT / "schemas" / "arc_d_b2_dispatch_ledger.schema.json")
+    failed = {"dispatch_index": 1, "outcome": "PROVIDER_FAILURE", "event_commitment_sha256": "a" * 64}
+    lane = {
+        "attrs_1567_setattr_mro": failed,
+        "httpx_3614_base_url_query": failed,
+        "httpx_3221_ipv6_no_proxy": failed,
+    }
+    ledger = {
+        "schema": "tier-bench/arc-d-b2-dispatch-ledger@2",
+        "protocol_id": "arc_d_buffalo_pilot_v2",
+        "attempt_id": "arc-d-b2-v2-failed",
+        "preregistration_manifest_sha256": "b" * 64,
+        "preregistration_commit": "c" * 40,
+        "cells": {"grade_a": lane, "grade_b": lane},
+        "state": "SEALED_PARTIAL_UNPAIRED",
+    }
+    assert validator.schema_errors(ledger, schema) == []
+
+
+def test_parser_clarification_does_not_reclassify_prior_outcomes():
+    amendment = validator._load(ROOT / validator.AMENDMENT_REL)
+    effect = amendment["scope"]["clarification_historical_effect"]
+    assert "no historical Grade B outcome is reclassified" in effect
+    assert "remains invalid" in effect
 
 
 def test_operational_modes_fail_closed_until_custody_task_merges():
