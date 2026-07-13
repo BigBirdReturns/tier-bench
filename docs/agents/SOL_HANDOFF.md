@@ -35,6 +35,13 @@ to the original conversational draft are marked.
   fail-closed validator. The exporter may construct official packets only when
   its exact source is on the default branch; tests may build ephemeral packets
   without disclosure, but no grader dispatch is authorized before merge.
+- The first B2 grading attempt is `PARTIAL_UNPAIRED`. Three OpenAI Grade A
+  outputs exist only in a local private worktree; policy denied publishing raw
+  grades or receipts to this public repository, so none is admitted evidence.
+  Local validation classified two as structurally valid and one as invalid for
+  treating non-authority issue material as authoritative. Anthropic Grade B was
+  blocked before provider dispatch despite explicit operator approval: zero
+  disclosures and zero outputs. No comparison or B2 result exists.
 
 ## Settled assets (with exact figures)
 
