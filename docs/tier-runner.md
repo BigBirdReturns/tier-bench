@@ -63,7 +63,7 @@ Minimal manifest shape:
   "tool_versions": {
     "claude_code": "<exact `claude --version` output>",
     "claude_help_sha256": "<sha256 from adapter `_help_surface('claude')`>",
-    "tier_claude_adapter": "6"
+    "tier_claude_adapter": "7"
   },
   "prompt_templates": {
     "hands": {
@@ -93,7 +93,7 @@ Minimal manifest shape:
           "--account", "<same account label>",
           "--claude-version", "<same exact version>",
           "--claude-help-sha256", "<same frozen help-surface sha256>",
-          "--adapter-version", "6",
+          "--adapter-version", "7",
           "--cost-basis", "subscription-derived"
         ]
       }
@@ -110,6 +110,10 @@ is the portable shape; runtime checks additionally bind exact Git bytes.
 The help-surface digest binds the raw `claude --help` stdout bytes. It must not
 be calculated by decoding and re-encoding the text: on Windows, Python's UTF-8
 mode can otherwise change the digest without any CLI-byte drift.
+
+On Windows, packets are created through the long-form `%LOCALAPPDATA%\\Temp`
+path rather than a legacy 8.3 `TEMP` alias so the CLI's path permission rules
+and tool inputs bind the same bytes.
 
 The included Claude Code adapter starts one fresh safe-mode, non-persistent
 session, explicitly allow-lists only the disposable packet directory for tool

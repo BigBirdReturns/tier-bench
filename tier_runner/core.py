@@ -112,6 +112,19 @@ def _safe_id(value: str) -> str:
     return slug[:80]
 
 
+def _packet_temp_root() -> Path | None:
+    if os.name != "nt":
+        return None
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    root = (
+        Path(local_app_data) / "Temp"
+        if local_app_data
+        else Path.home() / "AppData" / "Local" / "Temp"
+    )
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 def _normalize_scope(repo: Path, values: list[str]) -> list[tuple[str, bool]]:
     scopes: list[tuple[str, bool]] = []
     for raw_value in values:
@@ -488,7 +501,12 @@ def run_task(
         "artifacts": {},
         "errors": [],
     }
-    packet = Path(tempfile.mkdtemp(prefix=f"tier-packet-{_safe_id(task_id)}-"))
+    packet = Path(
+        tempfile.mkdtemp(
+            prefix=f"tier-packet-{_safe_id(task_id)}-",
+            dir=_packet_temp_root(),
+        )
+    )
     added_worktree = False
     try:
         _git(repo, "worktree", "add", "--detach", str(worktree), base)

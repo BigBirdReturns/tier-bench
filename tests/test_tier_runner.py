@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -14,7 +15,7 @@ REPO = Path(__file__).resolve().parents[1]
 TEST_TMP = REPO / ".test-tmp"
 sys.path.insert(0, str(REPO))
 
-from tier_runner.core import RunError, run_task, verify_run  # noqa: E402
+from tier_runner.core import RunError, _packet_temp_root, run_task, verify_run  # noqa: E402
 from tier_runner.adapters.claude_code import (  # noqa: E402
     EMPTY_MCP_CONFIG,
     REQUIRED_CLAUDE_FLAGS,
@@ -613,6 +614,15 @@ def test_claude_permissions_are_scoped_to_dispatched_files(parent: Path) -> None
     ]
 
 
+def test_windows_packet_root_avoids_legacy_temp_alias(parent: Path) -> None:
+    del parent
+    root = _packet_temp_root()
+    if sys.platform == "win32":
+        assert root == Path(os.environ["LOCALAPPDATA"]) / "Temp"
+    else:
+        assert root is None
+
+
 def main() -> int:
     TEST_TMP.mkdir(exist_ok=True)
     parent = Path(tempfile.mkdtemp(prefix="tier-runner-", dir=TEST_TMP))
@@ -636,6 +646,7 @@ def main() -> int:
         test_claude_empty_mcp_config_has_required_shape,
         test_claude_explicitly_allows_only_packet_path,
         test_claude_permissions_are_scoped_to_dispatched_files,
+        test_windows_packet_root_avoids_legacy_temp_alias,
     ]
     try:
         for index, test in enumerate(tests):
