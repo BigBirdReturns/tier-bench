@@ -44,10 +44,19 @@ REF = {
     "t3_accrual_crossover_001": _src(bv.ref_crossover, "crossover_day"),
 }
 NAIVE = {
-    "t3_null_filter_001": (
-        inspect.getsource(bv._cmp) + "\n" + inspect.getsource(bv._boolish) + "\n"
-        + _src(bv.naive_none_is_false, "select_ids")),
-    "t3_accrual_crossover_001": _src(bv.naive_float_formula, "crossover_day"),
+    # every declared naive gets the visible-OK / hidden-FAIL proof
+    "t3_null_filter_001": {
+        "none_is_false": (
+            inspect.getsource(bv._cmp) + "\n" + inspect.getsource(bv._boolish) + "\n"
+            + _src(bv.naive_none_is_false, "select_ids")),
+        "skip_none": (
+            inspect.getsource(bv._cmp) + "\n" + inspect.getsource(bv._boolish) + "\n"
+            + inspect.getsource(bv._touches_none) + "\n"
+            + _src(bv.naive_skip_none, "select_ids")),
+    },
+    "t3_accrual_crossover_001": {
+        "float_formula": _src(bv.naive_float_formula, "crossover_day"),
+    },
 }
 WRONG_TYPE = {
     # correct values, wrong containers
@@ -93,12 +102,14 @@ def test_reference_passes_visible_and_hidden():
             f"{task}: reference not full hidden score: {hid.stdout[:100]}"
 
 
-def test_naive_passes_visible_fails_hidden():
-    for task in NAIVE:
-        vis, hid = _splice_and_run(task, NAIVE[task])
-        assert vis.returncode == 0 and vis.stdout.strip().endswith("OK"), \
-            f"{task}: naive failed VISIBLE checks — knot not hidden enough: {vis.stdout[:150]}"
-        assert hid.returncode != 0, f"{task}: naive passed the hidden grader — no daylight"
+def test_every_declared_naive_passes_visible_fails_hidden():
+    for task, naives in NAIVE.items():
+        for name, impl in naives.items():
+            vis, hid = _splice_and_run(task, impl)
+            assert vis.returncode == 0 and vis.stdout.strip().endswith("OK"), \
+                f"{task}/{name}: naive failed VISIBLE checks — knot not hidden enough: {vis.stdout[:150]}"
+            assert hid.returncode != 0, \
+                f"{task}/{name}: naive passed the hidden grader — no daylight"
 
 
 def test_wrong_container_types_fail():
