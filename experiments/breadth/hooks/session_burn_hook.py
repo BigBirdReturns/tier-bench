@@ -111,7 +111,13 @@ def _scan_new(transcript: Path, offset: int) -> tuple[int, int, int]:
 
 def _upsert(row: dict) -> None:
     """Replace the auto row for this session in burn_log.jsonl (preserving every
-    other line verbatim and in place), else append. Atomic via temp + replace."""
+    other line verbatim and in place), else append. Atomic via temp + replace.
+
+    CLOSURE IS MONOTONIC. `closed: true` means "a SessionEnd event has been
+    observed for this session"; once set it never disappears, and the terminal
+    event name is retained — a later Stop checkpoint may only refresh the
+    counts (the harness can flush trailing Stop events after a SessionEnd).
+    Without this, a late checkpoint silently reopens a finalized session row."""
     sid = row["session"]
     lines: list[str] = []
     replaced = False
@@ -125,6 +131,9 @@ def _upsert(row: dict) -> None:
                 lines.append(raw)  # keep unparseable lines untouched
                 continue
             if obj.get("auto") and obj.get("session") == sid:
+                if obj.get("closed"):
+                    row["closed"] = True
+                    row["event"] = obj.get("event", row.get("event"))
                 lines.append(json.dumps(row, ensure_ascii=False))
                 replaced = True
             else:

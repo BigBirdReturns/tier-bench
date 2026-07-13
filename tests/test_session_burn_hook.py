@@ -100,6 +100,49 @@ def test_hook_end_to_end_with_breakdown_row(tmp_path=None):
             state.unlink(missing_ok=True)
 
 
+def test_closure_is_monotonic_sessionend_then_stop():
+    # A Stop checkpoint AFTER SessionEnd may refresh counts but must never
+    # strip closed:true or the terminal event name (the ca75826 regression).
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        transcript = d / "t.jsonl"
+        transcript.write_text(json.dumps(
+            {"type": "assistant", "message": {"usage": {
+                "input_tokens": 5, "output_tokens": 5}}}) + "\n")
+        env = dict(os.environ)
+        env["TIER_BENCH_ACCOUNT"] = "test-tier"
+        burn = REPO / "experiments/breadth/run/burn_log.jsonl"
+
+        def fire(event):
+            payload = json.dumps({"session_id": "hooktest-mono",
+                                  "transcript_path": str(transcript),
+                                  "hook_event_name": event})
+            p = subprocess.run([sys.executable, str(HOOK)], input=payload,
+                               capture_output=True, text=True, env=env)
+            assert p.returncode == 0, p.stderr
+
+        try:
+            fire("SessionEnd")  # terminal row: closed=true, event=SessionEnd
+            # session emits one more turn, then a trailing Stop flush arrives
+            with transcript.open("a") as f:
+                f.write(json.dumps({"type": "assistant", "message": {"usage": {
+                    "input_tokens": 3, "output_tokens": 4}}}) + "\n")
+            fire("Stop")
+            rows = [json.loads(l) for l in burn.read_text().splitlines()
+                    if l.strip() and json.loads(l).get("session") == "hooktest-mono"]
+            assert len(rows) == 1, f"expected exactly one row, got {len(rows)}"
+            r = rows[0]
+            assert r["closed"] is True, "closed:true disappeared after a later Stop"
+            assert r["event"] == "SessionEnd", f"terminal event lost: {r['event']}"
+            assert r["tokens"] == 17, f"counts not refreshed: {r['tokens']}"  # 10 + 7
+            assert r["calls"] == 2
+        finally:
+            keep = [l for l in burn.read_text().splitlines()
+                    if l.strip() and json.loads(l).get("session") != "hooktest-mono"]
+            burn.write_text("\n".join(keep) + "\n")
+            (REPO / "experiments/breadth/run/.burn_state/hooktest-mono.json").unlink(missing_ok=True)
+
+
 def _run_standalone() -> int:
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0
