@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -14,8 +15,14 @@ REPO = Path(__file__).resolve().parents[1]
 TEST_TMP = REPO / ".test-tmp"
 sys.path.insert(0, str(REPO))
 
-from tier_runner.core import RunError, run_task, verify_run  # noqa: E402
+from tier_runner.core import RunError, _packet_temp_root, run_task, verify_run  # noqa: E402
 from tier_runner.adapters.claude_code import (  # noqa: E402
+    EMPTY_MCP_CONFIG,
+    REQUIRED_CLAUDE_FLAGS,
+    _absolute_permission_path,
+    _help_surface_bytes,
+    _packet_access_args,
+    _packet_permission_args,
     _subscription_env,
     _runtime_model,
     _usage,
@@ -563,13 +570,64 @@ def test_claude_receipt_parser_requires_provider_model_evidence(parent: Path) ->
         "ANTHROPIC_API_KEY": "must-not-reach-subscription-cli",
         "AWS_ACCESS_KEY_ID": "must-not-switch-to-bedrock",
         "CLAUDE_CODE_OAUTH_TOKEN": "subscription-auth-is-allowed",
+        "CLAUDE_CODE_SESSION_ID": "must-not-reuse-parent-session",
+        "CLAUDE_CODE_REMOTE_SESSION_ID": "must-not-reuse-remote-session",
+        "CLAUDE_CODE_PARENT_SESSION_ID": "must-not-reuse-future-parent-session",
+        "CLAUDE_CODE_CHILD_SESSION": "must-not-mark-nested-session",
+        "CLAUDECODE": "must-not-inherit-parent-marker",
+        "CLAUDE_CODE_SHELL": "pwsh",
         "PATH": "kept",
         "TIER_RUN_DIR": "must-not-reach-model",
     })
     assert sanitized == {
         "CLAUDE_CODE_OAUTH_TOKEN": "subscription-auth-is-allowed",
+        "CLAUDE_CODE_SHELL": "pwsh",
         "PATH": "kept",
     }
+
+
+def test_claude_help_hash_binds_raw_bytes(parent: Path) -> None:
+    del parent
+    raw = b"\xff platform-specific help\r\n" + b"\n".join(
+        flag.encode("ascii") for flag in sorted(REQUIRED_CLAUDE_FLAGS)
+    )
+    assert _help_surface_bytes(raw) == hashlib.sha256(raw).hexdigest()
+
+
+def test_claude_empty_mcp_config_has_required_shape(parent: Path) -> None:
+    del parent
+    assert json.loads(EMPTY_MCP_CONFIG) == {"mcpServers": {}}
+
+
+def test_claude_explicitly_allows_only_packet_path(parent: Path) -> None:
+    packet = parent / "packet"
+    assert _packet_access_args(packet) == ["--add-dir", str(packet)]
+
+
+def test_claude_permissions_are_scoped_to_dispatched_files(parent: Path) -> None:
+    first = _absolute_permission_path(parent / "packet" / "src" / "a.py")
+    second = _absolute_permission_path(parent / "packet" / "docs" / "b.md")
+    assert first.startswith("//")
+    assert _packet_permission_args(
+        parent / "packet", ["src/a.py", "docs\\b.md"]
+    ) == [
+        "--permission-mode",
+        "dontAsk",
+        "--allowedTools",
+        f"Read({first})",
+        f"Edit({first})",
+        f"Read({second})",
+        f"Edit({second})",
+    ]
+
+
+def test_windows_packet_root_avoids_legacy_temp_alias(parent: Path) -> None:
+    del parent
+    root = _packet_temp_root()
+    if sys.platform == "win32":
+        assert root == Path(os.environ["LOCALAPPDATA"]) / "Temp"
+    else:
+        assert root is None
 
 
 def main() -> int:
@@ -591,6 +649,11 @@ def main() -> int:
         test_prompt_must_bind_every_registered_input,
         test_interventions_are_global_and_paired,
         test_claude_receipt_parser_requires_provider_model_evidence,
+        test_claude_help_hash_binds_raw_bytes,
+        test_claude_empty_mcp_config_has_required_shape,
+        test_claude_explicitly_allows_only_packet_path,
+        test_claude_permissions_are_scoped_to_dispatched_files,
+        test_windows_packet_root_avoids_legacy_temp_alias,
     ]
     try:
         for index, test in enumerate(tests):

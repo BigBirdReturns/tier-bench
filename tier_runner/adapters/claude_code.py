@@ -5,14 +5,17 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import subprocess
 import sys
 import time
 
 
 SCHEMA = "tier-bench/tier-backend-result@1"
+EMPTY_MCP_CONFIG = '{"mcpServers":{}}'
 REQUIRED_CLAUDE_FLAGS = {
+    "--add-dir",
+    "--allowedTools",
     "--disable-slash-commands",
     "--effort",
     "--mcp-config",
@@ -34,6 +37,10 @@ NON_SUBSCRIPTION_ENV_KEYS = {
     "GOOGLE_APPLICATION_CREDENTIALS",
 }
 NON_SUBSCRIPTION_ENV_PREFIXES = ("AWS_", "AZURE_", "BEDROCK_", "GOOGLE_", "VERTEX_")
+SESSION_IDENTITY_ENV_KEYS = {
+    "CLAUDECODE",
+    "CLAUDE_CODE_CHILD_SESSION",
+}
 
 
 def _sha(path: Path) -> str:
@@ -47,14 +54,21 @@ def _version(binary: str) -> str:
     return result.stdout.strip()
 
 
-def _help_surface(binary: str) -> str:
-    result = subprocess.run([binary, "--help"], capture_output=True, text=True)
-    if result.returncode:
-        raise RuntimeError(f"cannot read Claude Code help: {result.stderr.strip()}")
-    missing = sorted(flag for flag in REQUIRED_CLAUDE_FLAGS if flag not in result.stdout)
+def _help_surface_bytes(output: bytes) -> str:
+    missing = sorted(
+        flag for flag in REQUIRED_CLAUDE_FLAGS if flag.encode("ascii") not in output
+    )
     if missing:
         raise RuntimeError(f"Claude Code isolation flags are unavailable: {missing}")
-    return hashlib.sha256(result.stdout.encode("utf-8")).hexdigest()
+    return hashlib.sha256(output).hexdigest()
+
+
+def _help_surface(binary: str) -> str:
+    result = subprocess.run([binary, "--help"], capture_output=True)
+    if result.returncode:
+        stderr = result.stderr.decode(errors="replace").strip()
+        raise RuntimeError(f"cannot read Claude Code help: {stderr}")
+    return _help_surface_bytes(result.stdout)
 
 
 def _subscription_env(environment: dict[str, str]) -> dict[str, str]:
@@ -64,8 +78,30 @@ def _subscription_env(environment: dict[str, str]) -> dict[str, str]:
         if not key.startswith("TIER_")
         and key not in {"GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "OLDPWD", "PWD"}
         and key not in NON_SUBSCRIPTION_ENV_KEYS
+        and key not in SESSION_IDENTITY_ENV_KEYS
+        and not (key.startswith("CLAUDE_CODE_") and key.endswith("_SESSION_ID"))
         and not key.startswith(NON_SUBSCRIPTION_ENV_PREFIXES)
     }
+
+
+def _packet_access_args(worktree: Path) -> list[str]:
+    return ["--add-dir", str(worktree)]
+
+
+def _absolute_permission_path(path: Path) -> str:
+    posix = path.resolve().as_posix()
+    if len(posix) >= 3 and posix[1:3] == ":/":
+        return f"//{posix[0].lower()}{posix[2:]}"
+    return "//" + posix.lstrip("/")
+
+
+def _packet_permission_args(worktree: Path, files: list[str]) -> list[str]:
+    rules: list[str] = []
+    for path in files:
+        relative = Path(*PurePosixPath(path.replace("\\", "/")).parts)
+        absolute = _absolute_permission_path(worktree / relative)
+        rules.extend((f"Read({absolute})", f"Edit({absolute})"))
+    return ["--permission-mode", "dontAsk", "--allowedTools", *rules]
 
 
 def _usage(data: dict) -> dict:
@@ -112,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--claude-bin", default="claude")
     parser.add_argument("--claude-version", required=True)
     parser.add_argument("--claude-help-sha256", required=True)
-    parser.add_argument("--adapter-version", default="1")
+    parser.add_argument("--adapter-version", default="8")
     parser.add_argument("--model", required=True)
     parser.add_argument("--effort", required=True)
     parser.add_argument("--account", required=True)
@@ -143,13 +179,14 @@ def main(argv: list[str] | None = None) -> int:
         "--output-format", "json",
         "--model", args.model,
         "--effort", args.effort,
-        "--permission-mode", "acceptEdits",
+        *_packet_permission_args(args.worktree, dispatch["files"]),
         "--safe-mode",
         "--no-session-persistence",
         "--disable-slash-commands",
         "--no-chrome",
+        *_packet_access_args(args.worktree),
         "--strict-mcp-config",
-        "--mcp-config", "{}",
+        "--mcp-config", EMPTY_MCP_CONFIG,
         "--tools", "Read,Edit,Write",
     ]
     child_env = _subscription_env(dict(os.environ))
