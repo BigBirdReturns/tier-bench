@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import subprocess
 import sys
 import time
@@ -92,7 +92,8 @@ def _absolute_permission_path(path: Path) -> str:
 def _packet_permission_args(worktree: Path, files: list[str]) -> list[str]:
     rules: list[str] = []
     for path in files:
-        absolute = _absolute_permission_path(worktree / path)
+        relative = Path(*PurePosixPath(path.replace("\\", "/")).parts)
+        absolute = _absolute_permission_path(worktree / relative)
         rules.extend((f"Read({absolute})", f"Edit({absolute})"))
     return ["--permission-mode", "dontAsk", "--allowedTools", *rules]
 
