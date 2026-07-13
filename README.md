@@ -30,6 +30,10 @@ That approach fails because cheap models are good at many tasks, expensive model
 
 Routing without measurement burns money.
 
+For real repository work, [`tier run`](docs/tier-runner.md) is the fail-closed
+daily entrypoint: immutable operator acceptance, a disposable worktree, and a
+patch plus receipts instead of a silent merge.
+
 ## What Tier Bench does
 
 Tier Bench treats models like infrastructure, not magic.
