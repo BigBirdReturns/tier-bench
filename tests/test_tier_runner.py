@@ -570,11 +570,18 @@ def test_claude_receipt_parser_requires_provider_model_evidence(parent: Path) ->
         "ANTHROPIC_API_KEY": "must-not-reach-subscription-cli",
         "AWS_ACCESS_KEY_ID": "must-not-switch-to-bedrock",
         "CLAUDE_CODE_OAUTH_TOKEN": "subscription-auth-is-allowed",
+        "CLAUDE_CODE_SESSION_ID": "must-not-reuse-parent-session",
+        "CLAUDE_CODE_REMOTE_SESSION_ID": "must-not-reuse-remote-session",
+        "CLAUDE_CODE_PARENT_SESSION_ID": "must-not-reuse-future-parent-session",
+        "CLAUDE_CODE_CHILD_SESSION": "must-not-mark-nested-session",
+        "CLAUDECODE": "must-not-inherit-parent-marker",
+        "CLAUDE_CODE_SHELL": "pwsh",
         "PATH": "kept",
         "TIER_RUN_DIR": "must-not-reach-model",
     })
     assert sanitized == {
         "CLAUDE_CODE_OAUTH_TOKEN": "subscription-auth-is-allowed",
+        "CLAUDE_CODE_SHELL": "pwsh",
         "PATH": "kept",
     }
 

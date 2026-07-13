@@ -37,6 +37,10 @@ NON_SUBSCRIPTION_ENV_KEYS = {
     "GOOGLE_APPLICATION_CREDENTIALS",
 }
 NON_SUBSCRIPTION_ENV_PREFIXES = ("AWS_", "AZURE_", "BEDROCK_", "GOOGLE_", "VERTEX_")
+SESSION_IDENTITY_ENV_KEYS = {
+    "CLAUDECODE",
+    "CLAUDE_CODE_CHILD_SESSION",
+}
 
 
 def _sha(path: Path) -> str:
@@ -74,6 +78,8 @@ def _subscription_env(environment: dict[str, str]) -> dict[str, str]:
         if not key.startswith("TIER_")
         and key not in {"GIT_DIR", "GIT_INDEX_FILE", "GIT_WORK_TREE", "OLDPWD", "PWD"}
         and key not in NON_SUBSCRIPTION_ENV_KEYS
+        and key not in SESSION_IDENTITY_ENV_KEYS
+        and not (key.startswith("CLAUDE_CODE_") and key.endswith("_SESSION_ID"))
         and not key.startswith(NON_SUBSCRIPTION_ENV_PREFIXES)
     }
 
@@ -142,7 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--claude-bin", default="claude")
     parser.add_argument("--claude-version", required=True)
     parser.add_argument("--claude-help-sha256", required=True)
-    parser.add_argument("--adapter-version", default="7")
+    parser.add_argument("--adapter-version", default="8")
     parser.add_argument("--model", required=True)
     parser.add_argument("--effort", required=True)
     parser.add_argument("--account", required=True)
