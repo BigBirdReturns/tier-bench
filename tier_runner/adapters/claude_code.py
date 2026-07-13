@@ -47,14 +47,21 @@ def _version(binary: str) -> str:
     return result.stdout.strip()
 
 
-def _help_surface(binary: str) -> str:
-    result = subprocess.run([binary, "--help"], capture_output=True, text=True)
-    if result.returncode:
-        raise RuntimeError(f"cannot read Claude Code help: {result.stderr.strip()}")
-    missing = sorted(flag for flag in REQUIRED_CLAUDE_FLAGS if flag not in result.stdout)
+def _help_surface_bytes(output: bytes) -> str:
+    missing = sorted(
+        flag for flag in REQUIRED_CLAUDE_FLAGS if flag.encode("ascii") not in output
+    )
     if missing:
         raise RuntimeError(f"Claude Code isolation flags are unavailable: {missing}")
-    return hashlib.sha256(result.stdout.encode("utf-8")).hexdigest()
+    return hashlib.sha256(output).hexdigest()
+
+
+def _help_surface(binary: str) -> str:
+    result = subprocess.run([binary, "--help"], capture_output=True)
+    if result.returncode:
+        stderr = result.stderr.decode(errors="replace").strip()
+        raise RuntimeError(f"cannot read Claude Code help: {stderr}")
+    return _help_surface_bytes(result.stdout)
 
 
 def _subscription_env(environment: dict[str, str]) -> dict[str, str]:

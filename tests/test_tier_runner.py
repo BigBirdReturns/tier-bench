@@ -16,6 +16,8 @@ sys.path.insert(0, str(REPO))
 
 from tier_runner.core import RunError, run_task, verify_run  # noqa: E402
 from tier_runner.adapters.claude_code import (  # noqa: E402
+    REQUIRED_CLAUDE_FLAGS,
+    _help_surface_bytes,
     _subscription_env,
     _runtime_model,
     _usage,
@@ -572,6 +574,14 @@ def test_claude_receipt_parser_requires_provider_model_evidence(parent: Path) ->
     }
 
 
+def test_claude_help_hash_binds_raw_bytes(parent: Path) -> None:
+    del parent
+    raw = b"\xff platform-specific help\r\n" + b"\n".join(
+        flag.encode("ascii") for flag in sorted(REQUIRED_CLAUDE_FLAGS)
+    )
+    assert _help_surface_bytes(raw) == hashlib.sha256(raw).hexdigest()
+
+
 def main() -> int:
     TEST_TMP.mkdir(exist_ok=True)
     parent = Path(tempfile.mkdtemp(prefix="tier-runner-", dir=TEST_TMP))
@@ -591,6 +601,7 @@ def main() -> int:
         test_prompt_must_bind_every_registered_input,
         test_interventions_are_global_and_paired,
         test_claude_receipt_parser_requires_provider_model_evidence,
+        test_claude_help_hash_binds_raw_bytes,
     ]
     try:
         for index, test in enumerate(tests):

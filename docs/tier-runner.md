@@ -106,6 +106,10 @@ The template may use `{{TASK}}`, `{{FILES}}`, `{{ACCEPTANCE}}`, and
 blob, then commit the manifest. `schemas/tier_run_backend_manifest.schema.json`
 is the portable shape; runtime checks additionally bind exact Git bytes.
 
+The help-surface digest binds the raw `claude --help` stdout bytes. It must not
+be calculated by decoding and re-encoding the text: on Windows, Python's UTF-8
+mode can otherwise change the digest without any CLI-byte drift.
+
 The included Claude Code adapter starts one fresh safe-mode, non-persistent
 session, disables customizations/MCP/browser integration and shell access, and
 records the raw provider JSON, stderr, token usage, and session identity as
