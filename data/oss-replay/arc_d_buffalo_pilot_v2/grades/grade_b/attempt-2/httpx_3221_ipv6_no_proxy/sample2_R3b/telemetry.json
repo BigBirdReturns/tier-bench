@@ -1,0 +1,15 @@
+{
+  "item_id": "httpx_3221_ipv6_no_proxy",
+  "neutral_cwd_token": "item-t",
+  "session_id": "07825344-9780-4759-8139-10233fafe36e",
+  "assigned_session_id": "07825344-9780-4759-8139-10233fafe36e",
+  "total_cost_usd": 1.5543850000000001,
+  "duration_ms": 164888,
+  "num_turns": 15,
+  "input_tokens": 13,
+  "output_tokens": 11679,
+  "cache_read": 243406,
+  "cache_write": 36311,
+  "started_at": "2026-07-13T02:51:47+00:00",
+  "sealed_at": "2026-07-13T02:54:33+00:00"
+}

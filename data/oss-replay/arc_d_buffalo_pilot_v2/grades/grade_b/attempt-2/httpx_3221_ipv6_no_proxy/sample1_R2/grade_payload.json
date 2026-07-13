@@ -1,0 +1,90 @@
+{
+  "schema": "tier-bench/arc-d-b2-grade-payload@1",
+  "item_id": "httpx_3221_ipv6_no_proxy",
+  "attestations": {
+    "peer_grade_seen_before_seal": false,
+    "repository_context_seen": false,
+    "other_response_seen": false
+  },
+  "atomic_findings": [
+    {
+      "candidate_id": "httpx_3221_cidr_in_url_dispatch_key_v1",
+      "response_spans": [
+        {
+          "start_byte": 14,
+          "end_byte_exclusive": 571
+        },
+        {
+          "start_byte": 573,
+          "end_byte_exclusive": 1145
+        },
+        {
+          "start_byte": 1308,
+          "end_byte_exclusive": 2650
+        },
+        {
+          "start_byte": 2743,
+          "end_byte_exclusive": 4753
+        },
+        {
+          "start_byte": 4777,
+          "end_byte_exclusive": 5181
+        },
+        {
+          "start_byte": 5241,
+          "end_byte_exclusive": 5933
+        }
+      ],
+      "behavior_claim": "With no_proxy=fe11::/16, is_ipv6_hostname() in the pinned httpx/_utils.py excerpt validates only the substring before '/' (ipaddress.IPv6Address(hostname.split('/')[0])), so get_environment_proxies() emits the mount key all://[fe11::/16] with the CIDR suffix inside the IPv6 brackets; URLPattern.__init__ passes that malformed key to URL(), and released httpx 0.27.0 raises httpx.InvalidURL: Invalid port ':' during Client/AsyncClient proxy-mount construction, before any request. The shown URLPattern.matches() compares only scheme, exact-host regex, and port, so a merely parseable respelling such as all://[fe11::]/16 would not implement the intended in-network bypass; explicit network-membership evaluation is absent from the authoritative excerpt.",
+      "regression_test": "Expected results as stated in the response's regression matrix: no_proxy=fe11::/16 allows httpx.Client()/httpx.AsyncClient() construction to succeed and creates a network-aware bypass mount; http://[fe11::1]/ and https://[fe11:ffff::1]/ bypass; http://[fe12::1]/, http://fe11.example/, and http://192.168.1.1/ still proxy; ::/0 bypasses only IPv6 literals; 2001:db8::1/128 bypasses exactly that address; boundary prefixes /0, /32, /128 are valid while /33, /129, and nonnumeric suffixes must not be treated as valid networks; existing packet-evidenced behavior is preserved unchanged (PROXY_CASES entries 127.0.0.1, 192.168.0.0/16, ::1, localhost; URL_MATCH_CASES scheme/port semantics; EXPECTED_PRIORITY mount ordering), identically for Client and AsyncClient. No API or contract is invented beyond the intended behavior stated in the problem report.",
+      "residue": "When a configuration token embeds non-URL semantics (such as a CIDR suffix) inside a URL-shaped dispatch key, making the key parseable is insufficient; the dispatcher must explicitly preserve and evaluate those embedded semantics (e.g., network membership) at match time.",
+      "applicability_predicate": "Applies when CIDR or similar selector semantics are encoded into URL-shaped proxy/mount dispatch keys whose matcher compares only scheme, host pattern, and port, as in the pinned URLPattern/get_environment_proxies code path shared by Client and AsyncClient.",
+      "exclusions": [
+        "Does not apply when the downstream URL abstraction is documented to retain and natively match the embedded selector.",
+        "Does not extend to hostname, wildcard, scheme-qualified, port-qualified, or localhost no_proxy forms, whose existing semantics must remain unchanged.",
+        "The latent IPv4 CIDR non-membership inference and the exact internal URL-parser mechanism producing Invalid port ':' are hedged inferences beyond the packet excerpt and are not part of the closed claim."
+      ],
+      "distinctness": "UNIQUE",
+      "evidence": [
+        {
+          "kind": "source",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "test",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "9ed25770804e6d186c05777fbfc8f17c6427dc7da47c68622920a986a0620210",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "released_behavior",
+          "path": "PROBLEM.md",
+          "sha256": "fe714658c80597bbb7540091b1b909e29f54a04cf3030609811db48f8163e04b",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "source",
+          "path": "ORIGINAL_PROMPT.md",
+          "sha256": "a5ee77e4991f2bddae9b7281aa5e1a6c2aca857ccfc3383e5af612136c796fd4",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "source",
+          "path": "SEALED_RESPONSE.txt",
+          "sha256": "3f0f2b1e423d9230fa4663302ca81f1eeb46022eb21cea444358bc1977f0c3c1",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "other_executable",
+          "path": "ADMINISTRATION_RECEIPT.json",
+          "sha256": "c9769ae33108596be7411f30b380b64bacc924f54f4cda12855e1da7b05e4cc4",
+          "authority_status": "AUTHORITATIVE"
+        }
+      ],
+      "disposition": "B2_CANDIDATE_RESIDUE"
+    }
+  ],
+  "response_disposition": "B2_CANDIDATE_RESIDUE"
+}

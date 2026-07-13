@@ -14,7 +14,64 @@
 
 This document tracks the classification of tasks across the breadth test suite as they accumulate through layers.
 
-### Current Layer: crossing-event-task02-20260710
+### Current Layer: authoring2-floor-20260713
+
+**Authoring batch 2 floored — the floor ate all three embedded knots.**
+`t3_billing_anchor_001`, `t3_window_limit_001`, `t3_due_date_shift_001`: each
+settled 3/3 (haiku, hidden vectors 9/9 · 10/10 · 10/10 per trial), every grade
+re-run directly by the driver. **Evidence (hash-bound):
+`run/authoring2_floor_20260713/MANIFEST.json`** — nine distinct preserved
+candidates (sha256 ×9), each bound 1:1 to a distinct solver-subagent transcript
+(transcript sha256 ×9; per-provider session IDs were not captured at dispatch,
+the transcript hash is the identity retained), plus verbatim grader outputs and
+their hashes. After the PR #84 review hardened the graders to enforce declared
+return types, all nine candidates were **re-graded: 9/9 survives**. The knots
+provably exist — each paired naive passes the visible checks and fails the knot
+vectors — but haiku-as-spec-reader does not drift where a careless implementer
+does. **Rule 11 corollary sealed into LESSONS.md:** embedded-unannounced is
+necessary but not sufficient; the knots that actually bite are the ones whose
+edge *feels contradictory* to the rule text (task02) or whose deciding quantity
+must be *derived*, not applied (almanac lichun). Cost: $0 real-billed.
+
+### Previous Layer: fanout-floor-20260713
+
+**THE CORNER IS FULLY MAPPED — every breadth-valid task now settled.** The
+operator's fan-out ran six parallel haiku solvers over the only two non-settled
+cells (sediment diffed first; nothing settled was re-derived):
+
+- **`t2_ossrf_fnmatch_charclass` settled 3/3 on its FIRST flooring** — the
+  ARC-D admission task (CPython fnmatch character-class grammar, the task02
+  escape-class knot in shipping code) is cheap-floor commodity. The task02
+  residue was the boundary *commitment*, not the grammar.
+- **`task08_select_exchange` settled 3/3** (lifetime 7/8) — three distinct
+  driver-verified counterexamples, all nailing the greedy-blocks-completion
+  flaw. The old 4/5 was a procedural bounds slip; an explicit bounds reminder
+  (FREE adapt: prompt wording) and it never recurred. Rule 3 held: more cheap
+  trials, never escalation on noise.
+
+Cost: $0 real-billed (shadow subagent tokens only). Every grade run by the
+driver against the hidden grader. Remaining non-settled rows are only the
+characterized non-frontier artifacts: replay02 (spoiled-by-authoring),
+replay04 (scaffold boot-load depth limit).
+
+### Previous Layer: rule-boundary-escalation-fable-low-20260713
+
+**THE ALMANAC RESIDUAL IS CLEARED — a second measured model-separation.** The one
+cell that bit the cheap floor, `almanac_rule_boundary_001` (haiku **1/3**, the
+lichun solar-longitude boundary), was walked up the effort ladder from the
+cheapest rung above the floor and **cleared 3/3 at `claude-fable-5@low`** —
+hidden 14/14 on every trial, including the Feb-3/4/5 2020 lichun year-boundary
+vectors and the timezone→UT conversion pair the visible checks never touch.
+Three genuinely independent derivations (distinct hashes; diffs 25/171/178
+lines). This joins `task02_wildcard` (haiku 3/5 → sonnet@low 3/3) as the second
+measured model×capability separation in the corner. **Effort-before-access held
+exactly as designed:** the *lowest* Fable rung cleared it — no effort step-up, no
+access escalation, no Opus solve. Driver (Opus) planned/delegated/graded only;
+hands (fable@low) solved; every grade re-run by the driver against the hidden
+oracle. Cost: unbilled shadow (keyless Agent-tool subagents). Receipts:
+`run/ledger.jsonl` (3 `escalate` rows), sediment line in `known_corner.jsonl`.
+
+### Previous Layer: crossing-event-task02-20260710
 
 **THE CROSSING EVENT — capability transferred as an artifact, not a bigger
 model.** The $0.68 captured rule commitment (task02's in-class-backslash
@@ -110,3 +167,12 @@ This accumulation strategy prevents unnecessary re-work and tracks the frontier 
   packet). Replays 2–3 VALIDATED on distinct work items (capture ledger now
   amortizing 3 of 4); replay04 PARTIAL — the knot regressed through the packet
   at aggregate-count depth, the first measured limit of scaffold transfer.
+- **rule-boundary-escalation-fable-low-20260713**: the ARC-B almanac residual
+  (`almanac_rule_boundary_001`, haiku 1/3) escalated. `fable@low` clears it 3/3
+  (hidden 14/14 x3, independent derivations) — second measured model-separation,
+  effort-before-access held (lowest Fable rung, no access spend). The corner now
+  has **no open frontier residual**: the haiku-floor `rule_boundary` unstable cell
+  is superseded by the `@fable-low` settled cell; the only remaining `unstable`
+  entries are `task08_select_exchange` (4/5 procedural, cheap-trial territory) and
+  `replay04_count_matches` (a characterized scaffold-transfer limit) — neither a
+  frontier wall.

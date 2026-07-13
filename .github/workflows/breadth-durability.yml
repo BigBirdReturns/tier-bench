@@ -22,6 +22,7 @@ jobs:
       - name: compile breadth + harness tooling
         run: |
           python -m py_compile experiments/breadth/*.py experiments/breadth/selfrun/*.py \
+            experiments/breadth/hooks/*.py \
             harness/*.py experiments/almanac/reference/*.py experiments/breadth/edge_family/*.py \
             scripts/validate_primitives.py tests/test_validate_primitives.py
       - name: valid task set prints (hidden-grader guard)
@@ -52,6 +53,15 @@ jobs:
           python -m py_compile experiments/almanac/generate_vectors.py tests/test_almanac_vectors.py
           python experiments/almanac/generate_vectors.py --check
           python tests/test_almanac_vectors.py
+      - name: authoring batch 2 — frozen graders match the reference derivation
+        run: |
+          python -m py_compile experiments/breadth/authoring2/build_vectors.py \
+            fixtures/t3_billing_anchor_001/hidden_tests.py \
+            fixtures/t3_window_limit_001/hidden_tests.py \
+            fixtures/t3_due_date_shift_001/hidden_tests.py \
+            tests/test_authoring2_graders.py
+          python experiments/breadth/authoring2/build_vectors.py --check
+          python tests/test_authoring2_graders.py
       - name: capture guard tests bite
         run: |
           python tests/test_capture_ledger.py
@@ -60,6 +70,8 @@ jobs:
         run: |
           python -m py_compile tests/test_quota.py
           python tests/test_quota.py
+          python -m py_compile experiments/breadth/hooks/session_burn_hook.py tests/test_session_burn_hook.py
+          python tests/test_session_burn_hook.py
       - name: OSS replay field — licenses, vendored bytes, hidden grading, distinct-instance rule; vectors match vendored upstream
         run: |
           python -m py_compile scripts/validate_oss_replay_field.py experiments/oss_replay/generate_vectors.py tests/test_oss_replay_field.py

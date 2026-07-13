@@ -100,6 +100,27 @@ def test_per_trial_from_ledger_excludes_cache_reads():
     assert quota.per_trial_from_ledger([], "tokens") is None
 
 
+def test_filter_by_account_separates_meters():
+    # a Plus wall and a Max20x wall are different meters — must not pool
+    events = [
+        {"type": "spend", "tokens": 100, "account": "plus"},
+        {"type": "limit_hit"},
+        {"type": "spend", "tokens": 900, "account": "max20x"},
+        {"type": "spend", "tokens": 800},  # untagged legacy row (unknown lineage)
+    ]
+    # None → unfiltered, everything kept (back-compat / original behavior)
+    assert len(quota.filter_by_account(events, None)) == 4
+    # a specific account keeps only its explicitly-tagged rows + wall markers;
+    # the untagged legacy row is excluded, never silently attributed
+    max_ev = quota.filter_by_account(events, "max20x")
+    assert max_ev == [{"type": "limit_hit"}, {"type": "spend", "tokens": 900, "account": "max20x"}]
+    plus_ev = quota.filter_by_account(events, "plus")
+    assert plus_ev == [{"type": "spend", "tokens": 100, "account": "plus"}, {"type": "limit_hit"}]
+    # gauging the filtered stream: max20x has no CLOSED window → UNMEASURED,
+    # not inflated by the Plus window
+    assert quota.gauge_from_events(max_ev)["tokens"]["known"] is False
+
+
 def _run_standalone() -> int:
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]
     failed = 0

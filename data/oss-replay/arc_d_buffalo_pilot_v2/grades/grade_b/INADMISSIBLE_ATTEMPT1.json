@@ -1,0 +1,16 @@
+{
+  "record": "arc_d_b2_grade_b_attempt1_inadmissibility",
+  "status": "INADMISSIBLE — preserved as custody evidence only",
+  "sealed_commit": "f4d4962",
+  "adjudicated_by": "cross-engine fail-closed review (Sol lane), recorded in PR #83 and docs/agents/reviews/arc_d_b2_partial_summary_20260712.md",
+  "defects_admitted": [
+    "surface: graders ran as Agent-tool subagents inside the repository container — not the charter's fresh projectless packet-only context; the manifest's custody caveat recorded this but a caveat does not cure non-conformance",
+    "model identity: payloads recorded runtime id claude-fable-5; the frozen instrument is fable-5",
+    "per-item GRADE_RECEIPT.schema.json receipts never produced: session identities, started_at/sealed_at, prompt/response hashes, raw_grade hashes, and validator results absent",
+    "authority classification: 2 of 3 payloads marked explicitly non-authoritative packet material (REFERENCE_STATUS.json) as AUTHORITATIVE",
+    "output discipline: driver-supplied wrapper paraphrased GRADING_TASK.md and requested a two-file layout instead of the bare payload object the packet requires"
+  ],
+  "what_survives": "canonical Git blob hashes match the manifest (no tampering); the three raw grades and payloads remain preserved verbatim as attempt-1 custody evidence; nothing here is admitted grading evidence",
+  "supersession": "attempt-2 (physically projectless nested-CLI fable-5@high sessions with per-item receipts) is the live grade_b lane; see grades/grade_b/attempt-2/",
+  "lesson": "the packet's own GRADING_TASK.md is the instruction authority — a driver paraphrase is a contamination vector; and the frozen instrument definition (model name, surface class) binds exactly, not approximately"
+}

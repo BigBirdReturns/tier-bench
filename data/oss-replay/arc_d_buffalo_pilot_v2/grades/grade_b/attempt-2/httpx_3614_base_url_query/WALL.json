@@ -1,0 +1,60 @@
+{
+  "record": "arc_d_b2_grade_b_item_wall",
+  "item_id": "httpx_3614_base_url_query",
+  "status": "PROVIDER_REFUSAL_WALL \u2014 no grade_b exists for this item on the conforming surface",
+  "instrument": {
+    "model": "fable-5",
+    "effort": "high",
+    "surface": "physically projectless nested claude CLI (-p), packet-only cwd"
+  },
+  "evidence": "4/4 dispatches safety-flagged by the provider (Fable 5 safeguards / AUP notice) before a grade was produced; dispatches 1-2 flagged on turn 1 (pre-file-read), dispatch 3 flagged mid-read (num_turns=3) under a neutral cwd name, dispatch 4 flagged on turn 1",
+  "events": [
+    {
+      "dispatch": 1,
+      "round": "attempt-2 original",
+      "session_id": "050d0588-170a-43d3-98a9-4d06e9225194",
+      "cwd_style": "loaded item name",
+      "ts": "2026-07-13T02:39:49Z",
+      "num_turns": 1,
+      "duration_ms": 2523,
+      "cost_usd": 0.14849099999999998,
+      "request_id_fragment": "req_011CcyHMq3LoWb7VRUErPq7n"
+    },
+    {
+      "dispatch": 2,
+      "round": "R1 (fresh session, 60s spacing)",
+      "session_id": "4021ac5a-4cc9-4162-a7b7-a12a7412c249",
+      "cwd_style": "loaded item name",
+      "ts": "2026-07-13T02:41:16Z",
+      "num_turns": 1,
+      "duration_ms": 2590,
+      "cost_usd": 0.14945000000000003,
+      "request_id_fragment": "req_011CcyHUDAmksgkJ16Cg5FE6"
+    },
+    {
+      "dispatch": 3,
+      "round": "R2 (neutral cwd item-q)",
+      "session_id": "f1ea3a3b-c757-41f8-96c8-1892ae430f21",
+      "cwd_style": "neutral (item-q)",
+      "ts": "2026-07-13T02:44:08Z",
+      "num_turns": 3,
+      "duration_ms": 12177,
+      "raw_record": "OVERWRITTEN by dispatch 4 (runner-script import bug); identity preserved in runner logs b2d11ohjc"
+    },
+    {
+      "dispatch": 4,
+      "round": "accidental (R3 import bug; killed after)",
+      "session_id": "62fb46a5-430b-4cda-976f-bc0ac6ddfbed",
+      "cwd_style": "neutral (item-q)",
+      "ts": "2026-07-13T02:50:16Z",
+      "num_turns": 3,
+      "duration_ms": 16391,
+      "cost_usd": 0.25157999999999997,
+      "request_id_fragment": "req_011CcyJAyn1mfxkVcByk7Wp5"
+    }
+  ],
+  "not_counted_as": "a grading outcome, a task failure, or a disposition \u2014 provider-unreachable is a skip (constitution rule 7); refusal risk is recorded as part of the instrument's real price",
+  "surface_dependence_note": "the same packet WAS graded without a flag by the attempt-1 Agent-tool subagent surface (inadmissible for other reasons, see INADMISSIBLE_ATTEMPT1.json) \u2014 the refusal is surface-dependent, not intrinsic to the content",
+  "administration_defect_admitted": "dispatch 4 was accidental \u2014 a retry script imported the R2 script whose top-level code re-executed (no __main__ guard); it was killed before further dispatches but consumed the final authorized attempt and overwrote dispatch 3's raw record; both defects disclosed here",
+  "escalation": "per the charter's disagreement/failure default, this item cannot be paired for B2 comparison from the grade_b side; operator decision required on whether an amended-charter surface substitution is warranted"
+}

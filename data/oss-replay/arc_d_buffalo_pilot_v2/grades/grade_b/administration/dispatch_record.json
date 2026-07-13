@@ -1,0 +1,33 @@
+{
+  "record": "arc_d_b2_grade_b_dispatch",
+  "charter_sha256": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e",
+  "grade_id": "grade_b",
+  "grader": {
+    "provider_lineage": "anthropic",
+    "model": "claude-fable-5",
+    "effort": "high",
+    "surface": "claude-code Agent-tool subagent (agent type fable-high), remote container, packet-only by instruction",
+    "context": "fresh_packet_only"
+  },
+  "disclosure_time_utc": "2026-07-13T01:38:21+00:00",
+  "packets": {
+    "attrs_1567_setattr_mro": {
+      "packet_id": "arc_d_b2_attrs_1567_setattr_mro_v1",
+      "packet_sha256": "0c3632ad746698fbd3f61d6a5ff7b3a34e97a48d69115ad45f9d94ab7a5982bc",
+      "item_id": "attrs_1567_setattr_mro",
+      "source_commit": "4687bd888cc3c4246c653196604e10b9331aefa5"
+    },
+    "httpx_3614_base_url_query": {
+      "packet_id": "arc_d_b2_httpx_3614_base_url_query_v1",
+      "packet_sha256": "bbad09fea82ffd9c5111f5564ebac52556da644cb2d1ba03f498bb640b253631",
+      "item_id": "httpx_3614_base_url_query",
+      "source_commit": "4687bd888cc3c4246c653196604e10b9331aefa5"
+    },
+    "httpx_3221_ipv6_no_proxy": {
+      "packet_id": "arc_d_b2_httpx_3221_ipv6_no_proxy_v1",
+      "packet_sha256": "7ba91177dfdae0ac6ebe1c0c122d5b26c2affb68941f289823f429f042278dec",
+      "item_id": "httpx_3221_ipv6_no_proxy",
+      "source_commit": "4687bd888cc3c4246c653196604e10b9331aefa5"
+    }
+  }
+}

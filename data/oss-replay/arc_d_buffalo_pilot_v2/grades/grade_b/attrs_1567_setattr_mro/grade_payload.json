@@ -1,0 +1,53 @@
+{
+  "schema": "tier-bench/arc-d-b2-grade-payload@1",
+  "item_id": "attrs_1567_setattr_mro",
+  "attestations": {
+    "peer_grade_seen_before_seal": false,
+    "repository_context_seen": false,
+    "other_response_seen": false
+  },
+  "atomic_findings": [
+    {
+      "candidate_id": "attrs_1567_setattr_mro::effective_provider_ownership_rule",
+      "response_spans": [
+        {"start_byte": 66, "end_byte_exclusive": 853},
+        {"start_byte": 855, "end_byte_exclusive": 1092},
+        {"start_byte": 1094, "end_byte_exclusive": 1300},
+        {"start_byte": 1302, "end_byte_exclusive": 1760},
+        {"start_byte": 1788, "end_byte_exclusive": 2361},
+        {"start_byte": 3307, "end_byte_exclusive": 3548},
+        {"start_byte": 3873, "end_byte_exclusive": 4054},
+        {"start_byte": 5614, "end_byte_exclusive": 5822},
+        {"start_byte": 5824, "end_byte_exclusive": 6007},
+        {"start_byte": 6009, "end_byte_exclusive": 6334}
+      ],
+      "behavior_claim": "At python-attrs/attrs commit d2fbfccc1ce77dcc927a86eae9521c95dc4e289c, for a slotted chain A (attrs, on_setattr=setters.frozen) -> non-attrs B(A) -> mutable slotted attrs C(B), _create_slots_class() checks only self._cls.__bases__ for __attrs_own_setattr__ in each base's own __dict__; B.__dict__ carries neither the marker nor __setattr__, so C is not reset to object.__setattr__ and C(1).x = 2 dispatches to A's attrs-generated frozen setter, raising attr.exceptions.FrozenAttributeError. Closed by the pinned source's immediate-base loop and XXX comment plus the project's executable xfail reproducer test_slotted_confused (xfail raises=attr.exceptions.FrozenAttributeError) in SOURCE_EXCERPT.py; the dict-backed contrast matches the test docstring and the getattr-based MRO-visible check in _patch_original_class.",
+      "regression_test": "Response bytes [3307,3548): un-xfail the confused-chain contract for both slots=False and slots=True — given A slotted attrs with on_setattr=setters.frozen, transparent non-attrs B(A), and mutable attrs C(B): C(1).x = 2 succeeds, C.__setattr__ is object.__setattr__, and C.__attrs_own_setattr__ is False; paired with the preservation row [3873,4054): when B(A) defines a user __setattr__, both slot modes preserve B.__setattr__ with no reset. Uses only existing attrs API (attr.s, attr.ib, on_setattr, setters.frozen, __attrs_own_setattr__, object.__setattr__); expected results replicate the already-asserted reset contract of test_setattr_reset_if_no_custom_setattr, the passing test_setattr_inherited_do_not_reset preservation contract, and the intended behavior stated in the test_slotted_confused docstring — no invented API or contract.",
+      "residue": "When inherited behavior carries an ownership marker, decide whether to remove it by locating the effective method provider first (first class in MRO attribute-resolution order whose own __dict__ contains the method), then read the ownership marker from that same provider's own namespace; never continue past a user-owned provider. Falsifiable per response bytes [5824,6007): any hierarchy where this rule selects a different provider than Python's actual __setattr__ lookup, or replaces an effective user-owned setter, disproves it. The rule is consistent with every executable case in the packet (test_slotted_confused intended behavior, test_setattr_inherited_do_not_reset, test_setattr_reset_if_no_custom_setattr, test_slotted_class_can_have_custom_setattr).",
+      "applicability_predicate": "Applies only to class machinery where method ownership is reliably represented in the method-defining class's own __dict__ (here __attrs_own_setattr__ set by attrs on classes whose __setattr__ it generates) and where the effective method is resolved by ordinary class-dictionary/MRO lookup (response bytes [6009,6334)).",
+      "exclusions": [
+        "methods or ownership markers mutated independently after class creation",
+        "__setattr__ supplied dynamically by a metaclass without an owning class-dictionary entry",
+        "attribute resolution mechanisms not represented by ordinary class-dictionary/MRO lookup",
+        "multiple-inheritance orderings beyond packet test coverage are proposed boundary tests, not closed contract"
+      ],
+      "distinctness": "UNIQUE",
+      "evidence": [
+        {
+          "kind": "source",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "1ad73e4c19e8cae3f4c71852fbd8ca1b9b8a58ef93769acb59835d9cae2979e3",
+          "authority_status": "AUTHORITATIVE"
+        },
+        {
+          "kind": "test",
+          "path": "SOURCE_EXCERPT.py",
+          "sha256": "1ad73e4c19e8cae3f4c71852fbd8ca1b9b8a58ef93769acb59835d9cae2979e3",
+          "authority_status": "AUTHORITATIVE"
+        }
+      ],
+      "disposition": "B2_CANDIDATE_RESIDUE"
+    }
+  ],
+  "response_disposition": "B2_CANDIDATE_RESIDUE"
+}

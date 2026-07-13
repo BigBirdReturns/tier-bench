@@ -1,0 +1,107 @@
+{
+  "record": "arc_d_b2_grade_b_manifest",
+  "charter_sha256": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e",
+  "grade_id": "grade_b",
+  "grader": {
+    "provider_lineage": "anthropic",
+    "model": "claude-fable-5",
+    "effort": "high",
+    "surface": "claude-code Agent-tool subagent (agent type fable-high), remote container, packet-only by instruction",
+    "context": "fresh_packet_only"
+  },
+  "disclosure_time_utc": "2026-07-13T01:38:21+00:00",
+  "sealed_time_utc": "2026-07-13T01:46:11+00:00",
+  "source_commit": "4687bd888cc3c4246c653196604e10b9331aefa5",
+  "grader_sessions_hash_bound": [
+    {
+      "session_label": "grade_b_session_1",
+      "transcript_sha256": "02713e49a0a339cccb7d4faa440152bafb27aaee4ec1809a81ee67908eccfb14",
+      "transcript_bytes": 39573
+    },
+    {
+      "session_label": "grade_b_session_2",
+      "transcript_sha256": "806146d15748b70083714c33e5c314b22639050e7a76883a48b43594761cded1",
+      "transcript_bytes": 37557
+    },
+    {
+      "session_label": "grade_b_session_3",
+      "transcript_sha256": "19a651838834c2db13df444cb3ffb8d9fa61eb825d1b80e19c8e052902c9cb3b",
+      "transcript_bytes": 185574
+    },
+    {
+      "session_label": "grade_b_session_4",
+      "transcript_sha256": "8378f431cf1f7d656db9ebec4406fce62305c0324966b85d4d4279c41b5f5016",
+      "transcript_bytes": 187173
+    },
+    {
+      "session_label": "grade_b_session_5",
+      "transcript_sha256": "ec6c5da0f8216b7ce9861a8f0f89e421581071d9558f45bfccb34770dbfc9082",
+      "transcript_bytes": 172730
+    },
+    {
+      "session_label": "grade_b_session_6",
+      "transcript_sha256": "d22648adbcb64e4ea7aedf491d497201a489aa51b95cd75e11a828cf10a4e9c3",
+      "transcript_bytes": 36367
+    },
+    {
+      "session_label": "grade_b_session_7",
+      "transcript_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "transcript_bytes": 0
+    }
+  ],
+  "grader_usage_note": "three parallel Agent-tool fable-high subagents; ~67.9k/73.1k/73.9k subagent tokens, 304s/334s/347s; shadow cost (keyless session, no provider bill)",
+  "items": {
+    "attrs_1567_setattr_mro": {
+      "packet_id": "arc_d_b2_attrs_1567_setattr_mro_v1",
+      "packet_sha256": "0c3632ad746698fbd3f61d6a5ff7b3a34e97a48d69115ad45f9d94ab7a5982bc",
+      "packet_revalidated_after_grading": true,
+      "raw_grade_sha256": "6bce3bff51d2764df1ade8fac5638fb64700d5642e0bbe93d2a9f520b9442409",
+      "grade_payload_sha256": "2fd76273af4b3d09b6ff041184c876b106b324ec3eaed6a452af0e3a50155990",
+      "response_disposition": "B2_CANDIDATE_RESIDUE",
+      "atomic_findings": 1,
+      "attestations": {
+        "peer_grade_seen_before_seal": false,
+        "repository_context_seen": false,
+        "other_response_seen": false
+      },
+      "export_receipt_sha256": "1b69cdb2e08f37d06ad5c7d6f977f536206c1bf3533c6beb5db37205dd69de8d"
+    },
+    "httpx_3614_base_url_query": {
+      "packet_id": "arc_d_b2_httpx_3614_base_url_query_v1",
+      "packet_sha256": "bbad09fea82ffd9c5111f5564ebac52556da644cb2d1ba03f498bb640b253631",
+      "packet_revalidated_after_grading": true,
+      "raw_grade_sha256": "3ec147c674ffa73f57f8b1719b395c3a058107668c196989cc5d58176f073ae3",
+      "grade_payload_sha256": "72eca79567b215fb922a74ddaf272480d82454baefc84250f98031e4f9e2b75d",
+      "response_disposition": "B2_CANDIDATE_RESIDUE",
+      "atomic_findings": 1,
+      "attestations": {
+        "peer_grade_seen_before_seal": false,
+        "repository_context_seen": false,
+        "other_response_seen": false
+      },
+      "export_receipt_sha256": "a221fcf78409c9b32c8e06fdc5121d90a9a7fab016dfb8f4e5f848607fcc3032"
+    },
+    "httpx_3221_ipv6_no_proxy": {
+      "packet_id": "arc_d_b2_httpx_3221_ipv6_no_proxy_v1",
+      "packet_sha256": "7ba91177dfdae0ac6ebe1c0c122d5b26c2affb68941f289823f429f042278dec",
+      "packet_revalidated_after_grading": true,
+      "raw_grade_sha256": "39377c6e364b259efaa620aa4aad175b71708656370050b8cc4a6235a7fed472",
+      "grade_payload_sha256": "495e17917bf3fabd278dff9e0fde3bf787f7bdd629c66c89edd9d948cea26161",
+      "response_disposition": "B2_CANDIDATE_RESIDUE",
+      "atomic_findings": 1,
+      "attestations": {
+        "peer_grade_seen_before_seal": false,
+        "repository_context_seen": false,
+        "other_response_seen": false
+      },
+      "export_receipt_sha256": "6e316970da9c706368f3b7f7f3a27971841039de07019b109c395596eaf2dd23"
+    }
+  },
+  "custody": {
+    "driver_never_displayed_response_bytes": true,
+    "packets_exported_from_canonical_main_blobs": true,
+    "surface_caveat": "graders ran as Claude Code Agent-tool subagents in the repo container, instructed packet-only and attesting repository_context_seen=false; not a physically projectless surface \u2014 recorded honestly for the comparator",
+    "grade_a_status": "not run in this lane; awaiting Sol (gpt-5.6-sol@high)",
+    "comparison_receipt": "not yet built; B2 results remain PROPOSED until it merges per charter"
+  }
+}

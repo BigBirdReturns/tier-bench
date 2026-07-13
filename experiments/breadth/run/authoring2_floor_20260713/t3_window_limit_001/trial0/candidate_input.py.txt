@@ -1,0 +1,55 @@
+"""Sliding-window admission — the window-boundary rules, applied exactly.
+
+Implement:
+
+    def allow(events, w, n, t) -> bool
+
+`events` is a sorted (non-decreasing) list of integer timestamps in seconds —
+every event the service has already admitted. `w` (window seconds, w >= 1),
+`n` (limit, n >= 0) and `t` (the query instant, an integer) describe one
+admission query: may a new request be admitted at instant `t`?
+
+The rules (complete — every sentence is normative):
+
+1. THE WINDOW at query instant t reaches back w seconds: an already-admitted
+   event is inside the window iff it is strictly newer than the instant
+   exactly w seconds before t. The query instant itself is inside the window.
+
+2. The query is allowed iff strictly fewer than n events lie inside the
+   window.
+
+3. Events in the list may share a timestamp (bursts); each counts separately.
+   Events after t never occur in valid inputs.
+
+Notes: integers only, no clock, no floating point. Rule 1 decides every
+boundary case — apply it literally.
+"""
+
+
+def allow(events: list[int], w: int, n: int, t: int) -> bool:
+    window_start = t - w
+    count = sum(1 for event in events if event > window_start and event <= t)
+    return count < n
+
+
+def main() -> int:
+    checks = [
+        # ordinary interior cases (no boundary-exact event in play)
+        (([10, 20, 30], 25, 3, 40), True),    # window (15, 40]: events 20, 30 -> 2 < 3
+        (([10, 20, 30], 25, 2, 40), False),   # same 2 events, limit 2 -> deny
+        (([5, 6, 7, 8], 10, 5, 12), True),    # window (2, 12]: 4 events -> 4 < 5
+    ]
+    ok = True
+    for args, want in checks:
+        got = allow(*args)
+        if got is not want:
+            print(f"FAIL {args}: got {got}, want {want}")
+            ok = False
+    if ok:
+        print("OK")
+        return 0
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

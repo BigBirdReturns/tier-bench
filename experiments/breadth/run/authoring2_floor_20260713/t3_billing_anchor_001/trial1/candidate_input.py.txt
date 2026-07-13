@@ -1,0 +1,76 @@
+"""Monthly billing dates — the anchor-day rules, applied exactly.
+
+Implement:
+
+    def billing_dates(y, m, d, n) -> list[tuple[int, int, int]]
+
+`(y, m, d)` is the subscription start date (a valid Gregorian calendar date,
+1583 <= y <= 4000). Return the next `n` (0 <= n <= 48) monthly billing dates
+after the start date, in order, each as a `(year, month, day)` tuple.
+
+The rules (complete — every sentence is normative):
+
+1. Billing recurs once per calendar month, in each of the `n` months after the
+   start month, in order.
+
+2. THE ANCHOR DAY is the day-of-month of the start date. In every billing
+   month, the billing date is the anchor day of that month.
+
+3. If a billing month has no such day, that month's billing falls on the LAST
+   day of that month. This substitution affects only that month: the anchor
+   day itself never changes for the life of the subscription.
+
+4. Leap years follow the Gregorian rule: a year is a leap year iff it is
+   divisible by 4 and (not divisible by 100 or divisible by 400).
+
+Notes: no timezone, no clock — this is pure calendar arithmetic. The standard
+library (including `datetime` and `calendar`) is available if you want it.
+"""
+
+
+def billing_dates(y: int, m: int, d: int, n: int) -> list[tuple[int, int, int]]:
+    from calendar import monthrange
+
+    result = []
+    current_year = y
+    current_month = m
+
+    for _ in range(n):
+        # Move to next month
+        current_month += 1
+        if current_month > 12:
+            current_month = 1
+            current_year += 1
+
+        # Get the last day of the current month
+        last_day = monthrange(current_year, current_month)[1]
+
+        # Use anchor day or last day if anchor day doesn't exist in this month
+        billing_day = min(d, last_day)
+
+        result.append((current_year, current_month, billing_day))
+
+    return result
+
+
+def main() -> int:
+    checks = [
+        # ordinary mid-month anchors (no substitution in play)
+        ((2024, 3, 10, 3), [(2024, 4, 10), (2024, 5, 10), (2024, 6, 10)]),
+        ((2023, 11, 5, 4), [(2023, 12, 5), (2024, 1, 5), (2024, 2, 5), (2024, 3, 5)]),
+        ((2022, 7, 20, 2), [(2022, 8, 20), (2022, 9, 20)]),
+    ]
+    ok = True
+    for args, want in checks:
+        got = billing_dates(*args)
+        if list(map(tuple, got)) != want:
+            print(f"FAIL {args}: got {got}, want {want}")
+            ok = False
+    if ok:
+        print("OK")
+        return 0
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

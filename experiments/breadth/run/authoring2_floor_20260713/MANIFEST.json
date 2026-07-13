@@ -1,0 +1,140 @@
+{
+  "record": "authoring2_floor_evidence",
+  "sealed_time_utc": "2026-07-13T04:39:37+00:00",
+  "provenance": "the nine haiku K=3 floor candidates for authoring batch 2, preserved from the run scratch and re-graded by the driver under the HARDENED (type-enforcing) graders after PR #84 review finding 1; original-grader grades were 9/9 and the hardened re-grade is also 9/9 \u2014 the result survives the stricter rule",
+  "grader_versions": {
+    "original": "pre-review (container-normalizing)",
+    "hardened": "post-review (type-enforcing); fixtures/*/hidden_tests.py at this commit"
+  },
+  "trials": {
+    "t3_billing_anchor_001/trial0": {
+      "candidate_sha256": "7337f0586028c83fd9cdf7e71bb5acc2b7aa6ec9dbc7f33bf51161a6dc81dec3",
+      "candidate_bytes": 2578,
+      "hardened_grader_sha256": "9b1eafa8cd50db79ac723176e3b53c9ac5485b67a65454bf543e86fddfbc2be4",
+      "hardened_score_line": "SCORE 9/9",
+      "hardened_rc": 0,
+      "solver_dispatch": {
+        "surface": "claude-code Agent-tool subagent (general-purpose, model haiku)",
+        "transcript_sha256": "3665ca802f6cfe25a91bb47ca34f730bdfa7efdc7d74577e52d78914fa63102e",
+        "transcript_bytes": 55028,
+        "binding": "this transcript is the unique task-output file containing this trial's working-directory path; nine transcripts map 1:1 onto the nine trials"
+      },
+      "hardened_grade_output_sha256": "12cf291453fff66a1b758c469684a618ec3e1b09dcd7f8a79b3a9d22e9428919"
+    },
+    "t3_billing_anchor_001/trial1": {
+      "candidate_sha256": "ec990b35da40634419844cbfb5c2918b9d12fb1ba59643ac11ae378ff4965bb5",
+      "candidate_bytes": 2497,
+      "hardened_grader_sha256": "9b1eafa8cd50db79ac723176e3b53c9ac5485b67a65454bf543e86fddfbc2be4",
+      "hardened_score_line": "SCORE 9/9",
+      "hardened_rc": 0,
+      "solver_dispatch": {
+        "surface": "claude-code Agent-tool subagent (general-purpose, model haiku)",
+        "transcript_sha256": "567974a3a4662121302fec08e8fd8cd097efcc7aa3372e60a32cde4d2603701d",
+        "transcript_bytes": 52697,
+        "binding": "this transcript is the unique task-output file containing this trial's working-directory path; nine transcripts map 1:1 onto the nine trials"
+      },
+      "hardened_grade_output_sha256": "12cf291453fff66a1b758c469684a618ec3e1b09dcd7f8a79b3a9d22e9428919"
+    },
+    "t3_billing_anchor_001/trial2": {
+      "candidate_sha256": "98513df38600ff7f8ee8c39494998d1eea44de400f84192a30c0230887aaac48",
+      "candidate_bytes": 2548,
+      "hardened_grader_sha256": "9b1eafa8cd50db79ac723176e3b53c9ac5485b67a65454bf543e86fddfbc2be4",
+      "hardened_score_line": "SCORE 9/9",
+      "hardened_rc": 0,
+      "solver_dispatch": {
+        "surface": "claude-code Agent-tool subagent (general-purpose, model haiku)",
+        "transcript_sha256": "283727b176cdb32e1cb567b8c15a3751fc8ac4b096db32a01cac34fb65949f6f",
+        "transcript_bytes": 55767,
+        "binding": "this transcript is the unique task-output file containing this trial's working-directory path; nine transcripts map 1:1 onto the nine trials"
+      },
+      "hardened_grade_output_sha256": "12cf291453fff66a1b758c469684a618ec3e1b09dcd7f8a79b3a9d22e9428919"
+    },
+    "t3_window_limit_001/trial0": {
+      "candidate_sha256": "b19e268a2f9b0f97b896a683e962523bd9755579fac698061a995da9981d8fec",
+      "candidate_bytes": 1875,
+      "hardened_grader_sha256": "1ed3f06e6c52c3b68db081b9b2b0a171dd669763ab9f18abf4e66255b1c741cb",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0,
+      "solver_dispatch": {
+        "surface": "claude-code Agent-tool subagent (general-purpose, model haiku)",
+        "transcript_sha256": "f00247e6c75631c983e1799eff280eeff83c77fc358a5a4c67fb7d1f3dc003ac",
+        "transcript_bytes": 43275,
+        "binding": "this transcript is the unique task-output file containing this trial's working-directory path; nine transcripts map 1:1 onto the nine trials"
+      },
+      "hardened_grade_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    "t3_window_limit_001/trial1": {
+      "candidate_sha256": "db70a9d09c9fa68323159968962bebf675072e8ca161ac9e97ab9666fad197fc",
+      "candidate_bytes": 1858,
+      "hardened_grader_sha256": "1ed3f06e6c52c3b68db081b9b2b0a171dd669763ab9f18abf4e66255b1c741cb",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0,
+      "solver_dispatch": {
+        "surface": "claude-code Agent-tool subagent (general-purpose, model haiku)",
+        "transcript_sha256": "b9749525def3289b2cfa0a2af3ec4e8d29e90a21039295b0d5bf9f8b219c0940",
+        "transcript_bytes": 52724,
+        "binding": "this transcript is the unique task-output file containing this trial's working-directory path; nine transcripts map 1:1 onto the nine trials"
+      },
+      "hardened_grade_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    "t3_window_limit_001/trial2": {
+      "candidate_sha256": "ea37f804d7ea17dda98326d5770586f01b3df2fb8f6a664ce58898f6be1e6a51",
+      "candidate_bytes": 1863,
+      "hardened_grader_sha256": "1ed3f06e6c52c3b68db081b9b2b0a171dd669763ab9f18abf4e66255b1c741cb",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0,
+      "solver_dispatch": {
+        "surface": "claude-code Agent-tool subagent (general-purpose, model haiku)",
+        "transcript_sha256": "8f4e22b1c332e3ce07c876c0041a1b852b5c64586d56346b2e555c252f1d6e2b",
+        "transcript_bytes": 51579,
+        "binding": "this transcript is the unique task-output file containing this trial's working-directory path; nine transcripts map 1:1 onto the nine trials"
+      },
+      "hardened_grade_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    "t3_due_date_shift_001/trial0": {
+      "candidate_sha256": "6e333aa27b21cad9e9ca275093bfc88e386edfee76a8d5504506908168ae23be",
+      "candidate_bytes": 3375,
+      "hardened_grader_sha256": "0f7f40c4fe6d9a4b7abecdc925bb3296b835e785937d199f85ae44eef7444618",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0,
+      "solver_dispatch": {
+        "surface": "claude-code Agent-tool subagent (general-purpose, model haiku)",
+        "transcript_sha256": "5871dcc77b798f6bb2b127f1fdc6e2bdfb0c7d390d55a31517171fcb12cd0c0c",
+        "transcript_bytes": 67803,
+        "binding": "this transcript is the unique task-output file containing this trial's working-directory path; nine transcripts map 1:1 onto the nine trials"
+      },
+      "hardened_grade_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    "t3_due_date_shift_001/trial1": {
+      "candidate_sha256": "6cc1262ae841be3801506f81c244919c79498c654822da2ba8c5f40d430dc916",
+      "candidate_bytes": 3220,
+      "hardened_grader_sha256": "0f7f40c4fe6d9a4b7abecdc925bb3296b835e785937d199f85ae44eef7444618",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0,
+      "solver_dispatch": {
+        "surface": "claude-code Agent-tool subagent (general-purpose, model haiku)",
+        "transcript_sha256": "1b3ea750dec8de99ed3578024ab8a351dda5bafb17e2bd27c436ea994201bb08",
+        "transcript_bytes": 62811,
+        "binding": "this transcript is the unique task-output file containing this trial's working-directory path; nine transcripts map 1:1 onto the nine trials"
+      },
+      "hardened_grade_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    },
+    "t3_due_date_shift_001/trial2": {
+      "candidate_sha256": "61d603b9e5cbd5d916cd5e04c4aff7b73129a4755bb61d20d44260e655cea0bd",
+      "candidate_bytes": 3124,
+      "hardened_grader_sha256": "0f7f40c4fe6d9a4b7abecdc925bb3296b835e785937d199f85ae44eef7444618",
+      "hardened_score_line": "SCORE 10/10",
+      "hardened_rc": 0,
+      "solver_dispatch": {
+        "surface": "claude-code Agent-tool subagent (general-purpose, model haiku)",
+        "transcript_sha256": "126f94f363a8647705887629f0e84ce16dfb6b994baf2bc8666846292f6f2a1d",
+        "transcript_bytes": 60633,
+        "binding": "this transcript is the unique task-output file containing this trial's working-directory path; nine transcripts map 1:1 onto the nine trials"
+      },
+      "hardened_grade_output_sha256": "fc419a094a14c11ad370377435660dcb2c4d8fef3338ec080568ee1e55de75ae"
+    }
+  },
+  "distinct_candidates": 9,
+  "provenance_note": "solver dispatch receipts recovered 2026-07-13 (PR #84 follow-up finding 2): each of the nine trials binds to a distinct subagent transcript by unique working-directory reference (1:1, verified mechanically; transcripts hashed, not published \u2014 they live in the session container and their hashes are the durable identity). The independence claim is therefore: nine distinct preserved candidates produced by nine distinct solver subagent sessions. Per-transcript provider session IDs were not captured at dispatch time; the transcript hash is the strongest identity retained.",
+  "updated_time_utc": "2026-07-13T04:51:50+00:00"
+}
