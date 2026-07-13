@@ -97,3 +97,8 @@ jobs:
         run: |
           python -m py_compile scripts/export_arc_d_b2_packets.py scripts/validate_arc_d_b2_packet.py tests/test_arc_d_b2_packets.py
           python tests/test_arc_d_b2_packets.py
+      - name: ARC-D B2 admission v2 specification (unchanged rubric; operations disabled)
+        run: |
+          python -m py_compile scripts/validate_arc_d_b2_admission_v2.py tests/test_arc_d_b2_admission_v2.py
+          python scripts/validate_arc_d_b2_admission_v2.py
+          python tests/test_arc_d_b2_admission_v2.py

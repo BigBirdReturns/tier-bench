@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_batch_admission_receipt.schema.json",
+  "title": "ARC-D B2 six-bundle atomic admission receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_id", "attempt_id", "amendment_sha256", "custody_profile_sha256", "activation_commit", "preregistration_manifest_sha256", "preregistration_commit", "dispatch_ledger_sha256", "dispatch_ledger_commit", "required_receipt_count", "receipts", "seal", "attempt_failures", "state"],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-batch-admission-receipt@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "attempt_id": {"type": "string", "pattern": "^arc-d-b2-v2-[a-z0-9][a-z0-9._-]{2,63}$"},
+    "amendment_sha256": {"$ref": "#/$defs/sha256"},
+    "custody_profile_sha256": {"$ref": "#/$defs/sha256"},
+    "activation_commit": {"$ref": "#/$defs/gitsha"},
+    "preregistration_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "preregistration_commit": {"$ref": "#/$defs/gitsha"},
+    "dispatch_ledger_sha256": {"$ref": "#/$defs/sha256"},
+    "dispatch_ledger_commit": {"$ref": "#/$defs/gitsha"},
+    "required_receipt_count": {"const": 6},
+    "receipts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grade_a", "grade_b"],
+      "properties": {
+        "grade_a": {"$ref": "#/$defs/item_grid"},
+        "grade_b": {"$ref": "#/$defs/item_grid"}
+      }
+    },
+    "seal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["last_private_sealed_at", "first_public_disclosure_at", "all_private_before_public"],
+      "properties": {
+        "last_private_sealed_at": {"type": "string", "format": "date-time"},
+        "first_public_disclosure_at": {"type": "string", "format": "date-time"},
+        "all_private_before_public": {"const": true}
+      }
+    },
+    "attempt_failures": {"const": 0},
+    "state": {"const": "PROPOSED_FOR_ATOMIC_ADMISSION"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitsha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "receipt_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "item_grid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attrs_1567_setattr_mro", "httpx_3614_base_url_query", "httpx_3221_ipv6_no_proxy"],
+      "properties": {
+        "attrs_1567_setattr_mro": {"$ref": "#/$defs/receipt_ref"},
+        "httpx_3614_base_url_query": {"$ref": "#/$defs/receipt_ref"},
+        "httpx_3221_ipv6_no_proxy": {"$ref": "#/$defs/receipt_ref"}
+      }
+    }
+  }
+}

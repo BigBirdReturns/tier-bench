@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_custody_profile.schema.json",
+  "title": "ARC-D B2 admission-v2 custody activation profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_id", "amendment_sha256", "state", "lanes", "roles", "retention", "audit", "preflight"],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-custody-profile@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "amendment_sha256": {"$ref": "#/$defs/sha256"},
+    "state": {"const": "PROPOSED_FOR_SEPARATE_ACTIVATION"},
+    "lanes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grade_a", "grade_b"],
+      "properties": {
+        "grade_a": {"$ref": "#/$defs/lane"},
+        "grade_b": {"$ref": "#/$defs/lane"}
+      }
+    },
+    "roles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["custodian_id", "verifier_id", "coordinator_id", "verifier_lineage", "verifier_lineage_conflicts", "custodian_is_verifier", "coordinator_is_verifier", "verifier_is_not_rubric_author", "verifier_is_not_grading_instrument", "verifier_is_administration_only"],
+      "properties": {
+        "custodian_id": {"$ref": "#/$defs/identifier"},
+        "verifier_id": {"$ref": "#/$defs/identifier"},
+        "coordinator_id": {"$ref": "#/$defs/identifier"},
+        "verifier_lineage": {"enum": ["openai", "anthropic", "human", "other"]},
+        "verifier_lineage_conflicts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["grade_a", "grade_b"],
+          "properties": {
+            "grade_a": {"type": "boolean"},
+            "grade_b": {"type": "boolean"}
+          }
+        },
+        "custodian_is_verifier": {"const": false},
+        "coordinator_is_verifier": {"const": false},
+        "verifier_is_not_rubric_author": {"const": true},
+        "verifier_is_not_grading_instrument": {"const": true},
+        "verifier_is_administration_only": {"const": true}
+      }
+    },
+    "retention": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule", "recovery_copy", "access_log", "export_procedure"],
+      "properties": {
+        "rule": {"type": "string", "minLength": 1},
+        "recovery_copy": {"type": "string", "minLength": 1},
+        "access_log": {"type": "string", "minLength": 1},
+        "export_procedure": {"type": "string", "minLength": 1}
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["authentication", "validator_path", "validator_commit", "validator_sha256", "authentication_verifier_path", "authentication_verifier_sha256"],
+      "properties": {
+        "authentication": {"enum": ["github_actions_oidc", "signed_commit"]},
+        "validator_path": {"const": "scripts/validate_arc_d_b2_admission_v2.py"},
+        "validator_commit": {"$ref": "#/$defs/gitsha"},
+        "validator_sha256": {"$ref": "#/$defs/sha256"},
+        "authentication_verifier_path": {"type": "string", "pattern": "^[A-Za-z0-9._/-]{1,160}$"},
+        "authentication_verifier_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["receipt_sha256", "result", "content_used"],
+      "properties": {
+        "receipt_sha256": {"$ref": "#/$defs/sha256"},
+        "result": {"const": "PASS"},
+        "content_used": {"const": "NON_GRADER_SENTINELS_ONLY"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitsha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "identifier": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]{2,127}$"},
+    "lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["venue_type", "opaque_venue_id", "immutable_objects", "separate_write_boundary", "expected_surface"],
+      "properties": {
+        "venue_type": {"enum": ["private_git", "content_addressed_private_store"]},
+        "opaque_venue_id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{8,128}$"},
+        "immutable_objects": {"const": true},
+        "separate_write_boundary": {"const": true},
+        "expected_surface": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{2,127}$"}
+      }
+    }
+  }
+}

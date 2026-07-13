@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_public_admission_receipt.schema.json",
+  "title": "ARC-D B2 content-free public admission receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_id", "attempt_id", "lane", "item_id", "parent_charter_sha256", "amendment_sha256", "custody_profile_sha256", "activation_commit", "preregistration_manifest_sha256", "preregistration_commit", "dispatch_ledger_sha256", "dispatch_ledger_commit", "packet_sha256", "prompt_sha256", "response_sha256", "private_bundle", "instrument", "chronology", "audit", "state"],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-public-admission-receipt@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "attempt_id": {"type": "string", "pattern": "^arc-d-b2-v2-[a-z0-9][a-z0-9._-]{2,63}$"},
+    "lane": {"enum": ["grade_a", "grade_b"]},
+    "item_id": {"enum": ["attrs_1567_setattr_mro", "httpx_3614_base_url_query", "httpx_3221_ipv6_no_proxy"]},
+    "parent_charter_sha256": {"const": "44306491048c792cf4e1a049d8e8059d8033f4f56bb73f8b821cf1483c20a16e"},
+    "amendment_sha256": {"$ref": "#/$defs/sha256"},
+    "custody_profile_sha256": {"$ref": "#/$defs/sha256"},
+    "activation_commit": {"$ref": "#/$defs/gitsha"},
+    "preregistration_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "preregistration_commit": {"$ref": "#/$defs/gitsha"},
+    "dispatch_ledger_sha256": {"$ref": "#/$defs/sha256"},
+    "dispatch_ledger_commit": {"$ref": "#/$defs/gitsha"},
+    "packet_sha256": {"$ref": "#/$defs/sha256"},
+    "prompt_sha256": {"$ref": "#/$defs/sha256"},
+    "response_sha256": {"$ref": "#/$defs/sha256"},
+    "private_bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["opaque_venue_id", "object_id", "tree_id", "bundle_path_sha256", "manifest_sha256", "manifest_bytes", "raw_grade_sha256", "payload_sha256", "grade_receipt_sha256", "session_evidence_sha256", "session_id_sha256"],
+      "properties": {
+        "opaque_venue_id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{8,128}$"},
+        "object_id": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+        "tree_id": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+        "bundle_path_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest_bytes": {"type": "integer", "minimum": 1},
+        "raw_grade_sha256": {"$ref": "#/$defs/sha256"},
+        "payload_sha256": {"$ref": "#/$defs/sha256"},
+        "grade_receipt_sha256": {"$ref": "#/$defs/sha256"},
+        "session_evidence_sha256": {"$ref": "#/$defs/sha256"},
+        "session_id_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "instrument": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provider_lineage", "model", "effort", "surface"],
+      "properties": {
+        "provider_lineage": {"enum": ["openai", "anthropic"]},
+        "model": {"enum": ["gpt-5.6-sol", "fable-5"]},
+        "effort": {"const": "high"},
+        "surface": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{2,127}$"}
+      }
+    },
+    "chronology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dispatched_at", "sealed_at"],
+      "properties": {
+        "dispatched_at": {"type": "string", "format": "date-time"},
+        "sealed_at": {"type": "string", "format": "date-time"}
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verifier_id", "audit_receipt_sha256", "validator_sha256", "authentication", "authentication_evidence_sha256", "result", "raw_bytes_accessed"],
+      "properties": {
+        "verifier_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/-]{2,127}$"},
+        "audit_receipt_sha256": {"$ref": "#/$defs/sha256"},
+        "validator_sha256": {"$ref": "#/$defs/sha256"},
+        "authentication": {"enum": ["github_actions_oidc", "signed_commit"]},
+        "authentication_evidence_sha256": {"$ref": "#/$defs/sha256"},
+        "result": {"const": "PASS"},
+        "raw_bytes_accessed": {"const": true}
+      }
+    },
+    "state": {"const": "PROPOSED_FOR_ATOMIC_ADMISSION"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitsha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+  }
+}
