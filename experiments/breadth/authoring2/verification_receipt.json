@@ -1,0 +1,35 @@
+{
+  "t3_billing_anchor_001": {
+    "vectors": 9,
+    "knot_vectors": 6,
+    "reference_fails": 0,
+    "naive": {
+      "cascade_clamp": {
+        "fails": 5,
+        "knot_vector_fails": 5
+      }
+    }
+  },
+  "t3_window_limit_001": {
+    "vectors": 10,
+    "knot_vectors": 7,
+    "reference_fails": 0,
+    "naive": {
+      "closed_old_end": {
+        "fails": 3,
+        "knot_vector_fails": 3
+      }
+    }
+  },
+  "t3_due_date_shift_001": {
+    "vectors": 10,
+    "knot_vectors": 7,
+    "reference_fails": 0,
+    "naive": {
+      "forward_only": {
+        "fails": 6,
+        "knot_vector_fails": 6
+      }
+    }
+  }
+}

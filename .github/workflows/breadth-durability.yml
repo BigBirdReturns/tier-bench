@@ -53,6 +53,13 @@ jobs:
           python -m py_compile experiments/almanac/generate_vectors.py tests/test_almanac_vectors.py
           python experiments/almanac/generate_vectors.py --check
           python tests/test_almanac_vectors.py
+      - name: authoring batch 2 — frozen graders match the reference derivation
+        run: |
+          python -m py_compile experiments/breadth/authoring2/build_vectors.py \
+            fixtures/t3_billing_anchor_001/hidden_tests.py \
+            fixtures/t3_window_limit_001/hidden_tests.py \
+            fixtures/t3_due_date_shift_001/hidden_tests.py
+          python experiments/breadth/authoring2/build_vectors.py --check
       - name: capture guard tests bite
         run: |
           python tests/test_capture_ledger.py
