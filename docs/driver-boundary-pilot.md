@@ -1,4 +1,4 @@
-# Driver-boundary pilot — pre-registered protocol (v1, 2026-07-13)
+# Driver-boundary pilot — pre-registered protocol (v1.1, 2026-07-13)
 
 Status: **REGISTERED, not yet authorized to run.** This document is committed
 before any pilot task list exists. Per the adapt.py discipline, changing the
@@ -12,10 +12,15 @@ frozen first.
 
 ## What this pilot is and is not
 
-- It is a **feasibility pilot** (n≈10 real tasks): it estimates failure modes,
-  variance, and instrumentation gaps. **It cannot establish equivalence or
-  non-inferiority at this n, and no such claim may be made from it.** Its
-  output is a decision about whether a larger comparison is justified.
+- It is a **feasibility pilot** with **exactly N = 10 tasks**, drawn once by
+  the operator and never replaced. Stopping rule (deterministic, no
+  discretion): every drawn task runs in all three arms unless VOIDED by the
+  failure defaults below; voided tasks are reported, not replaced; if fewer
+  than 7 of 10 tasks complete un-voided in all arms, the pilot reports
+  PARTIAL and supports no hypothesis movement. There is no early stopping for
+  results — only the void rule ends a task early. **N=10 cannot establish
+  equivalence or non-inferiority, and no such claim may be made from it.**
+  Its output is a decision about whether a larger comparison is justified.
 - It tests **H-driver-execution** and instruments **H-authority-routing**.
   **H-driver-discovery is NOT tested here** — it needs a separate
   acceptance-authoring task set with a withheld audit (see §Discovery).
@@ -53,6 +58,19 @@ hands in every arm. Same visible task brief and the same acceptance command.
   time spent on those questions is COUNTED AT FULL WEIGHT in the primary
   metric — transferring judgment cost to the operator is not a speedup.
 
+## Arm order — seeded and counterbalanced
+
+Within a task, arms run sequentially (one operator), so operator familiarity
+grows with each pass — a bias that must not correlate with arm. Arm order per
+task is drawn deterministically from the six permutations of (A, B, C):
+
+    perm_index = int(sha256(task_id + ":" + protocol_commit).hexdigest(), 16) % 6
+
+where `protocol_commit` is the commit hash of THIS registered protocol version.
+No discretion, reproducible by anyone from the task list + this file. Across
+10 tasks this approximately counterbalances position effects; the readout must
+still report per-position means so residual familiarity bias is visible.
+
 ## Task selection
 
 Real tasks from the operator's actual repositories, selected by the operator
@@ -72,10 +90,38 @@ creation). The weakest arm must not be able to win by satisfying incomplete
 tests. Audit content is withheld from all arms and from both drivers until
 every arm has sealed.
 
+**Arm blinding of the audit.** Patches are audited as normalized artifacts
+under opaque labels: seeded-shuffled identifiers (same seeding scheme as arm
+order), diffs stripped of branch names, timestamps, worktree paths, and any
+runner metadata before presentation. All audit scores (CI result, diff
+constraints, acceptance, escaped defects) are recorded against opaque labels
+and SEALED before unblinding. Honest limit, stated up front: the operator
+cannot be fully blind to Arm C for tasks where it asked them questions —
+blinding is complete between Arms A and B, and partial for C; the readout
+must carry this caveat on every C comparison. Neither resident driver
+participates in auditing its own pilot's artifacts.
+
 ## Metrics
 
 **Primary: operator active minutes per accepted change** — including
 interruptions, clarification handling, and rescue work.
+
+**Reproducible accounting (schemas fixed here, pre-disclosure):**
+
+- *Operator time*: an intervention log, one JSONL row per operator touch:
+  `{task_id, arm, started_at, ended_at, category}` with category in
+  {brief, clarification, rescue, review, acceptance, other}. The runner
+  opens/closes rows interactively (operator marks start/stop); rows are
+  appended, never edited; active minutes = sum of row durations. Untracked
+  operator work discovered later voids the task (failure defaults).
+- *Model/backend usage*: one ledger row per model call in the established
+  `experiments/breadth/ledger.py` schema — `{ts, account, model, tier,
+  task_id, phase(arm), outcome, tokens (in/out/cache r/w), cost_usd,
+  latency_ms, note}` — with `cost_usd` real-billed where the surface reports
+  it and explicitly labeled shadow-estimated otherwise; the backend surface
+  (subscription CLI / API / Agent-tool) and runtime model id are recorded in
+  `note` for every call. Reconciliation (`ledger.reconcile`) runs at pilot
+  close; unreconciled books void the affected tasks.
 
 Secondary: elapsed wall-clock; frontier tokens/$ (real-billed); cheap
 tokens/$; escaped defects (from the withheld audit + follow-up window);
@@ -95,7 +141,18 @@ reviewers, with an empty cheap-review comparison class.
 
 ## Failure defaults
 
-Missing telemetry rows, cross-arm exposure, post-hoc metric changes, or an
-arm authoring its own acceptance void that task for all arms (never one arm
-selectively). A voided pilot reports as PARTIAL — never as evidence for any
-hypothesis.
+Missing telemetry rows, missing/edited intervention-log rows, unreconciled
+ledgers, cross-arm exposure, post-hoc metric changes, deviation from the
+seeded arm order, unblinded audit scoring, or an arm authoring its own
+acceptance void that task for ALL arms (never one arm selectively). Voided
+tasks are never replaced. A pilot below the 7-of-10 completion floor reports
+as PARTIAL — never as evidence for any hypothesis.
+
+## Change log
+
+- v1.1 (2026-07-13, pre-task-disclosure): fixed exact N and deterministic
+  stopping/void rule; seeded counterbalanced arm order; arm-blind audit
+  procedure with the honest Arm-C partial-blindness caveat; reproducible
+  operator-time and model/backend accounting schemas. Recorded as blockers by
+  the Sol lane on draft PR #90 before any task disclosure — pre-disclosure
+  amendment is permitted; post-disclosure amendment remains GATED.
