@@ -107,3 +107,60 @@ another cell cracks (LESSONS rule 2).
 The router (orchestrator + cost guard) is unaffected as *plumbing* — but its
 routing table should eventually key on settled-vs-derived task class, not
 tier difficulty. That is the product consequence of H2's verdict.
+
+---
+
+## The driver-boundary hypotheses (registered 2026-07-13, pre-task-list)
+
+> Context: the program measures the SOLVER seat with hidden graders and has
+> never measured the DRIVER seat. Both resident frontier lineages are
+> structurally conflicted parties on driver necessity (constitution §2.1:
+> "you are a conflicted party in every judgment about models, especially
+> about yourself"). No motive is asserted; the asymmetry is the finding.
+> `driver_traces.jsonl` is empty at registration time. These three hypotheses
+> split the load-bearing question so an easy execution result cannot erase a
+> real discovery difference. Design authority: cross-lineage exchange
+> 2026-07-13 (Sol correction of the Claude-lane draft); pilot protocol:
+> `docs/driver-boundary-pilot.md`. Registered BEFORE any pilot task list
+> exists; changing arms/metrics after task-list disclosure is a GATED act.
+
+### H-driver-execution
+
+> Given fixed executable acceptance, cheap coordination is non-inferior to
+> frontier coordination while reducing frontier cost, elapsed time, and
+> operator effort.
+
+**Verdict: UNMEASURED.** Component evidence only (fixture floors, one
+crossing event). No end-to-end run on real work exists in any arm. The
+existing daily entrypoint does not embody the measured harness (planner
+defaults to the frontier in models.json; acceptance is planner prose, never
+executed).
+
+### H-authority-routing
+
+> When work is blocked by genuine ambiguity or authorization (NOT by a
+> derivable quantity), a cheap apparatus can surface a concise operator
+> question without frontier assistance.
+
+**Verdict: UNMEASURED.** Scope guard: applies to interpretation/policy/
+authorization decisions only (task02's backslash class). Derivable
+quantities (lichun) are computation, not authority — routing them to the
+operator would replace derivation with fiat and is out of scope. Viability
+also requires interruptions to be RARE and reliably NOTICED; both are
+measurable quantities in the pilot (clarification count, missed-decision
+escapes).
+
+### H-driver-discovery
+
+> When the stated acceptance is incomplete, frontier review finds more
+> consequential missing invariants than cheap review or operator-only
+> routing.
+
+**Verdict: UNMEASURED — with one-armed anecdotal support for the frontier.**
+Every discovery data point to date comes from FRONTIER reviewers only
+(cross-lineage review chain: PR #84's grader-type hole, PR #85's batch-grid
+and preregistration gaps, PR #89's packet-equality and fork-choice gaps —
+each a missing invariant no crisp question preceded). A cheap-review baseline
+has never been run; the comparison class is empty. This is the hypothesis the
+resident drivers have the strongest interest in believing — treat its
+evidence bar accordingly.
