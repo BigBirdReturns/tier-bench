@@ -63,7 +63,7 @@ Minimal manifest shape:
   "tool_versions": {
     "claude_code": "<exact `claude --version` output>",
     "claude_help_sha256": "<sha256 from adapter `_help_surface('claude')`>",
-    "tier_claude_adapter": "1"
+    "tier_claude_adapter": "2"
   },
   "prompt_templates": {
     "hands": {
@@ -93,6 +93,7 @@ Minimal manifest shape:
           "--account", "<same account label>",
           "--claude-version", "<same exact version>",
           "--claude-help-sha256", "<same frozen help-surface sha256>",
+          "--adapter-version", "2",
           "--cost-basis", "subscription-derived"
         ]
       }
