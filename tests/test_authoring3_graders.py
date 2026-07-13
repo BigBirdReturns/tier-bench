@@ -102,6 +102,18 @@ def test_reference_passes_visible_and_hidden():
             f"{task}: reference not full hidden score: {hid.stdout[:100]}"
 
 
+def test_naive_registry_matches_builder_declarations():
+    # fail-closed parity: the manual NAIVE registry here must cover EXACTLY the
+    # naives build_vectors.py declares. A naive added to the builder without a
+    # daylight proof here fails this assertion — CI can never stay green while
+    # the "every declared naive" claim silently narrows.
+    declared = {task: set(cfg["naives"].keys()) for task, cfg in bv.TASKS.items()}
+    tested = {task: set(impls.keys()) for task, impls in NAIVE.items()}
+    assert declared == tested, (
+        f"naive registries diverge — declared in build_vectors: {declared}; "
+        f"proven in this test: {tested}")
+
+
 def test_every_declared_naive_passes_visible_fails_hidden():
     for task, naives in NAIVE.items():
         for name, impl in naives.items():
