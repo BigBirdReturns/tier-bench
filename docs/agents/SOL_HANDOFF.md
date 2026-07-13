@@ -35,6 +35,29 @@ to the original conversational draft are marked.
   fail-closed validator. The exporter may construct official packets only when
   its exact source is on the default branch; tests may build ephemeral packets
   without disclosure, but no grader dispatch is authorized before merge.
+- The first B2 grading attempt is `PARTIAL_UNPAIRED`. Three OpenAI Grade A
+  outputs exist only in a local private worktree; policy denied publishing raw
+  grades or receipts to this public repository, so none is admitted evidence.
+  Local validation classified two as structurally valid and one as invalid for
+  treating non-authority issue material as authoritative. Anthropic Grade B was
+  blocked before provider dispatch despite explicit operator approval: zero
+  disclosures and zero outputs. No comparison or B2 result exists.
+- A second Grade A attempt used three fresh projectless `gpt-5.6-sol@high`
+  sessions and validates 3/3 locally, but its evidence remains unadmitted here.
+  Grade B commit `f4d4962` was imported and checked before comparison: canonical
+  Git blob hashes match its manifest, but 0/3 grade receipts are admissible.
+  The recorded non-projectless repository-container surface and model id do not
+  match the frozen instrument; required per-item receipts are absent; and two
+  payloads misuse explicitly non-authoritative packet material. The comparator
+  was therefore not run and ARC-D remains `PARTIAL_UNPAIRED` at B1.
+- Grade B attempt 2 (`5008f3b`) corrected the physical surface and receipt
+  structure but still admits 0/3 under independent review. Its claimed attrs
+  receipt marks `ORIGINAL_PROMPT.md` authoritative; httpx-3614 is a provider
+  wall with disclosed administration defects; httpx-3221 has two non-bare,
+  disposition-disagreeing samples and no receipt. Operator `go` on 2026-07-13
+  authorizes a new versioned attempt 3 under the unchanged charter. Do not
+  repair or select among prior samples; preserve all outcomes and require exact
+  bare JSON, packet authority discipline, and complete per-item receipts.
 
 ## Settled assets (with exact figures)
 
