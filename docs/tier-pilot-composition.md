@@ -165,23 +165,27 @@ and task ID, and requires any preexisting artifact to equal that final state's
 sealed traces exactly. A validly self-hashed row from another task therefore
 cannot be inherited as historical evidence.
 
-## Deliberately unresolved boundary
+## Bridge status
 
-This proposal stops before production dispatch. The current Claude adapter
-emits the original one-call result shape and the current `tier run` owns a
-single-call disposable worktree. A later, separately claimed bridge must:
+The separately claimed bridge now implements the deterministic coordination
+spine with fixture adapters and ADMIN-opened raw custody. Its production
+entrypoint remains activation-blocked because no ratified activation schema yet
+binds a code-owned real adapter identity to frozen backend bytes. See
+`docs/tier-pilot-bridge.md`.
 
-1. keep one scoped packet/worktree across the composed arm without leaking it
-   across arms;
-2. dispatch the exact rendered prompt bytes and mint one call receipt per
+The bridge machinery:
+
+1. keeps one isolated worktree/advancing packet lineage per arm without leaking
+   it across arms, with a fresh provider session per call;
+2. dispatches the exact rendered prompt bytes and mints one call receipt per
    provider invocation;
-3. expose the model's stage output and the candidate patch as sealed causal
+3. exposes stage output and derives the full-index candidate patch as sealed causal
    inputs without trusting freehand reconstruction;
-4. run immutable acceptance between candidate calls;
-5. preserve/resume an Arm-C packet safely across an operator pause; and
-6. register sessions globally and append Arm-A traces atomically with the arm
+4. runs immutable acceptance between candidate calls;
+5. preserves/resumes Arm C only from a sealed operator answer; and
+6. registers sessions globally and appends Arm-A traces atomically with the arm
    receipt.
 
-Until that bridge is reviewed, merged, and activated against a frozen backend
-manifest, this module proves the composition contract and state transitions —
-not that the pilot can run.
+Until the bridge is reviewed, merged, and later activated against a frozen
+backend manifest and code-owned adapter receipt, these modules prove the
+coordination contract and state transitions—not that the pilot can run.

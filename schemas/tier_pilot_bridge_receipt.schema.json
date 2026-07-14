@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_bridge_receipt.schema.json",
+  "title": "Fixture-only pilot bridge coordination receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "task_id", "arm", "base_commit", "composition_manifest_sha256",
+    "status", "next_stage", "state_sequence", "state_sha256", "state_log", "calls",
+    "provider_receipts", "acceptance_receipts", "active_question_id",
+    "arm_worktree_removed", "scientific_verdict_minted",
+    "equivalence_claim_permitted", "noninferiority_claim_permitted"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/tier-pilot-bridge-receipt@1"},
+    "task_id": {"type": "string", "minLength": 1},
+    "arm": {"enum": ["arm_a", "arm_b", "arm_c"]},
+    "base_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "composition_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "status": {"enum": ["ACTIVE", "WAITING_OPERATOR", "COMPLETE", "FAILED"]},
+    "next_stage": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "state_sequence": {"type": "integer", "minimum": 0},
+    "state_sha256": {"$ref": "#/$defs/sha256"},
+    "state_log": {"$ref": "#/$defs/artifact"},
+    "calls": {"type": "array", "items": {"type": "object"}},
+    "provider_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}},
+    "acceptance_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}},
+    "active_question_id": {"oneOf": [{"type": "string"}, {"type": "null"}]},
+    "arm_worktree_removed": {"type": "boolean"},
+    "scientific_verdict_minted": {"const": false},
+    "equivalence_claim_permitted": {"const": false},
+    "noninferiority_claim_permitted": {"const": false}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "artifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}
