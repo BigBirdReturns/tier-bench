@@ -31,6 +31,7 @@ SOURCE_PATHS = {
     "composition_manifest_runtime": "tier_runner/pilot_manifest.py",
     "runner_core": "tier_runner/core.py",
     "backend_manifest_runtime": "tier_runner/manifest.py",
+    "intervention_runtime": "tier_runner/events.py",
 }
 PRODUCTION_SCHEMA_PATHS = {
     "activation": "schemas/tier_pilot_activation.schema.json",

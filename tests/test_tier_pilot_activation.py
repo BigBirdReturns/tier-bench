@@ -367,7 +367,7 @@ def test_activation_and_production_schemas_are_distinct(root: Path) -> None:
     expected = {
         "provider": "tier-bench/tier-pilot-production-provider-evidence@1",
         "acceptance": "tier-bench/tier-pilot-production-acceptance-evidence@1",
-        "bridge": "tier-bench/tier-pilot-production-bridge-receipt@1",
+        "bridge": "tier-bench/tier-pilot-production-bridge-receipt@2",
     }
     for name, schema_id in expected.items():
         value = json.loads((REPO / PRODUCTION_SCHEMA_PATHS[name]).read_text(encoding="utf-8"))

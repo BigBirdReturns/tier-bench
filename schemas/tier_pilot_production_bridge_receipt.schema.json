@@ -4,13 +4,13 @@
   "title": "Activated pilot bridge coordination receipt",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "executor_identity", "activation_commit", "activation_sha256", "task_id", "arm", "base_commit", "composition_manifest_sha256", "status", "state_sequence", "state_sha256", "state_log", "provider_receipts", "acceptance_receipts", "arm_worktree_removed", "scientific_verdict_minted", "equivalence_claim_permitted", "noninferiority_claim_permitted"],
+  "required": ["schema", "executor_identity", "activation_commit", "activation_sha256", "task_id", "arm", "base_commit", "composition_manifest_sha256", "status", "state_sequence", "state_sha256", "state_log", "provider_receipts", "acceptance_receipts", "question_receipts", "recovery_log", "arm_worktree_removed", "scientific_verdict_minted", "equivalence_claim_permitted", "noninferiority_claim_permitted"],
   "properties": {
-    "schema": {"const": "tier-bench/tier-pilot-production-bridge-receipt@1"},
+    "schema": {"const": "tier-bench/tier-pilot-production-bridge-receipt@2"},
     "executor_identity": {"const": "tier-bench/pilot-production-adapter@1"},
     "activation_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
     "activation_sha256": {"$ref": "#/$defs/sha256"},
-    "task_id": {"type": "string", "minLength": 1}, "arm": {"enum": ["arm_a", "arm_b", "arm_c"]}, "base_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "composition_manifest_sha256": {"$ref": "#/$defs/sha256"}, "status": {"enum": ["ACTIVE", "WAITING_OPERATOR", "COMPLETE", "FAILED"]}, "state_sequence": {"type": "integer", "minimum": 0}, "state_sha256": {"$ref": "#/$defs/sha256"}, "state_log": {"$ref": "#/$defs/artifact"}, "provider_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}}, "acceptance_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}}, "arm_worktree_removed": {"type": "boolean"}, "scientific_verdict_minted": {"const": false}, "equivalence_claim_permitted": {"const": false}, "noninferiority_claim_permitted": {"const": false}
+    "task_id": {"type": "string", "minLength": 1}, "arm": {"enum": ["arm_a", "arm_b", "arm_c"]}, "base_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"}, "composition_manifest_sha256": {"$ref": "#/$defs/sha256"}, "status": {"enum": ["ACTIVE", "WAITING_OPERATOR", "COMPLETE", "FAILED"]}, "state_sequence": {"type": "integer", "minimum": 0}, "state_sha256": {"$ref": "#/$defs/sha256"}, "state_log": {"$ref": "#/$defs/artifact"}, "provider_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}}, "acceptance_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}}, "question_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}}, "recovery_log": {"oneOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]}, "arm_worktree_removed": {"type": "boolean"}, "scientific_verdict_minted": {"const": false}, "equivalence_claim_permitted": {"const": false}, "noninferiority_claim_permitted": {"const": false}
   },
   "$defs": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "artifact": {"type": "object", "additionalProperties": false, "required": ["path", "sha256"], "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"$ref": "#/$defs/sha256"}}}}
 }
