@@ -11,6 +11,7 @@ from .manifest import COST_BASES, ManifestError
 
 
 SCHEMA = "tier-bench/pilot-backends@2"
+PROTOCOL_COMMIT = "076fd1e3d97c22f7c33933c5dee4ff897d7ba4e6"
 ARMS = ("arm_a", "arm_b", "arm_c")
 MODES = {
     "arm_a": "frontier_driver",
@@ -117,6 +118,7 @@ class PilotComposition:
     protocol_commit: str
     isolation: dict[str, Any]
     tool_versions: dict[str, str]
+    acceptance_tool_versions: dict[str, str]
     templates: dict[str, PromptTemplate]
     backends: dict[str, PilotBackend]
     arms: dict[str, PilotArm]
@@ -197,6 +199,7 @@ def load_pilot_composition(
             "protocol_commit",
             "isolation",
             "tool_versions",
+            "acceptance_tool_versions",
             "prompt_templates",
             "backends",
             "arms",
@@ -207,8 +210,10 @@ def load_pilot_composition(
     if data["schema"] != SCHEMA:
         raise ManifestError(f"pilot composition schema must be {SCHEMA}")
     protocol_commit = _string(data["protocol_commit"], "protocol_commit")
-    if not re.fullmatch(r"[0-9a-f]{40}", protocol_commit):
-        raise ManifestError("protocol_commit must be a full lowercase Git SHA")
+    if protocol_commit != PROTOCOL_COMMIT:
+        raise ManifestError(
+            f"protocol_commit must bind the registered v1.3 bytes at {PROTOCOL_COMMIT}"
+        )
 
     isolation = _object(data["isolation"], "isolation")
     required_isolation = {
@@ -230,6 +235,19 @@ def load_pilot_composition(
         for key, value in tool_versions.items()
     ):
         raise ManifestError("tool_versions must bind non-empty names to versions")
+    acceptance_tool_versions = _object(
+        data["acceptance_tool_versions"], "acceptance_tool_versions"
+    )
+    if not acceptance_tool_versions or not all(
+        isinstance(key, str)
+        and key
+        and isinstance(value, str)
+        and value
+        for key, value in acceptance_tool_versions.items()
+    ):
+        raise ManifestError(
+            "acceptance_tool_versions must bind non-empty names to versions"
+        )
 
     templates: dict[str, PromptTemplate] = {}
     for name, value in _object(data["prompt_templates"], "prompt_templates").items():
@@ -382,6 +400,7 @@ def load_pilot_composition(
         protocol_commit=protocol_commit,
         isolation=isolation,
         tool_versions=dict(tool_versions),
+        acceptance_tool_versions=dict(acceptance_tool_versions),
         templates=templates,
         backends=backends,
         arms=arms,

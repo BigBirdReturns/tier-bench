@@ -4,9 +4,11 @@ import copy
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 from typing import Any
+import uuid
 
 from .manifest import canonical_json
 from .pilot_manifest import PilotArm, PilotComposition, Stage
@@ -15,6 +17,8 @@ from .pilot_manifest import PilotArm, PilotComposition, Stage
 STATE_SCHEMA = "tier-bench/pilot-arm-state@1"
 CALL_SCHEMA = "tier-bench/pilot-call-receipt@1"
 TRACE_SCHEMA = "tier-bench/driver-trace@2"
+QUESTION_SCHEMA = "tier-bench/tier-pilot-question-receipt@1"
+ACCEPTANCE_SCHEMA = "tier-bench/tier-pilot-acceptance-receipt@1"
 CALL_FIELDS = {
     "ts",
     "account",
@@ -36,6 +40,34 @@ CALL_FIELDS = {
 }
 CALL_STAGES = {"driver_plan", "hands", "repair", "escalation", "hands_resume"}
 CALL_OUTCOMES = {"completed", "question", "error"}
+STATE_FIELDS = {
+    "schema",
+    "state_sequence",
+    "parent_state_sha256",
+    "state_sha256",
+    "transition",
+    "composition_manifest_sha256",
+    "protocol_commit",
+    "task_id",
+    "task_tier",
+    "task",
+    "files",
+    "acceptance_command",
+    "base_commit",
+    "arm",
+    "status",
+    "next_stage",
+    "repair_calls",
+    "escalation_index",
+    "calls",
+    "acceptance_attempts",
+    "questions",
+    "question_receipts",
+    "active_question_id",
+    "driver_traces",
+    "created_at",
+    "updated_at",
+}
 
 
 class CompositionError(ValueError):
@@ -55,6 +87,39 @@ def _sha256(value: Any, label: str) -> str:
     if not re.fullmatch(r"[0-9a-f]{64}", value):
         raise CompositionError(f"{label} must be a lowercase SHA-256")
     return value
+
+
+def state_hash(state: dict[str, Any]) -> str:
+    unsigned = {key: value for key, value in state.items() if key != "state_sha256"}
+    return hashlib.sha256(canonical_json(unsigned)).hexdigest()
+
+
+def _seal_initial(state: dict[str, Any]) -> dict[str, Any]:
+    state["state_sequence"] = 0
+    state["parent_state_sha256"] = None
+    state["transition"] = {"kind": "init", "at": state["created_at"]}
+    state["state_sha256"] = state_hash(state)
+    return state
+
+
+def _seal_next(
+    previous: dict[str, Any],
+    updated: dict[str, Any],
+    *,
+    kind: str,
+    reference_sha256: str,
+) -> dict[str, Any]:
+    at = _now()
+    updated["state_sequence"] = previous["state_sequence"] + 1
+    updated["parent_state_sha256"] = previous["state_sha256"]
+    updated["transition"] = {
+        "kind": kind,
+        "reference_sha256": _sha256(reference_sha256, "transition reference_sha256"),
+        "at": at,
+    }
+    updated["updated_at"] = at
+    updated["state_sha256"] = state_hash(updated)
+    return updated
 
 
 def _nonempty(value: Any, label: str) -> str:
@@ -123,7 +188,7 @@ def new_pilot_arm_state(
     if arm not in composition.arms:
         raise CompositionError(f"unknown arm {arm!r}")
     first_stage = "hands" if arm == "arm_c" else "driver_plan"
-    return {
+    return _seal_initial({
         "schema": STATE_SCHEMA,
         "composition_manifest_sha256": composition.sha256,
         "protocol_commit": composition.protocol_commit,
@@ -141,11 +206,12 @@ def new_pilot_arm_state(
         "calls": [],
         "acceptance_attempts": [],
         "questions": [],
+        "question_receipts": [],
         "active_question_id": None,
         "driver_traces": [],
         "created_at": _now(),
         "updated_at": _now(),
-    }
+    })
 
 
 def _last_completed_output(state: dict[str, Any], stages: set[str]) -> str | None:
@@ -235,6 +301,12 @@ def render_next_prompt(composition: PilotComposition, state: dict[str, Any]) -> 
 
 
 def _validate_state(composition: PilotComposition, state: dict[str, Any]) -> None:
+    if not isinstance(state, dict) or set(state) != STATE_FIELDS:
+        missing = STATE_FIELDS - set(state) if isinstance(state, dict) else STATE_FIELDS
+        unknown = set(state) - STATE_FIELDS if isinstance(state, dict) else set()
+        raise CompositionError(
+            f"state fields mismatch; missing={sorted(missing)}, unknown={sorted(unknown)}"
+        )
     if state.get("schema") != STATE_SCHEMA:
         raise CompositionError(f"state schema must be {STATE_SCHEMA}")
     if state.get("composition_manifest_sha256") != composition.sha256:
@@ -243,6 +315,194 @@ def _validate_state(composition: PilotComposition, state: dict[str, Any]) -> Non
         raise CompositionError("state protocol commit contradicts the composition manifest")
     if state.get("arm") not in composition.arms:
         raise CompositionError("state arm is not in the composition manifest")
+    if not isinstance(state.get("state_sequence"), int) or state["state_sequence"] < 0:
+        raise CompositionError("state_sequence must be a non-negative integer")
+    if state["state_sequence"] == 0:
+        if state.get("parent_state_sha256") is not None or state.get("transition", {}).get("kind") != "init":
+            raise CompositionError("initial state must have no parent and an init transition")
+    else:
+        _sha256(state.get("parent_state_sha256"), "parent_state_sha256")
+        transition = state.get("transition")
+        if not isinstance(transition, dict) or set(transition) != {"kind", "reference_sha256", "at"}:
+            raise CompositionError("non-initial state needs an exact transition receipt")
+        _nonempty(transition["kind"], "transition.kind")
+        _sha256(transition["reference_sha256"], "transition.reference_sha256")
+        _nonempty(transition["at"], "transition.at")
+    for key in ("task_id", "task_tier", "task", "acceptance_command", "base_commit"):
+        _nonempty(state.get(key), f"state.{key}")
+    if not re.fullmatch(r"[0-9a-f]{40}", state["base_commit"]):
+        raise CompositionError("state.base_commit must be a full lowercase Git SHA")
+    if not isinstance(state.get("files"), list) or not state["files"] or not all(
+        isinstance(item, str) and item for item in state["files"]
+    ):
+        raise CompositionError("state.files must be a non-empty string array")
+    for key in ("calls", "acceptance_attempts", "questions", "question_receipts", "driver_traces"):
+        if not isinstance(state.get(key), list):
+            raise CompositionError(f"state.{key} must be an array")
+    if state.get("status") not in {"ACTIVE", "WAITING_OPERATOR", "COMPLETE", "FAILED"}:
+        raise CompositionError("state.status is invalid")
+    _sha256(state.get("state_sha256"), "state_sha256")
+    if state["state_sha256"] != state_hash(state):
+        raise CompositionError("state hash is invalid; snapshot was rewritten")
+    if state["state_sequence"] > 0:
+        kind = state["transition"]["kind"]
+        if kind == "model_call":
+            if not state["calls"]:
+                raise CompositionError("model_call transition has no call receipt")
+            expected_ref = hashlib.sha256(canonical_json(state["calls"][-1])).hexdigest()
+        elif kind == "acceptance":
+            if not state["acceptance_attempts"]:
+                raise CompositionError("acceptance transition has no acceptance receipt")
+            expected_ref = state["acceptance_attempts"][-1].get("receipt_sha256")
+        elif kind == "operator_answer":
+            if not state["question_receipts"]:
+                raise CompositionError("operator_answer transition has no question receipt")
+            expected_ref = hashlib.sha256(
+                canonical_json(state["question_receipts"][-1])
+            ).hexdigest()
+        elif kind == "operator_decline":
+            answered = [item for item in state["questions"] if item.get("answer_sha256")]
+            if not answered:
+                raise CompositionError("operator_decline transition has no bound answer")
+            expected_ref = answered[-1]["answer_sha256"]
+        else:
+            raise CompositionError(f"unknown state transition kind {kind!r}")
+        if state["transition"]["reference_sha256"] != expected_ref:
+            raise CompositionError("state transition reference does not bind its evidence")
+    _validate_state_semantics(composition, state)
+
+
+def _validate_state_semantics(
+    composition: PilotComposition,
+    state: dict[str, Any],
+) -> None:
+    arm = composition.arms[state["arm"]]
+    if state["state_sequence"] == 0:
+        expected = ("ACTIVE", "hands" if state["arm"] == "arm_c" else "driver_plan")
+    else:
+        kind = state["transition"]["kind"]
+        if kind == "operator_answer":
+            expected = ("ACTIVE", "hands_resume")
+        elif kind == "operator_decline":
+            expected = ("FAILED", None)
+        elif kind == "model_call":
+            call = state["calls"][-1]
+            if call["outcome"] == "question":
+                expected = ("WAITING_OPERATOR", None)
+            elif call["outcome"] == "error":
+                expected = ("FAILED", None)
+            elif call["stage"] == "driver_plan":
+                expected = ("ACTIVE", "hands")
+            else:
+                expected = ("ACTIVE", "acceptance")
+        elif kind == "acceptance":
+            receipt = state["acceptance_attempts"][-1]
+            if receipt["passed"]:
+                expected = ("COMPLETE", None)
+            elif state["repair_calls"] < arm.repair.max_calls:
+                expected = ("ACTIVE", "repair")
+            elif state["escalation_index"] < len(arm.escalations):
+                expected = ("ACTIVE", "escalation")
+            else:
+                expected = ("FAILED", None)
+        else:
+            raise CompositionError(f"unknown state transition kind {kind!r}")
+    if (state["status"], state["next_stage"]) != expected:
+        raise CompositionError("state status/next_stage contradicts its sealed evidence")
+    if state["status"] == "WAITING_OPERATOR":
+        if not state["active_question_id"] or not state["questions"]:
+            raise CompositionError("WAITING_OPERATOR state lacks an active question")
+        if state["questions"][-1]["question_id"] != state["active_question_id"]:
+            raise CompositionError("active question ID does not bind the latest question")
+    elif state["active_question_id"] is not None:
+        raise CompositionError("non-waiting state cannot carry an active question")
+
+
+def _validate_parent_transition(
+    previous: dict[str, Any],
+    current: dict[str, Any],
+) -> None:
+    immutable = {
+        "composition_manifest_sha256",
+        "protocol_commit",
+        "task_id",
+        "task_tier",
+        "task",
+        "files",
+        "acceptance_command",
+        "base_commit",
+        "arm",
+        "created_at",
+    }
+    if any(current[key] != previous[key] for key in immutable):
+        raise CompositionError("pilot state transition rewrites immutable task identity")
+
+    def appended(name: str, maximum: int) -> int:
+        before = previous[name]
+        after = current[name]
+        if after[: len(before)] != before or len(after) - len(before) not in range(maximum + 1):
+            raise CompositionError(f"pilot state transition rewrites or over-appends {name}")
+        return len(after) - len(before)
+
+    kind = current["transition"]["kind"]
+    call_delta = appended("calls", 1)
+    acceptance_delta = appended("acceptance_attempts", 1)
+    receipt_delta = appended("question_receipts", 1)
+    trace_delta = appended("driver_traces", 1)
+    if len(current["questions"]) < len(previous["questions"]):
+        raise CompositionError("pilot state transition deletes operator questions")
+    question_delta = len(current["questions"]) - len(previous["questions"])
+    if question_delta > 1:
+        raise CompositionError("pilot state transition over-appends operator questions")
+
+    expected = {
+        "model_call": (1, 0, 0),
+        "acceptance": (0, 1, 0),
+        "operator_answer": (0, 0, 1),
+        "operator_decline": (0, 0, 0),
+    }
+    if kind not in expected or (call_delta, acceptance_delta, receipt_delta) != expected[kind]:
+        raise CompositionError("state transition kind contradicts appended evidence")
+    if kind == "model_call" and question_delta not in {0, 1}:
+        raise CompositionError("model call question delta is invalid")
+    if kind != "model_call" and question_delta != 0:
+        raise CompositionError("non-call transition cannot append a question")
+    if kind != "acceptance" and trace_delta != 0:
+        raise CompositionError("only acceptance may append a driver trace")
+    if kind == "acceptance" and trace_delta not in {0, 1}:
+        raise CompositionError("acceptance trace delta is invalid")
+    repair_delta = current["repair_calls"] - previous["repair_calls"]
+    escalation_delta = current["escalation_index"] - previous["escalation_index"]
+    expected_repair_delta = (
+        1
+        if kind == "model_call"
+        and current["calls"][-1]["stage"] == "repair"
+        else 0
+    )
+    expected_escalation_delta = (
+        1
+        if kind == "acceptance"
+        and current["acceptance_attempts"][-1]["passed"] is False
+        and previous["calls"][-1]["stage"] == "escalation"
+        else 0
+    )
+    if repair_delta != expected_repair_delta or escalation_delta != expected_escalation_delta:
+        raise CompositionError("pilot state transition rewrites repair/escalation counters")
+
+    # Existing questions are immutable except for the one-time answer fields
+    # (and the terminal declined marker on the immediately following state).
+    for index, before in enumerate(previous["questions"]):
+        after = current["questions"][index]
+        if before == after:
+            continue
+        allowed = dict(before)
+        if kind == "operator_answer" and before.get("answer") is None:
+            for key in ("answer", "answer_sha256", "answered_at", "intervention_id"):
+                allowed[key] = after.get(key)
+        elif kind == "operator_decline":
+            allowed["declined"] = True
+        if after != allowed:
+            raise CompositionError("operator question history was rewritten")
 
 
 def _validate_call_receipt(
@@ -360,7 +620,13 @@ def _validate_call_receipt(
         raise CompositionError("ledger_call.ts must be ISO-8601") from exc
     if timestamp.tzinfo is None:
         raise CompositionError("ledger_call.ts must include a timezone")
-    expected_call_outcome = "error" if receipt["outcome"] == "error" else "pass"
+    expected_call_outcome = (
+        "error"
+        if receipt["outcome"] == "error"
+        else "partial"
+        if receipt["outcome"] == "question"
+        else "pass"
+    )
     if call["outcome"] != expected_call_outcome:
         raise CompositionError("ledger_call.outcome contradicts the call receipt outcome")
     extra = call.get("extra")
@@ -436,6 +702,10 @@ def record_pilot_call(
     stage = receipt["stage"]
     outcome = receipt["outcome"]
     arm = composition.arms[updated["arm"]]
+    if stage == "repair":
+        # A repair invocation consumes the one preregistered repair budget even
+        # when it asks a question instead of producing a candidate.
+        updated["repair_calls"] += 1
 
     if outcome == "question":
         assert arm.question_route is not None
@@ -450,10 +720,13 @@ def record_pilot_call(
             question_id = _sha_text(
                 f"{updated['task_id']}:{updated['arm']}:{receipt['call_id']}:{evidence_sha}"
             )
+            asked_at = _now()
             updated["questions"].append(
                 {
                     "question_id": question_id,
+                    "intervention_id": None,
                     "call_id": receipt["call_id"],
+                    "asked_at": asked_at,
                     "question": receipt["output"]["text"],
                     "question_sha256": evidence_sha,
                     "rendered": rendered,
@@ -476,11 +749,13 @@ def record_pilot_call(
     elif stage == "driver_plan":
         updated["next_stage"] = "hands"
     else:
-        if stage == "repair":
-            updated["repair_calls"] += 1
         updated["next_stage"] = "acceptance"
-    updated["updated_at"] = _now()
-    return updated
+    return _seal_next(
+        state,
+        updated,
+        kind="model_call",
+        reference_sha256=hashlib.sha256(canonical_json(receipt)).hexdigest(),
+    )
 
 
 def _trace_for_repair(
@@ -522,29 +797,98 @@ def _trace_for_repair(
     return row
 
 
+ACCEPTANCE_FIELDS = {
+    "schema",
+    "receipt_sha256",
+    "task_id",
+    "arm",
+    "attempt",
+    "causal_call_id",
+    "base_commit",
+    "command",
+    "command_sha256",
+    "candidate_patch_sha256",
+    "candidate_tree_sha256",
+    "exit_code",
+    "passed",
+    "report",
+    "report_sha256",
+    "stdout_sha256",
+    "stderr_sha256",
+    "tool_versions",
+    "recorded_at",
+}
+
+
+def acceptance_receipt_hash(receipt: dict[str, Any]) -> str:
+    unsigned = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    return hashlib.sha256(canonical_json(unsigned)).hexdigest()
+
+
+def _validate_acceptance_receipt(
+    composition: PilotComposition,
+    state: dict[str, Any],
+    receipt: dict[str, Any],
+) -> None:
+    if not isinstance(receipt, dict) or set(receipt) != ACCEPTANCE_FIELDS:
+        raise CompositionError("acceptance receipt fields do not match the frozen contract")
+    if receipt.get("schema") != ACCEPTANCE_SCHEMA:
+        raise CompositionError(f"acceptance receipt schema must be {ACCEPTANCE_SCHEMA}")
+    if receipt.get("task_id") != state["task_id"] or receipt.get("arm") != state["arm"]:
+        raise CompositionError("acceptance receipt task/arm contradicts the state")
+    expected_attempt = len(state["acceptance_attempts"]) + 1
+    if receipt.get("attempt") != expected_attempt:
+        raise CompositionError(f"acceptance attempt must be {expected_attempt}")
+    if not state["calls"] or receipt.get("causal_call_id") != state["calls"][-1]["call_id"]:
+        raise CompositionError("acceptance receipt does not bind the causal model call")
+    candidate = state["calls"][-1]["output"]
+    if candidate["kind"] != "candidate_patch":
+        raise CompositionError("acceptance can run only on a sealed candidate patch")
+    if receipt.get("candidate_patch_sha256") != candidate["sha256"]:
+        raise CompositionError("acceptance candidate patch contradicts the causal call")
+    if receipt.get("base_commit") != state["base_commit"]:
+        raise CompositionError("acceptance base_commit contradicts the task state")
+    if receipt.get("command") != state["acceptance_command"]:
+        raise CompositionError("acceptance command contradicts the immutable task state")
+    if receipt.get("command_sha256") != _sha_text(state["acceptance_command"]):
+        raise CompositionError("acceptance command hash mismatch")
+    for key in (
+        "candidate_patch_sha256",
+        "candidate_tree_sha256",
+        "stdout_sha256",
+        "stderr_sha256",
+        "report_sha256",
+        "receipt_sha256",
+    ):
+        _sha256(receipt.get(key), f"acceptance receipt {key}")
+    report = _nonempty(receipt.get("report"), "acceptance receipt report")
+    if receipt["report_sha256"] != _sha_text(report):
+        raise CompositionError("acceptance report hash mismatch")
+    if receipt.get("tool_versions") != composition.acceptance_tool_versions:
+        raise CompositionError("acceptance tool versions contradict the frozen manifest")
+    if not isinstance(receipt.get("exit_code"), int) or isinstance(receipt["exit_code"], bool):
+        raise CompositionError("acceptance exit_code must be an integer")
+    if not isinstance(receipt.get("passed"), bool):
+        raise CompositionError("acceptance passed must be boolean")
+    if receipt["passed"] is not (receipt["exit_code"] == 0):
+        raise CompositionError("acceptance passed must equal exit_code == 0")
+    _nonempty(receipt.get("recorded_at"), "acceptance receipt recorded_at")
+    if receipt["receipt_sha256"] != acceptance_receipt_hash(receipt):
+        raise CompositionError("acceptance receipt hash is invalid")
+
+
 def record_acceptance(
     composition: PilotComposition,
     state: dict[str, Any],
-    *,
-    passed: bool,
-    report: str,
+    receipt: dict[str, Any],
 ) -> dict[str, Any]:
     _validate_state(composition, state)
     if state["status"] != "ACTIVE" or state["next_stage"] != "acceptance":
         raise CompositionError("arm state is not waiting for immutable acceptance")
-    if not isinstance(passed, bool):
-        raise CompositionError("acceptance passed must be boolean")
-    report = _nonempty(report, "acceptance report")
+    _validate_acceptance_receipt(composition, state, receipt)
+    passed = receipt["passed"]
     updated = copy.deepcopy(state)
-    updated["acceptance_attempts"].append(
-        {
-            "attempt": len(updated["acceptance_attempts"]) + 1,
-            "passed": passed,
-            "report": report,
-            "report_sha256": _sha_text(report),
-            "recorded_at": _now(),
-        }
-    )
+    updated["acceptance_attempts"].append(copy.deepcopy(receipt))
     trace = _trace_for_repair(composition, updated, passed)
     if trace is not None:
         updated["driver_traces"].append(trace)
@@ -555,8 +899,12 @@ def record_acceptance(
         if updated["calls"][-1]["stage"] == "escalation":
             updated["escalation_index"] += 1
         _route_after_failure(updated, composition.arms[updated["arm"]])
-    updated["updated_at"] = _now()
-    return updated
+    return _seal_next(
+        state,
+        updated,
+        kind="acceptance",
+        reference_sha256=receipt["receipt_sha256"],
+    )
 
 
 def answer_operator_question(
@@ -565,6 +913,7 @@ def answer_operator_question(
     *,
     question_id: str,
     answer: str,
+    intervention_id: str,
 ) -> dict[str, Any]:
     _validate_state(composition, state)
     if state["arm"] != "arm_c" or state["status"] != "WAITING_OPERATOR":
@@ -578,14 +927,37 @@ def answer_operator_question(
     )
     if question["answer"] is not None:
         raise CompositionError("operator question was already answered")
+    _nonempty(intervention_id, "intervention_id")
+    try:
+        uuid.UUID(intervention_id)
+    except ValueError as exc:
+        raise CompositionError("intervention_id must be a UUID") from exc
+    answered_at = _now()
+    question["intervention_id"] = intervention_id
     question["answer"] = answer
     question["answer_sha256"] = _sha_text(answer)
-    question["answered_at"] = _now()
+    question["answered_at"] = answered_at
+    question_receipt = {
+        "schema": QUESTION_SCHEMA,
+        "question_id": question_id,
+        "task_id": state["task_id"],
+        "arm": "arm_c",
+        "intervention_id": intervention_id,
+        "asked_at": question["asked_at"],
+        "answered_at": answered_at,
+        "question_sha256": question["question_sha256"],
+        "answer_sha256": question["answer_sha256"],
+    }
+    updated["question_receipts"].append(question_receipt)
     updated["active_question_id"] = None
     updated["status"] = "ACTIVE"
     updated["next_stage"] = "hands_resume"
-    updated["updated_at"] = _now()
-    return updated
+    return _seal_next(
+        state,
+        updated,
+        kind="operator_answer",
+        reference_sha256=hashlib.sha256(canonical_json(question_receipt)).hexdigest(),
+    )
 
 
 def decline_operator_question(
@@ -594,32 +966,175 @@ def decline_operator_question(
     *,
     question_id: str,
     reason: str,
+    intervention_id: str,
 ) -> dict[str, Any]:
     updated = answer_operator_question(
-        composition, state, question_id=question_id, answer=_nonempty(reason, "decline reason")
+        composition,
+        state,
+        question_id=question_id,
+        answer=_nonempty(reason, "decline reason"),
+        intervention_id=intervention_id,
     )
+    previous = updated
+    updated = copy.deepcopy(updated)
     updated["status"] = "FAILED"
     updated["next_stage"] = None
     updated["questions"][-1]["declined"] = True
-    updated["updated_at"] = _now()
-    return updated
+    return _seal_next(
+        previous,
+        updated,
+        kind="operator_decline",
+        reference_sha256=_sha_text(reason),
+    )
 
 
-def write_state(path: Path, state: dict[str, Any]) -> None:
-    path.write_bytes(canonical_json(state))
+def read_state(composition: PilotComposition, path: Path) -> dict[str, Any]:
+    if not path.is_file():
+        raise CompositionError("pilot arm state log does not exist")
+    states: list[dict[str, Any]] = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not line:
+            continue
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise CompositionError(f"invalid pilot state JSON at line {number}") from exc
+        if not isinstance(value, dict):
+            raise CompositionError(f"pilot state line {number} must be an object")
+        _validate_state(composition, value)
+        if value["state_sequence"] != len(states):
+            raise CompositionError("pilot state sequence is not contiguous")
+        expected_parent = states[-1]["state_sha256"] if states else None
+        if value["parent_state_sha256"] != expected_parent:
+            raise CompositionError("pilot state parent chain is broken or forked")
+        if states:
+            _validate_parent_transition(states[-1], value)
+        states.append(value)
+    if not states:
+        raise CompositionError("pilot arm state log is empty")
+    return states[-1]
 
 
-def read_state(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict):
-        raise CompositionError("pilot arm state must be a JSON object")
-    return value
+def write_state(
+    path: Path,
+    composition: PilotComposition,
+    state: dict[str, Any],
+) -> None:
+    _validate_state(composition, state)
+    if path.exists() and path.stat().st_size:
+        previous = read_state(composition, path)
+        if state["state_sequence"] != previous["state_sequence"] + 1:
+            raise CompositionError("refusing non-contiguous state append")
+        if state["parent_state_sha256"] != previous["state_sha256"]:
+            raise CompositionError("refusing state fork or rewritten parent")
+    elif state["state_sequence"] != 0 or state["parent_state_sha256"] is not None:
+        raise CompositionError("a new state log must begin with the initial state")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(canonical_json(state).decode("utf-8"))
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+TRACE_FIELDS = {
+    "schema",
+    "task_id",
+    "tier",
+    "hands_model",
+    "hands_output",
+    "hands_output_sha256",
+    "validator_report",
+    "validator_report_sha256",
+    "driver_model",
+    "driver_output",
+    "driver_output_sha256",
+    "repair_call_id",
+    "passed",
+    "trace_sha256",
+}
+
+
+def _validate_trace_content(row: dict[str, Any], label: str) -> None:
+    if not isinstance(row, dict) or set(row) != TRACE_FIELDS:
+        raise CompositionError(f"{label} fields do not match the driver trace schema")
+    if row.get("schema") != TRACE_SCHEMA or not isinstance(row.get("passed"), bool):
+        raise CompositionError(f"{label} schema/passed field is invalid")
+    for key in ("task_id", "tier", "hands_model", "driver_model", "repair_call_id"):
+        _nonempty(row.get(key), f"{label}.{key}")
+    for text_key, hash_key in (
+        ("hands_output", "hands_output_sha256"),
+        ("validator_report", "validator_report_sha256"),
+        ("driver_output", "driver_output_sha256"),
+    ):
+        text = _nonempty(row.get(text_key), f"{label}.{text_key}")
+        if row.get(hash_key) != _sha_text(text):
+            raise CompositionError(f"{label}.{hash_key} mismatch")
+    unsigned = dict(row)
+    trace_hash = unsigned.pop("trace_sha256")
+    expected = _sha_text(json.dumps(unsigned, sort_keys=True, separators=(",", ":")))
+    if trace_hash != expected:
+        raise CompositionError(f"{label} whole-row hash mismatch")
+
+
+def _validate_trace_causality(
+    composition: PilotComposition,
+    state: dict[str, Any],
+    row: dict[str, Any],
+) -> None:
+    if state["arm"] != "arm_a" or row["task_id"] != state["task_id"]:
+        raise CompositionError("driver trace is not bound to this Arm-A task state")
+    repair_indexes = [
+        index
+        for index, call in enumerate(state["calls"])
+        if call["call_id"] == row["repair_call_id"] and call["stage"] == "repair"
+    ]
+    if len(repair_indexes) != 1:
+        raise CompositionError("driver trace repair_call_id is not unique in the state")
+    repair_index = repair_indexes[0]
+    repair = state["calls"][repair_index]
+    hands_candidates = [
+        call
+        for call in state["calls"][:repair_index]
+        if call["stage"] in {"hands", "hands_resume"}
+        and call["outcome"] == "completed"
+    ]
+    if not hands_candidates:
+        raise CompositionError("driver trace has no causal cheap-hands candidate")
+    hands = hands_candidates[-1]
+    failures = [
+        receipt
+        for receipt in state["acceptance_attempts"]
+        if receipt["causal_call_id"] == hands["call_id"] and receipt["passed"] is False
+    ]
+    outcomes = [
+        receipt
+        for receipt in state["acceptance_attempts"]
+        if receipt["causal_call_id"] == repair["call_id"]
+    ]
+    if len(failures) != 1 or len(outcomes) != 1:
+        raise CompositionError("driver trace acceptance causality is incomplete or ambiguous")
+    arm = composition.arms["arm_a"]
+    assert arm.driver is not None
+    expected = {
+        "tier": state["task_tier"],
+        "hands_model": composition.backends[arm.hands.backend].model_id,
+        "hands_output": hands["output"]["text"],
+        "validator_report": failures[0]["report"],
+        "driver_model": composition.backends[arm.driver.backend].model_id,
+        "driver_output": repair["output"]["text"],
+        "passed": outcomes[0]["passed"],
+    }
+    for key, value in expected.items():
+        if row.get(key) != value:
+            raise CompositionError(f"driver trace {key} contradicts causal state evidence")
 
 
 def append_driver_traces(
     composition: PilotComposition,
-    repository_root: Path,
+    evidence_root: Path,
     state: dict[str, Any],
+    *,
+    forbidden_roots: list[Path],
 ) -> int:
     _validate_state(composition, state)
     if state.get("arm") != "arm_a":
@@ -629,12 +1144,28 @@ def append_driver_traces(
     relative = composition.arms["arm_a"].driver_trace_path
     if relative is None:
         raise CompositionError("Arm A has no frozen driver trace path")
-    root = repository_root.resolve()
+    if not forbidden_roots:
+        raise CompositionError("driver trace custody requires target/packet/worktree exclusions")
+    root = evidence_root.resolve()
     path = (root / relative).resolve()
     try:
         path.relative_to(root)
     except ValueError as exc:
-        raise CompositionError("frozen driver trace path escapes the repository") from exc
+        raise CompositionError("frozen driver trace path escapes evidence custody") from exc
+    for forbidden in forbidden_roots:
+        forbidden = forbidden.resolve()
+        try:
+            root.relative_to(forbidden)
+        except ValueError:
+            pass
+        else:
+            raise CompositionError("driver trace evidence root enters target/packet/worktree")
+        try:
+            path.relative_to(forbidden)
+        except ValueError:
+            pass
+        else:
+            raise CompositionError("driver trace path enters target/packet/worktree")
     existing_ids: set[str] = set()
     if path.exists():
         for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -647,21 +1178,14 @@ def append_driver_traces(
             trace_hash = row.get("trace_sha256")
             if not isinstance(trace_hash, str) or trace_hash in existing_ids:
                 raise CompositionError(f"invalid or duplicate driver trace row {number}")
-            unsigned = dict(row)
-            unsigned.pop("trace_sha256", None)
-            expected = _sha_text(json.dumps(unsigned, sort_keys=True, separators=(",", ":")))
-            if trace_hash != expected:
-                raise CompositionError(f"driver trace row {number} hash mismatch")
+            _validate_trace_content(row, f"driver trace row {number}")
             existing_ids.add(trace_hash)
     pending = [row for row in state.get("driver_traces", []) if row["trace_sha256"] not in existing_ids]
     if not pending:
         return 0
     for row in pending:
-        unsigned = dict(row)
-        trace_hash = unsigned.pop("trace_sha256", None)
-        expected = _sha_text(json.dumps(unsigned, sort_keys=True, separators=(",", ":")))
-        if trace_hash != expected:
-            raise CompositionError("pending driver trace hash mismatch")
+        _validate_trace_content(row, "pending driver trace")
+        _validate_trace_causality(composition, state, row)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8", newline="\n") as handle:
         for row in pending:

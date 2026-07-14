@@ -1,20 +1,26 @@
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from pathlib import Path
 import tempfile
+import uuid
 
 from tier_runner.manifest import ManifestError
 from tier_runner.pilot_composition import (
     CALL_SCHEMA,
     CompositionError,
+    acceptance_receipt_hash,
     answer_operator_question,
     append_driver_traces,
     new_pilot_arm_state,
+    read_state,
     record_acceptance,
     record_pilot_call,
     render_next_prompt,
+    state_hash,
+    write_state,
 )
 from tier_runner.pilot_manifest import PilotComposition, load_pilot_composition
 
@@ -103,6 +109,7 @@ def make_composition(root: Path) -> tuple[PilotComposition, Path]:
             "conversation_carryover": False,
         },
         "tool_versions": {"fixture-adapter": "1"},
+        "acceptance_tool_versions": {"fixture-acceptance": "1"},
         "prompt_templates": prompt_entries,
         "backends": {
             "frontier": backend("fixture-frontier", "frontier"),
@@ -205,7 +212,9 @@ def call_receipt(
         "tier": backend.tier,
         "task_id": state["task_id"],
         "phase": state["arm"],
-        "outcome": "pass" if outcome != "error" else "error",
+        "outcome": (
+            "error" if outcome == "error" else "partial" if outcome == "question" else "pass"
+        ),
         "effort": backend.effort,
         "input_tokens": 1,
         "output_tokens": 1,
@@ -258,6 +267,39 @@ def arm_state(composition: PilotComposition, task_id: str, task_tier: str, arm: 
     )
 
 
+def acceptance_receipt(
+    composition: PilotComposition,
+    state: dict,
+    *,
+    passed: bool,
+    report: str,
+) -> dict:
+    causal = state["calls"][-1]
+    receipt = {
+        "schema": "tier-bench/tier-pilot-acceptance-receipt@1",
+        "receipt_sha256": "0" * 64,
+        "task_id": state["task_id"],
+        "arm": state["arm"],
+        "attempt": len(state["acceptance_attempts"]) + 1,
+        "causal_call_id": causal["call_id"],
+        "base_commit": state["base_commit"],
+        "command": state["acceptance_command"],
+        "command_sha256": _sha(state["acceptance_command"]),
+        "candidate_patch_sha256": causal["output"]["sha256"],
+        "candidate_tree_sha256": _sha(f"tree-{causal['call_id']}"),
+        "exit_code": 0 if passed else 1,
+        "passed": passed,
+        "report": report,
+        "report_sha256": _sha(report),
+        "stdout_sha256": _sha(f"stdout-{report}"),
+        "stderr_sha256": _sha(f"stderr-{report}"),
+        "tool_versions": composition.acceptance_tool_versions,
+        "recorded_at": "2026-07-13T00:00:01Z",
+    }
+    receipt["receipt_sha256"] = acceptance_receipt_hash(receipt)
+    return receipt
+
+
 def test_manifest_locks_roles_and_common_hands(root: Path) -> None:
     composition, path = make_composition(root)
     assert composition.arms["arm_a"].mode == "frontier_driver"
@@ -271,6 +313,14 @@ def test_manifest_locks_roles_and_common_hands(root: Path) -> None:
     path.write_text(json.dumps(value), encoding="utf-8")
     assert "identical cheap-hands" in _raises(ManifestError, load_pilot_composition, path)
 
+    composition, path = make_composition(root / "wrong-protocol")
+    value = json.loads(path.read_text(encoding="utf-8"))
+    value["protocol_commit"] = "f" * 40
+    path.write_text(json.dumps(value), encoding="utf-8")
+    assert "registered v1.3 bytes" in _raises(
+        ManifestError, load_pilot_composition, path
+    )
+
 
 def test_arm_a_repairs_and_emits_driver_trace(root: Path) -> None:
     composition, _ = make_composition(root)
@@ -281,7 +331,9 @@ def test_arm_a_repairs_and_emits_driver_trace(root: Path) -> None:
     state = record_pilot_call(
         composition, state, call_receipt(composition, state, output="first patch")
     )
-    state = record_acceptance(composition, state, passed=False, report="tests failed")
+    state = record_acceptance(
+        composition, state, acceptance_receipt(composition, state, passed=False, report="tests failed")
+    )
     assert state["next_stage"] == "repair"
     repair_prompt = render_next_prompt(composition, state)
     assert b"Candidate:\nfirst patch" in repair_prompt
@@ -289,7 +341,9 @@ def test_arm_a_repairs_and_emits_driver_trace(root: Path) -> None:
     state = record_pilot_call(
         composition, state, call_receipt(composition, state, output="repaired patch")
     )
-    state = record_acceptance(composition, state, passed=True, report="tests passed")
+    state = record_acceptance(
+        composition, state, acceptance_receipt(composition, state, passed=True, report="tests passed")
+    )
     assert state["status"] == "COMPLETE"
     assert len(state["calls"]) == 3
     assert len(state["driver_traces"]) == 1
@@ -298,9 +352,29 @@ def test_arm_a_repairs_and_emits_driver_trace(root: Path) -> None:
     assert trace["validator_report"] == "tests failed"
     assert trace["driver_output"] == "repaired patch"
     assert trace["passed"] is True
-    traces = root / "driver_traces.jsonl"
-    assert append_driver_traces(composition, root, state) == 1
-    assert append_driver_traces(composition, root, state) == 0
+    evidence = root / "evidence"
+    target = root / "target"
+    packet = root / "packet"
+    worktree = root / "worktree"
+    for path in (target, packet, worktree):
+        path.mkdir()
+    traces = evidence / "driver_traces.jsonl"
+    exclusions = [target, packet, worktree]
+    assert append_driver_traces(
+        composition, evidence, state, forbidden_roots=exclusions
+    ) == 1
+    assert append_driver_traces(
+        composition, evidence, state, forbidden_roots=exclusions
+    ) == 0
+    assert "enters target" in _raises(
+        CompositionError,
+        append_driver_traces,
+        composition,
+        target,
+        state,
+        forbidden_roots=exclusions,
+    )
+    assert not (target / "driver_traces.jsonl").exists()
     assert json.loads(traces.read_text(encoding="utf-8"))["trace_sha256"] == trace["trace_sha256"]
 
 
@@ -309,16 +383,24 @@ def test_arm_b_failure_escalates_only_after_repair(root: Path) -> None:
     state = arm_state(composition, "real-02", "T2", "arm_b")
     state = record_pilot_call(composition, state, call_receipt(composition, state, output="cheap plan"))
     state = record_pilot_call(composition, state, call_receipt(composition, state, output="patch"))
-    state = record_acceptance(composition, state, passed=False, report="first fail")
+    state = record_acceptance(
+        composition, state, acceptance_receipt(composition, state, passed=False, report="first fail")
+    )
     assert state["next_stage"] == "repair"
     state = record_pilot_call(composition, state, call_receipt(composition, state, output="cheap repair"))
-    state = record_acceptance(composition, state, passed=False, report="repair failed")
+    state = record_acceptance(
+        composition, state, acceptance_receipt(composition, state, passed=False, report="repair failed")
+    )
     assert state["next_stage"] == "escalation"
     escalation_prompt = render_next_prompt(composition, state)
     assert b"Candidate:\ncheap repair" in escalation_prompt
     assert b"Failure:\nrepair failed" in escalation_prompt
     state = record_pilot_call(composition, state, call_receipt(composition, state, output="escalated repair"))
-    state = record_acceptance(composition, state, passed=True, report="escalation passed")
+    state = record_acceptance(
+        composition,
+        state,
+        acceptance_receipt(composition, state, passed=True, report="escalation passed"),
+    )
     assert state["status"] == "COMPLETE"
     assert not state["driver_traces"]
 
@@ -326,13 +408,20 @@ def test_arm_b_failure_escalates_only_after_repair(root: Path) -> None:
 def test_arm_c_question_answer_resume_has_no_driver(root: Path) -> None:
     composition, _ = make_composition(root)
     state = arm_state(composition, "real-03", "T1", "arm_c")
+    state_log = root / "evidence" / "arm-c-state.jsonl"
+    write_state(state_log, composition, state)
     assert state["next_stage"] == "hands"
     assert b"NO_MODEL_DRIVER" in render_next_prompt(composition, state)
+    question_call = call_receipt(
+        composition, state, output="Should the parser preserve blanks?", outcome="question"
+    )
+    assert question_call["ledger_call"]["outcome"] == "partial"
     state = record_pilot_call(
         composition,
         state,
-        call_receipt(composition, state, output="Should the parser preserve blanks?", outcome="question"),
+        question_call,
     )
+    write_state(state_log, composition, state)
     assert state["status"] == "WAITING_OPERATOR"
     assert state["active_question_id"]
     question = state["questions"][0]
@@ -342,18 +431,30 @@ def test_arm_c_question_answer_resume_has_no_driver(root: Path) -> None:
         state,
         question_id=state["active_question_id"],
         answer="Yes, preserve blanks.",
+        intervention_id=str(uuid.uuid4()),
     )
+    write_state(state_log, composition, state)
     assert state["next_stage"] == "hands_resume"
+    assert len(state["question_receipts"]) == 1
+    question_receipt = state["question_receipts"][0]
+    assert question_receipt["schema"] == "tier-bench/tier-pilot-question-receipt@1"
+    assert question_receipt["question_id"] == question["question_id"]
+    assert question_receipt["intervention_id"] == state["questions"][0]["intervention_id"]
     resume_prompt = render_next_prompt(composition, state)
     assert b"Should the parser preserve blanks?" in resume_prompt
     assert b"Yes, preserve blanks." in resume_prompt
     state = record_pilot_call(
         composition, state, call_receipt(composition, state, output="answered patch")
     )
-    state = record_acceptance(composition, state, passed=True, report="tests passed")
+    write_state(state_log, composition, state)
+    state = record_acceptance(
+        composition, state, acceptance_receipt(composition, state, passed=True, report="tests passed")
+    )
+    write_state(state_log, composition, state)
     assert state["status"] == "COMPLETE"
     assert [call["stage"] for call in state["calls"]] == ["hands", "hands_resume"]
     assert all(call["backend"] == "cheap_hands" for call in state["calls"])
+    assert read_state(composition, state_log)["state_sha256"] == state["state_sha256"]
 
 
 def test_call_receipts_fail_closed_on_identity_or_session_drift(root: Path) -> None:
@@ -381,12 +482,32 @@ def test_arm_c_acceptance_failure_uses_hands_repair_not_driver(root: Path) -> No
     composition, _ = make_composition(root)
     state = arm_state(composition, "real-05", "T1", "arm_c")
     state = record_pilot_call(composition, state, call_receipt(composition, state, output="patch"))
-    state = record_acceptance(composition, state, passed=False, report="tests failed")
+    state = record_acceptance(
+        composition, state, acceptance_receipt(composition, state, passed=False, report="tests failed")
+    )
     assert state["next_stage"] == "repair"
     receipt = call_receipt(composition, state, output="Need a policy choice", outcome="question")
     assert receipt["backend"] == "cheap_hands"
     state = record_pilot_call(composition, state, receipt)
     assert state["status"] == "WAITING_OPERATOR"
+    state = answer_operator_question(
+        composition,
+        state,
+        question_id=state["active_question_id"],
+        answer="Use the documented policy.",
+        intervention_id=str(uuid.uuid4()),
+    )
+    state = record_pilot_call(
+        composition, state, call_receipt(composition, state, output="resumed repair")
+    )
+    state = record_acceptance(
+        composition,
+        state,
+        acceptance_receipt(composition, state, passed=False, report="resume still failed"),
+    )
+    assert state["repair_calls"] == 1
+    assert state["status"] == "FAILED"
+    assert state["next_stage"] is None
 
 
 def test_provider_error_is_terminal_not_model_escalation(root: Path) -> None:
@@ -401,6 +522,94 @@ def test_provider_error_is_terminal_not_model_escalation(root: Path) -> None:
     assert [call["stage"] for call in state["calls"]] == ["driver_plan"]
 
 
+def test_acceptance_receipt_binds_candidate_and_tools(root: Path) -> None:
+    composition, _ = make_composition(root)
+    state = arm_state(composition, "real-07", "T1", "arm_c")
+    state = record_pilot_call(composition, state, call_receipt(composition, state, output="patch"))
+    wrong = acceptance_receipt(composition, state, passed=True, report="passed")
+    wrong["candidate_patch_sha256"] = "0" * 64
+    wrong["receipt_sha256"] = acceptance_receipt_hash(wrong)
+    assert "candidate patch" in _raises(
+        CompositionError, record_acceptance, composition, state, wrong
+    )
+    wrong = acceptance_receipt(composition, state, passed=True, report="passed")
+    wrong["tool_versions"] = {"fixture-acceptance": "drift"}
+    wrong["receipt_sha256"] = acceptance_receipt_hash(wrong)
+    assert "tool versions" in _raises(
+        CompositionError, record_acceptance, composition, state, wrong
+    )
+
+
+def test_state_log_rejects_rewrite_and_fork(root: Path) -> None:
+    composition, _ = make_composition(root)
+    initial = arm_state(composition, "real-08", "T2", "arm_a")
+    log = root / "evidence" / "arm-state.jsonl"
+    write_state(log, composition, initial)
+    branch_a = record_pilot_call(
+        composition, initial, call_receipt(composition, initial, output="plan A")
+    )
+    write_state(log, composition, branch_a)
+    assert read_state(composition, log)["state_sha256"] == branch_a["state_sha256"]
+    branch_b = record_pilot_call(
+        composition, initial, call_receipt(composition, initial, output="plan B")
+    )
+    assert "non-contiguous" in _raises(
+        CompositionError, write_state, log, composition, branch_b
+    )
+
+    rows = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
+    semantic_rewrite = copy.deepcopy(rows)
+    semantic_rewrite[-1]["next_stage"] = "repair"
+    semantic_rewrite[-1]["state_sha256"] = state_hash(semantic_rewrite[-1])
+    log.write_text(
+        "\n".join(json.dumps(row, sort_keys=True) for row in semantic_rewrite) + "\n",
+        encoding="utf-8",
+    )
+    assert "status/next_stage" in _raises(
+        CompositionError, read_state, composition, log
+    )
+
+    log.write_text(
+        "\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n",
+        encoding="utf-8",
+    )
+    rows[-1]["task"] = "rewritten after pause"
+    log.write_text("\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n", encoding="utf-8")
+    assert "state hash is invalid" in _raises(
+        CompositionError, read_state, composition, log
+    )
+
+
+def test_trace_rejects_rehashed_but_noncausal_content(root: Path) -> None:
+    composition, _ = make_composition(root)
+    state = arm_state(composition, "real-09", "T2", "arm_a")
+    state = record_pilot_call(composition, state, call_receipt(composition, state, output="plan"))
+    state = record_pilot_call(composition, state, call_receipt(composition, state, output="patch"))
+    state = record_acceptance(
+        composition, state, acceptance_receipt(composition, state, passed=False, report="real failure")
+    )
+    state = record_pilot_call(composition, state, call_receipt(composition, state, output="repair"))
+    state = record_acceptance(
+        composition, state, acceptance_receipt(composition, state, passed=True, report="passed")
+    )
+    tampered = copy.deepcopy(state)
+    trace = tampered["driver_traces"][0]
+    trace["validator_report"] = "invented failure"
+    trace["validator_report_sha256"] = _sha("invented failure")
+    unsigned = dict(trace)
+    unsigned.pop("trace_sha256")
+    trace["trace_sha256"] = _sha(json.dumps(unsigned, sort_keys=True, separators=(",", ":")))
+    tampered["state_sha256"] = state_hash(tampered)
+    assert "contradicts causal" in _raises(
+        CompositionError,
+        append_driver_traces,
+        composition,
+        root / "evidence",
+        tampered,
+        forbidden_roots=[root / "target", root / "packet", root / "worktree"],
+    )
+
+
 def main() -> None:
     tests = [
         test_manifest_locks_roles_and_common_hands,
@@ -410,6 +619,9 @@ def main() -> None:
         test_call_receipts_fail_closed_on_identity_or_session_drift,
         test_arm_c_acceptance_failure_uses_hands_repair_not_driver,
         test_provider_error_is_terminal_not_model_escalation,
+        test_acceptance_receipt_binds_candidate_and_tools,
+        test_state_log_rejects_rewrite_and_fork,
+        test_trace_rejects_rehashed_but_noncausal_content,
     ]
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)

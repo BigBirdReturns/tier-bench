@@ -5,16 +5,23 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schema", "composition_manifest_sha256", "protocol_commit", "task_id",
+    "schema", "state_sequence", "parent_state_sha256", "state_sha256", "transition",
+    "composition_manifest_sha256", "protocol_commit", "task_id",
     "task_tier", "task", "files", "acceptance_command", "base_commit",
     "arm", "status", "next_stage", "repair_calls",
-    "escalation_index", "calls", "acceptance_attempts", "questions",
+    "escalation_index", "calls", "acceptance_attempts", "questions", "question_receipts",
     "active_question_id", "driver_traces", "created_at", "updated_at"
   ],
   "properties": {
     "schema": {"const": "tier-bench/pilot-arm-state@1"},
+    "state_sequence": {"type": "integer", "minimum": 0},
+    "parent_state_sha256": {
+      "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+    },
+    "state_sha256": {"$ref": "#/$defs/sha256"},
+    "transition": {"type": "object"},
     "composition_manifest_sha256": {"$ref": "#/$defs/sha256"},
-    "protocol_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "protocol_commit": {"const": "076fd1e3d97c22f7c33933c5dee4ff897d7ba4e6"},
     "task_id": {"type": "string", "minLength": 1},
     "task_tier": {"type": "string", "minLength": 1},
     "task": {"type": "string", "minLength": 1},
@@ -32,8 +39,15 @@
     "repair_calls": {"type": "integer", "minimum": 0},
     "escalation_index": {"type": "integer", "minimum": 0},
     "calls": {"type": "array", "items": {"$ref": "tier_pilot_call_receipt.schema.json"}},
-    "acceptance_attempts": {"type": "array", "items": {"type": "object"}},
+    "acceptance_attempts": {
+      "type": "array",
+      "items": {"$ref": "tier_pilot_acceptance_receipt.schema.json"}
+    },
     "questions": {"type": "array", "items": {"type": "object"}},
+    "question_receipts": {
+      "type": "array",
+      "items": {"$ref": "tier_pilot_question_receipt.schema.json"}
+    },
     "active_question_id": {"type": ["string", "null"]},
     "driver_traces": {"type": "array", "items": {"type": "object"}},
     "created_at": {"type": "string", "minLength": 1},

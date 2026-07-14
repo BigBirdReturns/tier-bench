@@ -35,7 +35,9 @@ The portable shapes are:
 
 - `schemas/tier_pilot_backend_manifest.schema.json`
 - `schemas/tier_pilot_call_receipt.schema.json`
+- `schemas/tier_pilot_acceptance_receipt.schema.json`
 - `schemas/tier_pilot_arm_state.schema.json`
+- `schemas/tier_pilot_question_receipt.schema.json`
 - `schemas/tier_pilot_driver_trace.schema.json`
 
 ## Causal prompt binding
@@ -66,9 +68,11 @@ Each driver, hands, repair, escalation, and resume is one
 frozen backend and prompt-template identity, rendered-prompt hash, output hash,
 dispatch hash, and session identity. The composition layer rejects model,
 effort, account, tier, surface, cost-basis, tool-version, prompt, dispatch, or
-runtime-model drift. It also rejects session reuse within the arm state. The
-existing repository-wide session registry remains the cross-task/arm backstop
-when the production bridge is implemented.
+runtime-model drift *inside the supplied receipt set*. It also rejects session
+reuse within one arm state. These are internal self-consistency checks, not yet
+provider provenance: the production bridge must mint dispatch receipts from
+actual adapter calls and use the existing repository-wide session registry as
+the cross-task/arm backstop.
 
 Output semantics are stage-bound rather than inferred later: driver planning
 must emit `plan`, a completed hands/repair/escalation call must expose the
@@ -79,6 +83,13 @@ model summary is not candidate evidence.
 
 Call receipts are never collapsed: a frontier plan, cheap-hands attempt, and
 frontier repair remain three ledger rows and three session identities.
+
+Immutable acceptance is a separate sealed receipt, never a bare boolean. It
+binds the causal call ID, base commit, exact command and hash, candidate patch
+and candidate-tree hashes, exit code, pass bit, report, stdout/stderr hashes,
+frozen acceptance-tool versions, and a whole-receipt hash. `COMPLETE` is
+unreachable without that receipt. A question call records ledger outcome
+`partial`, not `pass`; it produced no accepted candidate.
 
 ## Failure routing
 
@@ -99,6 +110,26 @@ An Arm-C question above the frozen limit also fails. Operator decline is a
 terminal failure, not an implicit answer. A provider/adapter call error is also
 terminal: without a candidate and immutable acceptance failure, escalating it
 would silently change the stopping rule rather than repair measured work.
+Invoking repair consumes the one-call repair budget even when the repair asks
+an operator question. Resume cannot create a second repair after that budget is
+spent.
+
+## Pause/resume and operator-time custody
+
+Arm state is not an overwriteable JSON snapshot. Every transition carries its
+canonical self-hash, monotonically increasing sequence, parent-state hash, and
+transition receipt hash. `write_state` appends one complete state to JSONL and
+refuses a non-contiguous sequence or parent fork; `read_state` validates every
+row, every self-hash, and the entire parent chain. ADMIN later binds the exact
+final state artifact hash in the arm seal, preventing whole-log replacement.
+
+Every answered Arm-C question emits
+`tier-bench/tier-pilot-question-receipt@1` with the stable question ID, task,
+arm, ADMIN-supplied intervention ID, asked/answered timestamps, and
+question/answer hashes. COMPOSE checks the binding shape; ADMIN owns the global
+intervention ledger and must prove that intervention ID names exactly one
+closed, non-overlapping operator-time interval. An empty intervention ledger
+therefore cannot close an arm that has a question receipt.
 
 ## Driver trace semantics
 
@@ -113,7 +144,12 @@ The `validator_report` is the failure that caused the repair. The subsequent
 acceptance result is the separate `passed` field. Substituting the later
 "tests passed" report for the causal failed report would destroy the training
 example and is regression-tested. Trace rows carry content hashes and a
-whole-row hash; append rejects duplicate or tampered existing rows.
+whole-row hash. New rows are replayed against the sealed hands call, failed
+acceptance receipt, driver repair call, and post-repair acceptance receipt; a
+rehashed but invented failure is refused. Trace custody lives under the pilot
+evidence root, never the target repository. The append API requires explicit
+target, packet, and worktree exclusions and refuses any evidence root or trace
+path beneath them.
 
 ## Deliberately unresolved boundary
 

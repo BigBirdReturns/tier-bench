@@ -5,12 +5,12 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schema", "protocol_commit", "isolation", "tool_versions",
+    "schema", "protocol_commit", "isolation", "tool_versions", "acceptance_tool_versions",
     "prompt_templates", "backends", "arms"
   ],
   "properties": {
     "schema": {"const": "tier-bench/pilot-backends@2"},
-    "protocol_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "protocol_commit": {"const": "076fd1e3d97c22f7c33933c5dee4ff897d7ba4e6"},
     "isolation": {
       "type": "object",
       "additionalProperties": true,
@@ -26,6 +26,11 @@
       }
     },
     "tool_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "acceptance_tool_versions": {
       "type": "object",
       "minProperties": 1,
       "additionalProperties": {"type": "string", "minLength": 1}
