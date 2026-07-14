@@ -21,6 +21,7 @@ from tier_runner.pilot import (
     PLAN_SCHEMA,
     RESIDUAL_ORDERS,
     PilotError,
+    audit_normalized_payload,
     audit_label,
     canonical_json,
     close_pilot,
@@ -37,6 +38,7 @@ from tier_runner.pilot_composition import (
     new_pilot_arm_state,
     record_acceptance,
     record_pilot_call,
+    read_state,
     render_next_prompt,
     write_state,
 )
@@ -118,6 +120,11 @@ def _git(root: Path, *args: str, date: str | None = None) -> str:
 def _commit(root: Path, message: str, date: str) -> str:
     _git(root, "add", "-A")
     _git(root, "commit", "-m", message, date=date)
+    return _git(root, "rev-parse", "HEAD")
+
+
+def _empty_commit(root: Path, message: str, date: str) -> str:
+    _git(root, "commit", "--allow-empty", "-m", message, date=date)
     return _git(root, "rev-parse", "HEAD")
 
 
@@ -218,7 +225,10 @@ def _manifest(root: Path, *, real_billed: bool = False) -> tuple[dict, dict, dic
     artifact = _relative_artifact(root, "pilot/manifest.json", canonical_json(manifest))
     profile = _relative_artifact(
         root, "pilot/audit-profile.json",
-        canonical_json({"schema": "tier-bench/tier-pilot-audit-profile@1", "normalization": "fixture"}),
+        canonical_json({
+            "schema": "tier-bench/tier-pilot-audit-normalization-profile@1",
+            "normalizer": "builtin-terminal-state-projection@1",
+        }),
     )
     return manifest, artifact, profile
 
@@ -357,13 +367,20 @@ def _compose_run(
         )
         for index, receipt in enumerate(state["question_receipts"], 1)
     ]
+    driver_trace = None
+    if arm == "arm_a":
+        driver_trace = _relative_artifact(
+            root, f"{prefix}/driver-trace.jsonl",
+            b"".join(canonical_json(trace) for trace in state["driver_traces"]),
+        )
     run = {
         "task_id": task["task_id"], "arm": arm, "sequence": scheduled["sequence"],
         "position": scheduled["position"], "base_commit": task["base_commit"],
         "sealed_at": seal_time.isoformat().replace("+00:00", "Z"),
         "final_state": "ACCEPTED", "protocol_valid": True,
         "composition_state": state_ref, "call_receipts": call_refs,
-        "dispatch_receipts": dispatch_refs, "question_receipts": question_refs, "ledger": ledger,
+        "dispatch_receipts": dispatch_refs, "question_receipts": question_refs,
+        "driver_trace": driver_trace, "ledger": ledger,
     }
     seal_payload = {
         "schema": "tier-bench/pilot-arm-seal@1", "task_id": run["task_id"], "arm": arm,
@@ -371,6 +388,7 @@ def _compose_run(
         "sealed_at": run["sealed_at"], "final_state": run["final_state"], "protocol_valid": True,
         "composition_state_sha256": state_ref["sha256"],
         "question_receipt_sha256s": sorted(ref["sha256"] for ref in question_refs),
+        "driver_trace_sha256": driver_trace["sha256"] if driver_trace else None,
     }
     run["arm_seal"] = _relative_artifact(root, f"{prefix}/seal.json", canonical_json(seal_payload))
     return run, seal_time
@@ -425,6 +443,10 @@ def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict
         if cached_bill.is_file():
             (root / "pilot").mkdir(parents=True, exist_ok=True)
             shutil.copy2(cached_bill, root / "pilot" / cached_bill.name)
+        cached_provider = cached / "pilot" / "provider-pilot-api.json"
+        if cached_provider.is_file():
+            (root / "pilot").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(cached_provider, root / "pilot" / cached_provider.name)
         plan_path = root / "plan.json"
         evidence_path = root / "evidence.json"
         return (
@@ -477,20 +499,30 @@ def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict
     finally:
         pilot_composition._now = original_now
     audit_parts: dict[str, dict] = {}
+    run_by_coordinate = {(run["task_id"], run["arm"]): run for run in arm_runs}
     for task_index, task in enumerate(plan["tasks"], 1):
         withheld = _relative_artifact(
             root,
             f"audits/{task['task_id']}.json",
             canonical_json({"audit": task_index}),
         )
-        labels = sorted(audit_label(SEED, plan["pilot_id"], task["task_id"], arm) for arm in ARMS)
         entries = []
-        for entry_index, opaque in enumerate(labels):
+        for arm in ARMS:
+            opaque = audit_label(SEED, plan["pilot_id"], task["task_id"], arm)
+            run = run_by_coordinate[(task["task_id"], arm)]
+            state = read_state(composition, root / run["composition_state"]["path"])
             normalized_output = _relative_artifact(
-                root, f"audits/{task['task_id']}/normalized-{entry_index}.json",
-                canonical_json({"normalized": entry_index}),
+                root, f"audits/{task['task_id']}/normalized-{opaque}.json",
+                canonical_json(audit_normalized_payload(
+                    plan["pilot_id"], task["task_id"], opaque, profile["sha256"], state,
+                )),
             )
-            entries.append({"opaque_label": opaque, "artifact": normalized_output})
+            entries.append({
+                "opaque_label": opaque,
+                "artifact": normalized_output,
+            })
+        entries.sort(key=lambda entry: entry["opaque_label"])
+        labels = [entry["opaque_label"] for entry in entries]
         normalized_payload = {
             "schema": "tier-bench/tier-pilot-audit-inputs@1", "pilot_id": plan["pilot_id"],
             "task_id": task["task_id"], "profile_sha256": profile["sha256"], "entries": entries,
@@ -549,13 +581,18 @@ def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict
             "mapping_reveal": _git_bound_artifact(root, part["reveal_path"], reveal_commit, reveal_commit),
         })
     bill = None
+    provider_artifact = None
     if real_billed:
+        provider_artifact = _relative_artifact(
+            root, "pilot/provider-pilot-api.json",
+            canonical_json({"account": "pilot-api", "currency": "USD", "total_usd": 10.0}),
+        )
         bill = _relative_artifact(
             root, "pilot/bill-pilot-api.json",
             canonical_json({
                 "schema": "tier-bench/tier-pilot-bill@1", "account": "pilot-api",
                 "currency": "USD", "period": "2026-01", "total_usd": 10.0,
-                "provider_artifact_sha256": None,
+                "provider_artifact_sha256": provider_artifact["sha256"],
             }),
         )
     evidence = {
@@ -574,7 +611,8 @@ def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict
         "audits": audits,
         "operator_authorization": authorization,
         "cost_reconciliation": [
-            {"account": "pilot-api", "billed_usd": 10.0, "bill": bill}
+            {"account": "pilot-api", "billed_usd": 10.0, "bill": bill,
+             "provider_artifact": provider_artifact}
         ] if real_billed else [],
     }
     evidence_path = root / "evidence.json"
@@ -585,6 +623,37 @@ def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict
 
 def _rewrite(path: Path, value: dict) -> None:
     path.write_bytes(canonical_json(value))
+
+
+def _reseal_audit_chain(root: Path, evidence: dict) -> None:
+    normalized_commit = _commit(
+        root, "reseal blinded normalized audit inputs", "2026-01-15T01:05:00Z"
+    )
+    for audit in evidence["audits"]:
+        normalized_sha = sha256_file(root / audit["normalized_inputs"]["path"])
+        score_path = root / audit["score_commitment"]["path"]
+        score = json.loads(score_path.read_text(encoding="utf-8"))
+        score["normalized_inputs_sha256"] = normalized_sha
+        score_path.write_bytes(canonical_json(score))
+    score_commit = _commit(root, "reseal blinded audit scores", "2026-01-15T01:06:00Z")
+    for audit in evidence["audits"]:
+        score_path = root / audit["score_commitment"]["path"]
+        reveal_path = root / audit["mapping_reveal"]["path"]
+        reveal = json.loads(reveal_path.read_text(encoding="utf-8"))
+        reveal["score_commitment_sha256"] = sha256_file(score_path)
+        reveal["revealed_at"] = "2026-01-15T01:07:00Z"
+        reveal_path.write_bytes(canonical_json(reveal))
+    reveal_commit = _commit(root, "reseal audit label mapping", "2026-01-15T01:07:00Z")
+    for audit in evidence["audits"]:
+        audit["normalized_inputs"] = _git_bound_artifact(
+            root, audit["normalized_inputs"]["path"], normalized_commit, reveal_commit
+        )
+        audit["score_commitment"] = _git_bound_artifact(
+            root, audit["score_commitment"]["path"], score_commit, reveal_commit
+        )
+        audit["mapping_reveal"] = _git_bound_artifact(
+            root, audit["mapping_reveal"]["path"], reveal_commit, reveal_commit
+        )
 
 
 def _rewrite_first_call(root: Path, evidence: dict, mutate) -> None:
@@ -969,6 +1038,164 @@ def test_audit_mapping_and_followup_are_fail_closed(tmp_path: Path) -> None:
     )
 
 
+def test_score_commit_cannot_already_contain_reveal_path_or_bytes(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    score_commit = _empty_commit(
+        root, "invalid score checkpoint after reveal", "2026-01-15T01:05:00Z"
+    )
+    reveal_commit = _empty_commit(
+        root, "empty child reveal checkpoint", "2026-01-15T01:06:00Z"
+    )
+    for audit in evidence["audits"]:
+        audit["score_commitment"] = _git_bound_artifact(
+            root, audit["score_commitment"]["path"], score_commit, reveal_commit
+        )
+        audit["mapping_reveal"] = _git_bound_artifact(
+            root, audit["mapping_reveal"]["path"], reveal_commit, reveal_commit
+        )
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "mapping reveal path already existed at score commit")
+
+
+def test_all_unvoided_scores_require_one_common_commit(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    later_score = _empty_commit(root, "alternate score checkpoint", "2026-01-15T01:05:00Z")
+    later_reveal = _empty_commit(root, "later reveal checkpoint", "2026-01-15T01:06:00Z")
+    audit = evidence["audits"][0]
+    audit["score_commitment"] = _git_bound_artifact(
+        root, audit["score_commitment"]["path"], later_score, later_reveal
+    )
+    audit["mapping_reveal"] = _git_bound_artifact(
+        root, audit["mapping_reveal"]["path"], later_reveal, later_reveal
+    )
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "one common score commit")
+
+
+def test_post_score_ratified_void_cannot_close(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, plan, evidence = _fixture(root)
+    task_id = "real-01"
+    evidence_ref = next(
+        audit["withheld_audit"] for audit in evidence["audits"] if audit["task_id"] == task_id
+    )
+    seal_hashes = sorted(
+        run["arm_seal"]["sha256"] for run in evidence["arm_runs"]
+        if run["task_id"] == task_id
+    )
+    ratification_payload = {
+        "schema": "tier-bench/tier-pilot-void-ratification@1",
+        "pilot_id": plan["pilot_id"],
+        "plan_sha256": sha256_file(plan_path),
+        "task_id": task_id,
+        "reason_code": "other_protocol_fault",
+        "evidence_sha256s": [evidence_ref["sha256"]],
+        "arm_seal_sha256s": seal_hashes,
+    }
+    ratification_path = "pilot/void-real-01.json"
+    _relative_artifact(root, ratification_path, canonical_json(ratification_payload))
+    ratification_commit = _commit(
+        root, "ratify void after scored result", "2026-01-15T01:05:00Z"
+    )
+    evidence["voids"].append({
+        "task_id": task_id,
+        "authority": "ratified",
+        "reason_code": "other_protocol_fault",
+        "evidence_refs": [evidence_ref],
+        "ratification": _git_bound_artifact(
+            root, ratification_path, ratification_commit, ratification_commit
+        ),
+    })
+    evidence["audits"] = [audit for audit in evidence["audits"] if audit["task_id"] != task_id]
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "strict ancestor of the common score commit")
+
+
+def test_normalized_artifact_must_be_builtin_terminal_projection(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    audit = evidence["audits"][0]
+    normalized_path = root / audit["normalized_inputs"]["path"]
+    normalized = json.loads(normalized_path.read_text(encoding="utf-8"))
+    artifact_ref = normalized["entries"][0]["artifact"]
+    artifact_path = root / artifact_ref["path"]
+    artifact_path.write_bytes(canonical_json({"self_hashed_but_unrelated": True}))
+    artifact_ref["sha256"] = sha256_file(artifact_path)
+    normalized_path.write_bytes(canonical_json(normalized))
+    _reseal_audit_chain(root, evidence)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "is not the built-in projection")
+
+
+def test_normalization_profile_has_no_executable_or_unknown_surface(tmp_path: Path) -> None:
+    _fixture(tmp_path / "base")
+    for case, profile_value, needle in (
+        (
+            "executable",
+            {
+                "schema": "tier-bench/tier-pilot-audit-normalization-profile@1",
+                "normalizer": "builtin-terminal-state-projection@1",
+                "command": ["python", "normalize.py"],
+            },
+            "audit_normalization_profile payload fields mismatch",
+        ),
+        (
+            "unknown",
+            {
+                "schema": "tier-bench/tier-pilot-audit-normalization-profile@1",
+                "normalizer": "unknown-normalizer@1",
+            },
+            "is not the built-in supported algorithm",
+        ),
+    ):
+        root = tmp_path / case
+        plan_path, evidence_path, plan, evidence = _fixture(root)
+        profile_path = root / plan["audit_normalization_profile"]["path"]
+        profile_path.write_bytes(canonical_json(profile_value))
+        plan["audit_normalization_profile"]["sha256"] = sha256_file(profile_path)
+        plan_path.write_bytes(canonical_json(plan))
+        evidence["plan_sha256"] = sha256_file(plan_path)
+        _rewrite(evidence_path, evidence)
+        _must_refuse(plan_path, evidence_path, needle)
+
+
+def test_arm_a_driver_trace_is_required_and_replay_derived(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    run = next(run for run in evidence["arm_runs"] if run["arm"] == "arm_a")
+    trace_path = root / run["driver_trace"]["path"]
+    trace_path.write_bytes(canonical_json({"unrelated": "trace"}))
+    run["driver_trace"]["sha256"] = sha256_file(trace_path)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "does not equal replay-derived append_driver_traces output")
+
+
+def test_driver_trace_topology_refuses_missing_wrong_path_and_non_a(tmp_path: Path) -> None:
+    root = tmp_path / "missing"
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    arm_a = next(run for run in evidence["arm_runs"] if run["arm"] == "arm_a")
+    arm_a["driver_trace"] = None
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, ".driver_trace must be an object")
+
+    root = tmp_path / "wrong-path"
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    arm_a = next(run for run in evidence["arm_runs"] if run["arm"] == "arm_a")
+    arm_a["driver_trace"]["path"] = "artifacts/absent-driver-trace.jsonl"
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, ".driver_trace.path does not exist")
+
+    root = tmp_path / "non-a"
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    arm_a = next(run for run in evidence["arm_runs"] if run["arm"] == "arm_a")
+    arm_b = next(run for run in evidence["arm_runs"] if run["arm"] == "arm_b")
+    arm_b["driver_trace"] = dict(arm_a["driver_trace"])
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "must be null outside Arm A")
+
+
 def test_real_billed_rows_reconcile_and_drift_refuses(tmp_path: Path) -> None:
     root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root, real_billed=True)
@@ -985,6 +1212,19 @@ def test_real_billed_rows_reconcile_and_drift_refuses(tmp_path: Path) -> None:
     bill_ref["sha256"] = sha256_file(bill_path)
     _rewrite(evidence_path, evidence)
     _must_refuse(plan_path, evidence_path, "does not reconcile")
+
+
+def test_real_billed_bill_requires_opened_raw_provider_artifact(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root, real_billed=True)
+    record = evidence["cost_reconciliation"][0]
+    bill_path = root / record["bill"]["path"]
+    bill = json.loads(bill_path.read_text(encoding="utf-8"))
+    bill["provider_artifact_sha256"] = None
+    bill_path.write_bytes(canonical_json(bill))
+    record["bill"]["sha256"] = sha256_file(bill_path)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "must be non-null sha256")
 
 
 def test_canonical_intervention_path_is_bound(tmp_path: Path) -> None:
@@ -1015,7 +1255,15 @@ def main() -> int:
         test_withheld_audit_commitment_must_open,
         test_operator_authorization_binds_exact_plan,
         test_audit_mapping_and_followup_are_fail_closed,
+        test_score_commit_cannot_already_contain_reveal_path_or_bytes,
+        test_all_unvoided_scores_require_one_common_commit,
+        test_post_score_ratified_void_cannot_close,
+        test_normalized_artifact_must_be_builtin_terminal_projection,
+        test_normalization_profile_has_no_executable_or_unknown_surface,
+        test_arm_a_driver_trace_is_required_and_replay_derived,
+        test_driver_trace_topology_refuses_missing_wrong_path_and_non_a,
         test_real_billed_rows_reconcile_and_drift_refuses,
+        test_real_billed_bill_requires_opened_raw_provider_artifact,
         test_canonical_intervention_path_is_bound,
     ]
     parent = Path(tempfile.mkdtemp(prefix="tier-pilot-admin-tests-"))

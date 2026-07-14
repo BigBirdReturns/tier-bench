@@ -40,6 +40,9 @@ CALL_RECEIPT_SCHEMA = "tier-bench/pilot-call-receipt@1"
 ARM_SEAL_SCHEMA = "tier-bench/pilot-arm-seal@1"
 QUESTION_RECEIPT_SCHEMA = "tier-bench/tier-pilot-question-receipt@1"
 DISPATCH_RECEIPT_SCHEMA = "tier-bench/tier-pilot-dispatch-receipt@1"
+AUDIT_PROFILE_SCHEMA = "tier-bench/tier-pilot-audit-normalization-profile@1"
+AUDIT_NORMALIZED_SCHEMA = "tier-bench/tier-pilot-normalized-arm@1"
+AUDIT_NORMALIZATION_ALGORITHM = "builtin-terminal-state-projection@1"
 CALL_STAGES = {"driver_plan", "hands", "repair", "escalation", "hands_resume"}
 VOID_REASONS = {
     "cross_arm_exposure",
@@ -58,6 +61,57 @@ VOID_REASONS = {
 
 class PilotError(ValueError):
     pass
+
+
+def audit_normalized_payload(
+    pilot_id: str,
+    task_id: str,
+    opaque_label: str,
+    profile_sha256: str,
+    state: dict[str, Any],
+) -> dict[str, Any]:
+    """Built-in, non-executable audit normalization for a replayed terminal arm."""
+    attempts = state.get("acceptance_attempts")
+    if not isinstance(attempts, list) or not attempts:
+        raise PilotError("terminal audit source has no sealed acceptance receipt")
+    receipt = attempts[-1]
+    receipt_fields = {
+        "candidate_patch_sha256", "candidate_tree_sha256", "passed", "report",
+        "report_sha256", "stdout_sha256", "stderr_sha256", "receipt_sha256",
+        "causal_call_id",
+    }
+    if not isinstance(receipt, dict) or not receipt_fields <= set(receipt):
+        raise PilotError("terminal audit source acceptance receipt is incomplete")
+    calls = state.get("calls")
+    candidates = [
+        call for call in calls if isinstance(call, dict)
+        and call.get("call_id") == receipt["causal_call_id"]
+    ] if isinstance(calls, list) else []
+    if len(candidates) != 1:
+        raise PilotError("terminal audit source lacks its causal candidate call")
+    output = candidates[0].get("output")
+    if not isinstance(output, dict) or set(output) != {"kind", "text", "sha256"}:
+        raise PilotError("terminal audit source candidate output is invalid")
+    return {
+        "schema": AUDIT_NORMALIZED_SCHEMA,
+        "pilot_id": pilot_id,
+        "task_id": task_id,
+        "opaque_label": opaque_label,
+        "profile_sha256": profile_sha256,
+        "terminal_status": state.get("status"),
+        "output": output,
+        "acceptance": {
+            "receipt_sha256": receipt["receipt_sha256"],
+            "causal_call_id": receipt["causal_call_id"],
+            "candidate_patch_sha256": receipt["candidate_patch_sha256"],
+            "candidate_tree_sha256": receipt["candidate_tree_sha256"],
+            "passed": receipt["passed"],
+            "report": receipt["report"],
+            "report_sha256": receipt["report_sha256"],
+            "stdout_sha256": receipt["stdout_sha256"],
+            "stderr_sha256": receipt["stderr_sha256"],
+        },
+    }
 
 
 def canonical_json(value: Any) -> bytes:
@@ -377,6 +431,26 @@ def _git_is_ancestor(root: Path, older: str, newer: str) -> bool:
     ).returncode == 0
 
 
+def _git_path_exists(root: Path, commit: str, path: str) -> bool:
+    return subprocess.run(
+        ["git", "-C", str(root), "cat-file", "-e", f"{commit}:{path}"],
+        capture_output=True,
+    ).returncode == 0
+
+
+def _git_blob_exists(root: Path, commit: str, blob_oid: str) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(root), "ls-tree", "-r", commit],
+        capture_output=True, text=True,
+    )
+    if result.returncode:
+        return False
+    return any(
+        len(parts := line.split(None, 3)) >= 3 and parts[2] == blob_oid
+        for line in result.stdout.splitlines()
+    )
+
+
 def _json_artifact_object(
     artifact: tuple[Path, str] | None, label: str, errors: list[str]
 ) -> dict[str, Any] | None:
@@ -669,15 +743,18 @@ def _validate_arm_run(
     root: Path,
     authorization_time: datetime | None,
     errors: list[str],
-) -> tuple[tuple[str, str] | None, list[dict[str, Any]], datetime | None, list[dict[str, Any]]]:
+) -> tuple[
+    tuple[str, str] | None, list[dict[str, Any]], datetime | None,
+    list[dict[str, Any]], dict[str, Any] | None,
+]:
     label = f"arm_runs[{index}]"
     fields = {
         "task_id", "arm", "sequence", "position", "base_commit", "sealed_at", "final_state",
         "protocol_valid", "composition_state", "arm_seal", "call_receipts",
-        "dispatch_receipts", "question_receipts", "ledger",
+        "dispatch_receipts", "question_receipts", "driver_trace", "ledger",
     }
     if not _exact_fields(run, fields, label, errors):
-        return None, [], None, []
+        return None, [], None, [], None
     task_id = run.get("task_id")
     arm = run.get("arm")
     coordinate = (task_id, arm) if isinstance(task_id, str) and isinstance(arm, str) else None
@@ -744,6 +821,19 @@ def _validate_arm_run(
                 errors.append(f"{label}.composition_state acceptance occurred after arm seal")
             if recorded is not None and authorization_time is not None and recorded < authorization_time:
                 errors.append(f"{label}.composition_state acceptance occurred before authorization")
+
+    driver_trace_sha: str | None = None
+    if arm == "arm_a":
+        trace_artifact = _artifact(root, run.get("driver_trace"), f"{label}.driver_trace", errors)
+        expected_trace = b"".join(
+            canonical_json(trace) for trace in (state or {}).get("driver_traces", [])
+        )
+        if trace_artifact is not None:
+            driver_trace_sha = trace_artifact[1]
+            if trace_artifact[0].read_bytes() != expected_trace:
+                errors.append(f"{label}.driver_trace does not equal replay-derived append_driver_traces output")
+    elif run.get("driver_trace") is not None:
+        errors.append(f"{label}.driver_trace must be null outside Arm A")
 
     dispatches = run.get("dispatch_receipts")
     dispatch_hashes: list[str] = []
@@ -867,7 +957,8 @@ def _validate_arm_run(
     seal = _json_artifact_object(seal_artifact, f"{label}.arm_seal", errors)
     seal_fields = {
         "schema", "task_id", "arm", "base_commit", "sequence", "position", "sealed_at",
-        "final_state", "protocol_valid", "composition_state_sha256", "question_receipt_sha256s",
+        "final_state", "protocol_valid", "composition_state_sha256",
+        "question_receipt_sha256s", "driver_trace_sha256",
     }
     if seal is not None and _exact_fields(seal, seal_fields, f"{label}.arm_seal payload", errors):
         frozen = {key: run.get(key) for key in ("task_id", "arm", "base_commit", "sequence", "position", "sealed_at", "final_state", "protocol_valid")}
@@ -875,6 +966,7 @@ def _validate_arm_run(
             "schema": ARM_SEAL_SCHEMA,
             "composition_state_sha256": state_artifact[1] if state_artifact else None,
             "question_receipt_sha256s": sorted(question_hashes),
+            "driver_trace_sha256": driver_trace_sha,
         })
         for key, expected in frozen.items():
             if seal.get(key) != expected:
@@ -930,7 +1022,7 @@ def _validate_arm_run(
                 errors.append(f"{call_label}.cost_usd must be non-negative")
         if sorted(seen_dispatches) != sorted(dispatch_hashes):
             errors.append(f"{label} dispatch/ledger completeness is not bidirectional")
-    return coordinate, calls, sealed_at, question_values
+    return coordinate, calls, sealed_at, question_values, state
 
 
 def _validate_costs(
@@ -941,7 +1033,7 @@ def _validate_costs(
         errors.append("cost_reconciliation must be an array")
         return
     records: dict[str, dict[str, Any]] = {}
-    fields = {"account", "billed_usd", "bill"}
+    fields = {"account", "billed_usd", "bill", "provider_artifact"}
     for index, record in enumerate(reconciliation):
         label = f"cost_reconciliation[{index}]"
         if not _exact_fields(record, fields, label, errors):
@@ -962,6 +1054,9 @@ def _validate_costs(
         if not billed_valid:
             errors.append(f"{label}.billed_usd must be non-negative")
         bill_artifact = _artifact(root, record.get("bill"), f"{label}.bill", errors)
+        provider_artifact = _artifact(
+            root, record.get("provider_artifact"), f"{label}.provider_artifact", errors
+        )
         bill = _json_artifact_object(bill_artifact, f"{label}.bill", errors)
         if bill is not None and _exact_fields(
             bill, {"schema", "account", "currency", "period", "total_usd", "provider_artifact_sha256"},
@@ -973,7 +1068,12 @@ def _validate_costs(
                 errors.append(f"{label}.bill account/currency mismatch")
             if bill.get("total_usd") != billed:
                 errors.append(f"{label}.billed_usd does not equal the opened bill")
-        if billed_valid and bill is not None:
+            provider_sha = bill.get("provider_artifact_sha256")
+            if not _is_hex(provider_sha, HEX64):
+                errors.append(f"{label}.bill provider_artifact_sha256 must be non-null sha256")
+            elif provider_artifact is None or provider_artifact[1] != provider_sha:
+                errors.append(f"{label}.bill does not bind the opened raw provider artifact")
+        if billed_valid and bill is not None and provider_artifact is not None:
             records[account] = record
     real: dict[str, float] = {}
     for call in calls:
@@ -1118,15 +1218,16 @@ def _validate_audits_v2(
     unvoided: set[str],
     sealed: dict[tuple[str, str], datetime | None],
     seal_hashes: dict[tuple[str, str], str],
+    terminal_states: dict[tuple[str, str], dict[str, Any]],
     intervals: dict[str, tuple[dict[str, Any], dict[str, Any]]],
     used_operator_intervals: set[str],
     root: Path,
     as_of: datetime,
     errors: list[str],
-) -> set[str]:
+) -> tuple[set[str], str | None]:
     if not isinstance(audits, list):
         errors.append("audits must be an array")
-        return set()
+        return set(), None
     row_fields = {
         "task_id", "final_arm_sealed_at", "followup_closes_at", "withheld_audit",
         "normalized_inputs", "score_commitment", "mapping_reveal",
@@ -1135,6 +1236,7 @@ def _validate_audits_v2(
         "opaque_label", "repository_ci", "scope_ok", "operator_accepted", "escaped_defects",
     }
     seen: set[str] = set()
+    score_commits: set[str] = set()
     for index, row in enumerate(audits):
         label = f"audits[{index}]"
         if not _exact_fields(row, row_fields, label, errors):
@@ -1175,6 +1277,7 @@ def _validate_audits_v2(
             f"{label}.mapping_reveal", errors,
         )
         normalized_labels: list[str] = []
+        normalized_entries: dict[str, tuple[dict[str, Any], tuple[Path, str] | None]] = {}
         if normalized is not None and _exact_fields(
             normalized, {"schema", "pilot_id", "task_id", "profile_sha256", "entries"},
             f"{label}.normalized_inputs payload", errors,
@@ -1193,10 +1296,22 @@ def _validate_audits_v2(
                 errors.append(f"{label}.normalized_inputs must contain three entries")
             else:
                 for entry_index, entry in enumerate(entries):
-                    if not _exact_fields(entry, {"opaque_label", "artifact"}, f"{label}.normalized_inputs.entries[{entry_index}]", errors):
+                    if not _exact_fields(
+                        entry,
+                        {"opaque_label", "artifact"},
+                        f"{label}.normalized_inputs.entries[{entry_index}]", errors,
+                    ):
                         continue
-                    normalized_labels.append(entry.get("opaque_label"))
-                    _artifact(root, entry.get("artifact"), f"{label}.normalized_inputs.entries[{entry_index}].artifact", errors)
+                    opaque = entry.get("opaque_label")
+                    if not isinstance(opaque, str):
+                        errors.append(f"{label}.normalized_inputs.entries[{entry_index}].opaque_label must be a string")
+                        continue
+                    normalized_labels.append(opaque)
+                    artifact = _artifact(
+                        root, entry.get("artifact"),
+                        f"{label}.normalized_inputs.entries[{entry_index}].artifact", errors,
+                    )
+                    normalized_entries[opaque] = (entry, artifact)
                 if normalized_labels != sorted(normalized_labels) or len(set(normalized_labels)) != 3:
                     errors.append(f"{label}.normalized_inputs labels must be unique and sorted")
 
@@ -1229,6 +1344,8 @@ def _validate_audits_v2(
                 if score_labels != sorted(score_labels) or score_labels != normalized_labels:
                     errors.append(f"{label}.score labels do not exactly match normalized inputs")
             score_time = _timestamp(score.get("sealed_at"), f"{label}.score_commitment.sealed_at", errors)
+            if score_artifact is not None:
+                score_commits.add(score_artifact[2]["commit_oid"])
             if closes is not None and score_time is not None and score_time < closes:
                 errors.append(f"{label}.scores were sealed before the follow-up window closed")
 
@@ -1258,6 +1375,22 @@ def _validate_audits_v2(
                         errors.append(f"{label}.mapping_reveal.{arm} label does not match committed seed")
                     if binding.get("source_seal_sha256") != seal_hashes.get((task_id, arm)):
                         errors.append(f"{label}.mapping_reveal.{arm} does not bind the actual arm seal")
+                    state = terminal_states.get((task_id, arm))
+                    normalized_entry = normalized_entries.get(binding.get("opaque_label"))
+                    if state is None or normalized_entry is None:
+                        errors.append(f"{label}.mapping_reveal.{arm} has no replayed normalized source")
+                    else:
+                        _, artifact = normalized_entry
+                        try:
+                            expected_normalized = canonical_json(audit_normalized_payload(
+                                plan["pilot_id"], task_id, binding["opaque_label"],
+                                plan["audit_normalization_profile"]["sha256"], state,
+                            ))
+                        except PilotError as exc:
+                            errors.append(f"{label}.normalized_inputs cannot derive {arm}: {exc}")
+                        else:
+                            if artifact is None or artifact[0].read_bytes() != expected_normalized:
+                                errors.append(f"{label}.normalized_inputs artifact is not the built-in projection for {arm}")
                     score_item = scores_by_label.get(binding.get("opaque_label"))
                     if isinstance(score_item, dict) and score_item.get("operator_accepted") is True:
                         matches = [
@@ -1287,9 +1420,17 @@ def _validate_audits_v2(
                 errors.append(f"{label} normalized inputs were not committed before scores")
             if s_commit == r_commit or not _git_is_ancestor(root, s_commit, r_commit):
                 errors.append(f"{label} scores were not committed before mapping reveal")
+            reveal_path = reveal_artifact[2]["path"]
+            reveal_blob = reveal_artifact[2]["blob_oid"]
+            if _git_path_exists(root, s_commit, reveal_path):
+                errors.append(f"{label} mapping reveal path already existed at score commit")
+            if _git_blob_exists(root, s_commit, reveal_blob):
+                errors.append(f"{label} exact mapping reveal bytes already existed at score commit")
     if seen != unvoided:
         errors.append("audits must cover every and only unvoided task")
-    return seen
+    if len(score_commits) != 1:
+        errors.append("all unvoided score artifacts must share one common score commit")
+    return seen, next(iter(score_commits)) if len(score_commits) == 1 else None
 
 
 def validate_evidence(
@@ -1396,6 +1537,17 @@ def validate_evidence(
         evidence_root, plan.get("audit_normalization_profile"),
         "audit_normalization_profile", errors,
     )
+    profile_value = _json_artifact_object(profile, "audit_normalization_profile", errors)
+    if profile_value is not None and _exact_fields(
+        profile_value, {"schema", "normalizer"},
+        "audit_normalization_profile payload", errors,
+    ):
+        expected_profile = {
+            "schema": AUDIT_PROFILE_SCHEMA,
+            "normalizer": AUDIT_NORMALIZATION_ALGORITHM,
+        }
+        if profile_value != expected_profile:
+            errors.append("audit_normalization_profile is not the built-in supported algorithm")
     intervention = evidence.get("intervention_log")
     intervention_fields = {"path", "sha256", "head_sha256"}
     events: list[dict[str, Any]] = []
@@ -1452,13 +1604,14 @@ def validate_evidence(
     protocol_invalid_tasks: set[str] = set()
     all_dispatch_hashes: set[str] = set()
     all_question_receipts: list[dict[str, Any]] = []
+    terminal_states: dict[tuple[str, str], dict[str, Any]] = {}
     if not isinstance(arm_rows, list):
         errors.append("arm_runs must be an array")
     else:
         previous_sequence = 0
         previous_sealed_at: datetime | None = None
         for index, row in enumerate(arm_rows):
-            coordinate, calls, sealed_at, questions = _validate_arm_run(
+            coordinate, calls, sealed_at, questions, terminal_state = _validate_arm_run(
                 row, index, tasks, plan, manifest, composition,
                 evidence_root, authorization_time, errors
             )
@@ -1472,6 +1625,8 @@ def validate_evidence(
                     seal_hashes[coordinate] = seal_value["sha256"]
                 if row.get("protocol_valid") is False and coordinate[0] in tasks:
                     protocol_invalid_tasks.add(coordinate[0])
+                if terminal_state is not None:
+                    terminal_states[coordinate] = terminal_state
             sequence = row.get("sequence") if isinstance(row, dict) else None
             if not isinstance(sequence, int) or isinstance(sequence, bool):
                 errors.append(f"arm_runs[{index}].sequence must be an integer")
@@ -1500,6 +1655,7 @@ def validate_evidence(
                     all_dispatch_hashes.add(dispatch_hash)
             all_calls.extend(calls)
             all_question_receipts.extend(questions)
+    ratified_void_commits: list[tuple[str, str]] = []
     if protocol_invalid_tasks - voided:
         errors.append("every protocol-invalid arm must atomically void its whole task")
     for index, row in enumerate(void_rows or []):
@@ -1535,6 +1691,8 @@ def validate_evidence(
                     if artifact is not None:
                         evidence_hashes.append(artifact[1])
             ratified = _git_artifact(evidence_root, row.get("ratification"), f"{label}.ratification", errors)
+            if ratified is not None:
+                ratified_void_commits.append((label, ratified[2]["commit_oid"]))
             payload = _json_artifact_object(
                 (ratified[0], ratified[1]) if ratified else None, f"{label}.ratification", errors
             )
@@ -1650,10 +1808,22 @@ def validate_evidence(
         seed = bytes.fromhex(seed_hex)
         if sha256_bytes(seed) != plan.get("audit_label_seed_commitment_sha256"):
             errors.append("audit seed reveal does not open the frozen commitment")
-    audited = _validate_audits_v2(
+    audited, common_score_commit = _validate_audits_v2(
         evidence.get("audits"), seed, plan, tasks, unvoided, sealed,
-        seal_hashes, intervals, used_operator_intervals, evidence_root, as_of, errors
+        seal_hashes, terminal_states, intervals, used_operator_intervals,
+        evidence_root, as_of, errors
     )
+    if ratified_void_commits and common_score_commit is None:
+        errors.append("ratified voids cannot close without one common unvoided score commit")
+    elif common_score_commit is not None:
+        for label, ratification_commit in ratified_void_commits:
+            if (
+                ratification_commit == common_score_commit
+                or not _git_is_ancestor(evidence_root, ratification_commit, common_score_commit)
+            ):
+                errors.append(
+                    f"{label}.ratification commit must be a strict ancestor of the common score commit"
+                )
     for iid, (start_event, _) in intervals.items():
         if start_event.get("category") in {"clarification", "review", "rescue", "acceptance"} and iid not in used_operator_intervals:
             errors.append(

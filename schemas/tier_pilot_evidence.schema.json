@@ -43,11 +43,12 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["account", "billed_usd", "bill"],
+        "required": ["account", "billed_usd", "bill", "provider_artifact"],
         "properties": {
           "account": {"type": "string", "minLength": 1},
           "billed_usd": {"type": "number", "minimum": 0},
-          "bill": {"$ref": "#/$defs/artifact"}
+          "bill": {"$ref": "#/$defs/artifact"},
+          "provider_artifact": {"$ref": "#/$defs/artifact"}
         }
       }
     },
@@ -86,7 +87,7 @@
       "required": [
         "task_id", "arm", "sequence", "position", "base_commit", "sealed_at", "final_state",
         "protocol_valid", "composition_state", "arm_seal", "call_receipts",
-        "dispatch_receipts", "question_receipts", "ledger"
+        "dispatch_receipts", "question_receipts", "driver_trace", "ledger"
       ],
       "properties": {
         "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
@@ -109,6 +110,9 @@
         },
         "question_receipts": {
           "type": "array", "items": {"$ref": "#/$defs/artifact"}
+        },
+        "driver_trace": {
+          "oneOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]
         },
         "ledger": {"$ref": "#/$defs/artifact"}
       }

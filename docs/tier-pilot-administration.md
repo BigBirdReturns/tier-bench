@@ -48,6 +48,15 @@ its dispatch receipts; every call binds the frozen backend-manifest hash and its
 task/arm coordinate. A dispatch may appear once globally. Real-billed rows must
 reconcile by account; subscription-derived and shadow-estimated rows use the same
 receipt-completeness check but never pretend a provider bill exists.
+Every real-billed reconciliation must open both a canonical bill record and the
+raw provider artifact. The bill carries the raw artifact's non-null SHA-256;
+missing bytes, null hashes, and mismatches all refuse closeout.
+
+Arm A additionally carries one task-local `driver_trace` artifact whose bytes
+must exactly equal the canonical JSONL obtained from the replayed terminal
+composition state's `driver_traces`. Its SHA-256 is bound into the arm seal.
+Arms B and C must carry `null`; omitted, unrelated, or misplaced trace evidence
+cannot close.
 
 There is no arm-level void. A protocol fault creates one task-level void, and
 the task disappears from the completion numerator for all arms. The frozen plan
@@ -75,6 +84,23 @@ reveal, a mapping that does not open the commitment, or scores sealed before the
 fixed follow-up deadline. `followup_closes_at` must be exactly 14 days after the
 last arm seal. The score includes repository CI, scope compliance, operator
 acceptance, and escaped-defect count.
+
+Normalization is not an executable hook. The profile is exactly
+`tier-bench/tier-pilot-audit-normalization-profile@1` with normalizer
+`builtin-terminal-state-projection@1`; unknown algorithms, commands, and extra
+fields are rejected. Before scoring, each entry exposes only an opaque label and
+artifact reference. After reveal, the validator uses the label-to-arm mapping
+to select the already replayed terminal state and independently re-derives the
+canonical candidate output and causal acceptance projection. A self-consistent
+hash over unrelated bytes is therefore insufficient.
+
+All unvoided score artifacts must resolve at one common Git commit. At that
+commit neither the reveal path nor the exact reveal blob may exist anywhere in
+the tree; the reveal must be introduced only at a strict descendant commit.
+Every ratified task void must likewise be committed as a strict ancestor of the
+common score commit. A post-score or post-reveal void cannot select away an
+observed result, and ratified voids cannot close when no common score commit
+exists.
 
 The audit evidence must also reveal the exact withheld-audit artifact whose
 SHA-256 was committed in that task's plan row. A score set cannot close against
