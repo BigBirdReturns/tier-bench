@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_closeout.schema.json",
+  "title": "Driver-boundary pilot administrative closeout (no scientific verdict)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "pilot_id", "administrative_state", "scientific_verdict_minted",
+    "feasibility_readout_permitted", "equivalence_claim_permitted",
+    "noninferiority_claim_permitted", "tasks_total", "completed_tasks",
+    "voided_tasks", "completed_task_ids", "voided_task_ids", "no_replacement",
+    "follow_up_days", "plan_sha256", "evidence_sha256",
+    "backend_manifest_sha256", "intervention_head_sha256", "closed_at"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/tier-pilot-closeout@1"},
+    "pilot_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "administrative_state": {"enum": ["ADMINISTRATIVELY_COMPLETE", "PARTIAL"]},
+    "scientific_verdict_minted": {"const": false},
+    "feasibility_readout_permitted": {"type": "boolean"},
+    "equivalence_claim_permitted": {"const": false},
+    "noninferiority_claim_permitted": {"const": false},
+    "tasks_total": {"const": 10},
+    "completed_tasks": {"type": "integer", "minimum": 0, "maximum": 10},
+    "voided_tasks": {"type": "integer", "minimum": 0, "maximum": 10},
+    "completed_task_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "voided_task_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+    "no_replacement": {"const": true},
+    "follow_up_days": {"const": 14},
+    "plan_sha256": {"$ref": "#/$defs/sha256"},
+    "evidence_sha256": {"$ref": "#/$defs/sha256"},
+    "backend_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "intervention_head_sha256": {
+      "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+    },
+    "closed_at": {"type": "string", "format": "date-time"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

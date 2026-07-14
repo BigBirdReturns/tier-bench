@@ -31,8 +31,9 @@ jobs:
         run: python experiments/breadth/smoke.py
       - name: tier run daily entrypoint (fixture backends only; zero model calls)
         run: |
-          python -m py_compile tier_runner/*.py tier_runner/adapters/*.py tests/test_tier_runner.py
+          python -m py_compile tier_runner/*.py tier_runner/adapters/*.py tests/test_tier_runner.py tests/test_tier_pilot_admin.py
           python tests/test_tier_runner.py
+          python tests/test_tier_pilot_admin.py
       - name: UI-capture lane end-to-end ($0, temp files)
         run: python experiments/breadth/ui_capture_smoke.py
       - name: waterline schema + evidence-layer enforcement

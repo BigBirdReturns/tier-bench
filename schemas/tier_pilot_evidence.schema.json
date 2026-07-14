@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_evidence.schema.json",
+  "title": "Driver-boundary pilot administration evidence (GATED proposal)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "pilot_id",
+    "plan_sha256",
+    "backend_manifest_sha256",
+    "intervention_log",
+    "arm_runs",
+    "voids",
+    "audit_seed_reveal_hex",
+    "audits",
+    "cost_reconciliation",
+    "operator_authorization"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/tier-pilot-evidence@1"},
+    "pilot_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "plan_sha256": {"$ref": "#/$defs/sha256"},
+    "backend_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "intervention_log": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "head_sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "head_sha256": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        }
+      }
+    },
+    "arm_runs": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/arm_run"}},
+    "voids": {"type": "array", "maxItems": 10, "items": {"$ref": "#/$defs/void"}},
+    "audit_seed_reveal_hex": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "audits": {"type": "array", "maxItems": 10, "items": {"$ref": "#/$defs/audit"}},
+    "cost_reconciliation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["account", "billed_usd", "tolerance_fraction"],
+        "properties": {
+          "account": {"type": "string", "minLength": 1},
+          "billed_usd": {"type": "number", "minimum": 0},
+          "tolerance_fraction": {"type": "number", "minimum": 0, "maximum": 1}
+        }
+      }
+    },
+    "operator_authorization": {"$ref": "#/$defs/artifact"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "git_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "arm_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id", "arm", "sequence", "position", "base_commit", "sealed_at", "final_state",
+        "protocol_valid", "seal_sha256", "dispatch_receipts", "ledger"
+      ],
+      "properties": {
+        "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+        "arm": {"enum": ["arm_a", "arm_b", "arm_c"]},
+        "sequence": {"type": "integer", "minimum": 1, "maximum": 30},
+        "position": {"type": "integer", "minimum": 1, "maximum": 3},
+        "base_commit": {"$ref": "#/$defs/git_sha"},
+        "sealed_at": {"type": "string", "format": "date-time"},
+        "final_state": {"enum": ["ACCEPTED", "REJECTED", "ERROR"]},
+        "protocol_valid": {"type": "boolean"},
+        "seal_sha256": {"$ref": "#/$defs/sha256"},
+        "dispatch_receipts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/artifact"}
+        },
+        "ledger": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "void": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["task_id", "reason_code", "detail", "recorded_at", "evidence"],
+      "properties": {
+        "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+        "reason_code": {
+          "enum": [
+            "cross_arm_exposure", "intervention_log_invalid", "ledger_incomplete",
+            "manifest_drift", "metric_changed", "missing_telemetry",
+            "schedule_deviation", "task_definition_changed", "unblinded_audit",
+            "untracked_operator_work", "other_protocol_fault"
+          ]
+        },
+        "detail": {"type": "string", "minLength": 1},
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "evidence": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opaque_label", "repository_ci", "scope_ok", "operator_accepted",
+        "escaped_defects"
+      ],
+      "properties": {
+        "opaque_label": {"type": "string", "pattern": "^audit-[0-9a-f]{20}$"},
+        "repository_ci": {"type": "boolean"},
+        "scope_ok": {"type": "boolean"},
+        "operator_accepted": {"type": "boolean"},
+        "escaped_defects": {"type": "integer", "minimum": 0}
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id", "final_arm_sealed_at", "followup_closes_at", "scores",
+        "scores_sha256", "scores_sealed_at", "unblinded_at", "label_map",
+        "withheld_audit"
+      ],
+      "properties": {
+        "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+        "withheld_audit": {"$ref": "#/$defs/artifact"},
+        "final_arm_sealed_at": {"type": "string", "format": "date-time"},
+        "followup_closes_at": {"type": "string", "format": "date-time"},
+        "scores": {"type": "array", "minItems": 3, "maxItems": 3, "items": {"$ref": "#/$defs/score"}},
+        "scores_sha256": {"$ref": "#/$defs/sha256"},
+        "scores_sealed_at": {"type": "string", "format": "date-time"},
+        "unblinded_at": {"type": "string", "format": "date-time"},
+        "label_map": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["arm_a", "arm_b", "arm_c"],
+          "properties": {
+            "arm_a": {"type": "string", "pattern": "^audit-[0-9a-f]{20}$"},
+            "arm_b": {"type": "string", "pattern": "^audit-[0-9a-f]{20}$"},
+            "arm_c": {"type": "string", "pattern": "^audit-[0-9a-f]{20}$"}
+          }
+        }
+      }
+    }
+  }
+}
