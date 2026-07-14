@@ -40,6 +40,17 @@ CALL_FIELDS = {
 }
 CALL_STAGES = {"driver_plan", "hands", "repair", "escalation", "hands_resume"}
 CALL_OUTCOMES = {"completed", "question", "error"}
+QUESTION_RECEIPT_FIELDS = {
+    "schema",
+    "question_id",
+    "task_id",
+    "arm",
+    "intervention_id",
+    "asked_at",
+    "answered_at",
+    "question_sha256",
+    "answer_sha256",
+}
 STATE_FIELDS = {
     "schema",
     "state_sequence",
@@ -188,6 +199,7 @@ def new_pilot_arm_state(
     if arm not in composition.arms:
         raise CompositionError(f"unknown arm {arm!r}")
     first_stage = "hands" if arm == "arm_c" else "driver_plan"
+    created_at = _now()
     return _seal_initial({
         "schema": STATE_SCHEMA,
         "composition_manifest_sha256": composition.sha256,
@@ -209,8 +221,8 @@ def new_pilot_arm_state(
         "question_receipts": [],
         "active_question_id": None,
         "driver_traces": [],
-        "created_at": _now(),
-        "updated_at": _now(),
+        "created_at": created_at,
+        "updated_at": created_at,
     })
 
 
@@ -361,10 +373,11 @@ def _validate_state(composition: PilotComposition, state: dict[str, Any]) -> Non
                 canonical_json(state["question_receipts"][-1])
             ).hexdigest()
         elif kind == "operator_decline":
-            answered = [item for item in state["questions"] if item.get("answer_sha256")]
-            if not answered:
-                raise CompositionError("operator_decline transition has no bound answer")
-            expected_ref = answered[-1]["answer_sha256"]
+            if not state["question_receipts"]:
+                raise CompositionError("operator_decline transition has no question receipt")
+            expected_ref = hashlib.sha256(
+                canonical_json(state["question_receipts"][-1])
+            ).hexdigest()
         else:
             raise CompositionError(f"unknown state transition kind {kind!r}")
         if state["transition"]["reference_sha256"] != expected_ref:
@@ -378,6 +391,27 @@ def _validate_state_semantics(
 ) -> None:
     arm = composition.arms[state["arm"]]
     if state["state_sequence"] == 0:
+        if any(
+            state[name]
+            for name in (
+                "calls",
+                "acceptance_attempts",
+                "questions",
+                "question_receipts",
+                "driver_traces",
+            )
+        ):
+            raise CompositionError("initial state cannot contain preseeded evidence")
+        if state["repair_calls"] != 0 or state["escalation_index"] != 0:
+            raise CompositionError("initial state counters must be zero")
+        if state["active_question_id"] is not None:
+            raise CompositionError("initial state cannot contain an active question")
+        if not (
+            state["created_at"]
+            == state["updated_at"]
+            == state["transition"].get("at")
+        ):
+            raise CompositionError("initial state timestamps must share one canonical instant")
         expected = ("ACTIVE", "hands" if state["arm"] == "arm_c" else "driver_plan")
     else:
         kind = state["transition"]["kind"]
@@ -388,7 +422,11 @@ def _validate_state_semantics(
         elif kind == "model_call":
             call = state["calls"][-1]
             if call["outcome"] == "question":
-                expected = ("WAITING_OPERATOR", None)
+                routed = any(
+                    question.get("call_id") == call["call_id"]
+                    for question in state["questions"]
+                )
+                expected = ("WAITING_OPERATOR", None) if routed else ("FAILED", None)
             elif call["outcome"] == "error":
                 expected = ("FAILED", None)
             elif call["stage"] == "driver_plan":
@@ -459,7 +497,7 @@ def _validate_parent_transition(
         "model_call": (1, 0, 0),
         "acceptance": (0, 1, 0),
         "operator_answer": (0, 0, 1),
-        "operator_decline": (0, 0, 0),
+        "operator_decline": (0, 0, 1),
     }
     if kind not in expected or (call_delta, acceptance_delta, receipt_delta) != expected[kind]:
         raise CompositionError("state transition kind contradicts appended evidence")
@@ -499,10 +537,133 @@ def _validate_parent_transition(
         if kind == "operator_answer" and before.get("answer") is None:
             for key in ("answer", "answer_sha256", "answered_at", "intervention_id"):
                 allowed[key] = after.get(key)
-        elif kind == "operator_decline":
+        elif kind == "operator_decline" and before.get("answer") is None:
+            for key in ("answer", "answer_sha256", "answered_at", "intervention_id"):
+                allowed[key] = after.get(key)
             allowed["declined"] = True
         if after != allowed:
             raise CompositionError("operator question history was rewritten")
+
+
+def _validate_question_receipt_replay(
+    previous: dict[str, Any],
+    current: dict[str, Any],
+    receipt: dict[str, Any],
+) -> None:
+    if not isinstance(receipt, dict) or set(receipt) != QUESTION_RECEIPT_FIELDS:
+        raise CompositionError("question receipt fields do not match the frozen contract")
+    if receipt.get("schema") != QUESTION_SCHEMA:
+        raise CompositionError(f"question receipt schema must be {QUESTION_SCHEMA}")
+    if previous["arm"] != "arm_c" or previous["status"] != "WAITING_OPERATOR":
+        raise CompositionError("question receipt does not resume a paused Arm-C state")
+    if receipt.get("task_id") != previous["task_id"] or receipt.get("arm") != "arm_c":
+        raise CompositionError("question receipt task/arm contradicts its parent state")
+    question_id = previous["active_question_id"]
+    if receipt.get("question_id") != question_id:
+        raise CompositionError("question receipt does not name the active question")
+    prior = next(
+        (item for item in previous["questions"] if item["question_id"] == question_id),
+        None,
+    )
+    after = next(
+        (item for item in current["questions"] if item["question_id"] == question_id),
+        None,
+    )
+    if prior is None or after is None or prior.get("answer") is not None:
+        raise CompositionError("question receipt parent/answer state is invalid")
+    if receipt.get("asked_at") != prior.get("asked_at"):
+        raise CompositionError("question receipt asked_at contradicts the question")
+    if receipt.get("question_sha256") != prior.get("question_sha256"):
+        raise CompositionError("question receipt question hash contradicts the question")
+    if receipt.get("answered_at") != after.get("answered_at"):
+        raise CompositionError("question receipt answered_at contradicts the resumed state")
+    if receipt.get("answer_sha256") != after.get("answer_sha256"):
+        raise CompositionError("question receipt answer hash contradicts the resumed state")
+    if receipt.get("answer_sha256") != _sha_text(
+        _nonempty(after.get("answer"), "operator answer")
+    ):
+        raise CompositionError("question receipt answer hash does not bind the answer bytes")
+    if receipt.get("intervention_id") != after.get("intervention_id"):
+        raise CompositionError("question receipt intervention ID contradicts the resumed state")
+    try:
+        uuid.UUID(receipt["intervention_id"])
+    except (AttributeError, ValueError) as exc:
+        raise CompositionError("question receipt intervention_id must be a UUID") from exc
+
+
+def _validate_question_route_replay(
+    composition: PilotComposition,
+    previous: dict[str, Any],
+    current: dict[str, Any],
+    receipt: dict[str, Any],
+) -> None:
+    arm = composition.arms[previous["arm"]]
+    if receipt["outcome"] != "question":
+        if len(current["questions"]) != len(previous["questions"]):
+            raise CompositionError("non-question call appended an operator question")
+        return
+    assert arm.question_route is not None
+    if len(previous["questions"]) >= arm.question_route.max_questions:
+        if len(current["questions"]) != len(previous["questions"]):
+            raise CompositionError("question above the frozen limit was routed")
+        return
+    if len(current["questions"]) != len(previous["questions"]) + 1:
+        raise CompositionError("operator question call lacks its routed question record")
+    actual = current["questions"][-1]
+    asked_at = _nonempty(actual.get("asked_at"), "operator question asked_at")
+    evidence_sha = receipt["output"]["sha256"]
+    rendered, template_sha = _render_operator_question(
+        composition, current, receipt["output"]["text"], evidence_sha
+    )
+    expected = {
+        "question_id": _sha_text(
+            f"{current['task_id']}:{current['arm']}:{receipt['call_id']}:{evidence_sha}"
+        ),
+        "intervention_id": None,
+        "call_id": receipt["call_id"],
+        "asked_at": asked_at,
+        "question": receipt["output"]["text"],
+        "question_sha256": evidence_sha,
+        "rendered": rendered,
+        "rendered_sha256": _sha_text(rendered),
+        "question_template_sha256": template_sha,
+        "answer": None,
+        "answer_sha256": None,
+        "answered_at": None,
+    }
+    if actual != expected:
+        raise CompositionError("operator question record contradicts the causal call receipt")
+
+
+def _replay_transition_receipt(
+    composition: PilotComposition,
+    previous: dict[str, Any],
+    current: dict[str, Any],
+) -> None:
+    kind = current["transition"]["kind"]
+    if kind == "model_call":
+        receipt = current["calls"][-1]
+        _validate_call_receipt(composition, previous, receipt)
+        _validate_question_route_replay(composition, previous, current, receipt)
+    elif kind == "acceptance":
+        receipt = current["acceptance_attempts"][-1]
+        _validate_acceptance_receipt(composition, previous, receipt)
+        expected_trace = _trace_for_repair(composition, current, receipt["passed"])
+        new_traces = current["driver_traces"][len(previous["driver_traces"]):]
+        if new_traces != ([] if expected_trace is None else [expected_trace]):
+            raise CompositionError("driver trace contradicts the causal acceptance transition")
+    elif kind == "operator_answer":
+        _validate_question_receipt_replay(
+            previous, current, current["question_receipts"][-1]
+        )
+    elif kind == "operator_decline":
+        _validate_question_receipt_replay(
+            previous, current, current["question_receipts"][-1]
+        )
+        if current["questions"][-1].get("declined") is not True:
+            raise CompositionError("operator decline transition lacks the declined marker")
+    else:
+        raise CompositionError(f"unknown transition kind during receipt replay: {kind!r}")
 
 
 def _validate_call_receipt(
@@ -948,6 +1109,7 @@ def answer_operator_question(
         "question_sha256": question["question_sha256"],
         "answer_sha256": question["answer_sha256"],
     }
+    _validate_question_receipt_replay(state, updated, question_receipt)
     updated["question_receipts"].append(question_receipt)
     updated["active_question_id"] = None
     updated["status"] = "ACTIVE"
@@ -968,23 +1130,49 @@ def decline_operator_question(
     reason: str,
     intervention_id: str,
 ) -> dict[str, Any]:
-    updated = answer_operator_question(
-        composition,
-        state,
-        question_id=question_id,
-        answer=_nonempty(reason, "decline reason"),
-        intervention_id=intervention_id,
+    _validate_state(composition, state)
+    if state["arm"] != "arm_c" or state["status"] != "WAITING_OPERATOR":
+        raise CompositionError("only a paused arm_c state accepts an operator decline")
+    if question_id != state["active_question_id"]:
+        raise CompositionError("operator decline does not name the active question")
+    reason = _nonempty(reason, "decline reason")
+    try:
+        uuid.UUID(intervention_id)
+    except (AttributeError, ValueError) as exc:
+        raise CompositionError("intervention_id must be a UUID") from exc
+    updated = copy.deepcopy(state)
+    question = next(
+        item for item in updated["questions"] if item["question_id"] == question_id
     )
-    previous = updated
-    updated = copy.deepcopy(updated)
+    if question["answer"] is not None:
+        raise CompositionError("operator question was already answered")
+    answered_at = _now()
+    question["intervention_id"] = intervention_id
+    question["answer"] = reason
+    question["answer_sha256"] = _sha_text(reason)
+    question["answered_at"] = answered_at
+    question["declined"] = True
+    question_receipt = {
+        "schema": QUESTION_SCHEMA,
+        "question_id": question_id,
+        "task_id": state["task_id"],
+        "arm": "arm_c",
+        "intervention_id": intervention_id,
+        "asked_at": question["asked_at"],
+        "answered_at": answered_at,
+        "question_sha256": question["question_sha256"],
+        "answer_sha256": question["answer_sha256"],
+    }
+    _validate_question_receipt_replay(state, updated, question_receipt)
+    updated["question_receipts"].append(question_receipt)
+    updated["active_question_id"] = None
     updated["status"] = "FAILED"
     updated["next_stage"] = None
-    updated["questions"][-1]["declined"] = True
     return _seal_next(
-        previous,
+        state,
         updated,
         kind="operator_decline",
-        reference_sha256=_sha_text(reason),
+        reference_sha256=hashlib.sha256(canonical_json(question_receipt)).hexdigest(),
     )
 
 
@@ -1009,6 +1197,7 @@ def read_state(composition: PilotComposition, path: Path) -> dict[str, Any]:
             raise CompositionError("pilot state parent chain is broken or forked")
         if states:
             _validate_parent_transition(states[-1], value)
+            _replay_transition_receipt(composition, states[-1], value)
         states.append(value)
     if not states:
         raise CompositionError("pilot arm state log is empty")

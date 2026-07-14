@@ -120,8 +120,13 @@ Arm state is not an overwriteable JSON snapshot. Every transition carries its
 canonical self-hash, monotonically increasing sequence, parent-state hash, and
 transition receipt hash. `write_state` appends one complete state to JSONL and
 refuses a non-contiguous sequence or parent fork; `read_state` validates every
-row, every self-hash, and the entire parent chain. ADMIN later binds the exact
-final state artifact hash in the arm seal, preventing whole-log replacement.
+row, every self-hash, the entire parent chain, and every embedded model-call,
+acceptance, and operator-response receipt against the state that preceded it.
+This replay prevents a self-consistently rehashed chain from substituting a
+different tool, model, candidate, question, or answer. The genesis row is also
+canonical: it has no evidence, zero counters, no active question, and one
+shared creation/transition timestamp. ADMIN later binds the exact final state
+artifact hash in the arm seal, preventing whole-log replacement.
 
 Every answered Arm-C question emits
 `tier-bench/tier-pilot-question-receipt@1` with the stable question ID, task,
@@ -130,6 +135,11 @@ question/answer hashes. COMPOSE checks the binding shape; ADMIN owns the global
 intervention ledger and must prove that intervention ID names exactly one
 closed, non-overlapping operator-time interval. An empty intervention ledger
 therefore cannot close an arm that has a question receipt.
+
+An operator decline is one directly appendable transition from the waiting
+state. It emits the same sealed question receipt with a declined marker and
+ends the arm as `FAILED`; it does not manufacture an intermediate answer state
+or skip a sequence number.
 
 ## Driver trace semantics
 

@@ -14,6 +14,7 @@ from tier_runner.pilot_composition import (
     acceptance_receipt_hash,
     answer_operator_question,
     append_driver_traces,
+    decline_operator_question,
     new_pilot_arm_state,
     read_state,
     record_acceptance,
@@ -610,6 +611,157 @@ def test_trace_rejects_rehashed_but_noncausal_content(root: Path) -> None:
     )
 
 
+def test_read_state_replays_embedded_receipts(root: Path) -> None:
+    composition, _ = make_composition(root)
+    initial = arm_state(composition, "real-10", "T2", "arm_a")
+    called = record_pilot_call(
+        composition, initial, call_receipt(composition, initial, output="plan")
+    )
+    log = root / "call-state.jsonl"
+    write_state(log, composition, initial)
+    write_state(log, composition, called)
+    rows = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
+    rows[-1]["calls"][-1]["ledger_call"]["model"] = "mutated-model"
+    rows[-1]["transition"]["reference_sha256"] = hashlib.sha256(
+        (json.dumps(rows[-1]["calls"][-1], sort_keys=True, separators=(",", ":")) + "\n").encode()
+    ).hexdigest()
+    rows[-1]["state_sha256"] = state_hash(rows[-1])
+    log.write_text(
+        "\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n",
+        encoding="utf-8",
+    )
+    assert "frozen backend" in _raises(
+        CompositionError, read_state, composition, log
+    )
+
+    initial = arm_state(composition, "real-11", "T1", "arm_c")
+    candidate = record_pilot_call(
+        composition, initial, call_receipt(composition, initial, output="patch")
+    )
+    accepted = record_acceptance(
+        composition,
+        candidate,
+        acceptance_receipt(composition, candidate, passed=True, report="passed"),
+    )
+    log = root / "acceptance-state.jsonl"
+    for item in (initial, candidate, accepted):
+        write_state(log, composition, item)
+    rows = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
+    mutated = rows[-1]["acceptance_attempts"][-1]
+    mutated["tool_versions"] = {"fixture-acceptance": "mutated"}
+    mutated["receipt_sha256"] = acceptance_receipt_hash(mutated)
+    rows[-1]["transition"]["reference_sha256"] = mutated["receipt_sha256"]
+    rows[-1]["state_sha256"] = state_hash(rows[-1])
+    log.write_text(
+        "\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n",
+        encoding="utf-8",
+    )
+    assert "tool versions" in _raises(
+        CompositionError, read_state, composition, log
+    )
+
+    initial = arm_state(composition, "real-15", "T1", "arm_c")
+    asked = record_pilot_call(
+        composition,
+        initial,
+        call_receipt(composition, initial, output="Which interpretation?", outcome="question"),
+    )
+    log = root / "question-state.jsonl"
+    write_state(log, composition, initial)
+    write_state(log, composition, asked)
+    rows = [json.loads(line) for line in log.read_text(encoding="utf-8").splitlines()]
+    rows[-1]["questions"][-1]["question"] = "Substituted question"
+    rows[-1]["state_sha256"] = state_hash(rows[-1])
+    log.write_text(
+        "\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n",
+        encoding="utf-8",
+    )
+    assert "causal call receipt" in _raises(
+        CompositionError, read_state, composition, log
+    )
+
+
+def test_max_questions_terminal_state_is_durable(root: Path) -> None:
+    composition, _ = make_composition(root)
+    state = arm_state(composition, "real-12", "T1", "arm_c")
+    log = root / "max-question-state.jsonl"
+    write_state(log, composition, state)
+    for number in (1, 2):
+        state = record_pilot_call(
+            composition,
+            state,
+            call_receipt(composition, state, output=f"question {number}", outcome="question"),
+        )
+        write_state(log, composition, state)
+        state = answer_operator_question(
+            composition,
+            state,
+            question_id=state["active_question_id"],
+            answer=f"answer {number}",
+            intervention_id=str(uuid.uuid4()),
+        )
+        write_state(log, composition, state)
+    state = record_pilot_call(
+        composition,
+        state,
+        call_receipt(composition, state, output="question 3", outcome="question"),
+    )
+    assert state["status"] == "FAILED"
+    assert state["next_stage"] is None
+    assert len(state["questions"]) == 2
+    write_state(log, composition, state)
+    assert read_state(composition, log)["state_sha256"] == state["state_sha256"]
+
+
+def test_initial_state_rejects_preseeded_genesis(root: Path) -> None:
+    composition, _ = make_composition(root)
+    initial = arm_state(composition, "real-13", "T1", "arm_c")
+    preseeded = copy.deepcopy(initial)
+    preseeded["questions"].append({"question_id": "invented"})
+    preseeded["state_sha256"] = state_hash(preseeded)
+    assert "preseeded evidence" in _raises(
+        CompositionError, write_state, root / "preseeded.jsonl", composition, preseeded
+    )
+    counter = copy.deepcopy(initial)
+    counter["repair_calls"] = 1
+    counter["state_sha256"] = state_hash(counter)
+    assert "counters must be zero" in _raises(
+        CompositionError, write_state, root / "counter.jsonl", composition, counter
+    )
+    timestamp = copy.deepcopy(initial)
+    timestamp["updated_at"] = "2026-07-13T01:00:00Z"
+    timestamp["state_sha256"] = state_hash(timestamp)
+    assert "canonical instant" in _raises(
+        CompositionError, write_state, root / "timestamp.jsonl", composition, timestamp
+    )
+
+
+def test_decline_is_one_appendable_transition(root: Path) -> None:
+    composition, _ = make_composition(root)
+    state = arm_state(composition, "real-14", "T1", "arm_c")
+    log = root / "decline-state.jsonl"
+    write_state(log, composition, state)
+    state = record_pilot_call(
+        composition,
+        state,
+        call_receipt(composition, state, output="Need operator authority", outcome="question"),
+    )
+    write_state(log, composition, state)
+    paused_sequence = state["state_sequence"]
+    state = decline_operator_question(
+        composition,
+        state,
+        question_id=state["active_question_id"],
+        reason="Declined; task requires a new authorization.",
+        intervention_id=str(uuid.uuid4()),
+    )
+    assert state["state_sequence"] == paused_sequence + 1
+    assert state["status"] == "FAILED"
+    assert len(state["question_receipts"]) == 1
+    write_state(log, composition, state)
+    assert read_state(composition, log)["state_sha256"] == state["state_sha256"]
+
+
 def main() -> None:
     tests = [
         test_manifest_locks_roles_and_common_hands,
@@ -622,6 +774,10 @@ def main() -> None:
         test_acceptance_receipt_binds_candidate_and_tools,
         test_state_log_rejects_rewrite_and_fork,
         test_trace_rejects_rehashed_but_noncausal_content,
+        test_read_state_replays_embedded_receipts,
+        test_max_questions_terminal_state_is_durable,
+        test_initial_state_rejects_preseeded_genesis,
+        test_decline_is_one_appendable_transition,
     ]
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
