@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# Production pilot activation binds this state-transition authority exactly.
+
 import copy
 from datetime import datetime, timezone
 import hashlib

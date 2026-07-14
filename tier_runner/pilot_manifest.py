@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# Production pilot activation binds this composition-loader authority exactly.
+
 from dataclasses import dataclass
 import hashlib
 import json
