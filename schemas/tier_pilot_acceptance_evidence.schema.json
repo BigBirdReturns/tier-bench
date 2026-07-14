@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_acceptance_evidence.schema.json",
+  "title": "Inadmissible fixture pilot immutable-acceptance raw-evidence descriptor",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "execution_mode", "executor_identity", "receipt_sha256", "receipt", "stdout", "stderr", "candidate_before", "candidate_after", "report"],
+  "properties": {
+    "schema": {"const": "tier-bench/tier-pilot-fixture-acceptance-evidence@1"},
+    "execution_mode": {"const": "fixture"},
+    "executor_identity": {"const": "tier-bench/in-process-data-fixture@1"},
+    "receipt_sha256": {"$ref": "#/$defs/sha256"},
+    "receipt": {"$ref": "#/$defs/artifact"},
+    "stdout": {"$ref": "#/$defs/artifact"},
+    "stderr": {"$ref": "#/$defs/artifact"},
+    "candidate_before": {"$ref": "#/$defs/artifact"},
+    "candidate_after": {"$ref": "#/$defs/artifact"},
+    "report": {"$ref": "#/$defs/artifact"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "artifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

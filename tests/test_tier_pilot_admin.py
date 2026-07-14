@@ -256,6 +256,7 @@ def _compose_run(
     write_state(state_path, composition, state)
     dispatch_refs = []
     call_refs = []
+    provider_refs = []
     ledger_calls = []
     call_ordinal = 0
     question_routed = False
@@ -324,6 +325,35 @@ def _compose_run(
         call_refs.append(_relative_artifact(
             root, f"{prefix}/call-{call_ordinal}.json", canonical_json(call_payload)
         ))
+        provider_raw = _relative_artifact(
+            root, f"{prefix}/provider-{call_ordinal}.raw",
+            canonical_json({"output": output_text}),
+        )
+        provider_result = _relative_artifact(
+            root, f"{prefix}/provider-{call_ordinal}.json",
+            canonical_json({
+                "schema": "tier-bench/tier-backend-result@1",
+                "calls": [ledger_call],
+                "pilot_output": {
+                    "outcome": "question" if is_question else "completed",
+                    "text": output_text,
+                },
+                "artifacts": [{
+                    "name": "provider_raw", "path": provider_raw["path"],
+                    "sha256": provider_raw["sha256"],
+                }],
+            }),
+        )
+        provider_refs.append(_relative_artifact(
+            root, f"{prefix}/provider-{call_ordinal}-evidence.json",
+            canonical_json({
+                "schema": "tier-bench/tier-pilot-provider-evidence@1",
+                "call_id": call_id,
+                "dispatch_receipt_sha256": dispatch["sha256"],
+                "provider_result": provider_result,
+                "raw_artifacts": [{"name": "provider_raw", **provider_raw}],
+            }),
+        ))
         dispatch_refs.append(dispatch)
         ledger_calls.append(ledger_call)
         if is_question:
@@ -356,6 +386,25 @@ def _compose_run(
     acceptance["receipt_sha256"] = acceptance_receipt_hash(acceptance)
     state = record_acceptance(composition, state, acceptance)
     write_state(state_path, composition, state)
+    acceptance_ref = _relative_artifact(root, f"{prefix}/acceptance.json", canonical_json(acceptance))
+    acceptance_stdout = _relative_artifact(root, f"{prefix}/acceptance.stdout", b"")
+    acceptance_stderr = _relative_artifact(root, f"{prefix}/acceptance.stderr", b"")
+    candidate_raw = candidate["output"]["text"].encode("utf-8")
+    candidate_before = _relative_artifact(root, f"{prefix}/candidate.before.patch", candidate_raw)
+    candidate_after = _relative_artifact(root, f"{prefix}/candidate.after.patch", candidate_raw)
+    acceptance_report = _relative_artifact(
+        root, f"{prefix}/acceptance-report.txt", acceptance["report"].encode("utf-8")
+    )
+    acceptance_evidence = _relative_artifact(
+        root, f"{prefix}/acceptance-evidence.json",
+        canonical_json({
+            "schema": "tier-bench/tier-pilot-acceptance-evidence@1",
+            "receipt_sha256": acceptance["receipt_sha256"], "receipt": acceptance_ref,
+            "stdout": acceptance_stdout, "stderr": acceptance_stderr,
+            "candidate_before": candidate_before, "candidate_after": candidate_after,
+            "report": acceptance_report,
+        }),
+    )
     state_ref = {"path": f"{prefix}/state.jsonl", "sha256": sha256_file(state_path)}
     ledger = _relative_artifact(
         root, f"{prefix}/ledger.jsonl", b"".join(canonical_json(call) for call in ledger_calls)
@@ -379,7 +428,8 @@ def _compose_run(
         "sealed_at": seal_time.isoformat().replace("+00:00", "Z"),
         "final_state": "ACCEPTED", "protocol_valid": True,
         "composition_state": state_ref, "call_receipts": call_refs,
-        "dispatch_receipts": dispatch_refs, "question_receipts": question_refs,
+        "dispatch_receipts": dispatch_refs, "provider_receipts": provider_refs,
+        "acceptance_receipts": [acceptance_evidence], "question_receipts": question_refs,
         "driver_trace": driver_trace, "ledger": ledger,
     }
     seal_payload = {
@@ -934,6 +984,98 @@ def test_subscription_call_requires_sealed_call_receipt(tmp_path: Path) -> None:
     _must_refuse(plan_path, evidence_path, "call_receipts must be non-empty")
 
 
+def test_provider_raw_evidence_is_mandatory(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    evidence["arm_runs"][0]["provider_receipts"] = []
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "provider_receipts must cover every call")
+
+
+def test_acceptance_raw_report_must_match_replayed_receipt(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    run = evidence["arm_runs"][0]
+    descriptor_ref = run["acceptance_receipts"][0]
+    descriptor_path = root / descriptor_ref["path"]
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    report_path = root / descriptor["report"]["path"]
+    report_path.write_text("different raw report", encoding="utf-8")
+    descriptor["report"]["sha256"] = sha256_file(report_path)
+    descriptor_path.write_bytes(canonical_json(descriptor))
+    descriptor_ref["sha256"] = sha256_file(descriptor_path)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "raw report drifted")
+
+
+def test_fixture_provider_evidence_is_inadmissible(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    descriptor_ref = evidence["arm_runs"][0]["provider_receipts"][0]
+    descriptor_path = root / descriptor_ref["path"]
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    descriptor["schema"] = "tier-bench/tier-pilot-fixture-provider-evidence@1"
+    descriptor["execution_mode"] = "fixture"
+    descriptor["executor_identity"] = "tier-bench/in-process-data-fixture@1"
+    descriptor_path.write_bytes(canonical_json(descriptor))
+    descriptor_ref["sha256"] = sha256_file(descriptor_path)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "fixture provider evidence is inadmissible")
+
+
+def test_provider_raw_artifact_bijection_rejects_junk_and_aliases(tmp_path: Path) -> None:
+    junk = tmp_path / "junk"
+    junk.mkdir()
+    plan_path, evidence_path, _, evidence = _fixture(junk)
+    descriptor_ref = evidence["arm_runs"][0]["provider_receipts"][0]
+    descriptor_path = junk / descriptor_ref["path"]
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    result_path = junk / descriptor["provider_result"]["path"]
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    result["artifacts"].append("junk")
+    result_path.write_bytes(canonical_json(result))
+    descriptor["provider_result"]["sha256"] = sha256_file(result_path)
+    descriptor_path.write_bytes(canonical_json(descriptor))
+    descriptor_ref["sha256"] = sha256_file(descriptor_path)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "declared_artifacts[1] shape is invalid")
+
+    alias = tmp_path / "alias"
+    alias.mkdir()
+    plan_path, evidence_path, _, evidence = _fixture(alias)
+    descriptor_ref = evidence["arm_runs"][0]["provider_receipts"][0]
+    descriptor_path = alias / descriptor_ref["path"]
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    result_path = alias / descriptor["provider_result"]["path"]
+    result = json.loads(result_path.read_text(encoding="utf-8"))
+    original = descriptor["raw_artifacts"][0]
+    copy_relative = str(Path(original["path"]).with_name("provider-copy.raw")).replace("\\", "/")
+    copy_path = alias / copy_relative
+    copy_path.write_bytes((alias / original["path"]).read_bytes())
+    duplicate = {"name": original["name"], "path": copy_relative, "sha256": sha256_file(copy_path)}
+    result["artifacts"].append(duplicate)
+    descriptor["raw_artifacts"].append(duplicate)
+    result_path.write_bytes(canonical_json(result))
+    descriptor["provider_result"]["sha256"] = sha256_file(result_path)
+    descriptor_path.write_bytes(canonical_json(descriptor))
+    descriptor_ref["sha256"] = sha256_file(descriptor_path)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, ".name is duplicated")
+
+
+def test_acceptance_before_after_artifacts_cannot_alias(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    descriptor_ref = evidence["arm_runs"][0]["acceptance_receipts"][0]
+    descriptor_path = root / descriptor_ref["path"]
+    descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    descriptor["candidate_after"] = dict(descriptor["candidate_before"])
+    descriptor_path.write_bytes(canonical_json(descriptor))
+    descriptor_ref["sha256"] = sha256_file(descriptor_path)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "before/after snapshots must be distinct artifacts")
+
+
 def test_arm_c_question_requires_exact_intervention_interval(tmp_path: Path) -> None:
     root = tmp_path
     plan_path, evidence_path, plan, evidence = _fixture(root)
@@ -1371,6 +1513,11 @@ def main() -> int:
         test_call_cannot_predate_operator_authorization,
         test_ledger_model_must_match_opened_backend_manifest,
         test_subscription_call_requires_sealed_call_receipt,
+        test_provider_raw_evidence_is_mandatory,
+        test_acceptance_raw_report_must_match_replayed_receipt,
+        test_fixture_provider_evidence_is_inadmissible,
+        test_provider_raw_artifact_bijection_rejects_junk_and_aliases,
+        test_acceptance_before_after_artifacts_cannot_alias,
         test_arm_run_must_follow_frozen_schedule,
         test_withheld_audit_commitment_must_open,
         test_operator_authorization_binds_exact_plan,

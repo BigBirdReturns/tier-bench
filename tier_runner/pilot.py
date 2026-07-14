@@ -729,6 +729,166 @@ def _validate_call_against_manifest(
         errors.append(f"{label}.ledger_call telemetry is incomplete")
 
 
+def _validate_bridge_raw_evidence(
+    run: dict[str, Any], calls: list[dict[str, Any]], state: dict[str, Any] | None,
+    root: Path, label: str, errors: list[str],
+) -> None:
+    providers = run.get("provider_receipts")
+    if not isinstance(providers, list) or len(providers) != len(calls):
+        errors.append(f"{label}.provider_receipts must cover every call exactly once")
+    else:
+        for index, row in enumerate(providers):
+            artifact = _artifact(root, row, f"{label}.provider_receipts[{index}]", errors)
+            value = _json_artifact_object(artifact, f"{label}.provider_receipts[{index}]", errors)
+            if isinstance(value, dict) and (
+                value.get("schema") == "tier-bench/tier-pilot-fixture-provider-evidence@1"
+                or value.get("execution_mode") == "fixture"
+            ):
+                errors.append(
+                    f"{label}.provider_receipts[{index}] fixture provider evidence is inadmissible"
+                )
+                continue
+            fields = {"schema", "call_id", "dispatch_receipt_sha256", "provider_result", "raw_artifacts"}
+            if value is None or not _exact_fields(value, fields, f"{label}.provider_receipts[{index}] payload", errors):
+                continue
+            call = calls[index]
+            if value.get("schema") != "tier-bench/tier-pilot-provider-evidence@1":
+                errors.append(f"{label}.provider_receipts[{index}] schema is invalid")
+            if value.get("call_id") != call.get("call_id"):
+                errors.append(f"{label}.provider_receipts[{index}] call_id drifted")
+            if value.get("dispatch_receipt_sha256") != call.get("dispatch_receipt_sha256"):
+                errors.append(f"{label}.provider_receipts[{index}] dispatch hash drifted")
+            result_artifact = _artifact(root, value.get("provider_result"), f"{label}.provider_receipts[{index}].provider_result", errors)
+            result = _json_artifact_object(result_artifact, f"{label}.provider_receipts[{index}].provider_result", errors)
+            if not isinstance(result, dict) or result.get("schema") != "tier-bench/tier-backend-result@1":
+                errors.append(f"{label}.provider_receipts[{index}] provider result schema is invalid")
+                continue
+            if set(result) != {"schema", "calls", "pilot_output", "artifacts"}:
+                errors.append(f"{label}.provider_receipts[{index}] provider result fields are invalid")
+            if result.get("calls") != [call.get("ledger_call")]:
+                errors.append(f"{label}.provider_receipts[{index}] provider call differs from sealed call")
+            pilot_output = result.get("pilot_output")
+            if not isinstance(pilot_output, dict) or set(pilot_output) != {"outcome", "text"}:
+                errors.append(f"{label}.provider_receipts[{index}] pilot_output shape is invalid")
+            else:
+                if pilot_output.get("outcome") != call.get("outcome"):
+                    errors.append(f"{label}.provider_receipts[{index}] pilot_output outcome drifted")
+                call_output = call.get("output", {})
+                if call_output.get("kind") in {"plan", "question", "error"} and pilot_output.get("text") != call_output.get("text"):
+                    errors.append(f"{label}.provider_receipts[{index}] pilot_output bytes drifted")
+            declared = result.get("artifacts")
+            raws = value.get("raw_artifacts")
+            if not isinstance(declared, list) or not isinstance(raws, list) or not raws:
+                errors.append(f"{label}.provider_receipts[{index}] must open raw provider artifacts")
+                continue
+            expected: list[tuple[str, str, str]] = []
+            names: set[str] = set()
+            paths: set[str] = set()
+            declared_valid = True
+            for declared_index, item in enumerate(declared):
+                item_label = f"{label}.provider_receipts[{index}].declared_artifacts[{declared_index}]"
+                if not isinstance(item, dict) or set(item) != {"name", "path", "sha256"}:
+                    errors.append(f"{item_label} shape is invalid")
+                    declared_valid = False
+                    continue
+                name = item.get("name")
+                relative = _safe_relative(item.get("path"), f"{item_label}.path", errors)
+                digest = item.get("sha256")
+                if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9_.-]+", name):
+                    errors.append(f"{item_label}.name is unsafe")
+                    declared_valid = False
+                if not _is_hex(digest, HEX64):
+                    errors.append(f"{item_label}.sha256 must be sha256")
+                    declared_valid = False
+                if relative is None:
+                    declared_valid = False
+                if isinstance(name, str) and name in names:
+                    errors.append(f"{item_label}.name is duplicated")
+                    declared_valid = False
+                if relative is not None and relative in paths:
+                    errors.append(f"{item_label}.path is duplicated")
+                    declared_valid = False
+                if isinstance(name, str):
+                    names.add(name)
+                if relative is not None:
+                    paths.add(relative)
+                if (
+                    declared_valid and isinstance(name, str)
+                    and relative is not None and isinstance(digest, str)
+                ):
+                    expected.append((name, relative, digest))
+            opened: list[tuple[str, str, str]] = []
+            raw_names: set[str] = set()
+            raw_paths: set[str] = set()
+            for raw_index, raw in enumerate(raws):
+                if not isinstance(raw, dict) or set(raw) != {"name", "path", "sha256"}:
+                    errors.append(f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}] shape is invalid")
+                    continue
+                raw_name = raw.get("name")
+                raw_path = raw.get("path")
+                if not isinstance(raw_name, str) or not re.fullmatch(r"[a-z0-9_.-]+", raw_name):
+                    errors.append(f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}].name is unsafe")
+                    continue
+                if not isinstance(raw_path, str):
+                    errors.append(f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}].path is invalid")
+                    continue
+                if raw_name in raw_names or raw_path in raw_paths:
+                    errors.append(f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}] is duplicated")
+                    continue
+                raw_names.add(raw_name)
+                raw_paths.add(raw_path)
+                opened_artifact = _artifact(root, {"path": raw.get("path"), "sha256": raw.get("sha256")}, f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}]", errors)
+                if opened_artifact is not None:
+                    opened.append((raw_name, raw["path"], opened_artifact[1]))
+            if not declared_valid or opened != expected or not any(name == "provider_raw" for name, _, _ in opened):
+                errors.append(f"{label}.provider_receipts[{index}] raw artifact custody is incomplete")
+
+    attempts = state.get("acceptance_attempts", []) if isinstance(state, dict) else []
+    acceptances = run.get("acceptance_receipts")
+    if not isinstance(acceptances, list) or len(acceptances) != len(attempts):
+        errors.append(f"{label}.acceptance_receipts must cover every acceptance exactly once")
+        return
+    for index, row in enumerate(acceptances):
+        artifact = _artifact(root, row, f"{label}.acceptance_receipts[{index}]", errors)
+        value = _json_artifact_object(artifact, f"{label}.acceptance_receipts[{index}]", errors)
+        fields = {"schema", "receipt_sha256", "receipt", "stdout", "stderr", "candidate_before", "candidate_after", "report"}
+        if value is None or not _exact_fields(value, fields, f"{label}.acceptance_receipts[{index}] payload", errors):
+            continue
+        expected_receipt = attempts[index]
+        if value.get("schema") != "tier-bench/tier-pilot-acceptance-evidence@1":
+            errors.append(f"{label}.acceptance_receipts[{index}] schema is invalid")
+        if value.get("receipt_sha256") != expected_receipt.get("receipt_sha256"):
+            errors.append(f"{label}.acceptance_receipts[{index}] receipt hash drifted")
+        receipt_artifact = _artifact(root, value.get("receipt"), f"{label}.acceptance_receipts[{index}].receipt", errors)
+        if _json_artifact_object(receipt_artifact, f"{label}.acceptance_receipts[{index}].receipt", errors) != expected_receipt:
+            errors.append(f"{label}.acceptance_receipts[{index}] receipt differs from replayed state")
+        opened: dict[str, tuple[Path, str]] = {}
+        for name in ("stdout", "stderr", "candidate_before", "candidate_after", "report"):
+            item = _artifact(root, value.get(name), f"{label}.acceptance_receipts[{index}].{name}", errors)
+            if item is not None:
+                opened[name] = item
+        for name in ("stdout", "stderr"):
+            if name in opened and opened[name][1] != expected_receipt.get(f"{name}_sha256"):
+                errors.append(f"{label}.acceptance_receipts[{index}] {name} hash drifted")
+        for name in ("candidate_before", "candidate_after"):
+            if name in opened and opened[name][1] != expected_receipt.get("candidate_patch_sha256"):
+                errors.append(f"{label}.acceptance_receipts[{index}] {name} is not the tested candidate")
+        if (
+            "candidate_before" in opened and "candidate_after" in opened
+            and opened["candidate_before"][0] == opened["candidate_after"][0]
+        ):
+            errors.append(
+                f"{label}.acceptance_receipts[{index}] before/after snapshots must be distinct artifacts"
+            )
+        if "candidate_before" in opened and "candidate_after" in opened and opened["candidate_before"][0].read_bytes() != opened["candidate_after"][0].read_bytes():
+            errors.append(f"{label}.acceptance_receipts[{index}] candidate changed during acceptance")
+        if "report" in opened and (
+            opened["report"][1] != expected_receipt.get("report_sha256")
+            or opened["report"][0].read_text(encoding="utf-8") != expected_receipt.get("report")
+        ):
+            errors.append(f"{label}.acceptance_receipts[{index}] raw report drifted")
+
+
 def _validate_arm_run(
     run: Any,
     index: int,
@@ -747,7 +907,8 @@ def _validate_arm_run(
     fields = {
         "task_id", "arm", "sequence", "position", "base_commit", "sealed_at", "final_state",
         "protocol_valid", "composition_state", "arm_seal", "call_receipts",
-        "dispatch_receipts", "question_receipts", "driver_trace", "ledger",
+        "dispatch_receipts", "provider_receipts", "acceptance_receipts",
+        "question_receipts", "driver_trace", "ledger",
     }
     if not _exact_fields(run, fields, label, errors):
         return None, [], None, [], None
@@ -884,6 +1045,7 @@ def _validate_arm_run(
 
     if state is not None and state.get("calls") != call_values:
         errors.append(f"{label}.composition_state calls do not equal sealed call receipts in order")
+    _validate_bridge_raw_evidence(run, call_values, state, root, label, errors)
 
     question_artifacts = run.get("question_receipts")
     question_values: list[dict[str, Any]] = []

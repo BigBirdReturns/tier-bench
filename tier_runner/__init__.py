@@ -10,10 +10,12 @@ from .pilot_composition import (
     render_next_prompt,
 )
 from .pilot_manifest import PilotComposition, load_pilot_composition
+from .pilot_bridge import BridgeError, start_pilot_arm
 
 __all__ = [
     "CompositionError",
     "PilotComposition",
+    "BridgeError",
     "RunError",
     "answer_operator_question",
     "load_pilot_composition",
@@ -22,5 +24,6 @@ __all__ = [
     "record_pilot_call",
     "render_next_prompt",
     "run_task",
+    "start_pilot_arm",
     "verify_run",
 ]

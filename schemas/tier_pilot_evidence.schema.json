@@ -87,7 +87,8 @@
       "required": [
         "task_id", "arm", "sequence", "position", "base_commit", "sealed_at", "final_state",
         "protocol_valid", "composition_state", "arm_seal", "call_receipts",
-        "dispatch_receipts", "question_receipts", "driver_trace", "ledger"
+        "dispatch_receipts", "provider_receipts", "acceptance_receipts",
+        "question_receipts", "driver_trace", "ledger"
       ],
       "properties": {
         "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
@@ -107,6 +108,12 @@
           "type": "array",
           "minItems": 1,
           "items": {"$ref": "#/$defs/artifact"}
+        },
+        "provider_receipts": {
+          "type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}
+        },
+        "acceptance_receipts": {
+          "type": "array", "items": {"$ref": "#/$defs/artifact"}
         },
         "question_receipts": {
           "type": "array", "items": {"$ref": "#/$defs/artifact"}
