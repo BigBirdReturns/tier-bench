@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# Production pilot activation binds this backend-manifest authority exactly.
+
 from dataclasses import dataclass
 import hashlib
 import json

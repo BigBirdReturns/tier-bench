@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from dataclasses import dataclass
 import hashlib
 import json
@@ -17,11 +18,17 @@ ADAPTER_IDENTITY = "tier-bench/pilot-claude-code-bytes@1"
 ADAPTER_VERSION = "1"
 PROVIDER_RESULT_SCHEMA = "tier-bench/tier-backend-result@1"
 DEFAULT_REF = "refs/remotes/origin/main"
+REMOTE_DEFAULT_REF = "refs/heads/main"
 CONTROL_REMOTE_URL = "https://github.com/BigBirdReturns/tier-bench.git"
 SOURCE_PATHS = {
     "activation_validator": "tier_runner/pilot_activation.py",
     "production_adapter": "tier_runner/pilot_adapter.py",
     "production_bridge": "tier_runner/pilot_bridge.py",
+    "claude_adapter": "tier_runner/adapters/claude_code.py",
+    "composition_runtime": "tier_runner/pilot_composition.py",
+    "composition_manifest_runtime": "tier_runner/pilot_manifest.py",
+    "runner_core": "tier_runner/core.py",
+    "backend_manifest_runtime": "tier_runner/manifest.py",
 }
 PRODUCTION_SCHEMA_PATHS = {
     "activation": "schemas/tier_pilot_activation.schema.json",
@@ -125,10 +132,90 @@ def _open_artifact(repository: Path, commit: str, value: Any, label: str) -> byt
 
 def _runtime_source(path: str) -> bytes:
     root = Path(__file__).resolve().parents[1]
-    # Activation hashes bind Git blobs. A clean Windows checkout may materialize
-    # the same text with CRLF, so compare the running source after Git's text
-    # normalization rather than treating platform line endings as code drift.
-    return (root / path).read_bytes().replace(b"\r\n", b"\n")
+    raw = (root / path).read_bytes()
+    if b"\r\n" in raw:
+        raise ActivationError(f"running source is not LF-exact: {path}")
+    return raw
+
+
+def _local_import_paths(raw: bytes, source_path: str) -> set[str]:
+    try:
+        tree = ast.parse(raw.decode("utf-8"), filename=source_path)
+    except (UnicodeDecodeError, SyntaxError) as exc:
+        raise ActivationError(f"activated source cannot be parsed: {source_path}: {exc}") from exc
+    module_parts = list(PurePosixPath(source_path).with_suffix("").parts)
+    package = module_parts[:-1]
+    imported: set[str] = set()
+    for node in ast.walk(tree):
+        targets: list[list[str]] = []
+        if isinstance(node, ast.ImportFrom):
+            module = node.module.split(".") if node.module else []
+            if node.level:
+                keep = len(package) - node.level + 1
+                if keep < 0:
+                    raise ActivationError(f"relative import escapes tier_runner: {source_path}")
+                base = package[:keep] + module
+                if module:
+                    targets.append(base)
+                else:
+                    targets.extend(base + alias.name.split(".") for alias in node.names)
+            elif module[:1] == ["tier_runner"]:
+                if len(module) > 1:
+                    targets.append(module)
+                else:
+                    targets.extend(module + alias.name.split(".") for alias in node.names)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                parts = alias.name.split(".")
+                if parts[:1] == ["tier_runner"]:
+                    targets.append(parts)
+        for parts in targets:
+            if parts[:1] != ["tier_runner"] or len(parts) < 2:
+                continue
+            imported.add(PurePosixPath(*parts).with_suffix(".py").as_posix())
+    return imported
+
+
+def _authenticated_remote_head(repository: Path) -> str:
+    result = subprocess.run(
+        ["git", "ls-remote", "--exit-code", "origin", REMOTE_DEFAULT_REF],
+        cwd=repository,
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode:
+        raise ActivationError(
+            "cannot authenticate the remote default branch: "
+            + result.stderr.strip()
+        )
+    rows = [line.split("\t") for line in result.stdout.splitlines() if line.strip()]
+    if len(rows) != 1 or len(rows[0]) != 2 or rows[0][1] != REMOTE_DEFAULT_REF:
+        raise ActivationError("remote default branch did not resolve to exactly one ref")
+    remote_head = rows[0][0]
+    if not GIT_SHA.fullmatch(remote_head):
+        raise ActivationError("remote default branch did not resolve to a commit SHA")
+    fetched = subprocess.run(
+        [
+            "git", "fetch", "--no-tags", "--no-write-fetch-head",
+            "origin", REMOTE_DEFAULT_REF,
+        ],
+        cwd=repository,
+        capture_output=True,
+        text=True,
+    )
+    if fetched.returncode:
+        raise ActivationError(
+            "cannot fetch authenticated remote default-branch objects: "
+            + fetched.stderr.strip()
+        )
+    opened = subprocess.run(
+        ["git", "cat-file", "-e", f"{remote_head}^{{commit}}"],
+        cwd=repository,
+        capture_output=True,
+    )
+    if opened.returncode:
+        raise ActivationError("authenticated remote default-branch commit did not open")
+    return remote_head
 
 
 def load_official_activation(
@@ -178,14 +265,16 @@ def load_official_activation(
     actual_remote = _git_bytes(repository, "remote", "get-url", "origin").decode().strip()
     if actual_remote != remote_url:
         raise ActivationError("activation control-repository remote identity drifted")
+    remote_head = _authenticated_remote_head(repository)
     ancestor = subprocess.run(
-        ["git", "merge-base", "--is-ancestor", commit, DEFAULT_REF],
+        ["git", "merge-base", "--is-ancestor", commit, remote_head],
         cwd=repository, capture_output=True,
     )
     if ancestor.returncode != 0:
-        raise ActivationError("activation commit is not on the configured remote default branch")
+        raise ActivationError("activation commit is not on the authenticated remote default branch")
 
     sources = _keys(document["sources"], set(SOURCE_PATHS), "sources")
+    opened_sources: dict[str, bytes] = {}
     for name, expected_path in SOURCE_PATHS.items():
         artifact = _artifact(sources[name], f"sources.{name}")
         if artifact["path"] != expected_path:
@@ -193,6 +282,15 @@ def load_official_activation(
         committed = _open_artifact(repository, commit, artifact, f"sources.{name}")
         if committed != _runtime_source(expected_path):
             raise ActivationError(f"running {name} bytes differ from the activated source")
+        opened_sources[expected_path] = committed
+    imported_paths = set().union(*(
+        _local_import_paths(raw, path) for path, raw in opened_sources.items()
+    ))
+    missing_sources = imported_paths - set(SOURCE_PATHS.values())
+    if missing_sources:
+        raise ActivationError(
+            f"activated transitive source closure is incomplete: {sorted(missing_sources)}"
+        )
 
     composition_artifact = _artifact(document["composition_manifest"], "composition_manifest")
     composition_raw = _open_artifact(

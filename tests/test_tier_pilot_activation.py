@@ -27,7 +27,7 @@ from tier_runner.pilot_activation import (  # noqa: E402
     load_official_activation,
 )
 import tier_runner.pilot_activation as pilot_activation  # noqa: E402
-from tier_runner.pilot_adapter import run_activated_adapter  # noqa: E402
+from tier_runner.pilot_adapter import PilotAdapterError, run_activated_adapter  # noqa: E402
 
 
 def _sha(raw: bytes) -> str:
@@ -79,6 +79,12 @@ def _committed_artifact(root: Path, commit: str, relative: str) -> dict[str, str
 
 def _activation_fixture(root: Path):
     _, evidence, manifest_path, _ = _make_repos(root)
+    manifest_value = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest_value["arms"]["arm_a"]["escalations"] = [
+        {"backend": "frontier", "prompt_template": "repair"},
+        {"backend": "cheap", "prompt_template": "hands"},
+    ]
+    manifest_path.write_bytes(_canonical(manifest_value))
     remote = root / "control-remote.git"
     subprocess.run(
         ["git", "init", "--bare", "--initial-branch=main", str(remote)],
@@ -165,6 +171,7 @@ def test_official_activation_opens_exact_remote_git_objects(root: Path) -> None:
     activation["backend_entry_sha256s"]["cheap"] = "0" * 64
     (evidence / "pilot_activation.json").write_bytes(_canonical(activation))
     unlanded = _commit(evidence, "unlanded activation drift")
+    _git(evidence, "update-ref", "refs/remotes/origin/main", unlanded)
     try:
         load_official_activation(evidence, unlanded, "pilot_activation.json")
     except ActivationError as exc:
@@ -178,6 +185,27 @@ def test_official_activation_opens_exact_remote_git_objects(root: Path) -> None:
         assert "backend entry 'cheap' drifted" in str(exc)
     else:
         raise AssertionError("a landed activation with a false backend binding was accepted")
+
+
+def test_transitive_source_drift_is_not_self_authorizing(root: Path) -> None:
+    evidence, _, _, _ = _activation_fixture(root)
+    relative = SOURCE_PATHS["claude_adapter"]
+    path = evidence / relative
+    path.write_text(path.read_text(encoding="utf-8") + "\n# locally drifted argv authority\n", encoding="utf-8", newline="\n")
+    source_commit = _commit(evidence, "drift transitive command authority")
+    activation = json.loads((evidence / "pilot_activation.json").read_text())
+    activation["sources"]["claude_adapter"] = _committed_artifact(
+        evidence, source_commit, relative
+    )
+    (evidence / "pilot_activation.json").write_bytes(_canonical(activation))
+    drift_commit = _commit(evidence, "self-consistent drifted activation")
+    _git(evidence, "push", "origin", "main")
+    try:
+        load_official_activation(evidence, drift_commit, "pilot_activation.json")
+    except ActivationError as exc:
+        assert "running claude_adapter bytes differ" in str(exc)
+    else:
+        raise AssertionError("a self-consistent activation hid transitive source drift")
 
 
 def test_activated_adapter_ignores_manifest_argv_and_preserves_bytes(root: Path) -> None:
@@ -229,6 +257,7 @@ def test_activated_adapter_ignores_manifest_argv_and_preserves_bytes(root: Path)
             return subprocess.CompletedProcess(argv, 0, help_raw, b"")
         assert kwargs["input"] == prompt
         assert kwargs["text"] is False
+        dispatch_path.write_bytes(b"mutated during provider call")
         return subprocess.CompletedProcess(argv, 0, provider_raw, b"provider stderr\r\n")
 
     result_path = call_dir / "provider-result.json"
@@ -249,7 +278,52 @@ def test_activated_adapter_ignores_manifest_argv_and_preserves_bytes(root: Path)
     result = json.loads(result_path.read_text(encoding="utf-8"))
     assert result["pilot_output"] == provider_output
     assert result["calls"][0]["extra"]["rendered_prompt_sha256"] == _sha(prompt)
+    assert result["calls"][0]["extra"]["dispatch_receipt_sha256"] == _sha(
+        _canonical(dispatch)
+    )
     assert result["artifacts"][0]["sha256"] == _sha(provider_raw)
+
+
+def test_escalation_attempt_binds_one_ladder_position(root: Path) -> None:
+    _, _, activation, _ = _activation_fixture(root)
+    call_dir = root / "escalation"
+    call_dir.mkdir()
+    prompt = b"wrong escalation rung\n"
+    prompt_path = call_dir / "prompt.txt"
+    prompt_path.write_bytes(prompt)
+    wrong_template = activation.composition.templates["hands"]
+    dispatch = {
+        "schema": "tier-bench/tier-pilot-dispatch-receipt@1",
+        "call_id": "escalation-1", "task_id": "synthetic-canary",
+        "arm": "arm_a", "stage": "escalation", "attempt": 1,
+        "backend": "cheap",
+        "prompt_template": {"name": "hands", "sha256": wrong_template.sha256},
+        "prompt_sha256": _sha(prompt), "base_commit": "1" * 40,
+        "task_sha256": "2" * 64, "files": ["target.txt"],
+        "acceptance_sha256": "3" * 64,
+        "composition_manifest_sha256": activation.composition.sha256,
+    }
+    dispatch_path = call_dir / "dispatch.json"
+    dispatch_path.write_bytes(_canonical(dispatch))
+
+    def forbidden_runner(*args, **kwargs):
+        del args, kwargs
+        raise AssertionError("wrong escalation rung reached the provider")
+
+    try:
+        run_activated_adapter(
+            activation,
+            backend_name="cheap",
+            dispatch_path=dispatch_path,
+            prompt_path=prompt_path,
+            result_path=call_dir / "result.json",
+            worktree=root,
+            runner=forbidden_runner,
+        )
+    except PilotAdapterError as exc:
+        assert "invalid for its arm stage" in str(exc)
+    else:
+        raise AssertionError("adapter accepted a later escalation rung at attempt 1")
 
 
 def test_activation_and_production_schemas_are_distinct(root: Path) -> None:
@@ -266,12 +340,18 @@ def test_activation_and_production_schemas_are_distinct(root: Path) -> None:
     for name, schema_id in expected.items():
         value = json.loads((REPO / PRODUCTION_SCHEMA_PATHS[name]).read_text(encoding="utf-8"))
         assert value["properties"]["schema"]["const"] == schema_id
+    attributes = (REPO / ".gitattributes").read_text(encoding="utf-8")
+    for path in SOURCE_PATHS.values():
+        assert f"{path} text eol=lf" in attributes
+        assert b"\r\n" not in (REPO / path).read_bytes()
 
 
 def main() -> int:
     tests = [
         test_official_activation_opens_exact_remote_git_objects,
+        test_transitive_source_drift_is_not_self_authorizing,
         test_activated_adapter_ignores_manifest_argv_and_preserves_bytes,
+        test_escalation_attempt_binds_one_ladder_position,
         test_activation_and_production_schemas_are_distinct,
     ]
     with tempfile.TemporaryDirectory(prefix="tier-pilot-activation-") as temporary:

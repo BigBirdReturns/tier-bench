@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# Production pilot activation binds this packet/session authority exactly.
+
 from datetime import datetime, timezone
 import hashlib
 import json

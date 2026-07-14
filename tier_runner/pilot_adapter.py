@@ -39,14 +39,15 @@ def _sha(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def _object(path: Path, label: str) -> dict[str, Any]:
+def _object(path: Path, label: str) -> tuple[dict[str, Any], bytes]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        raw = path.read_bytes()
+        value = json.loads(raw.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise PilotAdapterError(f"cannot read {label}: {exc}") from exc
     if not isinstance(value, dict):
         raise PilotAdapterError(f"{label} must be an object")
-    return value
+    return value, raw
 
 
 def _pilot_output(data: dict[str, Any]) -> dict[str, str]:
@@ -68,7 +69,9 @@ def _pilot_output(data: dict[str, Any]) -> dict[str, str]:
     return {"outcome": output["outcome"], "text": output["text"]}
 
 
-def _stage_bindings(activation: PilotActivation, arm_name: str, stage: str) -> set[tuple[str, str]]:
+def _stage_bindings(
+    activation: PilotActivation, arm_name: str, stage: str, attempt: int
+) -> set[tuple[str, str]]:
     if arm_name not in activation.composition.arms:
         raise PilotAdapterError("pilot dispatch arm is not activated")
     arm = activation.composition.arms[arm_name]
@@ -79,7 +82,11 @@ def _stage_bindings(activation: PilotActivation, arm_name: str, stage: str) -> s
     if stage == "repair":
         return {(arm.repair.backend, arm.repair.prompt_template)}
     if stage == "escalation":
-        return {(item.backend, item.prompt_template) for item in arm.escalations}
+        index = attempt - 1
+        if index < 0 or index >= len(arm.escalations):
+            return set()
+        item = arm.escalations[index]
+        return {(item.backend, item.prompt_template)}
     if stage == "hands_resume" and arm.question_route is not None:
         return {(arm.hands.backend, arm.question_route.resume_prompt_template)}
     return set()
@@ -100,7 +107,7 @@ def run_activated_adapter(
     if backend_name not in activation.composition.backends:
         raise PilotAdapterError(f"activation has no backend {backend_name!r}")
     backend = activation.composition.backends[backend_name]
-    dispatch = _object(dispatch_path, "pilot dispatch")
+    dispatch, dispatch_raw = _object(dispatch_path, "pilot dispatch")
     if set(dispatch) != DISPATCH_FIELDS:
         raise PilotAdapterError("pilot dispatch fields do not match the production contract")
     if dispatch.get("schema") != "tier-bench/tier-pilot-dispatch-receipt@1":
@@ -139,7 +146,7 @@ def run_activated_adapter(
     if dispatch["prompt_template"] != {"name": template_name, "sha256": template.sha256}:
         raise PilotAdapterError("pilot dispatch prompt-template identity drifted")
     if (backend_name, template_name) not in _stage_bindings(
-        activation, dispatch.get("arm"), dispatch.get("stage")
+        activation, dispatch["arm"], dispatch["stage"], dispatch["attempt"]
     ):
         raise PilotAdapterError("pilot dispatch backend/template is invalid for its arm stage")
     prompt_raw = prompt_path.read_bytes()
@@ -232,7 +239,7 @@ def run_activated_adapter(
             "backend_manifest_sha256": activation.composition.sha256,
             "backend_surface": backend.surface,
             "cost_basis": backend.cost_basis,
-            "dispatch_receipt_sha256": _sha(dispatch_path.read_bytes()),
+            "dispatch_receipt_sha256": _sha(dispatch_raw),
             "prompt_template_sha256": template.sha256,
             "rendered_prompt_sha256": _sha(prompt_raw),
             "runtime_model_id": runtime_model,

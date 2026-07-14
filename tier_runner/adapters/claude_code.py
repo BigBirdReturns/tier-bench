@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# Production pilot activation binds this transitive command/env authority exactly.
+
 import argparse
 from datetime import datetime, timezone
 import hashlib
