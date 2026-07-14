@@ -113,25 +113,30 @@ $ab = Join-Path $env:TEMP ('cart0-ab-' + [guid]::NewGuid().ToString('N'))
 Get-Content -Raw (Join-Path $ab 'ab_receipt.json')
 ```
 
-The proposal-worktree run is preserved at
-`experiments/cart0_anchor_prototype/run_genesis_bridge_20260714/` with raw
-inputs, both exact prompt payloads, the compiled bundle, and refusal receipts.
+The initial proposal-worktree run remains preserved at
+`experiments/cart0_anchor_prototype/run_genesis_bridge_20260714/`. The
+claimed-state run at
+`experiments/cart0_anchor_prototype/run_claimed_bridge_20260714/` binds the
+same harness to reachable implementation commit `88e5bfb49bc8`, with raw
+inputs, both exact prompt payloads, the compiled bundle, rehydrated evidence,
+and refusal receipts. Its `ab_receipt.json` SHA-256 is
+`077df6d6ede86535d2cb345f5ced4920c87bd33401e25241a584cc66c615b248`.
 
 ## Measured result (one local projection A/B)
 
 Baseline A loaded the five full, pinned current-state files. B carried the same
-task plus a 213-token-proxy anchor and four deterministically selected cards.
+task plus a 231-token-proxy anchor and four deterministically selected cards.
 
 | Measure | A full context | B anchor + cards | Saved |
 |---|---:|---:|---:|
-| UTF-8 bytes | 49,588 | 2,533 | 47,055 |
-| `ceil(bytes/4)` proxy | 12,397 | 634 | 11,763 |
-| whitespace tokens | 6,590 | 288 | 6,302 |
+| UTF-8 bytes | 50,320 | 2,623 | 47,697 |
+| `ceil(bytes/4)` proxy | 12,580 | 656 | 11,924 |
+| whitespace tokens | 6,666 | 287 | 6,379 |
 
-Measured payload reduction: **94.8919%**. End-to-end local harness wall time,
+Measured payload reduction: **94.7874%**. End-to-end local harness wall time,
 including build, repeated verification, raw writes, and two refusal probes:
-**6,327.085 ms**. Individual cards used 89/128, 76/96, 106/128, and
-93/112 proxy tokens. The anchor itself used 213/256.
+**6,595.959 ms**. Individual cards used 89/128, 76/96, 106/128, and
+93/112 proxy tokens. The anchor itself used 231/256.
 
 The run also demonstrated fail-closed behavior for an unknown card ID and a
 tampered card. The test suite separately demonstrated stale-HEAD, wrong-boundary,
@@ -139,7 +144,7 @@ unsafe-path, and revision-gap refusal: 3/3 test groups passed, zero model calls.
 
 ## Blunt limit
 
-Demonstrated: this deterministic bridge placed 47,055 fewer bytes (11,763 fewer
+Demonstrated: this deterministic bridge placed 47,697 fewer bytes (11,924 fewer
 `bytes/4` proxy tokens) into one representative prompt while retaining explicit
 control state, selected compiled claims, and on-demand source pointers.
 

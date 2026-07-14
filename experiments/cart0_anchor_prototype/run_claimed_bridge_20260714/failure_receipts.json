@@ -1,0 +1,1 @@
+[{"error":"retrieval miss: card '999.999.MISSING' is not active in this bundle","probe":"retrieval_miss","refused":true},{"error":"card projection drifted: 000.100.AUTHORITY r1","probe":"stale_or_tampered_card","refused":true}]

@@ -13,3 +13,4 @@ experiments/breadth/run/replays/** -text -whitespace
 experiments/breadth/run/task02_edge_family.md -text -whitespace
 experiments/cart0_anchor_prototype/** -text -whitespace
 scripts/cart0_anchor.py -text -whitespace
+docs/cart0-anchor-prototype.md -text -whitespace
