@@ -349,6 +349,22 @@ def test_linked_worktree_cannot_be_evidence_repository(root: Path) -> None:
         raise AssertionError("linked worktree shared one common Git custody store")
 
 
+def test_output_directory_cannot_live_under_evidence_git(root: Path) -> None:
+    target, evidence, manifest, base = _make_repos(root)
+    try:
+        start_fixture_pilot_arm(
+            repo=target, evidence_repo=evidence, composition_manifest=manifest,
+            task_id="bridge-git-output", task_tier="T3", arm="arm_b", task="none",
+            files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
+            output_dir=evidence / ".git" / "tier-pilot-evidence" / "forbidden",
+            fixture_script=[_response("git-output")],
+        )
+    except BridgeError as exc:
+        assert "cannot live under the evidence Git directory" in str(exc)
+    else:
+        raise AssertionError("fixture evidence was written inside Git internals")
+
+
 def test_bad_question_and_prior_evidence_tamper_fail_closed(root: Path) -> None:
     target, evidence, manifest, base = _make_repos(root)
     bad_question = evidence / "runs" / "bad-question"
@@ -438,6 +454,7 @@ def main() -> int:
         test_dirty_call_burns_fixed_session_before_scope_refusal,
         test_ignored_scoped_output_cannot_create_unsealed_pass,
         test_linked_worktree_cannot_be_evidence_repository,
+        test_output_directory_cannot_live_under_evidence_git,
         test_bad_question_and_prior_evidence_tamper_fail_closed,
         test_manifest_adapter_argv_is_unreachable_in_fixture_mode,
     ]

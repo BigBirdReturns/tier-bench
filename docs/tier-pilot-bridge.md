@@ -46,6 +46,11 @@ Git index derives the tree without changing the persistent arm lineage. Ignored
 files inside scope are refused before dispatch and after packet sync because the
 patch contract cannot seal them.
 
+A completed non-driver call must leave a non-empty cumulative candidate patch.
+A repair that exactly restores the frozen base therefore fails closed instead of
+sealing an empty candidate; this is an intentional custody refusal, not an
+infrastructure retry signal.
+
 Every fixture model-call and acceptance transition is appended to `state.jsonl`
 and immediately replayed. Arm C may pause only on one canonical bounded JSON
 question with an enumerated category and no candidate edit. Fixture resume and

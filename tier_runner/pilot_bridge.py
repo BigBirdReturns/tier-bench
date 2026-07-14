@@ -160,22 +160,6 @@ def _last_candidate(state: dict[str, Any]) -> bytes:
     return b""
 
 
-def _apply_candidate(worktree: Path, patch: bytes) -> None:
-    if not patch:
-        return
-    process = subprocess.run(
-        ["git", "apply", "--binary", "--whitespace=nowarn", "-"],
-        cwd=worktree,
-        input=patch,
-        capture_output=True,
-    )
-    if process.returncode:
-        raise BridgeError(
-            "sealed prior candidate patch does not apply to the frozen base: "
-            + process.stderr.decode(errors="replace").strip()
-        )
-
-
 def _patch(worktree: Path) -> bytes:
     return subprocess.run(
         ["git", "diff", "--binary", "--full-index", "HEAD"],
@@ -1006,6 +990,8 @@ def start_fixture_pilot_arm(
         raise BridgeError("pilot evidence directory cannot modify the operator checkout")
     if not _inside(session_dir, evidence_repo):
         raise BridgeError("pilot evidence directory must live in the separate evidence repository")
+    if _inside(session_dir, registry_git):
+        raise BridgeError("pilot evidence directory cannot live under the evidence Git directory")
     if session_dir.exists() and any(session_dir.iterdir()):
         raise BridgeError("pilot evidence directory is not empty")
     session_dir.mkdir(parents=True, exist_ok=True)
