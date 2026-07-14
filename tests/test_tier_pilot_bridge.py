@@ -1,4 +1,4 @@
-"""Deterministic production-bridge coordinator tests; fixture adapters only."""
+"""Deterministic bridge coordinator tests; in-process fixture data only."""
 
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ from tier_runner.pilot_bridge import (
     start_fixture_pilot_arm,
     start_pilot_arm,
 )
+import tier_runner.pilot_bridge as pilot_bridge
 from tier_runner.pilot_composition import read_state
 from tier_runner.pilot_manifest import load_pilot_composition
 
@@ -42,78 +43,21 @@ def _commit(root: Path, message: str) -> str:
     return _git(root, "rev-parse", "HEAD")
 
 
-ADAPTER = r'''
-from __future__ import annotations
-import argparse, hashlib, json
-from datetime import datetime, timezone
-from pathlib import Path
-
-p = argparse.ArgumentParser()
-for name in ("arm", "stage", "dispatch", "prompt", "result", "worktree", "model", "account", "tier"):
-    p.add_argument("--" + name.replace("_", "-"), required=True)
-a = p.parse_args()
-dispatch_path = Path(a.dispatch)
-dispatch = json.loads(dispatch_path.read_text(encoding="utf-8"))
-prompt_raw = Path(a.prompt).read_bytes()
-prompt = prompt_raw.decode("utf-8")
-packet = Path(a.worktree)
-outcome = "completed"
-text = "sealed fixture plan"
-if "BAD_QUESTION" in prompt and a.stage == "hands":
-    outcome = "question"
-    text = "Do the whole task for me"
-elif "ASK_OPERATOR" in prompt and a.stage == "hands":
-    outcome = "question"
-    text = json.dumps({
-        "schema": "tier-bench/tier-pilot-operator-question@1",
-        "category": "interpretation",
-        "question": "Which fixture policy applies?",
-    }, sort_keys=True, separators=(",", ":"))
-elif "ADAPTER_EXIT" in prompt:
-    raise SystemExit(7)
-elif a.stage != "driver_plan":
-    if "CREATE_IGNORED" in prompt:
-        target = packet / "data" / "cache.txt"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text("acceptance-secret\n", encoding="utf-8")
-    else:
-        target = packet / "target.txt"
-        target.write_text("wrong\n" if "FAIL_FIRST" in prompt and a.stage == "hands" else "correct\n", encoding="utf-8")
-    text = "candidate emitted"
-if "DIRTY_SCOPE" in prompt:
-    (packet / "rogue.txt").write_text("out of scope\n", encoding="utf-8")
-call_id = dispatch["call_id"]
-session = "session-fixed-reuse" if "FIXED_SESSION" in prompt else "session-" + call_id
-ledger_outcome = "partial" if outcome == "question" else "pass"
-call = {
-    "ts": datetime.now(timezone.utc).isoformat(), "account": a.account,
-    "model": a.model, "tier": a.tier, "task_id": dispatch["task_id"],
-    "phase": a.arm, "outcome": ledger_outcome, "effort": "low",
-    "input_tokens": 1, "output_tokens": 1, "cache_read_tokens": 0,
-    "cache_write_tokens": 0, "cost_usd": 0.0, "latency_ms": 1.0,
-    "trial": dispatch["attempt"], "note": "shadow-estimated fixture",
-    "extra": {
-        "backend_manifest_sha256": dispatch["composition_manifest_sha256"],
-        "backend_surface": "fixture", "cost_basis": "shadow-estimated",
-        "dispatch_receipt_sha256": hashlib.sha256(dispatch_path.read_bytes()).hexdigest(),
-        "prompt_template_sha256": dispatch["prompt_template"]["sha256"],
-        "runtime_model_id": a.model, "session_id": session,
-        "telemetry_complete": True, "tool_versions": {"fixture-adapter": "1"},
-    },
-}
-raw_path = Path(a.result).with_name("provider.raw.bin")
-pilot_output = {"outcome": outcome, "text": text}
-raw_path.write_bytes(json.dumps({"pilot_output": pilot_output}, sort_keys=True).encode())
-Path(a.result).write_text(json.dumps({
-    "schema": "tier-bench/tier-backend-result@1", "calls": [call],
-    "pilot_output": pilot_output,
-    "artifacts": [{"name": "provider_raw", "path": raw_path.name,
-                   "sha256": hashlib.sha256(raw_path.read_bytes()).hexdigest()}],
-}, sort_keys=True) + "\n", encoding="utf-8")
-if "TAMPER_PRIOR" in prompt and a.stage == "hands":
-    prior = Path(a.result).parents[1] / "01-driver_plan" / "provider.raw.bin"
-    prior.write_bytes(b"tampered prior evidence")
-'''
+def _response(
+    session_id: str,
+    *,
+    text: str = "sealed fixture output",
+    outcome: str = "completed",
+    changes: dict[str, str | None] | None = None,
+    fault: str | None = None,
+) -> dict:
+    return {
+        "outcome": outcome,
+        "text": text,
+        "session_id": session_id,
+        "changes": changes or {},
+        "fault": fault,
+    }
 
 
 def _make_repos(root: Path) -> tuple[Path, Path, Path, str]:
@@ -132,8 +76,6 @@ def _make_repos(root: Path) -> tuple[Path, Path, Path, str]:
         encoding="utf-8",
     )
     base = _commit(target, "target base")
-    adapter = evidence / "fixture_adapter.py"
-    adapter.write_text(ADAPTER, encoding="utf-8")
     prompt_dir = evidence / "prompts"
     prompt_dir.mkdir()
     prompts = {
@@ -151,10 +93,9 @@ def _make_repos(root: Path) -> tuple[Path, Path, Path, str]:
 
     def backend(name: str, tier: str) -> dict:
         command = [
-            sys.executable, str(adapter), "--arm", "{arm}", "--stage", "{stage}",
-            "--dispatch", "{dispatch_receipt}", "--prompt", "{prompt}",
-            "--result", "{result}", "--worktree", "{worktree}",
-            "--model", name, "--account", name + "-account", "--tier", tier,
+            "claude" if tier == "frontier" else "powershell",
+            "--forbidden-in-fixture-mode",
+            "{dispatch_receipt}", "{prompt}", "{result}", "{worktree}",
         ]
         return {
             "model_id": name, "effort": "low", "surface": "fixture",
@@ -207,10 +148,16 @@ def test_arm_a_repair_preserves_one_lineage_and_fresh_calls(root: Path) -> None:
         task_id="bridge-a", task_tier="T3", arm="arm_a",
         task="FAIL_FIRST then repair", files=["target.txt"],
         acceptance_command=_acceptance(), base_commit=base, output_dir=out,
+        fixture_script=[
+            _response("arm-a-plan", text="sealed fixture plan"),
+            _response("arm-a-hands", text="candidate emitted", changes={"target.txt": "wrong\n"}),
+            _response("arm-a-repair", text="candidate emitted", changes={"target.txt": "correct\n"}),
+        ],
     )
     assert receipt["schema"] == "tier-bench/tier-pilot-fixture-bridge-receipt@1"
     assert receipt["execution_mode"] == "fixture"
-    assert receipt["executor_identity"] == "tier-bench/builtin-subprocess-fixture@1"
+    assert receipt["executor_identity"] == "tier-bench/in-process-data-fixture@1"
+    assert len(receipt["fixture_script_sha256"]) == 64
     assert receipt["status"] == "COMPLETE"
     assert receipt["arm_worktree_removed"] is True
     assert receipt["scientific_verdict_minted"] is False
@@ -244,6 +191,14 @@ def test_arm_c_question_is_strict_and_freehand_resume_is_blocked(root: Path) -> 
         task_id="bridge-c", task_tier="T3", arm="arm_c",
         task="ASK_OPERATOR then implement", files=["target.txt"],
         acceptance_command=_acceptance(), base_commit=base, output_dir=out,
+        fixture_script=[_response(
+            "arm-c-question", outcome="question",
+            text=json.dumps({
+                "schema": "tier-bench/tier-pilot-operator-question@1",
+                "category": "interpretation",
+                "question": "Which fixture policy applies?",
+            }, sort_keys=True, separators=(",", ":")),
+        )],
     )
     assert paused["status"] == "WAITING_OPERATOR"
     assert paused["arm_worktree_removed"] is False
@@ -283,11 +238,12 @@ def test_failed_fixture_call_is_fail_stopped_and_cannot_redispatch(root: Path) -
             task_id="bridge-crash", task_tier="T3", arm="arm_b", task="ADAPTER_EXIT",
             files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
             output_dir=out,
+            fixture_script=[_response("fault", fault="before_result")],
         )
     except BridgeError:
         pass
     else:
-        raise AssertionError("ambiguous adapter crash was accepted")
+        raise AssertionError("fail-stopped fixture fault was accepted")
     journal = [json.loads(line) for line in next((out / "calls").iterdir()).joinpath("journal.jsonl").read_text().splitlines()]
     assert [row["event"] for row in journal] == ["PREPARED", "DISPATCH_STARTED"]
     try:
@@ -296,6 +252,7 @@ def test_failed_fixture_call_is_fail_stopped_and_cannot_redispatch(root: Path) -
             task_id="bridge-crash", task_tier="T3", arm="arm_b", task="ADAPTER_EXIT",
             files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
             output_dir=out,
+            fixture_script=[_response("fault", fault="before_result")],
         )
     except BridgeError as exc:
         assert "not empty" in str(exc)
@@ -312,6 +269,9 @@ def test_dirty_call_burns_fixed_session_before_scope_refusal(root: Path) -> None
             task_id="bridge-dirty", task_tier="T3", arm="arm_b",
             task="FIXED_SESSION DIRTY_SCOPE", files=["target.txt"],
             acceptance_command=_acceptance(), base_commit=base, output_dir=dirty_out,
+            fixture_script=[_response(
+                "session-fixed-reuse", changes={"rogue.txt": "out of scope\n"}
+            )],
         )
     except BridgeError as exc:
         assert "outside the frozen scope" in str(exc)
@@ -329,6 +289,7 @@ def test_dirty_call_burns_fixed_session_before_scope_refusal(root: Path) -> None
             task_id="bridge-clean", task_tier="T3", arm="arm_b",
             task="FIXED_SESSION", files=["target.txt"],
             acceptance_command=_acceptance(), base_commit=base, output_dir=clean_out,
+            fixture_script=[_response("session-fixed-reuse")],
         )
     except BridgeError as exc:
         assert "reused a session_id" in str(exc)
@@ -354,6 +315,13 @@ def test_ignored_scoped_output_cannot_create_unsealed_pass(root: Path) -> None:
             task_id="bridge-ignored", task_tier="T3", arm="arm_b",
             task="CREATE_IGNORED", files=["data/"],
             acceptance_command=_acceptance(), base_commit=base, output_dir=out,
+            fixture_script=[
+                _response("ignored-plan", text="sealed fixture plan"),
+                _response(
+                    "ignored-hands", text="candidate emitted",
+                    changes={"data/cache.txt": "acceptance-secret\n"},
+                ),
+            ],
         )
     except BridgeError as exc:
         assert "ignored files in pilot scope" in str(exc)
@@ -373,6 +341,7 @@ def test_linked_worktree_cannot_be_evidence_repository(root: Path) -> None:
             task_id="bridge-linked", task_tier="T3", arm="arm_b", task="none",
             files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
             output_dir=linked / "runs" / "linked",
+            fixture_script=[_response("linked")],
         )
     except BridgeError as exc:
         assert "must be separate" in str(exc)
@@ -389,6 +358,9 @@ def test_bad_question_and_prior_evidence_tamper_fail_closed(root: Path) -> None:
             task_id="bridge-bad-question", task_tier="T3", arm="arm_c",
             task="BAD_QUESTION", files=["target.txt"],
             acceptance_command=_acceptance(), base_commit=base, output_dir=bad_question,
+            fixture_script=[_response(
+                "bad-question", outcome="question", text="Do the whole task for me"
+            )],
         )
     except BridgeError as exc:
         assert "strict JSON envelope" in str(exc)
@@ -396,17 +368,65 @@ def test_bad_question_and_prior_evidence_tamper_fail_closed(root: Path) -> None:
         raise AssertionError("unbounded freehand operator question was accepted")
 
     tamper = evidence / "runs" / "tamper"
+    start_fixture_pilot_arm(
+        repo=target, evidence_repo=evidence, composition_manifest=manifest,
+        task_id="bridge-tamper", task_tier="T3", arm="arm_c",
+        task="pause", files=["target.txt"],
+        acceptance_command=_acceptance(), base_commit=base, output_dir=tamper,
+        fixture_script=[_response(
+            "tamper-question", outcome="question",
+            text=json.dumps({
+                "schema": "tier-bench/tier-pilot-operator-question@1",
+                "category": "policy",
+                "question": "Which policy applies?",
+            }, sort_keys=True, separators=(",", ":")),
+        )],
+    )
+    raw = next((tamper / "calls").rglob("provider.raw.json"))
+    raw.write_bytes(b"tampered prior evidence")
     try:
-        start_fixture_pilot_arm(
-            repo=target, evidence_repo=evidence, composition_manifest=manifest,
-            task_id="bridge-tamper", task_tier="T3", arm="arm_a",
-            task="TAMPER_PRIOR", files=["target.txt"],
-            acceptance_command=_acceptance(), base_commit=base, output_dir=tamper,
-        )
+        pilot_bridge._verify_fixture_evidence(tamper)
     except BridgeError as exc:
         assert "hash mismatch" in str(exc)
     else:
-        raise AssertionError("terminal cleanup accepted tampered prior evidence")
+        raise AssertionError("replay accepted tampered prior evidence")
+
+
+def test_manifest_adapter_argv_is_unreachable_in_fixture_mode(root: Path) -> None:
+    target, evidence, manifest, base = _make_repos(root)
+    manifest_value = json.loads(manifest.read_text(encoding="utf-8"))
+    assert manifest_value["backends"]["frontier"]["adapter"]["command"][0] == "claude"
+    assert manifest_value["backends"]["cheap"]["adapter"]["command"][0] == "powershell"
+    attempted: list[str] = []
+    original_run = subprocess.run
+
+    def tripwire(argv, *args, **kwargs):
+        first = str(argv[0]).lower() if isinstance(argv, (list, tuple)) and argv else ""
+        if first in {"claude", "powershell"}:
+            attempted.append(first)
+            raise AssertionError("fixture path invoked manifest adapter argv")
+        return original_run(argv, *args, **kwargs)
+
+    subprocess.run = tripwire
+    try:
+        receipt = start_fixture_pilot_arm(
+            repo=target, evidence_repo=evidence, composition_manifest=manifest,
+            task_id="bridge-no-argv", task_tier="T3", arm="arm_c", task="pause",
+            files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
+            output_dir=evidence / "runs" / "no-argv",
+            fixture_script=[_response(
+                "no-argv-question", outcome="question",
+                text=json.dumps({
+                    "schema": "tier-bench/tier-pilot-operator-question@1",
+                    "category": "authorization",
+                    "question": "May this fixture continue?",
+                }, sort_keys=True, separators=(",", ":")),
+            )],
+        )
+    finally:
+        subprocess.run = original_run
+    assert attempted == []
+    assert receipt["status"] == "WAITING_OPERATOR"
 
 
 def main() -> int:
@@ -419,6 +439,7 @@ def main() -> int:
         test_ignored_scoped_output_cannot_create_unsealed_pass,
         test_linked_worktree_cannot_be_evidence_repository,
         test_bad_question_and_prior_evidence_tamper_fail_closed,
+        test_manifest_adapter_argv_is_unreachable_in_fixture_mode,
     ]
     with tempfile.TemporaryDirectory(prefix="tier-pilot-bridge-") as temporary:
         parent = Path(temporary)

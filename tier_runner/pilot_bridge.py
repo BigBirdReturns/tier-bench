@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import shutil
 import subprocess
@@ -52,11 +52,12 @@ DISPATCH_SCHEMA = "tier-bench/tier-pilot-fixture-dispatch-receipt@1"
 PROVIDER_EVIDENCE_SCHEMA = "tier-bench/tier-pilot-fixture-provider-evidence@1"
 ACCEPTANCE_EVIDENCE_SCHEMA = "tier-bench/tier-pilot-fixture-acceptance-evidence@1"
 EXECUTION_MODE = "fixture"
-FIXTURE_EXECUTOR_ID = "tier-bench/builtin-subprocess-fixture@1"
+FIXTURE_EXECUTOR_ID = "tier-bench/in-process-data-fixture@1"
 QUESTION_ENVELOPE_SCHEMA = "tier-bench/tier-pilot-operator-question@1"
 QUESTION_CATEGORIES = {"interpretation", "policy", "authorization"}
 MAX_QUESTION_BYTES = 512
 MAX_ACCEPTANCE_OUTPUT_BYTES = 8192
+FIXTURE_RESPONSE_FIELDS = {"outcome", "text", "session_id", "changes", "fault"}
 PROVIDER_OUTPUT_FIELDS = {"outcome", "text"}
 PROVIDER_RESULT_FIELDS = {"schema", "calls", "pilot_output", "artifacts"}
 
@@ -115,15 +116,41 @@ def _stage(composition: PilotComposition, state: dict[str, Any]) -> Stage:
     raise BridgeError(f"state is not waiting for a provider call: {stage!r}")
 
 
-def _expand(command: tuple[str, ...], values: dict[str, str]) -> list[str]:
-    argv: list[str] = []
-    for item in command:
-        for key, value in values.items():
-            item = item.replace("{" + key + "}", value)
-        if re.search(r"\{[^{}]+\}", item):
-            raise BridgeError(f"unexpanded adapter placeholder in {item!r}")
-        argv.append(item)
-    return argv
+def _fixture_script(value: Any) -> tuple[list[dict[str, Any]], str]:
+    if not isinstance(value, list) or not value:
+        raise BridgeError("fixture_script must be a non-empty data-only response array")
+    validated: list[dict[str, Any]] = []
+    for index, item in enumerate(value):
+        if not isinstance(item, dict) or set(item) != FIXTURE_RESPONSE_FIELDS:
+            raise BridgeError(f"fixture_script[{index}] fields are invalid")
+        if item.get("outcome") not in {"completed", "question", "error"}:
+            raise BridgeError(f"fixture_script[{index}].outcome is invalid")
+        if not isinstance(item.get("text"), str) or not item["text"]:
+            raise BridgeError(f"fixture_script[{index}].text must be non-empty")
+        if not isinstance(item.get("session_id"), str) or not item["session_id"]:
+            raise BridgeError(f"fixture_script[{index}].session_id must be non-empty")
+        if item.get("fault") not in {None, "before_result"}:
+            raise BridgeError(f"fixture_script[{index}].fault is invalid")
+        changes = item.get("changes")
+        if not isinstance(changes, dict):
+            raise BridgeError(f"fixture_script[{index}].changes must be an object")
+        for raw, content in changes.items():
+            if not isinstance(raw, str):
+                raise BridgeError(f"fixture_script[{index}] change path must be a string")
+            pure = PurePosixPath(raw.replace("\\", "/"))
+            if pure.is_absolute() or ".." in pure.parts or not pure.parts or pure.parts[0] == ".git":
+                raise BridgeError(f"fixture_script[{index}] change path is unsafe: {raw!r}")
+            if content is not None and not isinstance(content, str):
+                raise BridgeError(f"fixture_script[{index}] change content must be text or null")
+        validated.append({
+            "outcome": item["outcome"],
+            "text": item["text"],
+            "session_id": item["session_id"],
+            "changes": dict(changes),
+            "fault": item["fault"],
+        })
+    raw = canonical_json(validated)
+    return validated, _sha(raw)
 
 
 def _last_candidate(state: dict[str, Any]) -> bytes:
@@ -459,6 +486,7 @@ def _dispatch(
     stage_spec: Stage,
     call_id: str,
     prompt_raw: bytes,
+    fixture_script_sha256: str,
 ) -> dict[str, Any]:
     attempt = 1 + sum(call["stage"] == state["next_stage"] for call in state["calls"])
     template = composition.templates[stage_spec.prompt_template]
@@ -466,6 +494,7 @@ def _dispatch(
         "schema": DISPATCH_SCHEMA,
         "execution_mode": EXECUTION_MODE,
         "executor_identity": FIXTURE_EXECUTOR_ID,
+        "fixture_script_sha256": fixture_script_sha256,
         "call_id": call_id,
         "task_id": state["task_id"],
         "arm": state["arm"],
@@ -598,6 +627,84 @@ def _acceptance(
     return receipt
 
 
+def _simulate_fixture_result(
+    *,
+    response: dict[str, Any],
+    composition: PilotComposition,
+    state: dict[str, Any],
+    stage_spec: Stage,
+    dispatch: dict[str, Any],
+    dispatch_raw: bytes,
+    packet: Path,
+    call_dir: Path,
+    result_path: Path,
+) -> None:
+    """Interpret validated data only; never read or execute manifest adapter argv."""
+    if response["fault"] == "before_result":
+        raise BridgeError("fixture simulator stopped before producing a provider result")
+    for raw, content in response["changes"].items():
+        pure = PurePosixPath(raw.replace("\\", "/"))
+        target = packet / Path(*pure.parts)
+        if not _inside(target.resolve(), packet):
+            raise BridgeError(f"fixture simulator change escaped packet: {raw!r}")
+        if content is None:
+            if target.exists():
+                if not target.is_file() or target.is_symlink():
+                    raise BridgeError(f"fixture simulator cannot delete non-file path: {raw!r}")
+                target.unlink()
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8", newline="")
+    backend = composition.backends[stage_spec.backend]
+    outcome = response["outcome"]
+    ledger_outcome = "error" if outcome == "error" else "partial" if outcome == "question" else "pass"
+    ledger_call = {
+        "ts": "2026-01-01T00:00:00Z",
+        "account": backend.account,
+        "model": backend.model_id,
+        "tier": backend.tier,
+        "task_id": state["task_id"],
+        "phase": state["arm"],
+        "outcome": ledger_outcome,
+        "effort": backend.effort,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "cost_usd": 0.0,
+        "latency_ms": 0.0,
+        "trial": dispatch["attempt"],
+        "note": f"{backend.cost_basis} data-only fixture simulator",
+        "extra": {
+            "backend_manifest_sha256": composition.sha256,
+            "backend_surface": backend.surface,
+            "cost_basis": backend.cost_basis,
+            "dispatch_receipt_sha256": _sha(dispatch_raw),
+            "prompt_template_sha256": dispatch["prompt_template"]["sha256"],
+            "runtime_model_id": backend.model_id,
+            "session_id": response["session_id"],
+            "telemetry_complete": True,
+            "tool_versions": composition.tool_versions,
+        },
+    }
+    pilot_output = {"outcome": outcome, "text": response["text"]}
+    raw_path = call_dir / "provider.raw.json"
+    raw_path.write_bytes(canonical_json({"pilot_output": pilot_output}))
+    result = {
+        "schema": BACKEND_SCHEMA,
+        "calls": [ledger_call],
+        "pilot_output": pilot_output,
+        "artifacts": [{
+            "name": "provider_raw",
+            "path": raw_path.name,
+            "sha256": sha256_file(raw_path),
+        }],
+    }
+    result_path.write_bytes(canonical_json(result))
+    (call_dir / "adapter.stdout").write_bytes(b"")
+    (call_dir / "adapter.stderr").write_bytes(b"")
+
+
 def _call_once(
     composition: PilotComposition,
     state: dict[str, Any],
@@ -607,10 +714,14 @@ def _call_once(
     bridge_id: str,
     worktree: Path,
     registry_git: Path,
+    fixture_script: list[dict[str, Any]],
+    fixture_script_sha256: str,
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
     ordinal = len(state["calls"]) + 1
     stage_spec = _stage(composition, state)
-    backend = composition.backends[stage_spec.backend]
+    if ordinal > len(fixture_script):
+        raise BridgeError("fixture_script has no response for the next provider call")
+    response = fixture_script[ordinal - 1]
     call_id = f"{_safe_id(state['task_id'])}-{state['arm']}-{ordinal:02d}-{state['state_sha256']}"
     call_dir = session_dir / "calls" / f"{ordinal:02d}-{state['next_stage']}"
     _verify_fixture_evidence(session_dir)
@@ -640,28 +751,21 @@ def _call_once(
         baseline = _prepare_packet(worktree, packet, scopes)
         prompt_raw = render_next_prompt(composition, state)
         prompt_path.write_bytes(prompt_raw)
-        dispatch = _dispatch(composition, state, stage_spec, call_id, prompt_raw)
+        dispatch = _dispatch(
+            composition, state, stage_spec, call_id, prompt_raw,
+            fixture_script_sha256,
+        )
         dispatch_raw = canonical_json(dispatch)
         dispatch_path.write_bytes(dispatch_raw)
         _append_journal(journal_path, "PREPARED", call_id)
-        values = {
-            "arm": state["arm"], "call_receipt": str(call_path),
-            "dispatch_receipt": str(dispatch_path), "prompt": str(prompt_path),
-            "result": str(result_path), "stage": state["next_stage"],
-            "task_id": state["task_id"], "worktree": str(packet),
-        }
-        env = {key: value for key, value in os.environ.items() if not key.startswith("TIER_")}
-        env.update({"PYTHONUTF8": "1", "PYTHONDONTWRITEBYTECODE": "1"})
         _append_journal(journal_path, "DISPATCH_STARTED", call_id)
-        process = subprocess.run(
-            _expand(backend.command, values), cwd=packet, env=env, capture_output=True
+        _simulate_fixture_result(
+            response=response, composition=composition, state=state,
+            stage_spec=stage_spec, dispatch=dispatch, dispatch_raw=dispatch_raw,
+            packet=packet, call_dir=call_dir, result_path=result_path,
         )
-        (call_dir / "adapter.stdout").write_bytes(process.stdout or b"")
-        (call_dir / "adapter.stderr").write_bytes(process.stderr or b"")
-        if process.returncode:
-            raise BridgeError(f"provider adapter exited {process.returncode}")
         if not result_path.is_file():
-            raise BridgeError("provider adapter produced no provider result")
+            raise BridgeError("fixture simulator produced no provider result")
         if prompt_path.read_bytes() != prompt_raw or dispatch_path.read_bytes() != dispatch_raw:
             raise BridgeError("provider adapter modified immutable prompt/dispatch bytes")
         ledger_call, provider_output = _provider_result(result_path, call_dir)
@@ -767,7 +871,7 @@ def _call_once(
 
 def _receipt(
     session_dir: Path, composition: PilotComposition, state: dict[str, Any],
-    *, worktree_removed: bool,
+    *, worktree_removed: bool, fixture_script_sha256: str,
 ) -> dict[str, Any]:
     _verify_fixture_evidence(session_dir)
     calls: list[dict[str, Any]] = []
@@ -793,6 +897,7 @@ def _receipt(
         "schema": RECEIPT_SCHEMA,
         "execution_mode": EXECUTION_MODE,
         "executor_identity": FIXTURE_EXECUTOR_ID,
+        "fixture_script_sha256": fixture_script_sha256,
         "task_id": state["task_id"],
         "arm": state["arm"],
         "base_commit": state["base_commit"],
@@ -824,6 +929,8 @@ def _drive(
     bridge_id: str,
     worktree: Path,
     registry_git: Path,
+    fixture_script: list[dict[str, Any]],
+    fixture_script_sha256: str,
 ) -> dict[str, Any]:
     lock = session_dir / "arm.lock"
     try:
@@ -835,7 +942,7 @@ def _drive(
         while state["status"] == "ACTIVE":
             state, _ = _call_once(
                 composition, state, repo, session_dir, scopes, bridge_id,
-                worktree, registry_git,
+                worktree, registry_git, fixture_script, fixture_script_sha256,
             )
         removed = False
         if state["status"] in {"COMPLETE", "FAILED"}:
@@ -847,6 +954,7 @@ def _drive(
         return _receipt(
             session_dir, composition, state,
             worktree_removed=removed,
+            fixture_script_sha256=fixture_script_sha256,
         )
     finally:
         lock.unlink(missing_ok=True)
@@ -872,7 +980,9 @@ def start_fixture_pilot_arm(
     acceptance_command: str,
     base_commit: str,
     output_dir: Path,
+    fixture_script: list[dict[str, Any]],
 ) -> dict[str, Any]:
+    fixture_script, fixture_script_sha256 = _fixture_script(fixture_script)
     repo = _repo_root(repo)
     evidence_repo = _repo_root(evidence_repo)
     target_git = _git_common_dir(repo)
@@ -916,6 +1026,7 @@ def start_fixture_pilot_arm(
         "arm_worktree": str(worktree),
         "composition_manifest": str(composition_manifest),
         "composition_manifest_sha256": composition.sha256,
+        "fixture_script_sha256": fixture_script_sha256,
         "task_id": task_id,
         "arm": arm,
         "base_commit": base_commit,
@@ -925,7 +1036,7 @@ def start_fixture_pilot_arm(
     (session_dir / "bridge-session.json").write_bytes(canonical_json(session))
     return _drive(
         composition, state, repo, session_dir, scopes, bridge_id,
-        worktree, registry_git,
+        worktree, registry_git, fixture_script, fixture_script_sha256,
     )
 
 
@@ -937,7 +1048,7 @@ def _load_session(session_dir: Path) -> tuple[
     required = {
         "schema", "bridge_id", "repo", "evidence_repo", "arm_worktree", "composition_manifest",
         "composition_manifest_sha256", "task_id", "arm", "base_commit", "files",
-        "created_at",
+        "fixture_script_sha256", "created_at",
     }
     if set(session) != required or session.get("schema") != SESSION_SCHEMA:
         raise BridgeError("bridge session fields/schema are invalid")

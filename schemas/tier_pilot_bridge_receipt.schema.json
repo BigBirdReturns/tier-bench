@@ -5,7 +5,7 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "schema", "execution_mode", "executor_identity", "task_id", "arm", "base_commit", "composition_manifest_sha256",
+    "schema", "execution_mode", "executor_identity", "fixture_script_sha256", "task_id", "arm", "base_commit", "composition_manifest_sha256",
     "status", "next_stage", "state_sequence", "state_sha256", "state_log", "calls",
     "provider_receipts", "acceptance_receipts", "active_question_id",
     "arm_worktree_removed", "scientific_verdict_minted",
@@ -14,7 +14,8 @@
   "properties": {
     "schema": {"const": "tier-bench/tier-pilot-fixture-bridge-receipt@1"},
     "execution_mode": {"const": "fixture"},
-    "executor_identity": {"const": "tier-bench/builtin-subprocess-fixture@1"},
+    "executor_identity": {"const": "tier-bench/in-process-data-fixture@1"},
+    "fixture_script_sha256": {"$ref": "#/$defs/sha256"},
     "task_id": {"type": "string", "minLength": 1},
     "arm": {"enum": ["arm_a", "arm_b", "arm_c"]},
     "base_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},

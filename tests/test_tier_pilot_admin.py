@@ -1016,7 +1016,7 @@ def test_fixture_provider_evidence_is_inadmissible(tmp_path: Path) -> None:
     descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
     descriptor["schema"] = "tier-bench/tier-pilot-fixture-provider-evidence@1"
     descriptor["execution_mode"] = "fixture"
-    descriptor["executor_identity"] = "tier-bench/builtin-subprocess-fixture@1"
+    descriptor["executor_identity"] = "tier-bench/in-process-data-fixture@1"
     descriptor_path.write_bytes(canonical_json(descriptor))
     descriptor_ref["sha256"] = sha256_file(descriptor_path)
     _rewrite(evidence_path, evidence)
