@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_call_receipt.schema.json",
+  "title": "tier pilot per-call receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "call_id", "task_id", "arm", "stage", "attempt", "backend",
+    "prompt_template", "prompt_sha256", "dispatch_receipt_sha256", "session_id", "outcome",
+    "output", "ledger_call"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/pilot-call-receipt@1"},
+    "call_id": {"type": "string", "minLength": 1},
+    "task_id": {"type": "string", "minLength": 1},
+    "arm": {"enum": ["arm_a", "arm_b", "arm_c"]},
+    "stage": {"enum": ["driver_plan", "hands", "repair", "escalation", "hands_resume"]},
+    "attempt": {"type": "integer", "minimum": 1},
+    "backend": {"type": "string", "minLength": 1},
+    "prompt_template": {"$ref": "#/$defs/named_hash"},
+    "prompt_sha256": {"$ref": "#/$defs/sha256"},
+    "dispatch_receipt_sha256": {"$ref": "#/$defs/sha256"},
+    "session_id": {"type": "string", "minLength": 1},
+    "outcome": {"enum": ["completed", "question", "error"]},
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "text", "sha256"],
+      "properties": {
+        "kind": {"enum": ["plan", "candidate_patch", "question", "error"]},
+        "text": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "ledger_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ts", "account", "model", "tier", "task_id", "phase", "outcome",
+        "effort", "input_tokens", "output_tokens", "cache_read_tokens",
+        "cache_write_tokens", "cost_usd", "latency_ms", "trial", "note", "extra"
+      ],
+      "properties": {
+        "ts": {"type": "string", "minLength": 1},
+        "account": {"type": "string", "minLength": 1},
+        "model": {"type": "string", "minLength": 1},
+        "tier": {"type": "string", "minLength": 1},
+        "task_id": {"type": "string", "minLength": 1},
+        "phase": {"enum": ["arm_a", "arm_b", "arm_c"]},
+        "outcome": {"type": "string", "minLength": 1},
+        "effort": {"type": "string", "minLength": 1},
+        "input_tokens": {"type": "integer", "minimum": 0},
+        "output_tokens": {"type": "integer", "minimum": 0},
+        "cache_read_tokens": {"type": "integer", "minimum": 0},
+        "cache_write_tokens": {"type": "integer", "minimum": 0},
+        "cost_usd": {"type": "number", "minimum": 0},
+        "latency_ms": {"type": "number", "minimum": 0},
+        "trial": {"type": "integer", "minimum": 0},
+        "note": {"type": "string", "minLength": 1},
+        "extra": {"type": "object"}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "named_hash": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "sha256"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

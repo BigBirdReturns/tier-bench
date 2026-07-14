@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_driver_trace.schema.json",
+  "title": "tier pilot Arm-A driver repair trace",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "task_id", "tier", "hands_model", "hands_output",
+    "hands_output_sha256", "validator_report", "validator_report_sha256",
+    "driver_model", "driver_output", "driver_output_sha256", "repair_call_id",
+    "passed", "trace_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/driver-trace@2"},
+    "task_id": {"type": "string", "minLength": 1},
+    "tier": {"type": "string", "minLength": 1},
+    "hands_model": {"type": "string", "minLength": 1},
+    "hands_output": {"type": "string", "minLength": 1},
+    "hands_output_sha256": {"$ref": "#/$defs/sha256"},
+    "validator_report": {"type": "string", "minLength": 1},
+    "validator_report_sha256": {"$ref": "#/$defs/sha256"},
+    "driver_model": {"type": "string", "minLength": 1},
+    "driver_output": {"type": "string", "minLength": 1},
+    "driver_output_sha256": {"$ref": "#/$defs/sha256"},
+    "repair_call_id": {"type": "string", "minLength": 1},
+    "passed": {"type": "boolean"},
+    "trace_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

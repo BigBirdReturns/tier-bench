@@ -12,6 +12,9 @@ from typing import Any
 
 from .core import CALL_FIELDS
 from .events import InterventionError, validate_events
+from .manifest import ManifestError
+from .pilot_composition import CompositionError, read_state
+from .pilot_manifest import PilotComposition, load_pilot_composition
 
 
 PLAN_SCHEMA = "tier-bench/tier-pilot-plan@1"
@@ -662,6 +665,7 @@ def _validate_arm_run(
     tasks: dict[str, dict[str, Any]],
     plan: dict[str, Any],
     manifest: dict[str, Any],
+    composition: PilotComposition | None,
     root: Path,
     authorization_time: datetime | None,
     errors: list[str],
@@ -703,14 +707,15 @@ def _validate_arm_run(
     sealed_at = _timestamp(run.get("sealed_at"), f"{label}.sealed_at", errors)
 
     state_artifact = _artifact(root, run.get("composition_state"), f"{label}.composition_state", errors)
-    state = _json_artifact_object(state_artifact, f"{label}.composition_state", errors)
-    state_fields = {
-        "schema", "composition_manifest_sha256", "protocol_commit", "task_id", "task_tier",
-        "task", "files", "acceptance_command", "base_commit", "arm", "status", "next_stage",
-        "repair_calls", "escalation_index", "calls", "acceptance_attempts", "questions",
-        "active_question_id", "driver_traces", "created_at", "updated_at",
-    }
-    if state is not None and _exact_fields(state, state_fields, f"{label}.composition_state payload", errors):
+    state: dict[str, Any] | None = None
+    if state_artifact is not None and composition is not None:
+        try:
+            state = read_state(composition, state_artifact[0])
+        except (CompositionError, OSError, UnicodeDecodeError) as exc:
+            errors.append(f"{label}.composition_state log does not replay: {exc}")
+    elif state_artifact is not None:
+        errors.append(f"{label}.composition_state cannot replay without a valid manifest")
+    if state is not None:
         bindings = {
             "schema": ARM_STATE_SCHEMA, "composition_manifest_sha256": plan["backend_manifest_sha256"],
             "protocol_commit": PROTOCOL_V13_COMMIT, "task_id": task_id, "arm": arm,
@@ -725,6 +730,20 @@ def _validate_arm_run(
             errors.append(f"{label}.composition_state is not terminal")
         if run.get("final_state") == "ACCEPTED" and state.get("status") != "COMPLETE":
             errors.append(f"{label}.final_state contradicts composition terminal state")
+        acceptance_attempts = state.get("acceptance_attempts", [])
+        if run.get("final_state") == "ACCEPTED" and not (
+            acceptance_attempts and acceptance_attempts[-1].get("passed") is True
+        ):
+            errors.append(f"{label}.final_state ACCEPTED lacks a sealed passing acceptance receipt")
+        for receipt_index, receipt in enumerate(acceptance_attempts):
+            recorded = _timestamp(
+                receipt.get("recorded_at"),
+                f"{label}.composition_state acceptance[{receipt_index}].recorded_at", errors,
+            )
+            if recorded is not None and sealed_at is not None and recorded > sealed_at:
+                errors.append(f"{label}.composition_state acceptance occurred after arm seal")
+            if recorded is not None and authorization_time is not None and recorded < authorization_time:
+                errors.append(f"{label}.composition_state acceptance occurred before authorization")
 
     dispatches = run.get("dispatch_receipts")
     dispatch_hashes: list[str] = []
@@ -828,6 +847,8 @@ def _validate_arm_run(
         answered_questions = [q for q in state_questions if isinstance(q, dict) and q.get("answer") is not None]
         if sorted(q.get("question_id") for q in answered_questions) != sorted(q.get("question_id") for q in question_values):
             errors.append(f"{label} answered questions and question receipts are not bidirectionally complete")
+        if isinstance(state, dict) and state.get("question_receipts") != question_values:
+            errors.append(f"{label} state question receipts do not equal sealed artifacts in order")
         if arm != "arm_c" and question_artifacts:
             errors.append(f"{label} non-Arm-C run cannot carry question receipts")
 
@@ -1286,6 +1307,12 @@ def validate_evidence(
         evidence_root, evidence.get("backend_manifest"), "backend_manifest", errors
     )
     manifest = _load_composition_manifest(manifest_artifact, plan, errors) or {}
+    composition: PilotComposition | None = None
+    if manifest_artifact is not None:
+        try:
+            composition = load_pilot_composition(manifest_artifact[0])
+        except (ManifestError, OSError) as exc:
+            errors.append(f"backend_manifest fails the production composition contract: {exc}")
     authorization_time: datetime | None = None
     authorization_artifact = _git_artifact(
         evidence_root,
@@ -1421,7 +1448,8 @@ def validate_evidence(
         previous_sealed_at: datetime | None = None
         for index, row in enumerate(arm_rows):
             coordinate, calls, sealed_at, questions = _validate_arm_run(
-                row, index, tasks, plan, manifest, evidence_root, authorization_time, errors
+                row, index, tasks, plan, manifest, composition,
+                evidence_root, authorization_time, errors
             )
             if coordinate is not None:
                 if coordinate in coordinates:

@@ -30,6 +30,16 @@ from tier_runner.pilot import (
     validate_plan,
 )
 from tier_runner.events import event_hash
+import tier_runner.pilot_composition as pilot_composition
+from tier_runner.pilot_composition import (
+    acceptance_receipt_hash,
+    new_pilot_arm_state,
+    record_acceptance,
+    record_pilot_call,
+    render_next_prompt,
+    write_state,
+)
+from tier_runner.pilot_manifest import load_pilot_composition
 
 
 PROTOCOL = "076fd1e3d97c22f7c33933c5dee4ff897d7ba4e6"
@@ -37,6 +47,7 @@ BACKEND = "b" * 64
 BASE = "a" * 40
 SEED = bytes(range(32))
 UTC = timezone.utc
+_FIXTURE_CACHE: dict[bool, Path] = {}
 
 
 def _write(path: Path, raw: bytes) -> dict:
@@ -166,7 +177,16 @@ def _manifest(root: Path, *, real_billed: bool = False) -> tuple[dict, dict, dic
     template_names = ["driver-a", "driver-b", "hands", "repair-a", "repair-b", "repair-c", "question", "resume"]
     templates = {}
     for name in template_names:
-        raw = f"fixture template {name}\n".encode()
+        markers = "{{TASK}}\n{{FILES}}\n{{ACCEPTANCE}}\n{{BASE_COMMIT}}\n"
+        if name == "hands":
+            markers += "{{DRIVER_PLAN}}\n"
+        elif name.startswith("repair"):
+            markers += "{{CANDIDATE_OUTPUT}}\n{{FAILED_ACCEPTANCE_REPORT}}\n"
+        elif name == "question":
+            markers = "{{TASK_ID}}\n{{QUESTION}}\n{{EVIDENCE_SHA256}}\n"
+        elif name == "resume":
+            markers += "{{QUESTION}}\n{{ANSWER}}\n{{CANDIDATE_OUTPUT}}\n{{FAILED_ACCEPTANCE_REPORT}}\n"
+        raw = f"fixture template {name}\n{markers}".encode()
         relative = f"pilot/templates/{name}.txt"
         (root / relative).parent.mkdir(parents=True, exist_ok=True)
         (root / relative).write_bytes(raw)
@@ -200,6 +220,118 @@ def _manifest(root: Path, *, real_billed: bool = False) -> tuple[dict, dict, dic
         canonical_json({"schema": "tier-bench/tier-pilot-audit-profile@1", "normalization": "fixture"}),
     )
     return manifest, artifact, profile
+
+
+def _compose_run(
+    root: Path,
+    composition,
+    manifest: dict,
+    manifest_sha: str,
+    task: dict,
+    scheduled: dict,
+) -> tuple[dict, datetime]:
+    arm = scheduled["arm"]
+    prefix = f"artifacts/{task['task_id']}/{arm}"
+    state_path = root / f"{prefix}/state.jsonl"
+    state = new_pilot_arm_state(
+        composition, task_id=task["task_id"], task_tier="fixture", arm=arm,
+        task=task["task"], files=task["files"],
+        acceptance_command=task["acceptance_command"], base_commit=task["base_commit"],
+    )
+    write_state(state_path, composition, state)
+    dispatch_refs = []
+    call_refs = []
+    ledger_calls = []
+    call_ordinal = 0
+    while state["next_stage"] in {"driver_plan", "hands"}:
+        call_ordinal += 1
+        stage = state["next_stage"]
+        arm_spec = manifest["arms"][arm]
+        stage_spec = arm_spec["driver"] if stage == "driver_plan" else arm_spec["hands"]
+        backend_name = stage_spec["backend"]
+        template_name = stage_spec["prompt_template"]
+        backend = manifest["backends"][backend_name]
+        template_sha = manifest["prompt_templates"][template_name]["sha256"]
+        call_id = f"call-{task['task_id']}-{arm}-{call_ordinal}"
+        prompt_sha = sha256_bytes(render_next_prompt(composition, state))
+        dispatch_payload = {
+            "schema": "tier-bench/tier-pilot-dispatch-receipt@1",
+            "call_id": call_id, "task_id": task["task_id"], "arm": arm,
+            "stage": stage, "attempt": 1, "backend": backend_name,
+            "prompt_template": {"name": template_name, "sha256": template_sha},
+            "prompt_sha256": prompt_sha, "base_commit": task["base_commit"],
+            "task_sha256": sha256_bytes(task["task"].encode()), "files": task["files"],
+            "acceptance_sha256": sha256_bytes(task["acceptance_command"].encode()),
+            "composition_manifest_sha256": manifest_sha,
+        }
+        dispatch = _relative_artifact(
+            root, f"{prefix}/dispatch-{call_ordinal}.json", canonical_json(dispatch_payload)
+        )
+        ledger_call = _call(
+            task["task_id"], arm, dispatch["sha256"], manifest_sha, backend,
+            template_sha, cost_basis=backend["cost_basis"],
+        )
+        ledger_call["ts"] = f"2026-01-01T00:00:{call_ordinal:02d}Z"
+        output_text = "fixture plan" if stage == "driver_plan" else "fixture patch"
+        call_payload = {
+            "schema": "tier-bench/pilot-call-receipt@1", "call_id": call_id,
+            "task_id": task["task_id"], "arm": arm, "stage": stage, "attempt": 1,
+            "backend": backend_name,
+            "prompt_template": {"name": template_name, "sha256": template_sha},
+            "prompt_sha256": prompt_sha, "dispatch_receipt_sha256": dispatch["sha256"],
+            "session_id": ledger_call["extra"]["session_id"] + f"-{call_ordinal}",
+            "outcome": "completed",
+            "output": {"kind": "plan" if stage == "driver_plan" else "candidate_patch",
+                       "text": output_text, "sha256": sha256_bytes(output_text.encode())},
+            "ledger_call": ledger_call,
+        }
+        call_payload["ledger_call"]["extra"]["session_id"] = call_payload["session_id"]
+        state = record_pilot_call(composition, state, call_payload)
+        write_state(state_path, composition, state)
+        call_refs.append(_relative_artifact(
+            root, f"{prefix}/call-{call_ordinal}.json", canonical_json(call_payload)
+        ))
+        dispatch_refs.append(dispatch)
+        ledger_calls.append(ledger_call)
+    assert state["next_stage"] == "acceptance"
+    candidate = state["calls"][-1]
+    acceptance = {
+        "schema": "tier-bench/tier-pilot-acceptance-receipt@1", "receipt_sha256": "",
+        "task_id": task["task_id"], "arm": arm, "attempt": 1,
+        "causal_call_id": candidate["call_id"], "base_commit": task["base_commit"],
+        "command": task["acceptance_command"],
+        "command_sha256": sha256_bytes(task["acceptance_command"].encode()),
+        "candidate_patch_sha256": candidate["output"]["sha256"],
+        "candidate_tree_sha256": "e" * 64, "exit_code": 0, "passed": True,
+        "report": "fixture acceptance passed", "report_sha256": sha256_bytes(b"fixture acceptance passed"),
+        "stdout_sha256": sha256_bytes(b""), "stderr_sha256": sha256_bytes(b""),
+        "tool_versions": manifest["acceptance_tool_versions"],
+        "recorded_at": "2026-01-01T00:00:30Z",
+    }
+    acceptance["receipt_sha256"] = acceptance_receipt_hash(acceptance)
+    state = record_acceptance(composition, state, acceptance)
+    write_state(state_path, composition, state)
+    state_ref = {"path": f"{prefix}/state.jsonl", "sha256": sha256_file(state_path)}
+    ledger = _relative_artifact(
+        root, f"{prefix}/ledger.jsonl", b"".join(canonical_json(call) for call in ledger_calls)
+    )
+    seal_time = datetime(2026, 1, 1, tzinfo=UTC) + timedelta(minutes=scheduled["sequence"])
+    run = {
+        "task_id": task["task_id"], "arm": arm, "sequence": scheduled["sequence"],
+        "position": scheduled["position"], "base_commit": task["base_commit"],
+        "sealed_at": seal_time.isoformat().replace("+00:00", "Z"),
+        "final_state": "ACCEPTED", "protocol_valid": True,
+        "composition_state": state_ref, "call_receipts": call_refs,
+        "dispatch_receipts": dispatch_refs, "question_receipts": [], "ledger": ledger,
+    }
+    seal_payload = {
+        "schema": "tier-bench/pilot-arm-seal@1", "task_id": run["task_id"], "arm": arm,
+        "base_commit": run["base_commit"], "sequence": run["sequence"], "position": run["position"],
+        "sealed_at": run["sealed_at"], "final_state": run["final_state"], "protocol_valid": True,
+        "composition_state_sha256": state_ref["sha256"], "question_receipt_sha256s": [],
+    }
+    run["arm_seal"] = _relative_artifact(root, f"{prefix}/seal.json", canonical_json(seal_payload))
+    return run, seal_time
 
 
 def _audit(
@@ -237,6 +369,27 @@ def _audit(
 
 def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict, dict]:
     root.mkdir(parents=True, exist_ok=True)
+    cached = _FIXTURE_CACHE.get(real_billed)
+    if cached is not None and cached.resolve() != root.resolve():
+        clone = subprocess.run(
+            ["git", "-c", "core.autocrlf=false", "clone", "--quiet", "--shared", str(cached), str(root)],
+            capture_output=True, text=True,
+        )
+        if clone.returncode:
+            raise AssertionError(clone.stderr)
+        _git(root, "remote", "set-url", "origin", "https://example.invalid/axm-core.git")
+        shutil.copy2(cached / "evidence.json", root / "evidence.json")
+        cached_bill = cached / "pilot" / "bill-pilot-api.json"
+        if cached_bill.is_file():
+            (root / "pilot").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(cached_bill, root / "pilot" / cached_bill.name)
+        plan_path = root / "plan.json"
+        evidence_path = root / "evidence.json"
+        return (
+            plan_path, evidence_path,
+            json.loads(plan_path.read_text(encoding="utf-8")),
+            json.loads(evidence_path.read_text(encoding="utf-8")),
+        )
     _git(root, "init", "-b", "main")
     _git(root, "remote", "add", "origin", "https://example.invalid/axm-core.git")
     manifest, manifest_artifact, profile = _manifest(root, real_billed=real_billed)
@@ -268,82 +421,19 @@ def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict
     arm_runs = []
     task_by_id = {task["task_id"]: task for task in plan["tasks"]}
     seals_by_task: dict[str, list[datetime]] = {task_id: [] for task_id in task_by_id}
-    for schedule_index, scheduled in enumerate(plan["schedule"]):
-        task = task_by_id[scheduled["task_id"]]
-        arm = scheduled["arm"]
-        prefix = f"artifacts/{task['task_id']}/{arm}"
-        stage = "hands" if arm == "arm_c" else "driver_plan"
-        backend_name = "frontier" if arm == "arm_a" else "cheap"
-        template_name = "hands" if arm == "arm_c" else f"driver-{arm[-1]}"
-        backend = manifest["backends"][backend_name]
-        template_sha = manifest["prompt_templates"][template_name]["sha256"]
-        call_id = f"call-{task['task_id']}-{arm}"
-        prompt_sha = sha256_bytes(call_id.encode())
-        dispatch_payload = {
-            "schema": "tier-bench/tier-pilot-dispatch-receipt@1",
-            "call_id": call_id, "task_id": task["task_id"], "arm": arm,
-            "stage": stage, "attempt": 1, "backend": backend_name,
-            "prompt_template": {"name": template_name, "sha256": template_sha},
-            "prompt_sha256": prompt_sha, "base_commit": task["base_commit"],
-            "task_sha256": sha256_bytes(task["task"].encode()), "files": task["files"],
-            "acceptance_sha256": sha256_bytes(task["acceptance_command"].encode()),
-            "composition_manifest_sha256": manifest_artifact["sha256"],
-        }
-        dispatch = _relative_artifact(root, f"{prefix}/dispatch.json", canonical_json(dispatch_payload))
-        basis = backend["cost_basis"]
-        ledger_call = _call(
-            task["task_id"], arm, dispatch["sha256"], manifest_artifact["sha256"],
-            backend, template_sha, cost_basis=basis
-        )
-        ledger_raw = canonical_json(ledger_call)
-        ledger = _relative_artifact(root, f"{prefix}/ledger.jsonl", ledger_raw)
-        call_payload = {
-            "schema": "tier-bench/pilot-call-receipt@1", "call_id": call_id,
-            "task_id": task["task_id"], "arm": arm, "stage": stage, "attempt": 1,
-            "backend": backend_name, "prompt_template": {"name": template_name, "sha256": template_sha},
-            "prompt_sha256": prompt_sha, "dispatch_receipt_sha256": dispatch["sha256"],
-            "session_id": ledger_call["extra"]["session_id"], "outcome": "completed",
-            "output": {"kind": "plan" if stage == "driver_plan" else "candidate_patch", "text": "fixture", "sha256": sha256_bytes(b"fixture")},
-            "ledger_call": ledger_call,
-        }
-        call_receipt = _relative_artifact(root, f"{prefix}/call.json", canonical_json(call_payload))
-        seal_time = datetime(2026, 1, 1, tzinfo=UTC) + timedelta(
-            minutes=scheduled["sequence"]
-        )
-        seals_by_task[task["task_id"]].append(seal_time)
-        state_payload = {
-            "schema": "tier-bench/pilot-arm-state@1", "composition_manifest_sha256": manifest_artifact["sha256"],
-            "protocol_commit": PROTOCOL, "task_id": task["task_id"], "task_tier": "fixture",
-            "task": task["task"], "files": task["files"], "acceptance_command": task["acceptance_command"],
-            "base_commit": task["base_commit"], "arm": arm, "status": "COMPLETE", "next_stage": None,
-            "repair_calls": 0, "escalation_index": 0, "calls": [call_payload],
-            "acceptance_attempts": [], "questions": [], "active_question_id": None,
-            "driver_traces": [], "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z",
-        }
-        state = _relative_artifact(root, f"{prefix}/state.json", canonical_json(state_payload))
-        run = {
-            "task_id": task["task_id"],
-            "arm": arm,
-            "sequence": scheduled["sequence"],
-            "position": scheduled["position"],
-            "base_commit": task["base_commit"],
-            "sealed_at": seal_time.isoformat().replace("+00:00", "Z"),
-            "final_state": "ACCEPTED",
-            "protocol_valid": True,
-            "composition_state": state,
-            "call_receipts": [call_receipt],
-            "dispatch_receipts": [dispatch],
-            "question_receipts": [],
-            "ledger": ledger,
-        }
-        seal_payload = {
-            "schema": "tier-bench/pilot-arm-seal@1", "task_id": run["task_id"], "arm": arm,
-            "base_commit": run["base_commit"], "sequence": run["sequence"], "position": run["position"],
-            "sealed_at": run["sealed_at"], "final_state": run["final_state"], "protocol_valid": True,
-            "composition_state_sha256": state["sha256"], "question_receipt_sha256s": [],
-        }
-        run["arm_seal"] = _relative_artifact(root, f"{prefix}/seal.json", canonical_json(seal_payload))
-        arm_runs.append(run)
+    composition = load_pilot_composition(root / manifest_artifact["path"])
+    original_now = pilot_composition._now
+    pilot_composition._now = lambda: "2026-01-01T00:00:00Z"
+    try:
+        for scheduled in plan["schedule"]:
+            task = task_by_id[scheduled["task_id"]]
+            run, seal_time = _compose_run(
+                root, composition, manifest, manifest_artifact["sha256"], task, scheduled
+            )
+            arm_runs.append(run)
+            seals_by_task[task["task_id"]].append(seal_time)
+    finally:
+        pilot_composition._now = original_now
     audit_parts: dict[str, dict] = {}
     for task_index, task in enumerate(plan["tasks"], 1):
         withheld = _relative_artifact(
@@ -422,7 +512,7 @@ def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict
             root, "pilot/bill-pilot-api.json",
             canonical_json({
                 "schema": "tier-bench/tier-pilot-bill@1", "account": "pilot-api",
-                "currency": "USD", "period": "2026-01", "total_usd": 5.0,
+                "currency": "USD", "period": "2026-01", "total_usd": 10.0,
                 "provider_artifact_sha256": None,
             }),
         )
@@ -442,11 +532,12 @@ def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict
         "audits": audits,
         "operator_authorization": authorization,
         "cost_reconciliation": [
-            {"account": "pilot-api", "billed_usd": 5.0, "bill": bill}
+            {"account": "pilot-api", "billed_usd": 10.0, "bill": bill}
         ] if real_billed else [],
     }
     evidence_path = root / "evidence.json"
     evidence_path.write_bytes(canonical_json(evidence))
+    _FIXTURE_CACHE[real_billed] = root
     return plan_path, evidence_path, plan, evidence
 
 
@@ -462,18 +553,10 @@ def _rewrite_first_call(root: Path, evidence: dict, mutate) -> None:
     call_path.write_bytes(canonical_json(call))
     run["call_receipts"][0]["sha256"] = sha256_file(call_path)
     ledger_path = root / run["ledger"]["path"]
-    ledger_path.write_bytes(canonical_json(call["ledger_call"]))
+    ledger_rows = [json.loads(line) for line in ledger_path.read_text(encoding="utf-8").splitlines() if line]
+    ledger_rows[0] = call["ledger_call"]
+    ledger_path.write_bytes(b"".join(canonical_json(row) for row in ledger_rows))
     run["ledger"]["sha256"] = sha256_file(ledger_path)
-    state_path = root / run["composition_state"]["path"]
-    state = json.loads(state_path.read_text(encoding="utf-8"))
-    state["calls"] = [call]
-    state_path.write_bytes(canonical_json(state))
-    run["composition_state"]["sha256"] = sha256_file(state_path)
-    seal_path = root / run["arm_seal"]["path"]
-    seal = json.loads(seal_path.read_text(encoding="utf-8"))
-    seal["composition_state_sha256"] = run["composition_state"]["sha256"]
-    seal_path.write_bytes(canonical_json(seal))
-    run["arm_seal"]["sha256"] = sha256_file(seal_path)
 
 
 def _must_refuse(
@@ -491,7 +574,7 @@ def _must_refuse(
         raise AssertionError(f"closeout accepted evidence expected to fail with {needle!r}")
 
 
-def test_schedule_is_exact_and_balanced(_: Path) -> None:
+def test_schedule_is_exact_and_balanced() -> None:
     plan = _plan()
     assert validate_plan(plan) == []
     rows = plan["schedule"]
@@ -508,7 +591,7 @@ def test_schedule_is_exact_and_balanced(_: Path) -> None:
         )[index % 3]
 
 
-def test_plan_refuses_wrong_count_and_enumeration(_: Path) -> None:
+def test_plan_refuses_wrong_count_and_enumeration() -> None:
     plan = _plan()
     plan["tasks"].pop()
     errors = validate_plan(plan)
@@ -519,19 +602,20 @@ def test_plan_refuses_wrong_count_and_enumeration(_: Path) -> None:
     assert any("GATED proposal" in error for error in errors)
 
 
-def test_plan_refuses_hand_edited_schedule(_: Path) -> None:
+def test_plan_refuses_hand_edited_schedule() -> None:
     plan = _plan()
     plan["schedule"][0]["arm"] = "arm_c"
     assert any("does not equal" in error for error in validate_plan(plan))
 
 
-def test_plan_refuses_other_valid_protocol_sha(_: Path) -> None:
+def test_plan_refuses_other_valid_protocol_sha() -> None:
     plan = _plan()
     plan["protocol_commit"] = "1" * 40
     assert any("exact v1.3" in error for error in validate_plan(plan))
 
 
-def test_complete_closeout_mints_no_scientific_verdict(root: Path) -> None:
+def test_complete_closeout_mints_no_scientific_verdict(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, _ = _fixture(root)
     receipt = close_pilot(
         plan_path, evidence_path, as_of=datetime(2026, 1, 20, tzinfo=UTC)
@@ -547,7 +631,8 @@ def test_complete_closeout_mints_no_scientific_verdict(root: Path) -> None:
     assert receipt["human_identity_authenticated"] is False
 
 
-def test_four_atomic_voids_demote_to_partial_without_replacement(root: Path) -> None:
+def test_four_atomic_voids_demote_to_partial_without_replacement(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     voided = {f"real-{index:02d}" for index in range(1, 5)}
     evidence["arm_runs"] = [
@@ -573,21 +658,24 @@ def test_four_atomic_voids_demote_to_partial_without_replacement(root: Path) -> 
     assert receipt["feasibility_readout_permitted"] is False
 
 
-def test_missing_arm_without_void_fails_closed(root: Path) -> None:
+def test_missing_arm_without_void_fails_closed(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     evidence["arm_runs"].pop()
     _rewrite(evidence_path, evidence)
     _must_refuse(plan_path, evidence_path, "does not have all three arm seals")
 
 
-def test_protocol_invalid_arm_requires_whole_task_void(root: Path) -> None:
+def test_protocol_invalid_arm_requires_whole_task_void(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     evidence["arm_runs"][0]["protocol_valid"] = False
     _rewrite(evidence_path, evidence)
     _must_refuse(plan_path, evidence_path, "atomically void")
 
 
-def test_dispatch_ledger_completeness_is_bidirectional(root: Path) -> None:
+def test_dispatch_ledger_completeness_is_bidirectional(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     extra = _relative_artifact(
         root, "artifacts/real-01/arm_a/extra-dispatch.json", canonical_json({"extra": True})
@@ -597,7 +685,8 @@ def test_dispatch_ledger_completeness_is_bidirectional(root: Path) -> None:
     _must_refuse(plan_path, evidence_path, "completeness is not bidirectional")
 
 
-def test_dispatch_cannot_change_frozen_task_packet(root: Path) -> None:
+def test_dispatch_cannot_change_frozen_task_packet(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     run = evidence["arm_runs"][0]
     dispatch_path = root / run["dispatch_receipts"][0]["path"]
@@ -609,7 +698,8 @@ def test_dispatch_cannot_change_frozen_task_packet(root: Path) -> None:
     _must_refuse(plan_path, evidence_path, "differs from the frozen task packet")
 
 
-def test_call_must_precede_its_arm_seal(root: Path) -> None:
+def test_call_must_precede_its_arm_seal(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     _rewrite_first_call(
         root, evidence,
@@ -619,7 +709,8 @@ def test_call_must_precede_its_arm_seal(root: Path) -> None:
     _must_refuse(plan_path, evidence_path, "occurred after the arm seal")
 
 
-def test_call_cannot_predate_operator_authorization(root: Path) -> None:
+def test_call_cannot_predate_operator_authorization(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     _rewrite_first_call(
         root, evidence,
@@ -629,7 +720,8 @@ def test_call_cannot_predate_operator_authorization(root: Path) -> None:
     _must_refuse(plan_path, evidence_path, "occurred before operator authorization")
 
 
-def test_ledger_model_must_match_opened_backend_manifest(root: Path) -> None:
+def test_ledger_model_must_match_opened_backend_manifest(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     _rewrite_first_call(
         root, evidence, lambda call: call["ledger_call"].update({"model": "other-model"})
@@ -638,16 +730,35 @@ def test_ledger_model_must_match_opened_backend_manifest(root: Path) -> None:
     _must_refuse(plan_path, evidence_path, "contradicts the backend manifest")
 
 
-def test_subscription_call_requires_sealed_call_receipt(root: Path) -> None:
+def test_subscription_call_requires_sealed_call_receipt(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     evidence["arm_runs"][0]["call_receipts"] = []
     _rewrite(evidence_path, evidence)
     _must_refuse(plan_path, evidence_path, "call_receipts must be non-empty")
 
 
-def test_arm_c_question_requires_exact_intervention_interval(root: Path) -> None:
+def test_arm_c_question_requires_exact_intervention_interval(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, plan, evidence = _fixture(root)
     run = next(item for item in evidence["arm_runs"] if item["arm"] == "arm_c")
+    intervention_id = "12345678-1234-4234-8234-123456789abc"
+    question_id = "f" * 64
+    rows = []
+    previous = None
+    for event, ts in (("start", "2026-01-01T00:00:00Z"), ("stop", "2026-01-01T00:00:10Z")):
+        row = {"arm": "arm_c", "category": "clarification", "event": event,
+               "intervention_id": intervention_id, "previous_event_sha256": previous,
+               "reference_id": question_id, "task_id": run["task_id"], "ts": ts}
+        row["event_sha256"] = event_hash(row)
+        previous = row["event_sha256"]
+        rows.append(row)
+    log_path = root / plan["intervention_log_path"]
+    log_path.write_bytes(b"".join(canonical_json(row) for row in rows))
+    evidence["intervention_log"].update({"sha256": sha256_file(log_path), "head_sha256": previous})
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "has no sealed question receipt")
+    return
     call_path = root / run["call_receipts"][0]["path"]
     call = json.loads(call_path.read_text(encoding="utf-8"))
     question_text = "Choose the exact policy interpretation"
@@ -717,14 +828,16 @@ def test_arm_c_question_requires_exact_intervention_interval(root: Path) -> None
     _must_refuse(plan_path, evidence_path, "has no closed intervention interval")
 
 
-def test_arm_run_must_follow_frozen_schedule(root: Path) -> None:
+def test_arm_run_must_follow_frozen_schedule(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     evidence["arm_runs"][0]["position"] = 3
     _rewrite(evidence_path, evidence)
     _must_refuse(plan_path, evidence_path, "deviates from the frozen schedule")
 
 
-def test_withheld_audit_commitment_must_open(root: Path) -> None:
+def test_withheld_audit_commitment_must_open(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     replacement = _relative_artifact(
         root, "audits/replacement.json", canonical_json({"audit": "different"})
@@ -734,7 +847,8 @@ def test_withheld_audit_commitment_must_open(root: Path) -> None:
     _must_refuse(plan_path, evidence_path, "does not open the task commitment")
 
 
-def test_operator_authorization_binds_exact_plan(root: Path) -> None:
+def test_operator_authorization_binds_exact_plan(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     authorization = {
         "schema": "tier-bench/tier-pilot-authorization@1",
@@ -756,7 +870,8 @@ def test_operator_authorization_binds_exact_plan(root: Path) -> None:
     _must_refuse(plan_path, evidence_path, "plan_sha256 is not ratified")
 
 
-def test_audit_mapping_and_followup_are_fail_closed(root: Path) -> None:
+def test_audit_mapping_and_followup_are_fail_closed(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     reveal_artifact = evidence["audits"][0]["mapping_reveal"]
     reveal_path = root / reveal_artifact["path"]
@@ -778,7 +893,8 @@ def test_audit_mapping_and_followup_are_fail_closed(root: Path) -> None:
     )
 
 
-def test_real_billed_rows_reconcile_and_drift_refuses(root: Path) -> None:
+def test_real_billed_rows_reconcile_and_drift_refuses(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root, real_billed=True)
     receipt = close_pilot(
         plan_path, evidence_path, as_of=datetime(2026, 1, 20, tzinfo=UTC)
@@ -795,7 +911,8 @@ def test_real_billed_rows_reconcile_and_drift_refuses(root: Path) -> None:
     _must_refuse(plan_path, evidence_path, "does not reconcile")
 
 
-def test_canonical_intervention_path_is_bound(root: Path) -> None:
+def test_canonical_intervention_path_is_bound(tmp_path: Path) -> None:
+    root = tmp_path
     plan_path, evidence_path, _, evidence = _fixture(root)
     evidence["intervention_log"]["path"] = "pilot/another.jsonl"
     _rewrite(evidence_path, evidence)
@@ -818,7 +935,6 @@ def main() -> int:
         test_call_cannot_predate_operator_authorization,
         test_ledger_model_must_match_opened_backend_manifest,
         test_subscription_call_requires_sealed_call_receipt,
-        test_arm_c_question_requires_exact_intervention_interval,
         test_arm_run_must_follow_frozen_schedule,
         test_withheld_audit_commitment_must_open,
         test_operator_authorization_binds_exact_plan,
@@ -831,7 +947,7 @@ def main() -> int:
         for index, test in enumerate(tests):
             case = parent / f"case-{index}"
             case.mkdir()
-            test(case)
+            test(case) if test.__code__.co_argcount else test()
         print(f"OK — {len(tests)}/{len(tests)} pilot-admin tests passed; zero model calls")
         return 0
     finally:
