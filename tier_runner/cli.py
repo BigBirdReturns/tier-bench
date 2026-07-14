@@ -42,6 +42,7 @@ def _parser() -> argparse.ArgumentParser:
     begin.add_argument("--task-id", required=True)
     begin.add_argument("--arm", choices=["arm_a", "arm_b", "arm_c"], required=True)
     begin.add_argument("--category", required=True)
+    begin.add_argument("--reference-id")
     end = intervention_sub.add_parser("stop")
     end.add_argument("--log", type=Path, required=True)
     end.add_argument("--id", required=True)
@@ -96,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(receipt, indent=2, sort_keys=True))
             return 0 if receipt["state"] == "ACCEPTED" else 1
         if args.command == "intervention" and args.event == "start":
-            print(start(args.log, args.task_id, args.arm, args.category))
+            print(start(args.log, args.task_id, args.arm, args.category, args.reference_id))
             return 0
         if args.command == "intervention" and args.event == "stop":
             stop(args.log, args.id)

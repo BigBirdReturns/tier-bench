@@ -10,7 +10,9 @@
     "noninferiority_claim_permitted", "tasks_total", "completed_tasks",
     "voided_tasks", "completed_task_ids", "voided_task_ids", "no_replacement",
     "follow_up_days", "plan_sha256", "evidence_sha256",
-    "backend_manifest_sha256", "intervention_head_sha256", "closed_at"
+    "backend_manifest_sha256", "intervention_head_sha256",
+    "ratification_provenance", "exact_ratification_bytes_verified",
+    "human_identity_authenticated", "time_authenticated", "closed_at"
   ],
   "properties": {
     "schema": {"const": "tier-bench/tier-pilot-closeout@1"},
@@ -33,6 +35,10 @@
     "intervention_head_sha256": {
       "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
     },
+    "ratification_provenance": {"const": "local_git_object"},
+    "exact_ratification_bytes_verified": {"const": true},
+    "human_identity_authenticated": {"const": false},
+    "time_authenticated": {"const": false},
     "closed_at": {"type": "string", "format": "date-time"}
   },
   "$defs": {

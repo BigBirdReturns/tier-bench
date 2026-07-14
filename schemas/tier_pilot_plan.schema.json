@@ -9,6 +9,10 @@
     "pilot_id",
     "protocol_commit",
     "backend_manifest_sha256",
+    "target_remote",
+    "default_branch",
+    "audit_normalization_profile",
+    "real_billed_tolerance_fraction",
     "intervention_log_path",
     "follow_up_days",
     "audit_label_seed_commitment_sha256",
@@ -19,8 +23,12 @@
   "properties": {
     "schema": {"const": "tier-bench/tier-pilot-plan@1"},
     "pilot_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
-    "protocol_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "protocol_commit": {"const": "076fd1e3d97c22f7c33933c5dee4ff897d7ba4e6"},
     "backend_manifest_sha256": {"$ref": "#/$defs/sha256"},
+    "target_remote": {"type": "string", "minLength": 1},
+    "default_branch": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "audit_normalization_profile": {"$ref": "#/$defs/artifact"},
+    "real_billed_tolerance_fraction": {"type": "number", "minimum": 0, "maximum": 0.1},
     "intervention_log_path": {"$ref": "#/$defs/relative_path"},
     "follow_up_days": {"const": 14},
     "audit_label_seed_commitment_sha256": {"$ref": "#/$defs/sha256"},
@@ -47,6 +55,11 @@
       "type": "string",
       "minLength": 1,
       "not": {"pattern": "^(?:[A-Za-z]:|/|\\\\)|(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)"}
+    },
+    "artifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {"path": {"$ref": "#/$defs/relative_path"}, "sha256": {"$ref": "#/$defs/sha256"}}
     },
     "task": {
       "type": "object",

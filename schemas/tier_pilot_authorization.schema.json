@@ -13,7 +13,7 @@
     "pilot_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
     "plan_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "backend_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
-    "protocol_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "protocol_commit": {"const": "076fd1e3d97c22f7c33933c5dee4ff897d7ba4e6"},
     "authority": {"const": "operator"},
     "authorized": {"const": true},
     "ratified_at": {"type": "string", "format": "date-time"}
