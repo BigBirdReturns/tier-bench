@@ -13,6 +13,13 @@ This is the implementation vehicle registered in
 the ten-task pilot. The pilot still requires its separately committed backend
 manifest, task list, arm schedule, and operator authorization.
 
+The original daily command intentionally remains a one-call surface using
+`tier-bench/pilot-backends@1`. The proposal-only multi-call contract needed by
+the three-arm experiment is documented in `docs/tier-pilot-composition.md` and
+uses `tier-bench/pilot-backends@2`. Its deterministic state machine does not yet
+launch production adapters; do not treat schema-valid composition as pilot
+readiness.
+
 ## Install
 
 From this repository:
