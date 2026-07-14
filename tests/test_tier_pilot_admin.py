@@ -617,7 +617,30 @@ def _fixture(root: Path, *, real_billed: bool = False) -> tuple[Path, Path, dict
     }
     evidence_path = root / "evidence.json"
     evidence_path.write_bytes(canonical_json(evidence))
-    _FIXTURE_CACHE[real_billed] = root
+    # Cache a pristine sibling clone, never the directory returned to a test.
+    # Negative tests mutate their fixture aggressively; caching that live root
+    # makes targeted selection order-dependent and can poison every later case.
+    cache_root = root.parent / (
+        ".tier-pilot-admin-cache-real" if real_billed
+        else ".tier-pilot-admin-cache-subscription"
+    )
+    if cache_root.exists():
+        shutil.rmtree(cache_root)
+    cached = subprocess.run(
+        ["git", "-c", "core.autocrlf=false", "clone", "--quiet", "--shared", str(root), str(cache_root)],
+        capture_output=True,
+        text=True,
+    )
+    if cached.returncode:
+        raise AssertionError(cached.stderr)
+    shutil.copy2(evidence_path, cache_root / "evidence.json")
+    for relative in ("pilot/bill-pilot-api.json", "pilot/provider-pilot-api.json"):
+        source = root / relative
+        if source.is_file():
+            target = cache_root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+    _FIXTURE_CACHE[real_billed] = cache_root
     return plan_path, evidence_path, plan, evidence
 
 
@@ -764,6 +787,68 @@ def test_four_atomic_voids_demote_to_partial_without_replacement(tmp_path: Path)
     assert receipt["administrative_state"] == "PARTIAL"
     assert receipt["completed_tasks"] == 6
     assert receipt["voided_tasks"] == 4
+    assert receipt["tasks_total"] == 10
+    assert receipt["no_replacement"] is True
+    assert receipt["feasibility_readout_permitted"] is False
+
+
+def test_all_voided_pilot_emits_partial_without_score_commit(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, plan, evidence = _fixture(root)
+    ratified_task = "real-01"
+    evidence_ref = next(
+        audit["withheld_audit"]
+        for audit in evidence["audits"]
+        if audit["task_id"] == ratified_task
+    )
+    seal_hashes = sorted(
+        run["arm_seal"]["sha256"]
+        for run in evidence["arm_runs"]
+        if run["task_id"] == ratified_task
+    )
+    ratification_payload = {
+        "schema": "tier-bench/tier-pilot-void-ratification@1",
+        "pilot_id": plan["pilot_id"],
+        "plan_sha256": sha256_file(plan_path),
+        "task_id": ratified_task,
+        "reason_code": "other_protocol_fault",
+        "evidence_sha256s": [evidence_ref["sha256"]],
+        "arm_seal_sha256s": seal_hashes,
+    }
+    ratification_path = "pilot/void-real-01-all-voided.json"
+    _relative_artifact(root, ratification_path, canonical_json(ratification_payload))
+    ratification_commit = _commit(
+        root, "ratify transparent all-voided closeout", "2026-01-15T01:05:00Z"
+    )
+    evidence["voids"].append({
+        "task_id": ratified_task,
+        "authority": "ratified",
+        "reason_code": "other_protocol_fault",
+        "evidence_refs": [evidence_ref],
+        "ratification": _git_bound_artifact(
+            root, ratification_path, ratification_commit, ratification_commit
+        ),
+    })
+    derived_tasks = {f"real-{index:02d}" for index in range(2, 11)}
+    evidence["arm_runs"] = [
+        row for row in evidence["arm_runs"] if row["task_id"] == ratified_task
+    ]
+    for task_id in sorted(derived_tasks):
+        evidence["voids"].append({
+            "task_id": task_id,
+            "authority": "derived",
+            "reason_code": "other_protocol_fault",
+            "trigger_refs": ["missing_all_three_arm_coordinates"],
+        })
+    evidence["audits"] = []
+    _rewrite(evidence_path, evidence)
+
+    receipt = close_pilot(
+        plan_path, evidence_path, as_of=datetime(2026, 1, 20, tzinfo=UTC)
+    )
+    assert receipt["administrative_state"] == "PARTIAL"
+    assert receipt["completed_tasks"] == 0
+    assert receipt["voided_tasks"] == 10
     assert receipt["tasks_total"] == 10
     assert receipt["no_replacement"] is True
     assert receipt["feasibility_readout_permitted"] is False
@@ -1277,6 +1362,7 @@ def main() -> int:
         test_plan_refuses_other_valid_protocol_sha,
         test_complete_closeout_mints_no_scientific_verdict,
         test_four_atomic_voids_demote_to_partial_without_replacement,
+        test_all_voided_pilot_emits_partial_without_score_commit,
         test_missing_arm_without_void_fails_closed,
         test_protocol_invalid_arm_requires_whole_task_void,
         test_dispatch_ledger_completeness_is_bidirectional,

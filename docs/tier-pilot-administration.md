@@ -111,6 +111,13 @@ backend-manifest hash, protocol commit, pilot ID, and ratification timestamp.
 The operator's known partial blindness for Arm C remains a protocol caveat; a
 cryptographic label cannot erase human memory.
 
+Seed secrecy before the common score commit is also a behavioral custody line.
+The validator proves that neither the committed reveal path nor its exact blob
+exists in that score tree, but Git cannot prove that an operator did not retain,
+rename, encode, or disclose the raw seed elsewhere. Closeout verifies the
+registered artifact chain; it does not claim cryptographic proof of human
+non-disclosure.
+
 ## Fail-closed commands
 
 No command below invokes a model or chooses a task:

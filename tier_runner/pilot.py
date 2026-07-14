@@ -1424,7 +1424,7 @@ def _validate_audits_v2(
                 errors.append(f"{label} exact mapping reveal bytes already existed at score commit")
     if seen != unvoided:
         errors.append("audits must cover every and only unvoided task")
-    if len(score_commits) != 1:
+    if unvoided and len(score_commits) != 1:
         errors.append("all unvoided score artifacts must share one common score commit")
     return seen, next(iter(score_commits)) if len(score_commits) == 1 else None
 
@@ -1809,17 +1809,18 @@ def validate_evidence(
         seal_hashes, terminal_states, intervals, used_operator_intervals,
         evidence_root, as_of, errors
     )
-    if ratified_void_commits and common_score_commit is None:
-        errors.append("ratified voids cannot close without one common unvoided score commit")
-    elif common_score_commit is not None:
-        for label, ratification_commit in ratified_void_commits:
-            if (
-                ratification_commit == common_score_commit
-                or not _git_is_ancestor(evidence_root, ratification_commit, common_score_commit)
-            ):
-                errors.append(
-                    f"{label}.ratification commit must be a strict ancestor of the common score commit"
-                )
+    if unvoided:
+        if ratified_void_commits and common_score_commit is None:
+            errors.append("ratified voids cannot close without one common unvoided score commit")
+        elif common_score_commit is not None:
+            for label, ratification_commit in ratified_void_commits:
+                if (
+                    ratification_commit == common_score_commit
+                    or not _git_is_ancestor(evidence_root, ratification_commit, common_score_commit)
+                ):
+                    errors.append(
+                        f"{label}.ratification commit must be a strict ancestor of the common score commit"
+                    )
     for iid, (start_event, _) in intervals.items():
         if start_event.get("category") in {"clarification", "review", "rescue", "acceptance"} and iid not in used_operator_intervals:
             errors.append(
