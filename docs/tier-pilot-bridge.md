@@ -24,33 +24,39 @@ process dies after dispatch becomes ambiguous, the existing call directory and
 journal block redispatch; repair requires explicit future adjudication, never an
 automatic retry.
 
-The manifest argv is not executed by the public production entrypoint. Tests
-inject a fixture executor into `start_fixture_pilot_arm()` and
-`answer_and_resume_fixture_pilot_arm()`. This exercises argv expansion and the
-adapter result interface without turning arbitrary committed command text into
-host execution authority.
+The manifest argv is not executed by the public production entrypoint. The
+fixture entrypoint uses one code-owned subprocess executor identity and stamps
+`execution_mode: fixture` on its distinct dispatch, provider, acceptance, and
+bridge receipt schemas. ADMIN explicitly rejects those descriptors. This tests
+transaction mechanics without allowing fixture bytes to resemble admissible
+pilot evidence. Exact pre-read provider prompt identity remains unresolved for
+a real shim; a post-execution equality check is not claimed as a TOCTOU proof.
 
 ## Evidence derived by the bridge
 
-The adapter preserves a `tier-backend-result@1` provider result, an exact
+The fixture adapter preserves a `tier-backend-result@1` provider result, an exact
 `pilot_output` envelope, and at least one hash-bound `provider_raw` artifact.
+The raw fixture artifact must deterministically open that exact output.
 The bridge—not the adapter—derives the canonical full-index patch, candidate
 tree digest, call receipt, and immutable acceptance receipt. Acceptance keeps
 raw stdout, stderr, report, and before/after candidate snapshots. A temporary
-Git index derives the tree without changing the persistent arm lineage.
+Git index derives the tree without changing the persistent arm lineage. Ignored
+files inside scope are refused before dispatch and after packet sync because the
+patch contract cannot seal them.
 
-Every model-call, operator-answer/decline, and acceptance transition is appended
-to `state.jsonl` and immediately replayed. Arm C may pause only on an exact
-`{outcome: question, text}` provider envelope that made no candidate edit; resume
-requires the active question ID, a UUID intervention ID, and a sealed answer.
-ADMIN still owns the global non-overlapping intervention log and verifies that
-the question receipt's intervention ID closes exactly one operator interval.
+Every fixture model-call and acceptance transition is appended to `state.jsonl`
+and immediately replayed. Arm C may pause only on one canonical bounded JSON
+question with an enumerated category and no candidate edit. Fixture resume and
+decline both refuse: a freehand answer and UUID are not global intervention
+authority. Resume remains unimplemented until the bridge can open a canonical
+closed clarification interval owned by ADMIN.
 
-Provider and acceptance descriptors are not decorative bridge output. ADMIN now
-requires `provider_receipts` and `acceptance_receipts` on every arm run, opens the
-provider result and raw artifacts, binds the provider ledger call to the sealed
-call receipt, reopens the exact acceptance receipt, and checks stdout/stderr,
-report, and unchanged before/after candidate bytes.
+Fixture provider and acceptance descriptors are transaction-test artifacts only
+and are ADMIN-inadmissible. The future production format must open an exact,
+duplicate-free provider artifact sequence and distinct before/after acceptance
+snapshots. Acceptance reports already carry bounded stdout/stderr content plus
+full byte counts, truncation flags, and hashes so a repair prompt sees the
+failure rather than hashes alone.
 
 Bridge receipts keep the no-verdict boundary explicit:
 
@@ -73,5 +79,7 @@ These are intentionally unresolved and fail closed:
    and separate execution authority.
 
 Until all four land, the production entrypoint refuses before subprocess
-dispatch. The bridge implementation is machinery under test, not a runnable
-pilot and not evidence about any model.
+dispatch. The journal is hash/sequence/transition validated, but ambiguous
+calls are fail-stopped: no recovery consumer or idempotent redispatch is claimed.
+The fixture transaction contract is machinery under test, not a production
+bridge, runnable pilot, or evidence about any model.

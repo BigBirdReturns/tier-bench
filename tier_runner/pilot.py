@@ -740,6 +740,14 @@ def _validate_bridge_raw_evidence(
         for index, row in enumerate(providers):
             artifact = _artifact(root, row, f"{label}.provider_receipts[{index}]", errors)
             value = _json_artifact_object(artifact, f"{label}.provider_receipts[{index}]", errors)
+            if isinstance(value, dict) and (
+                value.get("schema") == "tier-bench/tier-pilot-fixture-provider-evidence@1"
+                or value.get("execution_mode") == "fixture"
+            ):
+                errors.append(
+                    f"{label}.provider_receipts[{index}] fixture provider evidence is inadmissible"
+                )
+                continue
             fields = {"schema", "call_id", "dispatch_receipt_sha256", "provider_result", "raw_artifacts"}
             if value is None or not _exact_fields(value, fields, f"{label}.provider_receipts[{index}] payload", errors):
                 continue
@@ -773,16 +781,66 @@ def _validate_bridge_raw_evidence(
             if not isinstance(declared, list) or not isinstance(raws, list) or not raws:
                 errors.append(f"{label}.provider_receipts[{index}] must open raw provider artifacts")
                 continue
-            expected = {(item.get("name"), item.get("sha256")) for item in declared if isinstance(item, dict)}
-            opened: set[tuple[Any, Any]] = set()
+            expected: list[tuple[str, str, str]] = []
+            names: set[str] = set()
+            paths: set[str] = set()
+            declared_valid = True
+            for declared_index, item in enumerate(declared):
+                item_label = f"{label}.provider_receipts[{index}].declared_artifacts[{declared_index}]"
+                if not isinstance(item, dict) or set(item) != {"name", "path", "sha256"}:
+                    errors.append(f"{item_label} shape is invalid")
+                    declared_valid = False
+                    continue
+                name = item.get("name")
+                relative = _safe_relative(item.get("path"), f"{item_label}.path", errors)
+                digest = item.get("sha256")
+                if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9_.-]+", name):
+                    errors.append(f"{item_label}.name is unsafe")
+                    declared_valid = False
+                if not _is_hex(digest, HEX64):
+                    errors.append(f"{item_label}.sha256 must be sha256")
+                    declared_valid = False
+                if relative is None:
+                    declared_valid = False
+                if isinstance(name, str) and name in names:
+                    errors.append(f"{item_label}.name is duplicated")
+                    declared_valid = False
+                if relative is not None and relative in paths:
+                    errors.append(f"{item_label}.path is duplicated")
+                    declared_valid = False
+                if isinstance(name, str):
+                    names.add(name)
+                if relative is not None:
+                    paths.add(relative)
+                if (
+                    declared_valid and isinstance(name, str)
+                    and relative is not None and isinstance(digest, str)
+                ):
+                    expected.append((name, relative, digest))
+            opened: list[tuple[str, str, str]] = []
+            raw_names: set[str] = set()
+            raw_paths: set[str] = set()
             for raw_index, raw in enumerate(raws):
                 if not isinstance(raw, dict) or set(raw) != {"name", "path", "sha256"}:
                     errors.append(f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}] shape is invalid")
                     continue
+                raw_name = raw.get("name")
+                raw_path = raw.get("path")
+                if not isinstance(raw_name, str) or not re.fullmatch(r"[a-z0-9_.-]+", raw_name):
+                    errors.append(f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}].name is unsafe")
+                    continue
+                if not isinstance(raw_path, str):
+                    errors.append(f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}].path is invalid")
+                    continue
+                if raw_name in raw_names or raw_path in raw_paths:
+                    errors.append(f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}] is duplicated")
+                    continue
+                raw_names.add(raw_name)
+                raw_paths.add(raw_path)
                 opened_artifact = _artifact(root, {"path": raw.get("path"), "sha256": raw.get("sha256")}, f"{label}.provider_receipts[{index}].raw_artifacts[{raw_index}]", errors)
                 if opened_artifact is not None:
-                    opened.add((raw.get("name"), opened_artifact[1]))
-            if opened != expected or not any(name == "provider_raw" for name, _ in opened):
+                    opened.append((raw_name, raw["path"], opened_artifact[1]))
+            if not declared_valid or opened != expected or not any(name == "provider_raw" for name, _, _ in opened):
                 errors.append(f"{label}.provider_receipts[{index}] raw artifact custody is incomplete")
 
     attempts = state.get("acceptance_attempts", []) if isinstance(state, dict) else []
@@ -815,6 +873,13 @@ def _validate_bridge_raw_evidence(
         for name in ("candidate_before", "candidate_after"):
             if name in opened and opened[name][1] != expected_receipt.get("candidate_patch_sha256"):
                 errors.append(f"{label}.acceptance_receipts[{index}] {name} is not the tested candidate")
+        if (
+            "candidate_before" in opened and "candidate_after" in opened
+            and opened["candidate_before"][0] == opened["candidate_after"][0]
+        ):
+            errors.append(
+                f"{label}.acceptance_receipts[{index}] before/after snapshots must be distinct artifacts"
+            )
         if "candidate_before" in opened and "candidate_after" in opened and opened["candidate_before"][0].read_bytes() != opened["candidate_after"][0].read_bytes():
             errors.append(f"{label}.acceptance_receipts[{index}] candidate changed during acceptance")
         if "report" in opened and (

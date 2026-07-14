@@ -167,10 +167,10 @@ cannot be inherited as historical evidence.
 
 ## Bridge status
 
-The separately claimed bridge now implements the deterministic coordination
-spine with fixture adapters and ADMIN-opened raw custody. Its production
-entrypoint remains activation-blocked because no ratified activation schema yet
-binds a code-owned real adapter identity to frozen backend bytes. See
+The separately claimed bridge now implements an explicitly inadmissible fixture
+transaction contract. Its production entrypoint remains activation-blocked
+because no ratified activation schema yet binds a code-owned real adapter
+identity to frozen backend bytes. See
 `docs/tier-pilot-bridge.md`.
 
 The bridge machinery:
@@ -182,10 +182,12 @@ The bridge machinery:
 3. exposes stage output and derives the full-index candidate patch as sealed causal
    inputs without trusting freehand reconstruction;
 4. runs immutable acceptance between candidate calls;
-5. preserves/resumes Arm C only from a sealed operator answer; and
+5. preserves an Arm-C pause from a strict question envelope but refuses resume
+   or decline until ADMIN-owned global clarification closure exists; and
 6. registers sessions globally and appends Arm-A traces atomically with the arm
    receipt.
 
-Until the bridge is reviewed, merged, and later activated against a frozen
-backend manifest and code-owned adapter receipt, these modules prove the
-coordination contract and state transitions—not that the pilot can run.
+Fixture receipts carry distinct schemas and `execution_mode: fixture`; ADMIN
+rejects them. Until a separate production bridge is reviewed, merged, and
+activated against a frozen backend manifest and code-owned adapter receipt,
+these modules test coordination mechanics—not that the pilot can run.

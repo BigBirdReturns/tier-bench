@@ -10,10 +10,11 @@ import shutil
 import subprocess
 import tempfile
 import uuid
-from typing import Any, Callable
+from typing import Any
 
 from .core import (
     BACKEND_SCHEMA,
+    RunError,
     _backend_artifacts,
     _changed_files,
     _git,
@@ -34,9 +35,7 @@ from .pilot_composition import (
     CALL_SCHEMA,
     CompositionError,
     acceptance_receipt_hash,
-    answer_operator_question,
     canonical_json,
-    decline_operator_question,
     new_pilot_arm_state,
     read_state,
     record_acceptance,
@@ -48,10 +47,18 @@ from .pilot_manifest import PilotComposition, Stage, load_pilot_composition
 
 
 SESSION_SCHEMA = "tier-bench/tier-pilot-bridge-session@1"
-RECEIPT_SCHEMA = "tier-bench/tier-pilot-bridge-receipt@1"
+RECEIPT_SCHEMA = "tier-bench/tier-pilot-fixture-bridge-receipt@1"
+DISPATCH_SCHEMA = "tier-bench/tier-pilot-fixture-dispatch-receipt@1"
+PROVIDER_EVIDENCE_SCHEMA = "tier-bench/tier-pilot-fixture-provider-evidence@1"
+ACCEPTANCE_EVIDENCE_SCHEMA = "tier-bench/tier-pilot-fixture-acceptance-evidence@1"
+EXECUTION_MODE = "fixture"
+FIXTURE_EXECUTOR_ID = "tier-bench/builtin-subprocess-fixture@1"
+QUESTION_ENVELOPE_SCHEMA = "tier-bench/tier-pilot-operator-question@1"
+QUESTION_CATEGORIES = {"interpretation", "policy", "authorization"}
+MAX_QUESTION_BYTES = 512
+MAX_ACCEPTANCE_OUTPUT_BYTES = 8192
 PROVIDER_OUTPUT_FIELDS = {"outcome", "text"}
 PROVIDER_RESULT_FIELDS = {"schema", "calls", "pilot_output", "artifacts"}
-FixtureAdapterExecutor = Callable[[list[str], Path, dict[str, str]], subprocess.CompletedProcess]
 
 
 class BridgeError(RuntimeError):
@@ -151,6 +158,28 @@ def _patch(worktree: Path) -> bytes:
     ).stdout
 
 
+def _ignored_scoped_files(
+    worktree: Path, scopes: list[tuple[str, bool]]
+) -> list[str]:
+    ignored = _git(
+        worktree, "ls-files", "--others", "--ignored", "--exclude-standard"
+    ).stdout.splitlines()
+    return sorted(
+        path.replace("\\", "/")
+        for path in ignored
+        if path.strip() and _in_scope(path.replace("\\", "/"), scopes)
+    )
+
+
+def _refuse_ignored_scope(worktree: Path, scopes: list[tuple[str, bool]]) -> None:
+    ignored = _ignored_scoped_files(worktree, scopes)
+    if ignored:
+        raise BridgeError(
+            "ignored files in pilot scope cannot be sealed by the fixture patch contract: "
+            f"{ignored}"
+        )
+
+
 def _tree(worktree: Path) -> str:
     descriptor, temporary = tempfile.mkstemp(prefix="tier-pilot-index-")
     os.close(descriptor)
@@ -188,6 +217,35 @@ def _tree(worktree: Path) -> str:
     return _sha(raw)
 
 
+def _question_envelope(text: str) -> dict[str, str]:
+    if len(text.encode("utf-8")) > MAX_QUESTION_BYTES:
+        raise BridgeError("operator question envelope exceeds the bounded byte limit")
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise BridgeError("operator question must be a strict JSON envelope") from exc
+    fields = {"schema", "category", "question"}
+    if not isinstance(value, dict) or set(value) != fields:
+        raise BridgeError("operator question envelope fields are invalid")
+    if value.get("schema") != QUESTION_ENVELOPE_SCHEMA:
+        raise BridgeError("operator question envelope schema is invalid")
+    if value.get("category") not in QUESTION_CATEGORIES:
+        raise BridgeError("operator question category is invalid")
+    question = value.get("question")
+    if (
+        not isinstance(question, str)
+        or not (1 <= len(question.encode("utf-8")) <= 280)
+        or "\n" in question
+        or "\r" in question
+        or question.count("?") != 1
+    ):
+        raise BridgeError("operator question must be one bounded single-line question")
+    canonical = canonical_json(value).decode("utf-8").rstrip("\n")
+    if text != canonical:
+        raise BridgeError("operator question envelope is not canonical JSON")
+    return value
+
+
 def _provider_result(path: Path, call_dir: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     value = _read_object(path, "provider result")
     if set(value) != PROVIDER_RESULT_FIELDS or value.get("schema") != BACKEND_SCHEMA:
@@ -202,9 +260,17 @@ def _provider_result(path: Path, call_dir: Path) -> tuple[dict[str, Any], dict[s
         raise BridgeError("provider pilot_output outcome is invalid")
     if not isinstance(output.get("text"), str) or not output["text"]:
         raise BridgeError("provider pilot_output text must be non-empty")
+    if output.get("outcome") == "question":
+        _question_envelope(output["text"])
     artifacts = _backend_artifacts(value, call_dir)
     if "provider_raw" not in artifacts:
         raise BridgeError("provider result must preserve a provider_raw artifact descriptor")
+    try:
+        raw = json.loads(artifacts["provider_raw"][0].read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise BridgeError("fixture provider_raw must be an exact JSON output witness") from exc
+    if raw != {"pilot_output": output}:
+        raise BridgeError("fixture provider_raw does not deterministically open pilot_output")
     return calls[0], output
 
 
@@ -218,14 +284,44 @@ def _append_state(
     return replayed
 
 
+def _read_journal(path: Path, call_id: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    if not path.exists():
+        return rows
+    allowed = ["PREPARED", "DISPATCH_STARTED", "EVIDENCE_SEALED"]
+    for sequence, line in enumerate(path.read_text(encoding="utf-8").splitlines()):
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise BridgeError(f"call journal row {sequence} is invalid JSON") from exc
+        fields = {
+            "schema", "sequence", "call_id", "event", "previous_event_sha256",
+            "recorded_at", "event_sha256",
+        }
+        if not isinstance(row, dict) or set(row) != fields:
+            raise BridgeError(f"call journal row {sequence} fields are invalid")
+        if row.get("schema") != "tier-bench/tier-pilot-call-journal-event@1":
+            raise BridgeError(f"call journal row {sequence} schema is invalid")
+        if row.get("sequence") != sequence or row.get("call_id") != call_id:
+            raise BridgeError(f"call journal row {sequence} coordinate is invalid")
+        if sequence >= len(allowed) or row.get("event") != allowed[sequence]:
+            raise BridgeError(f"call journal row {sequence} transition is invalid")
+        previous = rows[-1]["event_sha256"] if rows else None
+        if row.get("previous_event_sha256") != previous:
+            raise BridgeError(f"call journal row {sequence} chain is invalid")
+        claimed = row.get("event_sha256")
+        unhashed = dict(row)
+        del unhashed["event_sha256"]
+        if claimed != _sha(canonical_json(unhashed)):
+            raise BridgeError(f"call journal row {sequence} hash is invalid")
+        rows.append(row)
+    return rows
+
+
 def _append_journal(path: Path, event: str, call_id: str) -> None:
-    previous = None
-    sequence = 0
-    if path.exists():
-        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line]
-        if rows:
-            previous = rows[-1]["event_sha256"]
-            sequence = rows[-1]["sequence"] + 1
+    rows = _read_journal(path, call_id)
+    previous = rows[-1]["event_sha256"] if rows else None
+    sequence = len(rows)
     row = {
         "schema": "tier-bench/tier-pilot-call-journal-event@1",
         "sequence": sequence,
@@ -239,6 +335,122 @@ def _append_journal(path: Path, event: str, call_id: str) -> None:
         handle.write(canonical_json(row).decode("utf-8"))
         handle.flush()
         os.fsync(handle.fileno())
+    _read_journal(path, call_id)
+
+
+def _open_fixture_ref(root: Path, value: Any, label: str) -> tuple[Path, str]:
+    if not isinstance(value, dict) or set(value) != {"path", "sha256"}:
+        raise BridgeError(f"{label} artifact reference fields are invalid")
+    relative = value.get("path")
+    expected = value.get("sha256")
+    if not isinstance(relative, str) or not isinstance(expected, str):
+        raise BridgeError(f"{label} artifact reference values are invalid")
+    path = (root / relative).resolve()
+    if not _inside(path, root) or not path.is_file():
+        raise BridgeError(f"{label} artifact is missing or escapes fixture custody")
+    actual = sha256_file(path)
+    if actual != expected:
+        raise BridgeError(f"{label} artifact hash drifted")
+    return path, actual
+
+
+def _verify_fixture_evidence(session_dir: Path) -> None:
+    calls_dir = session_dir / "calls"
+    if not calls_dir.is_dir():
+        return
+    for call_dir in sorted(path for path in calls_dir.iterdir() if path.is_dir()):
+        dispatch_path = call_dir / "dispatch.json"
+        if not dispatch_path.is_file():
+            raise BridgeError(f"prior fixture call {call_dir.name} has no dispatch evidence")
+        dispatch = _read_object(dispatch_path, "fixture dispatch")
+        call_id = dispatch.get("call_id")
+        if (
+            dispatch.get("schema") != DISPATCH_SCHEMA
+            or dispatch.get("execution_mode") != EXECUTION_MODE
+            or dispatch.get("executor_identity") != FIXTURE_EXECUTOR_ID
+            or not isinstance(call_id, str)
+            or not call_id
+        ):
+            raise BridgeError(f"prior fixture call {call_dir.name} dispatch identity drifted")
+        journal = _read_journal(call_dir / "journal.jsonl", call_id)
+        if [row["event"] for row in journal] != [
+            "PREPARED", "DISPATCH_STARTED", "EVIDENCE_SEALED"
+        ]:
+            raise BridgeError(f"prior fixture call {call_dir.name} is not durably sealed")
+        provider_path = call_dir / "provider-evidence.json"
+        provider = _read_object(provider_path, "fixture provider evidence")
+        provider_fields = {
+            "schema", "execution_mode", "executor_identity", "call_id",
+            "dispatch_receipt_sha256", "provider_result", "raw_artifacts",
+        }
+        if (
+            set(provider) != provider_fields
+            or provider.get("schema") != PROVIDER_EVIDENCE_SCHEMA
+            or provider.get("execution_mode") != EXECUTION_MODE
+            or provider.get("executor_identity") != FIXTURE_EXECUTOR_ID
+            or provider.get("call_id") != call_id
+            or provider.get("dispatch_receipt_sha256") != _sha(dispatch_path.read_bytes())
+        ):
+            raise BridgeError(f"prior fixture call {call_dir.name} provider custody drifted")
+        result_path, _ = _open_fixture_ref(
+            session_dir, provider.get("provider_result"), "fixture provider result"
+        )
+        try:
+            _provider_result(result_path, call_dir)
+        except RunError as exc:
+            raise BridgeError(f"prior fixture provider evidence is invalid: {exc}") from exc
+        result = _read_object(result_path, "fixture provider result")
+        expected_raw: list[tuple[str, Path, str]] = []
+        for item in result["artifacts"]:
+            expected_raw.append((
+                item["name"], (call_dir / item["path"]).resolve(), item["sha256"]
+            ))
+        opened_raw: list[tuple[str, Path, str]] = []
+        raws = provider.get("raw_artifacts")
+        if not isinstance(raws, list):
+            raise BridgeError("fixture raw_artifacts must be an array")
+        for index, raw in enumerate(raws):
+            if not isinstance(raw, dict) or set(raw) != {"name", "path", "sha256"}:
+                raise BridgeError(f"fixture raw artifact {index} fields are invalid")
+            opened, digest = _open_fixture_ref(
+                session_dir, {"path": raw["path"], "sha256": raw["sha256"]},
+                f"fixture raw artifact {index}",
+            )
+            opened_raw.append((raw["name"], opened, digest))
+        if opened_raw != expected_raw:
+            raise BridgeError("fixture raw artifact custody is not an exact ordered match")
+        acceptance_path = call_dir / "acceptance-evidence.json"
+        if not acceptance_path.exists():
+            continue
+        acceptance = _read_object(acceptance_path, "fixture acceptance evidence")
+        acceptance_fields = {
+            "schema", "execution_mode", "executor_identity", "receipt_sha256",
+            "receipt", "stdout", "stderr", "candidate_before", "candidate_after", "report",
+        }
+        if (
+            set(acceptance) != acceptance_fields
+            or acceptance.get("schema") != ACCEPTANCE_EVIDENCE_SCHEMA
+            or acceptance.get("execution_mode") != EXECUTION_MODE
+            or acceptance.get("executor_identity") != FIXTURE_EXECUTOR_ID
+        ):
+            raise BridgeError(f"prior fixture call {call_dir.name} acceptance custody drifted")
+        opened = {
+            name: _open_fixture_ref(
+                session_dir, acceptance.get(name), f"fixture acceptance {name}"
+            )
+            for name in (
+                "receipt", "stdout", "stderr", "candidate_before", "candidate_after", "report"
+            )
+        }
+        if opened["candidate_before"][0] == opened["candidate_after"][0]:
+            raise BridgeError("fixture acceptance before/after snapshots alias one artifact")
+        if opened["candidate_before"][0].read_bytes() != opened["candidate_after"][0].read_bytes():
+            raise BridgeError("fixture acceptance candidate changed during execution")
+        receipt = _read_object(opened["receipt"][0], "fixture acceptance receipt")
+        if receipt.get("receipt_sha256") != acceptance.get("receipt_sha256"):
+            raise BridgeError("fixture acceptance receipt identity drifted")
+        if opened["report"][0].read_bytes() != receipt.get("report", "").encode("utf-8"):
+            raise BridgeError("fixture acceptance raw report drifted")
 
 
 def _dispatch(
@@ -251,7 +463,9 @@ def _dispatch(
     attempt = 1 + sum(call["stage"] == state["next_stage"] for call in state["calls"])
     template = composition.templates[stage_spec.prompt_template]
     return {
-        "schema": "tier-bench/tier-pilot-dispatch-receipt@1",
+        "schema": DISPATCH_SCHEMA,
+        "execution_mode": EXECUTION_MODE,
+        "executor_identity": FIXTURE_EXECUTOR_ID,
         "call_id": call_id,
         "task_id": state["task_id"],
         "arm": state["arm"],
@@ -347,10 +561,17 @@ def _acceptance(
     if after_patch != candidate_patch or after_files != before_files:
         raise BridgeError("acceptance command mutated the candidate; no receipt minted")
     tree = _tree(worktree)
-    report = (
-        f"acceptance exit={process.returncode}; stdout_sha256={_sha(stdout)}; "
-        f"stderr_sha256={_sha(stderr)}"
-    )
+    report = canonical_json({
+        "exit_code": process.returncode,
+        "stderr": stderr[:MAX_ACCEPTANCE_OUTPUT_BYTES].decode("utf-8", errors="replace"),
+        "stderr_bytes": len(stderr),
+        "stderr_sha256": _sha(stderr),
+        "stderr_truncated": len(stderr) > MAX_ACCEPTANCE_OUTPUT_BYTES,
+        "stdout": stdout[:MAX_ACCEPTANCE_OUTPUT_BYTES].decode("utf-8", errors="replace"),
+        "stdout_bytes": len(stdout),
+        "stdout_sha256": _sha(stdout),
+        "stdout_truncated": len(stdout) > MAX_ACCEPTANCE_OUTPUT_BYTES,
+    }).decode("utf-8").rstrip("\n")
     (call_dir / "acceptance-report.txt").write_bytes(report.encode("utf-8"))
     receipt = {
         "schema": ACCEPTANCE_SCHEMA,
@@ -386,13 +607,13 @@ def _call_once(
     bridge_id: str,
     worktree: Path,
     registry_git: Path,
-    fixture_executor: FixtureAdapterExecutor,
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
     ordinal = len(state["calls"]) + 1
     stage_spec = _stage(composition, state)
     backend = composition.backends[stage_spec.backend]
-    call_id = f"{_safe_id(state['task_id'])}-{state['arm']}-{ordinal:02d}-{state['state_sha256'][:10]}"
+    call_id = f"{_safe_id(state['task_id'])}-{state['arm']}-{ordinal:02d}-{state['state_sha256']}"
     call_dir = session_dir / "calls" / f"{ordinal:02d}-{state['next_stage']}"
+    _verify_fixture_evidence(session_dir)
     if call_dir.exists():
         raise BridgeError("call evidence directory already exists; refusing overwrite")
     call_dir.mkdir(parents=True)
@@ -414,6 +635,7 @@ def _call_once(
             raise BridgeError("isolated arm worktree is missing")
         if _patch(worktree) != _last_candidate(state):
             raise BridgeError("isolated arm worktree diverged from the sealed candidate lineage")
+        _refuse_ignored_scope(worktree, scopes)
         packet.rmdir()
         baseline = _prepare_packet(worktree, packet, scopes)
         prompt_raw = render_next_prompt(composition, state)
@@ -431,7 +653,9 @@ def _call_once(
         env = {key: value for key, value in os.environ.items() if not key.startswith("TIER_")}
         env.update({"PYTHONUTF8": "1", "PYTHONDONTWRITEBYTECODE": "1"})
         _append_journal(journal_path, "DISPATCH_STARTED", call_id)
-        process = fixture_executor(_expand(backend.command, values), packet, env)
+        process = subprocess.run(
+            _expand(backend.command, values), cwd=packet, env=env, capture_output=True
+        )
         (call_dir / "adapter.stdout").write_bytes(process.stdout or b"")
         (call_dir / "adapter.stderr").write_bytes(process.stderr or b"")
         if process.returncode:
@@ -442,7 +666,19 @@ def _call_once(
             raise BridgeError("provider adapter modified immutable prompt/dispatch bytes")
         ledger_call, provider_output = _provider_result(result_path, call_dir)
         provider_value = _read_object(result_path, "provider result")
+        extra = ledger_call.get("extra")
+        session_id = extra.get("session_id") if isinstance(extra, dict) else None
+        if not isinstance(session_id, str) or not session_id:
+            raise BridgeError("parsed provider result has no session identity to burn")
+        _register_session(
+            registry_git,
+            session_id=session_id, run_id=bridge_id,
+            task_id=state["task_id"], arm=state["arm"],
+            dispatch_hash=_sha(dispatch_raw),
+        )
+        registered = True
         _, packet_violations = _sync_packet(packet, worktree, scopes, baseline)
+        _refuse_ignored_scope(worktree, scopes)
         changed = _changed_files(worktree)
         violations = sorted(set(packet_violations + [
             path for path in changed if not _in_scope(path, scopes)
@@ -463,7 +699,9 @@ def _call_once(
             acceptance_path.write_bytes(canonical_json(acceptance_receipt))
             accepted_state = record_acceptance(composition, next_state, acceptance_receipt)
         provider_descriptor = {
-            "schema": "tier-bench/tier-pilot-provider-evidence@1",
+            "schema": PROVIDER_EVIDENCE_SCHEMA,
+            "execution_mode": EXECUTION_MODE,
+            "executor_identity": FIXTURE_EXECUTOR_ID,
             "call_id": call_id,
             "dispatch_receipt_sha256": call_receipt["dispatch_receipt_sha256"],
             "provider_result": _artifact_ref(session_dir, result_path),
@@ -478,7 +716,9 @@ def _call_once(
         (call_dir / "provider-evidence.json").write_bytes(canonical_json(provider_descriptor))
         if acceptance_receipt is not None:
             acceptance_descriptor = {
-                "schema": "tier-bench/tier-pilot-acceptance-evidence@1",
+                "schema": ACCEPTANCE_EVIDENCE_SCHEMA,
+                "execution_mode": EXECUTION_MODE,
+                "executor_identity": FIXTURE_EXECUTOR_ID,
                 "receipt_sha256": acceptance_receipt["receipt_sha256"],
                 "receipt": _artifact_ref(session_dir, acceptance_path),
                 "stdout": _artifact_ref(session_dir, call_dir / "acceptance.stdout"),
@@ -490,15 +730,11 @@ def _call_once(
             (call_dir / "acceptance-evidence.json").write_bytes(
                 canonical_json(acceptance_descriptor)
             )
-        _register_session(
-            registry_git,
-            session_id=call_receipt["session_id"], run_id=bridge_id,
-            task_id=state["task_id"], arm=state["arm"],
-            dispatch_hash=call_receipt["dispatch_receipt_sha256"],
-        )
-        registered = True
         _append_journal(journal_path, "EVIDENCE_SEALED", call_id)
-    except (BridgeError, CompositionError, ManifestError, OSError, ValueError, subprocess.SubprocessError) as exc:
+    except (
+        BridgeError, CompositionError, ManifestError, RunError, OSError,
+        ValueError, subprocess.SubprocessError,
+    ) as exc:
         error = exc
     finally:
         try:
@@ -533,6 +769,7 @@ def _receipt(
     session_dir: Path, composition: PilotComposition, state: dict[str, Any],
     *, worktree_removed: bool,
 ) -> dict[str, Any]:
+    _verify_fixture_evidence(session_dir)
     calls: list[dict[str, Any]] = []
     provider_receipts: list[dict[str, str]] = []
     acceptance_receipts: list[dict[str, str]] = []
@@ -554,6 +791,8 @@ def _receipt(
     state_path = session_dir / "state.jsonl"
     value = {
         "schema": RECEIPT_SCHEMA,
+        "execution_mode": EXECUTION_MODE,
+        "executor_identity": FIXTURE_EXECUTOR_ID,
         "task_id": state["task_id"],
         "arm": state["arm"],
         "base_commit": state["base_commit"],
@@ -585,7 +824,6 @@ def _drive(
     bridge_id: str,
     worktree: Path,
     registry_git: Path,
-    fixture_executor: FixtureAdapterExecutor,
 ) -> dict[str, Any]:
     lock = session_dir / "arm.lock"
     try:
@@ -597,10 +835,11 @@ def _drive(
         while state["status"] == "ACTIVE":
             state, _ = _call_once(
                 composition, state, repo, session_dir, scopes, bridge_id,
-                worktree, registry_git, fixture_executor,
+                worktree, registry_git,
             )
         removed = False
         if state["status"] in {"COMPLETE", "FAILED"}:
+            _verify_fixture_evidence(session_dir)
             process = _git(repo, "worktree", "remove", "--force", str(worktree), check=False)
             removed = process.returncode == 0 and not worktree.exists()
             if not removed:
@@ -633,11 +872,12 @@ def start_fixture_pilot_arm(
     acceptance_command: str,
     base_commit: str,
     output_dir: Path,
-    fixture_executor: FixtureAdapterExecutor,
 ) -> dict[str, Any]:
     repo = _repo_root(repo)
     evidence_repo = _repo_root(evidence_repo)
-    if evidence_repo == repo:
+    target_git = _git_common_dir(repo)
+    registry_git = _git_common_dir(evidence_repo)
+    if evidence_repo == repo or target_git == registry_git:
         raise BridgeError("control/evidence repository must be separate from the target")
     if subprocess.run(
         ["git", "cat-file", "-e", f"{base_commit}^{{commit}}"], cwd=repo,
@@ -650,8 +890,6 @@ def start_fixture_pilot_arm(
     composition = load_pilot_composition(composition_manifest)
     scopes = _normalize_scope(repo, files)
     normalized_files = [path + ("/" if is_dir else "") for path, is_dir in scopes]
-    target_git = _git_common_dir(repo)
-    registry_git = _git_common_dir(evidence_repo)
     bridge_id = f"{_safe_id(task_id)}-{arm}-{uuid.uuid4().hex[:12]}"
     session_dir = output_dir.resolve()
     if _inside(session_dir, repo):
@@ -687,7 +925,7 @@ def start_fixture_pilot_arm(
     (session_dir / "bridge-session.json").write_bytes(canonical_json(session))
     return _drive(
         composition, state, repo, session_dir, scopes, bridge_id,
-        worktree, registry_git, fixture_executor,
+        worktree, registry_git,
     )
 
 
@@ -705,7 +943,11 @@ def _load_session(session_dir: Path) -> tuple[
         raise BridgeError("bridge session fields/schema are invalid")
     repo = _repo_root(Path(session["repo"]))
     evidence_repo = _repo_root(Path(session["evidence_repo"]))
-    if repo == evidence_repo or not _inside(session_dir, evidence_repo):
+    if (
+        repo == evidence_repo
+        or _git_common_dir(repo) == _git_common_dir(evidence_repo)
+        or not _inside(session_dir, evidence_repo)
+    ):
         raise BridgeError("bridge session lost separate control/evidence custody")
     composition_path = Path(session["composition_manifest"]).resolve()
     if not _inside(composition_path, evidence_repo):
@@ -736,17 +978,11 @@ def answer_and_resume_fixture_pilot_arm(
     question_id: str,
     answer: str,
     intervention_id: str,
-    fixture_executor: FixtureAdapterExecutor,
 ) -> dict[str, Any]:
-    session, composition, repo, evidence_repo, scopes, state = _load_session(session_dir)
-    answered = answer_operator_question(
-        composition, state, question_id=question_id, answer=answer,
-        intervention_id=intervention_id,
-    )
-    answered = _append_state(session_dir.resolve() / "state.jsonl", composition, answered)
-    return _drive(
-        composition, answered, repo, session_dir.resolve(), scopes, session["bridge_id"],
-        Path(session["arm_worktree"]), _git_common_dir(evidence_repo), fixture_executor,
+    raise BridgeError(
+        "fixture Arm-C resume is activation-blocked: freehand answers and intervention "
+        "identifiers cannot authorize dispatch; a canonical globally closed clarification "
+        "interval is not implemented"
     )
 
 
@@ -757,15 +993,7 @@ def decline_pilot_arm(
     reason: str,
     intervention_id: str,
 ) -> dict[str, Any]:
-    session, composition, repo, _, _, state = _load_session(session_dir)
-    declined = decline_operator_question(
-        composition, state, question_id=question_id, reason=reason,
-        intervention_id=intervention_id,
+    raise BridgeError(
+        "fixture Arm-C decline is activation-blocked until canonical global intervention "
+        "closure and locked evidence replay are implemented"
     )
-    declined = _append_state(session_dir.resolve() / "state.jsonl", composition, declined)
-    worktree = Path(session["arm_worktree"])
-    process = _git(repo, "worktree", "remove", "--force", str(worktree), check=False)
-    removed = process.returncode == 0 and not worktree.exists()
-    if not removed:
-        raise BridgeError("declined arm could not remove its isolated worktree")
-    return _receipt(session_dir.resolve(), composition, declined, worktree_removed=True)

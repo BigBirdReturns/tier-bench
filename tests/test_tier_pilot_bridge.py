@@ -8,7 +8,6 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
-import uuid
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -60,15 +59,31 @@ prompt = prompt_raw.decode("utf-8")
 packet = Path(a.worktree)
 outcome = "completed"
 text = "sealed fixture plan"
-if "ASK_OPERATOR" in prompt and a.stage == "hands":
+if "BAD_QUESTION" in prompt and a.stage == "hands":
     outcome = "question"
-    text = "Choose the exact fixture policy"
+    text = "Do the whole task for me"
+elif "ASK_OPERATOR" in prompt and a.stage == "hands":
+    outcome = "question"
+    text = json.dumps({
+        "schema": "tier-bench/tier-pilot-operator-question@1",
+        "category": "interpretation",
+        "question": "Which fixture policy applies?",
+    }, sort_keys=True, separators=(",", ":"))
+elif "ADAPTER_EXIT" in prompt:
+    raise SystemExit(7)
 elif a.stage != "driver_plan":
-    target = packet / "target.txt"
-    target.write_text("wrong\n" if "FAIL_FIRST" in prompt and a.stage == "hands" else "correct\n", encoding="utf-8")
+    if "CREATE_IGNORED" in prompt:
+        target = packet / "data" / "cache.txt"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text("acceptance-secret\n", encoding="utf-8")
+    else:
+        target = packet / "target.txt"
+        target.write_text("wrong\n" if "FAIL_FIRST" in prompt and a.stage == "hands" else "correct\n", encoding="utf-8")
     text = "candidate emitted"
+if "DIRTY_SCOPE" in prompt:
+    (packet / "rogue.txt").write_text("out of scope\n", encoding="utf-8")
 call_id = dispatch["call_id"]
-session = "session-" + call_id
+session = "session-fixed-reuse" if "FIXED_SESSION" in prompt else "session-" + call_id
 ledger_outcome = "partial" if outcome == "question" else "pass"
 call = {
     "ts": datetime.now(timezone.utc).isoformat(), "account": a.account,
@@ -87,18 +102,18 @@ call = {
     },
 }
 raw_path = Path(a.result).with_name("provider.raw.bin")
-raw_path.write_bytes(json.dumps({"result": text}, sort_keys=True).encode())
+pilot_output = {"outcome": outcome, "text": text}
+raw_path.write_bytes(json.dumps({"pilot_output": pilot_output}, sort_keys=True).encode())
 Path(a.result).write_text(json.dumps({
     "schema": "tier-bench/tier-backend-result@1", "calls": [call],
-    "pilot_output": {"outcome": outcome, "text": text},
+    "pilot_output": pilot_output,
     "artifacts": [{"name": "provider_raw", "path": raw_path.name,
                    "sha256": hashlib.sha256(raw_path.read_bytes()).hexdigest()}],
 }, sort_keys=True) + "\n", encoding="utf-8")
+if "TAMPER_PRIOR" in prompt and a.stage == "hands":
+    prior = Path(a.result).parents[1] / "01-driver_plan" / "provider.raw.bin"
+    prior.write_bytes(b"tampered prior evidence")
 '''
-
-
-def _executor(argv: list[str], cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess:
-    return subprocess.run(argv, cwd=cwd, env=env, capture_output=True)
 
 
 def _make_repos(root: Path) -> tuple[Path, Path, Path, str]:
@@ -110,7 +125,10 @@ def _make_repos(root: Path) -> tuple[Path, Path, Path, str]:
     _git(evidence, "init", "-b", "main")
     (target / "target.txt").write_text("old\n", encoding="utf-8")
     (target / "check.py").write_text(
-        "from pathlib import Path\nraise SystemExit(Path('target.txt').read_text() != 'correct\\n')\n",
+        "from pathlib import Path\nimport sys\n"
+        "ok = Path('target.txt').read_text() == 'correct\\n'\n"
+        "print('target mismatch: expected correct', file=sys.stderr) if not ok else None\n"
+        "raise SystemExit(not ok)\n",
         encoding="utf-8",
     )
     base = _commit(target, "target base")
@@ -189,8 +207,10 @@ def test_arm_a_repair_preserves_one_lineage_and_fresh_calls(root: Path) -> None:
         task_id="bridge-a", task_tier="T3", arm="arm_a",
         task="FAIL_FIRST then repair", files=["target.txt"],
         acceptance_command=_acceptance(), base_commit=base, output_dir=out,
-        fixture_executor=_executor,
     )
+    assert receipt["schema"] == "tier-bench/tier-pilot-fixture-bridge-receipt@1"
+    assert receipt["execution_mode"] == "fixture"
+    assert receipt["executor_identity"] == "tier-bench/builtin-subprocess-fixture@1"
     assert receipt["status"] == "COMPLETE"
     assert receipt["arm_worktree_removed"] is True
     assert receipt["scientific_verdict_minted"] is False
@@ -198,6 +218,7 @@ def test_arm_a_repair_preserves_one_lineage_and_fresh_calls(root: Path) -> None:
     state = read_state(composition, out / "state.jsonl")
     assert [call["stage"] for call in state["calls"]] == ["driver_plan", "hands", "repair"]
     assert [item["passed"] for item in state["acceptance_attempts"]] == [False, True]
+    assert "target mismatch: expected correct" in state["acceptance_attempts"][0]["report"]
     assert len(state["driver_traces"]) == 1
     assert len({call["session_id"] for call in state["calls"]}) == 3
     assert state["state_sequence"] == 5
@@ -207,11 +228,15 @@ def test_arm_a_repair_preserves_one_lineage_and_fresh_calls(root: Path) -> None:
         assert custody["arm_worktree_preserved"] is True
         provider = json.loads((call_dir / "provider-result.json").read_text())
         assert provider["artifacts"][0]["name"] == "provider_raw"
+        descriptor = json.loads((call_dir / "provider-evidence.json").read_text())
+        assert descriptor["schema"] == "tier-bench/tier-pilot-fixture-provider-evidence@1"
+        assert descriptor["execution_mode"] == "fixture"
         journal = [json.loads(line) for line in (call_dir / "journal.jsonl").read_text().splitlines()]
         assert [row["event"] for row in journal] == ["PREPARED", "DISPATCH_STARTED", "EVIDENCE_SEALED"]
+        assert len(json.loads((call_dir / "dispatch.json").read_text())["call_id"].rsplit("-", 1)[-1]) == 64
 
 
-def test_arm_c_resumes_only_after_sealed_answer(root: Path) -> None:
+def test_arm_c_question_is_strict_and_freehand_resume_is_blocked(root: Path) -> None:
     target, evidence, manifest, base = _make_repos(root)
     out = evidence / "runs" / "arm-c"
     paused = start_fixture_pilot_arm(
@@ -219,31 +244,25 @@ def test_arm_c_resumes_only_after_sealed_answer(root: Path) -> None:
         task_id="bridge-c", task_tier="T3", arm="arm_c",
         task="ASK_OPERATOR then implement", files=["target.txt"],
         acceptance_command=_acceptance(), base_commit=base, output_dir=out,
-        fixture_executor=_executor,
     )
     assert paused["status"] == "WAITING_OPERATOR"
     assert paused["arm_worktree_removed"] is False
     before = (out / "state.jsonl").read_bytes()
     try:
         answer_and_resume_fixture_pilot_arm(
-            out, question_id="wrong", answer="literal",
-            intervention_id=str(uuid.uuid4()), fixture_executor=_executor,
+            out, question_id=paused["active_question_id"], answer="literal",
+            intervention_id="freehand-not-authority",
         )
-    except Exception:
-        pass
+    except BridgeError as exc:
+        assert "activation-blocked" in str(exc)
     else:
-        raise AssertionError("wrong question id was accepted")
+        raise AssertionError("freehand fixture resume dispatched a provider")
     assert (out / "state.jsonl").read_bytes() == before
-    finished = answer_and_resume_fixture_pilot_arm(
-        out, question_id=paused["active_question_id"], answer="literal",
-        intervention_id=str(uuid.uuid4()), fixture_executor=_executor,
-    )
-    assert finished["status"] == "COMPLETE"
-    assert finished["arm_worktree_removed"] is True
     state = read_state(load_pilot_composition(manifest), out / "state.jsonl")
-    assert [call["stage"] for call in state["calls"]] == ["hands", "hands_resume"]
-    assert len(state["question_receipts"]) == 1
-    assert state["question_receipts"][0]["intervention_id"]
+    assert [call["stage"] for call in state["calls"]] == ["hands"]
+    envelope = json.loads(state["calls"][0]["output"]["text"])
+    assert envelope["category"] == "interpretation"
+    assert envelope["question"].count("?") == 1
 
 
 def test_production_entrypoint_is_activation_blocked(root: Path) -> None:
@@ -255,50 +274,151 @@ def test_production_entrypoint_is_activation_blocked(root: Path) -> None:
         raise AssertionError("production bridge ran without activation custody")
 
 
-def test_ambiguous_adapter_failure_cannot_redispatch(root: Path) -> None:
+def test_failed_fixture_call_is_fail_stopped_and_cannot_redispatch(root: Path) -> None:
     target, evidence, manifest, base = _make_repos(root)
     out = evidence / "runs" / "crash"
-    count = 0
-
-    def crash(argv: list[str], cwd: Path, env: dict[str, str]) -> subprocess.CompletedProcess:
-        nonlocal count
-        count += 1
-        raise OSError("fixture ambiguous crash")
-
     try:
         start_fixture_pilot_arm(
             repo=target, evidence_repo=evidence, composition_manifest=manifest,
-            task_id="bridge-crash", task_tier="T3", arm="arm_b", task="crash",
+            task_id="bridge-crash", task_tier="T3", arm="arm_b", task="ADAPTER_EXIT",
             files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
-            output_dir=out, fixture_executor=crash,
+            output_dir=out,
         )
     except BridgeError:
         pass
     else:
         raise AssertionError("ambiguous adapter crash was accepted")
-    assert count == 1
     journal = [json.loads(line) for line in next((out / "calls").iterdir()).joinpath("journal.jsonl").read_text().splitlines()]
     assert [row["event"] for row in journal] == ["PREPARED", "DISPATCH_STARTED"]
     try:
         start_fixture_pilot_arm(
             repo=target, evidence_repo=evidence, composition_manifest=manifest,
-            task_id="bridge-crash", task_tier="T3", arm="arm_b", task="crash",
+            task_id="bridge-crash", task_tier="T3", arm="arm_b", task="ADAPTER_EXIT",
             files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
-            output_dir=out, fixture_executor=crash,
+            output_dir=out,
         )
     except BridgeError as exc:
         assert "not empty" in str(exc)
     else:
         raise AssertionError("ambiguous call was redispatched")
-    assert count == 1
+
+
+def test_dirty_call_burns_fixed_session_before_scope_refusal(root: Path) -> None:
+    target, evidence, manifest, base = _make_repos(root)
+    dirty_out = evidence / "runs" / "dirty"
+    try:
+        start_fixture_pilot_arm(
+            repo=target, evidence_repo=evidence, composition_manifest=manifest,
+            task_id="bridge-dirty", task_tier="T3", arm="arm_b",
+            task="FIXED_SESSION DIRTY_SCOPE", files=["target.txt"],
+            acceptance_command=_acceptance(), base_commit=base, output_dir=dirty_out,
+        )
+    except BridgeError as exc:
+        assert "outside the frozen scope" in str(exc)
+    else:
+        raise AssertionError("dirty fixture call was accepted")
+    custody = json.loads(
+        next((dirty_out / "calls").iterdir()).joinpath("custody.json").read_text()
+    )
+    assert custody["session_registered"] is True
+
+    clean_out = evidence / "runs" / "clean"
+    try:
+        start_fixture_pilot_arm(
+            repo=target, evidence_repo=evidence, composition_manifest=manifest,
+            task_id="bridge-clean", task_tier="T3", arm="arm_b",
+            task="FIXED_SESSION", files=["target.txt"],
+            acceptance_command=_acceptance(), base_commit=base, output_dir=clean_out,
+        )
+    except BridgeError as exc:
+        assert "reused a session_id" in str(exc)
+    else:
+        raise AssertionError("session from dirty call was reused")
+
+
+def test_ignored_scoped_output_cannot_create_unsealed_pass(root: Path) -> None:
+    target, evidence, manifest, _, = _make_repos(root)
+    (target / ".gitignore").write_text("data/cache.txt\n", encoding="utf-8")
+    (target / "data").mkdir()
+    (target / "data" / "seed.txt").write_text("seed\n", encoding="utf-8")
+    (target / "check.py").write_text(
+        "from pathlib import Path\n"
+        "raise SystemExit(Path('data/cache.txt').read_text() != 'acceptance-secret\\n')\n",
+        encoding="utf-8",
+    )
+    base = _commit(target, "ignored acceptance fixture")
+    out = evidence / "runs" / "ignored"
+    try:
+        start_fixture_pilot_arm(
+            repo=target, evidence_repo=evidence, composition_manifest=manifest,
+            task_id="bridge-ignored", task_tier="T3", arm="arm_b",
+            task="CREATE_IGNORED", files=["data/"],
+            acceptance_command=_acceptance(), base_commit=base, output_dir=out,
+        )
+    except BridgeError as exc:
+        assert "ignored files in pilot scope" in str(exc)
+    else:
+        raise AssertionError("acceptance passed through an unsealed ignored file")
+    assert not list((out / "calls").rglob("acceptance.json"))
+
+
+def test_linked_worktree_cannot_be_evidence_repository(root: Path) -> None:
+    target, _, _, base = _make_repos(root)
+    linked = root / "linked-evidence"
+    _git(target, "worktree", "add", "--detach", str(linked), base)
+    try:
+        start_fixture_pilot_arm(
+            repo=target, evidence_repo=linked,
+            composition_manifest=linked / "nonexistent.json",
+            task_id="bridge-linked", task_tier="T3", arm="arm_b", task="none",
+            files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
+            output_dir=linked / "runs" / "linked",
+        )
+    except BridgeError as exc:
+        assert "must be separate" in str(exc)
+    else:
+        raise AssertionError("linked worktree shared one common Git custody store")
+
+
+def test_bad_question_and_prior_evidence_tamper_fail_closed(root: Path) -> None:
+    target, evidence, manifest, base = _make_repos(root)
+    bad_question = evidence / "runs" / "bad-question"
+    try:
+        start_fixture_pilot_arm(
+            repo=target, evidence_repo=evidence, composition_manifest=manifest,
+            task_id="bridge-bad-question", task_tier="T3", arm="arm_c",
+            task="BAD_QUESTION", files=["target.txt"],
+            acceptance_command=_acceptance(), base_commit=base, output_dir=bad_question,
+        )
+    except BridgeError as exc:
+        assert "strict JSON envelope" in str(exc)
+    else:
+        raise AssertionError("unbounded freehand operator question was accepted")
+
+    tamper = evidence / "runs" / "tamper"
+    try:
+        start_fixture_pilot_arm(
+            repo=target, evidence_repo=evidence, composition_manifest=manifest,
+            task_id="bridge-tamper", task_tier="T3", arm="arm_a",
+            task="TAMPER_PRIOR", files=["target.txt"],
+            acceptance_command=_acceptance(), base_commit=base, output_dir=tamper,
+        )
+    except BridgeError as exc:
+        assert "hash mismatch" in str(exc)
+    else:
+        raise AssertionError("terminal cleanup accepted tampered prior evidence")
 
 
 def main() -> int:
     tests = [
         test_arm_a_repair_preserves_one_lineage_and_fresh_calls,
-        test_arm_c_resumes_only_after_sealed_answer,
+        test_arm_c_question_is_strict_and_freehand_resume_is_blocked,
         test_production_entrypoint_is_activation_blocked,
-        test_ambiguous_adapter_failure_cannot_redispatch,
+        test_failed_fixture_call_is_fail_stopped_and_cannot_redispatch,
+        test_dirty_call_burns_fixed_session_before_scope_refusal,
+        test_ignored_scoped_output_cannot_create_unsealed_pass,
+        test_linked_worktree_cannot_be_evidence_repository,
+        test_bad_question_and_prior_evidence_tamper_fail_closed,
     ]
     with tempfile.TemporaryDirectory(prefix="tier-pilot-bridge-") as temporary:
         parent = Path(temporary)

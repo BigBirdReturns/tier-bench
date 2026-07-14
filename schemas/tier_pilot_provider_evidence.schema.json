@@ -1,12 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bigbirdreturns.example/schemas/tier_pilot_provider_evidence.schema.json",
-  "title": "Pilot provider raw-evidence descriptor",
+  "title": "Inadmissible fixture pilot provider raw-evidence descriptor",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema", "call_id", "dispatch_receipt_sha256", "provider_result", "raw_artifacts"],
+  "required": ["schema", "execution_mode", "executor_identity", "call_id", "dispatch_receipt_sha256", "provider_result", "raw_artifacts"],
   "properties": {
-    "schema": {"const": "tier-bench/tier-pilot-provider-evidence@1"},
+    "schema": {"const": "tier-bench/tier-pilot-fixture-provider-evidence@1"},
+    "execution_mode": {"const": "fixture"},
+    "executor_identity": {"const": "tier-bench/builtin-subprocess-fixture@1"},
     "call_id": {"type": "string", "minLength": 1},
     "dispatch_receipt_sha256": {"$ref": "#/$defs/sha256"},
     "provider_result": {"$ref": "#/$defs/artifact"},
