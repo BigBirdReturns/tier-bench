@@ -91,6 +91,20 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
+def _answer_timestamp(value: str | None, asked_at: str) -> str:
+    value = _now() if value is None else _nonempty(value, "operator answered_at")
+    try:
+        answered = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        asked = datetime.fromisoformat(asked_at.replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise CompositionError("operator answer timestamps must be ISO-8601") from exc
+    if answered.tzinfo is None or asked.tzinfo is None:
+        raise CompositionError("operator answer timestamps must include a timezone")
+    if answered < asked:
+        raise CompositionError("operator answer cannot predate its sealed question")
+    return value
+
+
 def _sha_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
@@ -1077,6 +1091,7 @@ def answer_operator_question(
     question_id: str,
     answer: str,
     intervention_id: str,
+    answered_at: str | None = None,
 ) -> dict[str, Any]:
     _validate_state(composition, state)
     if state["arm"] != "arm_c" or state["status"] != "WAITING_OPERATOR":
@@ -1095,7 +1110,7 @@ def answer_operator_question(
         uuid.UUID(intervention_id)
     except ValueError as exc:
         raise CompositionError("intervention_id must be a UUID") from exc
-    answered_at = _now()
+    answered_at = _answer_timestamp(answered_at, question["asked_at"])
     question["intervention_id"] = intervention_id
     question["answer"] = answer
     question["answer_sha256"] = _sha_text(answer)
@@ -1131,6 +1146,7 @@ def decline_operator_question(
     question_id: str,
     reason: str,
     intervention_id: str,
+    answered_at: str | None = None,
 ) -> dict[str, Any]:
     _validate_state(composition, state)
     if state["arm"] != "arm_c" or state["status"] != "WAITING_OPERATOR":
@@ -1148,7 +1164,7 @@ def decline_operator_question(
     )
     if question["answer"] is not None:
         raise CompositionError("operator question was already answered")
-    answered_at = _now()
+    answered_at = _answer_timestamp(answered_at, question["asked_at"])
     question["intervention_id"] = intervention_id
     question["answer"] = reason
     question["answer_sha256"] = _sha_text(reason)

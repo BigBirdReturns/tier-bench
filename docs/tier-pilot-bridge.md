@@ -19,10 +19,23 @@ registry.
 
 Before fixture interpretation the bridge writes exact prompt and dispatch bytes and
 appends `PREPARED` then `DISPATCH_STARTED` to the call journal. The call ID is a
-deterministic function of task, arm, ordinal, and incoming state hash. If the
-process dies after dispatch becomes ambiguous, the existing call directory and
-journal block redispatch; repair requires explicit future adjudication, never an
-automatic retry.
+deterministic function of task, arm, ordinal, and incoming state hash. Recovery is
+explicit, lock-serialized, and split at that provider boundary:
+
+- no journal or `PREPARED` alone, with no provider/session evidence, is provably
+  pre-dispatch; exact bytes are write-ahead logged, archived, and the ordinal may
+  be attempted once again;
+- `EVIDENCE_SEALED` permits replay of the already sealed call and acceptance into
+  the append-only state log without another provider call; and
+- `DISPATCH_STARTED` without `EVIDENCE_SEALED`, malformed journal custody, or
+  provider evidence on a claimed pre-dispatch call is permanently fail-stopped as
+  `AMBIGUOUS_DISPATCH`. The arm worktree is removed and redispatch is forbidden.
+
+The hash-chained recovery ledger is write-ahead: a second crash after the event
+but before its archive/state mutation deterministically completes the same action
+instead of appending a second story. A leftover drive lock may be cleared only by
+the explicit recovery entrypoint, only when its exact bridge identity and
+timestamp validate, and only when its recorded PID is no longer alive.
 
 The manifest argv is not read or executed anywhere in the fixture path. The
 fixture entrypoint accepts only a canonical data array of scripted responses,
@@ -53,10 +66,18 @@ infrastructure retry signal.
 
 Every fixture model-call and acceptance transition is appended to `state.jsonl`
 and immediately replayed. Arm C may pause only on one canonical bounded JSON
-question with an enumerated category and no candidate edit. Fixture resume and
-decline both refuse: a freehand answer and UUID are not global intervention
-authority. Resume remains unimplemented until the bridge can open a canonical
-closed clarification interval owned by ADMIN.
+question with an enumerated category and no candidate edit. Resume or decline
+requires exactly one globally closed `clarification` interval matching task,
+Arm C, and the sealed question ID. The bridge derives the UUID from that ledger;
+the caller cannot supply one. The answer timestamp is the validated stop-event
+timestamp, so the final receipt proves `asked <= start <= answered <= stop`.
+Resume then uses a fresh `hands_resume` provider session; decline appends one
+terminal `FAILED` transition and dispatches nothing.
+
+Question receipts are durable standalone artifacts and bridge receipt v2 binds
+them together with the optional recovery ledger. Missing receipt material after
+a state-append crash can be reconstructed only from the exact replayed state and
+is itself recorded as a recovery action.
 
 Fixture provider and acceptance descriptors are transaction-test artifacts only
 and are ADMIN-inadmissible. The future production format must open an exact,
@@ -75,18 +96,17 @@ Bridge receipts keep the no-verdict boundary explicit:
 
 These are intentionally unresolved and fail closed:
 
-1. adopt an activation schema/receipt that binds the exact composition manifest,
-   code-owned adapter identity and source hash, adapter help surface, and control
-   repository custody;
-2. implement and review a real adapter shim that emits the exact pilot output
-   envelope and preserves binary provider bytes for every stage;
-3. freeze backend, prompt, and tool-version bytes and pass a manifest-bound live
-   activation canary;
-4. freeze the ten-task plan and audit material, then obtain operator ratification
-   and separate execution authority.
+1. implement and review the production bridge as the sole caller which re-loads
+   the official activation for every fresh or resumed session; this fixture PR
+   deliberately leaves `start_pilot_arm()` inert;
+2. freeze backend, prompt, source/schema, and tool-version bytes in one operator-
+   ratified activation instance;
+3. separately authorize and pass the manifest-bound synthetic live canary; and
+4. freeze the ten-task plan and audit material, then obtain separate execution
+   authority.
 
 Until all four land, the production entrypoint refuses before subprocess
-dispatch. The journal is hash/sequence/transition validated, but ambiguous
-calls are fail-stopped: no recovery consumer or idempotent redispatch is claimed.
-The fixture transaction contract is machinery under test, not a production
-bridge, runnable pilot, or evidence about any model.
+dispatch. The fixture recovery consumer proves the transaction classification;
+it does not turn fixture evidence into production evidence or authorize a live
+retry. The fixture transaction contract is machinery under test, not a
+production bridge, runnable pilot, or evidence about any model.

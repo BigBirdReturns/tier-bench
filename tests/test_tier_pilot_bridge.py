@@ -15,11 +15,14 @@ sys.path.insert(0, str(REPO))
 from tier_runner.pilot_bridge import (
     BridgeError,
     answer_and_resume_fixture_pilot_arm,
+    decline_pilot_arm,
+    recover_fixture_pilot_arm,
     start_fixture_pilot_arm,
     start_pilot_arm,
 )
 import tier_runner.pilot_bridge as pilot_bridge
 from tier_runner.pilot_composition import read_state
+from tier_runner.events import start as start_intervention, stop as stop_intervention
 from tier_runner.pilot_manifest import load_pilot_composition
 
 
@@ -127,7 +130,7 @@ def _make_repos(root: Path) -> tuple[Path, Path, Path, str]:
             "arm_c": {"mode": "operator_routed", "hands": {"backend": "cheap", "prompt_template": "hands"},
                       "repair": {"backend": "cheap", "prompt_template": "repair", "max_calls": 1},
                       "escalations": [], "question_route": {"question_template": "question",
-                                                              "resume_prompt_template": "resume", "max_questions": 2}},
+                                                              "resume_prompt_template": "resume", "max_questions": 1}},
         },
     }
     manifest_path = evidence / "pilot_backends.json"
@@ -154,7 +157,7 @@ def test_arm_a_repair_preserves_one_lineage_and_fresh_calls(root: Path) -> None:
             _response("arm-a-repair", text="candidate emitted", changes={"target.txt": "correct\n"}),
         ],
     )
-    assert receipt["schema"] == "tier-bench/tier-pilot-fixture-bridge-receipt@1"
+    assert receipt["schema"] == "tier-bench/tier-pilot-fixture-bridge-receipt@2"
     assert receipt["execution_mode"] == "fixture"
     assert receipt["executor_identity"] == "tier-bench/in-process-data-fixture@1"
     assert len(receipt["fixture_script_sha256"]) == 64
@@ -183,41 +186,100 @@ def test_arm_a_repair_preserves_one_lineage_and_fresh_calls(root: Path) -> None:
         assert len(json.loads((call_dir / "dispatch.json").read_text())["call_id"].rsplit("-", 1)[-1]) == 64
 
 
-def test_arm_c_question_is_strict_and_freehand_resume_is_blocked(root: Path) -> None:
+def test_arm_c_resume_requires_and_derives_one_closed_global_interval(root: Path) -> None:
     target, evidence, manifest, base = _make_repos(root)
     out = evidence / "runs" / "arm-c"
-    paused = start_fixture_pilot_arm(
-        repo=target, evidence_repo=evidence, composition_manifest=manifest,
-        task_id="bridge-c", task_tier="T3", arm="arm_c",
-        task="ASK_OPERATOR then implement", files=["target.txt"],
-        acceptance_command=_acceptance(), base_commit=base, output_dir=out,
-        fixture_script=[_response(
+    script = [
+        _response(
             "arm-c-question", outcome="question",
             text=json.dumps({
                 "schema": "tier-bench/tier-pilot-operator-question@1",
                 "category": "interpretation",
                 "question": "Which fixture policy applies?",
             }, sort_keys=True, separators=(",", ":")),
-        )],
+        ),
+        _response(
+            "arm-c-resume", text="candidate emitted",
+            changes={"target.txt": "correct\n"},
+        ),
+    ]
+    paused = start_fixture_pilot_arm(
+        repo=target, evidence_repo=evidence, composition_manifest=manifest,
+        task_id="bridge-c", task_tier="T3", arm="arm_c",
+        task="ASK_OPERATOR then implement", files=["target.txt"],
+        acceptance_command=_acceptance(), base_commit=base, output_dir=out,
+        fixture_script=script,
     )
     assert paused["status"] == "WAITING_OPERATOR"
     assert paused["arm_worktree_removed"] is False
     before = (out / "state.jsonl").read_bytes()
+    intervention_log = evidence / "pilot" / "interventions.jsonl"
     try:
         answer_and_resume_fixture_pilot_arm(
             out, question_id=paused["active_question_id"], answer="literal",
-            intervention_id="freehand-not-authority",
+            intervention_log=intervention_log, fixture_script=script,
         )
     except BridgeError as exc:
-        assert "activation-blocked" in str(exc)
+        assert "exactly one globally closed clarification interval" in str(exc)
     else:
-        raise AssertionError("freehand fixture resume dispatched a provider")
+        raise AssertionError("Arm-C resumed without globally timed operator authority")
     assert (out / "state.jsonl").read_bytes() == before
+    iid = start_intervention(
+        intervention_log, "bridge-c", "arm_c", "clarification",
+        paused["active_question_id"],
+    )
+    stop_intervention(intervention_log, iid)
+    receipt = answer_and_resume_fixture_pilot_arm(
+        out, question_id=paused["active_question_id"], answer="literal",
+        intervention_log=intervention_log, fixture_script=script,
+    )
+    assert receipt["status"] == "COMPLETE"
+    assert len(receipt["question_receipts"]) == 1
     state = read_state(load_pilot_composition(manifest), out / "state.jsonl")
-    assert [call["stage"] for call in state["calls"]] == ["hands"]
+    assert [call["stage"] for call in state["calls"]] == ["hands", "hands_resume"]
+    assert state["question_receipts"][0]["intervention_id"] == iid
+    assert state["questions"][0]["answer"] == "literal"
+    stop_row = json.loads(intervention_log.read_text().splitlines()[-1])
+    assert state["question_receipts"][0]["answered_at"] == stop_row["ts"]
     envelope = json.loads(state["calls"][0]["output"]["text"])
     assert envelope["category"] == "interpretation"
     assert envelope["question"].count("?") == 1
+
+
+def test_arm_c_decline_is_one_terminal_sealed_transition(root: Path) -> None:
+    target, evidence, manifest, base = _make_repos(root)
+    out = evidence / "runs" / "arm-c-decline"
+    script = [_response(
+        "arm-c-decline-question", outcome="question",
+        text=json.dumps({
+            "schema": "tier-bench/tier-pilot-operator-question@1",
+            "category": "authorization",
+            "question": "May this fixture proceed?",
+        }, sort_keys=True, separators=(",", ":")),
+    )]
+    paused = start_fixture_pilot_arm(
+        repo=target, evidence_repo=evidence, composition_manifest=manifest,
+        task_id="bridge-c-decline", task_tier="T3", arm="arm_c",
+        task="ASK_OPERATOR", files=["target.txt"],
+        acceptance_command=_acceptance(), base_commit=base, output_dir=out,
+        fixture_script=script,
+    )
+    intervention_log = evidence / "pilot" / "interventions.jsonl"
+    iid = start_intervention(
+        intervention_log, "bridge-c-decline", "arm_c", "clarification",
+        paused["active_question_id"],
+    )
+    stop_intervention(intervention_log, iid)
+    receipt = decline_pilot_arm(
+        out, question_id=paused["active_question_id"], reason="operator refused",
+        intervention_log=intervention_log, fixture_script=script,
+    )
+    assert receipt["status"] == "FAILED"
+    assert receipt["arm_worktree_removed"] is True
+    state = read_state(load_pilot_composition(manifest), out / "state.jsonl")
+    assert state["state_sequence"] == 2
+    assert state["questions"][0]["declined"] is True
+    assert len(state["question_receipts"]) == 1
 
 
 def test_production_entrypoint_is_activation_blocked(root: Path) -> None:
@@ -229,7 +291,223 @@ def test_production_entrypoint_is_activation_blocked(root: Path) -> None:
         raise AssertionError("production bridge ran without activation custody")
 
 
-def test_failed_fixture_call_is_fail_stopped_and_cannot_redispatch(root: Path) -> None:
+def test_evidence_seal_is_written_only_after_call_custody(root: Path) -> None:
+    target, evidence, manifest, base = _make_repos(root)
+    out = evidence / "runs" / "seal-order"
+    original = pilot_bridge._append_journal
+    observed = False
+
+    def assert_custody_before_seal(path: Path, event: str, call_id: str) -> None:
+        nonlocal observed
+        if event == "EVIDENCE_SEALED":
+            custody = json.loads((path.parent / "custody.json").read_text())
+            assert custody["call_id"] == call_id
+            assert custody["session_registered"] is True
+            assert custody["packet_removed"] is True
+            assert custody["error"] is None
+            observed = True
+        original(path, event, call_id)
+
+    pilot_bridge._append_journal = assert_custody_before_seal
+    try:
+        receipt = start_fixture_pilot_arm(
+            repo=target, evidence_repo=evidence, composition_manifest=manifest,
+            task_id="bridge-seal-order", task_tier="T3", arm="arm_c",
+            task="IMPLEMENT", files=["target.txt"],
+            acceptance_command=_acceptance(), base_commit=base, output_dir=out,
+            fixture_script=[_response(
+                "seal-order-session", text="candidate emitted",
+                changes={"target.txt": "correct\n"},
+            )],
+        )
+    finally:
+        pilot_bridge._append_journal = original
+    assert observed is True
+    assert receipt["status"] == "COMPLETE"
+
+
+def test_pre_dispatch_crash_archives_exact_bytes_and_retries_once(root: Path) -> None:
+    target, evidence, manifest, base = _make_repos(root)
+    out = evidence / "runs" / "pre-dispatch-crash"
+    script = [_response(
+        "pre-dispatch-session", text="candidate emitted",
+        changes={"target.txt": "correct\n"},
+    )]
+    original = pilot_bridge._append_journal
+    tripped = False
+
+    def stop_before_dispatch(path: Path, event: str, call_id: str) -> None:
+        nonlocal tripped
+        if event == "DISPATCH_STARTED" and not tripped:
+            tripped = True
+            raise OSError("synthetic crash before dispatch")
+        original(path, event, call_id)
+
+    pilot_bridge._append_journal = stop_before_dispatch
+    try:
+        try:
+            start_fixture_pilot_arm(
+                repo=target, evidence_repo=evidence, composition_manifest=manifest,
+                task_id="bridge-pre-dispatch", task_tier="T3", arm="arm_c",
+                task="IMPLEMENT", files=["target.txt"],
+                acceptance_command=_acceptance(), base_commit=base, output_dir=out,
+                fixture_script=script,
+            )
+        except BridgeError as exc:
+            assert "synthetic crash before dispatch" in str(exc)
+        else:
+            raise AssertionError("synthetic pre-dispatch crash did not stop the arm")
+    finally:
+        pilot_bridge._append_journal = original
+    session = json.loads((out / "bridge-session.json").read_text())
+    dead_pid = 999999
+    while pilot_bridge._pid_alive(dead_pid):
+        dead_pid += 1
+    (out / "arm.lock").write_bytes(pilot_bridge.canonical_json({
+        "schema": pilot_bridge.DRIVE_LOCK_SCHEMA,
+        "bridge_id": session["bridge_id"],
+        "pid": dead_pid,
+        "created_at": "2026-01-01T00:00:00Z",
+    }))
+    original_ensure = pilot_bridge._ensure_recovery_event
+    recovery_tripped = False
+
+    def stop_after_recovery_intent(
+        session_dir: Path, action: str, call_directory: str, evidence_sha256: str
+    ):
+        nonlocal recovery_tripped
+        row = original_ensure(session_dir, action, call_directory, evidence_sha256)
+        if action == "PRE_DISPATCH_ARCHIVED" and not recovery_tripped:
+            recovery_tripped = True
+            raise OSError("synthetic crash after recovery intent")
+        return row
+
+    pilot_bridge._ensure_recovery_event = stop_after_recovery_intent
+    try:
+        try:
+            recover_fixture_pilot_arm(out, fixture_script=script)
+        except OSError as exc:
+            assert "synthetic crash after recovery intent" in str(exc)
+        else:
+            raise AssertionError("recovery write-ahead crash did not stop recovery")
+    finally:
+        pilot_bridge._ensure_recovery_event = original_ensure
+    assert next((out / "calls").iterdir()).name == "01-hands"
+    receipt = recover_fixture_pilot_arm(out, fixture_script=script)
+    assert receipt["status"] == "COMPLETE"
+    archive = next((out / "recovered").iterdir())
+    assert archive.name.startswith("pre-dispatch-01-hands")
+    recovery = [json.loads(line) for line in (out / "recovery.jsonl").read_text().splitlines()]
+    assert [row["action"] for row in recovery] == [
+        "STALE_LOCK_CLEARED", "PRE_DISPATCH_ARCHIVED",
+    ]
+    registry = evidence / ".git" / "tier-session-registry.jsonl"
+    assert len(registry.read_text().splitlines()) == 1
+    repeated = recover_fixture_pilot_arm(out, fixture_script=script)
+    assert repeated["state_sha256"] == receipt["state_sha256"]
+    assert len(repeated["calls"]) == 1
+
+
+def test_sealed_call_replays_state_without_provider_redispatch(root: Path) -> None:
+    target, evidence, manifest, base = _make_repos(root)
+    out = evidence / "runs" / "sealed-state-crash"
+    script = [_response(
+        "sealed-only-once", text="candidate emitted",
+        changes={"target.txt": "correct\n"},
+    )]
+    original = pilot_bridge._append_state
+    tripped = False
+
+    def stop_before_state(path: Path, composition, state):
+        nonlocal tripped
+        if state["state_sequence"] > 0 and not tripped:
+            tripped = True
+            raise OSError("synthetic crash after evidence seal")
+        return original(path, composition, state)
+
+    pilot_bridge._append_state = stop_before_state
+    try:
+        try:
+            start_fixture_pilot_arm(
+                repo=target, evidence_repo=evidence, composition_manifest=manifest,
+                task_id="bridge-sealed-replay", task_tier="T3", arm="arm_c",
+                task="IMPLEMENT", files=["target.txt"],
+                acceptance_command=_acceptance(), base_commit=base, output_dir=out,
+                fixture_script=script,
+            )
+        except OSError as exc:
+            assert "synthetic crash after evidence seal" in str(exc)
+        else:
+            raise AssertionError("synthetic sealed-state crash did not stop the arm")
+    finally:
+        pilot_bridge._append_state = original
+    recovery_tripped = False
+
+    def stop_after_replay_intent(path: Path, composition, state):
+        nonlocal recovery_tripped
+        if state["state_sequence"] > 0 and not recovery_tripped:
+            recovery_tripped = True
+            raise OSError("synthetic crash after replay intent")
+        return original(path, composition, state)
+
+    pilot_bridge._append_state = stop_after_replay_intent
+    try:
+        try:
+            recover_fixture_pilot_arm(out, fixture_script=script)
+        except OSError as exc:
+            assert "synthetic crash after replay intent" in str(exc)
+        else:
+            raise AssertionError("replay write-ahead crash did not stop recovery")
+    finally:
+        pilot_bridge._append_state = original
+    receipt = recover_fixture_pilot_arm(out, fixture_script=script)
+    assert receipt["status"] == "COMPLETE"
+    assert len(receipt["calls"]) == 1
+    recovery = [json.loads(line) for line in (out / "recovery.jsonl").read_text().splitlines()]
+    assert [row["action"] for row in recovery] == ["SEALED_STATE_REPLAYED"]
+    registry = evidence / ".git" / "tier-session-registry.jsonl"
+    assert len(registry.read_text().splitlines()) == 1
+
+
+def test_recovery_never_clears_a_live_drive_lock(root: Path) -> None:
+    target, evidence, manifest, base = _make_repos(root)
+    out = evidence / "runs" / "live-lock"
+    script = [_response(
+        "live-lock-question", outcome="question",
+        text=json.dumps({
+            "schema": "tier-bench/tier-pilot-operator-question@1",
+            "category": "policy",
+            "question": "Which policy applies?",
+        }, sort_keys=True, separators=(",", ":")),
+    )]
+    start_fixture_pilot_arm(
+        repo=target, evidence_repo=evidence, composition_manifest=manifest,
+        task_id="bridge-live-lock", task_tier="T3", arm="arm_c", task="pause",
+        files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
+        output_dir=out, fixture_script=script,
+    )
+    session = json.loads((out / "bridge-session.json").read_text())
+    lock = out / "arm.lock"
+    lock.write_bytes(pilot_bridge.canonical_json({
+        "schema": pilot_bridge.DRIVE_LOCK_SCHEMA,
+        "bridge_id": session["bridge_id"],
+        "pid": pilot_bridge.os.getpid(),
+        "created_at": "2026-01-01T00:00:00Z",
+    }))
+    before = (out / "state.jsonl").read_bytes()
+    try:
+        recover_fixture_pilot_arm(out, fixture_script=script)
+    except BridgeError as exc:
+        assert "belongs to a live process" in str(exc)
+    else:
+        raise AssertionError("recovery cleared a live coordinator lock")
+    assert lock.exists()
+    assert (out / "state.jsonl").read_bytes() == before
+    assert not (out / "recovery.jsonl").exists()
+    lock.unlink()
+
+
+def test_ambiguous_dispatch_is_permanently_aborted_and_never_redispatched(root: Path) -> None:
     target, evidence, manifest, base = _make_repos(root)
     out = evidence / "runs" / "crash"
     try:
@@ -246,18 +524,16 @@ def test_failed_fixture_call_is_fail_stopped_and_cannot_redispatch(root: Path) -
         raise AssertionError("fail-stopped fixture fault was accepted")
     journal = [json.loads(line) for line in next((out / "calls").iterdir()).joinpath("journal.jsonl").read_text().splitlines()]
     assert [row["event"] for row in journal] == ["PREPARED", "DISPATCH_STARTED"]
-    try:
-        start_fixture_pilot_arm(
-            repo=target, evidence_repo=evidence, composition_manifest=manifest,
-            task_id="bridge-crash", task_tier="T3", arm="arm_b", task="ADAPTER_EXIT",
-            files=["target.txt"], acceptance_command=_acceptance(), base_commit=base,
-            output_dir=out,
-            fixture_script=[_response("fault", fault="before_result")],
-        )
-    except BridgeError as exc:
-        assert "not empty" in str(exc)
-    else:
-        raise AssertionError("ambiguous call was redispatched")
+    script = [_response("fault", fault="before_result")]
+    abort = recover_fixture_pilot_arm(out, fixture_script=script)
+    assert abort["reason"] == "AMBIGUOUS_DISPATCH"
+    assert abort["redispatch_permitted"] is False
+    assert abort["arm_worktree_removed"] is True
+    assert recover_fixture_pilot_arm(out, fixture_script=script) == abort
+    recovery = [json.loads(line) for line in (out / "recovery.jsonl").read_text().splitlines()]
+    assert [row["action"] for row in recovery] == [
+        "AMBIGUOUS_DISPATCH_FAIL_STOPPED"
+    ]
 
 
 def test_dirty_call_burns_fixed_session_before_scope_refusal(root: Path) -> None:
@@ -448,9 +724,14 @@ def test_manifest_adapter_argv_is_unreachable_in_fixture_mode(root: Path) -> Non
 def main() -> int:
     tests = [
         test_arm_a_repair_preserves_one_lineage_and_fresh_calls,
-        test_arm_c_question_is_strict_and_freehand_resume_is_blocked,
+        test_arm_c_resume_requires_and_derives_one_closed_global_interval,
+        test_arm_c_decline_is_one_terminal_sealed_transition,
         test_production_entrypoint_is_activation_blocked,
-        test_failed_fixture_call_is_fail_stopped_and_cannot_redispatch,
+        test_evidence_seal_is_written_only_after_call_custody,
+        test_pre_dispatch_crash_archives_exact_bytes_and_retries_once,
+        test_sealed_call_replays_state_without_provider_redispatch,
+        test_recovery_never_clears_a_live_drive_lock,
+        test_ambiguous_dispatch_is_permanently_aborted_and_never_redispatched,
         test_dirty_call_burns_fixed_session_before_scope_refusal,
         test_ignored_scoped_output_cannot_create_unsealed_pass,
         test_linked_worktree_cannot_be_evidence_repository,

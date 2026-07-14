@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+# Production activation binds this intervention-ledger authority byte-for-byte.
+
 from datetime import datetime, timezone
 import hashlib
 import json

@@ -29,13 +29,16 @@ from .core import (
     _safe_id,
     _sync_packet,
 )
+from .events import InterventionError, validate_events
 from .manifest import ManifestError, sha256_file
 from .pilot_composition import (
     ACCEPTANCE_SCHEMA,
     CALL_SCHEMA,
     CompositionError,
     acceptance_receipt_hash,
+    answer_operator_question,
     canonical_json,
+    decline_operator_question,
     new_pilot_arm_state,
     read_state,
     record_acceptance,
@@ -47,7 +50,7 @@ from .pilot_manifest import PilotComposition, Stage, load_pilot_composition
 
 
 SESSION_SCHEMA = "tier-bench/tier-pilot-bridge-session@1"
-RECEIPT_SCHEMA = "tier-bench/tier-pilot-fixture-bridge-receipt@1"
+RECEIPT_SCHEMA = "tier-bench/tier-pilot-fixture-bridge-receipt@2"
 DISPATCH_SCHEMA = "tier-bench/tier-pilot-fixture-dispatch-receipt@1"
 PROVIDER_EVIDENCE_SCHEMA = "tier-bench/tier-pilot-fixture-provider-evidence@1"
 ACCEPTANCE_EVIDENCE_SCHEMA = "tier-bench/tier-pilot-fixture-acceptance-evidence@1"
@@ -60,6 +63,25 @@ MAX_ACCEPTANCE_OUTPUT_BYTES = 8192
 FIXTURE_RESPONSE_FIELDS = {"outcome", "text", "session_id", "changes", "fault"}
 PROVIDER_OUTPUT_FIELDS = {"outcome", "text"}
 PROVIDER_RESULT_FIELDS = {"schema", "calls", "pilot_output", "artifacts"}
+RECOVERY_SCHEMA = "tier-bench/tier-pilot-recovery-event@1"
+RECOVERY_ACTIONS = {
+    "STALE_LOCK_CLEARED",
+    "PRE_DISPATCH_ARCHIVED",
+    "SEALED_STATE_REPLAYED",
+    "QUESTION_RECEIPT_RECOVERED",
+    "AMBIGUOUS_DISPATCH_FAIL_STOPPED",
+}
+RECOVERY_FIELDS = {
+    "schema", "sequence", "action", "call_directory", "evidence_sha256",
+    "previous_event_sha256", "recorded_at", "event_sha256",
+}
+DRIVE_LOCK_SCHEMA = "tier-bench/tier-pilot-drive-lock@1"
+ABORT_SCHEMA = "tier-bench/tier-pilot-bridge-abort@1"
+ABORT_FIELDS = {
+    "schema", "reason", "call_directory", "evidence_sha256",
+    "incoming_state_sha256", "redispatch_permitted", "arm_worktree_removed",
+    "recorded_at",
+}
 
 
 class BridgeError(RuntimeError):
@@ -93,6 +115,210 @@ def _read_object(path: Path, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise BridgeError(f"{label} must be a JSON object")
     return value
+
+
+def _write_new(path: Path, raw: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("xb") as handle:
+        handle.write(raw)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
+def _directory_sha256(path: Path) -> str:
+    items = sorted(path.rglob("*"))
+    if any(item.is_symlink() for item in items):
+        raise BridgeError("recovery evidence cannot contain symbolic links")
+    rows = [
+        {"path": item.relative_to(path).as_posix(), "sha256": sha256_file(item)}
+        for item in items if item.is_file()
+    ]
+    return _sha(canonical_json(rows))
+
+
+def _read_recovery_log(session_dir: Path) -> list[dict[str, Any]]:
+    path = session_dir / "recovery.jsonl"
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for sequence, line in enumerate(path.read_text(encoding="utf-8").splitlines()):
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise BridgeError(f"recovery row {sequence} is invalid JSON") from exc
+        if not isinstance(row, dict) or set(row) != RECOVERY_FIELDS:
+            raise BridgeError(f"recovery row {sequence} fields are invalid")
+        if (
+            row.get("schema") != RECOVERY_SCHEMA
+            or row.get("sequence") != sequence
+            or row.get("action") not in RECOVERY_ACTIONS
+            or not isinstance(row.get("call_directory"), str)
+            or not re.fullmatch(r"[A-Za-z0-9_.-]+", row["call_directory"])
+            or not re.fullmatch(r"[0-9a-f]{64}", str(row.get("evidence_sha256", "")))
+            or not re.fullmatch(r"[0-9a-f]{64}", str(row.get("event_sha256", "")))
+        ):
+            raise BridgeError(f"recovery row {sequence} identity is invalid")
+        try:
+            recorded_at = datetime.fromisoformat(
+                str(row.get("recorded_at", "")).replace("Z", "+00:00")
+            )
+        except ValueError as exc:
+            raise BridgeError(f"recovery row {sequence} timestamp is invalid") from exc
+        if recorded_at.tzinfo is None:
+            raise BridgeError(f"recovery row {sequence} timestamp is invalid")
+        previous = rows[-1]["event_sha256"] if rows else None
+        if row.get("previous_event_sha256") != previous:
+            raise BridgeError(f"recovery row {sequence} chain is invalid")
+        claimed = row.get("event_sha256")
+        unsigned = dict(row)
+        del unsigned["event_sha256"]
+        if claimed != _sha(canonical_json(unsigned)):
+            raise BridgeError(f"recovery row {sequence} hash is invalid")
+        rows.append(row)
+    identities = [
+        (row["action"], row["call_directory"], row["evidence_sha256"])
+        for row in rows
+    ]
+    if len(identities) != len(set(identities)):
+        raise BridgeError("recovery log repeats one write-ahead action")
+    single_use = [
+        (row["action"], row["call_directory"])
+        for row in rows if row["action"] != "STALE_LOCK_CLEARED"
+    ]
+    if len(single_use) != len(set(single_use)):
+        raise BridgeError("recovery log forks one single-use action")
+    return rows
+
+
+def _ensure_recovery_event(
+    session_dir: Path, action: str, call_directory: str, evidence_sha256: str
+) -> dict[str, Any]:
+    if (
+        action not in RECOVERY_ACTIONS
+        or not re.fullmatch(r"[A-Za-z0-9_.-]+", call_directory)
+        or not re.fullmatch(r"[0-9a-f]{64}", evidence_sha256)
+    ):
+        raise BridgeError("recovery event inputs are invalid")
+    rows = _read_recovery_log(session_dir)
+    existing = [
+        row for row in rows
+        if row["action"] == action
+        and row["call_directory"] == call_directory
+        and row["evidence_sha256"] == evidence_sha256
+    ]
+    if existing:
+        if len(existing) != 1:
+            raise BridgeError("recovery event contradicts its write-ahead evidence")
+        return existing[0]
+    conflicts = [
+        row for row in rows
+        if row["action"] == action and row["call_directory"] == call_directory
+    ]
+    if conflicts and action != "STALE_LOCK_CLEARED":
+        raise BridgeError("recovery event contradicts its write-ahead evidence")
+    row = {
+        "schema": RECOVERY_SCHEMA,
+        "sequence": len(rows),
+        "action": action,
+        "call_directory": call_directory,
+        "evidence_sha256": evidence_sha256,
+        "previous_event_sha256": rows[-1]["event_sha256"] if rows else None,
+        "recorded_at": _now(),
+    }
+    row["event_sha256"] = _sha(canonical_json(row))
+    with (session_dir / "recovery.jsonl").open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(canonical_json(row).decode("utf-8"))
+        handle.flush()
+        os.fsync(handle.fileno())
+    _read_recovery_log(session_dir)
+    return row
+
+
+def _question_receipt_path(session_dir: Path, index: int, question_id: str) -> Path:
+    if not re.fullmatch(r"[0-9a-f]{64}", question_id):
+        raise BridgeError("question receipt has an unsafe question ID")
+    return session_dir / "question-receipts" / f"{index:02d}-{question_id}.json"
+
+
+def _seal_question_receipts(
+    session_dir: Path,
+    state: dict[str, Any],
+    *,
+    recover_missing: bool,
+    record_recovery: bool = True,
+) -> list[Path]:
+    expected: list[Path] = []
+    for index, receipt in enumerate(state["question_receipts"], 1):
+        path = _question_receipt_path(session_dir, index, receipt["question_id"])
+        raw = canonical_json(receipt)
+        if not path.exists():
+            if not recover_missing:
+                raise BridgeError("state question receipt is missing its durable artifact")
+            if record_recovery:
+                _ensure_recovery_event(
+                    session_dir, "QUESTION_RECEIPT_RECOVERED", path.name, _sha(raw)
+                )
+            _write_new(path, raw)
+        elif path.read_bytes() != raw:
+            raise BridgeError("durable question receipt contradicts replayed state")
+        expected.append(path)
+    directory = session_dir / "question-receipts"
+    actual = sorted(path for path in directory.glob("*.json")) if directory.is_dir() else []
+    if actual != expected:
+        raise BridgeError("question receipt artifacts are incomplete, duplicated, or extra")
+    return expected
+
+
+def _closed_intervention(
+    intervention_log: Path,
+    state: dict[str, Any],
+    *,
+    question_id: str,
+) -> tuple[str, str]:
+    if (
+        state.get("arm") != "arm_c"
+        or state.get("status") != "WAITING_OPERATOR"
+        or question_id != state.get("active_question_id")
+    ):
+        raise BridgeError("operator response does not name the active Arm-C question")
+    try:
+        rows = validate_events(intervention_log.resolve(), require_closed=True)
+    except InterventionError as exc:
+        raise BridgeError(f"global intervention log is invalid: {exc}") from exc
+    pairs: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        pairs.setdefault(row["intervention_id"], []).append(row)
+    matches = [
+        (intervention_id, pair)
+        for intervention_id, pair in pairs.items()
+        if len(pair) == 2
+        and all(
+            row["task_id"] == state["task_id"]
+            and row["arm"] == "arm_c"
+            and row["category"] == "clarification"
+            and row["reference_id"] == question_id
+            for row in pair
+        )
+    ]
+    if len(matches) != 1:
+        raise BridgeError(
+            "operator response requires exactly one globally closed clarification interval"
+        )
+    intervention_id, pair = matches[0]
+    questions = [
+        item for item in state["questions"] if item["question_id"] == question_id
+    ]
+    if len(questions) != 1:
+        raise BridgeError("active Arm-C question is not unique in sealed state")
+    question = questions[0]
+    asked_at = datetime.fromisoformat(question["asked_at"].replace("Z", "+00:00"))
+    started_at = datetime.fromisoformat(pair[0]["ts"].replace("Z", "+00:00"))
+    stopped_at = datetime.fromisoformat(pair[1]["ts"].replace("Z", "+00:00"))
+    if started_at < asked_at or stopped_at < started_at:
+        raise BridgeError("clarification interval does not follow the sealed question")
+    if stopped_at > datetime.now(timezone.utc):
+        raise BridgeError("clarification interval ends in the future")
+    return intervention_id, pair[1]["ts"]
 
 
 def _stage(composition: PilotComposition, state: dict[str, Any]) -> Stage:
@@ -818,7 +1044,6 @@ def _call_once(
             (call_dir / "acceptance-evidence.json").write_bytes(
                 canonical_json(acceptance_descriptor)
             )
-        _append_journal(journal_path, "EVIDENCE_SEALED", call_id)
     except (
         BridgeError, CompositionError, ManifestError, RunError, OSError,
         ValueError, subprocess.SubprocessError,
@@ -844,6 +1069,7 @@ def _call_once(
             error = error or BridgeError("provider packet cleanup or arm lineage preservation failed")
     if error is not None:
         raise BridgeError(str(error)) from error
+    _append_journal(journal_path, "EVIDENCE_SEALED", call_id)
     assert next_state is not None
     state_path = session_dir / "state.jsonl"
     next_state = _append_state(state_path, composition, next_state)
@@ -861,6 +1087,17 @@ def _receipt(
     calls: list[dict[str, Any]] = []
     provider_receipts: list[dict[str, str]] = []
     acceptance_receipts: list[dict[str, str]] = []
+    question_receipts = [
+        _artifact_ref(session_dir, path)
+        for path in _seal_question_receipts(
+            session_dir, state, recover_missing=False
+        )
+    ]
+    recovery_path = session_dir / "recovery.jsonl"
+    recovery_log = None
+    if recovery_path.is_file():
+        _read_recovery_log(session_dir)
+        recovery_log = _artifact_ref(session_dir, recovery_path)
     calls_dir = session_dir / "calls"
     if calls_dir.is_dir():
         for call_dir in sorted(path for path in calls_dir.iterdir() if path.is_dir()):
@@ -894,6 +1131,8 @@ def _receipt(
         "calls": calls,
         "provider_receipts": provider_receipts,
         "acceptance_receipts": acceptance_receipts,
+        "question_receipts": question_receipts,
+        "recovery_log": recovery_log,
         "active_question_id": state["active_question_id"],
         "arm_worktree_removed": worktree_removed,
         "scientific_verdict_minted": False,
@@ -902,6 +1141,40 @@ def _receipt(
     }
     (session_dir / "bridge-receipt.json").write_bytes(canonical_json(value))
     return value
+
+
+def _acquire_drive_lock(session_dir: Path, bridge_id: str) -> Path:
+    lock = session_dir / "arm.lock"
+    if (session_dir / "bridge-abort.json").exists():
+        raise BridgeError("arm bridge is permanently fail-stopped")
+    try:
+        descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError as exc:
+        raise BridgeError("arm bridge is locked or has ambiguous interrupted work") from exc
+    lock_raw = canonical_json({
+        "schema": DRIVE_LOCK_SCHEMA,
+        "bridge_id": bridge_id,
+        "pid": os.getpid(),
+        "created_at": _now(),
+    })
+    try:
+        written = 0
+        while written < len(lock_raw):
+            count = os.write(descriptor, lock_raw[written:])
+            if count <= 0:
+                raise OSError("drive lock write made no progress")
+            written += count
+        os.fsync(descriptor)
+    except BaseException:
+        os.close(descriptor)
+        lock.unlink(missing_ok=True)
+        raise
+    finally:
+        try:
+            os.close(descriptor)
+        except OSError:
+            pass
+    return lock
 
 
 def _drive(
@@ -915,13 +1188,21 @@ def _drive(
     registry_git: Path,
     fixture_script: list[dict[str, Any]],
     fixture_script_sha256: str,
+    *,
+    lock_owned: bool = False,
 ) -> dict[str, Any]:
-    lock = session_dir / "arm.lock"
-    try:
-        descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError as exc:
-        raise BridgeError("arm bridge is locked or has ambiguous interrupted work") from exc
-    os.close(descriptor)
+    lock = session_dir / "arm.lock" if lock_owned else _acquire_drive_lock(
+        session_dir, bridge_id
+    )
+    if lock_owned:
+        value = _read_object(lock, "owned arm drive lock")
+        if (
+            set(value) != {"schema", "bridge_id", "pid", "created_at"}
+            or value.get("schema") != DRIVE_LOCK_SCHEMA
+            or value.get("bridge_id") != bridge_id
+            or value.get("pid") != os.getpid()
+        ):
+            raise BridgeError("caller does not own the arm drive lock")
     try:
         while state["status"] == "ACTIVE":
             state, _ = _call_once(
@@ -1026,10 +1307,15 @@ def start_fixture_pilot_arm(
     )
 
 
-def _load_session(session_dir: Path) -> tuple[
+def _load_session(
+    session_dir: Path, *, recover_missing_question_receipts: bool = False,
+    allow_unreplayed_worktree: bool = False, verify_question_receipts: bool = True,
+) -> tuple[
     dict[str, Any], PilotComposition, Path, Path, list[tuple[str, bool]], dict[str, Any]
 ]:
     session_dir = session_dir.resolve()
+    if (session_dir / "bridge-abort.json").exists():
+        raise BridgeError("bridge session is permanently fail-stopped")
     session = _read_object(session_dir / "bridge-session.json", "bridge session")
     required = {
         "schema", "bridge_id", "repo", "evidence_repo", "arm_worktree", "composition_manifest",
@@ -1063,10 +1349,339 @@ def _load_session(session_dir: Path) -> tuple[
     ).resolve()
     if worktree != expected_worktree:
         raise BridgeError("arm worktree path contradicts the bridge-owned lineage")
-    if state["status"] == "WAITING_OPERATOR":
+    if state["status"] in {"ACTIVE", "WAITING_OPERATOR"} and not allow_unreplayed_worktree:
         if not worktree.is_dir() or _patch(worktree) != _last_candidate(state):
-            raise BridgeError("paused arm worktree does not match its sealed candidate lineage")
+            raise BridgeError("active arm worktree does not match its sealed candidate lineage")
+    if verify_question_receipts:
+        _seal_question_receipts(
+            session_dir, state,
+            recover_missing=recover_missing_question_receipts,
+        )
     return session, composition, repo, evidence_repo, scopes, state
+
+
+def _session_fixture_script(
+    session: dict[str, Any], fixture_script: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], str]:
+    script, digest = _fixture_script(fixture_script)
+    if digest != session["fixture_script_sha256"]:
+        raise BridgeError("fixture script differs from the bytes frozen at bridge start")
+    return script, digest
+
+
+def _pid_alive(pid: int) -> bool:
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
+def _clear_stale_lock(session_dir: Path, bridge_id: str) -> None:
+    lock = session_dir / "arm.lock"
+    if not lock.exists():
+        return
+    raw = lock.read_bytes()
+    value = _read_object(lock, "arm drive lock")
+    if (
+        set(value) != {"schema", "bridge_id", "pid", "created_at"}
+        or value.get("schema") != DRIVE_LOCK_SCHEMA
+        or value.get("bridge_id") != bridge_id
+        or not isinstance(value.get("pid"), int)
+        or value["pid"] <= 0
+    ):
+        raise BridgeError("arm drive lock cannot be authenticated for recovery")
+    try:
+        created_at = datetime.fromisoformat(
+            str(value.get("created_at", "")).replace("Z", "+00:00")
+        )
+    except ValueError as exc:
+        raise BridgeError("arm drive lock timestamp is invalid") from exc
+    if created_at.tzinfo is None:
+        raise BridgeError("arm drive lock timestamp is invalid")
+    if _pid_alive(value["pid"]):
+        raise BridgeError("arm drive lock belongs to a live process; recovery refused")
+    if lock.read_bytes() != raw:
+        raise BridgeError("arm drive lock changed during recovery authentication")
+    _ensure_recovery_event(session_dir, "STALE_LOCK_CLEARED", "arm.lock", _sha(raw))
+    lock.unlink()
+
+
+def _abort_ambiguous_call(
+    session_dir: Path,
+    repo: Path,
+    worktree: Path,
+    state: dict[str, Any],
+    call_dir: Path,
+) -> dict[str, Any]:
+    evidence_sha256 = _directory_sha256(call_dir)
+    _ensure_recovery_event(
+        session_dir,
+        "AMBIGUOUS_DISPATCH_FAIL_STOPPED",
+        call_dir.name,
+        evidence_sha256,
+    )
+    if worktree.exists():
+        process = _git(repo, "worktree", "remove", "--force", str(worktree), check=False)
+        removed = process.returncode == 0 and not worktree.exists()
+    else:
+        removed = True
+    if not removed:
+        raise BridgeError("ambiguous dispatch was fail-stopped but worktree cleanup failed")
+    abort = {
+        "schema": ABORT_SCHEMA,
+        "reason": "AMBIGUOUS_DISPATCH",
+        "call_directory": call_dir.name,
+        "evidence_sha256": evidence_sha256,
+        "incoming_state_sha256": state["state_sha256"],
+        "redispatch_permitted": False,
+        "arm_worktree_removed": removed,
+        "recorded_at": _now(),
+    }
+    path = session_dir / "bridge-abort.json"
+    _write_new(path, canonical_json(abort))
+    return abort
+
+
+def _read_abort(path: Path) -> dict[str, Any]:
+    abort = _read_object(path, "bridge abort receipt")
+    if (
+        set(abort) != ABORT_FIELDS
+        or abort.get("schema") != ABORT_SCHEMA
+        or abort.get("reason") != "AMBIGUOUS_DISPATCH"
+        or abort.get("redispatch_permitted") is not False
+        or abort.get("arm_worktree_removed") is not True
+        or not re.fullmatch(r"[A-Za-z0-9_.-]+", str(abort.get("call_directory", "")))
+        or not re.fullmatch(r"[0-9a-f]{64}", str(abort.get("evidence_sha256", "")))
+        or not re.fullmatch(r"[0-9a-f]{64}", str(abort.get("incoming_state_sha256", "")))
+    ):
+        raise BridgeError("bridge abort receipt fields/schema are invalid")
+    try:
+        recorded_at = datetime.fromisoformat(
+            str(abort.get("recorded_at", "")).replace("Z", "+00:00")
+        )
+    except ValueError as exc:
+        raise BridgeError("bridge abort receipt timestamp is invalid") from exc
+    if recorded_at.tzinfo is None:
+        raise BridgeError("bridge abort receipt timestamp is invalid")
+    return abort
+
+
+def _verify_pre_dispatch_archives(session_dir: Path) -> None:
+    rows = _read_recovery_log(session_dir)
+    events = {
+        row["call_directory"]: row
+        for row in rows if row["action"] == "PRE_DISPATCH_ARCHIVED"
+    }
+    archive_root = session_dir / "recovered"
+    archives = (
+        sorted(path for path in archive_root.iterdir() if path.is_dir())
+        if archive_root.is_dir() else []
+    )
+    expected_names = {f"pre-dispatch-{name}" for name in events}
+    if {path.name for path in archives} - expected_names:
+        raise BridgeError("pre-dispatch recovery archive has no write-ahead event")
+    for call_name, row in events.items():
+        call_dir = session_dir / "calls" / call_name
+        archive = archive_root / f"pre-dispatch-{call_name}"
+        if archive.exists():
+            evidence = archive
+        elif call_dir.exists():
+            evidence = call_dir
+        else:
+            raise BridgeError("pre-dispatch recovery event has no exact evidence location")
+        if _directory_sha256(evidence) != row["evidence_sha256"]:
+            raise BridgeError("pre-dispatch recovery evidence changed after write-ahead")
+
+
+def _recover_sealed_calls(
+    session_dir: Path,
+    composition: PilotComposition,
+    state: dict[str, Any],
+) -> dict[str, Any]:
+    _verify_fixture_evidence(session_dir)
+    state_path = session_dir / "state.jsonl"
+    for call_dir in sorted(
+        path for path in (session_dir / "calls").iterdir() if path.is_dir()
+    ):
+        call = _read_object(call_dir / "call.json", "sealed recovery call")
+        matching_calls = [item for item in state["calls"] if item["call_id"] == call["call_id"]]
+        evidence_sha256 = _directory_sha256(call_dir)
+        if not matching_calls:
+            _ensure_recovery_event(
+                session_dir, "SEALED_STATE_REPLAYED", call_dir.name, evidence_sha256
+            )
+            state = _append_state(
+                state_path, composition, record_pilot_call(composition, state, call)
+            )
+        elif matching_calls != [call]:
+            raise BridgeError("sealed recovery call contradicts replayed state")
+        acceptance_path = call_dir / "acceptance.json"
+        matching_acceptance = [
+            item for item in state["acceptance_attempts"]
+            if item["causal_call_id"] == call["call_id"]
+        ]
+        if acceptance_path.is_file():
+            acceptance = _read_object(acceptance_path, "sealed recovery acceptance")
+            if not matching_acceptance:
+                _ensure_recovery_event(
+                    session_dir, "SEALED_STATE_REPLAYED", call_dir.name, evidence_sha256
+                )
+                state = _append_state(
+                    state_path,
+                    composition,
+                    record_acceptance(composition, state, acceptance),
+                )
+            elif matching_acceptance != [acceptance]:
+                raise BridgeError("sealed recovery acceptance contradicts replayed state")
+        elif state["next_stage"] == "acceptance" and state["calls"][-1]["call_id"] == call["call_id"]:
+            raise BridgeError("sealed candidate call is missing immutable acceptance evidence")
+    return state
+
+
+def recover_fixture_pilot_arm(
+    session_dir: Path,
+    *,
+    fixture_script: list[dict[str, Any]],
+) -> dict[str, Any]:
+    session_dir = session_dir.resolve()
+    abort_path = session_dir / "bridge-abort.json"
+    if abort_path.exists():
+        rows = _read_recovery_log(session_dir)
+        abort = _read_abort(abort_path)
+        matches = [
+            row for row in rows
+            if row["action"] == "AMBIGUOUS_DISPATCH_FAIL_STOPPED"
+            and row["call_directory"] == abort["call_directory"]
+            and row["evidence_sha256"] == abort["evidence_sha256"]
+        ]
+        if len(matches) != 1:
+            raise BridgeError("bridge abort receipt lacks one exact recovery event")
+        return abort
+    session, composition, repo, evidence_repo, scopes, state = _load_session(
+        session_dir,
+        allow_unreplayed_worktree=True,
+        verify_question_receipts=False,
+    )
+    script, script_sha256 = _session_fixture_script(session, fixture_script)
+    _clear_stale_lock(session_dir, session["bridge_id"])
+    lock = _acquire_drive_lock(session_dir, session["bridge_id"])
+    try:
+        session, composition, repo, evidence_repo, scopes, state = _load_session(
+            session_dir,
+            allow_unreplayed_worktree=True,
+            verify_question_receipts=False,
+        )
+        script, script_sha256 = _session_fixture_script(session, fixture_script)
+        _seal_question_receipts(session_dir, state, recover_missing=True)
+        _verify_pre_dispatch_archives(session_dir)
+        worktree = Path(session["arm_worktree"]).resolve()
+        calls_dir = session_dir / "calls"
+        call_dirs = sorted(path for path in calls_dir.iterdir() if path.is_dir())
+        incomplete: list[tuple[Path, list[str], str | None]] = []
+        for call_dir in call_dirs:
+            dispatch_path = call_dir / "dispatch.json"
+            journal_path = call_dir / "journal.jsonl"
+            dispatch_call_id: str | None = None
+            if not journal_path.exists() and not dispatch_path.exists():
+                journal = []
+            else:
+                try:
+                    dispatch = _read_object(dispatch_path, "recovery dispatch")
+                    call_id = dispatch.get("call_id")
+                    if not isinstance(call_id, str) or not call_id:
+                        raise BridgeError("recovery dispatch has no call identity")
+                    dispatch_call_id = call_id
+                    journal = _read_journal(journal_path, call_id)
+                except (BridgeError, OSError):
+                    return _abort_ambiguous_call(
+                        session_dir, repo, worktree, state, call_dir
+                    )
+            events = [row["event"] for row in journal]
+            if events != ["PREPARED", "DISPATCH_STARTED", "EVIDENCE_SEALED"]:
+                incomplete.append((call_dir, events, dispatch_call_id))
+        if len(incomplete) > 1 or (incomplete and incomplete[0][0] != call_dirs[-1]):
+            raise BridgeError("recovery found multiple or non-terminal incomplete calls")
+        if incomplete:
+            call_dir, events, dispatch_call_id = incomplete[0]
+            if events in ([], ["PREPARED"]):
+                allowed = {
+                    "prompt.txt", "dispatch.json", "journal.jsonl", "custody.json",
+                }
+                if any(
+                    not path.is_file() or path.name not in allowed
+                    for path in call_dir.iterdir()
+                ):
+                    return _abort_ambiguous_call(
+                        session_dir, repo, worktree, state, call_dir
+                    )
+                custody_path = call_dir / "custody.json"
+                if not custody_path.is_file():
+                    return _abort_ambiguous_call(
+                        session_dir, repo, worktree, state, call_dir
+                    )
+                custody = _read_object(custody_path, "pre-dispatch custody")
+                if (
+                    set(custody) != {
+                        "schema", "call_id", "session_registered", "packet_removed",
+                        "arm_worktree_preserved", "completed_at", "error",
+                    }
+                    or custody.get("schema") != "tier-bench/tier-pilot-call-custody@1"
+                    or custody.get("session_registered") is not False
+                    or custody.get("packet_removed") is not True
+                    or custody.get("arm_worktree_preserved") is not True
+                    or not isinstance(custody.get("call_id"), str)
+                    or not custody["call_id"]
+                    or (
+                        dispatch_call_id is not None
+                        and custody["call_id"] != dispatch_call_id
+                    )
+                    or not (
+                        custody.get("error") is None
+                        or isinstance(custody.get("error"), str)
+                    )
+                ):
+                    return _abort_ambiguous_call(
+                        session_dir, repo, worktree, state, call_dir
+                    )
+                digest = _directory_sha256(call_dir)
+                archive = session_dir / "recovered" / f"pre-dispatch-{call_dir.name}"
+                archive.parent.mkdir(parents=True, exist_ok=True)
+                _ensure_recovery_event(
+                    session_dir, "PRE_DISPATCH_ARCHIVED", call_dir.name, digest
+                )
+                if archive.exists():
+                    raise BridgeError("pre-dispatch recovery has two evidence locations")
+                call_dir.replace(archive)
+            else:
+                return _abort_ambiguous_call(
+                    session_dir, repo, worktree, state, call_dir
+                )
+        state = _recover_sealed_calls(session_dir, composition, state)
+        _seal_question_receipts(session_dir, state, recover_missing=True)
+        _verify_pre_dispatch_archives(session_dir)
+        if state["status"] in {"COMPLETE", "FAILED"} and not worktree.exists():
+            return _receipt(
+                session_dir, composition, state,
+                worktree_removed=True, fixture_script_sha256=script_sha256,
+            )
+        if not worktree.is_dir() or _patch(worktree) != _last_candidate(state):
+            raise BridgeError(
+                "recovered arm worktree does not match the replayed state lineage"
+            )
+        registry_git = _git_common_dir(evidence_repo)
+        return _drive(
+            composition, state, repo, session_dir, scopes, session["bridge_id"],
+            worktree, registry_git, script, script_sha256, lock_owned=True,
+        )
+    finally:
+        lock.unlink(missing_ok=True)
 
 
 def answer_and_resume_fixture_pilot_arm(
@@ -1074,13 +1689,37 @@ def answer_and_resume_fixture_pilot_arm(
     *,
     question_id: str,
     answer: str,
-    intervention_id: str,
+    intervention_log: Path,
+    fixture_script: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    raise BridgeError(
-        "fixture Arm-C resume is activation-blocked: freehand answers and intervention "
-        "identifiers cannot authorize dispatch; a canonical globally closed clarification "
-        "interval is not implemented"
-    )
+    session_dir = session_dir.resolve()
+    session, composition, repo, evidence_repo, scopes, state = _load_session(session_dir)
+    script, script_sha256 = _session_fixture_script(session, fixture_script)
+    lock = _acquire_drive_lock(session_dir.resolve(), session["bridge_id"])
+    try:
+        session, composition, repo, evidence_repo, scopes, state = _load_session(
+            session_dir
+        )
+        _verify_fixture_evidence(session_dir.resolve())
+        _read_recovery_log(session_dir.resolve())
+        intervention_id, answered_at = _closed_intervention(
+            intervention_log, state, question_id=question_id
+        )
+        resumed = answer_operator_question(
+            composition, state, question_id=question_id, answer=answer,
+            intervention_id=intervention_id, answered_at=answered_at,
+        )
+        resumed = _append_state(session_dir / "state.jsonl", composition, resumed)
+        _seal_question_receipts(
+            session_dir.resolve(), resumed, recover_missing=True, record_recovery=False
+        )
+        return _drive(
+            composition, resumed, repo, session_dir.resolve(), scopes,
+            session["bridge_id"], Path(session["arm_worktree"]).resolve(),
+            _git_common_dir(evidence_repo), script, script_sha256, lock_owned=True,
+        )
+    finally:
+        lock.unlink(missing_ok=True)
 
 
 def decline_pilot_arm(
@@ -1088,9 +1727,35 @@ def decline_pilot_arm(
     *,
     question_id: str,
     reason: str,
-    intervention_id: str,
+    intervention_log: Path,
+    fixture_script: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    raise BridgeError(
-        "fixture Arm-C decline is activation-blocked until canonical global intervention "
-        "closure and locked evidence replay are implemented"
-    )
+    session_dir = session_dir.resolve()
+    session, composition, repo, evidence_repo, scopes, state = _load_session(session_dir)
+    script, script_sha256 = _session_fixture_script(session, fixture_script)
+    lock = _acquire_drive_lock(session_dir.resolve(), session["bridge_id"])
+    try:
+        session, composition, repo, evidence_repo, scopes, state = _load_session(
+            session_dir
+        )
+        _verify_fixture_evidence(session_dir.resolve())
+        _read_recovery_log(session_dir.resolve())
+        intervention_id, answered_at = _closed_intervention(
+            intervention_log, state, question_id=question_id
+        )
+        declined = decline_operator_question(
+            composition, state, question_id=question_id, reason=reason,
+            intervention_id=intervention_id, answered_at=answered_at,
+        )
+        declined = _append_state(session_dir / "state.jsonl", composition, declined)
+        _seal_question_receipts(
+            session_dir.resolve(), declined, recover_missing=True,
+            record_recovery=False,
+        )
+        return _drive(
+            composition, declined, repo, session_dir.resolve(), scopes,
+            session["bridge_id"], Path(session["arm_worktree"]).resolve(),
+            _git_common_dir(evidence_repo), script, script_sha256, lock_owned=True,
+        )
+    finally:
+        lock.unlink(missing_ok=True)

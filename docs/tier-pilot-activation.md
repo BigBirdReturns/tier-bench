@@ -63,6 +63,8 @@ ratification and cross-lineage review, then merge it. Even after that merge, the
 synthetic canary requires separate operator authorization. Pilot-task selection,
 disclosure, grading, comparison, and verdicts remain unauthorized.
 
-Canonical Arm-C intervention continuation and crash recovery also remain launch
-blockers unless a later reviewed change implements them explicitly. An
-ambiguous call is never retried automatically.
+The reviewed fixture bridge now defines the required Arm-C intervention and
+crash-recovery transaction semantics, including permanent refusal after an
+ambiguous provider boundary. Those semantics do not activate production: the
+future sole-caller bridge must preserve them while re-deriving the official
+activation on every fresh or resumed session.

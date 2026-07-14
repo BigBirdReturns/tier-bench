@@ -7,12 +7,12 @@
   "required": [
     "schema", "execution_mode", "executor_identity", "fixture_script_sha256", "task_id", "arm", "base_commit", "composition_manifest_sha256",
     "status", "next_stage", "state_sequence", "state_sha256", "state_log", "calls",
-    "provider_receipts", "acceptance_receipts", "active_question_id",
+    "provider_receipts", "acceptance_receipts", "question_receipts", "recovery_log", "active_question_id",
     "arm_worktree_removed", "scientific_verdict_minted",
     "equivalence_claim_permitted", "noninferiority_claim_permitted"
   ],
   "properties": {
-    "schema": {"const": "tier-bench/tier-pilot-fixture-bridge-receipt@1"},
+    "schema": {"const": "tier-bench/tier-pilot-fixture-bridge-receipt@2"},
     "execution_mode": {"const": "fixture"},
     "executor_identity": {"const": "tier-bench/in-process-data-fixture@1"},
     "fixture_script_sha256": {"$ref": "#/$defs/sha256"},
@@ -28,6 +28,8 @@
     "calls": {"type": "array", "items": {"type": "object"}},
     "provider_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}},
     "acceptance_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}},
+    "question_receipts": {"type": "array", "items": {"$ref": "#/$defs/artifact"}},
+    "recovery_log": {"oneOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]},
     "active_question_id": {"oneOf": [{"type": "string"}, {"type": "null"}]},
     "arm_worktree_removed": {"type": "boolean"},
     "scientific_verdict_minted": {"const": false},
