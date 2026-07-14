@@ -33,6 +33,7 @@ from tier_runner.events import event_hash
 import tier_runner.pilot_composition as pilot_composition
 from tier_runner.pilot_composition import (
     acceptance_receipt_hash,
+    answer_operator_question,
     new_pilot_arm_state,
     record_acceptance,
     record_pilot_call,
@@ -229,9 +230,13 @@ def _compose_run(
     manifest_sha: str,
     task: dict,
     scheduled: dict,
+    *,
+    route_question: bool = False,
+    intervention_id: str = "12345678-1234-4234-8234-123456789abc",
+    artifact_variant: str = "",
 ) -> tuple[dict, datetime]:
     arm = scheduled["arm"]
-    prefix = f"artifacts/{task['task_id']}/{arm}"
+    prefix = f"artifacts/{task['task_id']}/{arm}{artifact_variant}"
     state_path = root / f"{prefix}/state.jsonl"
     state = new_pilot_arm_state(
         composition, task_id=task["task_id"], task_tier="fixture", arm=arm,
@@ -243,11 +248,20 @@ def _compose_run(
     call_refs = []
     ledger_calls = []
     call_ordinal = 0
-    while state["next_stage"] in {"driver_plan", "hands"}:
+    question_routed = False
+    while state["next_stage"] in {"driver_plan", "hands", "hands_resume"}:
         call_ordinal += 1
         stage = state["next_stage"]
         arm_spec = manifest["arms"][arm]
-        stage_spec = arm_spec["driver"] if stage == "driver_plan" else arm_spec["hands"]
+        if stage == "driver_plan":
+            stage_spec = arm_spec["driver"]
+        elif stage == "hands_resume":
+            stage_spec = {
+                "backend": arm_spec["hands"]["backend"],
+                "prompt_template": arm_spec["question_route"]["resume_prompt_template"],
+            }
+        else:
+            stage_spec = arm_spec["hands"]
         backend_name = stage_spec["backend"]
         template_name = stage_spec["prompt_template"]
         backend = manifest["backends"][backend_name]
@@ -271,8 +285,17 @@ def _compose_run(
             task["task_id"], arm, dispatch["sha256"], manifest_sha, backend,
             template_sha, cost_basis=backend["cost_basis"],
         )
-        ledger_call["ts"] = f"2026-01-01T00:00:{call_ordinal:02d}Z"
-        output_text = "fixture plan" if stage == "driver_plan" else "fixture patch"
+        is_question = route_question and arm == "arm_c" and stage == "hands" and not question_routed
+        ledger_call["ts"] = (
+            "2025-12-31T23:59:59Z" if is_question
+            else f"2026-01-01T00:00:{call_ordinal:02d}Z"
+        )
+        if is_question:
+            ledger_call["outcome"] = "partial"
+        output_text = (
+            "Choose the exact policy interpretation" if is_question
+            else "fixture plan" if stage == "driver_plan" else "fixture patch"
+        )
         call_payload = {
             "schema": "tier-bench/pilot-call-receipt@1", "call_id": call_id,
             "task_id": task["task_id"], "arm": arm, "stage": stage, "attempt": 1,
@@ -280,8 +303,8 @@ def _compose_run(
             "prompt_template": {"name": template_name, "sha256": template_sha},
             "prompt_sha256": prompt_sha, "dispatch_receipt_sha256": dispatch["sha256"],
             "session_id": ledger_call["extra"]["session_id"] + f"-{call_ordinal}",
-            "outcome": "completed",
-            "output": {"kind": "plan" if stage == "driver_plan" else "candidate_patch",
+            "outcome": "question" if is_question else "completed",
+            "output": {"kind": "question" if is_question else "plan" if stage == "driver_plan" else "candidate_patch",
                        "text": output_text, "sha256": sha256_bytes(output_text.encode())},
             "ledger_call": ledger_call,
         }
@@ -293,6 +316,18 @@ def _compose_run(
         ))
         dispatch_refs.append(dispatch)
         ledger_calls.append(ledger_call)
+        if is_question:
+            question_routed = True
+            fixed_now = pilot_composition._now
+            pilot_composition._now = lambda: "2026-01-01T00:00:05Z"
+            try:
+                state = answer_operator_question(
+                    composition, state, question_id=state["active_question_id"],
+                    answer="Use the literal interpretation", intervention_id=intervention_id,
+                )
+            finally:
+                pilot_composition._now = fixed_now
+            write_state(state_path, composition, state)
     assert state["next_stage"] == "acceptance"
     candidate = state["calls"][-1]
     acceptance = {
@@ -316,19 +351,26 @@ def _compose_run(
         root, f"{prefix}/ledger.jsonl", b"".join(canonical_json(call) for call in ledger_calls)
     )
     seal_time = datetime(2026, 1, 1, tzinfo=UTC) + timedelta(minutes=scheduled["sequence"])
+    question_refs = [
+        _relative_artifact(
+            root, f"{prefix}/question-{index}.json", canonical_json(receipt)
+        )
+        for index, receipt in enumerate(state["question_receipts"], 1)
+    ]
     run = {
         "task_id": task["task_id"], "arm": arm, "sequence": scheduled["sequence"],
         "position": scheduled["position"], "base_commit": task["base_commit"],
         "sealed_at": seal_time.isoformat().replace("+00:00", "Z"),
         "final_state": "ACCEPTED", "protocol_valid": True,
         "composition_state": state_ref, "call_receipts": call_refs,
-        "dispatch_receipts": dispatch_refs, "question_receipts": [], "ledger": ledger,
+        "dispatch_receipts": dispatch_refs, "question_receipts": question_refs, "ledger": ledger,
     }
     seal_payload = {
         "schema": "tier-bench/pilot-arm-seal@1", "task_id": run["task_id"], "arm": arm,
         "base_commit": run["base_commit"], "sequence": run["sequence"], "position": run["position"],
         "sealed_at": run["sealed_at"], "final_state": run["final_state"], "protocol_valid": True,
-        "composition_state_sha256": state_ref["sha256"], "question_receipt_sha256s": [],
+        "composition_state_sha256": state_ref["sha256"],
+        "question_receipt_sha256s": sorted(ref["sha256"] for ref in question_refs),
     }
     run["arm_seal"] = _relative_artifact(root, f"{prefix}/seal.json", canonical_json(seal_payload))
     return run, seal_time
@@ -741,12 +783,42 @@ def test_subscription_call_requires_sealed_call_receipt(tmp_path: Path) -> None:
 def test_arm_c_question_requires_exact_intervention_interval(tmp_path: Path) -> None:
     root = tmp_path
     plan_path, evidence_path, plan, evidence = _fixture(root)
-    run = next(item for item in evidence["arm_runs"] if item["arm"] == "arm_c")
     intervention_id = "12345678-1234-4234-8234-123456789abc"
-    question_id = "f" * 64
+    run_index = next(index for index, item in enumerate(evidence["arm_runs"]) if item["arm"] == "arm_c")
+    old_run = evidence["arm_runs"][run_index]
+    task = next(item for item in plan["tasks"] if item["task_id"] == old_run["task_id"])
+    scheduled = next(
+        item for item in plan["schedule"]
+        if item["task_id"] == old_run["task_id"] and item["arm"] == "arm_c"
+    )
+    manifest_path = root / evidence["backend_manifest"]["path"]
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    composition = load_pilot_composition(manifest_path)
+    original_now = pilot_composition._now
+    pilot_composition._now = lambda: "2026-01-01T00:00:00Z"
+    try:
+        run, _ = _compose_run(
+            root, composition, manifest, evidence["backend_manifest"]["sha256"],
+            task, scheduled, route_question=True, intervention_id=intervention_id,
+            artifact_variant="-question",
+        )
+    finally:
+        pilot_composition._now = original_now
+    evidence["arm_runs"][run_index] = run
+    question = json.loads((root / run["question_receipts"][0]["path"]).read_text(encoding="utf-8"))
+    question_id = question["question_id"]
+    audit = next(item for item in evidence["audits"] if item["task_id"] == run["task_id"])
+    reveal_path = root / audit["mapping_reveal"]["path"]
+    reveal = json.loads(reveal_path.read_text(encoding="utf-8"))
+    reveal["label_map"]["arm_c"]["source_seal_sha256"] = run["arm_seal"]["sha256"]
+    reveal_path.write_bytes(canonical_json(reveal))
+    reveal_commit = _commit(root, "refresh reveal for question fixture", "2026-01-15T01:04:00Z")
+    audit["mapping_reveal"] = _git_bound_artifact(
+        root, audit["mapping_reveal"]["path"], reveal_commit, reveal_commit
+    )
     rows = []
     previous = None
-    for event, ts in (("start", "2026-01-01T00:00:00Z"), ("stop", "2026-01-01T00:00:10Z")):
+    for event, ts in (("start", "2026-01-01T00:00:01Z"), ("stop", "2026-01-01T00:00:06Z")):
         row = {"arm": "arm_c", "category": "clarification", "event": event,
                "intervention_id": intervention_id, "previous_event_sha256": previous,
                "reference_id": question_id, "task_id": run["task_id"], "ts": ts}
@@ -757,7 +829,11 @@ def test_arm_c_question_requires_exact_intervention_interval(tmp_path: Path) -> 
     log_path.write_bytes(b"".join(canonical_json(row) for row in rows))
     evidence["intervention_log"].update({"sha256": sha256_file(log_path), "head_sha256": previous})
     _rewrite(evidence_path, evidence)
-    _must_refuse(plan_path, evidence_path, "has no sealed question receipt")
+    assert close_pilot(plan_path, evidence_path, as_of=datetime(2026, 1, 20, tzinfo=UTC))
+    log_path.write_bytes(b"")
+    evidence["intervention_log"].update({"sha256": sha256_file(log_path), "head_sha256": None})
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "has no closed intervention interval")
     return
     call_path = root / run["call_receipts"][0]["path"]
     call = json.loads(call_path.read_text(encoding="utf-8"))

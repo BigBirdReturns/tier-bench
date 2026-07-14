@@ -832,13 +832,24 @@ def _validate_arm_run(
                 source_calls = [
                     call for call in call_values if call.get("call_id") == q.get("call_id")
                 ]
-                if len(source_calls) != 1 or receipt.get("asked_at") != source_calls[0].get("ledger_call", {}).get("ts"):
-                    errors.append(f"{label}.question_receipts[{question_index}] asked_at does not bind the question-producing call")
+                if len(source_calls) != 1:
+                    errors.append(f"{label}.question_receipts[{question_index}] does not bind one question-producing call")
                 elif (
                     source_calls[0].get("outcome") != "question"
                     or source_calls[0].get("output", {}).get("sha256") != receipt.get("question_sha256")
                 ):
                     errors.append(f"{label}.question_receipts[{question_index}] source call is not the sealed question")
+                else:
+                    source_time = _timestamp(
+                        source_calls[0].get("ledger_call", {}).get("ts"),
+                        f"{label}.question_receipts[{question_index}] source call ts", errors,
+                    )
+                    asked_time = _timestamp(
+                        receipt.get("asked_at"),
+                        f"{label}.question_receipts[{question_index}] asked_at", errors,
+                    )
+                    if source_time is not None and asked_time is not None and asked_time < source_time:
+                        errors.append(f"{label}.question_receipts[{question_index}] predates its question-producing call")
             asked = _timestamp(receipt.get("asked_at"), f"{label}.question_receipts[{question_index}].asked_at", errors)
             answered = _timestamp(receipt.get("answered_at"), f"{label}.question_receipts[{question_index}].answered_at", errors)
             if asked is not None and answered is not None and asked > answered:
@@ -1601,7 +1612,7 @@ def validate_evidence(
         asked = _timestamp(receipt.get("asked_at"), f"question receipt {index}.asked_at", errors)
         answered = _timestamp(receipt.get("answered_at"), f"question receipt {index}.answered_at", errors)
         if all(value is not None for value in (start_time, stop_time, asked, answered)) and not (
-            start_time <= asked <= answered <= stop_time
+            asked <= start_time <= answered <= stop_time
         ):
             errors.append(f"question receipt {index} falls outside its intervention interval")
         if isinstance(iid, str):
