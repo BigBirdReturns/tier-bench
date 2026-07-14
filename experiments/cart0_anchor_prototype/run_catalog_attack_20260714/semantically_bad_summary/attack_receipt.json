@@ -1,0 +1,1 @@
+{"detail":{"bundle_receipt_sha256":"a540fdcf43a9ea1e30dd46f530f33ba05a1f9673a49388e8e7b416ed2682c401","selected_card_ids":["000.100.AUTHORITY","000.200.GATED","010.100.CART0","020.100.DESKTOP_LAYERS"]},"expected":"REQUEST_REVIEW","id":"semantically_bad_summary","observed":"PROCEED_UNREVIEWED","safe_as_preregistered":false}

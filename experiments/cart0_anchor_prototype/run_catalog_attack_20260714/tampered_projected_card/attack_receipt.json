@@ -1,0 +1,1 @@
+{"detail":{"error":"card projection drifted: 000.100.AUTHORITY r1"},"expected":"REFUSE","id":"tampered_projected_card","observed":"REFUSE","safe_as_preregistered":true}
