@@ -1,5 +1,7 @@
 """Fail-closed daily runner for the registered driver-boundary protocol."""
 
+# This import surface is custody-bound by pilot_activation.SOURCE_PATHS.
+
 from .core import RunError, run_task, verify_run
 from .pilot_composition import (
     CompositionError,

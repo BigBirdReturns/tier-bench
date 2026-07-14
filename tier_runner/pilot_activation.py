@@ -21,9 +21,11 @@ DEFAULT_REF = "refs/remotes/origin/main"
 REMOTE_DEFAULT_REF = "refs/heads/main"
 CONTROL_REMOTE_URL = "https://github.com/BigBirdReturns/tier-bench.git"
 SOURCE_PATHS = {
+    "runner_package_runtime": "tier_runner/__init__.py",
     "activation_validator": "tier_runner/pilot_activation.py",
     "production_adapter": "tier_runner/pilot_adapter.py",
     "production_bridge": "tier_runner/pilot_bridge.py",
+    "adapters_package_runtime": "tier_runner/adapters/__init__.py",
     "claude_adapter": "tier_runner/adapters/claude_code.py",
     "composition_runtime": "tier_runner/pilot_composition.py",
     "composition_manifest_runtime": "tier_runner/pilot_manifest.py",
@@ -176,6 +178,16 @@ def _local_import_paths(raw: bytes, source_path: str) -> set[str]:
     return imported
 
 
+def _package_initializer_paths(source_path: str) -> set[str]:
+    """Return every package initializer executed while importing source_path."""
+    path = PurePosixPath(source_path)
+    package_parts = path.parts[:-1]
+    return {
+        PurePosixPath(*package_parts[:depth], "__init__.py").as_posix()
+        for depth in range(1, len(package_parts) + 1)
+    }
+
+
 def _authenticated_remote_head(repository: Path) -> str:
     result = subprocess.run(
         ["git", "ls-remote", "--exit-code", "origin", REMOTE_DEFAULT_REF],
@@ -290,6 +302,15 @@ def load_official_activation(
     if missing_sources:
         raise ActivationError(
             f"activated transitive source closure is incomplete: {sorted(missing_sources)}"
+        )
+    required_initializers = set().union(*(
+        _package_initializer_paths(path) for path in SOURCE_PATHS.values()
+    ))
+    missing_initializers = required_initializers - set(SOURCE_PATHS.values())
+    if missing_initializers:
+        raise ActivationError(
+            "activated package-initializer closure is incomplete: "
+            f"{sorted(missing_initializers)}"
         )
 
     composition_artifact = _artifact(document["composition_manifest"], "composition_manifest")

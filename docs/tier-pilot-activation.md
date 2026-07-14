@@ -15,8 +15,9 @@ The activation object binds all of the following at one commit:
   entry;
 - every prompt-template path and byte hash opened by the composition loader;
 - the complete transitive execution closure: activation validator, production
-  adapter and bridge, Claude command/environment adapter, composition state and
-  manifest runtimes, packet/session core, and backend-manifest runtime;
+  adapter and bridge, every executed package initializer, Claude
+  command/environment adapter, composition state and manifest runtimes,
+  packet/session core, and backend-manifest runtime;
 - the code-owned byte-preserving adapter identity, CLI version, and raw help
   surface;
 - distinct production dispatch, provider, acceptance, and bridge schemas; and
@@ -28,6 +29,14 @@ fields, backend or prompt drift, schema substitution, and any activation that
 claims task-disclosure or verdict authority. All custody source paths are pinned
 `eol=lf` and compared byte-for-byte; there is no newline-normalization exception
 that could hide a changed string literal.
+
+Host-local Git configuration remains part of the activation trust boundary.
+In particular, a hostile `url.*.insteadOf` rule can redirect Git network
+operations even while `remote get-url origin` reports the canonical URL. The
+operator must ratify and run an activation only on a host whose system, global,
+and repository Git configuration is under operator control; the loader cannot
+independently authenticate the Git client configuration executing its own
+network calls.
 
 `pilot_adapter.run_activated_adapter` deliberately ignores manifest command
 argv. It constructs the provider command from code, verifies the activated CLI

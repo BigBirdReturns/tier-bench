@@ -24,6 +24,7 @@ from tier_runner.pilot_activation import (  # noqa: E402
     SCHEMA,
     SOURCE_PATHS,
     ActivationError,
+    _package_initializer_paths,
     load_official_activation,
 )
 import tier_runner.pilot_activation as pilot_activation  # noqa: E402
@@ -208,6 +209,37 @@ def test_transitive_source_drift_is_not_self_authorizing(root: Path) -> None:
         raise AssertionError("a self-consistent activation hid transitive source drift")
 
 
+def test_package_initializer_drift_is_not_self_authorizing(root: Path) -> None:
+    for source_name in ("runner_package_runtime", "adapters_package_runtime"):
+        case = root / source_name
+        case.mkdir()
+        evidence, _, _, _ = _activation_fixture(case)
+        relative = SOURCE_PATHS[source_name]
+        path = evidence / relative
+        path.write_text(
+            path.read_text(encoding="utf-8")
+            + "\n# locally drifted package import authority\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        source_commit = _commit(evidence, f"drift {source_name}")
+        activation = json.loads((evidence / "pilot_activation.json").read_text())
+        activation["sources"][source_name] = _committed_artifact(
+            evidence, source_commit, relative
+        )
+        (evidence / "pilot_activation.json").write_bytes(_canonical(activation))
+        drift_commit = _commit(evidence, f"self-consistent {source_name} drift")
+        _git(evidence, "push", "origin", "main")
+        try:
+            load_official_activation(evidence, drift_commit, "pilot_activation.json")
+        except ActivationError as exc:
+            assert f"running {source_name} bytes differ" in str(exc)
+        else:
+            raise AssertionError(
+                f"a self-consistent activation hid {source_name} drift"
+            )
+
+
 def test_activated_adapter_ignores_manifest_argv_and_preserves_bytes(root: Path) -> None:
     _, _, activation, help_raw = _activation_fixture(root)
     call_dir = root / "call"
@@ -344,12 +376,17 @@ def test_activation_and_production_schemas_are_distinct(root: Path) -> None:
     for path in SOURCE_PATHS.values():
         assert f"{path} text eol=lf" in attributes
         assert b"\r\n" not in (REPO / path).read_bytes()
+    required_initializers = set().union(*(
+        _package_initializer_paths(path) for path in SOURCE_PATHS.values()
+    ))
+    assert required_initializers <= set(SOURCE_PATHS.values())
 
 
 def main() -> int:
     tests = [
         test_official_activation_opens_exact_remote_git_objects,
         test_transitive_source_drift_is_not_self_authorizing,
+        test_package_initializer_drift_is_not_self_authorizing,
         test_activated_adapter_ignores_manifest_argv_and_preserves_bytes,
         test_escalation_attempt_binds_one_ladder_position,
         test_activation_and_production_schemas_are_distinct,
