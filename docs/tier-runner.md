@@ -46,9 +46,31 @@ noninferiority, or benchmark verdict.
 The original daily command intentionally remains a one-call surface using
 `tier-bench/pilot-backends@1`. The proposal-only multi-call contract needed by
 the three-arm experiment is documented in `docs/tier-pilot-composition.md` and
-uses `tier-bench/pilot-backends@2`. Its deterministic state machine does not yet
-launch production adapters; do not treat schema-valid composition as pilot
-readiness.
+uses `tier-bench/pilot-backends@2`. The production bridge is a library surface,
+not a dispatching CLI: `start_pilot_arm` re-derives an official activation from
+the authenticated control repository, opens one validated pilot plan and its
+exact operator-authorization blob at the same authenticated commit, authenticates
+the target origin/default branch, and takes only a task/arm coordinate from that
+plan. It does not accept caller-supplied
+task text, scopes, acceptance commands, adapter runners, `PilotActivation`
+objects, or intervention-log paths. Arm-C continuation derives the one global
+log from the validated plan's `intervention_log_path` on every entry.
+
+Wiring that entrypoint is not execution authority. No activation instance or
+pilot plan is ratified merely because the callable exists, and the separately
+authorized activation canary must still close before any real task is disclosed.
+Every start, resume, decline, and recovery re-opens the official activation and
+refuses plan-byte drift from the session's initial hash.
+
+Crash recovery has three fail-closed states. An interruption proved to have
+occurred before provider dispatch archives the exact call directory and may
+retry. A fully sealed call replays without another provider call. Any started
+dispatch without sealed evidence permanently aborts the arm and removes its
+worktree. A hard kill before the custody file is sealed is therefore treated as
+ambiguous even when the provider probably never started; this can reject a
+strictly retryable call, but only in the safe direction. Whole-call-directory
+deletion is detected by the ADMIN receipt-completeness layer rather than inferred
+by the bridge from absent bytes.
 
 ## Install
 

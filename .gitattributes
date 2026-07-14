@@ -23,6 +23,7 @@ tier_runner/adapters/__init__.py text eol=lf
 tier_runner/adapters/claude_code.py text eol=lf
 tier_runner/pilot_composition.py text eol=lf
 tier_runner/pilot_manifest.py text eol=lf
+tier_runner/pilot.py text eol=lf
 tier_runner/core.py text eol=lf
 tier_runner/manifest.py text eol=lf
 tier_runner/events.py text eol=lf

@@ -14,9 +14,11 @@ sys.path.insert(0, str(REPO))
 
 from tier_runner.pilot_bridge import (
     BridgeError,
+    answer_and_resume_pilot_arm,
     answer_and_resume_fixture_pilot_arm,
-    decline_pilot_arm,
+    decline_fixture_pilot_arm,
     recover_fixture_pilot_arm,
+    recover_pilot_arm,
     start_fixture_pilot_arm,
     start_pilot_arm,
 )
@@ -270,7 +272,7 @@ def test_arm_c_decline_is_one_terminal_sealed_transition(root: Path) -> None:
         paused["active_question_id"],
     )
     stop_intervention(intervention_log, iid)
-    receipt = decline_pilot_arm(
+    receipt = decline_fixture_pilot_arm(
         out, question_id=paused["active_question_id"], reason="operator refused",
         intervention_log=intervention_log, fixture_script=script,
     )
@@ -282,13 +284,22 @@ def test_arm_c_decline_is_one_terminal_sealed_transition(root: Path) -> None:
     assert len(state["question_receipts"]) == 1
 
 
-def test_production_entrypoint_is_activation_blocked(root: Path) -> None:
-    try:
-        start_pilot_arm(repo=root)
-    except BridgeError as exc:
-        assert "activation-blocked" in str(exc)
-    else:
-        raise AssertionError("production bridge ran without activation custody")
+def test_production_entrypoint_accepts_no_derived_authority(root: Path) -> None:
+    del root
+    import inspect
+
+    parameters = set(inspect.signature(start_pilot_arm).parameters)
+    assert "activation" not in parameters
+    assert "intervention_log" not in parameters
+    assert "task" not in parameters
+    assert "files" not in parameters
+    assert "acceptance_command" not in parameters
+    resume_parameters = set(inspect.signature(answer_and_resume_pilot_arm).parameters)
+    decline_parameters = set(inspect.signature(pilot_bridge.decline_pilot_arm).parameters)
+    recovery_parameters = set(inspect.signature(recover_pilot_arm).parameters)
+    assert "intervention_log" not in resume_parameters
+    assert "intervention_log" not in decline_parameters
+    assert recovery_parameters == {"session_dir"}
 
 
 def test_evidence_seal_is_written_only_after_call_custody(root: Path) -> None:
@@ -726,7 +737,7 @@ def main() -> int:
         test_arm_a_repair_preserves_one_lineage_and_fresh_calls,
         test_arm_c_resume_requires_and_derives_one_closed_global_interval,
         test_arm_c_decline_is_one_terminal_sealed_transition,
-        test_production_entrypoint_is_activation_blocked,
+        test_production_entrypoint_accepts_no_derived_authority,
         test_evidence_seal_is_written_only_after_call_custody,
         test_pre_dispatch_crash_archives_exact_bytes_and_retries_once,
         test_sealed_call_replays_state_without_provider_redispatch,

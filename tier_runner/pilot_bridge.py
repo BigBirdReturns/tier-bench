@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -31,6 +32,14 @@ from .core import (
 )
 from .events import InterventionError, validate_events
 from .manifest import ManifestError, sha256_file
+from .pilot import PilotError, validate_plan
+from .pilot_activation import (
+    EXECUTOR_IDENTITY,
+    ActivationError,
+    PilotActivation,
+    load_official_activation,
+)
+from .pilot_adapter import PilotAdapterError, run_activated_adapter
 from .pilot_composition import (
     ACCEPTANCE_SCHEMA,
     CALL_SCHEMA,
@@ -56,6 +65,15 @@ PROVIDER_EVIDENCE_SCHEMA = "tier-bench/tier-pilot-fixture-provider-evidence@1"
 ACCEPTANCE_EVIDENCE_SCHEMA = "tier-bench/tier-pilot-fixture-acceptance-evidence@1"
 EXECUTION_MODE = "fixture"
 FIXTURE_EXECUTOR_ID = "tier-bench/in-process-data-fixture@1"
+PRODUCTION_SESSION_SCHEMA = "tier-bench/tier-pilot-production-bridge-session@1"
+PRODUCTION_RECEIPT_SCHEMA = "tier-bench/tier-pilot-production-bridge-receipt@2"
+PRODUCTION_DISPATCH_SCHEMA = "tier-bench/tier-pilot-dispatch-receipt@1"
+PRODUCTION_PROVIDER_EVIDENCE_SCHEMA = (
+    "tier-bench/tier-pilot-production-provider-evidence@1"
+)
+PRODUCTION_ACCEPTANCE_EVIDENCE_SCHEMA = (
+    "tier-bench/tier-pilot-production-acceptance-evidence@1"
+)
 QUESTION_ENVELOPE_SCHEMA = "tier-bench/tier-pilot-operator-question@1"
 QUESTION_CATEGORIES = {"interpretation", "policy", "authorization"}
 MAX_QUESTION_BYTES = 512
@@ -86,6 +104,18 @@ ABORT_FIELDS = {
 
 class BridgeError(RuntimeError):
     pass
+
+
+@dataclass(frozen=True)
+class _Execution:
+    mode: str
+    activation: PilotActivation | None
+    fixture_script: list[dict[str, Any]] | None
+    fixture_script_sha256: str | None
+
+    @property
+    def production(self) -> bool:
+        return self.mode == "production"
 
 
 def _now() -> str:
@@ -483,7 +513,9 @@ def _question_envelope(text: str) -> dict[str, str]:
     return value
 
 
-def _provider_result(path: Path, call_dir: Path) -> tuple[dict[str, Any], dict[str, Any]]:
+def _provider_result(
+    path: Path, call_dir: Path, *, production: bool = False
+) -> tuple[dict[str, Any], dict[str, Any]]:
     value = _read_object(path, "provider result")
     if set(value) != PROVIDER_RESULT_FIELDS or value.get("schema") != BACKEND_SCHEMA:
         raise BridgeError("provider result fields/schema do not match the bridge contract")
@@ -505,8 +537,22 @@ def _provider_result(path: Path, call_dir: Path) -> tuple[dict[str, Any], dict[s
     try:
         raw = json.loads(artifacts["provider_raw"][0].read_text(encoding="utf-8"))
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise BridgeError("fixture provider_raw must be an exact JSON output witness") from exc
-    if raw != {"pilot_output": output}:
+        label = "production" if production else "fixture"
+        raise BridgeError(f"{label} provider_raw must be an exact JSON output witness") from exc
+    if production:
+        encoded = raw.get("result") if isinstance(raw, dict) else None
+        if not isinstance(encoded, str):
+            raise BridgeError("production provider_raw has no exact result string")
+        try:
+            opened = json.loads(encoded)
+        except json.JSONDecodeError as exc:
+            raise BridgeError("production provider_raw result is invalid JSON") from exc
+        if (
+            opened != output
+            or encoded != json.dumps(output, sort_keys=True, separators=(",", ":"))
+        ):
+            raise BridgeError("production provider_raw does not open exact pilot_output bytes")
+    elif raw != {"pilot_output": output}:
         raise BridgeError("fixture provider_raw does not deterministically open pilot_output")
     return calls[0], output
 
@@ -690,21 +736,128 @@ def _verify_fixture_evidence(session_dir: Path) -> None:
             raise BridgeError("fixture acceptance raw report drifted")
 
 
+def _verify_production_evidence(
+    session_dir: Path, activation: PilotActivation
+) -> None:
+    evidence_root = activation.repository
+    calls_dir = session_dir / "calls"
+    if not calls_dir.is_dir():
+        return
+    for call_dir in sorted(path for path in calls_dir.iterdir() if path.is_dir()):
+        dispatch_path = call_dir / "dispatch.json"
+        dispatch = _read_object(dispatch_path, "production dispatch")
+        call_id = dispatch.get("call_id")
+        if dispatch.get("schema") != PRODUCTION_DISPATCH_SCHEMA or not isinstance(
+            call_id, str
+        ) or not call_id:
+            raise BridgeError(f"prior production call {call_dir.name} dispatch drifted")
+        journal = _read_journal(call_dir / "journal.jsonl", call_id)
+        if [row["event"] for row in journal] != [
+            "PREPARED", "DISPATCH_STARTED", "EVIDENCE_SEALED"
+        ]:
+            raise BridgeError(f"prior production call {call_dir.name} is not durably sealed")
+        provider = _read_object(
+            call_dir / "provider-evidence.json", "production provider evidence"
+        )
+        fields = {
+            "schema", "executor_identity", "activation_commit", "activation_sha256",
+            "call_id", "dispatch_receipt_sha256", "provider_result", "raw_artifacts",
+        }
+        if (
+            set(provider) != fields
+            or provider.get("schema") != PRODUCTION_PROVIDER_EVIDENCE_SCHEMA
+            or provider.get("executor_identity") != EXECUTOR_IDENTITY
+            or provider.get("activation_commit") != activation.commit
+            or provider.get("activation_sha256") != activation.sha256
+            or provider.get("call_id") != call_id
+            or provider.get("dispatch_receipt_sha256") != _sha(dispatch_path.read_bytes())
+        ):
+            raise BridgeError(f"prior production call {call_dir.name} provider custody drifted")
+        result_path, _ = _open_fixture_ref(
+            evidence_root, provider.get("provider_result"), "production provider result"
+        )
+        try:
+            _provider_result(result_path, call_dir, production=True)
+        except RunError as exc:
+            raise BridgeError(f"prior production provider evidence is invalid: {exc}") from exc
+        result = _read_object(result_path, "production provider result")
+        expected_raw = [
+            (item["name"], (call_dir / item["path"]).resolve(), item["sha256"])
+            for item in result["artifacts"]
+        ]
+        raws = provider.get("raw_artifacts")
+        if not isinstance(raws, list):
+            raise BridgeError("production raw_artifacts must be an array")
+        opened_raw: list[tuple[str, Path, str]] = []
+        for index, raw in enumerate(raws):
+            if not isinstance(raw, dict) or set(raw) != {"name", "path", "sha256"}:
+                raise BridgeError(f"production raw artifact {index} fields are invalid")
+            opened, digest = _open_fixture_ref(
+                evidence_root, {"path": raw["path"], "sha256": raw["sha256"]},
+                f"production raw artifact {index}",
+            )
+            opened_raw.append((raw["name"], opened, digest))
+        if opened_raw != expected_raw:
+            raise BridgeError("production raw artifact custody is not an exact ordered match")
+
+        acceptance_path = call_dir / "acceptance-evidence.json"
+        if not acceptance_path.exists():
+            continue
+        acceptance = _read_object(acceptance_path, "production acceptance evidence")
+        acceptance_fields = {
+            "schema", "executor_identity", "activation_commit", "activation_sha256",
+            "receipt_sha256", "receipt", "stdout", "stderr", "candidate_before",
+            "candidate_after", "report",
+        }
+        if (
+            set(acceptance) != acceptance_fields
+            or acceptance.get("schema") != PRODUCTION_ACCEPTANCE_EVIDENCE_SCHEMA
+            or acceptance.get("executor_identity") != EXECUTOR_IDENTITY
+            or acceptance.get("activation_commit") != activation.commit
+            or acceptance.get("activation_sha256") != activation.sha256
+        ):
+            raise BridgeError(f"prior production call {call_dir.name} acceptance custody drifted")
+        opened = {
+            name: _open_fixture_ref(
+                evidence_root, acceptance.get(name), f"production acceptance {name}"
+            )
+            for name in (
+                "receipt", "stdout", "stderr", "candidate_before", "candidate_after",
+                "report",
+            )
+        }
+        if opened["candidate_before"][0] == opened["candidate_after"][0]:
+            raise BridgeError("production acceptance before/after snapshots alias one artifact")
+        if opened["candidate_before"][0].read_bytes() != opened["candidate_after"][0].read_bytes():
+            raise BridgeError("production acceptance candidate changed during execution")
+        receipt = _read_object(opened["receipt"][0], "production acceptance receipt")
+        if receipt.get("receipt_sha256") != acceptance.get("receipt_sha256"):
+            raise BridgeError("production acceptance receipt identity drifted")
+        if opened["report"][0].read_bytes() != receipt.get("report", "").encode("utf-8"):
+            raise BridgeError("production acceptance raw report drifted")
+
+
+def _verify_execution_evidence(session_dir: Path, execution: _Execution) -> None:
+    if execution.production:
+        if execution.activation is None:
+            raise BridgeError("production execution has no re-derived activation")
+        _verify_production_evidence(session_dir, execution.activation)
+    else:
+        _verify_fixture_evidence(session_dir)
+
+
 def _dispatch(
     composition: PilotComposition,
     state: dict[str, Any],
     stage_spec: Stage,
     call_id: str,
     prompt_raw: bytes,
-    fixture_script_sha256: str,
+    execution: _Execution,
 ) -> dict[str, Any]:
     attempt = 1 + sum(call["stage"] == state["next_stage"] for call in state["calls"])
     template = composition.templates[stage_spec.prompt_template]
-    return {
-        "schema": DISPATCH_SCHEMA,
-        "execution_mode": EXECUTION_MODE,
-        "executor_identity": FIXTURE_EXECUTOR_ID,
-        "fixture_script_sha256": fixture_script_sha256,
+    value = {
+        "schema": PRODUCTION_DISPATCH_SCHEMA if execution.production else DISPATCH_SCHEMA,
         "call_id": call_id,
         "task_id": state["task_id"],
         "arm": state["arm"],
@@ -719,6 +872,13 @@ def _dispatch(
         "acceptance_sha256": _sha(state["acceptance_command"].encode("utf-8")),
         "composition_manifest_sha256": composition.sha256,
     }
+    if not execution.production:
+        value.update({
+            "execution_mode": EXECUTION_MODE,
+            "executor_identity": FIXTURE_EXECUTOR_ID,
+            "fixture_script_sha256": execution.fixture_script_sha256,
+        })
+    return value
 
 
 def _call_receipt(
@@ -924,17 +1084,18 @@ def _call_once(
     bridge_id: str,
     worktree: Path,
     registry_git: Path,
-    fixture_script: list[dict[str, Any]],
-    fixture_script_sha256: str,
+    execution: _Execution,
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
     ordinal = len(state["calls"]) + 1
     stage_spec = _stage(composition, state)
-    if ordinal > len(fixture_script):
-        raise BridgeError("fixture_script has no response for the next provider call")
-    response = fixture_script[ordinal - 1]
+    response: dict[str, Any] | None = None
+    if not execution.production:
+        if execution.fixture_script is None or ordinal > len(execution.fixture_script):
+            raise BridgeError("fixture_script has no response for the next provider call")
+        response = execution.fixture_script[ordinal - 1]
     call_id = f"{_safe_id(state['task_id'])}-{state['arm']}-{ordinal:02d}-{state['state_sha256']}"
     call_dir = session_dir / "calls" / f"{ordinal:02d}-{state['next_stage']}"
-    _verify_fixture_evidence(session_dir)
+    _verify_execution_evidence(session_dir, execution)
     if call_dir.exists():
         raise BridgeError("call evidence directory already exists; refusing overwrite")
     call_dir.mkdir(parents=True)
@@ -962,23 +1123,37 @@ def _call_once(
         prompt_raw = render_next_prompt(composition, state)
         prompt_path.write_bytes(prompt_raw)
         dispatch = _dispatch(
-            composition, state, stage_spec, call_id, prompt_raw,
-            fixture_script_sha256,
+            composition, state, stage_spec, call_id, prompt_raw, execution,
         )
         dispatch_raw = canonical_json(dispatch)
         dispatch_path.write_bytes(dispatch_raw)
         _append_journal(journal_path, "PREPARED", call_id)
         _append_journal(journal_path, "DISPATCH_STARTED", call_id)
-        _simulate_fixture_result(
-            response=response, composition=composition, state=state,
-            stage_spec=stage_spec, dispatch=dispatch, dispatch_raw=dispatch_raw,
-            packet=packet, call_dir=call_dir, result_path=result_path,
-        )
+        if execution.production:
+            if execution.activation is None:
+                raise BridgeError("production call has no re-derived activation")
+            run_activated_adapter(
+                execution.activation,
+                backend_name=stage_spec.backend,
+                dispatch_path=dispatch_path,
+                prompt_path=prompt_path,
+                result_path=result_path,
+                worktree=packet,
+            )
+        else:
+            assert response is not None
+            _simulate_fixture_result(
+                response=response, composition=composition, state=state,
+                stage_spec=stage_spec, dispatch=dispatch, dispatch_raw=dispatch_raw,
+                packet=packet, call_dir=call_dir, result_path=result_path,
+            )
         if not result_path.is_file():
             raise BridgeError("fixture simulator produced no provider result")
         if prompt_path.read_bytes() != prompt_raw or dispatch_path.read_bytes() != dispatch_raw:
             raise BridgeError("provider adapter modified immutable prompt/dispatch bytes")
-        ledger_call, provider_output = _provider_result(result_path, call_dir)
+        ledger_call, provider_output = _provider_result(
+            result_path, call_dir, production=execution.production
+        )
         provider_value = _read_object(result_path, "provider result")
         extra = ledger_call.get("extra")
         session_id = extra.get("session_id") if isinstance(extra, dict) else None
@@ -1013,39 +1188,88 @@ def _call_once(
             acceptance_path.write_bytes(canonical_json(acceptance_receipt))
             accepted_state = record_acceptance(composition, next_state, acceptance_receipt)
         provider_descriptor = {
-            "schema": PROVIDER_EVIDENCE_SCHEMA,
-            "execution_mode": EXECUTION_MODE,
-            "executor_identity": FIXTURE_EXECUTOR_ID,
+            "schema": (
+                PRODUCTION_PROVIDER_EVIDENCE_SCHEMA
+                if execution.production else PROVIDER_EVIDENCE_SCHEMA
+            ),
+            "executor_identity": (
+                EXECUTOR_IDENTITY if execution.production else FIXTURE_EXECUTOR_ID
+            ),
             "call_id": call_id,
             "dispatch_receipt_sha256": call_receipt["dispatch_receipt_sha256"],
-            "provider_result": _artifact_ref(session_dir, result_path),
+            "provider_result": _artifact_ref(
+                execution.activation.repository if execution.production else session_dir,
+                result_path,
+            ),
             "raw_artifacts": [
                 {
                     "name": item["name"],
-                    **_artifact_ref(session_dir, call_dir / item["path"]),
+                    **_artifact_ref(
+                        execution.activation.repository if execution.production else session_dir,
+                        call_dir / item["path"],
+                    ),
                 }
                 for item in provider_value["artifacts"]
             ],
         }
+        if execution.production:
+            assert execution.activation is not None
+            provider_descriptor.update({
+                "activation_commit": execution.activation.commit,
+                "activation_sha256": execution.activation.sha256,
+            })
+        else:
+            provider_descriptor["execution_mode"] = EXECUTION_MODE
         (call_dir / "provider-evidence.json").write_bytes(canonical_json(provider_descriptor))
         if acceptance_receipt is not None:
             acceptance_descriptor = {
-                "schema": ACCEPTANCE_EVIDENCE_SCHEMA,
-                "execution_mode": EXECUTION_MODE,
-                "executor_identity": FIXTURE_EXECUTOR_ID,
+                "schema": (
+                    PRODUCTION_ACCEPTANCE_EVIDENCE_SCHEMA
+                    if execution.production else ACCEPTANCE_EVIDENCE_SCHEMA
+                ),
+                "executor_identity": (
+                    EXECUTOR_IDENTITY if execution.production else FIXTURE_EXECUTOR_ID
+                ),
                 "receipt_sha256": acceptance_receipt["receipt_sha256"],
-                "receipt": _artifact_ref(session_dir, acceptance_path),
-                "stdout": _artifact_ref(session_dir, call_dir / "acceptance.stdout"),
-                "stderr": _artifact_ref(session_dir, call_dir / "acceptance.stderr"),
-                "candidate_before": _artifact_ref(session_dir, call_dir / "candidate.before.patch"),
-                "candidate_after": _artifact_ref(session_dir, call_dir / "candidate.after.patch"),
-                "report": _artifact_ref(session_dir, call_dir / "acceptance-report.txt"),
+                "receipt": _artifact_ref(
+                    execution.activation.repository if execution.production else session_dir,
+                    acceptance_path,
+                ),
+                "stdout": _artifact_ref(
+                    execution.activation.repository if execution.production else session_dir,
+                    call_dir / "acceptance.stdout",
+                ),
+                "stderr": _artifact_ref(
+                    execution.activation.repository if execution.production else session_dir,
+                    call_dir / "acceptance.stderr",
+                ),
+                "candidate_before": _artifact_ref(
+                    execution.activation.repository if execution.production else session_dir,
+                    call_dir / "candidate.before.patch",
+                ),
+                "candidate_after": _artifact_ref(
+                    execution.activation.repository if execution.production else session_dir,
+                    call_dir / "candidate.after.patch",
+                ),
+                "report": _artifact_ref(
+                    execution.activation.repository if execution.production else session_dir,
+                    call_dir / "acceptance-report.txt",
+                ),
             }
+            if execution.production:
+                assert execution.activation is not None
+                acceptance_descriptor.update({
+                    "activation_commit": execution.activation.commit,
+                    "activation_sha256": execution.activation.sha256,
+                })
+            else:
+                acceptance_descriptor["execution_mode"] = EXECUTION_MODE
             (call_dir / "acceptance-evidence.json").write_bytes(
                 canonical_json(acceptance_descriptor)
             )
     except (
-        BridgeError, CompositionError, ManifestError, RunError, OSError,
+        ActivationError, BridgeError, CompositionError, ManifestError, PilotAdapterError,
+        PilotError, RunError, OSError,
         ValueError, subprocess.SubprocessError,
     ) as exc:
         error = exc
@@ -1081,14 +1305,19 @@ def _call_once(
 
 def _receipt(
     session_dir: Path, composition: PilotComposition, state: dict[str, Any],
-    *, worktree_removed: bool, fixture_script_sha256: str,
+    *, worktree_removed: bool, execution: _Execution,
 ) -> dict[str, Any]:
-    _verify_fixture_evidence(session_dir)
+    _verify_execution_evidence(session_dir, execution)
+    artifact_root = (
+        execution.activation.repository
+        if execution.production and execution.activation is not None
+        else session_dir
+    )
     calls: list[dict[str, Any]] = []
     provider_receipts: list[dict[str, str]] = []
     acceptance_receipts: list[dict[str, str]] = []
     question_receipts = [
-        _artifact_ref(session_dir, path)
+        _artifact_ref(artifact_root, path)
         for path in _seal_question_receipts(
             session_dir, state, recover_missing=False
         )
@@ -1097,7 +1326,7 @@ def _receipt(
     recovery_log = None
     if recovery_path.is_file():
         _read_recovery_log(session_dir)
-        recovery_log = _artifact_ref(session_dir, recovery_path)
+        recovery_log = _artifact_ref(artifact_root, recovery_path)
     calls_dir = session_dir / "calls"
     if calls_dir.is_dir():
         for call_dir in sorted(path for path in calls_dir.iterdir() if path.is_dir()):
@@ -1107,38 +1336,48 @@ def _receipt(
             calls.append({"directory": call_dir.name, "artifacts": artifacts})
             if (call_dir / "provider-evidence.json").is_file():
                 provider_receipts.append(
-                    _artifact_ref(session_dir, call_dir / "provider-evidence.json")
+                    _artifact_ref(artifact_root, call_dir / "provider-evidence.json")
                 )
             if (call_dir / "acceptance-evidence.json").is_file():
                 acceptance_receipts.append(
-                    _artifact_ref(session_dir, call_dir / "acceptance-evidence.json")
+                    _artifact_ref(artifact_root, call_dir / "acceptance-evidence.json")
                 )
     state_path = session_dir / "state.jsonl"
     value = {
-        "schema": RECEIPT_SCHEMA,
-        "execution_mode": EXECUTION_MODE,
-        "executor_identity": FIXTURE_EXECUTOR_ID,
-        "fixture_script_sha256": fixture_script_sha256,
+        "schema": PRODUCTION_RECEIPT_SCHEMA if execution.production else RECEIPT_SCHEMA,
+        "executor_identity": EXECUTOR_IDENTITY if execution.production else FIXTURE_EXECUTOR_ID,
         "task_id": state["task_id"],
         "arm": state["arm"],
         "base_commit": state["base_commit"],
         "composition_manifest_sha256": composition.sha256,
         "status": state["status"],
-        "next_stage": state["next_stage"],
         "state_sequence": state["state_sequence"],
         "state_sha256": state["state_sha256"],
-        "state_log": {"path": "state.jsonl", "sha256": sha256_file(state_path)},
-        "calls": calls,
+        "state_log": _artifact_ref(artifact_root, state_path),
         "provider_receipts": provider_receipts,
         "acceptance_receipts": acceptance_receipts,
         "question_receipts": question_receipts,
         "recovery_log": recovery_log,
-        "active_question_id": state["active_question_id"],
         "arm_worktree_removed": worktree_removed,
         "scientific_verdict_minted": False,
         "equivalence_claim_permitted": False,
         "noninferiority_claim_permitted": False,
     }
+    if execution.production:
+        if execution.activation is None:
+            raise BridgeError("production receipt has no re-derived activation")
+        value.update({
+            "activation_commit": execution.activation.commit,
+            "activation_sha256": execution.activation.sha256,
+        })
+    else:
+        value.update({
+            "execution_mode": EXECUTION_MODE,
+            "fixture_script_sha256": execution.fixture_script_sha256,
+            "next_stage": state["next_stage"],
+            "calls": calls,
+            "active_question_id": state["active_question_id"],
+        })
     (session_dir / "bridge-receipt.json").write_bytes(canonical_json(value))
     return value
 
@@ -1186,8 +1425,7 @@ def _drive(
     bridge_id: str,
     worktree: Path,
     registry_git: Path,
-    fixture_script: list[dict[str, Any]],
-    fixture_script_sha256: str,
+    execution: _Execution,
     *,
     lock_owned: bool = False,
 ) -> dict[str, Any]:
@@ -1207,28 +1445,243 @@ def _drive(
         while state["status"] == "ACTIVE":
             state, _ = _call_once(
                 composition, state, repo, session_dir, scopes, bridge_id,
-                worktree, registry_git, fixture_script, fixture_script_sha256,
+                worktree, registry_git, execution,
             )
         removed = False
         if state["status"] in {"COMPLETE", "FAILED"}:
-            _verify_fixture_evidence(session_dir)
+            _verify_execution_evidence(session_dir, execution)
             process = _git(repo, "worktree", "remove", "--force", str(worktree), check=False)
             removed = process.returncode == 0 and not worktree.exists()
             if not removed:
                 raise BridgeError("terminal arm could not remove its isolated worktree")
         return _receipt(
             session_dir, composition, state,
-            worktree_removed=removed,
-            fixture_script_sha256=fixture_script_sha256,
+            worktree_removed=removed, execution=execution,
         )
     finally:
         lock.unlink(missing_ok=True)
 
 
-def start_pilot_arm(**_: Any) -> dict[str, Any]:
-    raise BridgeError(
-        "pilot bridge production dispatch is activation-blocked: no ratified adapter "
-        "identity/activation schema is merged; use fixture-only tests, not a live backend"
+def _production_authorities(
+    evidence_repo: Path,
+    *,
+    activation_commit: str,
+    activation_path: str,
+    plan_path: str,
+    authorization_path: str,
+) -> tuple[PilotActivation, dict[str, Any], str, str, Path]:
+    evidence_repo = _repo_root(evidence_repo)
+    evidence_git = _git_common_dir(evidence_repo)
+
+    def committed_blob(path: str, label: str) -> bytes:
+        if not isinstance(path, str) or not path:
+            raise BridgeError(f"{label} path is not a canonical committed path")
+        pure = PurePosixPath(path)
+        if (
+            path != pure.as_posix()
+            or pure.is_absolute()
+            or ".." in pure.parts
+            or "." in pure.parts
+            or pure.parts[0] == ".git"
+        ):
+            raise BridgeError(f"{label} path is not a canonical committed path")
+        process = subprocess.run(
+            ["git", "show", f"{activation_commit}:{path}"],
+            cwd=evidence_repo,
+            capture_output=True,
+        )
+        if process.returncode:
+            raise BridgeError(f"{label} does not exist at the authenticated authority commit")
+        return process.stdout
+
+    try:
+        activation = load_official_activation(
+            evidence_repo, activation_commit, activation_path
+        )
+        plan_raw = committed_blob(plan_path, "pilot plan")
+        plan = json.loads(plan_raw)
+        plan_errors = validate_plan(plan)
+        if plan_errors:
+            raise BridgeError("invalid committed pilot plan:\n- " + "\n- ".join(plan_errors))
+        authorization_raw = committed_blob(authorization_path, "operator authorization")
+        authorization = json.loads(authorization_raw)
+    except (ActivationError, ManifestError, PilotError, OSError) as exc:
+        raise BridgeError(f"cannot derive production authority: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise BridgeError("operator authorization is invalid JSON") from exc
+    if plan["backend_manifest_sha256"] != activation.composition.sha256:
+        raise BridgeError("pilot plan backend manifest differs from the official activation")
+    authorization_fields = {
+        "schema", "pilot_id", "plan_sha256", "backend_manifest_sha256",
+        "protocol_commit", "authority", "authorized", "ratified_at",
+    }
+    if not isinstance(authorization, dict) or set(authorization) != authorization_fields:
+        raise BridgeError("operator authorization fields are invalid")
+    expected_authorization = {
+        "schema": "tier-bench/tier-pilot-authorization@1",
+        "pilot_id": plan["pilot_id"],
+        "plan_sha256": _sha(plan_raw),
+        "backend_manifest_sha256": plan["backend_manifest_sha256"],
+        "protocol_commit": plan["protocol_commit"],
+        "authority": "operator",
+        "authorized": True,
+    }
+    for key, expected in expected_authorization.items():
+        if authorization.get(key) != expected:
+            raise BridgeError(f"operator authorization {key} does not ratify exact plan bytes")
+    try:
+        ratified_at = datetime.fromisoformat(
+            str(authorization.get("ratified_at", "")).replace("Z", "+00:00")
+        )
+    except ValueError as exc:
+        raise BridgeError("operator authorization ratified_at is invalid") from exc
+    if ratified_at.tzinfo is None or ratified_at > datetime.now(timezone.utc):
+        raise BridgeError("operator authorization ratified_at is invalid")
+    intervention_log = (evidence_repo / plan["intervention_log_path"]).resolve()
+    if not _inside(intervention_log, evidence_repo) or _inside(
+        intervention_log, evidence_git
+    ):
+        raise BridgeError("frozen intervention log path escapes evidence custody")
+    return activation, plan, _sha(plan_raw), _sha(authorization_raw), intervention_log
+
+
+def _production_task(plan: dict[str, Any], task_id: str, arm: str) -> dict[str, Any]:
+    tasks = [task for task in plan["tasks"] if task["task_id"] == task_id]
+    if len(tasks) != 1:
+        raise BridgeError("production task is not unique in the frozen plan")
+    coordinates = [
+        row for row in plan["schedule"]
+        if row["task_id"] == task_id and row["arm"] == arm
+    ]
+    if len(coordinates) != 1:
+        raise BridgeError("production task/arm is not unique in the frozen schedule")
+    return tasks[0]
+
+
+def _authenticate_target_repository(
+    repo: Path, plan: dict[str, Any], base_commit: str
+) -> None:
+    actual_remote = _git(repo, "remote", "get-url", "origin", check=False)
+    if actual_remote.returncode or actual_remote.stdout.strip() != plan["target_remote"]:
+        raise BridgeError("target repository origin differs from the frozen pilot plan")
+    remote_ref = f"refs/heads/{plan['default_branch']}"
+    query = subprocess.run(
+        ["git", "ls-remote", "--exit-code", plan["target_remote"], remote_ref],
+        cwd=repo,
+        capture_output=True,
+        text=True,
+    )
+    rows = [line.split() for line in query.stdout.splitlines() if line.strip()]
+    if query.returncode or len(rows) != 1 or len(rows[0]) != 2 or rows[0][1] != remote_ref:
+        raise BridgeError("cannot authenticate the target default branch")
+    remote_head = rows[0][0]
+    if not re.fullmatch(r"[0-9a-f]{40}", remote_head):
+        raise BridgeError("target default branch returned an invalid commit")
+    fetch = subprocess.run(
+        ["git", "fetch", "--no-tags", "--quiet", plan["target_remote"], remote_head],
+        cwd=repo,
+        capture_output=True,
+    )
+    if fetch.returncode:
+        raise BridgeError("authenticated target default-branch commit did not open")
+    ancestor = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", base_commit, remote_head],
+        cwd=repo,
+        capture_output=True,
+    )
+    if ancestor.returncode:
+        raise BridgeError("frozen task base is not on the authenticated target default branch")
+
+
+def start_pilot_arm(
+    *,
+    repo: Path,
+    evidence_repo: Path,
+    activation_commit: str,
+    activation_path: str,
+    plan_path: str,
+    authorization_path: str,
+    task_id: str,
+    arm: str,
+    output_dir: Path,
+) -> dict[str, Any]:
+    """Start one activated arm using only task bytes frozen in the pilot plan."""
+    repo = _repo_root(repo)
+    evidence_repo = _repo_root(evidence_repo)
+    target_git = _git_common_dir(repo)
+    registry_git = _git_common_dir(evidence_repo)
+    if evidence_repo == repo or target_git == registry_git:
+        raise BridgeError("control/evidence repository must be separate from the target")
+    activation, plan, plan_sha256, authorization_sha256, _ = _production_authorities(
+        evidence_repo,
+        activation_commit=activation_commit,
+        activation_path=activation_path,
+        plan_path=plan_path,
+        authorization_path=authorization_path,
+    )
+    task = _production_task(plan, task_id, arm)
+    base_commit = task["base_commit"]
+    if subprocess.run(
+        ["git", "cat-file", "-e", f"{base_commit}^{{commit}}"], cwd=repo,
+        capture_output=True,
+    ).returncode:
+        raise BridgeError("frozen base_commit is not available in the target repository")
+    _authenticate_target_repository(repo, plan, base_commit)
+    scopes = _normalize_scope(repo, task["files"])
+    normalized_files = [path + ("/" if is_dir else "") for path, is_dir in scopes]
+    if normalized_files != task["files"]:
+        raise BridgeError("frozen plan file scopes are not canonically normalized")
+    bridge_id = f"{_safe_id(task_id)}-{arm}-{uuid.uuid4().hex[:12]}"
+    session_dir = output_dir.resolve()
+    if _inside(session_dir, repo):
+        raise BridgeError("pilot evidence directory cannot modify the operator checkout")
+    if not _inside(session_dir, evidence_repo):
+        raise BridgeError("pilot evidence directory must live in the separate evidence repository")
+    if _inside(session_dir, registry_git):
+        raise BridgeError("pilot evidence directory cannot live under the evidence Git directory")
+    if session_dir.exists() and any(session_dir.iterdir()):
+        raise BridgeError("pilot evidence directory is not empty")
+    session_dir.mkdir(parents=True, exist_ok=True)
+    worktree = target_git / "tier-pilot-worktrees" / bridge_id
+    _git(repo, "worktree", "add", "--detach", str(worktree), base_commit)
+    state = new_pilot_arm_state(
+        activation.composition,
+        task_id=task_id,
+        task_tier="pilot",
+        arm=arm,
+        task=task["task"],
+        files=normalized_files,
+        acceptance_command=task["acceptance_command"],
+        base_commit=base_commit,
+    )
+    state = _append_state(session_dir / "state.jsonl", activation.composition, state)
+    session = {
+        "schema": PRODUCTION_SESSION_SCHEMA,
+        "bridge_id": bridge_id,
+        "repo": str(repo),
+        "evidence_repo": str(evidence_repo),
+        "arm_worktree": str(worktree),
+        "activation_commit": activation.commit,
+        "activation_path": activation.path,
+        "activation_sha256": activation.sha256,
+        "plan_path": plan_path,
+        "plan_sha256": plan_sha256,
+        "authorization_path": authorization_path,
+        "authorization_sha256": authorization_sha256,
+        "task_id": task_id,
+        "arm": arm,
+        "base_commit": base_commit,
+        "files": normalized_files,
+        "created_at": _now(),
+    }
+    (session_dir / "bridge-session.json").write_bytes(canonical_json(session))
+    execution = _Execution(
+        mode="production", activation=activation, fixture_script=None,
+        fixture_script_sha256=None,
+    )
+    return _drive(
+        activation.composition, state, repo, session_dir, scopes, bridge_id,
+        worktree, registry_git, execution,
     )
 
 
@@ -1301,9 +1754,13 @@ def start_fixture_pilot_arm(
         "created_at": _now(),
     }
     (session_dir / "bridge-session.json").write_bytes(canonical_json(session))
+    execution = _Execution(
+        mode="fixture", activation=None, fixture_script=fixture_script,
+        fixture_script_sha256=fixture_script_sha256,
+    )
     return _drive(
         composition, state, repo, session_dir, scopes, bridge_id,
-        worktree, registry_git, fixture_script, fixture_script_sha256,
+        worktree, registry_git, execution,
     )
 
 
@@ -1358,6 +1815,94 @@ def _load_session(
             recover_missing=recover_missing_question_receipts,
         )
     return session, composition, repo, evidence_repo, scopes, state
+
+
+def _load_production_session(
+    session_dir: Path,
+    *,
+    recover_missing_question_receipts: bool = False,
+    allow_unreplayed_worktree: bool = False,
+    verify_question_receipts: bool = True,
+    allow_abort: bool = False,
+) -> tuple[
+    dict[str, Any], PilotActivation, dict[str, Any], Path, Path,
+    list[tuple[str, bool]], dict[str, Any], Path,
+]:
+    session_dir = session_dir.resolve()
+    if (session_dir / "bridge-abort.json").exists() and not allow_abort:
+        raise BridgeError("bridge session is permanently fail-stopped")
+    session = _read_object(session_dir / "bridge-session.json", "production bridge session")
+    required = {
+        "schema", "bridge_id", "repo", "evidence_repo", "arm_worktree",
+        "activation_commit", "activation_path", "activation_sha256", "plan_path",
+        "plan_sha256", "authorization_path", "authorization_sha256", "task_id",
+        "arm", "base_commit", "files", "created_at",
+    }
+    if set(session) != required or session.get("schema") != PRODUCTION_SESSION_SCHEMA:
+        raise BridgeError("production bridge session fields/schema are invalid")
+    repo = _repo_root(Path(session["repo"]))
+    evidence_repo = _repo_root(Path(session["evidence_repo"]))
+    if (
+        repo == evidence_repo
+        or _git_common_dir(repo) == _git_common_dir(evidence_repo)
+        or not _inside(session_dir, evidence_repo)
+    ):
+        raise BridgeError("production session lost separate control/evidence custody")
+    (
+        activation, plan, plan_sha256, authorization_sha256, intervention_log,
+    ) = _production_authorities(
+        evidence_repo,
+        activation_commit=session["activation_commit"],
+        activation_path=session["activation_path"],
+        plan_path=session["plan_path"],
+        authorization_path=session["authorization_path"],
+    )
+    if activation.sha256 != session["activation_sha256"]:
+        raise BridgeError("official activation bytes drifted after bridge start")
+    if plan_sha256 != session["plan_sha256"]:
+        raise BridgeError("frozen pilot plan bytes drifted after bridge start")
+    if authorization_sha256 != session["authorization_sha256"]:
+        raise BridgeError("operator authorization bytes drifted after bridge start")
+    task = _production_task(plan, session["task_id"], session["arm"])
+    _authenticate_target_repository(repo, plan, task["base_commit"])
+    expected = {
+        "base_commit": task["base_commit"],
+        "files": task["files"],
+    }
+    for key, value in expected.items():
+        if session.get(key) != value:
+            raise BridgeError(f"production session {key} contradicts the frozen plan")
+    scopes = _normalize_scope(repo, task["files"])
+    state = read_state(activation.composition, session_dir / "state.jsonl")
+    state_bindings = {
+        "task_id": session["task_id"],
+        "arm": session["arm"],
+        "base_commit": task["base_commit"],
+        "files": task["files"],
+        "task": task["task"],
+        "acceptance_command": task["acceptance_command"],
+    }
+    for key, value in state_bindings.items():
+        if state.get(key) != value:
+            raise BridgeError(f"production state {key} contradicts the frozen plan")
+    worktree = Path(session["arm_worktree"]).resolve()
+    expected_worktree = (
+        _git_common_dir(repo) / "tier-pilot-worktrees" / session["bridge_id"]
+    ).resolve()
+    if worktree != expected_worktree:
+        raise BridgeError("arm worktree path contradicts the production bridge lineage")
+    if state["status"] in {"ACTIVE", "WAITING_OPERATOR"} and not allow_unreplayed_worktree:
+        if not worktree.is_dir() or _patch(worktree) != _last_candidate(state):
+            raise BridgeError("active production worktree differs from sealed candidate lineage")
+    if verify_question_receipts:
+        _seal_question_receipts(
+            session_dir, state,
+            recover_missing=recover_missing_question_receipts,
+        )
+    return (
+        session, activation, plan, repo, evidence_repo, scopes, state,
+        intervention_log,
+    )
 
 
 def _session_fixture_script(
@@ -1504,8 +2049,9 @@ def _recover_sealed_calls(
     session_dir: Path,
     composition: PilotComposition,
     state: dict[str, Any],
+    execution: _Execution,
 ) -> dict[str, Any]:
-    _verify_fixture_evidence(session_dir)
+    _verify_execution_evidence(session_dir, execution)
     state_path = session_dir / "state.jsonl"
     for call_dir in sorted(
         path for path in (session_dir / "calls").iterdir() if path.is_dir()
@@ -1570,6 +2116,10 @@ def recover_fixture_pilot_arm(
         verify_question_receipts=False,
     )
     script, script_sha256 = _session_fixture_script(session, fixture_script)
+    execution = _Execution(
+        mode="fixture", activation=None, fixture_script=script,
+        fixture_script_sha256=script_sha256,
+    )
     _clear_stale_lock(session_dir, session["bridge_id"])
     lock = _acquire_drive_lock(session_dir, session["bridge_id"])
     try:
@@ -1579,6 +2129,10 @@ def recover_fixture_pilot_arm(
             verify_question_receipts=False,
         )
         script, script_sha256 = _session_fixture_script(session, fixture_script)
+        execution = _Execution(
+            mode="fixture", activation=None, fixture_script=script,
+            fixture_script_sha256=script_sha256,
+        )
         _seal_question_receipts(session_dir, state, recover_missing=True)
         _verify_pre_dispatch_archives(session_dir)
         worktree = Path(session["arm_worktree"]).resolve()
@@ -1663,13 +2217,13 @@ def recover_fixture_pilot_arm(
                 return _abort_ambiguous_call(
                     session_dir, repo, worktree, state, call_dir
                 )
-        state = _recover_sealed_calls(session_dir, composition, state)
+        state = _recover_sealed_calls(session_dir, composition, state, execution)
         _seal_question_receipts(session_dir, state, recover_missing=True)
         _verify_pre_dispatch_archives(session_dir)
         if state["status"] in {"COMPLETE", "FAILED"} and not worktree.exists():
             return _receipt(
                 session_dir, composition, state,
-                worktree_removed=True, fixture_script_sha256=script_sha256,
+                worktree_removed=True, execution=execution,
             )
         if not worktree.is_dir() or _patch(worktree) != _last_candidate(state):
             raise BridgeError(
@@ -1678,7 +2232,161 @@ def recover_fixture_pilot_arm(
         registry_git = _git_common_dir(evidence_repo)
         return _drive(
             composition, state, repo, session_dir, scopes, session["bridge_id"],
-            worktree, registry_git, script, script_sha256, lock_owned=True,
+            worktree, registry_git, execution, lock_owned=True,
+        )
+    finally:
+        lock.unlink(missing_ok=True)
+
+
+def recover_pilot_arm(session_dir: Path) -> dict[str, Any]:
+    """Recover an activated arm without accepting activation or adapter authority."""
+    session_dir = session_dir.resolve()
+    abort_path = session_dir / "bridge-abort.json"
+    if abort_path.exists():
+        _load_production_session(
+            session_dir,
+            allow_unreplayed_worktree=True,
+            verify_question_receipts=False,
+            allow_abort=True,
+        )
+        rows = _read_recovery_log(session_dir)
+        abort = _read_abort(abort_path)
+        matches = [
+            row for row in rows
+            if row["action"] == "AMBIGUOUS_DISPATCH_FAIL_STOPPED"
+            and row["call_directory"] == abort["call_directory"]
+            and row["evidence_sha256"] == abort["evidence_sha256"]
+        ]
+        if len(matches) != 1:
+            raise BridgeError("bridge abort receipt lacks one exact recovery event")
+        return abort
+    (
+        session, activation, _, repo, evidence_repo, scopes, state, _,
+    ) = _load_production_session(
+        session_dir,
+        allow_unreplayed_worktree=True,
+        verify_question_receipts=False,
+    )
+    execution = _Execution(
+        mode="production", activation=activation, fixture_script=None,
+        fixture_script_sha256=None,
+    )
+    _clear_stale_lock(session_dir, session["bridge_id"])
+    lock = _acquire_drive_lock(session_dir, session["bridge_id"])
+    try:
+        (
+            session, activation, _, repo, evidence_repo, scopes, state, _,
+        ) = _load_production_session(
+            session_dir,
+            allow_unreplayed_worktree=True,
+            verify_question_receipts=False,
+        )
+        execution = _Execution(
+            mode="production", activation=activation, fixture_script=None,
+            fixture_script_sha256=None,
+        )
+        _seal_question_receipts(session_dir, state, recover_missing=True)
+        _verify_pre_dispatch_archives(session_dir)
+        worktree = Path(session["arm_worktree"]).resolve()
+        calls_dir = session_dir / "calls"
+        call_dirs = sorted(path for path in calls_dir.iterdir() if path.is_dir())
+        incomplete: list[tuple[Path, list[str], str | None]] = []
+        for call_dir in call_dirs:
+            dispatch_path = call_dir / "dispatch.json"
+            journal_path = call_dir / "journal.jsonl"
+            dispatch_call_id: str | None = None
+            if not journal_path.exists() and not dispatch_path.exists():
+                journal = []
+            else:
+                try:
+                    dispatch = _read_object(dispatch_path, "recovery dispatch")
+                    call_id = dispatch.get("call_id")
+                    if not isinstance(call_id, str) or not call_id:
+                        raise BridgeError("recovery dispatch has no call identity")
+                    dispatch_call_id = call_id
+                    journal = _read_journal(journal_path, call_id)
+                except (BridgeError, OSError):
+                    return _abort_ambiguous_call(
+                        session_dir, repo, worktree, state, call_dir
+                    )
+            events = [row["event"] for row in journal]
+            if events != ["PREPARED", "DISPATCH_STARTED", "EVIDENCE_SEALED"]:
+                incomplete.append((call_dir, events, dispatch_call_id))
+        if len(incomplete) > 1 or (incomplete and incomplete[0][0] != call_dirs[-1]):
+            raise BridgeError("recovery found multiple or non-terminal incomplete calls")
+        if incomplete:
+            call_dir, events, dispatch_call_id = incomplete[0]
+            if events in ([], ["PREPARED"]):
+                allowed = {
+                    "prompt.txt", "dispatch.json", "journal.jsonl", "custody.json",
+                }
+                if any(
+                    not path.is_file() or path.name not in allowed
+                    for path in call_dir.iterdir()
+                ):
+                    return _abort_ambiguous_call(
+                        session_dir, repo, worktree, state, call_dir
+                    )
+                custody_path = call_dir / "custody.json"
+                if not custody_path.is_file():
+                    return _abort_ambiguous_call(
+                        session_dir, repo, worktree, state, call_dir
+                    )
+                custody = _read_object(custody_path, "pre-dispatch custody")
+                if (
+                    set(custody) != {
+                        "schema", "call_id", "session_registered", "packet_removed",
+                        "arm_worktree_preserved", "completed_at", "error",
+                    }
+                    or custody.get("schema") != "tier-bench/tier-pilot-call-custody@1"
+                    or custody.get("session_registered") is not False
+                    or custody.get("packet_removed") is not True
+                    or custody.get("arm_worktree_preserved") is not True
+                    or not isinstance(custody.get("call_id"), str)
+                    or not custody["call_id"]
+                    or (
+                        dispatch_call_id is not None
+                        and custody["call_id"] != dispatch_call_id
+                    )
+                    or not (
+                        custody.get("error") is None
+                        or isinstance(custody.get("error"), str)
+                    )
+                ):
+                    return _abort_ambiguous_call(
+                        session_dir, repo, worktree, state, call_dir
+                    )
+                digest = _directory_sha256(call_dir)
+                archive = session_dir / "recovered" / f"pre-dispatch-{call_dir.name}"
+                archive.parent.mkdir(parents=True, exist_ok=True)
+                _ensure_recovery_event(
+                    session_dir, "PRE_DISPATCH_ARCHIVED", call_dir.name, digest
+                )
+                if archive.exists():
+                    raise BridgeError("pre-dispatch recovery has two evidence locations")
+                call_dir.replace(archive)
+            else:
+                return _abort_ambiguous_call(
+                    session_dir, repo, worktree, state, call_dir
+                )
+        state = _recover_sealed_calls(
+            session_dir, activation.composition, state, execution
+        )
+        _seal_question_receipts(session_dir, state, recover_missing=True)
+        _verify_pre_dispatch_archives(session_dir)
+        if state["status"] in {"COMPLETE", "FAILED"} and not worktree.exists():
+            return _receipt(
+                session_dir, activation.composition, state,
+                worktree_removed=True, execution=execution,
+            )
+        if not worktree.is_dir() or _patch(worktree) != _last_candidate(state):
+            raise BridgeError(
+                "recovered arm worktree does not match the replayed state lineage"
+            )
+        return _drive(
+            activation.composition, state, repo, session_dir, scopes,
+            session["bridge_id"], worktree, _git_common_dir(evidence_repo),
+            execution, lock_owned=True,
         )
     finally:
         lock.unlink(missing_ok=True)
@@ -1695,6 +2403,10 @@ def answer_and_resume_fixture_pilot_arm(
     session_dir = session_dir.resolve()
     session, composition, repo, evidence_repo, scopes, state = _load_session(session_dir)
     script, script_sha256 = _session_fixture_script(session, fixture_script)
+    execution = _Execution(
+        mode="fixture", activation=None, fixture_script=script,
+        fixture_script_sha256=script_sha256,
+    )
     lock = _acquire_drive_lock(session_dir.resolve(), session["bridge_id"])
     try:
         session, composition, repo, evidence_repo, scopes, state = _load_session(
@@ -1716,7 +2428,56 @@ def answer_and_resume_fixture_pilot_arm(
         return _drive(
             composition, resumed, repo, session_dir.resolve(), scopes,
             session["bridge_id"], Path(session["arm_worktree"]).resolve(),
-            _git_common_dir(evidence_repo), script, script_sha256, lock_owned=True,
+            _git_common_dir(evidence_repo), execution, lock_owned=True,
+        )
+    finally:
+        lock.unlink(missing_ok=True)
+
+
+def answer_and_resume_pilot_arm(
+    session_dir: Path,
+    *,
+    question_id: str,
+    answer: str,
+) -> dict[str, Any]:
+    session_dir = session_dir.resolve()
+    (
+        session, activation, _, repo, evidence_repo, scopes, state,
+        intervention_log,
+    ) = _load_production_session(session_dir)
+    execution = _Execution(
+        mode="production", activation=activation, fixture_script=None,
+        fixture_script_sha256=None,
+    )
+    lock = _acquire_drive_lock(session_dir, session["bridge_id"])
+    try:
+        (
+            session, activation, _, repo, evidence_repo, scopes, state,
+            intervention_log,
+        ) = _load_production_session(session_dir)
+        execution = _Execution(
+            mode="production", activation=activation, fixture_script=None,
+            fixture_script_sha256=None,
+        )
+        _verify_production_evidence(session_dir, activation)
+        _read_recovery_log(session_dir)
+        intervention_id, answered_at = _closed_intervention(
+            intervention_log, state, question_id=question_id
+        )
+        resumed = answer_operator_question(
+            activation.composition, state, question_id=question_id, answer=answer,
+            intervention_id=intervention_id, answered_at=answered_at,
+        )
+        resumed = _append_state(
+            session_dir / "state.jsonl", activation.composition, resumed
+        )
+        _seal_question_receipts(
+            session_dir, resumed, recover_missing=True, record_recovery=False
+        )
+        return _drive(
+            activation.composition, resumed, repo, session_dir, scopes,
+            session["bridge_id"], Path(session["arm_worktree"]).resolve(),
+            _git_common_dir(evidence_repo), execution, lock_owned=True,
         )
     finally:
         lock.unlink(missing_ok=True)
@@ -1727,12 +2488,65 @@ def decline_pilot_arm(
     *,
     question_id: str,
     reason: str,
+) -> dict[str, Any]:
+    session_dir = session_dir.resolve()
+    (
+        session, activation, _, repo, evidence_repo, scopes, state,
+        intervention_log,
+    ) = _load_production_session(session_dir)
+    execution = _Execution(
+        mode="production", activation=activation, fixture_script=None,
+        fixture_script_sha256=None,
+    )
+    lock = _acquire_drive_lock(session_dir, session["bridge_id"])
+    try:
+        (
+            session, activation, _, repo, evidence_repo, scopes, state,
+            intervention_log,
+        ) = _load_production_session(session_dir)
+        execution = _Execution(
+            mode="production", activation=activation, fixture_script=None,
+            fixture_script_sha256=None,
+        )
+        _verify_production_evidence(session_dir, activation)
+        _read_recovery_log(session_dir)
+        intervention_id, answered_at = _closed_intervention(
+            intervention_log, state, question_id=question_id
+        )
+        declined = decline_operator_question(
+            activation.composition, state, question_id=question_id, reason=reason,
+            intervention_id=intervention_id, answered_at=answered_at,
+        )
+        declined = _append_state(
+            session_dir / "state.jsonl", activation.composition, declined
+        )
+        _seal_question_receipts(
+            session_dir, declined, recover_missing=True, record_recovery=False
+        )
+        return _drive(
+            activation.composition, declined, repo, session_dir, scopes,
+            session["bridge_id"], Path(session["arm_worktree"]).resolve(),
+            _git_common_dir(evidence_repo), execution, lock_owned=True,
+        )
+    finally:
+        lock.unlink(missing_ok=True)
+
+
+def decline_fixture_pilot_arm(
+    session_dir: Path,
+    *,
+    question_id: str,
+    reason: str,
     intervention_log: Path,
     fixture_script: list[dict[str, Any]],
 ) -> dict[str, Any]:
     session_dir = session_dir.resolve()
     session, composition, repo, evidence_repo, scopes, state = _load_session(session_dir)
     script, script_sha256 = _session_fixture_script(session, fixture_script)
+    execution = _Execution(
+        mode="fixture", activation=None, fixture_script=script,
+        fixture_script_sha256=script_sha256,
+    )
     lock = _acquire_drive_lock(session_dir.resolve(), session["bridge_id"])
     try:
         session, composition, repo, evidence_repo, scopes, state = _load_session(
@@ -1755,7 +2569,7 @@ def decline_pilot_arm(
         return _drive(
             composition, declined, repo, session_dir.resolve(), scopes,
             session["bridge_id"], Path(session["arm_worktree"]).resolve(),
-            _git_common_dir(evidence_repo), script, script_sha256, lock_owned=True,
+            _git_common_dir(evidence_repo), execution, lock_owned=True,
         )
     finally:
         lock.unlink(missing_ok=True)

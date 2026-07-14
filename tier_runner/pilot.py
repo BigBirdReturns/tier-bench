@@ -732,7 +732,8 @@ def _validate_call_against_manifest(
 def _validate_bridge_raw_evidence(
     run: dict[str, Any], calls: list[dict[str, Any]], state: dict[str, Any] | None,
     root: Path, label: str, errors: list[str],
-) -> None:
+) -> tuple[str, str] | None:
+    activation_identity: tuple[str, str] | None = None
     providers = run.get("provider_receipts")
     if not isinstance(providers, list) or len(providers) != len(calls):
         errors.append(f"{label}.provider_receipts must cover every call exactly once")
@@ -748,12 +749,24 @@ def _validate_bridge_raw_evidence(
                     f"{label}.provider_receipts[{index}] fixture provider evidence is inadmissible"
                 )
                 continue
-            fields = {"schema", "call_id", "dispatch_receipt_sha256", "provider_result", "raw_artifacts"}
+            fields = {
+                "schema", "executor_identity", "activation_commit", "activation_sha256",
+                "call_id", "dispatch_receipt_sha256", "provider_result", "raw_artifacts",
+            }
             if value is None or not _exact_fields(value, fields, f"{label}.provider_receipts[{index}] payload", errors):
                 continue
             call = calls[index]
-            if value.get("schema") != "tier-bench/tier-pilot-provider-evidence@1":
+            if value.get("schema") != "tier-bench/tier-pilot-production-provider-evidence@1":
                 errors.append(f"{label}.provider_receipts[{index}] schema is invalid")
+            if value.get("executor_identity") != "tier-bench/pilot-production-adapter@1":
+                errors.append(f"{label}.provider_receipts[{index}] executor identity is invalid")
+            identity = (value.get("activation_commit"), value.get("activation_sha256"))
+            if not _is_hex(identity[0], HEX40) or not _is_hex(identity[1], HEX64):
+                errors.append(f"{label}.provider_receipts[{index}] activation identity is invalid")
+            elif activation_identity is None:
+                activation_identity = identity
+            elif identity != activation_identity:
+                errors.append(f"{label}.provider_receipts[{index}] activation identity drifted")
             if value.get("call_id") != call.get("call_id"):
                 errors.append(f"{label}.provider_receipts[{index}] call_id drifted")
             if value.get("dispatch_receipt_sha256") != call.get("dispatch_receipt_sha256"):
@@ -847,16 +860,27 @@ def _validate_bridge_raw_evidence(
     acceptances = run.get("acceptance_receipts")
     if not isinstance(acceptances, list) or len(acceptances) != len(attempts):
         errors.append(f"{label}.acceptance_receipts must cover every acceptance exactly once")
-        return
+        return activation_identity
     for index, row in enumerate(acceptances):
         artifact = _artifact(root, row, f"{label}.acceptance_receipts[{index}]", errors)
         value = _json_artifact_object(artifact, f"{label}.acceptance_receipts[{index}]", errors)
-        fields = {"schema", "receipt_sha256", "receipt", "stdout", "stderr", "candidate_before", "candidate_after", "report"}
+        fields = {
+            "schema", "executor_identity", "activation_commit", "activation_sha256",
+            "receipt_sha256", "receipt", "stdout", "stderr", "candidate_before",
+            "candidate_after", "report",
+        }
         if value is None or not _exact_fields(value, fields, f"{label}.acceptance_receipts[{index}] payload", errors):
             continue
         expected_receipt = attempts[index]
-        if value.get("schema") != "tier-bench/tier-pilot-acceptance-evidence@1":
+        if value.get("schema") != "tier-bench/tier-pilot-production-acceptance-evidence@1":
             errors.append(f"{label}.acceptance_receipts[{index}] schema is invalid")
+        if value.get("executor_identity") != "tier-bench/pilot-production-adapter@1":
+            errors.append(f"{label}.acceptance_receipts[{index}] executor identity is invalid")
+        identity = (value.get("activation_commit"), value.get("activation_sha256"))
+        if not _is_hex(identity[0], HEX40) or not _is_hex(identity[1], HEX64):
+            errors.append(f"{label}.acceptance_receipts[{index}] activation identity is invalid")
+        elif activation_identity is None or identity != activation_identity:
+            errors.append(f"{label}.acceptance_receipts[{index}] activation identity drifted")
         if value.get("receipt_sha256") != expected_receipt.get("receipt_sha256"):
             errors.append(f"{label}.acceptance_receipts[{index}] receipt hash drifted")
         receipt_artifact = _artifact(root, value.get("receipt"), f"{label}.acceptance_receipts[{index}].receipt", errors)
@@ -887,6 +911,7 @@ def _validate_bridge_raw_evidence(
             or opened["report"][0].read_text(encoding="utf-8") != expected_receipt.get("report")
         ):
             errors.append(f"{label}.acceptance_receipts[{index}] raw report drifted")
+    return activation_identity
 
 
 def _validate_arm_run(
@@ -901,7 +926,7 @@ def _validate_arm_run(
     errors: list[str],
 ) -> tuple[
     tuple[str, str] | None, list[dict[str, Any]], datetime | None,
-    list[dict[str, Any]], dict[str, Any] | None,
+    list[dict[str, Any]], dict[str, Any] | None, tuple[str, str] | None,
 ]:
     label = f"arm_runs[{index}]"
     fields = {
@@ -911,7 +936,7 @@ def _validate_arm_run(
         "question_receipts", "driver_trace", "ledger",
     }
     if not _exact_fields(run, fields, label, errors):
-        return None, [], None, [], None
+        return None, [], None, [], None, None
     task_id = run.get("task_id")
     arm = run.get("arm")
     coordinate = (task_id, arm) if isinstance(task_id, str) and isinstance(arm, str) else None
@@ -1045,7 +1070,9 @@ def _validate_arm_run(
 
     if state is not None and state.get("calls") != call_values:
         errors.append(f"{label}.composition_state calls do not equal sealed call receipts in order")
-    _validate_bridge_raw_evidence(run, call_values, state, root, label, errors)
+    activation_identity = _validate_bridge_raw_evidence(
+        run, call_values, state, root, label, errors
+    )
 
     question_artifacts = run.get("question_receipts")
     question_values: list[dict[str, Any]] = []
@@ -1180,7 +1207,7 @@ def _validate_arm_run(
                 errors.append(f"{call_label}.cost_usd must be non-negative")
         if sorted(seen_dispatches) != sorted(dispatch_hashes):
             errors.append(f"{label} dispatch/ledger completeness is not bidirectional")
-    return coordinate, calls, sealed_at, question_values, state
+    return coordinate, calls, sealed_at, question_values, state, activation_identity
 
 
 def _validate_costs(
@@ -1763,16 +1790,22 @@ def validate_evidence(
     all_dispatch_hashes: set[str] = set()
     all_question_receipts: list[dict[str, Any]] = []
     terminal_states: dict[tuple[str, str], dict[str, Any]] = {}
+    activation_identities: set[tuple[str, str]] = set()
     if not isinstance(arm_rows, list):
         errors.append("arm_runs must be an array")
     else:
         previous_sequence = 0
         previous_sealed_at: datetime | None = None
         for index, row in enumerate(arm_rows):
-            coordinate, calls, sealed_at, questions, terminal_state = _validate_arm_run(
+            (
+                coordinate, calls, sealed_at, questions, terminal_state,
+                activation_identity,
+            ) = _validate_arm_run(
                 row, index, tasks, plan, manifest, composition,
                 evidence_root, authorization_time, errors
             )
+            if activation_identity is not None:
+                activation_identities.add(activation_identity)
             if coordinate is not None:
                 if coordinate in coordinates:
                     errors.append(f"duplicate arm run coordinate {coordinate}")
@@ -1813,6 +1846,8 @@ def validate_evidence(
                     all_dispatch_hashes.add(dispatch_hash)
             all_calls.extend(calls)
             all_question_receipts.extend(questions)
+        if len(activation_identities) != 1 and coordinates:
+            errors.append("all arm runs must share one exact production activation identity")
     ratified_void_commits: list[tuple[str, str]] = []
     if protocol_invalid_tasks - voided:
         errors.append("every protocol-invalid arm must atomically void its whole task")

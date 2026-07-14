@@ -12,7 +12,7 @@ import tempfile
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from test_tier_pilot_bridge import _make_repos  # noqa: E402
+from test_tier_pilot_bridge import _acceptance, _make_repos  # noqa: E402
 from tier_runner.adapters.claude_code import REQUIRED_CLAUDE_FLAGS  # noqa: E402
 from tier_runner.pilot_activation import (  # noqa: E402
     ADAPTER_IDENTITY,
@@ -29,6 +29,9 @@ from tier_runner.pilot_activation import (  # noqa: E402
 )
 import tier_runner.pilot_activation as pilot_activation  # noqa: E402
 from tier_runner.pilot_adapter import PilotAdapterError, run_activated_adapter  # noqa: E402
+from tier_runner.pilot import PROTOCOL_V13_COMMIT, RESIDUAL_ORDERS, derive_schedule  # noqa: E402
+from tier_runner.pilot_bridge import recover_pilot_arm, start_pilot_arm  # noqa: E402
+import tier_runner.pilot_bridge as pilot_bridge  # noqa: E402
 
 
 def _sha(raw: bytes) -> str:
@@ -313,6 +316,7 @@ def test_activated_adapter_ignores_manifest_argv_and_preserves_bytes(root: Path)
     assert result["calls"][0]["extra"]["dispatch_receipt_sha256"] == _sha(
         _canonical(dispatch)
     )
+    assert result["calls"][0]["extra"]["tool_versions"] == activation.composition.tool_versions
     assert result["artifacts"][0]["sha256"] == _sha(provider_raw)
 
 
@@ -364,6 +368,10 @@ def test_activation_and_production_schemas_are_distinct(root: Path) -> None:
         (REPO / "schemas/tier_pilot_activation.schema.json").read_text(encoding="utf-8")
     )
     assert activation_schema["properties"]["status"]["const"] == "OPERATOR_RATIFIED"
+    assert set(activation_schema["properties"]["sources"]["required"]) == set(SOURCE_PATHS)
+    assert set(activation_schema["properties"]["production_schemas"]["required"]) == set(
+        PRODUCTION_SCHEMA_PATHS
+    )
     expected = {
         "provider": "tier-bench/tier-pilot-production-provider-evidence@1",
         "acceptance": "tier-bench/tier-pilot-production-acceptance-evidence@1",
@@ -372,6 +380,218 @@ def test_activation_and_production_schemas_are_distinct(root: Path) -> None:
     for name, schema_id in expected.items():
         value = json.loads((REPO / PRODUCTION_SCHEMA_PATHS[name]).read_text(encoding="utf-8"))
         assert value["properties"]["schema"]["const"] == schema_id
+
+
+def test_production_entrypoint_rederives_activation_plan_and_provider_custody(
+    root: Path,
+) -> None:
+    evidence, commit, activation, _ = _activation_fixture(root)
+    target = root / "target"
+    base = _git(target, "rev-parse", "HEAD")
+    target_remote = root / "target-remote.git"
+    subprocess.run(
+        ["git", "init", "--bare", "--initial-branch=main", str(target_remote)],
+        check=True,
+        capture_output=True,
+    )
+    _git(target, "remote", "add", "origin", str(target_remote.resolve()))
+    _git(target, "push", "-u", "origin", "main")
+    tasks = [
+        {
+            "task_id": f"prod-{index:02d}",
+            "base_commit": base,
+            "task": "Write the accepted target value",
+            "files": ["target.txt"],
+            "acceptance_command": _acceptance(),
+            "withheld_audit_sha256": "d" * 64,
+        }
+        for index in range(10)
+    ]
+    plan = {
+        "schema": "tier-bench/tier-pilot-plan@1",
+        "pilot_id": "production-entry-fixture",
+        "protocol_commit": PROTOCOL_V13_COMMIT,
+        "backend_manifest_sha256": activation.composition.sha256,
+        "target_remote": str(target_remote.resolve()),
+        "default_branch": "main",
+        "audit_normalization_profile": {
+            "path": "pilot/audit-profile.json", "sha256": "e" * 64,
+        },
+        "real_billed_tolerance_fraction": 0.01,
+        "intervention_log_path": "pilot/interventions.jsonl",
+        "follow_up_days": 14,
+        "audit_label_seed_commitment_sha256": "f" * 64,
+        "residual_order_enumeration": list(RESIDUAL_ORDERS),
+        "tasks": tasks,
+        "schedule": derive_schedule(tasks, PROTOCOL_V13_COMMIT),
+    }
+    plan_path = evidence / "pilot-plan.json"
+    plan_path.write_bytes(_canonical(plan))
+    authorization_path = evidence / "pilot" / "operator-authorization.json"
+    authorization_path.parent.mkdir(parents=True, exist_ok=True)
+    authorization_path.write_bytes(_canonical({
+        "schema": "tier-bench/tier-pilot-authorization@1",
+        "pilot_id": plan["pilot_id"],
+        "plan_sha256": _sha(_canonical(plan)),
+        "backend_manifest_sha256": plan["backend_manifest_sha256"],
+        "protocol_commit": plan["protocol_commit"],
+        "authority": "operator",
+        "authorized": True,
+        "ratified_at": "2026-07-14T00:00:00Z",
+    }))
+    authority_commit = _commit(evidence, "ratify exact production fixture plan")
+    _git(evidence, "push", "origin", "main")
+
+    calls = 0
+
+    def fake_adapter(
+        loaded,
+        *,
+        backend_name,
+        dispatch_path,
+        prompt_path,
+        result_path,
+        worktree,
+    ):
+        nonlocal calls
+        calls += 1
+        assert loaded.commit == authority_commit
+        dispatch = json.loads(dispatch_path.read_text(encoding="utf-8"))
+        assert dispatch["schema"] == "tier-bench/tier-pilot-dispatch-receipt@1"
+        assert prompt_path.read_bytes()
+        if dispatch["stage"] == "hands":
+            (worktree / "target.txt").write_text("correct\n", encoding="utf-8")
+        output = {
+            "outcome": "completed",
+            "text": "plan" if dispatch["stage"] == "driver_plan" else "candidate",
+        }
+        encoded = json.dumps(output, sort_keys=True, separators=(",", ":"))
+        raw = _canonical({"result": encoded, "session_id": f"prod-session-{calls}"})
+        raw_path = result_path.with_name("provider.raw.bin")
+        stderr_path = result_path.with_name("provider.stderr.bin")
+        raw_path.write_bytes(raw)
+        stderr_path.write_bytes(b"")
+        backend = loaded.composition.backends[backend_name]
+        call = {
+            "ts": "2026-07-14T00:00:00+00:00",
+            "account": backend.account,
+            "model": backend.model_id,
+            "tier": backend.tier,
+            "task_id": dispatch["task_id"],
+            "phase": dispatch["arm"],
+            "outcome": "pass",
+            "effort": backend.effort,
+            "input_tokens": 1,
+            "output_tokens": 1,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+            "cost_usd": 0.0,
+            "latency_ms": 1.0,
+            "trial": dispatch["attempt"],
+            "note": f"{backend.cost_basis}; deterministic production fixture",
+            "extra": {
+                "activation_commit": loaded.commit,
+                "activation_sha256": loaded.sha256,
+                "backend_manifest_sha256": loaded.composition.sha256,
+                "backend_surface": backend.surface,
+                "cost_basis": backend.cost_basis,
+                "dispatch_receipt_sha256": _sha(dispatch_path.read_bytes()),
+                "prompt_template_sha256": dispatch["prompt_template"]["sha256"],
+                "rendered_prompt_sha256": _sha(prompt_path.read_bytes()),
+                "runtime_model_id": backend.model_id,
+                "session_id": f"prod-session-{calls}",
+                "telemetry_complete": True,
+                "tool_versions": loaded.composition.tool_versions,
+                "raw_result_sha256": _sha(raw),
+                "stderr_sha256": _sha(b""),
+            },
+        }
+        result_path.write_bytes(_canonical({
+            "schema": PROVIDER_RESULT_SCHEMA,
+            "calls": [call],
+            "pilot_output": output,
+            "artifacts": [
+                {"name": "provider_raw", "path": raw_path.name, "sha256": _sha(raw)},
+                {"name": "provider_stderr", "path": stderr_path.name, "sha256": _sha(b"")},
+            ],
+        }))
+        return 0
+
+    original = pilot_bridge.run_activated_adapter
+    pilot_bridge.run_activated_adapter = fake_adapter
+    try:
+        receipt = start_pilot_arm(
+            repo=target,
+            evidence_repo=evidence,
+            activation_commit=authority_commit,
+            activation_path="pilot_activation.json",
+            plan_path="pilot-plan.json",
+            authorization_path="pilot/operator-authorization.json",
+            task_id="prod-00",
+            arm="arm_b",
+            output_dir=evidence / "runs" / "prod-00-arm-b",
+        )
+    finally:
+        pilot_bridge.run_activated_adapter = original
+    assert calls == 2
+    assert receipt["schema"] == "tier-bench/tier-pilot-production-bridge-receipt@2"
+    assert receipt["activation_commit"] == authority_commit
+    assert receipt["activation_sha256"] == activation.sha256
+    assert receipt["status"] == "COMPLETE"
+    assert receipt["arm_worktree_removed"] is True
+    receipt_schema = json.loads(
+        (REPO / PRODUCTION_SCHEMA_PATHS["bridge"]).read_text(encoding="utf-8")
+    )
+    assert set(receipt) == set(receipt_schema["required"])
+    assert len(receipt["provider_receipts"]) == 2
+    for reference in receipt["provider_receipts"]:
+        value = json.loads((evidence / reference["path"]).read_text())
+        assert value["activation_commit"] == authority_commit
+        assert value["activation_sha256"] == activation.sha256
+
+    crashed = evidence / "runs" / "prod-01-arm-c-recovery"
+    original_append = pilot_bridge._append_state
+    tripped = False
+
+    def crash_after_seal(path, composition, state):
+        nonlocal tripped
+        if state["task_id"] == "prod-01" and state["state_sequence"] > 0 and not tripped:
+            tripped = True
+            raise OSError("synthetic production crash after evidence seal")
+        return original_append(path, composition, state)
+
+    pilot_bridge.run_activated_adapter = fake_adapter
+    pilot_bridge._append_state = crash_after_seal
+    calls_before_recovery = calls
+    try:
+        try:
+            start_pilot_arm(
+                repo=target,
+                evidence_repo=evidence,
+                activation_commit=authority_commit,
+                activation_path="pilot_activation.json",
+                plan_path="pilot-plan.json",
+                authorization_path="pilot/operator-authorization.json",
+                task_id="prod-01",
+                arm="arm_c",
+                output_dir=crashed,
+            )
+        except OSError as exc:
+            assert "synthetic production crash" in str(exc)
+        else:
+            raise AssertionError("production sealed-state crash did not stop the arm")
+    finally:
+        pilot_bridge._append_state = original_append
+    try:
+        recovered = recover_pilot_arm(crashed)
+    finally:
+        pilot_bridge.run_activated_adapter = original
+    assert recovered["status"] == "COMPLETE"
+    assert calls == calls_before_recovery + 1
+    recovery_rows = [
+        json.loads(line) for line in (crashed / "recovery.jsonl").read_text().splitlines()
+    ]
+    assert [row["action"] for row in recovery_rows] == ["SEALED_STATE_REPLAYED"]
     attributes = (REPO / ".gitattributes").read_text(encoding="utf-8")
     for path in SOURCE_PATHS.values():
         assert f"{path} text eol=lf" in attributes
@@ -390,6 +610,7 @@ def main() -> int:
         test_activated_adapter_ignores_manifest_argv_and_preserves_bytes,
         test_escalation_attempt_binds_one_ladder_position,
         test_activation_and_production_schemas_are_distinct,
+        test_production_entrypoint_rederives_activation_plan_and_provider_custody,
     ]
     with tempfile.TemporaryDirectory(prefix="tier-pilot-activation-") as temporary:
         parent = Path(temporary)

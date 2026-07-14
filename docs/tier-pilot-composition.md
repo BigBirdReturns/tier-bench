@@ -4,10 +4,11 @@
 registered driver-boundary protocol and the original one-call daily runner.
 It is additive: `tier run` and `tier-bench/pilot-backends@1` are unchanged.
 
-This contract is **not pilot execution authority**. No production adapter
-bridge exists in this change, no backend choices or prompt bytes are frozen,
-and no real task may be disclosed through it. Cross-lineage review and merge
-make the instrument available for later activation; they do not launch it.
+This contract is **not pilot execution authority**. A production bridge exists,
+but it can open only an official activation and a validated frozen plan; no
+activation instance, backend choices, prompt bytes, task list, canary, or model
+call follows merely from the code being present. Cross-lineage review and merge
+make the instrument available for later ratification; they do not launch it.
 
 ## What v2 freezes
 
@@ -167,11 +168,11 @@ cannot be inherited as historical evidence.
 
 ## Bridge status
 
-The separately claimed bridge now implements an explicitly inadmissible fixture
-transaction contract. Its production entrypoint remains activation-blocked
-because no ratified activation schema yet binds a code-owned real adapter
-identity to frozen backend bytes. See
-`docs/tier-pilot-bridge.md`.
+The bridge implements both an explicitly inadmissible fixture transaction and a
+production path over the ratifiable activation contract. The production path
+re-derives activation and plan authority on every start, resume, decline, and
+recovery; no caller can donate an activation object, adapter runner, task packet,
+or intervention-log path. See `docs/tier-pilot-bridge.md`.
 
 The bridge machinery:
 
@@ -188,6 +189,8 @@ The bridge machinery:
    receipt.
 
 Fixture receipts carry distinct schemas and `execution_mode: fixture`; ADMIN
-rejects them. Until a separate production bridge is reviewed, merged, and
-activated against a frozen backend manifest and code-owned adapter receipt,
-these modules test coordination mechanics—not that the pilot can run.
+rejects them. Production descriptors carry the exact activation commit/hash and
+code-owned executor identity, and ADMIN requires one activation identity across
+every provider and acceptance descriptor in an arm. The remaining operator-owned
+activation, canary, task-plan, and execution gates still determine whether the
+pilot may run.

@@ -1,12 +1,22 @@
-# Tier pilot bridge — activation-blocked coordinator
+# Tier pilot bridge — activation-derived coordinator
 
 This module connects the merged three-arm composition state machine to the
-existing argv/result adapter boundary. It is deliberately **not a live pilot
-entrypoint**. `start_pilot_arm()` always refuses because no ratified activation
-schema currently binds a code-owned adapter implementation to frozen backend
-bytes. Deterministic tests use the explicitly named fixture-only entrypoints;
-they cannot authorize a backend, disclose a task, run a canary, grade an output,
-or mint a verdict.
+activated argv/result adapter boundary. `start_pilot_arm()` is the sole
+production start surface: it re-loads the official activation from the
+authenticated control repository, validates one frozen pilot plan, and derives
+task text, scopes, acceptance, base commit, composition, and the Arm-C global
+intervention path from those authorities. Its signature accepts no
+`PilotActivation`, adapter runner, task packet, or intervention-log path.
+The plan and operator-authorization payload must be Git blobs at that same
+authenticated authority commit; the authorization binds the exact plan and
+backend-manifest hashes. The target origin/default branch is independently
+opened with `ls-remote`, and each task base must be its ancestor.
+
+The callable is deliberately **not pilot execution authority**. No production
+activation instance, bounded canary authorization, task plan, or execution
+authorization follows from these bytes. Deterministic tests replace the internal
+adapter only inside the test process and record zero model calls; the public
+production signature exposes no such injection point.
 
 ## Transaction and isolation contract
 
@@ -17,7 +27,7 @@ call. No packet or worktree crosses arms. Each call must report a fresh provider
 session, registered in the separate control/evidence repository's global session
 registry.
 
-Before fixture interpretation the bridge writes exact prompt and dispatch bytes and
+Before either adapter path runs, the bridge writes exact prompt and dispatch bytes and
 appends `PREPARED` then `DISPATCH_STARTED` to the call journal. The call ID is a
 deterministic function of task, arm, ordinal, and incoming state hash. Recovery is
 explicit, lock-serialized, and split at that provider boundary:
@@ -45,13 +55,17 @@ bridge receipt schemas. ADMIN explicitly rejects those descriptors. This tests
 transaction mechanics without granting arbitrary manifest command text process
 authority or allowing fixture bytes to resemble admissible pilot evidence. The
 canonical script hash is preserved in dispatch and bridge receipts. Exact
-pre-read provider prompt identity remains unresolved for a real shim.
+production path instead calls the code-owned activated adapter, which rechecks
+the exact dispatch/prompt bytes, activated backend/rung, CLI version/help surface,
+and packet scope before launch.
 
 ## Evidence derived by the bridge
 
-The in-process simulator preserves a `tier-backend-result@1` provider result, an exact
+Both paths preserve a `tier-backend-result@1` provider result, an exact
 `pilot_output` envelope, and at least one hash-bound `provider_raw` artifact.
-The raw fixture artifact must deterministically open that exact output.
+The raw fixture artifact must deterministically open that exact output. A
+production raw artifact must open the provider's canonical `result` string to
+the same `pilot_output` bytes.
 The bridge—not fixture response data—derives the canonical full-index patch, candidate
 tree digest, call receipt, and immutable acceptance receipt. Acceptance keeps
 raw stdout, stderr, report, and before/after candidate snapshots. A temporary
@@ -64,7 +78,7 @@ A repair that exactly restores the frozen base therefore fails closed instead of
 sealing an empty candidate; this is an intentional custody refusal, not an
 infrastructure retry signal.
 
-Every fixture model-call and acceptance transition is appended to `state.jsonl`
+Every provider-call and acceptance transition is appended to `state.jsonl`
 and immediately replayed. Arm C may pause only on one canonical bounded JSON
 question with an enumerated category and no candidate edit. Resume or decline
 requires exactly one globally closed `clarification` interval matching task,
@@ -80,9 +94,10 @@ a state-append crash can be reconstructed only from the exact replayed state and
 is itself recorded as a recovery action.
 
 Fixture provider and acceptance descriptors are transaction-test artifacts only
-and are ADMIN-inadmissible. The future production format must open an exact,
-duplicate-free provider artifact sequence and distinct before/after acceptance
-snapshots. Acceptance reports already carry bounded stdout/stderr content plus
+and are ADMIN-inadmissible. Production descriptors bind the official activation
+commit/hash and code-owned executor, open an exact duplicate-free provider
+artifact sequence, and preserve distinct before/after acceptance snapshots.
+ADMIN requires one activation identity across the arm. Acceptance reports carry bounded stdout/stderr content plus
 full byte counts, truncation flags, and hashes so a repair prompt sees the
 failure rather than hashes alone.
 
@@ -92,21 +107,25 @@ Bridge receipts keep the no-verdict boundary explicit:
 - `equivalence_claim_permitted: false`
 - `noninferiority_claim_permitted: false`
 
-## Remaining activation gates
+## Remaining launch gates
 
 These are intentionally unresolved and fail closed:
 
-1. implement and review the production bridge as the sole caller which re-loads
-   the official activation for every fresh or resumed session; this fixture PR
-   deliberately leaves `start_pilot_arm()` inert;
-2. freeze backend, prompt, source/schema, and tool-version bytes in one operator-
+1. freeze backend, prompt, source/schema, and tool-version bytes in one operator-
    ratified activation instance;
-3. separately authorize and pass the manifest-bound synthetic live canary; and
-4. freeze the ten-task plan and audit material, then obtain separate execution
+2. separately authorize and pass the manifest-bound synthetic live canary; and
+3. freeze the ten-task plan and audit material, then obtain separate execution
    authority.
 
-Until all four land, the production entrypoint refuses before subprocess
-dispatch. The fixture recovery consumer proves the transaction classification;
-it does not turn fixture evidence into production evidence or authorize a live
-retry. The fixture transaction contract is machinery under test, not a
-production bridge, runnable pilot, or evidence about any model.
+Until all three land, nobody is authorized to supply runnable production inputs.
+The bridge reopens the committed plan and operator authorization on each entry;
+the payload records ratification, while authentication of the human/maintainer
+act remains external to the process. The
+fixture recovery consumer proves the same transaction classification without
+turning fixture evidence into production evidence or authorizing a live retry.
+
+A hard kill before the custody file is sealed is conservatively classified as
+ambiguous even if the call was probably pre-dispatch. That can reject a
+strictly-retryable call, but only in the safe direction. Conversely, deletion of
+an entire call directory is detected by ADMIN's bidirectional receipt
+completeness check; the bridge cannot infer evidence that no longer exists.

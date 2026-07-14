@@ -29,13 +29,16 @@ SOURCE_PATHS = {
     "claude_adapter": "tier_runner/adapters/claude_code.py",
     "composition_runtime": "tier_runner/pilot_composition.py",
     "composition_manifest_runtime": "tier_runner/pilot_manifest.py",
+    "pilot_admin_runtime": "tier_runner/pilot.py",
     "runner_core": "tier_runner/core.py",
     "backend_manifest_runtime": "tier_runner/manifest.py",
     "intervention_runtime": "tier_runner/events.py",
 }
 PRODUCTION_SCHEMA_PATHS = {
     "activation": "schemas/tier_pilot_activation.schema.json",
+    "authorization": "schemas/tier_pilot_authorization.schema.json",
     "dispatch": "schemas/tier_pilot_dispatch_receipt.schema.json",
+    "plan": "schemas/tier_pilot_plan.schema.json",
     "provider": "schemas/tier_pilot_production_provider_evidence.schema.json",
     "acceptance": "schemas/tier_pilot_production_acceptance_evidence.schema.json",
     "bridge": "schemas/tier_pilot_production_bridge_receipt.schema.json",
