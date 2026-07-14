@@ -1,0 +1,33 @@
+TASK BOUNDARY: implementation_start
+CURRENT TASK: Implement and verify the opt-in CART0 Select/Compose bridge without crossing gated boundaries.
+Use the active catalog below. Rehydrate a source only on a miss.
+
+CART0 cart0-token-saver-today [proposal]
+O: Save prompt tokens today: replace repeated repo briefing with a verifiable task anchor.
+I: Opt-in payload test only; not a context-window or quality proof.
+C: No gated grader, criterion, task, hidden vector, ledger, or cost changes.
+C: No model, pilot, activation, or canary dispatch.
+C: Prompt-size results imply no quality, benchmark, or scientific gain.
+C: Refuse HEAD, tool, spec, evidence, or anchor drift.
+P: codex-sol / proposal / driver / codex/cart0-anchor-prototype / no CART0 queue row
+N: Build, verify, run local payload A/B, return receipts and blocker.
+A: User delegation + QUEUE failure default; no evidence minting or providers.
+K: 000.100.AUTHORITYr1,000.200.GATEDr1,010.100.CART0r1,020.100.DESKTOP_LAYERSr1 (full evidence on demand via receipt.json)
+F: HEAD 31844cc00861 / 035f49c1bf4e62d5
+
+SELECTED CARDS
+CARD 000.100.AUTHORITY r1 [repository-normative; git-head-bound; proposal-unreviewed]
+A task exists only with a queue row. No CART0 implementation row exists at pinned HEAD, so this work remains proposal/test-harness only.
+SRC docs/agents/QUEUE.md:L3-L6@40d9554a08d0; docs/agents/QUEUE.md:L20-L49@a58694b2f07a; full hashes/OIDs=receipt.json; SUPERSEDES -
+
+CARD 000.200.GATED r1 [repository-normative; git-head-bound; proposal-unreviewed]
+Do not change graders, pass criteria, tasks, hidden vectors, ledger closure, or cost accounting; do not mint a benchmark verdict or receipt.
+SRC AGENTS.md:L48-L58@41c371568306; full hashes/OIDs=receipt.json; SUPERSEDES -
+
+CARD 010.100.CART0 r1 [operator-ratified-doctrine; git-head-bound; proposal-unreviewed]
+CART0 is a tiny control projection plus a decision-boundary gate. Keep full history out of the foreground; dispatch constraints mechanically and retrieve evidence by pointer.
+SRC data/continuity/CART0_CONTRACT.md:L8-L29@b242b437cf4c; data/continuity/CART0_CONTRACT.md:L84-L93@f18533f88625; full hashes/OIDs=receipt.json; SUPERSEDES -
+
+CARD 020.100.DESKTOP_LAYERS r1 [project-architecture; git-head-bound; proposal-unreviewed]
+Separate powers: isolated agents may propose, Console records human review, custody seals bytes, retrieval opens high-resolution terrain, and CART0 preserves lawful continuation.
+SRC docs/THE-RECURRING-DEFECT.md:L148-L179@a6a9070f2e78; full hashes/OIDs=receipt.json; SUPERSEDES -

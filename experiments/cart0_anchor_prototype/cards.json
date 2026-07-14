@@ -1,0 +1,64 @@
+{
+  "schema": "tier-bench/cart0-card-catalog@0",
+  "catalog_id": "residue-context-catalog",
+  "cards": [
+    {
+      "card_id": "000.100.AUTHORITY",
+      "revision": 1,
+      "summary": "CART0-BRIDGE-1 authorizes this bounded implementation and deterministic no-model tests; review and CI are still required before closure.",
+      "token_budget": 128,
+      "sources": [
+        {"path": "docs/agents/QUEUE.md", "start_line": 3, "end_line": 6},
+        {"path": "docs/agents/QUEUE.md", "start_line": 20, "end_line": 50}
+      ],
+      "supersedes": null,
+      "freshness": "git-head-bound",
+      "authority": "repository-normative",
+      "review_status": "proposal-unreviewed",
+      "select_at": ["implementation_start", "before_commit", "handoff", "recovery"]
+    },
+    {
+      "card_id": "000.200.GATED",
+      "revision": 1,
+      "summary": "Do not change graders, pass criteria, tasks, hidden vectors, ledger closure, or cost accounting; do not mint a benchmark verdict or receipt.",
+      "token_budget": 96,
+      "sources": [
+        {"path": "AGENTS.md", "start_line": 48, "end_line": 58}
+      ],
+      "supersedes": null,
+      "freshness": "git-head-bound",
+      "authority": "repository-normative",
+      "review_status": "proposal-unreviewed",
+      "select_at": ["implementation_start", "before_commit", "handoff", "recovery"]
+    },
+    {
+      "card_id": "010.100.CART0",
+      "revision": 1,
+      "summary": "CART0 is a tiny control projection plus a decision-boundary gate. Keep full history out of the foreground; dispatch constraints mechanically and retrieve evidence by pointer.",
+      "token_budget": 128,
+      "sources": [
+        {"path": "data/continuity/CART0_CONTRACT.md", "start_line": 8, "end_line": 29},
+        {"path": "data/continuity/CART0_CONTRACT.md", "start_line": 84, "end_line": 93}
+      ],
+      "supersedes": null,
+      "freshness": "git-head-bound",
+      "authority": "operator-ratified-doctrine",
+      "review_status": "proposal-unreviewed",
+      "select_at": ["implementation_start", "before_commit", "handoff", "recovery"]
+    },
+    {
+      "card_id": "020.100.DESKTOP_LAYERS",
+      "revision": 1,
+      "summary": "Separate powers: isolated agents may propose, Console records human review, custody seals bytes, retrieval opens high-resolution terrain, and CART0 preserves lawful continuation.",
+      "token_budget": 112,
+      "sources": [
+        {"path": "docs/THE-RECURRING-DEFECT.md", "start_line": 148, "end_line": 179}
+      ],
+      "supersedes": null,
+      "freshness": "git-head-bound",
+      "authority": "project-architecture",
+      "review_status": "proposal-unreviewed",
+      "select_at": ["implementation_start", "handoff", "recovery"]
+    }
+  ]
+}
