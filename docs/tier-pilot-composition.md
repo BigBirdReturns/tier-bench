@@ -159,7 +159,11 @@ acceptance receipt, driver repair call, and post-repair acceptance receipt; a
 rehashed but invented failure is refused. Trace custody lives under the pilot
 evidence root, never the target repository. The append API requires explicit
 target, packet, and worktree exclusions and refuses any evidence root or trace
-path beneath them.
+path beneath them. It reads the full arm-state log itself, requires a terminal
+replayed state, derives one task-specific trace filename from the frozen path
+and task ID, and requires any preexisting artifact to equal that final state's
+sealed traces exactly. A validly self-hashed row from another task therefore
+cannot be inherited as historical evidence.
 
 ## Deliberately unresolved boundary
 

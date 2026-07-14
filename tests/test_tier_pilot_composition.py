@@ -325,16 +325,22 @@ def test_manifest_locks_roles_and_common_hands(root: Path) -> None:
 
 def test_arm_a_repairs_and_emits_driver_trace(root: Path) -> None:
     composition, _ = make_composition(root)
+    evidence = root / "evidence"
+    state_log = evidence / "arm-state.jsonl"
     state = arm_state(composition, "real-01", "T2", "arm_a")
+    write_state(state_log, composition, state)
     state = record_pilot_call(composition, state, call_receipt(composition, state, output="plan"))
+    write_state(state_log, composition, state)
     assert state["next_stage"] == "hands"
     assert b"Frozen driver plan:\nplan" in render_next_prompt(composition, state)
     state = record_pilot_call(
         composition, state, call_receipt(composition, state, output="first patch")
     )
+    write_state(state_log, composition, state)
     state = record_acceptance(
         composition, state, acceptance_receipt(composition, state, passed=False, report="tests failed")
     )
+    write_state(state_log, composition, state)
     assert state["next_stage"] == "repair"
     repair_prompt = render_next_prompt(composition, state)
     assert b"Candidate:\nfirst patch" in repair_prompt
@@ -342,9 +348,11 @@ def test_arm_a_repairs_and_emits_driver_trace(root: Path) -> None:
     state = record_pilot_call(
         composition, state, call_receipt(composition, state, output="repaired patch")
     )
+    write_state(state_log, composition, state)
     state = record_acceptance(
         composition, state, acceptance_receipt(composition, state, passed=True, report="tests passed")
     )
+    write_state(state_log, composition, state)
     assert state["status"] == "COMPLETE"
     assert len(state["calls"]) == 3
     assert len(state["driver_traces"]) == 1
@@ -353,29 +361,28 @@ def test_arm_a_repairs_and_emits_driver_trace(root: Path) -> None:
     assert trace["validator_report"] == "tests failed"
     assert trace["driver_output"] == "repaired patch"
     assert trace["passed"] is True
-    evidence = root / "evidence"
     target = root / "target"
     packet = root / "packet"
     worktree = root / "worktree"
     for path in (target, packet, worktree):
         path.mkdir()
-    traces = evidence / "driver_traces.jsonl"
+    traces = evidence / f"driver_traces.{_sha('real-01')}.jsonl"
     exclusions = [target, packet, worktree]
     assert append_driver_traces(
-        composition, evidence, state, forbidden_roots=exclusions
+        composition, evidence, state_log, forbidden_roots=exclusions
     ) == 1
     assert append_driver_traces(
-        composition, evidence, state, forbidden_roots=exclusions
+        composition, evidence, state_log, forbidden_roots=exclusions
     ) == 0
     assert "enters target" in _raises(
         CompositionError,
         append_driver_traces,
         composition,
         target,
-        state,
+        state_log,
         forbidden_roots=exclusions,
     )
-    assert not (target / "driver_traces.jsonl").exists()
+    assert not (target / f"driver_traces.{_sha('real-01')}.jsonl").exists()
     assert json.loads(traces.read_text(encoding="utf-8"))["trace_sha256"] == trace["trace_sha256"]
 
 
@@ -583,16 +590,23 @@ def test_state_log_rejects_rewrite_and_fork(root: Path) -> None:
 
 def test_trace_rejects_rehashed_but_noncausal_content(root: Path) -> None:
     composition, _ = make_composition(root)
+    state_log = root / "trace-state.jsonl"
     state = arm_state(composition, "real-09", "T2", "arm_a")
+    write_state(state_log, composition, state)
     state = record_pilot_call(composition, state, call_receipt(composition, state, output="plan"))
+    write_state(state_log, composition, state)
     state = record_pilot_call(composition, state, call_receipt(composition, state, output="patch"))
+    write_state(state_log, composition, state)
     state = record_acceptance(
         composition, state, acceptance_receipt(composition, state, passed=False, report="real failure")
     )
+    write_state(state_log, composition, state)
     state = record_pilot_call(composition, state, call_receipt(composition, state, output="repair"))
+    write_state(state_log, composition, state)
     state = record_acceptance(
         composition, state, acceptance_receipt(composition, state, passed=True, report="passed")
     )
+    write_state(state_log, composition, state)
     tampered = copy.deepcopy(state)
     trace = tampered["driver_traces"][0]
     trace["validator_report"] = "invented failure"
@@ -601,12 +615,69 @@ def test_trace_rejects_rehashed_but_noncausal_content(root: Path) -> None:
     unsigned.pop("trace_sha256")
     trace["trace_sha256"] = _sha(json.dumps(unsigned, sort_keys=True, separators=(",", ":")))
     tampered["state_sha256"] = state_hash(tampered)
-    assert "contradicts causal" in _raises(
+    rows = [json.loads(line) for line in state_log.read_text(encoding="utf-8").splitlines()]
+    rows[-1] = tampered
+    state_log.write_text(
+        "\n".join(json.dumps(row, sort_keys=True) for row in rows) + "\n",
+        encoding="utf-8",
+    )
+    assert "driver trace contradicts" in _raises(
         CompositionError,
         append_driver_traces,
         composition,
         root / "evidence",
-        tampered,
+        state_log,
+        forbidden_roots=[root / "target", root / "packet", root / "worktree"],
+    )
+
+
+def test_preexisting_trace_file_must_match_replayed_task(root: Path) -> None:
+    composition, _ = make_composition(root / "preexisting-trace")
+    state_log = root / "preexisting-trace-state.jsonl"
+    state = arm_state(composition, "real-16", "T2", "arm_a")
+    write_state(state_log, composition, state)
+    for output in ("plan", "patch"):
+        state = record_pilot_call(
+            composition, state, call_receipt(composition, state, output=output)
+        )
+        write_state(state_log, composition, state)
+    state = record_acceptance(
+        composition,
+        state,
+        acceptance_receipt(composition, state, passed=False, report="real failure"),
+    )
+    write_state(state_log, composition, state)
+    state = record_pilot_call(
+        composition, state, call_receipt(composition, state, output="repair")
+    )
+    write_state(state_log, composition, state)
+    state = record_acceptance(
+        composition,
+        state,
+        acceptance_receipt(composition, state, passed=True, report="passed"),
+    )
+    write_state(state_log, composition, state)
+
+    fabricated = copy.deepcopy(state["driver_traces"][0])
+    fabricated["task_id"] = "fabricated-other-task"
+    unsigned = dict(fabricated)
+    unsigned.pop("trace_sha256")
+    fabricated["trace_sha256"] = _sha(
+        json.dumps(unsigned, sort_keys=True, separators=(",", ":"))
+    )
+    evidence = root / "preexisting-evidence"
+    evidence.mkdir()
+    trace_path = evidence / f"driver_traces.{_sha('real-16')}.jsonl"
+    trace_path.write_text(
+        json.dumps(fabricated, sort_keys=True, separators=(",", ":")) + "\n",
+        encoding="utf-8",
+    )
+    assert "not bound to this Arm-A task" in _raises(
+        CompositionError,
+        append_driver_traces,
+        composition,
+        evidence,
+        state_log,
         forbidden_roots=[root / "target", root / "packet", root / "worktree"],
     )
 
@@ -774,6 +845,7 @@ def main() -> None:
         test_acceptance_receipt_binds_candidate_and_tools,
         test_state_log_rejects_rewrite_and_fork,
         test_trace_rejects_rehashed_but_noncausal_content,
+        test_preexisting_trace_file_must_match_replayed_task,
         test_read_state_replays_embedded_receipts,
         test_max_questions_terminal_state_is_durable,
         test_initial_state_rejects_preseeded_genesis,

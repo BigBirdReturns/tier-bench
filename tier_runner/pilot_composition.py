@@ -1321,11 +1321,13 @@ def _validate_trace_causality(
 def append_driver_traces(
     composition: PilotComposition,
     evidence_root: Path,
-    state: dict[str, Any],
+    state_log: Path,
     *,
     forbidden_roots: list[Path],
 ) -> int:
-    _validate_state(composition, state)
+    state = read_state(composition, state_log)
+    if state["status"] not in {"COMPLETE", "FAILED"}:
+        raise CompositionError("driver traces require a replayed terminal Arm-A state")
     if state.get("arm") != "arm_a":
         if state.get("driver_traces"):
             raise CompositionError("non-arm_a state cannot carry driver traces")
@@ -1336,7 +1338,13 @@ def append_driver_traces(
     if not forbidden_roots:
         raise CompositionError("driver trace custody requires target/packet/worktree exclusions")
     root = evidence_root.resolve()
-    path = (root / relative).resolve()
+    relative_path = Path(relative)
+    suffix = relative_path.suffix or ".jsonl"
+    task_component = _sha_text(state["task_id"])
+    task_relative = relative_path.with_name(
+        f"{relative_path.stem}.{task_component}{suffix}"
+    )
+    path = (root / task_relative).resolve()
     try:
         path.relative_to(root)
     except ValueError as exc:
@@ -1355,6 +1363,7 @@ def append_driver_traces(
             pass
         else:
             raise CompositionError("driver trace path enters target/packet/worktree")
+    existing: list[dict[str, Any]] = []
     existing_ids: set[str] = set()
     if path.exists():
         for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -1368,16 +1377,25 @@ def append_driver_traces(
             if not isinstance(trace_hash, str) or trace_hash in existing_ids:
                 raise CompositionError(f"invalid or duplicate driver trace row {number}")
             _validate_trace_content(row, f"driver trace row {number}")
+            _validate_trace_causality(composition, state, row)
+            existing.append(row)
             existing_ids.add(trace_hash)
-    pending = [row for row in state.get("driver_traces", []) if row["trace_sha256"] not in existing_ids]
-    if not pending:
+    sealed = state.get("driver_traces", [])
+    if path.exists():
+        if existing != sealed:
+            raise CompositionError(
+                "task trace artifact does not exactly equal the replayed final state"
+            )
         return 0
-    for row in pending:
+    if not sealed:
+        return 0
+    for row in sealed:
         _validate_trace_content(row, "pending driver trace")
         _validate_trace_causality(composition, state, row)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8", newline="\n") as handle:
-        for row in pending:
+    with path.open("x", encoding="utf-8", newline="\n") as handle:
+        for row in sealed:
             handle.write(canonical_json(row).decode("utf-8"))
         handle.flush()
-    return len(pending)
+        os.fsync(handle.fileno())
+    return len(sealed)
