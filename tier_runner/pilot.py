@@ -102,14 +102,10 @@ def audit_normalized_payload(
         "output": output,
         "acceptance": {
             "receipt_sha256": receipt["receipt_sha256"],
-            "causal_call_id": receipt["causal_call_id"],
-            "candidate_patch_sha256": receipt["candidate_patch_sha256"],
             "candidate_tree_sha256": receipt["candidate_tree_sha256"],
             "passed": receipt["passed"],
             "report": receipt["report"],
             "report_sha256": receipt["report_sha256"],
-            "stdout_sha256": receipt["stdout_sha256"],
-            "stderr_sha256": receipt["stderr_sha256"],
         },
     }
 

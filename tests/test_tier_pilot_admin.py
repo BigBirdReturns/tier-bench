@@ -1129,6 +1129,40 @@ def test_normalized_artifact_must_be_builtin_terminal_projection(tmp_path: Path)
     _must_refuse(plan_path, evidence_path, "is not the built-in projection")
 
 
+def test_normalized_artifacts_exclude_runner_identity_and_reject_causal_id(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    for audit in evidence["audits"]:
+        normalized = json.loads(
+            (root / audit["normalized_inputs"]["path"]).read_text(encoding="utf-8")
+        )
+        for entry in normalized["entries"]:
+            raw = (root / entry["artifact"]["path"]).read_bytes()
+            assert b"arm_a" not in raw
+            assert b"arm_b" not in raw
+            assert b"arm_c" not in raw
+            assert b"causal_call_id" not in raw
+            payload = json.loads(raw)
+            assert set(payload["acceptance"]) == {
+                "receipt_sha256", "candidate_tree_sha256", "passed", "report",
+                "report_sha256",
+            }
+
+    audit = evidence["audits"][0]
+    normalized_path = root / audit["normalized_inputs"]["path"]
+    normalized = json.loads(normalized_path.read_text(encoding="utf-8"))
+    artifact_ref = normalized["entries"][0]["artifact"]
+    artifact_path = root / artifact_ref["path"]
+    payload = json.loads(artifact_path.read_text(encoding="utf-8"))
+    payload["acceptance"]["causal_call_id"] = "call-real-01-arm_a-1"
+    artifact_path.write_bytes(canonical_json(payload))
+    artifact_ref["sha256"] = sha256_file(artifact_path)
+    normalized_path.write_bytes(canonical_json(normalized))
+    _reseal_audit_chain(root, evidence)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(plan_path, evidence_path, "is not the built-in projection")
+
+
 def test_normalization_profile_has_no_executable_or_unknown_surface(tmp_path: Path) -> None:
     _fixture(tmp_path / "base")
     for case, profile_value, needle in (
@@ -1259,6 +1293,7 @@ def main() -> int:
         test_all_unvoided_scores_require_one_common_commit,
         test_post_score_ratified_void_cannot_close,
         test_normalized_artifact_must_be_builtin_terminal_projection,
+        test_normalized_artifacts_exclude_runner_identity_and_reject_causal_id,
         test_normalization_profile_has_no_executable_or_unknown_surface,
         test_arm_a_driver_trace_is_required_and_replay_derived,
         test_driver_trace_topology_refuses_missing_wrong_path_and_non_a,
