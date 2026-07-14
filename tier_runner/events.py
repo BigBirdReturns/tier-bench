@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import uuid
 
 
@@ -12,8 +13,9 @@ CATEGORIES = {"brief", "clarification", "rescue", "review", "acceptance", "other
 ARMS = {"arm_a", "arm_b", "arm_c"}
 EVENT_FIELDS = {
     "arm", "category", "event", "event_sha256", "intervention_id",
-    "previous_event_sha256", "task_id", "ts",
+    "previous_event_sha256", "reference_id", "task_id", "ts",
 }
+REFERENCE_ID = re.compile(r"^[A-Za-z0-9_.:-]+$")
 
 
 class InterventionError(ValueError):
@@ -70,6 +72,11 @@ def open_intervention(rows: list[dict]) -> dict | None:
             raise InterventionError("intervention arm/category is invalid")
         if not isinstance(row.get("task_id"), str) or not row["task_id"]:
             raise InterventionError("intervention task_id must be a non-empty string")
+        reference_id = row.get("reference_id")
+        if reference_id is not None and (
+            not isinstance(reference_id, str) or not REFERENCE_ID.fullmatch(reference_id)
+        ):
+            raise InterventionError("intervention reference_id is unsafe")
         try:
             timestamp = datetime.fromisoformat(str(row.get("ts", "")).replace("Z", "+00:00"))
         except ValueError as exc:
@@ -94,6 +101,8 @@ def open_intervention(rows: list[dict]) -> dict | None:
                 raise InterventionError("stop task/arm does not match start")
             if row.get("category") != current.get("category"):
                 raise InterventionError("stop category does not match start")
+            if row.get("reference_id") != current.get("reference_id"):
+                raise InterventionError("stop reference_id does not match start")
             current = None
         else:
             raise InterventionError(f"unknown intervention event {event!r}")
@@ -120,7 +129,13 @@ def _append(path: Path, row: dict, rows: list[dict]) -> None:
         os.fsync(handle.fileno())
 
 
-def start(path: Path, task_id: str, arm: str, category: str) -> str:
+def start(
+    path: Path,
+    task_id: str,
+    arm: str,
+    category: str,
+    reference_id: str | None = None,
+) -> str:
     if category not in CATEGORIES:
         raise InterventionError(f"category must be one of {sorted(CATEGORIES)}")
     rows = load_events(path)
@@ -132,6 +147,7 @@ def start(path: Path, task_id: str, arm: str, category: str) -> str:
         "category": category,
         "event": "start",
         "intervention_id": iid,
+        "reference_id": reference_id,
         "task_id": task_id,
         "ts": _now(),
     }, rows)
@@ -148,6 +164,7 @@ def stop(path: Path, intervention_id: str) -> None:
         "category": current["category"],
         "event": "stop",
         "intervention_id": intervention_id,
+        "reference_id": current["reference_id"],
         "task_id": current["task_id"],
         "ts": _now(),
     }, rows)

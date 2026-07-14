@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
@@ -9,6 +10,13 @@ import sys
 from .core import RunError, run_task, verify_run
 from .events import InterventionError, start, stop, validate_events
 from .manifest import ManifestError
+from .pilot import (
+    PilotError,
+    canonical_json,
+    close_pilot,
+    derive_schedule,
+    validate_plan,
+)
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -34,6 +42,7 @@ def _parser() -> argparse.ArgumentParser:
     begin.add_argument("--task-id", required=True)
     begin.add_argument("--arm", choices=["arm_a", "arm_b", "arm_c"], required=True)
     begin.add_argument("--category", required=True)
+    begin.add_argument("--reference-id")
     end = intervention_sub.add_parser("stop")
     end.add_argument("--log", type=Path, required=True)
     end.add_argument("--id", required=True)
@@ -44,6 +53,28 @@ def _parser() -> argparse.ArgumentParser:
     verify.add_argument("--log", type=Path, required=True)
     verify_run_parser = sub.add_parser("verify", help="verify a run's hashes and bindings")
     verify_run_parser.add_argument("--run-dir", type=Path, required=True)
+
+    pilot = sub.add_parser(
+        "pilot", help="validate and close the proposal-only driver-boundary administration"
+    )
+    pilot_sub = pilot.add_subparsers(dest="pilot_command", required=True)
+    pilot_schedule = pilot_sub.add_parser(
+        "schedule", help="derive the frozen three-arm schedule from a draft plan"
+    )
+    pilot_schedule.add_argument("--plan", type=Path, required=True)
+    pilot_validate = pilot_sub.add_parser(
+        "validate", help="validate an exact ten-task plan without dispatching anything"
+    )
+    pilot_validate.add_argument("--plan", type=Path, required=True)
+    pilot_close = pilot_sub.add_parser(
+        "close", help="fail closed over sealed pilot administration evidence"
+    )
+    pilot_close.add_argument("--plan", type=Path, required=True)
+    pilot_close.add_argument("--evidence", type=Path, required=True)
+    pilot_close.add_argument(
+        "--as-of", help="ISO-8601 verification instant; defaults to current UTC time"
+    )
+    pilot_close.add_argument("--output", type=Path)
     return parser
 
 
@@ -66,7 +97,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(receipt, indent=2, sort_keys=True))
             return 0 if receipt["state"] == "ACCEPTED" else 1
         if args.command == "intervention" and args.event == "start":
-            print(start(args.log, args.task_id, args.arm, args.category))
+            print(start(args.log, args.task_id, args.arm, args.category, args.reference_id))
             return 0
         if args.command == "intervention" and args.event == "stop":
             stop(args.log, args.id)
@@ -83,7 +114,42 @@ def main(argv: list[str] | None = None) -> int:
             errors = verify_run(args.run_dir)
             print(json.dumps({"ok": not errors, "errors": errors}, indent=2, sort_keys=True))
             return int(bool(errors))
-    except (InterventionError, ManifestError, RunError, OSError) as exc:
+        if args.command == "pilot" and args.pilot_command == "schedule":
+            raw = json.loads(args.plan.read_text(encoding="utf-8"))
+            if not isinstance(raw, dict):
+                raise PilotError("pilot plan must be a JSON object")
+            schedule = derive_schedule(raw.get("tasks", []), raw.get("protocol_commit", ""))
+            print(json.dumps(schedule, indent=2, sort_keys=True))
+            return 0
+        if args.command == "pilot" and args.pilot_command == "validate":
+            raw = json.loads(args.plan.read_text(encoding="utf-8"))
+            errors = validate_plan(raw)
+            print(json.dumps({"ok": not errors, "errors": errors}, indent=2, sort_keys=True))
+            return int(bool(errors))
+        if args.command == "pilot" and args.pilot_command == "close":
+            as_of = None
+            if args.as_of:
+                as_of = datetime.fromisoformat(args.as_of.replace("Z", "+00:00"))
+                if as_of.tzinfo is None:
+                    raise PilotError("--as-of must include a timezone")
+            receipt = close_pilot(args.plan, args.evidence, as_of=as_of)
+            output = canonical_json(receipt)
+            if args.output:
+                if args.output.exists():
+                    raise PilotError("--output already exists; closeout receipts are immutable")
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_bytes(output)
+            print(json.dumps(receipt, indent=2, sort_keys=True))
+            return 0
+    except (
+        InterventionError,
+        ManifestError,
+        PilotError,
+        RunError,
+        OSError,
+        json.JSONDecodeError,
+        ValueError,
+    ) as exc:
         print(f"tier: {exc}", file=sys.stderr)
         return 2
     return 2

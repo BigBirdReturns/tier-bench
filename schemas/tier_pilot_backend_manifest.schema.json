@@ -1,0 +1,175 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_backend_manifest.schema.json",
+  "title": "tier pilot composed backend manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "protocol_commit", "isolation", "tool_versions", "acceptance_tool_versions",
+    "prompt_templates", "backends", "arms"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/pilot-backends@2"},
+    "protocol_commit": {"const": "076fd1e3d97c22f7c33933c5dee4ff897d7ba4e6"},
+    "isolation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "fresh_session_per_call", "instruction_files", "auto_memory",
+        "conversation_carryover"
+      ],
+      "properties": {
+        "fresh_session_per_call": {"const": true},
+        "instruction_files": {"const": false},
+        "auto_memory": {"const": false},
+        "conversation_carryover": {"const": false}
+      }
+    },
+    "tool_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "acceptance_tool_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "prompt_templates": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"$ref": "#/$defs/prompt"}
+    },
+    "backends": {
+      "type": "object",
+      "minProperties": 2,
+      "additionalProperties": {"$ref": "#/$defs/backend"}
+    },
+    "arms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["arm_a", "arm_b", "arm_c"],
+      "properties": {
+        "arm_a": {"$ref": "#/$defs/arm_a"},
+        "arm_b": {"$ref": "#/$defs/arm_b"},
+        "arm_c": {"$ref": "#/$defs/arm_c"}
+      }
+    }
+  },
+  "$defs": {
+    "prompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "backend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id", "effort", "surface", "cost_basis", "account", "tier", "adapter"
+      ],
+      "properties": {
+        "model_id": {"type": "string", "minLength": 1},
+        "effort": {"type": "string", "minLength": 1},
+        "surface": {"type": "string", "minLength": 1},
+        "cost_basis": {
+          "enum": ["real-billed", "shadow-estimated", "subscription-derived"]
+        },
+        "account": {"type": "string", "minLength": 1},
+        "tier": {"type": "string", "minLength": 1},
+        "adapter": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["command"],
+          "properties": {
+            "command": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backend", "prompt_template"],
+      "properties": {
+        "backend": {"type": "string", "minLength": 1},
+        "prompt_template": {"type": "string", "minLength": 1}
+      }
+    },
+    "repair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["backend", "prompt_template", "max_calls"],
+      "properties": {
+        "backend": {"type": "string", "minLength": 1},
+        "prompt_template": {"type": "string", "minLength": 1},
+        "max_calls": {"const": 1}
+      }
+    },
+    "driver_trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required", "path"],
+      "properties": {
+        "required": {"const": true},
+        "path": {"type": "string", "minLength": 1}
+      }
+    },
+    "arm_a": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode", "driver", "hands", "repair", "escalations", "driver_trace"
+      ],
+      "properties": {
+        "mode": {"const": "frontier_driver"},
+        "driver": {"$ref": "#/$defs/stage"},
+        "hands": {"$ref": "#/$defs/stage"},
+        "repair": {"$ref": "#/$defs/repair"},
+        "escalations": {"type": "array", "items": {"$ref": "#/$defs/stage"}},
+        "driver_trace": {"$ref": "#/$defs/driver_trace"}
+      }
+    },
+    "arm_b": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "driver", "hands", "repair", "escalations"],
+      "properties": {
+        "mode": {"const": "cheap_driver"},
+        "driver": {"$ref": "#/$defs/stage"},
+        "hands": {"$ref": "#/$defs/stage"},
+        "repair": {"$ref": "#/$defs/repair"},
+        "escalations": {"type": "array", "items": {"$ref": "#/$defs/stage"}}
+      }
+    },
+    "arm_c": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "hands", "repair", "escalations", "question_route"],
+      "properties": {
+        "mode": {"const": "operator_routed"},
+        "hands": {"$ref": "#/$defs/stage"},
+        "repair": {"$ref": "#/$defs/repair"},
+        "escalations": {"type": "array", "maxItems": 0},
+        "question_route": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["question_template", "resume_prompt_template", "max_questions"],
+          "properties": {
+            "question_template": {"type": "string", "minLength": 1},
+            "resume_prompt_template": {"type": "string", "minLength": 1},
+            "max_questions": {"type": "integer", "minimum": 1}
+          }
+        }
+      }
+    }
+  }
+}

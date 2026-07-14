@@ -13,6 +13,43 @@ This is the implementation vehicle registered in
 the ten-task pilot. The pilot still requires its separately committed backend
 manifest, task list, arm schedule, and operator authorization.
 
+The proposal-only `tier pilot close` administration is deliberately stricter
+than a folder of receipts. The plan pins the exact protocol v1.3 commit, target
+remote/default branch, backend-manifest bytes, audit-normalization profile,
+ten task bases, schedule, and real-billed tolerance before disclosure. Evidence
+must open those bytes; bind every model call through dispatch, provider-call,
+ledger, final composition-state, and arm-seal artifacts; and prove calls occur
+after ratification and before their own arm seal. Subscription and shadow calls
+close through that receipt bijection. Real-billed calls additionally open a bill
+artifact and reconcile using only the plan-frozen tolerance.
+
+Operator questions in Arm C use `--reference-id <question-id>` on the matching
+`clarification` intervention. The final question receipt, state question, and
+closed global interval must agree one-to-one; an untracked answer or an extra
+clarification interval refuses closeout. Any other operator intervention that
+affects output remains a launch gate until its causal receipt is defined.
+
+Audit scoring is two-stage: committed normalized inputs contain opaque labels
+only, a later commit seals scores against those exact normalized bytes, and a
+strictly later mapping reveal opens the seed and binds each label to its actual
+arm seal. Recomputing scores after reveal therefore cannot satisfy the committed
+chain. Voids are never accepted from an arbitrary note: they must reproduce a
+fixed validator predicate or open a Git-bound ratification that names the exact
+task, reason, evidence hashes, and all three arm seals.
+
+Git-object proofs establish exact local bytes and ancestry. They do **not**
+authenticate a human identity unless the commit has a separately verified
+signature or attestation; maintainer authority remains an external merge fact.
+The closeout remains administrative and never mints an equivalence,
+noninferiority, or benchmark verdict.
+
+The original daily command intentionally remains a one-call surface using
+`tier-bench/pilot-backends@1`. The proposal-only multi-call contract needed by
+the three-arm experiment is documented in `docs/tier-pilot-composition.md` and
+uses `tier-bench/pilot-backends@2`. Its deterministic state machine does not yet
+launch production adapters; do not treat schema-valid composition as pilot
+readiness.
+
 ## Install
 
 From this repository:

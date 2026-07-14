@@ -136,6 +136,13 @@ blinding is complete between Arms A and B, and partial for C; the readout
 must carry this caveat on every C comparison. Neither resident driver
 participates in auditing its own pilot's artifacts.
 
+The administration instrument implements this with one fixed, non-executable
+normalizer over the replayed terminal candidate and its causal acceptance
+receipt. Pre-score entries expose only opaque labels and artifact references.
+All ten unvoided score artifacts share one Git commit at which no reveal path or
+exact reveal blob exists; reveal occurs at a strict descendant. Ratified voids
+must predate that common score commit, preventing post-result selection.
+
 ## Metrics
 
 **Primary: operator active minutes per accepted change** — including
@@ -176,6 +183,9 @@ interruptions, clarification handling, and rescue work.
   receipt hash recorded in `extra.dispatch_receipt_sha256`), and no ledger
   row lacks a receipt. Failed reconciliation or failed completeness voids
   the affected tasks.
+  Every real-billed row also requires the raw provider artifact; the opened bill
+  binds its non-null SHA-256, so a locally authored summary cannot substitute for
+  provider evidence.
 
 Secondary: elapsed wall-clock; frontier tokens/$ (real-billed); cheap
 tokens/$; escaped defects (from the withheld audit + follow-up window);
