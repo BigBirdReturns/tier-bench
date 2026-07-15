@@ -15,7 +15,7 @@ SCHEMAS = ROOT / "prompts" / "schemas"
 CLI = Path(r"C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\3135b80b111fd431\codex.exe")
 PROMPT = "Return the smallest valid payload with kind \"spark_receipt\" and neutral or empty values."
 
-sys.path.insert(0, str(ROOT.parents[2] / "scripts"))
+sys.path.insert(0, str(ROOT.parents[1] / "scripts"))
 from validate_strict_output_schemas import validate_instance, validate_schema  # noqa: E402
 
 
