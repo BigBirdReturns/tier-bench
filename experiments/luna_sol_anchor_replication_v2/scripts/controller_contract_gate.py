@@ -91,7 +91,7 @@ def run_gate(output: Path) -> dict[str, Any]:
         outscope = runner.run_full(root / "outscope", "trial-001", "full_outscope", "fixture", "low", 0, packet, fixture_executor("full_out_of_scope"))
         check("full_agent_out_of_scope_rejected", outscope["validation"].get("disposition") == "REJECTED_PATH_VIOLATION")
         planner_subject = root / "planner_subject"; runner.initialize_subject(planner_subject)
-        planner = runner.invoke(root / "planner", planner_subject, "fixture", "low", "read-only", "planner", packet, "planner_initial.schema.json", fixture_executor("planner_null"))
+        planner = runner.invoke(root / "planner", planner_subject, "fixture", "low", "read-only", "planner_initial", packet, "planner_initial.schema.json", fixture_executor("planner_null"))
         check("v21_null_anchor_rejected_by_schema", bool(planner["instance_errors"]))
         chain = runner.run_chain(root / "chain", "trial-001", 0, False, packet, fixture_executor("chain"))
         check("valid_initial_planner_and_spark_hand1_admitted", chain.get("accepted_hand_1", {}).get("visible_validators", {}).get("stage", {}).get("passed", False))
@@ -116,7 +116,10 @@ def run_gate(output: Path) -> dict[str, Any]:
         receipts = list((root / "chain").rglob("final_receipt.json"))
         receipt_schema = json.loads((runner.SCHEMAS / "final_receipt.schema.json").read_text(encoding="utf-8"))
         check("production_final_receipts_validate", bool(receipts) and all(not runner.validate_instance(json.loads(p.read_text()), receipt_schema) for p in receipts))
-    result = {"schema":"luna-sol-anchor-replication/controller-contract-gate@2.2","protocol_revision":"2.2","code_paths":["run_full","run_chain","apply_hand","create_fork","grade_candidate","seal_final_receipt"],"hashes":{"runner_sha256":runner.sha(RUNNER_PATH),"schema_hashes":{p.name:runner.sha(p) for p in runner.SCHEMAS.glob("*.json")},"prompt_hashes":{p.name:runner.sha(p) for p in runner.PROMPTS.glob("*.txt")},"task_packet_sha256":runner.sha(runner.TASK / "task_packet.json")},"tests":checks,"all_pass":all(x["result"] == "PASS" for x in checks)}
+        dispatches = list(root.rglob("dispatch.json"))
+        depth_ok = bool(dispatches) and all("agents.max_depth=0" in json.loads(path.read_text(encoding="utf-8"))["command"] and "agents.max_threads=1" in json.loads(path.read_text(encoding="utf-8"))["command"] for path in dispatches)
+        check("production_command_vectors_disable_subagents", depth_ok)
+    result = {"schema":"luna-sol-anchor-replication/controller-contract-gate@2.2.1","protocol_revision":"2.2.1","code_paths":["run_full","run_chain","apply_hand","create_fork","grade_candidate","seal_final_receipt","extract_remote_error"],"hashes":{"runner_sha256":runner.sha(RUNNER_PATH),"schema_hashes":{p.name:runner.sha(p) for p in runner.SCHEMAS.glob("*.json")},"prompt_hashes":{p.name:runner.sha(p) for p in runner.PROMPTS.glob("*.txt")},"task_packet_sha256":runner.sha(runner.TASK / "task_packet.json")},"tests":checks,"all_pass":all(x["result"] == "PASS" for x in checks)}
     runner.write(output, runner.canon(result))
     return result
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the single administrative union-schema acceptance preflight."""
+"""Run the single administrative production-schema acceptance proof."""
 from __future__ import annotations
 
 import hashlib
@@ -13,7 +13,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / "prompts" / "schemas"
 CLI = Path(r"C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\3135b80b111fd431\codex.exe")
-PROMPT = "Return the smallest valid payload with kind \"spark_receipt\" and neutral or empty values."
+PROMPT = "Return the smallest neutral object satisfying all three required properties: initial_planner, continuation_planner, and spark_report. Use the exact action values required by their embedded schemas and empty arrays where allowed."
 
 sys.path.insert(0, str(ROOT.parents[1] / "scripts"))
 from validate_strict_output_schemas import validate_instance, validate_schema  # noqa: E402
@@ -63,17 +63,19 @@ def main(argv: list[str] | None = None) -> int:
     subprocess.run(["git", "init", "-q"], cwd=empty_repo, check=True)
 
     defs = {
-        name.removesuffix(".schema.json"): json.loads((SCHEMAS / name).read_text(encoding="utf-8"))
-        for name in ("full_agent.schema.json", "planner.schema.json", "spark.schema.json")
+        "initial_planner": json.loads((SCHEMAS / "planner_initial.schema.json").read_text(encoding="utf-8")),
+        "continuation_planner": json.loads((SCHEMAS / "planner_continuation.schema.json").read_text(encoding="utf-8")),
+        "spark_report": json.loads((SCHEMAS / "spark.schema.json").read_text(encoding="utf-8")),
     }
     union = {
         "$defs": defs,
         "additionalProperties": False,
         "properties": {
-            "kind": {"enum": ["spark_receipt"]},
-            "payload": {"anyOf": [{"$ref": "#/$defs/full_agent"}, {"$ref": "#/$defs/planner"}, {"$ref": "#/$defs/spark"}]},
+            "initial_planner": {"$ref": "#/$defs/initial_planner"},
+            "continuation_planner": {"$ref": "#/$defs/continuation_planner"},
+            "spark_report": {"$ref": "#/$defs/spark_report"},
         },
-        "required": ["kind", "payload"],
+        "required": ["initial_planner", "continuation_planner", "spark_report"],
         "type": "object",
     }
     union_path = output / "union.schema.json"
@@ -86,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         "--output-last-message", str(final_path), "--output-schema", str(union_path),
         "--config", 'model_reasoning_effort="low"', "--config", 'model_reasoning_summary="none"',
         "--config", "model_supports_reasoning_summaries=false", "--config", 'web_search="disabled"',
-        "--config", "sandbox_workspace_write.network_access=false", "--config", "agents.max_depth=1",
+        "--config", "sandbox_workspace_write.network_access=false", "--config", "agents.max_depth=0",
         "--config", "agents.max_threads=1", "--config", 'history.persistence="none"',
         "--config", "hide_agent_reasoning=true", "--config", 'approval_policy="never"', "-C", str(empty_repo), "-",
     ]

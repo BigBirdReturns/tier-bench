@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute, seal, grade, and report the frozen Luna/Sol v2 episode."""
+"""Execute, seal, grade, and report the frozen Luna/Sol v2.2.1 episode."""
 from __future__ import annotations
 
 import argparse
@@ -27,7 +27,7 @@ PROMPTS = ROOT / "prompts"
 SCHEMAS = PROMPTS / "schemas"
 CLI = Path(r"C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\3135b80b111fd431\codex.exe")
 PREFERRED_PYTHON = Path(r"C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe")
-EXPERIMENT_TAG = "LUNA_SOL_ANCHOR_REPLICATION_V2"
+EXPERIMENT_TAG = "LUNA_SOL_ANCHOR_REPLICATION_V2_2_1"
 
 class ControllerError(RuntimeError):
     def __init__(self, code: str, stage: str, message: str, path: str | None = None):
@@ -170,6 +170,60 @@ def has_role_violation(stdout: bytes) -> list[str]:
             violations.append("forbidden agent or MCP event")
     return sorted(set(violations))
 
+def _decode_error_payload(value: Any) -> dict[str, Any] | None:
+    if isinstance(value, dict):
+        return value
+    if not isinstance(value, str):
+        return None
+    try:
+        decoded = json.loads(value)
+    except json.JSONDecodeError:
+        return None
+    return decoded if isinstance(decoded, dict) else None
+
+def extract_remote_error(stdout: bytes) -> dict[str, Any] | None:
+    """Extract a concrete provider/CLI error before missing-final fallback."""
+    for line in stdout.decode(errors="replace").splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        raw_candidates: list[Any] = []
+        event_type = event.get("type")
+        if event_type == "error":
+            raw_candidates.append(event.get("message"))
+            raw_candidates.append(event.get("error"))
+        elif event_type == "turn.failed":
+            failed = event.get("error")
+            raw_candidates.append(failed)
+            if isinstance(failed, dict):
+                raw_candidates.append(failed.get("message"))
+        for raw in raw_candidates:
+            envelope = _decode_error_payload(raw)
+            if not envelope:
+                continue
+            provider = envelope.get("error") if isinstance(envelope.get("error"), dict) else envelope
+            if not isinstance(provider, dict) or not provider.get("code"):
+                continue
+            provider_code = str(provider.get("code"))
+            status = envelope.get("status", event.get("status"))
+            administrative_code = "API_INVALID_JSON_SCHEMA" if provider_code == "invalid_json_schema" else "API_PROVIDER_ERROR"
+            stage = "response_schema_validation" if provider_code == "invalid_json_schema" else "remote_api"
+            return {
+                "code": administrative_code,
+                "stage": stage,
+                "http_status": status,
+                "provider_error_type": provider.get("type"),
+                "provider_error_code": provider_code,
+                "provider_param": provider.get("param"),
+                "message": provider.get("message", ""),
+                "agent_output_observed": False,
+                "event_type": event_type,
+            }
+    return None
+
 Executor = Callable[[list[str], Path, bytes, Path], subprocess.CompletedProcess[bytes]]
 
 def invoke(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, base_name: str, packet: dict[str, Any], schema_name: str, executor: Executor | None = None) -> dict[str, Any]:
@@ -180,7 +234,7 @@ def invoke(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, bas
     prompt_path = call_dir / "prompt.txt"; write(prompt_path, prompt)
     schema_path = SCHEMAS / schema_name
     final_path = call_dir / "final.json"
-    command = [str(CLI), "exec", "--model", model, "--sandbox", sandbox, "--ephemeral", "--json", "--output-last-message", str(final_path), "--output-schema", str(schema_path), "--config", f'model_reasoning_effort="{effort}"', "--config", 'model_reasoning_summary="none"', "--config", "model_supports_reasoning_summaries=false", "--config", 'web_search="disabled"', "--config", "sandbox_workspace_write.network_access=false", "--config", "agents.max_depth=1", "--config", "agents.max_threads=1", "--config", 'history.persistence="none"', "--config", "hide_agent_reasoning=true", "--config", 'approval_policy="never"', "-C", str(cwd), "-"]
+    command = [str(CLI), "exec", "--model", model, "--sandbox", sandbox, "--ephemeral", "--json", "--output-last-message", str(final_path), "--output-schema", str(schema_path), "--config", f'model_reasoning_effort="{effort}"', "--config", 'model_reasoning_summary="none"', "--config", "model_supports_reasoning_summaries=false", "--config", 'web_search="disabled"', "--config", "sandbox_workspace_write.network_access=false", "--config", "agents.max_depth=0", "--config", "agents.max_threads=1", "--config", 'history.persistence="none"', "--config", "hide_agent_reasoning=true", "--config", 'approval_policy="never"', "-C", str(cwd), "-"]
     dispatch = {"started_at": now(), "model": model, "effort": effort, "sandbox": sandbox, "cwd": str(cwd), "command": command, "prompt_sha256": sha(prompt_path), "schema_sha256": sha(schema_path), "schema": schema_name}
     write(call_dir / "dispatch.json", canon(dispatch))
     started = time.time()
@@ -203,14 +257,21 @@ def invoke(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, bas
                 final_bytes = str(event["text"]).encode(); break
     if final_bytes:
         write(call_dir / "final_response.txt", final_bytes)
-    receipt = {"completed_at": now(), "duration_seconds": round(time.time() - started, 3), "exit_code": result.returncode, "timed_out": timed_out, "stdout_sha256": sha(call_dir / "events.jsonl"), "stderr_sha256": sha(call_dir / "stderr.txt"), "final_response_sha256": sha_bytes(final_bytes), "usage": extract_usage(result.stdout), "role_violations": has_role_violation(result.stdout), "final_present": bool(final_bytes)}
-    write(call_dir / "completion.json", canon(receipt))
+    administrative_error = extract_remote_error(result.stdout)
+    if administrative_error is not None:
+        administrative_error["agent_output_observed"] = bool(final_bytes)
+    receipt = {"completed_at": now(), "duration_seconds": round(time.time() - started, 3), "exit_code": result.returncode, "timed_out": timed_out, "stdout_sha256": sha(call_dir / "events.jsonl"), "stderr_sha256": sha(call_dir / "stderr.txt"), "final_response_sha256": sha_bytes(final_bytes), "usage": extract_usage(result.stdout), "role_violations": has_role_violation(result.stdout), "final_present": bool(final_bytes), "administrative_error": administrative_error}
     try: receipt["final_json"] = json.loads(final_bytes.decode())
     except Exception: receipt["final_json"] = None
     schema_doc = json.loads(schema_path.read_text(encoding="utf-8"))
     receipt["schema_errors"] = validate_schema(schema_doc, str(schema_path))
-    receipt["instance_errors"] = validate_instance(receipt["final_json"], schema_doc) if receipt["final_json"] is not None else ["no final JSON"]
+    receipt["instance_errors"] = validate_instance(receipt["final_json"], schema_doc) if receipt["final_json"] is not None else []
+    if administrative_error is not None:
+        receipt["instance_errors"].insert(0, administrative_error["code"])
+    if receipt["final_json"] is None:
+        receipt["instance_errors"].append("no final JSON")
     receipt["schema_valid"] = not receipt["schema_errors"] and not receipt["instance_errors"]
+    write(call_dir / "completion.json", canon(receipt))
     return receipt
 
 def require_keys(value: Any, keys: list[str], label: str) -> None:
@@ -237,7 +298,7 @@ def validate_planner(response: dict[str, Any], phase: str) -> tuple[dict[str, An
     require_keys(response, ["action", "anchor_state", "work_graph", "crate", "decision_record"], "planner response") if phase == "hand_1" else require_keys(response, ["action", "anchor_state", "crate"], "planner response")
     if response["action"] != action or not response["anchor_state"] or not response["crate"]:
         raise ControllerError("PLANNER_SCHEMA_POLICY_REJECTED", "planner_validation", f"planner did not return {action} with non-null anchor and crate")
-    if phase == "hand_1" and (len(response["work_graph"]) != 2 or response["work_graph"][0]["node_id"] == response["work_graph"][1]["node_id"]):
+    if phase == "hand_1" and (len(response["work_graph"]) != 2 or response["work_graph"][0]["node_id"] == response["work_graph"][1]["node_id"] or response["work_graph"][0]["node_id"] not in response["work_graph"][1]["depends_on"]):
         raise ControllerError("PRELUDE_PLANNER_WORK_GRAPH_INVALID", "planner_validation", "initial planner must define exactly two distinct hand nodes")
     validate_anchor(response["anchor_state"], phase)
     validate_crate(response["crate"], phase)
@@ -311,9 +372,9 @@ def run_hand(run_dir: Path, trial: str, arm: str, phase: str, model: str, effort
     write(run_dir / trial / arm / phase / "outcome.json", canon(call))
     return call
 
-def controller_crate(crate: dict[str, Any], parent_state: str, anchor_sha: str, trial: str, schema_name: str) -> dict[str, Any]:
+def controller_crate(crate: dict[str, Any], parent_state: str, anchor_sha: str, trial: str, schema_name: str, prompt_name: str) -> dict[str, Any]:
     value = dict(crate)
-    value.update({"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "parent_state_sha256": parent_state, "anchor_sha256": anchor_sha, "required_receipt_schema_sha256": sha(SCHEMAS / "spark.schema.json"), "schema_sha256": sha(SCHEMAS / schema_name), "prompt_sha256": sha(PROMPTS / "planner_base.txt")})
+    value.update({"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "parent_state_sha256": parent_state, "anchor_sha256": anchor_sha, "required_receipt_schema_sha256": sha(SCHEMAS / "spark.schema.json"), "schema_sha256": sha(SCHEMAS / schema_name), "prompt_sha256": sha(PROMPTS / prompt_name)})
     return value
 
 def create_fork(source: Path, destination: Path) -> None:
@@ -338,12 +399,12 @@ def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_bas
         if not reuse:
             initialize_subject(base)
             initial_packet = {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(base), "public_validator_catalog": public_catalog(), "remaining_budget": {"planner_calls": 3, "spark_calls": 3}}
-            first = invoke(prelude / "planner_initial" / "call", base, "gpt-5.6-luna", "high", "read-only", "planner", initial_packet, "planner_initial.schema.json", executor)
+            first = invoke(prelude / "planner_initial" / "call", base, "gpt-5.6-luna", "high", "read-only", "planner_initial", initial_packet, "planner_initial.schema.json", executor)
             result["planner_initial"] = first
             if first["final_json"] is None or first["instance_errors"]:
                 raise ControllerError("NOT_RUN_PRELUDE_PLANNER_REJECTED", "planner_validation", "initial planner report failed schema or was absent")
             anchor, crate1_semantic = validate_planner(first["final_json"], "hand_1")
-            anchor_sha = sha_bytes(canon(anchor)); crate1 = controller_crate(crate1_semantic, tree_state(base), anchor_sha, trial, "planner_initial.schema.json")
+            anchor_sha = sha_bytes(canon(anchor)); crate1 = controller_crate(crate1_semantic, tree_state(base), anchor_sha, trial, "planner_initial.schema.json", "planner_initial_base.txt")
             write(prelude / "anchor.json", canon({"anchor_state": anchor, "anchor_sha256": anchor_sha, "crate_sha256": sha_bytes(canon(crate1))}))
             hand1_work = prelude / "spark_hand_1" / "work"; copy_state(base, hand1_work)
             hand1 = run_hand(run_dir, trial, "split_prelude", "spark_hand_1", "gpt-5.3-codex-spark", "low", "workspace-write", hand1_work, crate1, {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(hand1_work), "hand_crate": crate1, "public_validator_catalog": public_catalog()}, executor)
@@ -356,12 +417,12 @@ def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_bas
         fork = run_dir / trial / arm; fork_base = fork / "continuation_base"; create_fork(accepted1, fork_base)
         continuation_packet = {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(fork_base), "accepted_hand_1_receipt": hand1.get("final_json"), "public_validator_catalog": public_catalog(), "remaining_budget": {"planner_calls": 2, "spark_calls": 2}}
         if not no_anchor: continuation_packet["current_anchor"] = anchor
-        cont = invoke(fork / "planner_continuation" / "call", fork_base, "gpt-5.6-luna", "high", "read-only", "planner", continuation_packet, "planner_continuation.schema.json", executor)
+        cont = invoke(fork / "planner_continuation" / "call", fork_base, "gpt-5.6-luna", "high", "read-only", "planner_continuation", continuation_packet, "planner_continuation.schema.json", executor)
         result["planner_continuation"] = cont
         if cont["final_json"] is None or cont["instance_errors"]:
             raise ControllerError("CONTINUATION_PLANNER_REJECTED", "continuation_validation", "continuation planner report failed schema or was absent")
         anchor2, crate2_semantic = validate_planner(cont["final_json"], "hand_2")
-        crate2 = controller_crate(crate2_semantic, tree_state(fork_base), sha_bytes(canon(anchor2)), trial, "planner_continuation.schema.json")
+        crate2 = controller_crate(crate2_semantic, tree_state(fork_base), sha_bytes(canon(anchor2)), trial, "planner_continuation.schema.json", "planner_continuation_base.txt")
         hand2_work = fork / "spark_hand_2" / "work"; copy_state(fork_base, hand2_work)
         hand2 = run_hand(run_dir, trial, arm, "spark_hand_2", "gpt-5.3-codex-spark", "low", "workspace-write", hand2_work, crate2, {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(hand2_work), "accepted_hand_1_receipt": hand1.get("final_json"), "hand_crate": crate2, "public_validator_catalog": public_catalog()}, executor)
         result["spark_hand_2"] = hand2
@@ -411,8 +472,8 @@ def main() -> int:
     if not contract_gate.get("all_pass"):
         raise SystemExit("zero-inference controller contract gate did not pass")
     canary = json.loads(args.canary_receipt.read_text(encoding="utf-8"))
-    if not canary.get("all_pass") or canary.get("call_count") != 2:
-        raise SystemExit("two-call administrative canary did not pass")
+    if not canary.get("all_pass") or canary.get("call_count") != 1 or canary.get("canary", {}).get("id") != "CANARY_2_INITIAL_PLANNER_REPLACEMENT":
+        raise SystemExit("replacement initial-planner administrative canary did not pass")
     if args.run_root is None: args.run_root = ROOT / "run" / datetime.now(timezone.utc).strftime("run_%Y%m%dT%H%M%SZ")
     run_dir = args.run_root.resolve(); run_dir.mkdir(parents=True, exist_ok=False)
     models = json.loads(subprocess.run([str(CLI), "debug", "models"], capture_output=True, check=True).stdout)
@@ -422,7 +483,7 @@ def main() -> int:
     schedule = json.loads(prior_schedule.read_text(encoding="utf-8"))
     if (run_dir / "schedule.json").exists(): raise SystemExit("new run schedule path already exists")
     write(run_dir / "schedule.json", canon(schedule)); write(run_dir / "model_catalog.json", model_catalog_bytes)
-    manifest = {"schema": "luna-sol-anchor-replication/run-manifest@2.2", "protocol_revision": "2.2", "created_at": now(), "suite_commit": args.suite_commit, "branch": "codex/luna-sol-anchor-replication-v2", "cli_path": str(CLI), "cli_sha256": sha(CLI), "cli_version": subprocess.run([str(CLI), "--version"], capture_output=True, check=True).stdout.decode().strip(), "controller_python": {"path": str(PREFERRED_PYTHON), "version": subprocess.run([str(PREFERRED_PYTHON), "--version"], capture_output=True, check=True).stdout.decode().strip(), "sha256": sha(PREFERRED_PYTHON)}, "model_catalog_sha256": sha(run_dir / "model_catalog.json"), "task_version": "derived_ledger_rollup_v2", "task_packet_sha256": task_hash, "hidden_grader_sha256": sha(PRIVATE / "hidden_grader.py"), "visible_bundle_sha256": json.loads((TASK / "oracle_self_test.json").read_text())["build"]["visible_bundle_sha256"], "prompt_hashes": {p.name: sha(p) for p in PROMPTS.glob("*.txt")}, "schema_hashes": {p.name: sha(p) for p in SCHEMAS.glob("*.json")}, "k": 3, "schedule_seed": schedule["seed"], "schedule_source_sha256": sha(prior_schedule), "frozen": True, "prior_run_2_0": "run_20260715T205630Z", "prior_run_2_1": "run_20260715T212046Z", "prior_2_1_disposition": "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT", "prior_2_1_benchmark_calls": 9, "prior_2_1_candidates": 0, "prior_2_1_hidden_grades": 0, "prior_partial_run": args.prior_partial_run.name, "prior_subject_outputs_admitted": 0, "prior_candidates_admitted": 0, "prior_grades_admitted": 0, "administrative_preflight_sha256": sha(args.preflight_receipt), "controller_contract_gate_sha256": sha(args.contract_gate), "live_canary_sha256": sha(args.canary_receipt), "cli_compatibility": {"requested_agents_max_depth": 0, "used_agents_max_depth": 1, "reason": "pinned CLI rejects zero; max_threads=1 and exact prompts disable subagent use"}, "stopping_rules": json.loads((TASK / "preregistration.json").read_text())["stopping_rules"]}
+    manifest = {"schema": "luna-sol-anchor-replication/run-manifest@2.2.1", "protocol_revision": "2.2.1", "created_at": now(), "suite_commit": args.suite_commit, "branch": "codex/luna-sol-anchor-replication-v2", "cli_path": str(CLI), "cli_sha256": sha(CLI), "cli_version": subprocess.run([str(CLI), "--version"], capture_output=True, check=True).stdout.decode().strip(), "controller_python": {"path": str(PREFERRED_PYTHON), "version": subprocess.run([str(PREFERRED_PYTHON), "--version"], capture_output=True, check=True).stdout.decode().strip(), "sha256": sha(PREFERRED_PYTHON)}, "model_catalog_sha256": sha(run_dir / "model_catalog.json"), "task_version": "derived_ledger_rollup_v2", "task_packet_sha256": task_hash, "hidden_grader_sha256": sha(PRIVATE / "hidden_grader.py"), "visible_bundle_sha256": json.loads((TASK / "oracle_self_test.json").read_text())["build"]["visible_bundle_sha256"], "prompt_hashes": {p.name: sha(p) for p in PROMPTS.glob("*.txt")}, "schema_hashes": {p.name: sha(p) for p in SCHEMAS.glob("*.json")}, "k": 3, "schedule_seed": schedule["seed"], "schedule_source_sha256": sha(prior_schedule), "frozen": True, "prior_run_2_0": "run_20260715T205630Z", "prior_run_2_1": "run_20260715T212046Z", "prior_2_1_disposition": "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT", "prior_2_1_benchmark_calls": 9, "prior_2_1_candidates": 0, "prior_2_1_hidden_grades": 0, "prior_partial_run": args.prior_partial_run.name, "prior_subject_outputs_admitted": 0, "prior_candidates_admitted": 0, "prior_grades_admitted": 0, "administrative_preflight_sha256": sha(args.preflight_receipt), "controller_contract_gate_sha256": sha(args.contract_gate), "live_canary_sha256": sha(args.canary_receipt), "cli_compatibility": {"requested_agents_max_depth": 0, "used_agents_max_depth": 0, "max_threads": 1}, "stopping_rules": json.loads((TASK / "preregistration.json").read_text())["stopping_rules"]}
     write(run_dir / "manifest.json", canon(manifest))
     packet_full = {"task_id": "derived_ledger_rollup_v2", "task_packet": task_packet(), "public_validator_catalog": public_catalog(), "instruction": "Complete the visible task in this isolated repository."}
     arms: dict[str, Any] = {}

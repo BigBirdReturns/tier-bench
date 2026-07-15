@@ -28,11 +28,6 @@ def pointer_join(path: str, token: str) -> str:
     return f"{path}/{pointer_token(token)}"
 
 
-def effective_object(node: dict[str, Any]) -> bool:
-    value = node.get("type")
-    return value == "object" or (isinstance(value, list) and "object" in value) or "properties" in node
-
-
 def resolve_local(root: dict[str, Any], ref: str) -> tuple[Any | None, str | None]:
     if not isinstance(ref, str) or not ref.startswith("#"):
         return None, "only local JSON Pointer $refs are supported"
@@ -51,7 +46,7 @@ def validate_schema(schema: Any, label: str = "schema") -> list[dict[str, str]]:
     errors: list[dict[str, str]] = []
     counts = {"objects": 0, "properties": 0, "enums": 0, "strings": 0}
     counted_nodes: set[int] = set()
-    active_refs: set[str] = set()
+    active_refs: set[tuple[str, str]] = set()
 
     def error(path: str, message: str) -> None:
         errors.append({"path": path or "/", "message": message})
@@ -63,7 +58,30 @@ def validate_schema(schema: Any, label: str = "schema") -> list[dict[str, str]]:
     if "anyOf" in schema:
         error("/anyOf", "root schema must not use anyOf")
 
-    def walk(node: Any, path: str, depth: int) -> None:
+    def declared_types(node: dict[str, Any]) -> set[str]:
+        value = node.get("type")
+        if isinstance(value, str):
+            return {value}
+        if isinstance(value, list) and all(isinstance(item, str) for item in value):
+            return set(value)
+        return set()
+
+    def json_type(value: Any) -> str:
+        if value is None:
+            return "null"
+        if isinstance(value, bool):
+            return "boolean"
+        if isinstance(value, int):
+            return "integer"
+        if isinstance(value, float):
+            return "number"
+        if isinstance(value, str):
+            return "string"
+        if isinstance(value, list):
+            return "array"
+        return "object"
+
+    def walk(node: Any, path: str, depth: int, ref_context: str = "root") -> None:
         if not isinstance(node, dict):
             error(path, "schema node must be an object")
             return
@@ -81,13 +99,13 @@ def validate_schema(schema: Any, label: str = "schema") -> list[dict[str, str]]:
             if isinstance(node.get("const"), str):
                 counts["strings"] += len(node["const"])
 
-        if "anyOf" in node:
-            branches = node["anyOf"]
+        branches = node.get("anyOf")
+        if branches is not None:
             if not isinstance(branches, list) or not branches:
                 error(pointer_join(path, "anyOf"), "anyOf must be a non-empty array")
             else:
                 for index, branch in enumerate(branches):
-                    walk(branch, pointer_join(pointer_join(path, "anyOf"), str(index)), depth)
+                    walk(branch, pointer_join(pointer_join(path, "anyOf"), str(index)), depth, ref_context)
 
         ref = node.get("$ref")
         if ref is not None:
@@ -95,10 +113,10 @@ def validate_schema(schema: Any, label: str = "schema") -> list[dict[str, str]]:
             ref_path = pointer_join(path, "$ref")
             if ref_error:
                 error(ref_path, ref_error)
-            elif ref not in active_refs:
-                active_refs.add(ref)
-                walk(target, ref_path, depth)
-                active_refs.remove(ref)
+            elif (ref_context, ref) not in active_refs:
+                active_refs.add((ref_context, ref))
+                walk(target, ref_path, depth, ref)
+                active_refs.remove((ref_context, ref))
 
         definitions = node.get("$defs")
         if definitions is not None:
@@ -107,11 +125,42 @@ def validate_schema(schema: Any, label: str = "schema") -> list[dict[str, str]]:
             else:
                 counts["strings"] += sum(len(name) for name in definitions)
                 for name, definition in definitions.items():
-                    walk(definition, pointer_join(pointer_join(path, "$defs"), name), 0)
+                    walk(definition, pointer_join(pointer_join(path, "$defs"), name), 0, ref_context)
 
-        is_object = effective_object(node)
+        types = declared_types(node)
+        is_object = "object" in types
+        has_object_keywords = "properties" in node or "required" in node or "additionalProperties" in node
+        if has_object_keywords and node.get("type") != "object":
+            error(path, "object schema must declare type object")
+        has_array_keywords = "items" in node or "minItems" in node or "maxItems" in node
+        if has_array_keywords and node.get("type") != "array":
+            error(path, "array schema must declare type array")
+
+        is_array = node.get("type") == "array"
+        if "type" not in node and "$ref" not in node and "anyOf" not in node:
+            error(path, "schema node must have an explicit type, $ref, or anyOf")
+        if "type" in node and not (isinstance(node["type"], str) or (isinstance(node["type"], list) and node["type"] and all(isinstance(item, str) for item in node["type"]))):
+            error(pointer_join(path, "type"), "type must be a string or non-empty array of strings")
+
+        if "const" in node:
+            if "type" not in node:
+                error(path, "const requires an explicit compatible type")
+            elif json_type(node["const"]) not in types and not (json_type(node["const"]) == "integer" and "number" in types):
+                error(pointer_join(path, "const"), "const value is incompatible with type")
+        if "enum" in node:
+            if not isinstance(node["enum"], list):
+                error(pointer_join(path, "enum"), "enum must be an array")
+            elif "type" not in node:
+                error(path, "enum requires an explicit compatible type")
+            else:
+                for index, value in enumerate(node["enum"]):
+                    value_type = json_type(value)
+                    if value_type not in types and not (value_type == "integer" and "number" in types):
+                        error(pointer_join(pointer_join(path, "enum"), str(index)), "enum value is incompatible with type")
+
         current_depth = depth + 1 if is_object else depth
-        if is_object:
+        object_like = is_object or has_object_keywords
+        if object_like:
             counts["objects"] += 1
             if current_depth > 10:
                 error(path, "maximum object nesting depth is 10")
@@ -137,12 +186,16 @@ def validate_schema(schema: Any, label: str = "schema") -> list[dict[str, str]]:
             if required_names != property_names:
                 error(pointer_join(path, "required"), "required names must equal property names")
             for name, child in properties.items():
-                walk(child, pointer_join(pointer_join(path, "properties"), name), current_depth)
+                walk(child, pointer_join(pointer_join(path, "properties"), name), current_depth, ref_context)
 
         items = node.get("items")
+        array_like = is_array or has_array_keywords
+        if array_like:
+            if items is None:
+                error(pointer_join(path, "items"), "array schema must have an items schema")
         if items is not None:
             if isinstance(items, dict):
-                walk(items, pointer_join(path, "items"), current_depth)
+                walk(items, pointer_join(path, "items"), current_depth, ref_context)
             else:
                 error(pointer_join(path, "items"), "items must be a schema object")
 

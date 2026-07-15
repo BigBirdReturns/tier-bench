@@ -32,12 +32,12 @@ def run(output: Path) -> dict:
         planner = root / "planner_repo"; planner.mkdir(); (planner / "src").mkdir(); (planner / "src" / "ledger_stage.py").write_text("# synthetic parser\n", encoding="utf-8"); (planner / "src" / "solution.py").write_text("# synthetic rollup\n", encoding="utf-8"); git_init(planner)
         packet2 = {"task_id":"admin_two_hand_canary","task_packet":{"task_text":"Synthetic parser-to-rollup task. HAND 1 prepares src/ledger_stage.py and HAND 2 completes src/solution.py.","allowed_files":["src/ledger_stage.py","src/solution.py"]},"visible_state_capsule":controller.state_capsule(planner),"public_validator_catalog":[{"id":"synthetic","command":"controller-owned","scope":["src/ledger_stage.py","src/solution.py"]}],"remaining_budget":{"planner_calls":1,"spark_calls":1}}
         canary2_dir = root / "canary_2_initial_planner"
-        call2 = controller.invoke(canary2_dir / "call", planner, "gpt-5.6-luna", "high", "read-only", "planner", packet2, "planner_initial.schema.json")
+        call2 = controller.invoke(canary2_dir / "call", planner, "gpt-5.6-luna", "high", "read-only", "planner_initial", packet2, "planner_initial.schema.json")
         anchor = crate = None; validation2 = {"accepted":False}
         if call2.get("final_json") is not None and not call2.get("instance_errors"):
             try:
                 anchor, crate = controller.validate_planner(call2["final_json"], "hand_1")
-                anchor_sha = controller.sha_bytes(controller.canon(anchor)); crate_envelope = controller.controller_crate(crate, controller.tree_state(planner), anchor_sha, "admin-canary", "planner_initial.schema.json")
+                anchor_sha = controller.sha_bytes(controller.canon(anchor)); crate_envelope = controller.controller_crate(crate, controller.tree_state(planner), anchor_sha, "admin-canary", "planner_initial.schema.json", "planner_initial_base.txt")
                 validation2 = {"accepted":True,"anchor_sha256":anchor_sha,"crate_sha256":controller.sha_bytes(controller.canon(crate_envelope)),"parent_state_sha256":controller.tree_state(planner),"schema_sha256":controller.sha(controller.SCHEMAS / "planner_initial.schema.json"),"prompt_sha256":controller.sha(canary2_dir / "call" / "prompt.txt")}
             except controller.ControllerError as exc:
                 validation2 = {"accepted":False,"error":exc.receipt()}
