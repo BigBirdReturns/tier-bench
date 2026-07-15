@@ -1,0 +1,1 @@
+{"class":"positive_residual","detail":{"semantic_truth_proven":false},"error":null,"expected":"PROCEED_RESIDUAL_RISK","id":"admitted_semantically_false_summary","observed":"PROCEED_RESIDUAL_RISK","passed":true}

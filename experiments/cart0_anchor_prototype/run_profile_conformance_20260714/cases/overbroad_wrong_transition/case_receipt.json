@@ -1,0 +1,1 @@
+{"class":"negative","detail":{},"error":"cards[0] fields are invalid; cards are data and may not self-authorize","expected":"REFUSE","id":"overbroad_wrong_transition","observed":"REFUSE","passed":true}
