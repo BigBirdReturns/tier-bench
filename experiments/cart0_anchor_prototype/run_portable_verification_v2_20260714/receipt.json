@@ -1,0 +1,26 @@
+{
+  "schema": "tier-bench/cart0-portable-verification-receipt@1",
+  "archive": "experiments/cart0_anchor_prototype/cart0-profile-1-independent-verification-v2-a30ca1a.zip",
+  "archive_sha256": "fb912f39d08681ff60108e0cf5ca7199f339de25bc36bfe1d1c5300602f66bdc",
+  "tested_commit": "a30ca1a3509b11cae601e2fd5968440c9133a9ab",
+  "bundle_tip": "ad48ab838d848704253f0295ef5b7d1a92891c0e",
+  "preserved_b0_receipt_commit": "133fdf14177e3fded0250a7953f8ac1ed941df4c",
+  "fresh_external_directory": true,
+  "source_repository_state_borrowed": false,
+  "network_used": false,
+  "exit_code": 0,
+  "terminal_marker": "PORTABLE_CART0_PROFILE_1_VERIFIED",
+  "raw_output_sha256": "01d55b0edc80f112aab05801c8c1697cc8f6fc409f5aac0c5238674be6e9b405",
+  "checks": [
+    "internal SHA256SUMS",
+    "git bundle clone and verify",
+    "exact tested-tree byte comparison",
+    "py_compile",
+    "test_cart0_anchor.py",
+    "test_cart0_catalog_attack_receipt.py",
+    "fresh 15-vector profile conformance",
+    "remediated B0 bundle verification",
+    "preserved historical B0 bundle verification"
+  ],
+  "model_calls": 0
+}

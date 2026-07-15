@@ -1,0 +1,598 @@
+Cloning into 'C:\Users\BAM-DE~1\AppData\Local\Temp\c4s00836120\r'...
+C:/Users/BAM-DE~1/AppData/Local/Temp/c4e540bb89e/repository.bundle is okay
+The bundle contains this ref:
+ad48ab838d848704253f0295ef5b7d1a92891c0e refs/heads/codex/cart0-anchor-prototype
+The bundle records a complete history.
+The bundle uses this hash algorithm: sha1
+HEAD is now at a30ca1a Seal CART0 independent-review remediation receipts
+OK - strict cart0@1 build/verify/quarantine plus 15/15 conformance vectors; zero model calls
+OK - CART0-B4-ATTACK-1 receipt tree verified: 4/10 safe, 6/10 gaps
+{
+  "count": 15,
+  "model_calls": 0,
+  "negative_count": 10,
+  "passed_count": 15,
+  "positive_count": 5,
+  "reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67",
+  "reject_all_guard_passed": true,
+  "results": [
+    {
+      "class": "negative",
+      "detail": {},
+      "error": "catalog must contain between one and 64 revisions",
+      "expected": "REFUSE",
+      "id": "missing_necessary_card",
+      "observed": "REFUSE",
+      "passed": true
+    },
+    {
+      "class": "negative",
+      "detail": {},
+      "error": "stale compile head in card admission",
+      "expected": "REFUSE",
+      "id": "stale_correctly_hashed_card",
+      "observed": "REFUSE",
+      "passed": true
+    },
+    {
+      "class": "negative",
+      "detail": {},
+      "error": "REQUEST_REVIEW: card admission state 'unreviewed' is not accepted",
+      "expected": "REQUEST_REVIEW",
+      "id": "semantically_bad_summary",
+      "observed": "REQUEST_REVIEW",
+      "passed": true
+    },
+    {
+      "class": "negative",
+      "detail": {},
+      "error": "actor/lane mismatch: lane is not allowed",
+      "expected": "REFUSE",
+      "id": "wrong_actor_lane",
+      "observed": "REFUSE",
+      "passed": true
+    },
+    {
+      "class": "negative",
+      "detail": {},
+      "error": "duplicate card revision: 000.100.TEST r1",
+      "expected": "REFUSE",
+      "id": "conflicting_revision",
+      "observed": "REFUSE",
+      "passed": true
+    },
+    {
+      "class": "positive_safety",
+      "detail": {
+        "rehydrated_sha256": "2577fa520fe3045e7ebbceaf4c3694b8b2dd0c2616cb62de8f1e7466b859e6d1"
+      },
+      "error": null,
+      "expected": "PROCEED_QUARANTINED",
+      "id": "malicious_source_instruction",
+      "observed": "PROCEED_QUARANTINED",
+      "passed": true
+    },
+    {
+      "class": "negative",
+      "detail": {},
+      "error": "git show 5497cd242cbc3b0db1d22e260f072adccb4c234a:MISSING.md failed: fatal: path 'MISSING.md' does not exist in '5497cd242cbc3b0db1d22e260f072adccb4c234a'",
+      "expected": "REFUSE",
+      "id": "unavailable_evidence_pointer",
+      "observed": "REFUSE",
+      "passed": true
+    },
+    {
+      "class": "negative",
+      "detail": {},
+      "error": "cards[0] fields are invalid; cards are data and may not self-authorize",
+      "expected": "REFUSE",
+      "id": "overbroad_wrong_transition",
+      "observed": "REFUSE",
+      "passed": true
+    },
+    {
+      "class": "negative",
+      "detail": {},
+      "error": "card projection drifted: 000.100.TEST.r1.md",
+      "expected": "REFUSE",
+      "id": "tampered_projected_card",
+      "observed": "REFUSE",
+      "passed": true
+    },
+    {
+      "class": "negative",
+      "detail": {},
+      "error": "retrieval miss: card '999.999.MISSING' is not active",
+      "expected": "REFUSE",
+      "id": "inactive_card_lookup",
+      "observed": "REFUSE",
+      "passed": true
+    },
+    {
+      "class": "positive",
+      "detail": {
+        "bundle_receipt_sha256": "354e9a64f7fea107cfcbf891e63886dbfa405f353aab9c855f8cfd21494a7f5e"
+      },
+      "error": null,
+      "expected": "PROCEED",
+      "id": "valid_build_verify_resurface",
+      "observed": "PROCEED",
+      "passed": true
+    },
+    {
+      "class": "positive_residual",
+      "detail": {
+        "semantic_truth_proven": false
+      },
+      "error": null,
+      "expected": "PROCEED_RESIDUAL_RISK",
+      "id": "admitted_semantically_false_summary",
+      "observed": "PROCEED_RESIDUAL_RISK",
+      "passed": true
+    },
+    {
+      "class": "positive_safety",
+      "detail": {
+        "rehydrated_sha256": "7de99f436d6281f3bd0dd3069045cfe009b5c4a7a1cfb671d4ae7440c013e424"
+      },
+      "error": null,
+      "expected": "PROCEED_VERIFIED_BLOB",
+      "id": "rehydrate_head_drift",
+      "observed": "PROCEED_VERIFIED_BLOB",
+      "passed": true
+    },
+    {
+      "class": "negative",
+      "detail": {
+        "clean_anchor_errors": 6,
+        "payload_count": 6
+      },
+      "error": null,
+      "expected": "REFUSE",
+      "id": "unsafe_control_paths",
+      "observed": "REFUSE",
+      "passed": true
+    },
+    {
+      "class": "positive_safety",
+      "detail": {
+        "boundary_id": "2eeb57b0f9dd496ed57982a256cd8df1",
+        "rehydrated_sha256": "6adf217784a597a9bf3b205c66b8f234ee8192e3f8a045edbe561d781866a670"
+      },
+      "error": null,
+      "expected": "PROCEED_NONCE_DELIMITED",
+      "id": "quarantine_delimiter_hardening",
+      "observed": "PROCEED_NONCE_DELIMITED",
+      "passed": true
+    }
+  ],
+  "runner_sha256": "e7320acd5fbe3dab4b842714593cf78c0d559c902ecd344fc2b9a7f8394427df",
+  "schema": "tier-bench/cart0-profile-conformance-receipt@1",
+  "suite_id": "CART0-PROFILE-1-B4",
+  "vectors_sha256": "c00feeac93b062f6047150744128ee9970bdedf04ec8c1db83739c3083aec0ea",
+  "wall_time_ms": 15372.275
+}
+{
+  "active_anchor_plus_cards_metrics": {
+    "approx_tokens_bytes_div_4": 633,
+    "unicode_characters": 2531,
+    "utf8_bytes": 2531,
+    "whitespace_tokens": 255
+  },
+  "anchor_id": "cart0-token-saver-today",
+  "anchor_metrics": {
+    "approx_tokens_bytes_div_4": 243,
+    "unicode_characters": 971,
+    "utf8_bytes": 971,
+    "whitespace_tokens": 121
+  },
+  "anchor_sha256": "e3b32c7c977792edd477ebf96ae948c1afd06c8adf9c67d9df8d0973ebfe5b0b",
+  "boundary": "implementation_start",
+  "cards": [
+    {
+      "admission_state": "driver-reviewed",
+      "authority_id": "queue.cart0-profile-1",
+      "card_id": "000.100.AUTHORITY",
+      "filename": "000.100.AUTHORITY.r1.md",
+      "metrics": {
+        "approx_tokens_bytes_div_4": 98,
+        "unicode_characters": 392,
+        "utf8_bytes": 392,
+        "whitespace_tokens": 28
+      },
+      "review_id": "cart0-profile-1-authority-r1",
+      "revision": 1,
+      "sha256": "b87200a197a878cff70056f086ed22937ff268d7d4f728266fbd508d8518e3c2",
+      "sources": [
+        {
+          "blob_oid": "ac3343c862d2ea4e6a8829a359158836d0b2dffb",
+          "end_line": 6,
+          "file_sha256": "47c927d3fd7f19a9cbd6a2dcf040f05d46ddee9e843eda98b909755217fb4849",
+          "path": "docs/agents/QUEUE.md",
+          "span_sha256": "40d9554a08d0a1e223d1baf51bcae4b23e24aa116e31d8bdff98974c3dbc1d7b",
+          "span_utf8_bytes": 313,
+          "start_line": 3
+        },
+        {
+          "blob_oid": "ac3343c862d2ea4e6a8829a359158836d0b2dffb",
+          "end_line": 51,
+          "file_sha256": "47c927d3fd7f19a9cbd6a2dcf040f05d46ddee9e843eda98b909755217fb4849",
+          "path": "docs/agents/QUEUE.md",
+          "span_sha256": "696075fe8ad64fd1928968afcdd83f21a815c5bafcce235dac8612208f67b68f",
+          "span_utf8_bytes": 18658,
+          "start_line": 20
+        }
+      ],
+      "supersedes": null,
+      "token_budget": 128,
+      "trust_label": "admitted-compiled-data"
+    },
+    {
+      "admission_state": "driver-reviewed",
+      "authority_id": "agents.gated-law",
+      "card_id": "000.200.GATED",
+      "filename": "000.200.GATED.r1.md",
+      "metrics": {
+        "approx_tokens_bytes_div_4": 83,
+        "unicode_characters": 329,
+        "utf8_bytes": 329,
+        "whitespace_tokens": 34
+      },
+      "review_id": "cart0-profile-1-gated-r1",
+      "revision": 1,
+      "sha256": "79d6aa483377bf924e660c7a17d4b9cece4607e9fa2a9d50a559b86ac5fcb9ba",
+      "sources": [
+        {
+          "blob_oid": "dd26eb5edae84cbd5b254d3a65f431905b965b25",
+          "end_line": 58,
+          "file_sha256": "4bfc82f05f7855b585b620fe525ebebd17d19ecb9776c1f2d6e61752cb404c9e",
+          "path": "AGENTS.md",
+          "span_sha256": "41c3715683069e05774995da0a6a0064135215cbeee0ce8bcf7a2c0d3a5b5d78",
+          "span_utf8_bytes": 628,
+          "start_line": 48
+        }
+      ],
+      "supersedes": null,
+      "token_budget": 96,
+      "trust_label": "admitted-compiled-data"
+    },
+    {
+      "admission_state": "driver-reviewed",
+      "authority_id": "cart0.contract",
+      "card_id": "010.100.CART0",
+      "filename": "010.100.CART0.r1.md",
+      "metrics": {
+        "approx_tokens_bytes_div_4": 110,
+        "unicode_characters": 440,
+        "utf8_bytes": 440,
+        "whitespace_tokens": 38
+      },
+      "review_id": "cart0-profile-1-contract-r1",
+      "revision": 1,
+      "sha256": "0f02cb46508e9e88c9adb8620168d6990b84f900c9378fdfebc5e60fa4a6af23",
+      "sources": [
+        {
+          "blob_oid": "9f997e37e7d4e94b7b67537ce3c8cf582ded3119",
+          "end_line": 29,
+          "file_sha256": "2d96bbeb4f587ddbaa0ecd91fef9e56db9756fbbef2ca9894c284034d7ec7e35",
+          "path": "data/continuity/CART0_CONTRACT.md",
+          "span_sha256": "b242b437cf4cdcbf6ac809a4bafd4de782a97887bcc4641f915e069882218dab",
+          "span_utf8_bytes": 1068,
+          "start_line": 8
+        },
+        {
+          "blob_oid": "9f997e37e7d4e94b7b67537ce3c8cf582ded3119",
+          "end_line": 93,
+          "file_sha256": "2d96bbeb4f587ddbaa0ecd91fef9e56db9756fbbef2ca9894c284034d7ec7e35",
+          "path": "data/continuity/CART0_CONTRACT.md",
+          "span_sha256": "f18533f88625e660e153ce56fe24748358bc4341b096506059e6d0096b198d95",
+          "span_utf8_bytes": 627,
+          "start_line": 84
+        }
+      ],
+      "supersedes": null,
+      "token_budget": 128,
+      "trust_label": "admitted-compiled-data"
+    },
+    {
+      "admission_state": "driver-reviewed",
+      "authority_id": "desktop.layers",
+      "card_id": "020.100.DESKTOP_LAYERS",
+      "filename": "020.100.DESKTOP_LAYERS.r1.md",
+      "metrics": {
+        "approx_tokens_bytes_div_4": 99,
+        "unicode_characters": 395,
+        "utf8_bytes": 395,
+        "whitespace_tokens": 34
+      },
+      "review_id": "cart0-profile-1-layers-r1",
+      "revision": 1,
+      "sha256": "80cb1af65772f2601d82c4b9a698da8a63f57e5e6317e19d5adddf53c6d2c0b5",
+      "sources": [
+        {
+          "blob_oid": "91437db66f27e5937d85d569f5a5cf278c934a88",
+          "end_line": 179,
+          "file_sha256": "f293614296c4e3b7255c6b672133e8fab938807695cd747ad94f15d73fb90b22",
+          "path": "docs/THE-RECURRING-DEFECT.md",
+          "span_sha256": "a6a9070f2e7890250233b8ce68c8f25f3b8fa85fca17ab4972cb0d374c4d2adc",
+          "span_utf8_bytes": 1871,
+          "start_line": 148
+        }
+      ],
+      "supersedes": null,
+      "token_budget": 112,
+      "trust_label": "admitted-compiled-data"
+    }
+  ],
+  "catalog_id": "residue-context-catalog",
+  "catalog_sha256": "53cfc0920772a16cec484e64d8c493dac4f5f0e170c81b8dcfc6a5da2c19030e",
+  "custody": "Git/hash-bound test receipt; not a Genesis-signed shard",
+  "event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+  "evidence": [
+    {
+      "blob_oid": "dd26eb5edae84cbd5b254d3a65f431905b965b25",
+      "path": "AGENTS.md",
+      "sha256": "4bfc82f05f7855b585b620fe525ebebd17d19ecb9776c1f2d6e61752cb404c9e",
+      "utf8_bytes": 4645
+    },
+    {
+      "blob_oid": "ac3343c862d2ea4e6a8829a359158836d0b2dffb",
+      "path": "docs/agents/QUEUE.md",
+      "sha256": "47c927d3fd7f19a9cbd6a2dcf040f05d46ddee9e843eda98b909755217fb4849",
+      "utf8_bytes": 22873
+    },
+    {
+      "blob_oid": "9f997e37e7d4e94b7b67537ce3c8cf582ded3119",
+      "path": "data/continuity/CART0_CONTRACT.md",
+      "sha256": "2d96bbeb4f587ddbaa0ecd91fef9e56db9756fbbef2ca9894c284034d7ec7e35",
+      "utf8_bytes": 6632
+    },
+    {
+      "blob_oid": "91437db66f27e5937d85d569f5a5cf278c934a88",
+      "path": "docs/THE-RECURRING-DEFECT.md",
+      "sha256": "f293614296c4e3b7255c6b672133e8fab938807695cd747ad94f15d73fb90b22",
+      "utf8_bytes": 11358
+    },
+    {
+      "blob_oid": "facd5905468774e49bce89bb647092f59c015fdd",
+      "path": "experiments/breadth/run/abc_causal_task02_20260711/RESULTS.md",
+      "sha256": "2a22a495336d417728bb69c1eefdaab4f77e74489605849e7349578ef414d33d",
+      "utf8_bytes": 5794
+    }
+  ],
+  "evidence_trust_label": "untrusted-source-evidence",
+  "instruction_safety_proven": false,
+  "max_approx_tokens": 256,
+  "profile_id": "cart0@1",
+  "profile_sha256": "7b240d4c29c53508b0a45fca0d9f7eee4c5897842fab432b02d4313f0cb05677",
+  "profiles_checked": [
+    "cart0@1"
+  ],
+  "profiles_unchecked": [],
+  "projection_digest": "7b6348a0c7038f51ada594e6167230253e674517dbad374e41f3a1d2bc967676",
+  "projection_profile_digest": "2967482971717d6906bf958eafeb6a579f417955135333f0e75b1d48fcca7124",
+  "raw_history_rewritten": false,
+  "reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67",
+  "rehydration_instruction_authority": false,
+  "repository_head_at_compile": "3292102f1111a258cb9baeaa0e694675fe25c26b",
+  "schema": "tier-bench/cart0-anchor-receipt@2",
+  "scientific_claim_minted": false,
+  "semantic_truth_proven": false,
+  "spec_sha256": "7b6539d01b8d1a86b2293038dd1871254fcb0b73274a9fa071e12f9fa212cbe7",
+  "tool_sha256": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
+}
+Cloning into 'C:\Users\BAM-DE~1\AppData\Local\Temp\c4s00836120\h'...
+HEAD is now at 133fdf1 Seal repaired CART0 B4 and B0 receipts
+{
+  "active_anchor_plus_cards_metrics": {
+    "approx_tokens_bytes_div_4": 636,
+    "unicode_characters": 2542,
+    "utf8_bytes": 2542,
+    "whitespace_tokens": 257
+  },
+  "anchor_id": "cart0-token-saver-today",
+  "anchor_metrics": {
+    "approx_tokens_bytes_div_4": 246,
+    "unicode_characters": 982,
+    "utf8_bytes": 982,
+    "whitespace_tokens": 123
+  },
+  "anchor_sha256": "0c17524a9caec621b7e6a06bdd2c503f40c5b2db83066635390c9926016b50ad",
+  "boundary": "implementation_start",
+  "cards": [
+    {
+      "admission_state": "driver-reviewed",
+      "authority_id": "queue.cart0-profile-1",
+      "card_id": "000.100.AUTHORITY",
+      "filename": "000.100.AUTHORITY.r1.md",
+      "metrics": {
+        "approx_tokens_bytes_div_4": 98,
+        "unicode_characters": 392,
+        "utf8_bytes": 392,
+        "whitespace_tokens": 28
+      },
+      "review_id": "cart0-profile-1-authority-r1",
+      "revision": 1,
+      "sha256": "cd872348f8517586e791341b51797cdc929958352be5bcbbe73ebd213bebb486",
+      "sources": [
+        {
+          "blob_oid": "195ebaa5af39739cb14788977ccf0339f7785713",
+          "end_line": 6,
+          "file_sha256": "1d5d871aad7136c995b29b5b2301fd1cb3ffb25e8bf00818ff1a620fbc87040e",
+          "path": "docs/agents/QUEUE.md",
+          "span_sha256": "40d9554a08d0a1e223d1baf51bcae4b23e24aa116e31d8bdff98974c3dbc1d7b",
+          "span_utf8_bytes": 313,
+          "start_line": 3
+        },
+        {
+          "blob_oid": "195ebaa5af39739cb14788977ccf0339f7785713",
+          "end_line": 50,
+          "file_sha256": "1d5d871aad7136c995b29b5b2301fd1cb3ffb25e8bf00818ff1a620fbc87040e",
+          "path": "docs/agents/QUEUE.md",
+          "span_sha256": "9f511deff473d82224b331743db00089267e12f0488a0a3b9fac2491c241ea4f",
+          "span_utf8_bytes": 17346,
+          "start_line": 20
+        }
+      ],
+      "supersedes": null,
+      "token_budget": 128,
+      "trust_label": "admitted-compiled-data"
+    },
+    {
+      "admission_state": "driver-reviewed",
+      "authority_id": "agents.gated-law",
+      "card_id": "000.200.GATED",
+      "filename": "000.200.GATED.r1.md",
+      "metrics": {
+        "approx_tokens_bytes_div_4": 83,
+        "unicode_characters": 329,
+        "utf8_bytes": 329,
+        "whitespace_tokens": 34
+      },
+      "review_id": "cart0-profile-1-gated-r1",
+      "revision": 1,
+      "sha256": "79d6aa483377bf924e660c7a17d4b9cece4607e9fa2a9d50a559b86ac5fcb9ba",
+      "sources": [
+        {
+          "blob_oid": "dd26eb5edae84cbd5b254d3a65f431905b965b25",
+          "end_line": 58,
+          "file_sha256": "4bfc82f05f7855b585b620fe525ebebd17d19ecb9776c1f2d6e61752cb404c9e",
+          "path": "AGENTS.md",
+          "span_sha256": "41c3715683069e05774995da0a6a0064135215cbeee0ce8bcf7a2c0d3a5b5d78",
+          "span_utf8_bytes": 628,
+          "start_line": 48
+        }
+      ],
+      "supersedes": null,
+      "token_budget": 96,
+      "trust_label": "admitted-compiled-data"
+    },
+    {
+      "admission_state": "driver-reviewed",
+      "authority_id": "cart0.contract",
+      "card_id": "010.100.CART0",
+      "filename": "010.100.CART0.r1.md",
+      "metrics": {
+        "approx_tokens_bytes_div_4": 110,
+        "unicode_characters": 440,
+        "utf8_bytes": 440,
+        "whitespace_tokens": 38
+      },
+      "review_id": "cart0-profile-1-contract-r1",
+      "revision": 1,
+      "sha256": "0f02cb46508e9e88c9adb8620168d6990b84f900c9378fdfebc5e60fa4a6af23",
+      "sources": [
+        {
+          "blob_oid": "9f997e37e7d4e94b7b67537ce3c8cf582ded3119",
+          "end_line": 29,
+          "file_sha256": "2d96bbeb4f587ddbaa0ecd91fef9e56db9756fbbef2ca9894c284034d7ec7e35",
+          "path": "data/continuity/CART0_CONTRACT.md",
+          "span_sha256": "b242b437cf4cdcbf6ac809a4bafd4de782a97887bcc4641f915e069882218dab",
+          "span_utf8_bytes": 1068,
+          "start_line": 8
+        },
+        {
+          "blob_oid": "9f997e37e7d4e94b7b67537ce3c8cf582ded3119",
+          "end_line": 93,
+          "file_sha256": "2d96bbeb4f587ddbaa0ecd91fef9e56db9756fbbef2ca9894c284034d7ec7e35",
+          "path": "data/continuity/CART0_CONTRACT.md",
+          "span_sha256": "f18533f88625e660e153ce56fe24748358bc4341b096506059e6d0096b198d95",
+          "span_utf8_bytes": 627,
+          "start_line": 84
+        }
+      ],
+      "supersedes": null,
+      "token_budget": 128,
+      "trust_label": "admitted-compiled-data"
+    },
+    {
+      "admission_state": "driver-reviewed",
+      "authority_id": "desktop.layers",
+      "card_id": "020.100.DESKTOP_LAYERS",
+      "filename": "020.100.DESKTOP_LAYERS.r1.md",
+      "metrics": {
+        "approx_tokens_bytes_div_4": 99,
+        "unicode_characters": 395,
+        "utf8_bytes": 395,
+        "whitespace_tokens": 34
+      },
+      "review_id": "cart0-profile-1-layers-r1",
+      "revision": 1,
+      "sha256": "80cb1af65772f2601d82c4b9a698da8a63f57e5e6317e19d5adddf53c6d2c0b5",
+      "sources": [
+        {
+          "blob_oid": "91437db66f27e5937d85d569f5a5cf278c934a88",
+          "end_line": 179,
+          "file_sha256": "f293614296c4e3b7255c6b672133e8fab938807695cd747ad94f15d73fb90b22",
+          "path": "docs/THE-RECURRING-DEFECT.md",
+          "span_sha256": "a6a9070f2e7890250233b8ce68c8f25f3b8fa85fca17ab4972cb0d374c4d2adc",
+          "span_utf8_bytes": 1871,
+          "start_line": 148
+        }
+      ],
+      "supersedes": null,
+      "token_budget": 112,
+      "trust_label": "admitted-compiled-data"
+    }
+  ],
+  "catalog_id": "residue-context-catalog",
+  "catalog_sha256": "3d3bf82805ef42babc432ccbb3c4ee444431fab24bd1536376f13091d85d4869",
+  "custody": "Git/hash-bound test receipt; not a Genesis-signed shard",
+  "event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
+  "evidence": [
+    {
+      "blob_oid": "dd26eb5edae84cbd5b254d3a65f431905b965b25",
+      "path": "AGENTS.md",
+      "sha256": "4bfc82f05f7855b585b620fe525ebebd17d19ecb9776c1f2d6e61752cb404c9e",
+      "utf8_bytes": 4645
+    },
+    {
+      "blob_oid": "195ebaa5af39739cb14788977ccf0339f7785713",
+      "path": "docs/agents/QUEUE.md",
+      "sha256": "1d5d871aad7136c995b29b5b2301fd1cb3ffb25e8bf00818ff1a620fbc87040e",
+      "utf8_bytes": 22509
+    },
+    {
+      "blob_oid": "9f997e37e7d4e94b7b67537ce3c8cf582ded3119",
+      "path": "data/continuity/CART0_CONTRACT.md",
+      "sha256": "2d96bbeb4f587ddbaa0ecd91fef9e56db9756fbbef2ca9894c284034d7ec7e35",
+      "utf8_bytes": 6632
+    },
+    {
+      "blob_oid": "91437db66f27e5937d85d569f5a5cf278c934a88",
+      "path": "docs/THE-RECURRING-DEFECT.md",
+      "sha256": "f293614296c4e3b7255c6b672133e8fab938807695cd747ad94f15d73fb90b22",
+      "utf8_bytes": 11358
+    },
+    {
+      "blob_oid": "facd5905468774e49bce89bb647092f59c015fdd",
+      "path": "experiments/breadth/run/abc_causal_task02_20260711/RESULTS.md",
+      "sha256": "2a22a495336d417728bb69c1eefdaab4f77e74489605849e7349578ef414d33d",
+      "utf8_bytes": 5794
+    }
+  ],
+  "evidence_trust_label": "untrusted-source-evidence",
+  "instruction_safety_proven": false,
+  "max_approx_tokens": 256,
+  "profile_id": "cart0@1",
+  "profile_sha256": "6cc39888d9563bbf7da6da15ce80d6d7079c27d1fa45ed6202531128d91bb528",
+  "profiles_checked": [
+    "cart0@1"
+  ],
+  "profiles_unchecked": [],
+  "projection_digest": "d6e5952f58bbe89fe39a5a7ca3d86e436fbf1ebadde2617459b8807ad76324b6",
+  "projection_profile_digest": "c35939cc790c898c88dc977a601e06f50492b212d8aaa2f96a467b2a09264dc8",
+  "raw_history_rewritten": false,
+  "reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5",
+  "rehydration_instruction_authority": false,
+  "repository_head_at_compile": "7805ec5671046d72da1fdf8c16460ef6d0d7dfcf",
+  "schema": "tier-bench/cart0-anchor-receipt@2",
+  "scientific_claim_minted": false,
+  "semantic_truth_proven": false,
+  "spec_sha256": "2d1c72bb53d90f922a9258b2d1927da4f85563db2f4e870d0ca439ac822811e7",
+  "tool_sha256": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5"
+}
+PORTABLE_CART0_PROFILE_1_VERIFIED
+TESTED_COMMIT a30ca1a3509b11cae601e2fd5968440c9133a9ab
+PRESERVED_B0_COMMIT 133fdf14177e3fded0250a7953f8ac1ed941df4c
+SCRATCH C:\Users\BAM-DE~1\AppData\Local\Temp\c4s00836120
