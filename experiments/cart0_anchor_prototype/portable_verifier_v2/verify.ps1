@@ -24,16 +24,17 @@ foreach ($line in Get-Content -LiteralPath $sums) {
     if ($actual -ne $parts[0]) { throw "SHA-256 mismatch for $($parts[1])" }
 }
 
-$repo = Join-Path $Scratch "repo"
-& git clone --no-local $bundle $repo
+$repo = Join-Path $Scratch "r"
+& git clone --no-checkout --no-local $bundle $repo
 if ($LASTEXITCODE -ne 0) { throw "git clone from bundle failed" }
 & git -C $repo bundle verify $bundle
 if ($LASTEXITCODE -ne 0) { throw "git bundle verify failed" }
+& git -C $repo config core.longpaths true
 & git -C $repo checkout --detach $expectedCommit
 if ($LASTEXITCODE -ne 0) { throw "tested commit checkout failed" }
 if ((& git -C $repo rev-parse HEAD).Trim() -ne $expectedCommit) { throw "tested commit mismatch" }
 
-$tree = Join-Path $Scratch "tested-tree"
+$tree = Join-Path $Scratch "t"
 Expand-Archive -LiteralPath $treeZip -DestinationPath $tree
 $tracked = @(& git -C $repo ls-tree -r --name-only $expectedCommit)
 $treeFiles = @(Get-ChildItem -LiteralPath $tree -Recurse -File)
@@ -55,7 +56,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw "test_cart0_anchor.py failed" }
     & $Python tests/test_cart0_catalog_attack_receipt.py
     if ($LASTEXITCODE -ne 0) { throw "test_cart0_catalog_attack_receipt.py failed" }
-    & $Python experiments/cart0_anchor_prototype/run_profile_conformance.py --out (Join-Path $Scratch "fresh-conformance")
+    & $Python experiments/cart0_anchor_prototype/run_profile_conformance.py --out (Join-Path $Scratch "c")
     if ($LASTEXITCODE -ne 0) { throw "fresh profile conformance failed" }
     & $Python scripts/cart0_anchor.py verify --repo . --bundle experiments/cart0_anchor_prototype/run_profile_b0_remediation_20260714/bundle
     if ($LASTEXITCODE -ne 0) { throw "remediated B0 verification failed" }
@@ -63,9 +64,10 @@ try {
     Pop-Location
 }
 
-$historical = Join-Path $Scratch "historical-b0"
-& git clone --no-local $bundle $historical
+$historical = Join-Path $Scratch "h"
+& git clone --no-checkout --no-local $bundle $historical
 if ($LASTEXITCODE -ne 0) { throw "historical clone failed" }
+& git -C $historical config core.longpaths true
 & git -C $historical checkout --detach $historicalB0Commit
 if ($LASTEXITCODE -ne 0) { throw "historical B0 checkout failed" }
 Push-Location $historical
