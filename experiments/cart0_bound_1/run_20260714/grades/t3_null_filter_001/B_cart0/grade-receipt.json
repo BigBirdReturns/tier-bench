@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "task_id": "t3_null_filter_001",
+  "source_commit": "489ba8f53cae513d4a803561deae24a8d5c3eff4",
+  "packet_sha256": "79c2a89fc81188c91a2e703864e9038c08d651fc10b1d52bd6cb2d4c3d25d265",
+  "prompt_sha256": "bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd",
+  "candidate_sha256": "90f405f0a88d75cbd58cb58706e3ed36fa29e0d551b55fa82bd27a0870046b5a",
+  "raw_response_sha256": "e3961e8418b5cc447a8fa0d1af239c38a7a8f9f66189cfa00a48c04dd559bb81",
+  "thread_id": "c2d0ff39-e643-4177-be77-b875e4f6bd42",
+  "usage": {
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 0,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 0,
+    "cache_read_input_tokens": 0,
+    "inference_geo": "not_available",
+    "input_tokens": 2218,
+    "iterations": [
+      {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 0,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 2218,
+        "output_tokens": 4036,
+        "type": "message"
+      }
+    ],
+    "output_tokens": 4036,
+    "server_tool_use": {
+      "web_fetch_requests": 0,
+      "web_search_requests": 0
+    },
+    "service_tier": "standard",
+    "speed": "standard"
+  },
+  "usage_available": true,
+  "event_stream_capture_kind": "provider-raw-jsonl",
+  "coordinator_id": "codex-sol-driver-019f628b-cb07-7d92-8092-067d7e175baa",
+  "solver_equals_grader": false,
+  "grader_output_sha256": "70bc6bdf2d6cebda28b158e26155d27803bebe2919847b38cae33dc36b27fc57",
+  "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+  "hidden_grader_runs": 2,
+  "hidden_grader_deterministic": true,
+  "outcome": "fail",
+  "timed_out": false,
+  "timeout_seconds": 30.0,
+  "visible_returncode": 1,
+  "hidden_returncodes": [
+    1,
+    1
+  ],
+  "cost_basis": "subscription-derived",
+  "cost_usd": 0.0
+}
