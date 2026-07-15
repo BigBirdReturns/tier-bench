@@ -17,7 +17,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[2]
-sys.path.insert(0, str(REPO / "scripts"))
+sys.path.insert(0, str(ROOT.parents[1] / "scripts"))
 from validate_strict_output_schemas import validate_instance, validate_schema  # noqa: E402
 TASK = ROOT / "task"
 VISIBLE = TASK / "subject_bundle"
