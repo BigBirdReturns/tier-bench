@@ -14,7 +14,7 @@
     "role": "implementation",
     "lane": "driver",
     "branch": "codex/cart0-anchor-prototype",
-    "state": "CART0-PROFILE-1 claimed; deterministic conformance repair in progress"
+    "state": "CART0-PROFILE-1 independent-review remediation in progress"
   },
   "authorized_transition": "Repair the deterministic bridge, freeze conformance vectors, and seal zero-model receipts.",
   "authority": "Operator authorization + claimed CART0-PROFILE-1 row; no providers, models, or gated changes.",

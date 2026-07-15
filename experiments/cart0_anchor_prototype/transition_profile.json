@@ -2,13 +2,13 @@
   "schema": "tier-bench/cart0-transition-profile@1",
   "profile_id": "cart0@1",
   "revision": 1,
-  "profile_digest": "c35939cc790c898c88dc977a601e06f50492b212d8aaa2f96a467b2a09264dc8",
+  "profile_digest": "2967482971717d6906bf958eafeb6a579f417955135333f0e75b1d48fcca7124",
   "enforcement_mode": "strict",
-  "expected_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
-  "expected_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5",
+  "expected_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+  "expected_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67",
   "accepted_admission_states": ["driver-reviewed"],
   "review_receipt_path": "experiments/cart0_anchor_prototype/card_review_receipts.json",
-  "review_receipt_sha256": "6081db76180ba5d7b44aff976173472e68573f69bb2a4508d8f3e8724ae7ff0a",
+  "review_receipt_sha256": "b841b8951311af2dc1a310b04c6d9f2bb9eef275a417a910e3ca103a59cabbab",
   "evidence_quarantine": {
     "trust_label": "untrusted-source-evidence",
     "instruction_authority": false,
@@ -27,29 +27,29 @@
       "card_id": "000.100.AUTHORITY", "revision": 1,
       "authority_id": "queue.cart0-profile-1", "admission_state": "driver-reviewed",
       "review_id": "cart0-profile-1-authority-r1",
-      "compiled_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
-      "compiled_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5"
+      "compiled_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+      "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
     },
     {
       "card_id": "000.200.GATED", "revision": 1,
       "authority_id": "agents.gated-law", "admission_state": "driver-reviewed",
       "review_id": "cart0-profile-1-gated-r1",
-      "compiled_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
-      "compiled_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5"
+      "compiled_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+      "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
     },
     {
       "card_id": "010.100.CART0", "revision": 1,
       "authority_id": "cart0.contract", "admission_state": "driver-reviewed",
       "review_id": "cart0-profile-1-contract-r1",
-      "compiled_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
-      "compiled_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5"
+      "compiled_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+      "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
     },
     {
       "card_id": "020.100.DESKTOP_LAYERS", "revision": 1,
       "authority_id": "desktop.layers", "admission_state": "driver-reviewed",
       "review_id": "cart0-profile-1-layers-r1",
-      "compiled_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
-      "compiled_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5"
+      "compiled_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+      "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
     }
   ],
   "transitions": {

@@ -9,7 +9,7 @@
       "token_budget": 128,
       "sources": [
         {"path": "docs/agents/QUEUE.md", "start_line": 3, "end_line": 6},
-        {"path": "docs/agents/QUEUE.md", "start_line": 20, "end_line": 50}
+        {"path": "docs/agents/QUEUE.md", "start_line": 20, "end_line": 51}
       ],
       "supersedes": null
     },

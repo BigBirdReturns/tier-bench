@@ -19,6 +19,9 @@
     {"id":"tampered_projected_card","class":"negative","original_observed":"REFUSE","expected":"REFUSE","mechanism":"byte comparison and hash binding"},
     {"id":"inactive_card_lookup","class":"negative","original_observed":"REFUSE","expected":"REFUSE","mechanism":"active-set lookup only"},
     {"id":"valid_build_verify_resurface","class":"positive","original_observed":null,"expected":"PROCEED","mechanism":"lawful strict transition"},
-    {"id":"admitted_semantically_false_summary","class":"positive_residual","original_observed":null,"expected":"PROCEED_RESIDUAL_RISK","mechanism":"admitted bytes remain mechanically valid","threat_model_correction":"A mistaken or malicious reviewer/publisher can admit and sign a false summary; integrity is not truth."}
+    {"id":"admitted_semantically_false_summary","class":"positive_residual","original_observed":null,"expected":"PROCEED_RESIDUAL_RISK","mechanism":"admitted bytes remain mechanically valid","threat_model_correction":"A mistaken or malicious reviewer/publisher can admit and sign a false summary; integrity is not truth."},
+    {"id":"rehydrate_head_drift","class":"positive_safety","original_observed":"PROCEED_UNVERIFIED_HEAD","expected":"PROCEED_VERIFIED_BLOB","mechanism":"fetch immutable verified blob OID and recheck file/span hashes before emission","independent_witness_sha256":"a5502e13db46ecc84eb5ef219600d485c6adf5dbd2af7b30c457e5d55b2d5749"},
+    {"id":"unsafe_control_paths","class":"negative","original_observed":"UNCAUGHT_VALUE_ERROR","expected":"REFUSE","mechanism":"reject all C0/DEL controls and nested .git components before subprocess","independent_witness_sha256":"5e49bd7245b366397fcd4a8c3572da88294600b08128e5f74d42774cf38c8487"},
+    {"id":"quarantine_delimiter_hardening","class":"positive_safety","original_observed":"PROCEED_AMBIGUOUS_DELIMITERS","expected":"PROCEED_NONCE_DELIMITED","mechanism":"content-bound nonce delimiter with exactly one generated begin/end pair","independent_witness_sha256":"62e29f352084e7249d01b07326af10348e233c4cb643aac333381c3e416d4bdd"}
   ]
 }
