@@ -316,7 +316,7 @@ def main() -> int:
         trial = item["trial_id"]; arms[trial] = {}
         for arm in item["full_order"]:
             model = "gpt-5.6-sol" if arm == "SOL_FULL" else "gpt-5.6-luna"
-            arms[trial][arm] = run_full(run_dir, trial, arm.lower(), arm, model, "high", 0, packet_full)
+            arms[trial][arm] = run_full(run_dir, trial, arm.lower(), model, "high", 0, packet_full)
         for arm in item["fork_order"]:
             no_anchor = arm == "LUNA_SPARK_NO_ANCHOR"; arms[trial][arm] = run_chain(run_dir, trial, 0, no_anchor, packet_full)
     for trial, trial_arms in arms.items():
