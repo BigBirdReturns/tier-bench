@@ -1,0 +1,1 @@
+{"class":"positive_safety","detail":{"boundary_id":"2eeb57b0f9dd496ed57982a256cd8df1","rehydrated_sha256":"6adf217784a597a9bf3b205c66b8f234ee8192e3f8a045edbe561d781866a670"},"error":null,"expected":"PROCEED_NONCE_DELIMITED","id":"quarantine_delimiter_hardening","observed":"PROCEED_NONCE_DELIMITED","passed":true}

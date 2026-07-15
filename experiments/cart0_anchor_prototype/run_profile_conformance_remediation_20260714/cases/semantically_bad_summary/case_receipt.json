@@ -1,0 +1,1 @@
+{"class":"negative","detail":{},"error":"REQUEST_REVIEW: card admission state 'unreviewed' is not accepted","expected":"REQUEST_REVIEW","id":"semantically_bad_summary","observed":"REQUEST_REVIEW","passed":true}

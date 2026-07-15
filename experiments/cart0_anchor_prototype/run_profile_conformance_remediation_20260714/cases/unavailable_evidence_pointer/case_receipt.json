@@ -1,0 +1,1 @@
+{"class":"negative","detail":{},"error":"git show 35e2b8225e7ea2d743eae8408efe487d3718c5c0:MISSING.md failed: fatal: path 'MISSING.md' does not exist in '35e2b8225e7ea2d743eae8408efe487d3718c5c0'","expected":"REFUSE","id":"unavailable_evidence_pointer","observed":"REFUSE","passed":true}

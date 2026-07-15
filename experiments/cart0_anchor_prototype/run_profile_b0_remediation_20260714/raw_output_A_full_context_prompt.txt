@@ -1,0 +1,597 @@
+TASK BOUNDARY: implementation_start
+CURRENT TASK: Verify the independent-review remediation for CART0-PROFILE-1 without model dispatch, gated changes, or B1.
+FULL CURRENT-STATE EVIDENCE FOLLOWS. Derive constraints and next action.
+
+===== AGENTS.md =====
+# AGENTS.md — Sol's bootstrap (auto-loaded by Codex CLI / desktop)
+
+*You are Sol — the OpenAI/Codex cross-lineage peer on this repo. This file is
+your `CLAUDE.md`: Codex loads it at session start so you do not wake up blind.
+It is committed state, not a paraphrase; when it disagrees with conversational
+memory, the committed record wins.*
+
+## The mission you are part of
+
+Two model lineages — Claude (Anthropic) and GPT (OpenAI) — work on the same
+repository as independent measurement engines: two solvers, two graders, one
+sealed evidence record. The value of the pairing is lineage independence, not
+interchangeable hands or merged opinions.
+
+`docs/agents/QUEUE.md` assigns work. The engine-neutral evidence contract is
+`docs/agents/CROSS_ENGINE_PROTOCOL.md`. The queue decides *what* is authorized;
+the protocol decides *how* independent work is sealed, graded and compared.
+
+## Read these, in order, before acting
+
+1. `docs/agents/QUEUE.md` — the shared assignment authority.
+2. `docs/agents/SOL_HANDOFF.md` — durable project state and exact figures.
+3. `docs/agents/CROSS_ENGINE_PROTOCOL.md` — paired-run and review discipline.
+4. `ROADMAP.md` — arc sequence and budget discipline.
+5. `experiments/breadth/LESSONS.md` — standing measurement rules.
+
+## The two-lane law (epistemic separation)
+
+Every session runs in exactly one lane, declared by the queue row:
+
+- **`lane: driver`** — receives the repository and may run, administer, review
+  and propose. Private material may remain local but is never committed.
+- **`lane: subject` / `lane: instrument`** — receives a generated packet only:
+  no repository checkout, queue, handoff, hidden grader, key, or peer answer.
+
+No session holds both lanes in one context. Knowledge leaks through context, so
+channels between lanes are deterministic scripts and sealed receipts, never a
+freehand paraphrase from a knowing driver.
+
+## Git discipline (collision safety)
+
+- Write only under `codex/*` branches or isolated Codex worktrees. Never push
+  directly to `main` and never modify a `claude/*` branch.
+- Pull requests are the merge point; `breadth-durability` CI is the referee.
+- Claiming a queue task requires a commit that changes its queue state.
+- Preserve raw responses and engine/thread identity before summarizing.
+
+## Hard limits (GATED — proposal-only, both lineages)
+
+Graders, pass criteria, task definitions, hidden vectors, ledger closure rules,
+and cost accounting are GATED under `adapt.py` discipline. Proposals belong in
+review; an engine may not silently change what counts as passing.
+
+- Never award yourself a benchmark verdict. A coordinator injects and reruns
+  the hidden grader only after the candidate is sealed.
+- Never fabricate a receipt. Broken pipelines mint neither PASS nor FAIL.
+- Subscription runs record `cost_basis: subscription-derived`.
+- Paired conclusions remain separate until compatible receipts are sealed.
+
+## Durable cross-engine machinery
+
+- `docs/agents/CROSS_ENGINE_PROTOCOL.md` — roles and independence rules;
+- `scripts/export_solver_packet.py` — hidden-free solver packets;
+- `schemas/orchestration_run.schema.json` — per-engine receipt contract;
+- `scripts/validate_orchestration_run.py` — provenance and routing validator;
+- `scripts/compare_engine_runs.py` — compares without merging disagreements.
+
+## Current standing state (mirror — QUEUE.md is authoritative)
+
+- SOL-1 blind control grading is sealed from fresh desktop thread
+  `019f4d56-c26f-7ec0-9d3e-67819c2270ec` and merged additively. Exact baseline
+  agreement is 48/80, with 32 off by one and zero off by two; see
+  `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`. No aggregate
+  benchmark verdict follows from that agreement report.
+- SOL-2, the Codex adversarial review of ARC-A/ARC-B, is complete with findings
+  at `docs/agents/reviews/sol_arc_ab_review_20260710.md`; remediation is open.
+- ARC-C is pair-sealed. Codex gpt-5.6-sol@low and Claude fable-5@low each clear
+  all three almanac knots 3/3 at floor against source `3d38371`; the committed
+  comparator admits the pair with 3/3 task-decision agreement. The result is a
+  paired orchestration measurement, not a universal capability claim.
+- SOL-4, the residue-recorder constitution review, is complete at
+  `docs/agents/reviews/sol_residue_recorder_constitution_v04_20260712.md`:
+  disposition `CHANGES_REQUESTED_BEFORE_MERGE`, seven P1 and four P2 findings,
+  with 7/7 executable witnesses. ARC-D is the next roadmap arc but has no queue
+  row; the queue remains authoritative for who may claim it.
+- The capture ledger remains *amortizing, 1 of 4*, never "amortized."
+
+===== docs/agents/QUEUE.md =====
+# QUEUE.md — the shared assignment authority (both lineages)
+
+*One queue, two readers. Claude sessions load `CLAUDE.md` → pointed here; Sol
+sessions load `AGENTS.md` → pointed here. A task exists when it has a row; a
+task is claimed when a commit flips its `state`; a task is done when its
+`evidence` path exists and CI is green. Content keys only — never PR numbers.*
+
+## Queue law
+
+1. **Claim before work**: flip `state: open → claimed` (with your session/date
+   in `note`) in a commit on your own branch before starting.
+2. **Lane is binding**: `driver` rows get the repo; `subject`/`instrument`
+   rows get a generated packet only — never both in one context.
+3. **Done needs evidence**: a row closes only by pointing at committed
+   artifacts (receipts, sealed layers, merged PRs) — burden discipline applies.
+4. Owners: `sol` (GPT lineage), `claude` (Anthropic lineage), `either`,
+   `operator` (human-only steps).
+5. Append new rows; never delete history — strike through superseded rows.
+
+## Active queue
+
+| id | task | owner | lane | state | evidence when done | note |
+|----|------|-------|------|-------|--------------------|------|
+| SOL-1 | Blind-grade control packet (80 items, **v2**): return `[{id, score, rationale}]` per packet instructions | sol | **instrument** | **done** — one sealed v2 run, 2026-07-10 | `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`; raw artifact + session record under `data/control-results/_external_grade_runs/sol-1-v2-019f4d56-c26f-7ec0-9d3e-67819c2270ec/` | Exact baseline agreement 48/80; 32 off by one; zero off by two. Operator reported a second attempt, but no second thread/artifact was discoverable, so it is not counted. |
+| SOL-2 | Adversarial review of the capture ledger (`data/capture/`, validator, ROI) + almanac corpus (`tasks/almanac_*`, vectors, graders) — hunt the defect class same-lineage review missed | sol | driver (read-only) | **done** — 2026-07-10 | `docs/agents/reviews/sol_arc_ab_review_20260710.md` | Two P1 closure holes and four P2 durability defects recorded; remediation remains gated and open. |
+| SOL-3 | Independent-architect pass on the Residue Broker (ARC-C) | sol | driver | **superseded / independence precondition lost** | PR #63 plus explicit contamination note | Operator-directed ARC-C implementation began before the coordination merge. This repo-aware author context cannot honestly recreate an independent-before-conclusions architecture pass. |
+| SOL-4 | Adversarial review of `docs/RESIDUE_RECORDER_CONSTITUTION.md` v0.3→v0.4 (`4affafe`→`7d93e87`): find schemes that satisfy §§12.1–12.4 while violating privacy, authority, durability, evaluation independence, or operability | sol | driver (read-only) | **done — 2026-07-12** | `docs/agents/reviews/sol_residue_recorder_constitution_v04_20260712.md` + executable companion | Disposition `CHANGES_REQUESTED_BEFORE_MERGE`: no P0, seven P1, four P2; 7/7 witnesses reproduce. Immutable review commit `f78c726` attached to governance PR #72 by comment `4952508270`. No gated doctrine changed. |
+| ~~CLAUDE-1~~ | ~~Push blind packet to temp repo~~ — superseded: v1 bytes unavailable, SHA `64e33f2a…` irreproducible from any committed state (100-commit sweep, Claude 2026-07-10) | claude | driver | **superseded by CLAUDE-1b** | — | v1 packet existed only in the original session's working copy. |
+| CLAUDE-1b | Verify packet **v2** delivery (coordinator pushed; supersession record `docs/agents/BLIND_CONTROL_V2.md` on codex branch) | claude | driver | **done** — independently verified 2026-07-10 | `docs/agents/BLIND_CONTROL_V2_VERIFICATION.md` | Commit `6771868` / single-file tree / schema / 80 items / no leaks: **confirmed**. Declared SHA `98997bf9…` is the CRLF rendering; canonical in-git digest is `e1a1dc6bfcee26a435e23107d08019870153ceb1cf6e646b46317663ad8afd06` (transport adjudication, not integrity failure). Key-side claims remain single-source until key disclosure. |
+| CLAUDE-2 | Replays 2–4 of the task02 capture: DISTINCT task02-class work items (frozen edge-family variants / almanac knots), floor + scaffold packet, hidden-graded | claude | driver (subjects are cold floor runs) | **done** 2026-07-10 (2 validated + 1 partial; amortizing 3/4) | receipts under `run/replays/`, ledger rows, capture row update | Same-instance repeats do not count; 2 of 4 validated (crossing + replay03); replay02 spoiled 0/3, replay04 1/3 did not. |
+| CLAUDE-3 | Same-session bare-vs-packet A/B on task02 (closes the prompt-wording confound named in the capture row) | claude | driver | **done** 2026-07-10 — confound closed (bare 3/5 vs packet 4/5, zero knot misses in packet arm) | sealed layer + confound note resolved in capture row `gap` | Cheap; shadow-estimated. |
+| CLAUDE-4 | ARC-A P1 hardening: capture closure depends on distinct hash-bound replay events + computed break-even (one shared calculation) | claude | driver | **done** — PR open 2026-07-10 | `scripts/capture_math.py`, hardened `validate_capture_ledger.py`, restructured task02 row, `data/continuity/EPISODES.md` EP-001, 32+8 tests | Bounded repair from main; PR #63 untouched. Defect preserved as provenance (representation could not prove distinctness; claim itself was true). |
+| OP-1 | Create empty private repo `BigBirdReturns/tier-bench-blind-grade-001` (no README/.gitignore) and grant the Claude GitHub integration access | operator | — | **done** 2026-07-10 | repo exists (verified private at add time); Claude integration access verified by clone | Session credential gets 403 on repo creation — human-only step. |
+| ARC-C | Orchestration-pattern benchmark over the real knots | either (lead: claude) | driver | **done — paired seal, 2026-07-12** | `data/orchestration/arc_c_almanac_v1.json`, `data/orchestration/arc_c_almanac_claude_v1.json`, and `data/orchestration/comparisons/arc_c_almanac_cross_engine_v1.json` | Both independent runs are sealed 3/3/3 at floor against source `3d38371`; comparator admits the pair and reports 3/3 task-decision agreement. This closes the pairing claim, not a universal capability claim. |
+| SOL-5 | Refill the excluded Codex ARC-C cells: fresh source-bound (3d38371 bytes) exception-class + record-binding observations, K=3 each at floor, ingest + seal `arc_c_almanac_v1`, then run `scripts/compare_engine_runs.py` against the sealed Claude run | sol | driver | **done — 2026-07-12** | `data/orchestration/arc_c_almanac_v1.json` + `data/orchestration/runs/arc_c_almanac_v1/` + `data/orchestration/comparisons/arc_c_almanac_cross_engine_v1.json` | Six fresh packet-only subjects, distinct thread/turn identities, zero tool calls, exact source-bound prompts. Provider rollouts remain local; committed safe event snapshots and hash-bound administration receipts preserve identity, timing, usage, response, and full-rollout SHA-256 without publishing host context. |
+| ARC-D-PILOT | Design the OSS “buffalo” replay field: preregister a ≤10% harvest prior, model how sparse reusable residue compounds, define the next evidence rungs, and run three bounded packet-only simulations on pinned public OSS work items | sol | driver (subjects are isolated packet-only simulations) | **partial — 3/3 provider system errors, 2026-07-12** | `docs/arc-d-buffalo-field.md` + `data/oss-replay/arc_d_buffalo_pilot_v1/` | Field contract, three hash-bound packets, and four illustrative projections exist. All three fresh projectless threads received exact transported envelopes, then returned `systemError` with no assistant response or reported provider detail. Preserve them as `PARTIAL`; zero observations were graded, no retry is permitted under the frozen stopping rule, and the HARVEST gate remains proposal-only. |
+| ARC-D-PILOT-R1 | Retry the ARC-D packet-only pilot under a separately versioned protocol: capacity preflight first, then at most three sequential dispatches carrying the exact v1 prompt bytes; preserve all outcomes without grading | sol | driver (subjects are fresh isolated packet-only simulations) | **done — responses sealed unadjudicated, 2026-07-12** | `data/oss-replay/arc_d_buffalo_pilot_v2/` | Operator-authorized after immutable v1 merged. Excluded preflight returned exact `CAPACITY_OK`; three sequential fresh projectless subjects received exact v1 prompt blobs and completed with 7,345 / 5,933 / 5,933 UTF-8 response bytes, zero tools, and hash-bound thread/turn/timestamp evidence. CI run #95 was green on evidence commit `ba38e040`. HARVEST remains proposal-only: zero grades and zero harvest verdicts. |
+| ARC-D-HARVEST-CHARTER | Freeze the B2 source-case rubric, adjudicator designation, prospective B4 gate, packet-only grading procedure, disagreement rule, provenance receipt, and failure default before any response disclosure | sol | driver (rubric authoring only; this session may not inspect or grade responses) | **done — merge verified (charter adoption `12bfd61` on main; normalized 2026-07-13 after the condition was satisfied)** | `docs/arc-d-harvest-adjudication.md` + `data/oss-replay/arc_d_buffalo_pilot_v2/harvest_charter.json` + validator/tests | Operator said `go` after confirming no HARVEST response text had appeared. Merge adopts the B2 rubric and prospective B4 rule; no response is graded and no HARVEST evidence is minted by adoption. |
+| ARC-D-B2-PACKETS | Build a deterministic one-response-only packet exporter and fail-closed packet validator for the ratified ARC-D B2 charter; do not grade or dispatch before the exporter merges | sol | driver (administration only; response carriers may be copied mechanically but never displayed or interpreted) | **done — merge verified (exporter `6b4b389` ancestor of main via #82; normalized 2026-07-13)** | `scripts/export_arc_d_b2_packets.py` + `scripts/validate_arc_d_b2_packet.py` + packet/payload schemas + tests | Operator said `do it` after charter merge `12bfd61`. Merge authorizes mechanical packet construction, not dispatch or grading. Each packet excludes repository governance/history, peer grades, other response bytes, and unratified instructions. |
+| ARC-D-B2-GRADE-A | Grade the three ratified ARC-D B2 packets independently with one fresh projectless `gpt-5.6-sol@high` instrument session per packet; preserve raw output and session identity before any comparison | sol | instrument (packet-only; one response per fresh session) | **partial — clean local rerun 3/3 valid, evidence not admitted, 2026-07-12** | `docs/agents/reviews/arc_d_b2_partial_summary_20260712.md` | A second local attempt used three fresh projectless sessions and validated 3/3 payloads and receipt sets. Publication of the grading artifacts remains disallowed, so this is local custody evidence rather than an admitted public Grade A lane. The first 2-valid/1-invalid attempt remains preserved. |
+| ARC-D-B2-GRADE-B | Grade the same three ratified ARC-D B2 packets independently with one fresh projectless `fable-5@high` instrument session per packet; preserve raw output and session identity before any comparison | claude | instrument (packet-only; one response per fresh session) | **attempt-3 SEALED, partial 1/3 admissible — 2026-07-13 (operator-authorized in PR #83)** | `data/oss-replay/arc_d_buffalo_pilot_v2/grades/grade_b/attempt-3/MANIFEST.json` (+ per-item evidence, hash-bound); attempts 1–2 preserved inadmissible | Attempt 3 fixes both review findings: authority hardened fail-closed (AUTHORITATIVE only for role=source_evidence — closes attempt-2's ORIGINAL_PROMPT.md hole) and bare-JSON stated mechanically. attrs: **ADMISSIBLE, B2_CANDIDATE_RESIDUE** — the pairable receipt. httpx_3614: the 4/4 wall BROKE — first content-complete grade (unofficial B2_REFERENCE_AMBIGUOUS) but non-bare reply → preserved inadmissible. httpx_3221: content-complete, unofficial B2_REFERENCE_AMBIGUOUS, non-bare → preserved. Instrument pattern recorded: bare 2/2 on attrs vs fenced 4/4 on httpx packets. Real-billed $5.61. Prior outputs untouched. |
+| ARC-D-B2-COMPARE | Validate the six sealed grade receipts, compare dispositions and cited evidence without averaging, and produce one comparison receipt per item | sol | driver (receipts only after both lanes seal) | **not run — Grade B invalid and Grade A not admitted** | `docs/agents/reviews/arc_d_b2_partial_summary_20260712.md` | The driver validated custody before comparison and refused to compare non-admissible evidence. Failure default `PARTIAL_UNPAIRED`: zero comparison receipts, binding B2 dispositions, candidate residues, or HARVEST claims. |
+| ARC-D-B2-ADMISSION-V2 | Prospectively ratify a private-custody/public-commitment admission contract for fresh ARC-D B2 grading lanes, with no rubric change and no retroactive admission of prior attempts | sol | driver (governance/specification only; no response inspection or grading) | **done — ADOPTED at merge `e7201e1` (exact approved head `8db8e25`; operator-ratified in-session 2026-07-13, executed by the Claude-lane driver; state ADOPTED_PENDING_CUSTODY)** | `docs/arc-d-b2-admission-v2.md` + `data/oss-replay/arc_d_buffalo_pilot_v2/harvest_charter_v2.json` + `docs/agents/reviews/arc_d_b2_admission_v2_fanout_20260712.md` + strict amendment/specification validator/tests + draft receipt interfaces | Operator authorized fan-out after PR #84 merged. Merge adopts only the prospective custody/admission specification and leaves `ADOPTED_PENDING_CUSTODY`; draft operational schemas gain authority only when a later activation receipt binds their final Git blobs. Existing Grade A/B attempts remain `PARTIAL_UNPAIRED`. |
+| ARC-D-B2-CUSTODY-V2 | Implement and activate the admission-v2 custody profile: separate lane venues, default-branch activation receipt, preregistered six-cell attempt/dispatch ledger, exact private Git object validation, authenticated audit receipt verification, and private-to-public derivation | sol | driver (administration only; content-blind fixture/preflight until activation) | **open — UNBLOCKED 2026-07-13 (admission-v2 merged, `e7201e1`); awaiting custodian + verifier designation (operator: deferred) and the activation component build** | future custody profile + activation/preflight/attempt/audit schemas and executable validators/tests | No grader dispatch is lawful when only the amendment has merged. Public-only validation may say `PUBLIC_COMMITMENT_SHAPE_VALID`; it may never self-declare admission. |
+| ARC-D-B2-GRADE-A-V2 | Run three fresh Grade A sessions under the unchanged v1 rubric/packet bytes and active v2 custody contract | sol | instrument (fresh projectless packet-only; one dispatch per preregistered cell) | **open — blocked on ARC-D-B2-CUSTODY-V2 activation** | future private immutable bundles + public authenticated commitments | Prior local Grade A attempts are historical and cannot be wrapped into v2. |
+| ARC-D-B2-GRADE-B-V2 | Run three fresh Grade B sessions under the unchanged v1 rubric/packet bytes and active v2 custody contract | claude | instrument (fresh projectless packet-only; one dispatch per preregistered cell) | **open — blocked on ARC-D-B2-CUSTODY-V2 activation** | future private immutable bundles + public authenticated commitments | Grade B attempts 1–3 are historical and cannot be wrapped into v2; strict one-object/no-fence/no-prose output remains fail-closed. |
+| ARC-D-B2-COMPARE-V2 | Compare only six fully admitted v2 receipts after atomic batch admission, preserving v1 disagreement and B4 rules | sol | driver (private audited receipts only after both lanes admit) | **open — blocked on both v2 grading lanes** | future deterministic comparison receipts | No comparison, B2 binding, B3 artifactization, or HARVEST may occur before the later comparison-receipt merge. |
+| CLAUDE-AUTH2 | Authoring batch 2 — three embedded-knot hidden-graded tasks per LESSONS rule 11 (knot arrives unannounced mid-implementation; no defusing guarantees; NOT counterexample-framed): `t3_billing_anchor_001` (anchor-vs-cascade), `t3_window_limit_001` (boundary-endpoint words), `t3_due_date_shift_001` (modified-following reversal) | claude | driver (grader/oracle authoring is driver-owned; no solver ran) | **done — 2026-07-13** (claimed+built+verified same session on operator "make it so") | `tasks/t3_{billing_anchor,window_limit,due_date_shift}_001.json` + `fixtures/…/input.py` + frozen `hidden_tests.py` ×3 + `experiments/breadth/authoring2/build_vectors.py` (mechanical derivation + `--check` CI drift guard) + `verification_receipt.json` | Key material verified bidirectionally BEFORE freeze: reference passes visible + full hidden score on all three; each paired naive (cascade-clamp / closed-old-end / forward-only) passes the VISIBLE checks but fails the knot vectors — the daylight is the signal. Listed breadth-valid by `breadth_tasks.py`; selfrun prep strips hidden files, prompts clean. **NO model results claimed.** |
+| SOL-6 | Land and verify the authoring2 floor-evidence validator reported at local commit `fbdfdb5` | sol | driver (validator implementation and tests only; no grading) | **open — reported complete locally, but not landed** | a reachable remote commit containing the validator and its tests, followed by CI-green merge evidence | The reported commit exists only on branch `work` in a container with no configured remote. It is absent from this clone, all fetched refs, and the local Codex task/worktree inventory as of 2026-07-13. Transfer the exact bytes by bundle, format-patch, or push; do not reconstruct them from the report. |
+| CART0-BRIDGE-1 | Land the opt-in CART0 `Select -> Compose` payload bridge: bounded source-span cards, actor-relative boundary selection, hash-bound verification/rehydration, deterministic refusal tests, and the preserved zero-model payload A/B | sol | driver (implementation and deterministic no-model tests only) | **claimed — implementation complete locally; review/CI pending, 2026-07-14** | `scripts/cart0_anchor.py` + `tests/test_cart0_anchor.py` + `experiments/cart0_anchor_prototype/` + `docs/cart0-anchor-prototype.md` | Operator authorized in Codex task `019f628b-cb07-7d92-8092-067d7e175baa`; implementation commit `88e5bfb`; claimed-state receipt binds that exact head. Scope excludes provider/model dispatch, gated machinery, benchmark or context-window verdicts, production Genesis signing, and downstream-quality claims. |
+| CART0-PROFILE-1 | Repair the CART0 B4 integration/conformance failures with an independent canonical transition profile, actor/head/reducer/review enforcement, quarantined evidence envelopes, frozen negative and positive vectors, fresh zero-model B0/B4 receipts, and a `cart0@1` Genesis-profile proposal | sol | driver (deterministic no-model implementation, conformance vectors, receipts, and proposal only) | **remediation in progress — independent review changes requested, 2026-07-14** | repaired bridge/profile + additive conformance/witness vectors + fresh B0/B4 receipts + Git-custodied portable verifier + `cart0@1` proposal | Original repair and receipts are commits `7805ec5` and `133fdf1`; failed portability artifact remains preserved at `eec76dd`. Independent Claude report SHA-256 `9a75696089c7e7ef0e8fa11a75fb09e0ed905556cfe5c2223f63764654b844bb` confirmed P1 rehydrate TOCTOU, P1 NUL-path crash, and missing archive Git custody. Operator authorized additive remediation in source task `019f628b-cb07-7d92-8092-067d7e175baa`. Scope still forbids model/provider dispatch, hidden-grader access or mutation, benchmark/pass-criterion changes, production Genesis custody/signing claims, and edits to the separate `axm-genesis` repository. Cards remain data; lawful selection stays project-local. |
+
+| CLAUDE-AUTH3 | Authoring batch 3 — two hidden-graded tasks aimed at the ONLY measured discriminator shapes (LESSONS 11b): a felt-contradiction knot (`t3_null_filter_001`, SQL-style three-valued logic where the correct reading fights the boolean prior even after the rule is read) and a derived-quantity knot (`t3_accrual_crossover_001`, integer floor-compounding crossover where formula-thinking diverges from the rules at stall and boundary) | claude | driver (grader/oracle authoring only; NO solver runs, NO grading dispatches) | **done (authoring) — 2026-07-13, same session as claim; NO model results claimed, flooring separately authorized** | `tasks/t3_null_filter_001.json` + `tasks/t3_accrual_crossover_001.json` + `fixtures/t3_null_filter_001/{input.py,hidden_tests.py}` + `fixtures/t3_accrual_crossover_001/{input.py,hidden_tests.py}` + `experiments/breadth/authoring3/{build_vectors.py,verification_receipt.json}` + `tests/test_authoring3_graders.py` + the `authoring batch 3` step in `.github/workflows/breadth-durability.yml` | Authored to the batch-2 post-review standard from the first commit (Sol findings 1–2 are the template). NO model results will be claimed; flooring is a separately authorized future run. |
+
+## Done (most recent first)
+
+| id | task | evidence |
+|----|------|----------|
+| ARC-D (foundation) | OSS replay field admission layer + first real entry (CPython fnmatch character classes ← task02 capture grammar) | `docs/oss-replay-field.md`, `data/oss_replay/field.jsonl`, vendored upstream + provenance, `scripts/validate_oss_replay_field.py` (11 tests, CI), splice-equivalence vector guard; zero replays run, no credit claimed. NOTE: complements the ARC-D-PILOT buffalo lane (`data/oss-replay/`, hyphen — distinct dir, Sol's hash-bound evidence, do not rename); the two lanes converge when the HARVEST gate is ratified |
+| SOL-4 | Cross-lineage adversarial review of Residue Recorder constitution v0.4 | `docs/agents/reviews/sol_residue_recorder_constitution_v04_20260712.md`; review commit `f78c726`; 7/7 executable witnesses; attached to PR #72 |
+| SOL-5 / ARC-C | Refill Codex custody gap and seal the cross-engine pair | Codex + Claude runs 3/3/3; comparator comparable with 3/3 agreement; source `3d38371` |
+| SOL-1 | Non-Anthropic blind grade of the preserved control packet | `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`; thread `019f4d56-c26f-7ec0-9d3e-67819c2270ec`; raw artifact SHA-256 `da69f26d…16af04c` |
+| PACKET-V2 | Supersede unavailable blind-control v1 with private-salted v2 | `docs/agents/BLIND_CONTROL_V2.md`; private delivery commit `6771868`; canonical in-git digest recorded above |
+| SOL-2 | Cross-lineage adversarial review of ARC-A capture + ARC-B almanac | `docs/agents/reviews/sol_arc_ab_review_20260710.md`; executable counterexamples; PR #63 |
+| — | ARC-B: edge-family freeze + almanac corpus | PR #59, layer + CI drift guard |
+| — | Crossing event: first validated replay (amortizing 1/4) | PR #58, `run/replays/task02_wildcard/` |
+| — | ARC-A: frontier capture ledger | PR #57 |
+| — | Blind-grading export/merge pipeline | PR #61 |
+| — | Sol handoff doc | PR #60, `docs/agents/SOL_HANDOFF.md` |
+
+===== data/continuity/CART0_CONTRACT.md =====
+# CART0 — the contract (operator-ratified doctrine, 2026-07-10)
+
+*Evidence preservation of a steering exchange — not a schema, not a reducer.
+CART0 build work remains postponed until ARC-C closes. This file exists because
+briefing-by-conversation evaporates (EP-005); the contract below was ratified
+in-session and must survive it.*
+
+**CART0 is the zero-resolution map that still preserves control** — the
+irreducible state required to continue without unlawfully rewriting what the
+expedition has already learned. It is not a memory document. It is a minimal
+deontic control surface with two coupled parts:
+
+```text
+CART0 projection:  minimum state required to orient the entrant
+CART0 gate:        reassert the applicable constraints before consequential transitions
+```
+
+## The projection (five elements)
+
+1. **Objective + current interpretation** — kept distinct, so mission
+   continuity and plan adaptation cannot be conflated.
+2. **Prohibitions + harvested constraints** — the operational value of dead
+   branches (residue) and GATED machinery.
+3. **Position fix** — current branch, its state, the one presently authorized
+   transition, and the authority that permits it.
+4. **Freshness commitment** — prevents a stale projection from impersonating
+   current authority.
+5. **Retrieval index** — full-resolution history available without keeping it
+   in the cognitive foreground.
+
+## Precision adjustments (part of the contract)
+
+- **Gate binding.** "Enforced by a validator" only permits dropping the prose
+  when invocation is deterministic and mandatory. The projection stays bound to
+  the gate, e.g. `{"gate": "scripts/validate_capture_ledger.py",
+  "gate_version": "<digest>", "required_before": ["capture_closure"]}`.
+  The system remembers the constraint by making circumvention structurally
+  unavailable, not by re-explaining the rule. The gate digest doubles as
+  tamper evidence: editing the gate is a detectable state change, never a
+  silent reinterpretation.
+- **Freshness beyond HEAD.** A projection is semantically stale when the
+  reducer changes even if history did not:
+  `projection_digest = hash(event_head || reducer_digest || projection_profile)`.
+  Distinguishes "new terrain exists" from "same terrain, different
+  authoritative reduction machinery". (Genesis conformance: identity derived,
+  never stored.)
+
+## The execution finding (replay04)
+
+Transfer at boot does not guarantee retention under load: the rule was present
+and lost competition for attention. CART0 must test **availability and
+effective reactivation** separately. Decision-point resurfacing is not a sixth
+map element; it is the execution contract around the map.
+
+## The research hypothesis
+
+> Continuity depends less on how much prior context is retained than on
+> whether the operative constraints are deterministically resurfaced at the
+> transitions where violating them would change project state.
+
+Falsifiable first test: `256-token projection + decision-boundary resurfacing`
+vs `4,096-token projection loaded once` — prediction: the first wins
+specifically on residue-consequence tests, while the larger map may improve
+narrative reconstruction yet still allow an absorbing task to suppress a
+prohibition at the moment it matters.
+
+## Addendum (same steering exchange): actor-relative projection + causal design
+
+- **The position fix is actor-relative** (inside element 3, not a sixth
+  element): it binds `{principal, role, lane, knowledge_boundary,
+  authorized_transition, authority}`. The same repo state permits different
+  actions for different entrants; a map that prescribes a globally valid action
+  to a locally disqualified actor has failed. Known hidden-gradable episode: a
+  repo-aware session grading SOL-1 is contaminated even if every score is
+  substantively correct.
+- **Causal design before the headline sweep** — hold the map constant, vary
+  only the decision boundary: A boot-only (neutral equal-length transition
+  message) · B applicable residue constraint resurfaced · C equal-length
+  irrelevant-but-valid constraint (recency control). Fresh sessions, same
+  model/effort, two-turn protocol, distinct isomorphic edge-family items,
+  hidden grader sees candidates only after sealing. Then the 2x2 factorial
+  (resolution 256/4096 x delivery boot/resurfaced). Prediction: resolution
+  helps reconstruction; resurfacing dominates residue-consequence accuracy.
+- **Constraint dispatch is mechanical**: the transition class
+  (`capture_closure`, `candidate_sealing`, `blind_grading`, …) deterministically
+  selects the bound gates and residue constraints. The model receives the
+  result; it never decides what deserves remembering.
+
+> The mechanism, stated finally: a compact constraint map remains operational
+> only when the system binds each consequential transition to the applicable,
+> version-pinned gate and resurfaces that constraint for the authorized actor
+> at the moment of action. The model does not have to keep remembering; the
+> protocol has to keep refusing to forget.
+
+## Placement
+
+CART0 is a cross-cutting continuity protocol, not an AXM spoke.
+
+- **Research and validation:** Tier Bench owns the experimental corpus, reducers,
+  projections, gates, receipts, and hidden grading until the minimum sufficient
+  continuity residue is empirically established.
+- **Normative custody contract:** once stable, canonical serialization, identity,
+  sealing, and conformance requirements may graduate into an AXM Genesis profile.
+  Genesis verifies the artifact; it does not determine the lawful next action.
+- **Runtime:** reusable reduction, retrieval, and projection machinery may live in
+  AXM Core, while project-specific transition rules and gates remain project-local.
+- **Instances:** each project stores its own continuity event ledger and projections
+  beside the work they govern.
+- **Spoke relationship:** AXM spokes, including axm-hinge, emit consequential state
+  transitions that CART0 may preserve. They do not contain CART0, and CART0 does
+  not replace their domain objects.
+
+> Correction on record (2026-07-10): do NOT put the reducer into Genesis merely
+> because the artifact is Genesis-shaped. The reducer is epistemic authority; Genesis
+> is custody. Genesis owns the sealable wire format (a `continuity-event@1` / `cart0@1`
+> profile: canonical serialization, identifiers, projection-digest construction,
+> conformance vectors, seal/verify rules). The reducer/projection runtime is Core or
+> project-local. Conflating them makes the custody kernel the universal project-state
+> interpreter — the centralization CART0 exists to refuse.
+
+===== docs/THE-RECURRING-DEFECT.md =====
+# The recurring defect — and how the stack moves knowledge out of attention
+
+*Operator synthesis, 2026-07-10. Preserved verbatim as durable authority (defect
+#3: briefing by conversation evaporates). This document is itself a **project-level
+CART0 projection**: its control question is the invariant objective, its twenty
+"what must become impossible" clauses are the prohibition set, and its
+defect→artifact table is the retrieval index. Treat it as the map a cold driver
+reads first — bind it to a freshness commitment, don't file it as an essay.*
+
+```yaml
+freshness:
+  reconciles_through: "3e6aa2e86f55b1e24346748f28a50cdfcda13332"  # PR #64 merge
+  projection_profile: "whole-project-control-map@0"
+  reducer: null
+  reducer_state: "not implemented; evidence-preservation stage (no reducer by doctrine until ARC-C closes)"
+  retrieval_index:
+    - data/continuity/CART0_CONTRACT.md
+    - data/continuity/EPISODES.md
+```
+
+*This is an honest provisional freshness commitment: CART0 has no reducer yet by
+explicit doctrine, so the full `event_head || reducer_digest || projection_profile`
+digest is not faked. It makes staleness detectable — reconcile this map to the
+PR #64 merge commit once it lands — without pretending machinery that does not
+exist.*
+
+---
+
+We solved it by repeatedly refusing to let an insight remain a sentence. Every
+time something failed, we asked four questions:
+
+1. What exact state changed?
+2. What evidence proves it?
+3. What must become impossible afterward?
+4. What artifact can carry that result without the original intelligence?
+
+## The twenty defects, one at a time
+
+**1. Good judgment disappeared when the session ended.** A model could make an
+excellent judgment, but the next session had to rediscover it from prose. Fix:
+convert the judgment into a reusable artifact — scaffold packet, lens, validator,
+routing rule, sealed layer. The frontier model performs the expensive reasoning
+once; later models execute the captured move cheaply. → **Frontier Capture thesis**:
+expensive cognition should become reusable machinery, with replay evidence and
+break-even accounting.
+
+**2. "Memory" preserved facts but not operational state.** A system might remember
+what happened without knowing what was now permitted, prohibited, superseded, or
+unresolved. Fix: stop treating the transcript as authority; preserve explicit
+state transitions and derive the current position from them. The object became
+"what project state can be reconstructed without inventing history." → **CART0**.
+
+**3. Briefing by conversation evaporated.** Claude or Codex would wake without the
+assignment, the latest correction, or the branch boundary. Fix: put coordination
+into committed, auto-loaded artifacts — `AGENTS.md`, `CLAUDE.md`, `QUEUE.md`,
+`ROADMAP.md`, durable handoff records. Committed state wins over conversation; the
+queue is assignment authority; work is not real until it has a row, a claim, and
+evidence.
+
+**4. Multiple agents contaminated each other.** The same context could hold the
+repository, the hidden task, prior conclusions, and the rubric. Fix: the **two-lane
+law** — driver/coordinator lane may see the repo, export packets, ingest results,
+operate deterministic tooling; subject/instrument lane receives only the generated
+packet. Independence became a property of the execution boundary, not a promise in
+prose.
+
+**5. The grader could grade its own work.** Fix: sealed packet first, fresh grader
+second, hidden grader third, coordinator afterward. The solver does not see the
+grader; the grader does not alter the candidate; the coordinator does not rewrite
+the raw response. The conclusion is tied to separable instruments, not one
+persuasive narrative.
+
+**6. Blind packet v1 could not be reproduced.** A declared artifact existed in
+prose but its exact bytes were unavailable. Fix: mark v1 superseded, not
+contradicted; generate v2 from explicit private entropy, commit public
+commitments, preserve the exact packet hash, publish only the packet.
+Irrecoverability became evidence about the old artifact, not an excuse to pretend
+recovery.
+
+**7. CRLF changed the evidence while Git pretended nothing happened.** Windows and
+Linux checkouts produced different bytes for evidence files. Fix: define digests
+over canonical committed bytes, disable text normalization for evidence paths,
+test fresh-clone integrity under hostile Git settings. Transport differences became
+adjudicable — a transport defect distinguishable from a substantive one.
+
+**8. "One of three" was misread as "one pass, two failures."** Collection state and
+performance state were conflated. Fix: separate observations collected / passes and
+failures observed / required K / final broker decision. Append a correction layer;
+retain the original record. "Collecting at floor" became structurally distinct from
+"failed two trials."
+
+**9. Replay count could be manufactured.** Two labels or paths to one receipt could
+receive multiple credit; a claimant integer could create evidence. Fix: replay
+evidence became a hash-bound event — unique work-item identity, receipt hash,
+packet hash, candidate hash, grader-output hash, artifact hash. The validator counts
+unique eligible events; `validated_replays` is only a redundant assertion; break-even
+is computed from cost evidence through one shared function. One replay cannot close a
+four-replay burden even if copied or renamed. (PR #64 keeps the capture at 1 of 4
+while closing the validator defect.)
+
+**10. Stable rules were present but forgotten under load.** Replay04 showed a
+captured commitment could be in the prompt and still lose the competition for
+attention when the task became absorbing. Fix: separate the map from the execution
+mechanism — **CART0 projection** (minimum state to orient the entrant) and **CART0
+gate** (reassert the applicable constraint immediately before the consequential
+transition). Continuity stopped meaning "the rule was once loaded" and became "the
+rule is mechanically reactivated when violating it would change project state."
+
+**11. CART0 could have become another summary document.** Fix: define the minimum
+map as (1) invariant objective + current interpretation; (2) prohibitions and
+harvested constraints; (3) actor-relative position fix; (4) freshness commitment;
+(5) retrieval index — then bind consequential transitions to version-pinned gates.
+The map carries only what is not already self-executing; as constraints move into
+gates, the map gets smaller.
+
+**12. The map itself could become stale or silently reinterpreted.** A new reducer
+could derive a different lawful-action set from unchanged history; a modified
+validator could silently change the rule. Fix: bind projection identity to
+`event_head || reducer_digest || projection_profile`, and bind gates to their own
+digests. Changing the interpreter or validator becomes a detectable state
+transition, not a silent semantic edit.
+
+**13. "Correct next action" was not globally correct.** The same action may be legal
+for one actor and contaminating for another. Fix: make the position fix
+actor-relative — principal, role, lane, knowledge boundary, authorized transition,
+authority source. CART0 states not just what happens next but who may do it under
+which epistemic conditions.
+
+**14. Selecting what to remember could reintroduce taste.** A model deciding which
+constraint was important enough to resurface becomes the taste arbiter again. Fix:
+dispatch constraints mechanically by transition class (`capture_closure` → capture
+validator → unique replay identity constraint → computed break-even rule). The model
+receives the applicable constraint; it does not choose which history deserves force.
+
+**15. Forecasts presented structure as destiny.** A structural forecast could be
+coherent and still fail through betrayal, illness, refusal, fraud, succession,
+coalition fracture, or hidden dependency. Fix: **axm-hinge** binds a forecast to
+explicit assumptions, invalidating hinges, broken-assumption references, observables,
+activation triggers, consequences, evidence states, and human review history. A
+forecast must say what would make it stop governing reality.
+
+**16. Hinge analysis could have become a fancy risk register.** Fix: a hinge is
+invalid unless it breaks a named assumption, has an observable, has a trigger
+condition, and names what must stop/reopen/recompute. The score measures coverage
+and review priority, not probability or truth. The ledger is about model
+invalidation, not generic anxiety.
+
+**17. AI-generated hinges could become AI authority.** Fix: separate powers — Aide
+or GhostBox may propose; a human admits/dismisses/requests context; Console records
+review; Genesis seals; Core/Spectra retrieves; no model silently upgrades its own
+proposal.
+
+**18. Provenance could prove integrity while accidentally implying truth.** A signed
+artifact can be intact and still wrong. Fix: keep evidence tiers and claims explicit.
+Genesis proves which bytes were published, by whom, under which content identity — not
+that the claim is true. Custody, truth, review, and execution remain different layers.
+
+**19. Frontier inference kept being repurchased.** Fix, the governing economic rule:
+**seal what has stopped moving; rent only what has not.** Stable judgment becomes a
+gate, a lens, a scaffold, a hinge ledger, a reducer, a retrieval index, a sealed
+claim. Frontier intelligence mints durable residue instead of remaining in the loop.
+
+**20. The fields were solving different slices of the same problem.** Memory research,
+authorization, provenance, event sourcing, formal verification, benchmarking, and
+forecasting each treated the others as peripheral. Fix: join them around one control
+question — **what must remain provable and enforceable after the intelligence that
+understood the work is gone?**
+
+## The division of labor that fell out of it
+
+- **Tier Bench** — measures transfer, routing, resumption, and failure.
+- **Capture Ledger** — prices expensive cognition and its reuse.
+- **Living lenses / scaffolds** — carry validated moves.
+- **CART0** — preserves lawful continuation.
+- **axm-hinge** — preserves forecast invalidators.
+- **Genesis** — seals provenance and integrity.
+- **Core / Spectra** — retrieves high-resolution terrain.
+- **Console** — holds human review.
+- **Aide** — proposes work but does not become authority.
+
+## What is actually solved
+
+**Closed in machinery:** committed coordination replacing chat briefing; driver vs
+instrument separation; blind packet custody; canonical-byte integrity; correction
+without historical erasure; unique replay identity; computed amortization closure;
+human-attributed hinge review; fail-closed hinge validation; Genesis custody boundary.
+
+**Strong architecture, not yet fully proven (the live frontier):** CART0
+decision-point resurfacing; actor-relative cold resumption; minimum sufficient map
+size; hinge usefulness across real domains; cross-project portability; whether these
+artifacts consistently reduce frontier inference cost at scale.
+
+## The thesis
+
+We did not solve "memory," "forecasting," or "agent reliability" in one stroke. We
+found the recurring defect underneath them:
+
+> stable knowledge kept remaining inside fallible attention instead of becoming
+> external control structure.
+
+Then, one defect at a time, we moved it out.
+
+===== experiments/breadth/run/abc_causal_task02_20260711/RESULTS.md =====
+# A/B/C causal test — decision-boundary resurfacing on `count_matches`
+
+**Run:** `abc-causal-task02-20260711` · coordinator: the 2026-07-11 driver session
+(Claude, lead agent) · solver: claude-haiku-4-5 fresh subagents · K=5 per
+condition · cost: ~$0.85 shadow-estimated, $0.00 real-billed.
+
+Design as pinned in the CART0 contract addendum
+(`data/continuity/CART0_CONTRACT.md`, branch `claude/capture-ledger-p1-hardening`),
+with the operator's one logged FREE-class adaptation: the **work item is held
+constant** across conditions — `count_matches`, the deepest-embedding shape,
+where the boot-load regression was measured at 1/3 (replay04, layer
+`claude2-distinct-replays-20260710` on `claude/driving-assistance-r5mtu1` @ 72adaac).
+Fresh sessions cannot contaminate each other; a constant item isolates the
+boundary variable exactly.
+
+## Protocol
+
+- **Map constant:** every solver booted with the identical context — the
+  emit_scaffold task02 packet (rule commitment + discipline), spec.md, visible
+  tests (committed here as `turn1_prompt.txt`; hidden vectors + grader pinned
+  under `hidden_used/`, byte-identical to the replay04 materials).
+- **Two turns:** turn 1 plan-only (no code); turn 2 delivers the condition
+  message at the decision boundary (`turn2_{A,B,C}.txt`, 55–60 words each):
+  - **A** boot-only: neutral equal-length go message.
+  - **B** applicable constraint resurfaced (in-class backslash is literal).
+  - **C** recency control: equal-length valid-but-irrelevant constraint
+    (DO-NOT-ESCALATE wording).
+- **Quarantine:** solvers instructed no tools / no files / no repo;
+  `tool_uses: 0` on all 30 agent turns. Hidden vectors never in any solver
+  context; held by the coordinator only.
+- **Sealing:** all 15 candidates extracted mechanically and sha256-sealed
+  (`trials/*/seal.json`) BEFORE any grading; grader then run twice per
+  candidate (determinism check).
+- **Key material verified before any trial:** replay04 reference solution
+  scores 10/10 on the pinned grader; a naive escape-inside-class
+  implementation scores 6/10 — exactly the replay04 trial0 baseline score,
+  corroborating vector fidelity.
+
+## Result
+
+| Condition | Perfect (10/10 hidden vectors) | Knot-vector failures | Deterministic |
+|---|---|---|---|
+| A — boot-only | **5/5** | 0 | 5/5 |
+| B — applicable resurfaced | **5/5** | 0 | 5/5 |
+| C — irrelevant control | **5/5** | 0 | 5/5 |
+
+**Ceiling. No separation measured.** The predicted condition-A regression
+(the replay04 1/3 behavior) did not appear anywhere: 15/15 candidates passed
+all ten hidden vectors including every backslash-knot vector.
+
+## Interpretation (hypothesis, not a sealed claim)
+
+**The two-turn protocol itself defused the knot.** Turn-1 plan-only
+elicitation caused **14 of 15 solvers to restate the rule commitment in their
+own plan** ("Key rule from packet: inside `[...]`, backslash is NOT an escape…"),
+and the 15th implemented it correctly regardless. Writing the constraint into
+one's own plan is self-administered resurfacing: by the time the boundary
+message arrived, every condition was effectively condition B.
+
+The honest contrast this run adds is therefore not A-vs-B but
+**protocol-shape**: same model, same packet, same work item —
+
+- single-turn, packet-at-boot, straight to code (replay04): **1/3**, misses on
+  the exact captured rule;
+- two-turn, plan-first (this run, pooled): **15/15**.
+
+That is a large measured effect of *making the solver rehearse the map before
+acting* — CART0's mechanism confirmed from an unexpected direction: decision-
+point resurfacing works even when the solver is the one who performs it, at
+plan time. What this run does NOT establish is the marginal value of
+protocol-delivered boundary messages once rehearsal has occurred (redundant
+here), nor anything about the 256-vs-4096-token resolution axis.
+
+This is LESSONS rule 11 operating at the protocol layer: spec guarantees can
+defuse a knot, and so can an elicitation step that invites the solver to
+recite the deciding constraint.
+
+## Next iteration (proposal only — GATED, operator review)
+
+To unmask the boundary variable, the next design must prevent plan-time
+rehearsal from saturating the effect: (a) single-turn with an absorbing
+prefix task (the original replay04 shape) and the condition message injected
+mid-stream; or (b) plan turn constrained to architecture-only with the
+constraint-recitation channel closed. Prediction to test: A regresses toward
+the 1/3 baseline while B holds ceiling.
+
+## What is NOT claimed
+
+- No waterline or known_corner writes; this directory is proposal-layer
+  evidence pending operator seal.
+- **Not a validated replay** for the capture ledger: same work instance as
+  replay04 (`count_matches`) — the same-instance rule forbids credit.
+- The 1/3-vs-15/15 contrast spans two sessions and prompt shapes; the
+  replay04 baseline's exact bytes were not re-run here (named confound, same
+  class as the bare-vs-packet wording confound already on the capture row).
+
+## Burden note (docs/burden-discipline.md)
+
+```text
+requested_outcome: record the A/B/C causal run as sealed proposal-layer evidence (ceiling; no separation)
+claimant: the 2026-07-11 driver session
+authority: pinned task02-derived hidden vectors (hidden_used/, byte-pinned) + CART0 contract design
+predicates: candidates sealed before grading; grader deterministic (2 runs each); key material verified naive-fails/reference-passes; solver quarantine held (tool_uses 0)
+burden_holder: this directory
+evidence: trials/*/ (raw, candidate, seal, grader output), grades_summary.json, turn prompts
+gap: A/B/C separation unmeasured (protocol saturated it); resolution axis untouched; baseline bytes not re-run
+closure_decision: held (pending operator review)
+failure_default: keep_open
+```

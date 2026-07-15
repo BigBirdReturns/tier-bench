@@ -1,0 +1,1 @@
+{"class":"negative","detail":{"clean_anchor_errors":6,"payload_count":6},"error":null,"expected":"REFUSE","id":"unsafe_control_paths","observed":"REFUSE","passed":true}
