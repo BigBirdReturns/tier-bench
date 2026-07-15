@@ -256,16 +256,25 @@ def run_hand(run_dir: Path, trial: str, arm: str, phase: str, model: str, effort
 
 def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_base: dict[str, Any]) -> dict[str, Any]:
     arm = "luna_spark_no_anchor" if no_anchor else "luna_spark_correct_anchor"
-    prelude = run_dir / trial / "split_prelude"; base = prelude / "base"; initialize_subject(base)
-    initial_packet = {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(base), "public_validator_catalog": public_catalog(), "remaining_budget": {"planner_calls": 3, "spark_calls": 3}}
-    first = invoke(prelude / "planner_initial" / "call", base, "gpt-5.6-luna", "high", "read-only", "planner", initial_packet, "planner.schema.json")
-    result: dict[str, Any] = {"planner_initial": first}
+    prelude = run_dir / trial / "split_prelude"; base = prelude / "base"
+    reuse = (prelude / "accepted_state").is_dir()
+    result: dict[str, Any] = {"prelude_reused": reuse}
     try:
-        anchor, crate1 = validate_planner(first["final_json"], tree_state(base), "derived_ledger_rollup_v2", trial, True)
-        hand1_work = prelude / "spark_hand_1" / "work"; copy_state(base, hand1_work)
-        hand1 = run_hand(run_dir, trial, "split_prelude", "spark_hand_1", "gpt-5.3-codex-spark", "low", "workspace-write", hand1_work, crate1, {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(hand1_work), "public_validator_catalog": public_catalog()})
-        result["spark_hand_1"] = hand1
-        accepted1 = prelude / "accepted_state"; result["accepted_hand_1"] = apply_hand(base, hand1_work, accepted1, {"src/ledger_stage.py", "data/normalized_ledger.json"}, hand1)
+        if not reuse:
+            initialize_subject(base)
+            initial_packet = {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(base), "public_validator_catalog": public_catalog(), "remaining_budget": {"planner_calls": 3, "spark_calls": 3}}
+            first = invoke(prelude / "planner_initial" / "call", base, "gpt-5.6-luna", "high", "read-only", "planner", initial_packet, "planner.schema.json")
+            result["planner_initial"] = first
+            anchor, crate1 = validate_planner(first["final_json"], tree_state(base), "derived_ledger_rollup_v2", trial, True)
+            hand1_work = prelude / "spark_hand_1" / "work"; copy_state(base, hand1_work)
+            hand1 = run_hand(run_dir, trial, "split_prelude", "spark_hand_1", "gpt-5.3-codex-spark", "low", "workspace-write", hand1_work, crate1, {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(hand1_work), "public_validator_catalog": public_catalog()})
+            result["spark_hand_1"] = hand1
+            accepted1 = prelude / "accepted_state"; result["accepted_hand_1"] = apply_hand(base, hand1_work, accepted1, {"src/ledger_stage.py", "data/normalized_ledger.json"}, hand1)
+            write(prelude / "anchor.json", canon(anchor))
+        else:
+            accepted1 = prelude / "accepted_state"
+            anchor = json.loads((prelude / "anchor.json").read_text(encoding="utf-8"))
+            hand1 = json.loads((prelude / "spark_hand_1" / "outcome.json").read_text(encoding="utf-8"))
         fork = run_dir / trial / arm; continuation_packet = {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(accepted1), "accepted_hand_1_receipt": hand1["final_json"], "public_validator_catalog": public_catalog(), "remaining_budget": {"planner_calls": 2, "spark_calls": 2}}
         if not no_anchor: continuation_packet["current_anchor"] = anchor
         cont = invoke(fork / "planner_continuation" / "call", accepted1, "gpt-5.6-luna", "high", "read-only", "planner", continuation_packet, "planner.schema.json")
