@@ -1,0 +1,1 @@
+{"class":"negative","detail":{},"error":"stale compile head in card admission","expected":"REFUSE","id":"stale_correctly_hashed_card","observed":"REFUSE","passed":true}

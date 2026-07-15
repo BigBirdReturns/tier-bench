@@ -1,0 +1,21 @@
+{
+  "schema": "tier-bench/cart0-independent-review-witness-manifest@1",
+  "review_report": {
+    "path_at_review": "C:/Users/BAM-Desktop/Documents/claude-cart0-profile-1-independent-test.txt",
+    "sha256": "9a75696089c7e7ef0e8fa11a75fb09e0ed905556cfe5c2223f63764654b844bb",
+    "verdict": "CHANGES_REQUESTED"
+  },
+  "witness_root_at_review": "C:/Users/BAM-Desktop/Documents/claude-cart0-verify-work/attacks",
+  "witnesses": [
+    {"file":"_summary.json","sha256":"ef48955f57d1b6f2f1257083683fa0c01dd1300482dc0e6f1cbe4c7be1d1a0fe"},
+    {"file":"attack_1_toctou_rehydrate.json","sha256":"a5502e13db46ecc84eb5ef219600d485c6adf5dbd2af7b30c457e5d55b2d5749","frozen_as":"rehydrate_head_drift"},
+    {"file":"attack_2_duplicate_json_keys.json","sha256":"0924c139ed9afdd2659a4a2e6df21d3df9e8ddfff039483b077ad920efa02426"},
+    {"file":"attack_3_unicode_casefold.json","sha256":"8d7433dac88a6a9bc0d1094576852372806fbfdd563aecccbdcf61b20dda5eb6"},
+    {"file":"attack_4_path_traversal_sweep.json","sha256":"5e49bd7245b366397fcd4a8c3572da88294600b08128e5f74d42774cf38c8487","frozen_as":"unsafe_control_paths"},
+    {"file":"attack_5_quarantine_delimiter_injection.json","sha256":"62e29f352084e7249d01b07326af10348e233c4cb643aac333381c3e416d4bdd","frozen_as":"quarantine_delimiter_hardening"},
+    {"file":"attack_6_review_receipt_replay.json","sha256":"29662adb9750b4ed70f3079902b3904df4896be75e6e7a2c20c0b8633a5478b2"},
+    {"file":"attack_7_evidence_paths_swap.json","sha256":"8fff5af8ec9e98165e310d9e8b1456991ca669a598cb43d50c8dff4bdf86d64f"},
+    {"file":"new_attacks.py","sha256":"f792500f02f8577c53c3c831502adaf82ceacd6f4df5816d152f200ad9ef66b3"}
+  ],
+  "preservation": "The external sealed files remain unchanged. This manifest binds their exact bytes and maps confirmed witnesses to additive local regression vectors."
+}

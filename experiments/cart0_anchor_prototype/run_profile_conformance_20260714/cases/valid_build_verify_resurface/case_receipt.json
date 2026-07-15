@@ -1,0 +1,1 @@
+{"class":"positive","detail":{"bundle_receipt_sha256":"160214c45a1a69cbdf400c427a30d7e8b1ac4d6496cf95deaae971d38e0dd6db"},"error":null,"expected":"PROCEED","id":"valid_build_verify_resurface","observed":"PROCEED","passed":true}

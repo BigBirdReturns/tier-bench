@@ -1,0 +1,37 @@
+REHYDRATED 010.100.CART0 r1 @ HEAD 88e5bfb49bc82b68c61ff402207b9e9abca9a150
+
+===== data/continuity/CART0_CONTRACT.md:L8-L29 sha256:b242b437cf4cdcbf6ac809a4bafd4de782a97887bcc4641f915e069882218dab =====
+**CART0 is the zero-resolution map that still preserves control** — the
+irreducible state required to continue without unlawfully rewriting what the
+expedition has already learned. It is not a memory document. It is a minimal
+deontic control surface with two coupled parts:
+
+```text
+CART0 projection:  minimum state required to orient the entrant
+CART0 gate:        reassert the applicable constraints before consequential transitions
+```
+
+## The projection (five elements)
+
+1. **Objective + current interpretation** — kept distinct, so mission
+   continuity and plan adaptation cannot be conflated.
+2. **Prohibitions + harvested constraints** — the operational value of dead
+   branches (residue) and GATED machinery.
+3. **Position fix** — current branch, its state, the one presently authorized
+   transition, and the authority that permits it.
+4. **Freshness commitment** — prevents a stale projection from impersonating
+   current authority.
+5. **Retrieval index** — full-resolution history available without keeping it
+   in the cognitive foreground.
+
+===== data/continuity/CART0_CONTRACT.md:L84-L93 sha256:f18533f88625e660e153ce56fe24748358bc4341b096506059e6d0096b198d95 =====
+- **Constraint dispatch is mechanical**: the transition class
+  (`capture_closure`, `candidate_sealing`, `blind_grading`, …) deterministically
+  selects the bound gates and residue constraints. The model receives the
+  result; it never decides what deserves remembering.
+
+> The mechanism, stated finally: a compact constraint map remains operational
+> only when the system binds each consequential transition to the applicable,
+> version-pinned gate and resurfaces that constraint for the authorized actor
+> at the moment of action. The model does not have to keep remembering; the
+> protocol has to keep refusing to forget.

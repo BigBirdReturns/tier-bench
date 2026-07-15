@@ -1,0 +1,56 @@
+{
+  "schema": "tier-bench/cart0-card-review-receipts@1",
+  "review_scope": "CART0-PROFILE-1 driver-lane deterministic test proposal",
+  "reviews": [
+    {
+      "review_id": "cart0-profile-1-authority-r1",
+      "card_id": "000.100.AUTHORITY",
+      "revision": 1,
+      "reviewer": "codex-sol-driver",
+      "review_state": "driver-reviewed",
+      "summary_sha256": "df38468e1cec97896be414c6b0dabde54eacf9663eeb8ad8a776f47178d8911c",
+      "source_span_sha256": [
+        "40d9554a08d0a1e223d1baf51bcae4b23e24aa116e31d8bdff98974c3dbc1d7b",
+        "696075fe8ad64fd1928968afcdd83f21a815c5bafcce235dac8612208f67b68f"
+      ],
+      "semantic_truth_proven": false
+    },
+    {
+      "review_id": "cart0-profile-1-gated-r1",
+      "card_id": "000.200.GATED",
+      "revision": 1,
+      "reviewer": "codex-sol-driver",
+      "review_state": "driver-reviewed",
+      "summary_sha256": "3a68d5e76bcf6ee7792d071bb71f09c35d8112c4038b78c9ada7754bc3ea0bf7",
+      "source_span_sha256": [
+        "41c3715683069e05774995da0a6a0064135215cbeee0ce8bcf7a2c0d3a5b5d78"
+      ],
+      "semantic_truth_proven": false
+    },
+    {
+      "review_id": "cart0-profile-1-contract-r1",
+      "card_id": "010.100.CART0",
+      "revision": 1,
+      "reviewer": "codex-sol-driver",
+      "review_state": "driver-reviewed",
+      "summary_sha256": "bff67e4b564246749300f004f8ac20a5cf3719271b3c447d55b3e63b57c501e9",
+      "source_span_sha256": [
+        "b242b437cf4cdcbf6ac809a4bafd4de782a97887bcc4641f915e069882218dab",
+        "f18533f88625e660e153ce56fe24748358bc4341b096506059e6d0096b198d95"
+      ],
+      "semantic_truth_proven": false
+    },
+    {
+      "review_id": "cart0-profile-1-layers-r1",
+      "card_id": "020.100.DESKTOP_LAYERS",
+      "revision": 1,
+      "reviewer": "codex-sol-driver",
+      "review_state": "driver-reviewed",
+      "summary_sha256": "ee9513a74b7108031841332d840a50e207ae8399b906ff5c9e681280d4a3b107",
+      "source_span_sha256": [
+        "a6a9070f2e7890250233b8ce68c8f25f3b8fa85fca17ab4972cb0d374c4d2adc"
+      ],
+      "semantic_truth_proven": false
+    }
+  ]
+}

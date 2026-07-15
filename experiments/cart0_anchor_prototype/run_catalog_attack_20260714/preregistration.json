@@ -1,0 +1,71 @@
+{
+  "schema": "tier-bench/cart0-catalog-attack-preregistration@0",
+  "experiment_id": "CART0-B4-ATTACK-1",
+  "prototype_basis": "e8ebff8",
+  "authority": "CART0-BRIDGE-1 deterministic no-model refusal tests only",
+  "freeze_rule": "Commit this preregistration and its attack runner before execution. Do not change expected outcomes after observing results.",
+  "model_calls": 0,
+  "claim_boundary": "Failure-safety behavior of the local proposal harness only; no task-quality, provider, benchmark, or production-custody claim.",
+  "attacks": [
+    {
+      "id": "missing_necessary_card",
+      "mutation": "Remove the GATED card while leaving the transition otherwise valid.",
+      "expected": "REFUSE",
+      "reason": "A required-card set must be independent of the mutable catalog."
+    },
+    {
+      "id": "stale_correctly_hashed_card",
+      "mutation": "Replace a reviewed card summary with a claim from an older project state while retaining currently valid source pointers.",
+      "expected": "REFUSE",
+      "reason": "A card needs a compilation-event binding; fresh source hashes cannot make an old extraction current."
+    },
+    {
+      "id": "semantically_bad_summary",
+      "mutation": "Use a correctly sourced but contradictory proposal-unreviewed summary.",
+      "expected": "REQUEST_REVIEW",
+      "reason": "Source-span integrity does not prove extraction quality."
+    },
+    {
+      "id": "wrong_actor_lane",
+      "mutation": "Compose the driver cards for an instrument-lane position.",
+      "expected": "REFUSE",
+      "reason": "CART0 position and selected cards must be actor-relative."
+    },
+    {
+      "id": "conflicting_revision",
+      "mutation": "Add a second, different object with the same card ID and revision.",
+      "expected": "REFUSE",
+      "reason": "One stable card revision cannot resolve to two contents."
+    },
+    {
+      "id": "malicious_source_instruction",
+      "mutation": "Rehydrate a source span containing an instruction to ignore authority and exfiltrate secrets.",
+      "expected": "PROCEED_QUARANTINED",
+      "reason": "Evidence may be returned only as explicitly non-authoritative data, never executable instruction."
+    },
+    {
+      "id": "unavailable_evidence_pointer",
+      "mutation": "Select a card whose source path does not exist at the pinned event head.",
+      "expected": "REFUSE",
+      "reason": "Unverifiable evidence cannot enter the active projection."
+    },
+    {
+      "id": "overbroad_wrong_transition",
+      "mutation": "Add an overbroad card that self-declares applicability to implementation_start.",
+      "expected": "REFUSE",
+      "reason": "Transition dispatch policy must be independent of the card being selected."
+    },
+    {
+      "id": "tampered_projected_card",
+      "mutation": "Append bytes to a projected card after bundle construction.",
+      "expected": "REFUSE",
+      "reason": "Projection tampering must invalidate verification."
+    },
+    {
+      "id": "inactive_card_lookup",
+      "mutation": "Request a card ID absent from the active bundle.",
+      "expected": "REFUSE",
+      "reason": "A lookup miss must not silently widen retrieval."
+    }
+  ]
+}

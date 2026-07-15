@@ -1,0 +1,1 @@
+{"class":"negative","detail":{},"error":"actor/lane mismatch: lane is not allowed","expected":"REFUSE","id":"wrong_actor_lane","observed":"REFUSE","passed":true}

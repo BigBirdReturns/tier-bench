@@ -1,0 +1,1 @@
+{"class":"negative","detail":{},"error":"card projection drifted: 000.100.TEST.r1.md","expected":"REFUSE","id":"tampered_projected_card","observed":"REFUSE","passed":true}

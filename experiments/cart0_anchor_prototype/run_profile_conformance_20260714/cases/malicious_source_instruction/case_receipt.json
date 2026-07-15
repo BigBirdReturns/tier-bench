@@ -1,0 +1,1 @@
+{"class":"positive_safety","detail":{"rehydrated_sha256":"0189023a4af4bc55354d142f5f9f2437c66c7e368dca8bbc03f719c5cc8437ee"},"error":null,"expected":"PROCEED_QUARANTINED","id":"malicious_source_instruction","observed":"PROCEED_QUARANTINED","passed":true}

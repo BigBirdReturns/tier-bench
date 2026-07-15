@@ -1,0 +1,34 @@
+{
+  "schema": "tier-bench/cart0-anchor-spec@0",
+  "anchor_id": "cart0-token-saver-today",
+  "objective": "Save prompt tokens today: replace repeated repo briefing with a verifiable task anchor.",
+  "interpretation": "Opt-in payload test only; not a context-window or quality proof.",
+  "constraints": [
+    "No gated grader, criterion, task, hidden vector, ledger, or cost changes.",
+    "No model, pilot, activation, or canary dispatch.",
+    "Prompt-size results imply no quality, benchmark, or scientific gain.",
+    "Refuse HEAD, tool, spec, evidence, or anchor drift."
+  ],
+  "position": {
+    "principal": "codex-sol",
+    "role": "implementation",
+    "lane": "driver",
+    "branch": "codex/cart0-anchor-prototype",
+    "state": "CART0-PROFILE-1 independent retest passed; merge and CI pending"
+  },
+  "authorized_transition": "Repair the deterministic bridge, freeze conformance vectors, and seal zero-model receipts.",
+  "authority": "Operator authorization + claimed CART0-PROFILE-1 row; no providers, models, or gated changes.",
+  "resurface_at": [
+    "implementation_start",
+    "before_commit",
+    "handoff",
+    "recovery"
+  ],
+  "evidence_paths": [
+    "AGENTS.md",
+    "docs/agents/QUEUE.md",
+    "data/continuity/CART0_CONTRACT.md",
+    "docs/THE-RECURRING-DEFECT.md",
+    "experiments/breadth/run/abc_causal_task02_20260711/RESULTS.md"
+  ]
+}

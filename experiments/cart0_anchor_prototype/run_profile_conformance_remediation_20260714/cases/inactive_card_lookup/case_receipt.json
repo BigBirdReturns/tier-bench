@@ -1,0 +1,1 @@
+{"class":"negative","detail":{},"error":"retrieval miss: card '999.999.MISSING' is not active","expected":"REFUSE","id":"inactive_card_lookup","observed":"REFUSE","passed":true}

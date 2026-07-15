@@ -1,0 +1,1 @@
+{"class":"negative","detail":{},"error":"catalog must contain between one and 64 revisions","expected":"REFUSE","id":"missing_necessary_card","observed":"REFUSE","passed":true}

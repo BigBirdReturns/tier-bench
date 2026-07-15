@@ -1,0 +1,1 @@
+{"cards":[{"card_id":"000.100.TEST","revision":1,"sources":[{"end_line":2,"path":"MISSING.md","start_line":1}],"summary":"The current objective and constraints are source-bound.","supersedes":null,"token_budget":128}],"catalog_id":"fixture","schema":"tier-bench/cart0-card-catalog@1"}
