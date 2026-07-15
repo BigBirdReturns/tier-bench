@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "t3_accrual_crossover_001",
+  "source_commit": "489ba8f53cae513d4a803561deae24a8d5c3eff4",
+  "manifest_path": "tasks/t3_accrual_crossover_001.json",
+  "manifest_sha256": "fadd3d79d7a3ba71d0877573e314f7900e9b5e5b56ddd64bdb50cf1ea21f29df",
+  "packet_sha256": "a05cb19d874d88daa825b97b24444028902647b93afbe30063933efed5e158a4",
+  "prompt_sha256": "6b0937378a9866c9c1b31e7a6e496c52f185ce0b977180d440e379464b6929ec",
+  "hidden_graders": [
+    {
+      "path": "fixtures/t3_accrual_crossover_001/hidden_tests.py",
+      "sha256": "397804c9d778683f24ffcc2eb51fc5b865602772793ec0eb0a9cae22ecc5cfb9"
+    }
+  ],
+  "solver_scope": "<SOLVER_SCOPE>",
+  "peer_conclusions_included": false
+}
