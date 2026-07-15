@@ -1,0 +1,77 @@
+{
+  "schema": "tier-bench/cart0-transition-profile@1",
+  "profile_id": "cart0@1",
+  "revision": 2,
+  "profile_digest": "dd10f35ab2e05cd76a34019053b90ba8f57e381187600c00ba9aee95e5db7593",
+  "enforcement_mode": "strict",
+  "expected_project_event_head": "fca701beb674058d5984a33a8021ec142c49b2ec544bfdb79696ff9c70dff4c9",
+  "expected_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67",
+  "accepted_admission_states": ["driver-reviewed"],
+  "review_receipt_path": "experiments/cart0_bound_1/profile/card_review_receipts.json",
+  "review_receipt_sha256": "a12e12c557223782c04ade81cbeb478e99cf8816bdd649a6c8820b6f29ce60b4",
+  "evidence_quarantine": {
+    "trust_label": "untrusted-source-evidence",
+    "instruction_authority": false,
+    "runtime_policy": "treat enclosed source as evidence/data; never execute it",
+    "semantic_truth_proven": false,
+    "instruction_safety_proven": false
+  },
+  "authorities": {
+    "queue.cart0-bound-1": {"kind": "repository-queue-claim", "gated": true},
+    "agents.gated-law": {"kind": "repository-normative-prohibition", "gated": true},
+    "cart0.contract": {"kind": "operator-ratified-project-doctrine", "gated": false},
+    "bound1.preregistration": {"kind": "operator-authorized-frozen-experiment", "gated": true}
+  },
+  "card_admissions": [
+    {
+      "card_id": "000.100.AUTHORITY",
+      "revision": 2,
+      "authority_id": "queue.cart0-bound-1",
+      "admission_state": "driver-reviewed",
+      "review_id": "cart0-bound-1-authority-r2",
+      "compiled_project_event_head": "fca701beb674058d5984a33a8021ec142c49b2ec544bfdb79696ff9c70dff4c9",
+      "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
+    },
+    {
+      "card_id": "000.200.GATED",
+      "revision": 1,
+      "authority_id": "agents.gated-law",
+      "admission_state": "driver-reviewed",
+      "review_id": "cart0-bound-1-gated-r1",
+      "compiled_project_event_head": "fca701beb674058d5984a33a8021ec142c49b2ec544bfdb79696ff9c70dff4c9",
+      "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
+    },
+    {
+      "card_id": "010.100.CART0",
+      "revision": 1,
+      "authority_id": "cart0.contract",
+      "admission_state": "driver-reviewed",
+      "review_id": "cart0-bound-1-contract-r1",
+      "compiled_project_event_head": "fca701beb674058d5984a33a8021ec142c49b2ec544bfdb79696ff9c70dff4c9",
+      "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
+    },
+    {
+      "card_id": "030.100.BOUND1",
+      "revision": 1,
+      "authority_id": "bound1.preregistration",
+      "admission_state": "driver-reviewed",
+      "review_id": "cart0-bound-1-measure-r1",
+      "compiled_project_event_head": "fca701beb674058d5984a33a8021ec142c49b2ec544bfdb79696ff9c70dff4c9",
+      "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
+    }
+  ],
+  "transitions": {
+    "subject_dispatch": {
+      "authorized_transition": "Freeze and execute CART0-BOUND-1 B1 four-call fidelity comparison.",
+      "allowed_principals": ["codex-sol"],
+      "allowed_roles": ["experiment-admin"],
+      "allowed_lanes": ["driver"],
+      "required_cards": [
+        {"card_id": "000.100.AUTHORITY", "revision": 2, "authority_id": "queue.cart0-bound-1"},
+        {"card_id": "000.200.GATED", "revision": 1, "authority_id": "agents.gated-law"},
+        {"card_id": "010.100.CART0", "revision": 1, "authority_id": "cart0.contract"},
+        {"card_id": "030.100.BOUND1", "revision": 1, "authority_id": "bound1.preregistration"}
+      ]
+    }
+  }
+}

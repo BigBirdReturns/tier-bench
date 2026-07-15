@@ -12,7 +12,9 @@ data/control-results/** -text -whitespace
 experiments/breadth/run/replays/** -text -whitespace
 experiments/breadth/run/task02_edge_family.md -text -whitespace
 experiments/cart0_anchor_prototype/** -text -whitespace
+experiments/cart0_bound_1/** -text -whitespace
 scripts/cart0_anchor.py -text -whitespace
+scripts/cart0_bound1.py -text -whitespace
 docs/cart0-anchor-prototype.md -text -whitespace
 
 # Activated pilot execution sources are compared byte-for-byte at runtime.

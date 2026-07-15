@@ -1,0 +1,56 @@
+{
+  "schema": "tier-bench/cart0-card-review-receipts@1",
+  "review_scope": "CART0-BOUND-1 driver-lane B1 preregistration; semantic truth and instruction safety remain unproven",
+  "reviews": [
+    {
+      "review_id": "cart0-bound-1-authority-r2",
+      "card_id": "000.100.AUTHORITY",
+      "revision": 2,
+      "reviewer": "codex-sol-driver",
+      "review_state": "driver-reviewed",
+      "summary_sha256": "cb0a666e35427ee101aeab4e97bcf54cf350f1b739eb3ff28728550809c24e69",
+      "source_span_sha256": [
+        "40d9554a08d0a1e223d1baf51bcae4b23e24aa116e31d8bdff98974c3dbc1d7b",
+        "fdd0d26ca67a68fb124cfb0a25e198ad759cbb91b61441e2e59e140d954c0ff1"
+      ],
+      "semantic_truth_proven": false
+    },
+    {
+      "review_id": "cart0-bound-1-gated-r1",
+      "card_id": "000.200.GATED",
+      "revision": 1,
+      "reviewer": "codex-sol-driver",
+      "review_state": "driver-reviewed",
+      "summary_sha256": "05185ab85df81475bcaf1cc1df99742c2b97747a487f1ca08f32447180cc5bdd",
+      "source_span_sha256": [
+        "41c3715683069e05774995da0a6a0064135215cbeee0ce8bcf7a2c0d3a5b5d78"
+      ],
+      "semantic_truth_proven": false
+    },
+    {
+      "review_id": "cart0-bound-1-contract-r1",
+      "card_id": "010.100.CART0",
+      "revision": 1,
+      "reviewer": "codex-sol-driver",
+      "review_state": "driver-reviewed",
+      "summary_sha256": "db382bee63f2e22e6c7efe58f90e5de7ab21e15df78db75589c1396fcd6471ee",
+      "source_span_sha256": [
+        "b242b437cf4cdcbf6ac809a4bafd4de782a97887bcc4641f915e069882218dab",
+        "f18533f88625e660e153ce56fe24748358bc4341b096506059e6d0096b198d95"
+      ],
+      "semantic_truth_proven": false
+    },
+    {
+      "review_id": "cart0-bound-1-measure-r1",
+      "card_id": "030.100.BOUND1",
+      "revision": 1,
+      "reviewer": "codex-sol-driver",
+      "review_state": "driver-reviewed",
+      "summary_sha256": "0d424eb52143144b226c72ea1c23e1d3676257cdc73f46859fe71c517af53e8a",
+      "source_span_sha256": [
+        "49b7ae77cd7c0b3ff130dd648387d8df47a3e63707b60b426dfd310d57209464"
+      ],
+      "semantic_truth_proven": false
+    }
+  ]
+}
