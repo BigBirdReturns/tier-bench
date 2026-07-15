@@ -283,8 +283,14 @@ def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_bas
 
 def grade_candidate(candidate: str | None, out_dir: Path) -> dict[str, Any]:
     if not candidate: return {"outcome": "NOT_RUN_NO_CANDIDATE"}
-    result = run([sys.executable, str(PRIVATE / "hidden_grader.py"), candidate], ROOT, 180)
-    receipt = {"outcome": "pass" if result.returncode == 0 else "fail", "returncode": result.returncode, "stdout": result.stdout.decode(errors="replace"), "stderr": result.stderr.decode(errors="replace"), "candidate_state_sha256": tree_state(Path(candidate))}
+    source = Path(candidate)
+    sealed_state = tree_state(source)
+    grading_copy = out_dir / "external_grading_copy"
+    shutil.copytree(source, grading_copy, ignore=shutil.ignore_patterns(".git"))
+    result = run([sys.executable, str(PRIVATE / "hidden_grader.py"), str(grading_copy)], ROOT, 180)
+    receipt = {"outcome": "pass" if result.returncode == 0 else "fail", "returncode": result.returncode, "stdout": result.stdout.decode(errors="replace"), "stderr": result.stderr.decode(errors="replace"), "candidate_state_sha256": sealed_state, "candidate_state_sha256_after": tree_state(source), "grading_copy_state_sha256": tree_state(grading_copy)}
+    if receipt["candidate_state_sha256"] != receipt["candidate_state_sha256_after"]:
+        raise RuntimeError("hidden grading mutated sealed candidate")
     write(out_dir / "hidden_grade.json", canon(receipt)); return receipt
 
 def main() -> int:
