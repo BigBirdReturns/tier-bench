@@ -239,7 +239,7 @@ def extract_base(source: bytes, name: str) -> bytes:
     m = re.search(rf"{name}_BEGIN\n(.*?){name}_END\n", text, re.S)
     if not m:
         raise RuntimeError(f"missing base prompt {name}")
-    return m.group(1).encode()
+    return (m.group(1).rstrip("\r\n") + "\n").encode()
 
 def hidden_grader_source() -> str:
     cases = json.dumps(CASES, sort_keys=True, separators=(",", ":"))

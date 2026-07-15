@@ -131,7 +131,7 @@ def invoke(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, bas
     call_dir.mkdir(parents=True, exist_ok=True)
     base = (PROMPTS / f"{base_name}_base.txt").read_bytes()
     packet_bytes = canon(packet)
-    prompt = base + b"\n" + b"\nINPUT_PACKET_JSON_BEGIN\n" + packet_bytes + b"INPUT_PACKET_JSON_END\n"
+    prompt = base + b"\nINPUT_PACKET_JSON_BEGIN\n" + packet_bytes + b"INPUT_PACKET_JSON_END\n"
     prompt_path = call_dir / "prompt.txt"; write(prompt_path, prompt)
     schema_path = SCHEMAS / schema_name
     final_path = call_dir / "final.json"
