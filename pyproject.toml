@@ -15,6 +15,7 @@ dev = ["ruff>=0.6.0"]
 
 [project.scripts]
 capability-harness = "capability_harness.__main__:main"
+tier = "tier_runner.cli:main"
 
 [build-system]
 requires = ["setuptools>=61"]
@@ -22,7 +23,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 # Ship the harness as an importable package; the benchmark itself stays script-run.
-packages = ["capability_harness"]
+packages = ["capability_harness", "tier_runner", "tier_runner.adapters"]
 
 [tool.ruff]
 line-length = 100

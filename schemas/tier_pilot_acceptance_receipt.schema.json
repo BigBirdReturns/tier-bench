@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_acceptance_receipt.schema.json",
+  "title": "tier pilot immutable acceptance receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "receipt_sha256", "task_id", "arm", "attempt",
+    "causal_call_id", "base_commit", "command", "command_sha256",
+    "candidate_patch_sha256", "candidate_tree_sha256", "exit_code", "passed",
+    "report", "report_sha256", "stdout_sha256", "stderr_sha256",
+    "tool_versions", "recorded_at"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/tier-pilot-acceptance-receipt@1"},
+    "receipt_sha256": {"$ref": "#/$defs/sha256"},
+    "task_id": {"type": "string", "minLength": 1},
+    "arm": {"enum": ["arm_a", "arm_b", "arm_c"]},
+    "attempt": {"type": "integer", "minimum": 1},
+    "causal_call_id": {"type": "string", "minLength": 1},
+    "base_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "command": {"type": "string", "minLength": 1},
+    "command_sha256": {"$ref": "#/$defs/sha256"},
+    "candidate_patch_sha256": {"$ref": "#/$defs/sha256"},
+    "candidate_tree_sha256": {"$ref": "#/$defs/sha256"},
+    "exit_code": {"type": "integer"},
+    "passed": {"type": "boolean"},
+    "report": {"type": "string", "minLength": 1},
+    "report_sha256": {"$ref": "#/$defs/sha256"},
+    "stdout_sha256": {"$ref": "#/$defs/sha256"},
+    "stderr_sha256": {"$ref": "#/$defs/sha256"},
+    "tool_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "recorded_at": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}

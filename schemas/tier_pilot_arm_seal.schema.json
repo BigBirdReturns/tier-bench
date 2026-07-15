@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_arm_seal.schema.json",
+  "title": "Pilot arm final evidence seal (GATED proposal)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "task_id", "arm", "base_commit", "sequence", "position", "sealed_at", "final_state", "protocol_valid", "composition_state_sha256", "question_receipt_sha256s", "driver_trace_sha256"],
+  "properties": {
+    "schema": {"const": "tier-bench/pilot-arm-seal@1"},
+    "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "arm": {"enum": ["arm_a", "arm_b", "arm_c"]},
+    "base_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sequence": {"type": "integer", "minimum": 1, "maximum": 30},
+    "position": {"type": "integer", "minimum": 1, "maximum": 3},
+    "sealed_at": {"type": "string", "format": "date-time"},
+    "final_state": {"enum": ["ACCEPTED", "REJECTED", "ERROR"]},
+    "protocol_valid": {"type": "boolean"},
+    "composition_state_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "question_receipt_sha256s": {"type": "array", "items": {"type": "string", "pattern": "^[0-9a-f]{64}$"}},
+    "driver_trace_sha256": {
+      "oneOf": [
+        {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        {"type": "null"}
+      ]
+    }
+  }
+}

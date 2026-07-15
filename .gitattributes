@@ -14,3 +14,18 @@ experiments/breadth/run/task02_edge_family.md -text -whitespace
 experiments/cart0_anchor_prototype/** -text -whitespace
 scripts/cart0_anchor.py -text -whitespace
 docs/cart0-anchor-prototype.md -text -whitespace
+
+# Activated pilot execution sources are compared byte-for-byte at runtime.
+# Force LF in both Git and the worktree so newline normalization cannot hide
+# behavior-changing CRLF inside string literals.
+tier_runner/__init__.py text eol=lf
+tier_runner/pilot_activation.py text eol=lf
+tier_runner/pilot_adapter.py text eol=lf
+tier_runner/pilot_bridge.py text eol=lf
+tier_runner/adapters/__init__.py text eol=lf
+tier_runner/adapters/claude_code.py text eol=lf
+tier_runner/pilot_composition.py text eol=lf
+tier_runner/pilot_manifest.py text eol=lf
+tier_runner/core.py text eol=lf
+tier_runner/manifest.py text eol=lf
+tier_runner/events.py text eol=lf

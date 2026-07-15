@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_run_receipt.schema.json",
+  "title": "tier run receipt",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema", "run_id", "state", "started_at", "completed_at", "task_id", "task",
+    "repo", "base_commit", "arm", "files", "acceptance_command", "backend_manifest",
+    "prompt_template", "artifacts", "errors", "worktree_removed", "packet_removed"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/tier-run-receipt@1"},
+    "run_id": {"type": "string", "minLength": 1},
+    "state": {"enum": ["ACCEPTED", "REJECTED", "ERROR"]},
+    "task_id": {"type": "string", "minLength": 1},
+    "base_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "arm": {"enum": ["arm_a", "arm_b", "arm_c"]},
+    "files": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "errors": {"type": "array", "items": {"type": "string"}},
+    "worktree_removed": {"type": "boolean"},
+    "packet_removed": {"type": "boolean"},
+    "artifacts": {
+      "type": "object",
+      "required": [
+        "backend_manifest", "dispatch_receipt", "patch", "prompt", "prompt_template"
+      ],
+      "properties": {
+        "backend_manifest": {"$ref": "#/$defs/artifact"},
+        "dispatch_receipt": {"$ref": "#/$defs/artifact"},
+        "backend_result": {"$ref": "#/$defs/artifact"},
+        "ledger": {"$ref": "#/$defs/artifact"},
+        "patch": {"$ref": "#/$defs/artifact"},
+        "prompt": {"$ref": "#/$defs/artifact"},
+        "prompt_template": {"$ref": "#/$defs/artifact"}
+      }
+    }
+  },
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    }
+  }
+}

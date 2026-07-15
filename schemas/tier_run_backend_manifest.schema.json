@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_run_backend_manifest.schema.json",
+  "title": "tier run frozen backend manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "protocol_commit", "isolation", "tool_versions", "prompt_templates", "arms"],
+  "properties": {
+    "schema": {"const": "tier-bench/pilot-backends@1"},
+    "protocol_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "isolation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["fresh_session_per_call", "instruction_files", "auto_memory", "conversation_carryover"],
+      "properties": {
+        "fresh_session_per_call": {"const": true},
+        "instruction_files": {"const": false},
+        "auto_memory": {"const": false},
+        "conversation_carryover": {"const": false}
+      }
+    },
+    "tool_versions": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {"type": "string", "minLength": 1}
+    },
+    "prompt_templates": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    },
+    "arms": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["model_id", "effort", "surface", "cost_basis", "account", "tier", "prompt_template", "adapter"],
+        "properties": {
+          "model_id": {"type": "string", "minLength": 1},
+          "effort": {"type": "string"},
+          "surface": {"type": "string", "minLength": 1},
+          "cost_basis": {"enum": ["real-billed", "shadow-estimated", "subscription-derived"]},
+          "account": {"type": "string", "minLength": 1},
+          "tier": {"type": "string", "minLength": 1},
+          "prompt_template": {"type": "string", "minLength": 1},
+          "adapter": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["command"],
+            "properties": {
+              "command": {
+                "type": "array",
+                "minItems": 1,
+                "items": {"type": "string", "minLength": 1}
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

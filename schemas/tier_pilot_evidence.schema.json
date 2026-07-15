@@ -1,0 +1,195 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_evidence.schema.json",
+  "title": "Driver-boundary pilot administration evidence (GATED proposal)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "pilot_id",
+    "plan_sha256",
+    "backend_manifest",
+    "intervention_log",
+    "arm_runs",
+    "voids",
+    "audit_seed_reveal_hex",
+    "audits",
+    "cost_reconciliation",
+    "operator_authorization"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/tier-pilot-evidence@1"},
+    "pilot_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "plan_sha256": {"$ref": "#/$defs/sha256"},
+    "backend_manifest": {"$ref": "#/$defs/artifact"},
+    "intervention_log": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "head_sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "head_sha256": {
+          "oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]
+        }
+      }
+    },
+    "arm_runs": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/arm_run"}},
+    "voids": {"type": "array", "maxItems": 10, "items": {"$ref": "#/$defs/void"}},
+    "audit_seed_reveal_hex": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "audits": {"type": "array", "maxItems": 10, "items": {"$ref": "#/$defs/audit"}},
+    "cost_reconciliation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["account", "billed_usd", "bill", "provider_artifact"],
+        "properties": {
+          "account": {"type": "string", "minLength": 1},
+          "billed_usd": {"type": "number", "minimum": 0},
+          "bill": {"$ref": "#/$defs/artifact"},
+          "provider_artifact": {"$ref": "#/$defs/artifact"}
+        }
+      }
+    },
+    "operator_authorization": {"$ref": "#/$defs/git_artifact"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "git_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "git_proof": {
+      "type": "object", "additionalProperties": false,
+      "required": ["commit_oid", "path", "blob_oid", "anchor_commit_oid"],
+      "properties": {
+        "commit_oid": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+        "path": {"type": "string", "minLength": 1},
+        "blob_oid": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"},
+        "anchor_commit_oid": {"type": "string", "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"}
+      }
+    },
+    "git_artifact": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "sha256", "git_proof"],
+      "properties": {"path": {"type": "string", "minLength": 1}, "sha256": {"$ref": "#/$defs/sha256"}, "git_proof": {"$ref": "#/$defs/git_proof"}}
+    },
+    "arm_run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id", "arm", "sequence", "position", "base_commit", "sealed_at", "final_state",
+        "protocol_valid", "composition_state", "arm_seal", "call_receipts",
+        "dispatch_receipts", "provider_receipts", "acceptance_receipts",
+        "question_receipts", "driver_trace", "ledger"
+      ],
+      "properties": {
+        "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+        "arm": {"enum": ["arm_a", "arm_b", "arm_c"]},
+        "sequence": {"type": "integer", "minimum": 1, "maximum": 30},
+        "position": {"type": "integer", "minimum": 1, "maximum": 3},
+        "base_commit": {"$ref": "#/$defs/git_sha"},
+        "sealed_at": {"type": "string", "format": "date-time"},
+        "final_state": {"enum": ["ACCEPTED", "REJECTED", "ERROR"]},
+        "protocol_valid": {"type": "boolean"},
+        "composition_state": {"$ref": "#/$defs/artifact"},
+        "arm_seal": {"$ref": "#/$defs/artifact"},
+        "call_receipts": {
+          "type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}
+        },
+        "dispatch_receipts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/artifact"}
+        },
+        "provider_receipts": {
+          "type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}
+        },
+        "acceptance_receipts": {
+          "type": "array", "items": {"$ref": "#/$defs/artifact"}
+        },
+        "question_receipts": {
+          "type": "array", "items": {"$ref": "#/$defs/artifact"}
+        },
+        "driver_trace": {
+          "oneOf": [{"$ref": "#/$defs/artifact"}, {"type": "null"}]
+        },
+        "ledger": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "void": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["task_id", "authority", "reason_code", "trigger_refs"], "properties": {
+          "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"}, "authority": {"const": "derived"}, "reason_code": {"$ref": "#/$defs/void_reason"}, "trigger_refs": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+        }},
+        {"type": "object", "additionalProperties": false, "required": ["task_id", "authority", "reason_code", "evidence_refs", "ratification"], "properties": {
+          "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"}, "authority": {"const": "ratified"}, "reason_code": {"$ref": "#/$defs/void_reason"}, "evidence_refs": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/artifact"}}, "ratification": {"$ref": "#/$defs/git_artifact"}
+        }}
+      ]
+    },
+    "void_reason": {
+      "enum": [
+        "cross_arm_exposure", "intervention_log_invalid", "ledger_incomplete",
+        "manifest_drift", "metric_changed", "missing_telemetry",
+        "schedule_deviation", "task_definition_changed", "unblinded_audit",
+        "untracked_operator_work", "other_protocol_fault"
+      ]
+    },
+    "legacy_void_removed": {
+      "type": "object",
+      "properties": {
+        "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+        "reason_code": {
+          "enum": [
+            "cross_arm_exposure", "intervention_log_invalid", "ledger_incomplete",
+            "manifest_drift", "metric_changed", "missing_telemetry",
+            "schedule_deviation", "task_definition_changed", "unblinded_audit",
+            "untracked_operator_work", "other_protocol_fault"
+          ]
+        },
+        "detail": {"type": "string", "minLength": 1},
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "evidence": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opaque_label", "repository_ci", "scope_ok", "operator_accepted",
+        "escaped_defects"
+      ],
+      "properties": {
+        "opaque_label": {"type": "string", "pattern": "^audit-[0-9a-f]{20}$"},
+        "repository_ci": {"type": "boolean"},
+        "scope_ok": {"type": "boolean"},
+        "operator_accepted": {"type": "boolean"},
+        "escaped_defects": {"type": "integer", "minimum": 0}
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id", "final_arm_sealed_at", "followup_closes_at", "withheld_audit",
+        "normalized_inputs", "score_commitment", "mapping_reveal"
+      ],
+      "properties": {
+        "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+        "withheld_audit": {"$ref": "#/$defs/artifact"},
+        "final_arm_sealed_at": {"type": "string", "format": "date-time"},
+        "followup_closes_at": {"type": "string", "format": "date-time"},
+        "normalized_inputs": {"$ref": "#/$defs/git_artifact"},
+        "score_commitment": {"$ref": "#/$defs/git_artifact"},
+        "mapping_reveal": {"$ref": "#/$defs/git_artifact"}
+      }
+    }
+  }
+}

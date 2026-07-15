@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_authorization.schema.json",
+  "title": "Operator authorization for exact driver-boundary pilot bytes",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "pilot_id", "plan_sha256", "backend_manifest_sha256",
+    "protocol_commit", "authority", "authorized", "ratified_at"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/tier-pilot-authorization@1"},
+    "pilot_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "plan_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "backend_manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "protocol_commit": {"const": "076fd1e3d97c22f7c33933c5dee4ff897d7ba4e6"},
+    "authority": {"const": "operator"},
+    "authorized": {"const": true},
+    "ratified_at": {"type": "string", "format": "date-time"}
+  }
+}

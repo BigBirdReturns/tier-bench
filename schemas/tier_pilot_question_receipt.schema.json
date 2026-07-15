@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/tier_pilot_question_receipt.schema.json",
+  "title": "tier pilot Arm-C operator question receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema", "question_id", "task_id", "arm", "intervention_id",
+    "asked_at", "answered_at", "question_sha256", "answer_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/tier-pilot-question-receipt@1"},
+    "question_id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "task_id": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+$"},
+    "arm": {"const": "arm_c"},
+    "intervention_id": {"type": "string", "format": "uuid"},
+    "asked_at": {"type": "string", "format": "date-time"},
+    "answered_at": {"type": "string", "format": "date-time"},
+    "question_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "answer_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  }
+}
