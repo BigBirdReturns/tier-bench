@@ -2,13 +2,13 @@
   "schema": "tier-bench/cart0-transition-profile@1",
   "profile_id": "cart0@1",
   "revision": 1,
-  "profile_digest": "2967482971717d6906bf958eafeb6a579f417955135333f0e75b1d48fcca7124",
+  "profile_digest": "6d85f5a4cac7c06b1ff376205e9898ef201f8c2c3d3673c21e47498fd668827a",
   "enforcement_mode": "strict",
-  "expected_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+  "expected_project_event_head": "c4c0c25d297bc8ce30c11ab9f305c29e5080d6407a02b92d50bf134385f6ab7f",
   "expected_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67",
   "accepted_admission_states": ["driver-reviewed"],
   "review_receipt_path": "experiments/cart0_anchor_prototype/card_review_receipts.json",
-  "review_receipt_sha256": "b841b8951311af2dc1a310b04c6d9f2bb9eef275a417a910e3ca103a59cabbab",
+  "review_receipt_sha256": "fb2809c7d6b634335dd315b5a5d493a38b7422acdd84c5ecbece09c8f6e32cbe",
   "evidence_quarantine": {
     "trust_label": "untrusted-source-evidence",
     "instruction_authority": false,
@@ -27,28 +27,28 @@
       "card_id": "000.100.AUTHORITY", "revision": 1,
       "authority_id": "queue.cart0-profile-1", "admission_state": "driver-reviewed",
       "review_id": "cart0-profile-1-authority-r1",
-      "compiled_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+      "compiled_project_event_head": "c4c0c25d297bc8ce30c11ab9f305c29e5080d6407a02b92d50bf134385f6ab7f",
       "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
     },
     {
       "card_id": "000.200.GATED", "revision": 1,
       "authority_id": "agents.gated-law", "admission_state": "driver-reviewed",
       "review_id": "cart0-profile-1-gated-r1",
-      "compiled_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+      "compiled_project_event_head": "c4c0c25d297bc8ce30c11ab9f305c29e5080d6407a02b92d50bf134385f6ab7f",
       "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
     },
     {
       "card_id": "010.100.CART0", "revision": 1,
       "authority_id": "cart0.contract", "admission_state": "driver-reviewed",
       "review_id": "cart0-profile-1-contract-r1",
-      "compiled_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+      "compiled_project_event_head": "c4c0c25d297bc8ce30c11ab9f305c29e5080d6407a02b92d50bf134385f6ab7f",
       "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
     },
     {
       "card_id": "020.100.DESKTOP_LAYERS", "revision": 1,
       "authority_id": "desktop.layers", "admission_state": "driver-reviewed",
       "review_id": "cart0-profile-1-layers-r1",
-      "compiled_project_event_head": "2fc46660c9740ed1b32a3eb8bdc4a82bd930d4734fc5793ddf2e81c0e9d7acc8",
+      "compiled_project_event_head": "c4c0c25d297bc8ce30c11ab9f305c29e5080d6407a02b92d50bf134385f6ab7f",
       "compiled_reducer_digest": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
     }
   ],
