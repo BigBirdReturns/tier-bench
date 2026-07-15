@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $expectedCommit = "a30ca1a3509b11cae601e2fd5968440c9133a9ab"
-$historicalB0Commit = "7805ec5671046d72da1fdf8c16460ef6d0d7dfcf"
+$historicalB0Commit = "133fdf14177e3fded0250a7953f8ac1ed941df4c"
 $bundle = Join-Path $PSScriptRoot "repository.bundle"
 $treeZip = Join-Path $PSScriptRoot "tested-tree.zip"
 $sums = Join-Path $PSScriptRoot "SHA256SUMS"
