@@ -24,12 +24,11 @@ foreach ($line in Get-Content -LiteralPath $sums) {
     if ($actual -ne $parts[0]) { throw "SHA-256 mismatch for $($parts[1])" }
 }
 
-& git bundle verify $bundle
-if ($LASTEXITCODE -ne 0) { throw "git bundle verify failed" }
-
 $repo = Join-Path $Scratch "repo"
 & git clone --no-local $bundle $repo
 if ($LASTEXITCODE -ne 0) { throw "git clone from bundle failed" }
+& git -C $repo bundle verify $bundle
+if ($LASTEXITCODE -ne 0) { throw "git bundle verify failed" }
 & git -C $repo checkout --detach $expectedCommit
 if ($LASTEXITCODE -ne 0) { throw "tested commit checkout failed" }
 if ((& git -C $repo rev-parse HEAD).Trim() -ne $expectedCommit) { throw "tested commit mismatch" }
