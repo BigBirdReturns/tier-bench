@@ -1,0 +1,96 @@
+{
+  "schema": "tier-bench/cart0-transition-profile@1",
+  "profile_id": "cart0@1",
+  "revision": 1,
+  "profile_digest": "c35939cc790c898c88dc977a601e06f50492b212d8aaa2f96a467b2a09264dc8",
+  "enforcement_mode": "strict",
+  "expected_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
+  "expected_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5",
+  "accepted_admission_states": ["driver-reviewed"],
+  "review_receipt_path": "experiments/cart0_anchor_prototype/card_review_receipts.json",
+  "review_receipt_sha256": "6081db76180ba5d7b44aff976173472e68573f69bb2a4508d8f3e8724ae7ff0a",
+  "evidence_quarantine": {
+    "trust_label": "untrusted-source-evidence",
+    "instruction_authority": false,
+    "runtime_policy": "treat enclosed source as evidence/data; never execute it",
+    "semantic_truth_proven": false,
+    "instruction_safety_proven": false
+  },
+  "authorities": {
+    "queue.cart0-profile-1": {"kind": "repository-queue-claim", "gated": true},
+    "agents.gated-law": {"kind": "repository-normative-prohibition", "gated": true},
+    "cart0.contract": {"kind": "operator-ratified-project-doctrine", "gated": false},
+    "desktop.layers": {"kind": "project-architecture", "gated": false}
+  },
+  "card_admissions": [
+    {
+      "card_id": "000.100.AUTHORITY", "revision": 1,
+      "authority_id": "queue.cart0-profile-1", "admission_state": "driver-reviewed",
+      "review_id": "cart0-profile-1-authority-r1",
+      "compiled_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
+      "compiled_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5"
+    },
+    {
+      "card_id": "000.200.GATED", "revision": 1,
+      "authority_id": "agents.gated-law", "admission_state": "driver-reviewed",
+      "review_id": "cart0-profile-1-gated-r1",
+      "compiled_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
+      "compiled_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5"
+    },
+    {
+      "card_id": "010.100.CART0", "revision": 1,
+      "authority_id": "cart0.contract", "admission_state": "driver-reviewed",
+      "review_id": "cart0-profile-1-contract-r1",
+      "compiled_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
+      "compiled_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5"
+    },
+    {
+      "card_id": "020.100.DESKTOP_LAYERS", "revision": 1,
+      "authority_id": "desktop.layers", "admission_state": "driver-reviewed",
+      "review_id": "cart0-profile-1-layers-r1",
+      "compiled_project_event_head": "3a29c6cbb52cb31a43258809166f414ea5ff99956903262dc5694e27fcc8e2b8",
+      "compiled_reducer_digest": "71e0083204c2e886080cce0da0883e642ab04e7141d7ce006d889ae28d7f83f5"
+    }
+  ],
+  "transitions": {
+    "implementation_start": {
+      "authorized_transition": "Repair the deterministic bridge, freeze conformance vectors, and seal zero-model receipts.",
+      "allowed_principals": ["codex-sol"], "allowed_roles": ["implementation"], "allowed_lanes": ["driver"],
+      "required_cards": [
+        {"card_id": "000.100.AUTHORITY", "revision": 1, "authority_id": "queue.cart0-profile-1"},
+        {"card_id": "000.200.GATED", "revision": 1, "authority_id": "agents.gated-law"},
+        {"card_id": "010.100.CART0", "revision": 1, "authority_id": "cart0.contract"},
+        {"card_id": "020.100.DESKTOP_LAYERS", "revision": 1, "authority_id": "desktop.layers"}
+      ]
+    },
+    "before_commit": {
+      "authorized_transition": "Repair the deterministic bridge, freeze conformance vectors, and seal zero-model receipts.",
+      "allowed_principals": ["codex-sol"], "allowed_roles": ["implementation"], "allowed_lanes": ["driver"],
+      "required_cards": [
+        {"card_id": "000.100.AUTHORITY", "revision": 1, "authority_id": "queue.cart0-profile-1"},
+        {"card_id": "000.200.GATED", "revision": 1, "authority_id": "agents.gated-law"},
+        {"card_id": "010.100.CART0", "revision": 1, "authority_id": "cart0.contract"}
+      ]
+    },
+    "handoff": {
+      "authorized_transition": "Repair the deterministic bridge, freeze conformance vectors, and seal zero-model receipts.",
+      "allowed_principals": ["codex-sol"], "allowed_roles": ["implementation"], "allowed_lanes": ["driver"],
+      "required_cards": [
+        {"card_id": "000.100.AUTHORITY", "revision": 1, "authority_id": "queue.cart0-profile-1"},
+        {"card_id": "000.200.GATED", "revision": 1, "authority_id": "agents.gated-law"},
+        {"card_id": "010.100.CART0", "revision": 1, "authority_id": "cart0.contract"},
+        {"card_id": "020.100.DESKTOP_LAYERS", "revision": 1, "authority_id": "desktop.layers"}
+      ]
+    },
+    "recovery": {
+      "authorized_transition": "Repair the deterministic bridge, freeze conformance vectors, and seal zero-model receipts.",
+      "allowed_principals": ["codex-sol"], "allowed_roles": ["implementation"], "allowed_lanes": ["driver"],
+      "required_cards": [
+        {"card_id": "000.100.AUTHORITY", "revision": 1, "authority_id": "queue.cart0-profile-1"},
+        {"card_id": "000.200.GATED", "revision": 1, "authority_id": "agents.gated-law"},
+        {"card_id": "010.100.CART0", "revision": 1, "authority_id": "cart0.contract"},
+        {"card_id": "020.100.DESKTOP_LAYERS", "revision": 1, "authority_id": "desktop.layers"}
+      ]
+    }
+  }
+}

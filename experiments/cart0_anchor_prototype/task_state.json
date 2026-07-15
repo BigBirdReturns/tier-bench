@@ -14,10 +14,10 @@
     "role": "implementation",
     "lane": "driver",
     "branch": "codex/cart0-anchor-prototype",
-    "state": "CART0-BRIDGE-1 claimed; review and CI pending"
+    "state": "CART0-PROFILE-1 claimed; deterministic conformance repair in progress"
   },
-  "authorized_transition": "Land the bounded bridge, deterministic tests, documentation, and zero-model payload receipt.",
-  "authority": "Operator authorization + claimed CART0-BRIDGE-1 row; no providers or gated evidence.",
+  "authorized_transition": "Repair the deterministic bridge, freeze conformance vectors, and seal zero-model receipts.",
+  "authority": "Operator authorization + claimed CART0-PROFILE-1 row; no providers, models, or gated changes.",
   "resurface_at": [
     "implementation_start",
     "before_commit",

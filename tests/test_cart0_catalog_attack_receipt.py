@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +29,11 @@ def main() -> int:
     assert master["attack_runner_sha256"] == sha(
         ROOT / "experiments" / "cart0_anchor_prototype" / "attack_catalog.py"
     )
-    assert master["projection_tool_sha256"] == sha(ROOT / "scripts" / "cart0_anchor.py")
+    original_tool = subprocess.run(
+        ["git", "show", "dbfc13d:scripts/cart0_anchor.py"], cwd=ROOT,
+        capture_output=True, check=True,
+    ).stdout
+    assert master["projection_tool_sha256"] == hashlib.sha256(original_tool).hexdigest()
 
     ids = set()
     for row in master["results"]:

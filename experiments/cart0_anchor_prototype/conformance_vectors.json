@@ -1,0 +1,24 @@
+{
+  "schema": "tier-bench/cart0-profile-conformance-vectors@1",
+  "suite_id": "CART0-PROFILE-1-B4",
+  "frozen_from": {
+    "preregistration_commit": "dbfc13dbd05036b940ea490570d770896f968947",
+    "result_commit": "b571bb30fa1b946219d1ecf33c2d4c164cd4f88f",
+    "original_receipt_sha256": "2aecf0241459e20502b541d8bdca9af55927301f41e06fb361f0851e55adc146"
+  },
+  "claim_boundary": "Deterministic local cart0@1 conformance only; no semantic-truth, instruction-safety, task-quality, provider, benchmark, or production-custody claim.",
+  "vectors": [
+    {"id":"missing_necessary_card","class":"negative","original_observed":"PROCEED","expected":"REFUSE","mechanism":"external required-card dispatch"},
+    {"id":"stale_correctly_hashed_card","class":"negative","original_observed":"PROCEED","expected":"REFUSE","mechanism":"compiled project-event-head binding"},
+    {"id":"semantically_bad_summary","class":"negative","original_observed":"PROCEED_UNREVIEWED","expected":"REQUEST_REVIEW","mechanism":"strict admission state","threat_model_correction":"Cryptography cannot detect semantic falsity; the strongest valid mechanical outcome is review gating before admission."},
+    {"id":"wrong_actor_lane","class":"negative","original_observed":"PROCEED","expected":"REFUSE","mechanism":"external principal/role/lane allowlist"},
+    {"id":"conflicting_revision","class":"negative","original_observed":"REFUSE","expected":"REFUSE","mechanism":"unique contiguous revision validation"},
+    {"id":"malicious_source_instruction","class":"positive_safety","original_observed":"PROCEED_UNQUARANTINED","expected":"PROCEED_QUARANTINED","mechanism":"non-authoritative evidence envelope","threat_model_correction":"Quarantine labels and runtime policy do not cryptographically guarantee downstream LLM compliance."},
+    {"id":"unavailable_evidence_pointer","class":"negative","original_observed":"REFUSE","expected":"REFUSE","mechanism":"source binding must resolve at event head"},
+    {"id":"overbroad_wrong_transition","class":"negative","original_observed":"PROCEED","expected":"REFUSE","mechanism":"cards cannot contain selection/authority fields; dispatch is external"},
+    {"id":"tampered_projected_card","class":"negative","original_observed":"REFUSE","expected":"REFUSE","mechanism":"byte comparison and hash binding"},
+    {"id":"inactive_card_lookup","class":"negative","original_observed":"REFUSE","expected":"REFUSE","mechanism":"active-set lookup only"},
+    {"id":"valid_build_verify_resurface","class":"positive","original_observed":null,"expected":"PROCEED","mechanism":"lawful strict transition"},
+    {"id":"admitted_semantically_false_summary","class":"positive_residual","original_observed":null,"expected":"PROCEED_RESIDUAL_RISK","mechanism":"admitted bytes remain mechanically valid","threat_model_correction":"A mistaken or malicious reviewer/publisher can admit and sign a false summary; integrity is not truth."}
+  ]
+}
