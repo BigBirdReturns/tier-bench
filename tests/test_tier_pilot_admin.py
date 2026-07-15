@@ -347,7 +347,10 @@ def _compose_run(
         provider_refs.append(_relative_artifact(
             root, f"{prefix}/provider-{call_ordinal}-evidence.json",
             canonical_json({
-                "schema": "tier-bench/tier-pilot-provider-evidence@1",
+                "schema": "tier-bench/tier-pilot-production-provider-evidence@1",
+                "executor_identity": "tier-bench/pilot-production-adapter@1",
+                "activation_commit": "a" * 40,
+                "activation_sha256": "b" * 64,
                 "call_id": call_id,
                 "dispatch_receipt_sha256": dispatch["sha256"],
                 "provider_result": provider_result,
@@ -398,7 +401,10 @@ def _compose_run(
     acceptance_evidence = _relative_artifact(
         root, f"{prefix}/acceptance-evidence.json",
         canonical_json({
-            "schema": "tier-bench/tier-pilot-acceptance-evidence@1",
+            "schema": "tier-bench/tier-pilot-production-acceptance-evidence@1",
+            "executor_identity": "tier-bench/pilot-production-adapter@1",
+            "activation_commit": "a" * 40,
+            "activation_sha256": "b" * 64,
             "receipt_sha256": acceptance["receipt_sha256"], "receipt": acceptance_ref,
             "stdout": acceptance_stdout, "stderr": acceptance_stderr,
             "candidate_before": candidate_before, "candidate_after": candidate_after,
@@ -1023,6 +1029,25 @@ def test_fixture_provider_evidence_is_inadmissible(tmp_path: Path) -> None:
     _must_refuse(plan_path, evidence_path, "fixture provider evidence is inadmissible")
 
 
+def test_all_arms_share_one_production_activation_identity(tmp_path: Path) -> None:
+    root = tmp_path
+    plan_path, evidence_path, _, evidence = _fixture(root)
+    run = evidence["arm_runs"][1]
+    for key in ("provider_receipts", "acceptance_receipts"):
+        for descriptor_ref in run[key]:
+            descriptor_path = root / descriptor_ref["path"]
+            descriptor = json.loads(descriptor_path.read_text(encoding="utf-8"))
+            descriptor["activation_commit"] = "c" * 40
+            descriptor["activation_sha256"] = "d" * 64
+            descriptor_path.write_bytes(canonical_json(descriptor))
+            descriptor_ref["sha256"] = sha256_file(descriptor_path)
+    _rewrite(evidence_path, evidence)
+    _must_refuse(
+        plan_path, evidence_path,
+        "all arm runs must share one exact production activation identity",
+    )
+
+
 def test_provider_raw_artifact_bijection_rejects_junk_and_aliases(tmp_path: Path) -> None:
     junk = tmp_path / "junk"
     junk.mkdir()
@@ -1516,6 +1541,7 @@ def main() -> int:
         test_provider_raw_evidence_is_mandatory,
         test_acceptance_raw_report_must_match_replayed_receipt,
         test_fixture_provider_evidence_is_inadmissible,
+        test_all_arms_share_one_production_activation_identity,
         test_provider_raw_artifact_bijection_rejects_junk_and_aliases,
         test_acceptance_before_after_artifacts_cannot_alias,
         test_arm_run_must_follow_frozen_schedule,

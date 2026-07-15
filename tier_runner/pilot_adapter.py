@@ -245,12 +245,10 @@ def run_activated_adapter(
             "runtime_model_id": runtime_model,
             "session_id": session_id,
             "telemetry_complete": True,
-            "tool_versions": {
-                **activation.composition.tool_versions,
-                "pilot_adapter": activation.adapter["version"],
-                "provider_cli": activation.adapter["cli_version"],
-                "provider_help_sha256": activation.adapter["help_sha256"],
-            },
+            # The arm-state and ADMIN validators bind this field to the frozen
+            # composition exactly. Adapter/CLI identities are independently
+            # activation-bound above and must not silently widen this mapping.
+            "tool_versions": activation.composition.tool_versions,
             "raw_result_sha256": _sha(stdout),
             "stderr_sha256": _sha(stderr),
         },
