@@ -1,24 +1,24 @@
 {
   "schema": "tier-bench/cart0-anchor-spec@0",
   "anchor_id": "cart0-bound-1-b1",
-  "objective": "Test whether CART0 preserves hidden-graded task fidelity while reducing actual provider input.",
-  "interpretation": "Two-task B1 falsification only; no aggregate benchmark, billing, causality, capacity, portability, or context-window claim.",
+  "objective": "Test CART0 fidelity and provider input on two hidden-graded tasks.",
+  "interpretation": "Two-task B1 falsification; no broader benchmark, billing, or context-window claim.",
   "constraints": [
-    "Use exactly two frozen tasks and four fresh Haiku 4.5 low calls.",
-    "Do not alter tasks, graders, criteria, cards, profile, or order after response disclosure.",
-    "Subjects receive no repository, queue, peer output, coordinator receipt, or hidden grader.",
-    "Preserve raw provider receipts and candidates before repeated hidden grading.",
-    "Missing output or custody is PARTIAL; never fabricate PASS or FAIL."
+    "Exactly two tasks and four fresh Haiku-low calls.",
+    "Freeze tasks, graders, cards, profile, and order before responses.",
+    "Subjects see no repo, queue, peer output, receipt, or hidden grader.",
+    "Seal raw receipts and candidates before hidden grading.",
+    "Missing output or custody is PARTIAL; never invent PASS or FAIL."
   ],
   "position": {
     "principal": "codex-sol",
     "role": "experiment-admin",
     "lane": "driver",
     "branch": "codex/cart0-bound-1",
-    "state": "CART0-BOUND-1 claimed; inputs must freeze before dispatch"
+    "state": "B1 claimed; inputs freeze before dispatch"
   },
   "authorized_transition": "Freeze and execute CART0-BOUND-1 B1 four-call fidelity comparison.",
-  "authority": "Operator authorization plus committed CART0-BOUND-1 claim d5672dd; B1 Phase 1 only.",
+  "authority": "Operator plus queue claim d5672dd; B1 Phase 1 only.",
   "resurface_at": [
     "subject_dispatch"
   ],
