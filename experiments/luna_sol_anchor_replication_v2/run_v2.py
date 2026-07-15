@@ -17,6 +17,8 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[2]
+sys.path.insert(0, str(REPO / "scripts"))
+from validate_strict_output_schemas import validate_instance, validate_schema  # noqa: E402
 TASK = ROOT / "task"
 VISIBLE = TASK / "subject_bundle"
 PRIVATE = TASK / "private"
@@ -162,6 +164,10 @@ def invoke(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, bas
     write(call_dir / "completion.json", canon(receipt))
     try: receipt["final_json"] = json.loads(final_bytes.decode())
     except Exception: receipt["final_json"] = None
+    schema_doc = json.loads(schema_path.read_text(encoding="utf-8"))
+    receipt["schema_errors"] = validate_schema(schema_doc, str(schema_path))
+    receipt["instance_errors"] = validate_instance(receipt["final_json"], schema_doc) if receipt["final_json"] is not None else ["no final JSON"]
+    receipt["schema_valid"] = not receipt["schema_errors"] and not receipt["instance_errors"]
     return receipt
 
 def require_keys(value: Any, keys: list[str], label: str) -> None:
@@ -304,20 +310,29 @@ def grade_candidate(candidate: str | None, out_dir: Path) -> dict[str, Any]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(); parser.add_argument("--suite-commit", required=True); parser.add_argument("--run-root", type=Path)
+    parser.add_argument("--prior-partial-run", type=Path, required=True); parser.add_argument("--schedule-source", type=Path, required=True)
+    parser.add_argument("--preflight-receipt", type=Path, required=True)
     args = parser.parse_args()
     if not CLI.is_file(): raise SystemExit("missing pinned CLI")
     if not (TASK / "oracle_self_test.json").is_file(): raise SystemExit("oracle self-test receipt missing")
     oracle = json.loads((TASK / "oracle_self_test.json").read_text());
     if oracle.get("tests", {}).get("mutants") != "all_fail": raise SystemExit("oracle self-test did not pass")
+    schema_paths = sorted(SCHEMAS.glob("*.json"))
+    schema_errors = {str(path): validate_schema(json.loads(path.read_text(encoding="utf-8")), str(path)) for path in schema_paths}
+    if any(schema_errors.values()): raise SystemExit(json.dumps({"schema_errors": schema_errors}, sort_keys=True))
+    preflight = json.loads(args.preflight_receipt.read_text(encoding="utf-8"))
+    if not preflight.get("schema_valid") or preflight.get("exit_code") != 0:
+        raise SystemExit("administrative schema preflight did not pass")
     if args.run_root is None: args.run_root = ROOT / "run" / datetime.now(timezone.utc).strftime("run_%Y%m%dT%H%M%SZ")
     run_dir = args.run_root.resolve(); run_dir.mkdir(parents=True, exist_ok=False)
     models = json.loads(subprocess.run([str(CLI), "debug", "models"], capture_output=True, check=True).stdout)
     model_catalog_bytes = canon(models)
     task_hash = sha(TASK / "task_packet.json"); seed = sha_bytes((args.suite_commit + task_hash + EXPERIMENT_TAG).encode()); rng = random.Random(int(seed[:16], 16))
-    schedule = {"seed": seed, "replicates": []}
-    for i in range(1, 4): schedule["replicates"].append({"trial_id": f"replicate_{i:03d}", "full_order": ["SOL_FULL", "LUNA_FULL"] if rng.randrange(2) == 0 else ["LUNA_FULL", "SOL_FULL"], "fork_order": ["LUNA_SPARK_CORRECT_ANCHOR", "LUNA_SPARK_NO_ANCHOR"] if rng.randrange(2) == 0 else ["LUNA_SPARK_NO_ANCHOR", "LUNA_SPARK_CORRECT_ANCHOR"]})
+    prior_schedule = args.schedule_source.resolve()
+    schedule = json.loads(prior_schedule.read_text(encoding="utf-8"))
+    if (run_dir / "schedule.json").exists(): raise SystemExit("new run schedule path already exists")
     write(run_dir / "schedule.json", canon(schedule)); write(run_dir / "model_catalog.json", model_catalog_bytes)
-    manifest = {"schema": "luna-sol-anchor-replication/run-manifest@2", "created_at": now(), "suite_commit": args.suite_commit, "branch": "codex/luna-sol-anchor-replication-v2", "cli_path": str(CLI), "cli_sha256": sha(CLI), "cli_version": subprocess.run([str(CLI), "--version"], capture_output=True, check=True).stdout.decode().strip(), "model_catalog_sha256": sha(run_dir / "model_catalog.json"), "task_packet_sha256": task_hash, "hidden_grader_sha256": sha(PRIVATE / "hidden_grader.py"), "visible_bundle_sha256": json.loads((TASK / "oracle_self_test.json").read_text())["build"]["visible_bundle_sha256"], "prompt_hashes": {p.name: sha(p) for p in PROMPTS.glob("*.txt")}, "schema_hashes": {p.name: sha(p) for p in SCHEMAS.glob("*.json")}, "k": 3, "schedule_seed": seed, "frozen": True, "cli_compatibility": {"requested_agents_max_depth": 0, "used_agents_max_depth": 1, "reason": "pinned CLI rejects zero; max_threads=1 and exact prompts disable subagent use"}, "stopping_rules": json.loads((TASK / "preregistration.json").read_text())["stopping_rules"]}
+    manifest = {"schema": "luna-sol-anchor-replication/run-manifest@2.1", "protocol_revision": "2.1", "created_at": now(), "suite_commit": args.suite_commit, "branch": "codex/luna-sol-anchor-replication-v2", "cli_path": str(CLI), "cli_sha256": sha(CLI), "cli_version": subprocess.run([str(CLI), "--version"], capture_output=True, check=True).stdout.decode().strip(), "model_catalog_sha256": sha(run_dir / "model_catalog.json"), "task_version": "derived_ledger_rollup_v2", "task_packet_sha256": task_hash, "hidden_grader_sha256": sha(PRIVATE / "hidden_grader.py"), "visible_bundle_sha256": json.loads((TASK / "oracle_self_test.json").read_text())["build"]["visible_bundle_sha256"], "prompt_hashes": {p.name: sha(p) for p in PROMPTS.glob("*.txt")}, "schema_hashes": {p.name: sha(p) for p in SCHEMAS.glob("*.json")}, "k": 3, "schedule_seed": schedule["seed"], "schedule_source_sha256": sha(prior_schedule), "frozen": True, "prior_partial_run": args.prior_partial_run.name, "prior_partial_disposition": "ADMINISTRATIVE_OUTPUT_SCHEMA_REJECTION", "prior_subject_outputs_admitted": 0, "prior_candidates_admitted": 0, "prior_grades_admitted": 0, "administrative_preflight_sha256": sha(args.preflight_receipt), "cli_compatibility": {"requested_agents_max_depth": 0, "used_agents_max_depth": 1, "reason": "pinned CLI rejects zero; max_threads=1 and exact prompts disable subagent use"}, "stopping_rules": json.loads((TASK / "preregistration.json").read_text())["stopping_rules"]}
     write(run_dir / "manifest.json", canon(manifest))
     packet_full = {"task_id": "derived_ledger_rollup_v2", "task_packet": task_packet(), "public_validator_catalog": public_catalog(), "instruction": "Complete the visible task in this isolated repository."}
     arms: dict[str, Any] = {}
