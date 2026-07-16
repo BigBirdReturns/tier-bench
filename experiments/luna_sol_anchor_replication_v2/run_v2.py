@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute, seal, grade, and report the frozen Luna/Sol v2.2.1 episode."""
+"""Execute, seal, grade, and report the frozen Luna/Sol v2.2.2 episode."""
 from __future__ import annotations
 
 import argparse
@@ -27,7 +27,7 @@ PROMPTS = ROOT / "prompts"
 SCHEMAS = PROMPTS / "schemas"
 CLI = Path(r"C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\3135b80b111fd431\codex.exe")
 PREFERRED_PYTHON = Path(r"C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe")
-EXPERIMENT_TAG = "LUNA_SOL_ANCHOR_REPLICATION_V2_2_1"
+EXPERIMENT_TAG = "LUNA_SOL_ANCHOR_REPLICATION_V2_2_2"
 
 class ControllerError(RuntimeError):
     def __init__(self, code: str, stage: str, message: str, path: str | None = None):
@@ -71,6 +71,14 @@ def tree_state(root: Path) -> str:
 
 def files_manifest(root: Path) -> list[dict[str, str]]:
     return [{"path": p.relative_to(root).as_posix(), "sha256": sha(p)} for p in sorted(root.rglob("*")) if p.is_file() and ".git" not in p.parts]
+
+def visible_bundle_sha256() -> str:
+    files = {
+        path.relative_to(VISIBLE).as_posix(): sha(path)
+        for path in sorted(VISIBLE.rglob("*"))
+        if path.is_file() and path.name != "normalized_ledger.json"
+    }
+    return sha_bytes(canon(files))
 
 def initialize_subject(destination: Path) -> None:
     if destination.exists():
@@ -394,6 +402,46 @@ def outcome_error(outcome: dict[str, Any]) -> dict[str, Any] | None:
     validation = outcome.get("validation") or outcome.get("final") or {}
     return outcome.get("error") or validation.get("error") or (outcome.get("call") or {}).get("administrative_error")
 
+def build_comparison(table: list[dict[str, Any]]) -> dict[str, Any]:
+    expected = {
+        (f"replicate_{number:03d}", arm)
+        for number in range(1, 4)
+        for arm in ("SOL_FULL", "LUNA_FULL", "LUNA_SPARK_CORRECT_ANCHOR", "LUNA_SPARK_NO_ANCHOR")
+    }
+    observed = {(row.get("trial"), row.get("arm")) for row in table}
+    complete = (
+        len(table) == len(expected)
+        and observed == expected
+        and all(
+            row.get("candidate") is True
+            and row.get("hidden_outcome") in {"pass", "fail"}
+            and row.get("error") is None
+            for row in table
+        )
+    )
+    sol = [row for row in table if row["arm"] == "SOL_FULL" and row["hidden_outcome"] == "pass"]
+    anchor = [row for row in table if row["arm"] == "LUNA_SPARK_CORRECT_ANCHOR" and row["hidden_outcome"] == "pass"]
+    no_anchor = [row for row in table if row["arm"] == "LUNA_SPARK_NO_ANCHOR" and row["hidden_outcome"] == "pass"]
+    comparison: dict[str, Any] = {
+        "schema": "luna-sol-anchor-replication/comparison@2.2.2",
+        "protocol_revision": "2.2.2",
+        "disposition": "COMPLETE" if complete else "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT",
+        "comparison_rules_applied": complete,
+        "table": table,
+        "sol_replication_verdict": None,
+        "anchor_mechanism_verdict": None,
+        "counts": {
+            "sol_full_pass": len(sol),
+            "correct_anchor_pass": len(anchor),
+            "no_anchor_pass": len(no_anchor),
+        },
+    }
+    if not complete:
+        return comparison
+    comparison["sol_replication_verdict"] = "SOL_LEVEL_REPLICATED_ON_FROZEN_TASK" if len(sol) == 3 and len(anchor) == 3 else "TASK_NON_INFORMATIVE_FOR_SOL_REPLICATION" if len(sol) != 3 else "NOT_REPLICATED"
+    comparison["anchor_mechanism_verdict"] = "ANCHOR_CAUSAL_SIGNAL_ON_FROZEN_TASK" if len(anchor) > len(no_anchor) and sum(1 for a, n in zip(sorted(anchor, key=lambda x:x["trial"]), sorted(no_anchor, key=lambda x:x["trial"])) if a["hidden_outcome"] == "pass" and n["hidden_outcome"] != "pass") >= 2 else "NO_ANCHOR_MECHANISM_IDENTIFIED"
+    return comparison
+
 def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_base: dict[str, Any], executor: Executor | None = None, interpreter: Path = PREFERRED_PYTHON) -> dict[str, Any]:
     arm = "luna_spark_no_anchor" if no_anchor else "luna_spark_correct_anchor"
     prelude = run_dir / trial / "split_prelude"; base = prelude / "base"
@@ -473,9 +521,13 @@ def main() -> int:
     parser.add_argument("--preflight-receipt", type=Path, required=True); parser.add_argument("--contract-gate", type=Path, required=True); parser.add_argument("--canary-receipt", type=Path, required=True)
     args = parser.parse_args()
     if not CLI.is_file(): raise SystemExit("missing pinned CLI")
-    if not (TASK / "oracle_self_test.json").is_file(): raise SystemExit("oracle self-test receipt missing")
-    oracle = json.loads((TASK / "oracle_self_test.json").read_text());
-    if oracle.get("tests", {}).get("mutants") != "all_fail": raise SystemExit("oracle self-test did not pass")
+    oracle_path = TASK / "oracle_self_test_v222.json"
+    if not oracle_path.is_file(): raise SystemExit("v2.2.2 task/visible consistency receipt missing")
+    oracle = json.loads(oracle_path.read_text(encoding="utf-8"))
+    if oracle.get("protocol_revision") != "2.2.2" or not oracle.get("all_pass"):
+        raise SystemExit("v2.2.2 task/visible consistency gate did not pass")
+    if oracle.get("build", {}).get("visible_bundle_sha256") != visible_bundle_sha256():
+        raise SystemExit("visible bundle does not match v2.2.2 consistency receipt")
     schema_paths = sorted(SCHEMAS.glob("*.json"))
     schema_errors = {str(path): validate_schema(json.loads(path.read_text(encoding="utf-8")), str(path)) for path in schema_paths}
     if any(schema_errors.values()): raise SystemExit(json.dumps({"schema_errors": schema_errors}, sort_keys=True))
@@ -483,12 +535,30 @@ def main() -> int:
     preflight = json.loads(args.preflight_receipt.read_text(encoding="utf-8"))
     if not preflight.get("schema_valid") or preflight.get("exit_code") != 0:
         raise SystemExit("administrative schema preflight did not pass")
+    preflight_dir = args.preflight_receipt.resolve().parent
+    preflight_dispatch = json.loads((preflight_dir / "dispatch.json").read_text(encoding="utf-8"))
+    if preflight_dispatch.get("model") != "gpt-5.3-codex-spark" or preflight_dispatch.get("schema") != "union.schema.json":
+        raise SystemExit("administrative schema preflight was not the frozen Spark union-schema proof")
+    if preflight_dispatch.get("schema_sha256") != sha(preflight_dir / "union.schema.json") or preflight.get("stdout_sha256") != sha(preflight_dir / "events.jsonl") or preflight.get("stderr_sha256") != sha(preflight_dir / "stderr.txt"):
+        raise SystemExit("administrative schema preflight custody hashes do not match")
     contract_gate = json.loads(args.contract_gate.read_text(encoding="utf-8"))
-    if not contract_gate.get("all_pass"):
+    if contract_gate.get("protocol_revision") != "2.2.2" or not contract_gate.get("all_pass"):
         raise SystemExit("zero-inference controller contract gate did not pass")
+    if contract_gate.get("hashes", {}).get("runner_sha256") != sha(Path(__file__).resolve()):
+        raise SystemExit("controller contract gate does not bind this runner")
+    if contract_gate.get("hashes", {}).get("task_packet_sha256") != sha(TASK / "task_packet.json") or contract_gate.get("hashes", {}).get("hidden_grader_sha256") != sha(PRIVATE / "hidden_grader.py"):
+        raise SystemExit("controller contract gate does not bind the frozen task and hidden grader")
+    if contract_gate.get("hashes", {}).get("schema_hashes") != {p.name: sha(p) for p in SCHEMAS.glob("*.json")} or contract_gate.get("hashes", {}).get("prompt_hashes") != {p.name: sha(p) for p in PROMPTS.glob("*.txt")}:
+        raise SystemExit("controller contract gate does not bind the frozen schemas and prompts")
+    if contract_gate.get("hashes", {}).get("visible_bundle_sha256") != oracle["build"]["visible_bundle_sha256"]:
+        raise SystemExit("controller contract gate does not bind the corrected visible bundle")
+    if contract_gate.get("hashes", {}).get("task_visible_consistency_receipt_sha256") != sha(oracle_path):
+        raise SystemExit("controller contract gate does not bind the v2.2.2 consistency receipt")
     canary = json.loads(args.canary_receipt.read_text(encoding="utf-8"))
-    if not canary.get("all_pass") or canary.get("call_count") != 1 or canary.get("canary", {}).get("id") != "CANARY_2_INITIAL_PLANNER_REPLACEMENT":
-        raise SystemExit("replacement initial-planner administrative canary did not pass")
+    required_canaries = {"CANARY_2_INITIAL_PLANNER_REPLACEMENT", "CANARY_3_SPARK_CRATE_SCOPE"}
+    observed_canaries = {item.get("id") for item in canary.get("canaries", []) if item.get("passed")}
+    if canary.get("protocol_revision") != "2.2.2" or not canary.get("all_pass") or canary.get("call_count") != 2 or observed_canaries != required_canaries:
+        raise SystemExit("v2.2.2 Luna/Spark administrative canaries did not pass")
     if args.run_root is None: args.run_root = ROOT / "run" / datetime.now(timezone.utc).strftime("run_%Y%m%dT%H%M%SZ")
     run_dir = args.run_root.resolve(); run_dir.mkdir(parents=True, exist_ok=False)
     models = json.loads(subprocess.run([str(CLI), "debug", "models"], capture_output=True, check=True).stdout)
@@ -498,7 +568,7 @@ def main() -> int:
     schedule = json.loads(prior_schedule.read_text(encoding="utf-8"))
     if (run_dir / "schedule.json").exists(): raise SystemExit("new run schedule path already exists")
     write(run_dir / "schedule.json", canon(schedule)); write(run_dir / "model_catalog.json", model_catalog_bytes)
-    manifest = {"schema": "luna-sol-anchor-replication/run-manifest@2.2.1", "protocol_revision": "2.2.1", "created_at": now(), "suite_commit": args.suite_commit, "branch": "codex/luna-sol-anchor-replication-v2", "cli_path": str(CLI), "cli_sha256": sha(CLI), "cli_version": subprocess.run([str(CLI), "--version"], capture_output=True, check=True).stdout.decode().strip(), "controller_python": {"path": str(PREFERRED_PYTHON), "version": subprocess.run([str(PREFERRED_PYTHON), "--version"], capture_output=True, check=True).stdout.decode().strip(), "sha256": sha(PREFERRED_PYTHON)}, "model_catalog_sha256": sha(run_dir / "model_catalog.json"), "task_version": "derived_ledger_rollup_v2", "task_packet_sha256": task_hash, "hidden_grader_sha256": sha(PRIVATE / "hidden_grader.py"), "visible_bundle_sha256": json.loads((TASK / "oracle_self_test.json").read_text())["build"]["visible_bundle_sha256"], "prompt_hashes": {p.name: sha(p) for p in PROMPTS.glob("*.txt")}, "schema_hashes": {p.name: sha(p) for p in SCHEMAS.glob("*.json")}, "k": 3, "schedule_seed": schedule["seed"], "schedule_source_sha256": sha(prior_schedule), "frozen": True, "prior_run_2_0": "run_20260715T205630Z", "prior_run_2_1": "run_20260715T212046Z", "prior_2_1_disposition": "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT", "prior_2_1_benchmark_calls": 9, "prior_2_1_candidates": 0, "prior_2_1_hidden_grades": 0, "prior_partial_run": args.prior_partial_run.name, "prior_subject_outputs_admitted": 0, "prior_candidates_admitted": 0, "prior_grades_admitted": 0, "administrative_preflight_sha256": sha(args.preflight_receipt), "controller_contract_gate_sha256": sha(args.contract_gate), "live_canary_sha256": sha(args.canary_receipt), "cli_compatibility": {"multi_agent": False, "features.multi_agent": False, "requested_agents_max_depth": 1, "used_agents_max_depth": 1, "max_threads": 1}, "stopping_rules": json.loads((TASK / "preregistration.json").read_text())["stopping_rules"]}
+    manifest = {"schema": "luna-sol-anchor-replication/run-manifest@2.2.2", "protocol_revision": "2.2.2", "created_at": now(), "suite_commit": args.suite_commit, "branch": "codex/luna-sol-anchor-replication-v2", "cli_path": str(CLI), "cli_sha256": sha(CLI), "cli_version": subprocess.run([str(CLI), "--version"], capture_output=True, check=True).stdout.decode().strip(), "controller_python": {"path": str(PREFERRED_PYTHON), "version": subprocess.run([str(PREFERRED_PYTHON), "--version"], capture_output=True, check=True).stdout.decode().strip(), "sha256": sha(PREFERRED_PYTHON)}, "model_catalog_sha256": sha(run_dir / "model_catalog.json"), "task_version": "derived_ledger_rollup_v2", "task_packet_sha256": task_hash, "hidden_grader_sha256": sha(PRIVATE / "hidden_grader.py"), "visible_bundle_sha256": oracle["build"]["visible_bundle_sha256"], "task_visible_consistency_receipt_sha256": sha(oracle_path), "prompt_hashes": {p.name: sha(p) for p in PROMPTS.glob("*.txt")}, "schema_hashes": {p.name: sha(p) for p in SCHEMAS.glob("*.json")}, "k": 3, "schedule_seed": schedule["seed"], "schedule_source_sha256": sha(prior_schedule), "frozen": True, "prior_run_2_0": "run_20260715T205630Z", "prior_run_2_1": "run_20260715T212046Z", "prior_run_2_2_1": args.prior_partial_run.name, "prior_2_1_disposition": "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT", "prior_2_1_benchmark_calls": 9, "prior_2_1_candidates": 0, "prior_2_1_hidden_grades": 0, "prior_2_2_1_disposition": "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT", "prior_2_2_1_benchmark_calls": 16, "prior_2_2_1_candidates": 0, "prior_2_2_1_hidden_grades": 0, "prior_partial_run": args.prior_partial_run.name, "prior_subject_outputs_admitted": 0, "prior_candidates_admitted": 0, "prior_grades_admitted": 0, "administrative_preflight_sha256": sha(args.preflight_receipt), "controller_contract_gate_sha256": sha(args.contract_gate), "live_canary_sha256": sha(args.canary_receipt), "cli_compatibility": {"multi_agent": False, "features.multi_agent": False, "requested_agents_max_depth": 1, "used_agents_max_depth": 1, "max_threads": 1}, "stopping_rules": json.loads((TASK / "preregistration.json").read_text())["stopping_rules"]}
     write(run_dir / "manifest.json", canon(manifest))
     packet_full = {"task_id": "derived_ledger_rollup_v2", "task_packet": task_packet(), "public_validator_catalog": public_catalog(), "instruction": "Complete the visible task in this isolated repository."}
     arms: dict[str, Any] = {}
@@ -520,13 +590,14 @@ def main() -> int:
         for arm, outcome in trial_arms.items():
             validation = outcome.get("validation") or outcome.get("final") or {}
             table.append({"trial": trial, "arm": arm, "hidden_outcome": outcome.get("hidden_grade", {}).get("outcome"), "candidate": bool(outcome.get("candidate")), "disposition": outcome.get("disposition") or validation.get("disposition"), "error": outcome_error(outcome)})
-    sol = [x for x in table if x["arm"] == "SOL_FULL" and x["hidden_outcome"] == "pass"]
-    anchor = [x for x in table if x["arm"] == "LUNA_SPARK_CORRECT_ANCHOR" and x["hidden_outcome"] == "pass"]
-    no_anchor = [x for x in table if x["arm"] == "LUNA_SPARK_NO_ANCHOR" and x["hidden_outcome"] == "pass"]
-    comparison = {"schema": "luna-sol-anchor-replication/comparison@2", "table": table, "sol_replication_verdict": "SOL_LEVEL_REPLICATED_ON_FROZEN_TASK" if len(sol) == 3 and len(anchor) == 3 else "TASK_NON_INFORMATIVE_FOR_SOL_REPLICATION" if len(sol) != 3 else "NOT_REPLICATED", "anchor_mechanism_verdict": "ANCHOR_CAUSAL_SIGNAL_ON_FROZEN_TASK" if len(anchor) > len(no_anchor) and sum(1 for a, n in zip(sorted(anchor, key=lambda x:x["trial"]), sorted(no_anchor, key=lambda x:x["trial"])) if a["hidden_outcome"] == "pass" and n["hidden_outcome"] != "pass") >= 2 else "NO_ANCHOR_MECHANISM_IDENTIFIED", "counts": {"sol_full_pass": len(sol), "correct_anchor_pass": len(anchor), "no_anchor_pass": len(no_anchor)}}
+    comparison = build_comparison(table)
     write(run_dir / "comparison.json", canon(comparison))
-    report = "# Luna/Sol Anchor Replication v2\n\n" + f"suite_commit: `{args.suite_commit}`\nexperiment_run: `{run_dir.name}`\n\n" + "| Replicate | Arm | Hidden outcome | Candidate |\n|---|---|---|---|\n" + "\n".join(f"| {x['trial']} | {x['arm']} | {x['hidden_outcome']} | {x['candidate']} |" for x in table) + "\n\n" + f"Sol replication verdict: **{comparison['sol_replication_verdict']}**\n\nAnchor mechanism verdict: **{comparison['anchor_mechanism_verdict']}**\n\nNarrow claim: this report supports only the preregistered behavior on `derived_ledger_rollup_v2` with the sealed custody records in this run.\n"
-    write(run_dir / "report.md", report); write(run_dir / "collection_receipt.json", canon({"schema": "luna-sol-anchor-replication/collection@2", "completed_at": now(), "manifest_sha256": sha(run_dir / "manifest.json"), "schedule_sha256": sha(run_dir / "schedule.json"), "comparison_sha256": sha(run_dir / "comparison.json"), "report_sha256": sha(run_dir / "report.md"), "calls": sum(1 for _ in run_dir.rglob("dispatch.json"))}))
+    report = "# Luna/Sol Anchor Replication v2.2.2\n\n" + f"suite_commit: `{args.suite_commit}`\nexperiment_run: `{run_dir.name}`\ndisposition: **{comparison['disposition']}**\n\n" + "| Replicate | Arm | Hidden outcome | Candidate |\n|---|---|---|---|\n" + "\n".join(f"| {x['trial']} | {x['arm']} | {x['hidden_outcome']} | {x['candidate']} |" for x in table) + "\n\n"
+    if comparison["comparison_rules_applied"]:
+        report += f"Sol replication verdict: **{comparison['sol_replication_verdict']}**\n\nAnchor mechanism verdict: **{comparison['anchor_mechanism_verdict']}**\n\nNarrow claim: this report supports only the preregistered behavior on `derived_ledger_rollup_v2` with the sealed custody records in this run.\n"
+    else:
+        report += "No benchmark verdict is admitted. The collection is incomplete or contains an administrative/candidate failure, so the frozen comparison rules were not applied.\n"
+    write(run_dir / "report.md", report); write(run_dir / "collection_receipt.json", canon({"schema": "luna-sol-anchor-replication/collection@2.2.2", "protocol_revision": "2.2.2", "completed_at": now(), "disposition": comparison["disposition"], "comparison_rules_applied": comparison["comparison_rules_applied"], "manifest_sha256": sha(run_dir / "manifest.json"), "schedule_sha256": sha(run_dir / "schedule.json"), "comparison_sha256": sha(run_dir / "comparison.json"), "report_sha256": sha(run_dir / "report.md"), "calls": sum(1 for _ in run_dir.rglob("dispatch.json"))}))
     print(json.dumps({"run_root": str(run_dir), "comparison": comparison}, indent=2)); return 0
 
 if __name__ == "__main__": raise SystemExit(main())

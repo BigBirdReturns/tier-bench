@@ -15,12 +15,17 @@ spec = importlib.util.spec_from_file_location("luna_run_v22", RUNNER_PATH)
 assert spec and spec.loader
 runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
+CONSISTENCY_PATH = HERE / "task_visible_consistency_gate.py"
+consistency_spec = importlib.util.spec_from_file_location("luna_task_visible_consistency_v222", CONSISTENCY_PATH)
+assert consistency_spec and consistency_spec.loader
+consistency = importlib.util.module_from_spec(consistency_spec)
+consistency_spec.loader.exec_module(consistency)
 
 STAGE = '''
 import json, sys
 raw=json.load(open(sys.argv[1])); out=[]
 for i,r in enumerate(raw["records"]):
-    p=int(r.get("priority",0)); out.append({"id":str(r["id"]),"account":str(r["account"]),"period":int(r["period"]),"kind":r["kind"],"amount_cents":int(r["amount_cents"]),"status":r["status"],"priority":p,"eligible":r["kind"] != "waiver" and r["status"] in {"open","settled"} and int(r["period"]) <= int(raw["cutoff_period"]),"fee_relief_eligible":False,"source_index":i})
+    p=int(r.get("priority",0)); out.append({"id":str(r["id"]),"account":str(r["account"]),"period":int(r["period"]),"kind":r["kind"],"amount_cents":int(r["amount_cents"]),"status":r["status"],"priority":p,"eligible":r["status"] in {"open","settled"} and int(r["period"]) <= int(raw["cutoff_period"]),"fee_relief_eligible":r["kind"] == "waiver" and p >= 2,"source_index":i})
 json.dump({"schema":1,"cutoff_period":int(raw["cutoff_period"]),"records":out},open(sys.argv[2],"w"),sort_keys=True)
 '''
 SOLUTION = '''
@@ -126,7 +131,21 @@ def run_gate(output: Path) -> dict[str, Any]:
         dispatches = list(root.rglob("dispatch.json"))
         config_ok = bool(dispatches) and all("features.multi_agent=false" in json.loads(path.read_text(encoding="utf-8"))["command"] and "agents.max_depth=1" in json.loads(path.read_text(encoding="utf-8"))["command"] and "agents.max_threads=1" in json.loads(path.read_text(encoding="utf-8"))["command"] and "agents.max_depth=0" not in json.loads(path.read_text(encoding="utf-8"))["command"] for path in dispatches)
         check("production_command_vectors_disable_subagents_with_valid_depth", config_ok)
-    result = {"schema":"luna-sol-anchor-replication/controller-contract-gate@2.2.1","protocol_revision":"2.2.1","code_paths":["run_full","run_chain","apply_hand","create_fork","grade_candidate","seal_final_receipt","extract_remote_error"],"hashes":{"runner_sha256":runner.sha(RUNNER_PATH),"schema_hashes":{p.name:runner.sha(p) for p in runner.SCHEMAS.glob("*.json")},"prompt_hashes":{p.name:runner.sha(p) for p in runner.PROMPTS.glob("*.txt")},"task_packet_sha256":runner.sha(runner.TASK / "task_packet.json")},"tests":checks,"all_pass":all(x["result"] == "PASS" for x in checks)}
+    fresh_consistency = consistency.evaluate()
+    saved_consistency_path = runner.TASK / "oracle_self_test_v222.json"
+    saved_consistency = json.loads(saved_consistency_path.read_text(encoding="utf-8"))
+    check("fresh_task_visible_consistency_matches_sealed_receipt", fresh_consistency == saved_consistency and fresh_consistency.get("all_pass"), json.dumps(fresh_consistency, sort_keys=True))
+    partial = runner.build_comparison([{"trial":"replicate_001","arm":"SOL_FULL","hidden_outcome":"NOT_RUN_NO_CANDIDATE","candidate":False,"disposition":"NO_CANDIDATE_NO_DIFF","error":None}])
+    check("incomplete_collection_suppresses_capability_verdicts", partial["disposition"] == "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT" and not partial["comparison_rules_applied"] and partial["sol_replication_verdict"] is None and partial["anchor_mechanism_verdict"] is None, json.dumps(partial, sort_keys=True))
+    complete_table = []
+    for number in range(1, 4):
+        trial = f"replicate_{number:03d}"
+        for arm in ("SOL_FULL", "LUNA_FULL", "LUNA_SPARK_CORRECT_ANCHOR", "LUNA_SPARK_NO_ANCHOR"):
+            hidden = "fail" if arm == "LUNA_SPARK_NO_ANCHOR" else "pass"
+            complete_table.append({"trial":trial,"arm":arm,"hidden_outcome":hidden,"candidate":True,"disposition":"CANDIDATE_ADMITTED","error":None})
+    complete = runner.build_comparison(complete_table)
+    check("complete_collection_preserves_frozen_comparison_formulas", complete["disposition"] == "COMPLETE" and complete["comparison_rules_applied"] and complete["sol_replication_verdict"] == "SOL_LEVEL_REPLICATED_ON_FROZEN_TASK" and complete["anchor_mechanism_verdict"] == "NO_ANCHOR_MECHANISM_IDENTIFIED", json.dumps(complete, sort_keys=True))
+    result = {"schema":"luna-sol-anchor-replication/controller-contract-gate@2.2.2","protocol_revision":"2.2.2","code_paths":["run_full","run_chain","apply_hand","create_fork","grade_candidate","seal_final_receipt","extract_remote_error","build_comparison"],"hashes":{"runner_sha256":runner.sha(RUNNER_PATH),"schema_hashes":{p.name:runner.sha(p) for p in runner.SCHEMAS.glob("*.json")},"prompt_hashes":{p.name:runner.sha(p) for p in runner.PROMPTS.glob("*.txt")},"task_packet_sha256":runner.sha(runner.TASK / "task_packet.json"),"hidden_grader_sha256":runner.sha(runner.PRIVATE / "hidden_grader.py"),"visible_bundle_sha256":fresh_consistency["build"]["visible_bundle_sha256"],"task_visible_consistency_receipt_sha256":runner.sha(saved_consistency_path)},"tests":checks,"all_pass":all(x["result"] == "PASS" for x in checks)}
     runner.write(output, runner.canon(result))
     return result
 
