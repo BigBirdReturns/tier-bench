@@ -1,0 +1,9 @@
+2026-07-16T00:43:53.714048Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-16T00:43:53.714087Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-16T00:43:53.721104Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-16T00:43:53.964614Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-16T00:43:53.964648Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-16T00:44:03.746603Z ERROR codex_core::tools::router: error=apply_patch verification failed: Failed to find expected lines in C:\Users\BAM-Desktop\.codex\worktrees\4263\Residue\experiments\luna_sol_anchor_replication_v2\run\run_v221_corrected_20260716T003429Z\replicate_002\split_prelude\spark_hand_1\work\src\ledger_stage.py:
+        priority = int(record["priority"]) if "priority" in record else None
+
+        fee_relief_eligible = kind == "waiver" and (priority is not None and priority >= 2)

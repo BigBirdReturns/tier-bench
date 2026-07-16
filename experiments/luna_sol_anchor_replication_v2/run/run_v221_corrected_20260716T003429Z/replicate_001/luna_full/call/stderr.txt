@@ -1,0 +1,19 @@
+2026-07-16T00:34:30.533207Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-16T00:34:30.533247Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-16T00:34:30.542588Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-16T00:34:30.811554Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-16T00:34:30.811582Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-16T00:36:05.013597Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+[31;1mTest-Path: [0m
+[31;1m[36;1mLine |[0m
+[31;1m[36;1m[36;1m   2 | [0m … thon313\python.exe'; if (-not ([36;1mTest-Path -LiteralPath $python[0m)) { thr …[0m
+[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mAccess to the path 'C:\Users\BAM-Desktop\AppData\Local\Programs\Python\Python313\python.exe' is denied.[0m
+[31;1mException: [0m
+[31;1m[36;1mLine |[0m
+[31;1m[36;1m[36;1m   2 | [0m … eralPath $python)) { [36;1mthrow 'Python 3.13 executable not found'[0m }; & $p …[0m
+[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m     | [31;1m                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[31;1m[36;1m[36;1m[0m[36;1m[0m[36;1m[31;1m[31;1m[36;1m     | [31;1mPython 3.13 executable not found[0m
+
