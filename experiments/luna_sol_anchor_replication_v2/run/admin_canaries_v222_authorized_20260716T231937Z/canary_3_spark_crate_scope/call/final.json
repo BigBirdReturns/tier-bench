@@ -1,0 +1,1 @@
+{"crate_id":"admin-canary-v222-spark-crate","summary":"Updated value.txt from `0` to `1` with newline, and made no other file changes.","files_inspected_claimed":["value.txt"],"files_changed_claimed":["value.txt"],"commands_claimed":["Get-Content -Path value.txt","Set-Content -Path value.txt -Value \"1`n\""],"unresolved_blockers":[]}
