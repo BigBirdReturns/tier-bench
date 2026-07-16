@@ -544,6 +544,9 @@ def main() -> int:
     contract_gate = json.loads(args.contract_gate.read_text(encoding="utf-8"))
     if contract_gate.get("protocol_revision") != "2.2.2" or not contract_gate.get("all_pass"):
         raise SystemExit("zero-inference controller contract gate did not pass")
+    contract_tests = {item.get("name"): item.get("result") for item in contract_gate.get("tests", [])}
+    if contract_tests.get("complete_collection_matches_preregistered_anchor_signal") != "PASS":
+        raise SystemExit("controller contract gate does not prove the preregistered anchor comparison rule")
     if contract_gate.get("hashes", {}).get("runner_sha256") != sha(Path(__file__).resolve()):
         raise SystemExit("controller contract gate does not bind this runner")
     if contract_gate.get("hashes", {}).get("task_packet_sha256") != sha(TASK / "task_packet.json") or contract_gate.get("hashes", {}).get("hidden_grader_sha256") != sha(PRIVATE / "hidden_grader.py"):
