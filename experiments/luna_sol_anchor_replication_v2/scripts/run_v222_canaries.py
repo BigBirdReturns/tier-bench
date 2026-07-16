@@ -114,18 +114,31 @@ def spark_crate_canary(output: Path) -> dict[str, object]:
 
 
 def run(output: Path) -> dict[str, object]:
-    if not runner.CLI.is_file():
-        raise SystemExit(f"missing pinned CLI: {runner.CLI}")
+    try:
+        cli_identity = runner.require_cli_identity()
+    except runner.ControllerError as exc:
+        raise SystemExit(json.dumps(exc.receipt(), sort_keys=True)) from exc
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     canaries = [planner_canary(output), spark_crate_canary(output)]
+    dispatches = sorted(output.rglob("dispatch.json"))
+    dispatch_cli_identities = {
+        json.dumps(json.loads(path.read_text(encoding="utf-8")).get("cli_identity"), sort_keys=True)
+        for path in dispatches
+    }
+    expected_cli_identity = json.dumps(cli_identity, sort_keys=True)
+    cli_bound = len(dispatches) == 2 and dispatch_cli_identities == {expected_cli_identity}
     receipt = {
         "schema": "luna-sol-anchor-replication/live-canaries@2.2.2",
         "protocol_revision": "2.2.2",
         "call_count": 2,
-        "all_pass": all(item["passed"] for item in canaries),
+        "all_pass": all(item["passed"] for item in canaries) and cli_bound,
         "canaries": canaries,
         "models": {"planner": "gpt-5.6-luna", "crate_executor": "gpt-5.3-codex-spark"},
+        "cli_identity": cli_identity,
+        "dispatch_count": len(dispatches),
+        "dispatch_cli_identities": [json.loads(value) for value in sorted(dispatch_cli_identities)],
+        "all_dispatches_bind_authorized_cli": cli_bound,
         "capability_evidence": False,
         "controller_python": {"path": str(runner.PREFERRED_PYTHON), "sha256": runner.sha(runner.PREFERRED_PYTHON)},
     }

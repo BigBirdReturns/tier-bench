@@ -4,6 +4,12 @@ Date: 2026-07-16
 
 Current disposition: **PRE_DISPATCH_BLOCK_MISSING_FROZEN_CLI**
 
+Decision update: **PATH 2 AUTHORIZED PROSPECTIVELY on 2026-07-16** for the
+exact `codex-cli 0.144.5` candidate identity recorded below. The authorization
+also approved only the separately proposed minimal pairwise comparison repair;
+no other gated change was authorized. The immutable pre-dispatch block remains
+historical evidence.
+
 The approved prospective task/visible repair and every offline deterministic gate are green at commit `1fc65f2`. The first live administrative step stopped before dispatch because the exact executable used by v2.2.1 no longer exists:
 
 - required path: `C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\3135b80b111fd431\codex.exe`

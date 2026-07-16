@@ -91,6 +91,32 @@ def run_gate(output: Path) -> dict[str, Any]:
         root = Path(temp); packet = {"task_id":"derived_ledger_rollup_v2"}
         def check(name: str, passed: bool, detail: str = "") -> None:
             checks.append({"name":name,"code_path":"experiments/luna_sol_anchor_replication_v2/run_v2.py","result":"PASS" if passed else "FAIL","detail":detail})
+        cli_identity = runner.require_cli_identity()
+        check(
+            "pinned_cli_identity_matches_authorized_surface",
+            cli_identity == {
+                "path": str(runner.CLI),
+                "sha256": runner.CLI_SHA256,
+                "version": runner.CLI_VERSION,
+                "execution_chain": [{"path": str(runner.CLI), "sha256": runner.CLI_SHA256, "version": runner.CLI_VERSION}],
+            },
+            json.dumps(cli_identity, sort_keys=True),
+        )
+        missing_cli = root / "missing-codex.exe"
+        try:
+            runner.require_cli_identity(path=missing_cli, expected_path=missing_cli, version_text=runner.CLI_VERSION)
+            missing_refused = False
+        except runner.ControllerError as exc:
+            missing_refused = exc.code == "CLI_MISSING"
+        check("missing_cli_refused_before_dispatch", missing_refused)
+        mismatched_cli = root / "mismatched-codex.exe"
+        mismatched_cli.write_bytes(b"not the authorized executable\n")
+        try:
+            runner.require_cli_identity(path=mismatched_cli, expected_path=mismatched_cli, version_text=runner.CLI_VERSION)
+            mismatch_refused = False
+        except runner.ControllerError as exc:
+            mismatch_refused = exc.code == "CLI_HASH_MISMATCH"
+        check("hash_mismatched_cli_refused_before_dispatch", mismatch_refused)
         full = runner.run_full(root / "full", "trial-001", "full_valid", "fixture", "low", 0, packet, fixture_executor("full_valid"))
         check("full_agent_diff_admitted_despite_advisory_blocker", bool(full.get("candidate") and full["call"]["final_json"]["unresolved_blockers"]), json.dumps(full.get("validation"), sort_keys=True))
         nodiff = runner.run_full(root / "nodiff", "trial-001", "full_nodiff", "fixture", "low", 0, packet, fixture_executor("full_nodiff"))
@@ -137,15 +163,35 @@ def run_gate(output: Path) -> dict[str, Any]:
     check("fresh_task_visible_consistency_matches_sealed_receipt", fresh_consistency == saved_consistency and fresh_consistency.get("all_pass"), json.dumps(fresh_consistency, sort_keys=True))
     partial = runner.build_comparison([{"trial":"replicate_001","arm":"SOL_FULL","hidden_outcome":"NOT_RUN_NO_CANDIDATE","candidate":False,"disposition":"NO_CANDIDATE_NO_DIFF","error":None}])
     check("incomplete_collection_suppresses_capability_verdicts", partial["disposition"] == "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT" and not partial["comparison_rules_applied"] and partial["sol_replication_verdict"] is None and partial["anchor_mechanism_verdict"] is None, json.dumps(partial, sort_keys=True))
-    complete_table = []
-    for number in range(1, 4):
-        trial = f"replicate_{number:03d}"
-        for arm in ("SOL_FULL", "LUNA_FULL", "LUNA_SPARK_CORRECT_ANCHOR", "LUNA_SPARK_NO_ANCHOR"):
-            hidden = "fail" if arm == "LUNA_SPARK_NO_ANCHOR" else "pass"
-            complete_table.append({"trial":trial,"arm":arm,"hidden_outcome":hidden,"candidate":True,"disposition":"CANDIDATE_ADMITTED","error":None})
+    def complete_comparison_table(correct: list[str], no_anchor: list[str], sol: list[str] | None = None) -> list[dict[str, Any]]:
+        sol = sol or ["pass", "pass", "pass"]
+        result: list[dict[str, Any]] = []
+        for index in range(3):
+            trial = f"replicate_{index + 1:03d}"
+            outcomes = {
+                "SOL_FULL": sol[index],
+                "LUNA_FULL": "pass",
+                "LUNA_SPARK_CORRECT_ANCHOR": correct[index],
+                "LUNA_SPARK_NO_ANCHOR": no_anchor[index],
+            }
+            for arm, hidden in outcomes.items():
+                result.append({"trial":trial,"arm":arm,"hidden_outcome":hidden,"candidate":True,"disposition":"CANDIDATE_ADMITTED","error":None})
+        return result
+    complete_table = complete_comparison_table(["pass", "pass", "pass"], ["fail", "fail", "fail"])
     complete = runner.build_comparison(complete_table)
     check("complete_collection_matches_preregistered_anchor_signal", complete["disposition"] == "COMPLETE" and complete["comparison_rules_applied"] and complete["sol_replication_verdict"] == "SOL_LEVEL_REPLICATED_ON_FROZEN_TASK" and complete["anchor_mechanism_verdict"] == "ANCHOR_CAUSAL_SIGNAL_ON_FROZEN_TASK", json.dumps(complete, sort_keys=True))
-    result = {"schema":"luna-sol-anchor-replication/controller-contract-gate@2.2.2","protocol_revision":"2.2.2","code_paths":["run_full","run_chain","apply_hand","create_fork","grade_candidate","seal_final_receipt","extract_remote_error","build_comparison"],"hashes":{"runner_sha256":runner.sha(RUNNER_PATH),"schema_hashes":{p.name:runner.sha(p) for p in runner.SCHEMAS.glob("*.json")},"prompt_hashes":{p.name:runner.sha(p) for p in runner.PROMPTS.glob("*.txt")},"task_packet_sha256":runner.sha(runner.TASK / "task_packet.json"),"hidden_grader_sha256":runner.sha(runner.PRIVATE / "hidden_grader.py"),"visible_bundle_sha256":fresh_consistency["build"]["visible_bundle_sha256"],"task_visible_consistency_receipt_sha256":runner.sha(saved_consistency_path)},"tests":checks,"all_pass":all(x["result"] == "PASS" for x in checks)}
+    two_to_one = runner.build_comparison(complete_comparison_table(["pass", "pass", "fail"], ["fail", "fail", "pass"]))
+    check("two_correct_passes_one_no_anchor_pass_with_two_favored_pairs_signals", two_to_one["anchor_mechanism_verdict"] == "ANCHOR_CAUSAL_SIGNAL_ON_FROZEN_TASK" and two_to_one["counts"]["paired_trials_favor_correct_anchor"] == 2, json.dumps(two_to_one, sort_keys=True))
+    equal = runner.build_comparison(complete_comparison_table(["pass", "pass", "fail"], ["pass", "fail", "pass"]))
+    check("equal_pass_counts_do_not_signal", equal["counts"]["correct_anchor_pass"] == equal["counts"]["no_anchor_pass"] and equal["anchor_mechanism_verdict"] == "NO_ANCHOR_MECHANISM_IDENTIFIED", json.dumps(equal, sort_keys=True))
+    one_favored = runner.build_comparison(complete_comparison_table(["pass", "fail", "fail"], ["fail", "fail", "fail"]))
+    check("fewer_than_two_favored_pairs_do_not_signal", one_favored["counts"]["correct_anchor_pass"] > one_favored["counts"]["no_anchor_pass"] and one_favored["counts"]["paired_trials_favor_correct_anchor"] == 1 and one_favored["anchor_mechanism_verdict"] == "NO_ANCHOR_MECHANISM_IDENTIFIED", json.dumps(one_favored, sort_keys=True))
+    duplicate = complete_table[:-1] + [complete_table[0]]
+    duplicate_result = runner.build_comparison(duplicate)
+    check("duplicate_or_missing_pair_suppresses_capability_verdicts", duplicate_result["disposition"] == "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT" and not duplicate_result["comparison_rules_applied"] and duplicate_result["anchor_mechanism_verdict"] is None, json.dumps(duplicate_result, sort_keys=True))
+    sol_regression = runner.build_comparison(complete_comparison_table(["pass", "pass", "pass"], ["fail", "fail", "fail"], ["pass", "pass", "fail"]))
+    check("sol_replication_expression_remains_unchanged", sol_regression["sol_replication_verdict"] == "TASK_NON_INFORMATIVE_FOR_SOL_REPLICATION" and sol_regression["anchor_mechanism_verdict"] == "ANCHOR_CAUSAL_SIGNAL_ON_FROZEN_TASK", json.dumps(sol_regression, sort_keys=True))
+    result = {"schema":"luna-sol-anchor-replication/controller-contract-gate@2.2.2","protocol_revision":"2.2.2","code_paths":["require_cli_identity","run_full","run_chain","apply_hand","create_fork","grade_candidate","seal_final_receipt","extract_remote_error","build_comparison"],"cli_identity":cli_identity,"hashes":{"runner_sha256":runner.sha(RUNNER_PATH),"schema_hashes":{p.name:runner.sha(p) for p in runner.SCHEMAS.glob("*.json")},"prompt_hashes":{p.name:runner.sha(p) for p in runner.PROMPTS.glob("*.txt")},"task_packet_sha256":runner.sha(runner.TASK / "task_packet.json"),"hidden_grader_sha256":runner.sha(runner.PRIVATE / "hidden_grader.py"),"visible_bundle_sha256":fresh_consistency["build"]["visible_bundle_sha256"],"task_visible_consistency_receipt_sha256":runner.sha(saved_consistency_path)},"tests":checks,"all_pass":all(x["result"] == "PASS" for x in checks)}
     runner.write(output, runner.canon(result))
     return result
 

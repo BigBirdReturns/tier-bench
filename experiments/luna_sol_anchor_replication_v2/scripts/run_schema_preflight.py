@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -12,8 +13,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMAS = ROOT / "prompts" / "schemas"
-CLI = Path(r"C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\3135b80b111fd431\codex.exe")
 PROMPT = "Return the smallest neutral object satisfying all three required properties: initial_planner, continuation_planner, and spark_report. Use the exact action values required by their embedded schemas and empty arrays where allowed."
+
+RUNNER_PATH = ROOT / "run_v2.py"
+runner_spec = importlib.util.spec_from_file_location("luna_run_v222_schema_preflight", RUNNER_PATH)
+assert runner_spec and runner_spec.loader
+runner = importlib.util.module_from_spec(runner_spec)
+runner_spec.loader.exec_module(runner)
 
 sys.path.insert(0, str(ROOT.parents[1] / "scripts"))
 from validate_strict_output_schemas import validate_instance, validate_schema  # noqa: E402
@@ -50,8 +56,10 @@ def usage(stdout: bytes) -> dict[str, object]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    if not CLI.is_file():
-        raise SystemExit(f"missing pinned CLI: {CLI}")
+    try:
+        cli_identity = runner.require_cli_identity()
+    except runner.ControllerError as exc:
+        raise SystemExit(json.dumps(exc.receipt(), sort_keys=True)) from exc
     if argv is None:
         argv = sys.argv[1:]
     if len(argv) != 1:
@@ -84,7 +92,7 @@ def main(argv: list[str] | None = None) -> int:
     (output / "prompt.txt").write_text(PROMPT, encoding="utf-8", newline="\n")
     final_path = output / "final.json"
     command = [
-        str(CLI), "exec", "--model", "gpt-5.3-codex-spark", "--sandbox", "read-only", "--ephemeral", "--json",
+        str(runner.CLI), "exec", "--model", "gpt-5.3-codex-spark", "--sandbox", "read-only", "--ephemeral", "--json",
         "--output-last-message", str(final_path), "--output-schema", str(union_path),
         "--config", 'model_reasoning_effort="low"', "--config", 'model_reasoning_summary="none"',
         "--config", "model_supports_reasoning_summaries=false", "--config", 'web_search="disabled"',
@@ -96,6 +104,7 @@ def main(argv: list[str] | None = None) -> int:
         "started_at": now(), "model": "gpt-5.3-codex-spark", "effort": "low", "sandbox": "read-only",
         "cwd": str(empty_repo), "command": command, "prompt_sha256": sha(output / "prompt.txt"),
         "schema_sha256": sha(union_path), "schema": "union.schema.json", "strict_schema_errors": strict_errors,
+        "cli_identity": cli_identity,
     }))
     result = subprocess.run(command, cwd=empty_repo, input=PROMPT.encode(), capture_output=True, timeout=900)
     (output / "events.jsonl").write_bytes(result.stdout)
@@ -114,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
         "stdout_sha256": sha(output / "events.jsonl"), "stderr_sha256": sha(output / "stderr.txt"),
         "final_response_sha256": sha_bytes(final_bytes), "usage": usage(result.stdout),
         "final_present": bool(final_bytes), "parse_error": parse_error, "schema_valid": not strict_errors and not instance_errors,
-        "schema_errors": strict_errors, "instance_errors": instance_errors,
+        "schema_errors": strict_errors, "instance_errors": instance_errors, "cli_identity": cli_identity,
     }
     (output / "completion.json").write_bytes(canon(completion))
     if parsed is not None:

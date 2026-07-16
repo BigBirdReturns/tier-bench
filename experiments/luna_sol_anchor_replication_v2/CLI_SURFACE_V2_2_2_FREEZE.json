@@ -1,0 +1,43 @@
+{
+  "schema": "luna-sol-anchor-replication/cli-surface-freeze@2.2.2",
+  "protocol_revision": "2.2.2",
+  "authorized_on": "2026-07-16",
+  "operator_authorization": "Authorize v2.2.2 to bind codex-cli 0.144.5 at the recorded path and SHA-256, and implement the minimal preregistered pairwise comparison repair exactly as proposed; authorize no other gated change.",
+  "cli_identity": {
+    "path": "C:\\Users\\BAM-Desktop\\AppData\\Local\\OpenAI\\Codex\\bin\\494ae9d46ab9b3eb\\codex.exe",
+    "sha256": "efdb3540ef74b9909408c8d38da79483454797b36f471e3e004fc2bf2b70e22a",
+    "version": "codex-cli 0.144.5",
+    "execution_chain": [
+      {
+        "path": "C:\\Users\\BAM-Desktop\\AppData\\Local\\OpenAI\\Codex\\bin\\494ae9d46ab9b3eb\\codex.exe",
+        "sha256": "efdb3540ef74b9909408c8d38da79483454797b36f471e3e004fc2bf2b70e22a",
+        "version": "codex-cli 0.144.5"
+      }
+    ]
+  },
+  "superseded_cli_identity_for_v2_2_2": {
+    "path": "C:\\Users\\BAM-Desktop\\AppData\\Local\\OpenAI\\Codex\\bin\\3135b80b111fd431\\codex.exe",
+    "sha256": "2caacad1f7b8b3e9b2527b9bff9630cfbb30ec25d8d8c018c9d55a2bec348032",
+    "version": "codex-cli 0.144.2",
+    "reason": "recorded executable no longer exists; superseded prospectively for v2.2.2 only"
+  },
+  "authorized_change_scope": [
+    "bind the exact cli_identity above in preflight, canaries, and benchmark dispatch",
+    "fail before dispatch on path, SHA-256, or version mismatch",
+    "repair the completed-run anchor comparison by pairing correct-anchor and no-anchor outcomes by replicate before counting"
+  ],
+  "unchanged_gated_contracts": [
+    "task",
+    "visible validator beyond the already-authorized v2.2.2 task-consistency repair",
+    "hidden grader",
+    "schedule",
+    "models",
+    "budgets",
+    "prompts",
+    "schemas",
+    "hidden vectors",
+    "Sol replication expression",
+    "comparison labels and thresholds"
+  ],
+  "capability_evidence": false
+}

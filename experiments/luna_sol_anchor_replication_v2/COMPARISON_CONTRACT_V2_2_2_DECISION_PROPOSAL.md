@@ -4,6 +4,12 @@ Date: 2026-07-16
 
 Current disposition: **DETERMINISTIC_GATE_BLOCK_PREREGISTRATION_COMPARISON_MISMATCH**
 
+Decision update: **MINIMAL PROSPECTIVE REPAIR AUTHORIZED on 2026-07-16**.
+Authorization is limited to the replicate-keyed implementation described in
+this proposal and the separately recorded exact CLI 0.144.5 binding. No label,
+threshold, comparison population, stopping rule, or other gated contract may
+change.
+
 The frozen preregistration says the anchor signal is present when the correct-anchor arm "passes more paired replicates and at least two of three favor it." The current implementation first filters both arm lists to passing rows and then counts a pair only when the already-filtered no-anchor row is not a pass. That second condition is unreachable.
 
 Smallest three-pair witness:

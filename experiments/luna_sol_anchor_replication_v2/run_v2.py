@@ -25,7 +25,9 @@ VISIBLE = TASK / "subject_bundle"
 PRIVATE = TASK / "private"
 PROMPTS = ROOT / "prompts"
 SCHEMAS = PROMPTS / "schemas"
-CLI = Path(r"C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\3135b80b111fd431\codex.exe")
+CLI = Path(r"C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\494ae9d46ab9b3eb\codex.exe")
+CLI_SHA256 = "efdb3540ef74b9909408c8d38da79483454797b36f471e3e004fc2bf2b70e22a"
+CLI_VERSION = "codex-cli 0.144.5"
 PREFERRED_PYTHON = Path(r"C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe")
 EXPERIMENT_TAG = "LUNA_SOL_ANCHOR_REPLICATION_V2_2_2"
 
@@ -48,6 +50,33 @@ def sha_bytes(data: bytes) -> str:
 
 def sha(path: Path) -> str:
     return sha_bytes(path.read_bytes())
+
+def require_cli_identity(
+    path: Path = CLI,
+    *,
+    expected_path: Path = CLI,
+    expected_sha256: str = CLI_SHA256,
+    expected_version: str = CLI_VERSION,
+    version_text: str | None = None,
+) -> dict[str, Any]:
+    path = Path(path)
+    expected_path = Path(expected_path)
+    if path != expected_path:
+        raise ControllerError("CLI_PATH_MISMATCH", "cli_identity", f"unauthorized CLI path: {path}", str(path))
+    if not path.is_file():
+        raise ControllerError("CLI_MISSING", "cli_identity", f"missing pinned CLI: {path}", str(path))
+    actual_sha256 = sha(path)
+    if actual_sha256 != expected_sha256:
+        raise ControllerError("CLI_HASH_MISMATCH", "cli_identity", f"CLI SHA-256 mismatch: {actual_sha256}", str(path))
+    if version_text is None:
+        result = subprocess.run([str(path), "--version"], capture_output=True, timeout=30)
+        if result.returncode:
+            raise ControllerError("CLI_VERSION_PROBE_FAILED", "cli_identity", result.stderr.decode(errors="replace"), str(path))
+        version_text = result.stdout.decode(errors="replace").strip()
+    if version_text != expected_version:
+        raise ControllerError("CLI_VERSION_MISMATCH", "cli_identity", f"CLI version mismatch: {version_text}", str(path))
+    executable = {"path": str(path), "sha256": actual_sha256, "version": version_text}
+    return {**executable, "execution_chain": [executable]}
 
 def write(path: Path, data: bytes | str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -235,6 +264,7 @@ def extract_remote_error(stdout: bytes) -> dict[str, Any] | None:
 Executor = Callable[[list[str], Path, bytes, Path], subprocess.CompletedProcess[bytes]]
 
 def invoke(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, base_name: str, packet: dict[str, Any], schema_name: str, executor: Executor | None = None) -> dict[str, Any]:
+    cli_identity = require_cli_identity()
     call_dir.mkdir(parents=True, exist_ok=True)
     base = (PROMPTS / f"{base_name}_base.txt").read_bytes()
     packet_bytes = canon(packet)
@@ -243,7 +273,7 @@ def invoke(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, bas
     schema_path = SCHEMAS / schema_name
     final_path = call_dir / "final.json"
     command = [str(CLI), "exec", "--model", model, "--sandbox", sandbox, "--ephemeral", "--json", "--output-last-message", str(final_path), "--output-schema", str(schema_path), "--config", f'model_reasoning_effort="{effort}"', "--config", 'model_reasoning_summary="none"', "--config", "model_supports_reasoning_summaries=false", "--config", 'web_search="disabled"', "--config", "sandbox_workspace_write.network_access=false", "--config", "features.multi_agent=false", "--config", "agents.max_depth=1", "--config", "agents.max_threads=1", "--config", 'history.persistence="none"', "--config", "hide_agent_reasoning=true", "--config", 'approval_policy="never"', "-C", str(cwd), "-"]
-    dispatch = {"started_at": now(), "model": model, "effort": effort, "sandbox": sandbox, "cwd": str(cwd), "command": command, "prompt_sha256": sha(prompt_path), "schema_sha256": sha(schema_path), "schema": schema_name}
+    dispatch = {"started_at": now(), "model": model, "effort": effort, "sandbox": sandbox, "cwd": str(cwd), "command": command, "prompt_sha256": sha(prompt_path), "schema_sha256": sha(schema_path), "schema": schema_name, "cli_identity": cli_identity}
     write(call_dir / "dispatch.json", canon(dispatch))
     started = time.time()
     try:
@@ -420,8 +450,17 @@ def build_comparison(table: list[dict[str, Any]]) -> dict[str, Any]:
         )
     )
     sol = [row for row in table if row["arm"] == "SOL_FULL" and row["hidden_outcome"] == "pass"]
-    anchor = [row for row in table if row["arm"] == "LUNA_SPARK_CORRECT_ANCHOR" and row["hidden_outcome"] == "pass"]
-    no_anchor = [row for row in table if row["arm"] == "LUNA_SPARK_NO_ANCHOR" and row["hidden_outcome"] == "pass"]
+    correct_anchor_rows = {row["trial"]: row for row in table if row["arm"] == "LUNA_SPARK_CORRECT_ANCHOR"}
+    no_anchor_rows = {row["trial"]: row for row in table if row["arm"] == "LUNA_SPARK_NO_ANCHOR"}
+    anchor = [row for row in correct_anchor_rows.values() if row["hidden_outcome"] == "pass"]
+    no_anchor = [row for row in no_anchor_rows.values() if row["hidden_outcome"] == "pass"]
+    favored_pairs = sum(
+        1
+        for trial, row in correct_anchor_rows.items()
+        if row["hidden_outcome"] == "pass"
+        and trial in no_anchor_rows
+        and no_anchor_rows[trial]["hidden_outcome"] != "pass"
+    )
     comparison: dict[str, Any] = {
         "schema": "luna-sol-anchor-replication/comparison@2.2.2",
         "protocol_revision": "2.2.2",
@@ -434,12 +473,13 @@ def build_comparison(table: list[dict[str, Any]]) -> dict[str, Any]:
             "sol_full_pass": len(sol),
             "correct_anchor_pass": len(anchor),
             "no_anchor_pass": len(no_anchor),
+            "paired_trials_favor_correct_anchor": favored_pairs,
         },
     }
     if not complete:
         return comparison
     comparison["sol_replication_verdict"] = "SOL_LEVEL_REPLICATED_ON_FROZEN_TASK" if len(sol) == 3 and len(anchor) == 3 else "TASK_NON_INFORMATIVE_FOR_SOL_REPLICATION" if len(sol) != 3 else "NOT_REPLICATED"
-    comparison["anchor_mechanism_verdict"] = "ANCHOR_CAUSAL_SIGNAL_ON_FROZEN_TASK" if len(anchor) > len(no_anchor) and sum(1 for a, n in zip(sorted(anchor, key=lambda x:x["trial"]), sorted(no_anchor, key=lambda x:x["trial"])) if a["hidden_outcome"] == "pass" and n["hidden_outcome"] != "pass") >= 2 else "NO_ANCHOR_MECHANISM_IDENTIFIED"
+    comparison["anchor_mechanism_verdict"] = "ANCHOR_CAUSAL_SIGNAL_ON_FROZEN_TASK" if len(anchor) > len(no_anchor) and favored_pairs >= 2 else "NO_ANCHOR_MECHANISM_IDENTIFIED"
     return comparison
 
 def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_base: dict[str, Any], executor: Executor | None = None, interpreter: Path = PREFERRED_PYTHON) -> dict[str, Any]:
@@ -520,7 +560,10 @@ def main() -> int:
     parser.add_argument("--prior-partial-run", type=Path, required=True); parser.add_argument("--schedule-source", type=Path, required=True)
     parser.add_argument("--preflight-receipt", type=Path, required=True); parser.add_argument("--contract-gate", type=Path, required=True); parser.add_argument("--canary-receipt", type=Path, required=True)
     args = parser.parse_args()
-    if not CLI.is_file(): raise SystemExit("missing pinned CLI")
+    try:
+        cli_identity = require_cli_identity()
+    except ControllerError as exc:
+        raise SystemExit(json.dumps(exc.receipt(), sort_keys=True)) from exc
     oracle_path = TASK / "oracle_self_test_v222.json"
     if not oracle_path.is_file(): raise SystemExit("v2.2.2 task/visible consistency receipt missing")
     oracle = json.loads(oracle_path.read_text(encoding="utf-8"))
@@ -541,6 +584,8 @@ def main() -> int:
         raise SystemExit("administrative schema preflight was not the frozen Spark union-schema proof")
     if preflight_dispatch.get("schema_sha256") != sha(preflight_dir / "union.schema.json") or preflight.get("stdout_sha256") != sha(preflight_dir / "events.jsonl") or preflight.get("stderr_sha256") != sha(preflight_dir / "stderr.txt"):
         raise SystemExit("administrative schema preflight custody hashes do not match")
+    if preflight_dispatch.get("cli_identity") != cli_identity or preflight.get("cli_identity") != cli_identity:
+        raise SystemExit("administrative schema preflight does not bind the authorized CLI identity")
     contract_gate = json.loads(args.contract_gate.read_text(encoding="utf-8"))
     if contract_gate.get("protocol_revision") != "2.2.2" or not contract_gate.get("all_pass"):
         raise SystemExit("zero-inference controller contract gate did not pass")
@@ -549,6 +594,8 @@ def main() -> int:
         raise SystemExit("controller contract gate does not prove the preregistered anchor comparison rule")
     if contract_gate.get("hashes", {}).get("runner_sha256") != sha(Path(__file__).resolve()):
         raise SystemExit("controller contract gate does not bind this runner")
+    if contract_gate.get("cli_identity") != cli_identity:
+        raise SystemExit("controller contract gate does not bind the authorized CLI identity")
     if contract_gate.get("hashes", {}).get("task_packet_sha256") != sha(TASK / "task_packet.json") or contract_gate.get("hashes", {}).get("hidden_grader_sha256") != sha(PRIVATE / "hidden_grader.py"):
         raise SystemExit("controller contract gate does not bind the frozen task and hidden grader")
     if contract_gate.get("hashes", {}).get("schema_hashes") != {p.name: sha(p) for p in SCHEMAS.glob("*.json")} or contract_gate.get("hashes", {}).get("prompt_hashes") != {p.name: sha(p) for p in PROMPTS.glob("*.txt")}:
@@ -562,6 +609,8 @@ def main() -> int:
     observed_canaries = {item.get("id") for item in canary.get("canaries", []) if item.get("passed")}
     if canary.get("protocol_revision") != "2.2.2" or not canary.get("all_pass") or canary.get("call_count") != 2 or observed_canaries != required_canaries:
         raise SystemExit("v2.2.2 Luna/Spark administrative canaries did not pass")
+    if canary.get("cli_identity") != cli_identity or canary.get("dispatch_count") != 2 or canary.get("dispatch_cli_identities") != [cli_identity] or not canary.get("all_dispatches_bind_authorized_cli"):
+        raise SystemExit("v2.2.2 administrative canaries do not bind the authorized CLI identity")
     if args.run_root is None: args.run_root = ROOT / "run" / datetime.now(timezone.utc).strftime("run_%Y%m%dT%H%M%SZ")
     run_dir = args.run_root.resolve(); run_dir.mkdir(parents=True, exist_ok=False)
     models = json.loads(subprocess.run([str(CLI), "debug", "models"], capture_output=True, check=True).stdout)
@@ -571,7 +620,7 @@ def main() -> int:
     schedule = json.loads(prior_schedule.read_text(encoding="utf-8"))
     if (run_dir / "schedule.json").exists(): raise SystemExit("new run schedule path already exists")
     write(run_dir / "schedule.json", canon(schedule)); write(run_dir / "model_catalog.json", model_catalog_bytes)
-    manifest = {"schema": "luna-sol-anchor-replication/run-manifest@2.2.2", "protocol_revision": "2.2.2", "created_at": now(), "suite_commit": args.suite_commit, "branch": "codex/luna-sol-anchor-replication-v2", "cli_path": str(CLI), "cli_sha256": sha(CLI), "cli_version": subprocess.run([str(CLI), "--version"], capture_output=True, check=True).stdout.decode().strip(), "controller_python": {"path": str(PREFERRED_PYTHON), "version": subprocess.run([str(PREFERRED_PYTHON), "--version"], capture_output=True, check=True).stdout.decode().strip(), "sha256": sha(PREFERRED_PYTHON)}, "model_catalog_sha256": sha(run_dir / "model_catalog.json"), "task_version": "derived_ledger_rollup_v2", "task_packet_sha256": task_hash, "hidden_grader_sha256": sha(PRIVATE / "hidden_grader.py"), "visible_bundle_sha256": oracle["build"]["visible_bundle_sha256"], "task_visible_consistency_receipt_sha256": sha(oracle_path), "prompt_hashes": {p.name: sha(p) for p in PROMPTS.glob("*.txt")}, "schema_hashes": {p.name: sha(p) for p in SCHEMAS.glob("*.json")}, "k": 3, "schedule_seed": schedule["seed"], "schedule_source_sha256": sha(prior_schedule), "frozen": True, "prior_run_2_0": "run_20260715T205630Z", "prior_run_2_1": "run_20260715T212046Z", "prior_run_2_2_1": args.prior_partial_run.name, "prior_2_1_disposition": "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT", "prior_2_1_benchmark_calls": 9, "prior_2_1_candidates": 0, "prior_2_1_hidden_grades": 0, "prior_2_2_1_disposition": "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT", "prior_2_2_1_benchmark_calls": 16, "prior_2_2_1_candidates": 0, "prior_2_2_1_hidden_grades": 0, "prior_partial_run": args.prior_partial_run.name, "prior_subject_outputs_admitted": 0, "prior_candidates_admitted": 0, "prior_grades_admitted": 0, "administrative_preflight_sha256": sha(args.preflight_receipt), "controller_contract_gate_sha256": sha(args.contract_gate), "live_canary_sha256": sha(args.canary_receipt), "cli_compatibility": {"multi_agent": False, "features.multi_agent": False, "requested_agents_max_depth": 1, "used_agents_max_depth": 1, "max_threads": 1}, "stopping_rules": json.loads((TASK / "preregistration.json").read_text())["stopping_rules"]}
+    manifest = {"schema": "luna-sol-anchor-replication/run-manifest@2.2.2", "protocol_revision": "2.2.2", "created_at": now(), "suite_commit": args.suite_commit, "branch": "codex/luna-sol-anchor-replication-v2", "cli_identity": cli_identity, "cli_path": cli_identity["path"], "cli_sha256": cli_identity["sha256"], "cli_version": cli_identity["version"], "controller_python": {"path": str(PREFERRED_PYTHON), "version": subprocess.run([str(PREFERRED_PYTHON), "--version"], capture_output=True, check=True).stdout.decode().strip(), "sha256": sha(PREFERRED_PYTHON)}, "model_catalog_sha256": sha(run_dir / "model_catalog.json"), "task_version": "derived_ledger_rollup_v2", "task_packet_sha256": task_hash, "hidden_grader_sha256": sha(PRIVATE / "hidden_grader.py"), "visible_bundle_sha256": oracle["build"]["visible_bundle_sha256"], "task_visible_consistency_receipt_sha256": sha(oracle_path), "prompt_hashes": {p.name: sha(p) for p in PROMPTS.glob("*.txt")}, "schema_hashes": {p.name: sha(p) for p in SCHEMAS.glob("*.json")}, "k": 3, "schedule_seed": schedule["seed"], "schedule_source_sha256": sha(prior_schedule), "frozen": True, "prior_run_2_0": "run_20260715T205630Z", "prior_run_2_1": "run_20260715T212046Z", "prior_run_2_2_1": args.prior_partial_run.name, "prior_2_1_disposition": "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT", "prior_2_1_benchmark_calls": 9, "prior_2_1_candidates": 0, "prior_2_1_hidden_grades": 0, "prior_2_2_1_disposition": "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT", "prior_2_2_1_benchmark_calls": 16, "prior_2_2_1_candidates": 0, "prior_2_2_1_hidden_grades": 0, "prior_partial_run": args.prior_partial_run.name, "prior_subject_outputs_admitted": 0, "prior_candidates_admitted": 0, "prior_grades_admitted": 0, "administrative_preflight_sha256": sha(args.preflight_receipt), "controller_contract_gate_sha256": sha(args.contract_gate), "live_canary_sha256": sha(args.canary_receipt), "cli_compatibility": {"multi_agent": False, "features.multi_agent": False, "requested_agents_max_depth": 1, "used_agents_max_depth": 1, "max_threads": 1}, "stopping_rules": json.loads((TASK / "preregistration.json").read_text())["stopping_rules"]}
     write(run_dir / "manifest.json", canon(manifest))
     packet_full = {"task_id": "derived_ledger_rollup_v2", "task_packet": task_packet(), "public_validator_catalog": public_catalog(), "instruction": "Complete the visible task in this isolated repository."}
     arms: dict[str, Any] = {}
