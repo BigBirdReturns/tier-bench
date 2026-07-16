@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         "--output-last-message", str(final_path), "--output-schema", str(union_path),
         "--config", 'model_reasoning_effort="low"', "--config", 'model_reasoning_summary="none"',
         "--config", "model_supports_reasoning_summaries=false", "--config", 'web_search="disabled"',
-        "--config", "sandbox_workspace_write.network_access=false", "--config", "agents.max_depth=0",
+        "--config", "sandbox_workspace_write.network_access=false", "--config", "features.multi_agent=false", "--config", "agents.max_depth=1",
         "--config", "agents.max_threads=1", "--config", 'history.persistence="none"',
         "--config", "hide_agent_reasoning=true", "--config", 'approval_policy="never"', "-C", str(empty_repo), "-",
     ]
