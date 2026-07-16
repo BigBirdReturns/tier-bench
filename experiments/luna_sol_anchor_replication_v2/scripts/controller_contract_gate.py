@@ -68,6 +68,8 @@ def fixture_executor(mode: str):
             packet = packet_from_prompt(prompt); crate = packet["hand_crate"]
             if "src/ledger_stage.py" in crate["allowed_paths"]:
                 (cwd / "src/ledger_stage.py").write_text(STAGE, encoding="utf-8")
+                if mode == "spark_out_of_scope":
+                    (cwd / "src/solution.py").write_text(SOLUTION, encoding="utf-8")
             else:
                 (cwd / "src/solution.py").write_text(SOLUTION, encoding="utf-8")
             payload = {"crate_id":crate["crate_id"],"summary":"fixture execution","files_inspected_claimed":[],"files_changed_claimed":[],"commands_claimed":[],"unresolved_blockers":["runtime unavailable"]}
@@ -107,6 +109,11 @@ def run_gate(output: Path) -> dict[str, Any]:
         failed = runner.run_chain(root / "failed", "trial-002", 0, False, packet, fixture_executor("planner_null"))
         forks = list((root / "failed" / "trial-002").glob("luna_spark_*")) if (root / "failed" / "trial-002").exists() else []
         check("failed_prelude_emits_typed_disposition_without_forks", failed.get("disposition") == "NOT_RUN_PRELUDE_PLANNER_REJECTED" and not forks, json.dumps(failed, sort_keys=True, default=str))
+        shared_failure = root / "shared_failure"
+        first_failure = runner.run_chain(shared_failure, "trial-003", 0, False, packet, fixture_executor("spark_out_of_scope"))
+        second_failure = runner.run_chain(shared_failure, "trial-003", 0, True, packet, fixture_executor("spark_out_of_scope"))
+        planner_calls = list((shared_failure / "trial-003" / "split_prelude").glob("planner_initial/call/dispatch.json"))
+        check("shared_failed_prelude_is_reused_without_controller_exception", first_failure.get("disposition") == "PRELUDE_HAND1_PATH_VIOLATION" and second_failure.get("disposition") == "PRELUDE_HAND1_PATH_VIOLATION" and second_failure.get("error", {}).get("code") == "PRELUDE_HAND1_PATH_VIOLATION" and len(planner_calls) == 1, json.dumps({"first": first_failure, "second": second_failure}, sort_keys=True, default=str))
         try:
             runner.create_fork(root / "chain" / "trial-001" / "split_prelude" / "accepted_state", fork_a)
             idempotent = False

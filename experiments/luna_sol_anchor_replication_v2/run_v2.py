@@ -390,11 +390,22 @@ def seal_final_receipt(run_dir: Path, trial: str, arm: str, outcome: dict[str, A
     write(run_dir / trial / arm / "final_receipt.json", canon(receipt))
     return receipt
 
+def outcome_error(outcome: dict[str, Any]) -> dict[str, Any] | None:
+    validation = outcome.get("validation") or outcome.get("final") or {}
+    return outcome.get("error") or validation.get("error") or (outcome.get("call") or {}).get("administrative_error")
+
 def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_base: dict[str, Any], executor: Executor | None = None, interpreter: Path = PREFERRED_PYTHON) -> dict[str, Any]:
     arm = "luna_spark_no_anchor" if no_anchor else "luna_spark_correct_anchor"
     prelude = run_dir / trial / "split_prelude"; base = prelude / "base"
     reuse = (prelude / "accepted_state").is_dir()
+    prelude_failure = prelude / "failure.json"
     result: dict[str, Any] = {"prelude_reused": reuse}
+    if not reuse and prelude_failure.is_file():
+        saved = json.loads(prelude_failure.read_text(encoding="utf-8"))
+        result.update({"disposition": saved["disposition"], "error": saved["error"], "candidate": None})
+        seal_final_receipt(run_dir, trial, "split_prelude", result)
+        write(prelude / "outcome.json", canon(result))
+        return result
     try:
         if not reuse:
             initialize_subject(base)
@@ -432,9 +443,13 @@ def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_bas
         if exc.code == "NOT_RUN_PRELUDE_PLANNER_REJECTED" or exc.stage == "planner_validation": disposition = "NOT_RUN_PRELUDE_PLANNER_REJECTED"
         elif exc.code in {"PRELUDE_HAND1_NO_DIFF", "PRELUDE_HAND1_PATH_VIOLATION", "PRELUDE_HAND1_VISIBLE_VALIDATOR_FAILURE"}: disposition = exc.code
         else: disposition = "NOT_RUN_PRELUDE_ADMINISTRATIVE_FAILURE" if not (prelude / "accepted_state").is_dir() else "REJECTED_CONTROLLER_ERROR"
-        result.update({"disposition": disposition, "error": exc.receipt(), "candidate": None})
+        error = exc.receipt(); result.update({"disposition": disposition, "error": error, "candidate": None})
+        if not (prelude / "accepted_state").is_dir(): write(prelude_failure, canon({"disposition": disposition, "error": error}))
     except Exception as exc:
-        result.update({"disposition": "NOT_RUN_PRELUDE_ADMINISTRATIVE_FAILURE" if not (prelude / "accepted_state").is_dir() else "REJECTED_CONTROLLER_ERROR", "error": {"code": "CONTROLLER_EXCEPTION", "stage": "split_state_machine", "message": str(exc)}, "candidate": None})
+        disposition = "NOT_RUN_PRELUDE_ADMINISTRATIVE_FAILURE" if not (prelude / "accepted_state").is_dir() else "REJECTED_CONTROLLER_ERROR"
+        error = {"code": "CONTROLLER_EXCEPTION", "stage": "split_state_machine", "message": str(exc)}
+        result.update({"disposition": disposition, "error": error, "candidate": None})
+        if not (prelude / "accepted_state").is_dir(): write(prelude_failure, canon({"disposition": disposition, "error": error}))
     evidence_arm = arm if (prelude / "accepted_state").is_dir() else "split_prelude"
     seal_final_receipt(run_dir, trial, evidence_arm, result)
     write(run_dir / trial / evidence_arm / "outcome.json", canon(result))
@@ -502,7 +517,9 @@ def main() -> int:
             seal_final_receipt(run_dir, trial, arm_dir, outcome)
     table = []
     for trial, trial_arms in arms.items():
-        for arm, outcome in trial_arms.items(): table.append({"trial": trial, "arm": arm, "hidden_outcome": outcome.get("hidden_grade", {}).get("outcome"), "candidate": bool(outcome.get("candidate")), "error": outcome.get("error")})
+        for arm, outcome in trial_arms.items():
+            validation = outcome.get("validation") or outcome.get("final") or {}
+            table.append({"trial": trial, "arm": arm, "hidden_outcome": outcome.get("hidden_grade", {}).get("outcome"), "candidate": bool(outcome.get("candidate")), "disposition": outcome.get("disposition") or validation.get("disposition"), "error": outcome_error(outcome)})
     sol = [x for x in table if x["arm"] == "SOL_FULL" and x["hidden_outcome"] == "pass"]
     anchor = [x for x in table if x["arm"] == "LUNA_SPARK_CORRECT_ANCHOR" and x["hidden_outcome"] == "pass"]
     no_anchor = [x for x in table if x["arm"] == "LUNA_SPARK_NO_ANCHOR" and x["hidden_outcome"] == "pass"]
