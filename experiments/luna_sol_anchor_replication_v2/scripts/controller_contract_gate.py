@@ -53,7 +53,7 @@ def packet_from_prompt(prompt: bytes) -> dict[str, Any]:
 
 def fixture_executor(mode: str):
     def execute(command: list[str], cwd: Path, prompt: bytes, final_path: Path) -> subprocess.CompletedProcess[bytes]:
-        schema = Path(command[command.index("--output-schema") + 1]).name
+        schema = Path(command[command.index("--output-schema") + 1]).name if "--output-schema" in command else None
         payload: dict[str, Any]
         if schema == "full_agent.schema.json":
             if mode == "full_valid":
@@ -69,15 +69,22 @@ def fixture_executor(mode: str):
                 payload = {"action":"spawn_hand_1", "anchor_state":{"objective":"preserve durable progress","invariants":["bounded"],"decisions":["split stages"],"open_risks":[],"stop_condition":"validator passes"},"work_graph":[{"node_id":"hand_1","objective":"normalize input","depends_on":[]},{"node_id":"hand_2","objective":"roll up result","depends_on":["hand_1"]}],"crate":{"crate_id":"fixture-hand-1","objective":"implement normalization","allowed_paths":["src/ledger_stage.py"],"forbidden_paths":["src/solution.py"],"dependencies":[],"visible_context_refs":["task"],"validator_ids":["stage"],"command_budget":4,"wall_time_seconds":60,"stop_condition":"stage passes"},"decision_record":["two dependent hands"]}
         elif schema == "planner_continuation.schema.json":
             payload = {"action":"spawn_hand_2", "anchor_state":{"objective":"finish bounded rollup","invariants":["preserve HAND 1"],"decisions":["edit solution"],"open_risks":[],"stop_condition":"visible validator passes"},"crate":{"crate_id":"fixture-hand-2","objective":"implement rollup","allowed_paths":["src/solution.py"],"forbidden_paths":["src/ledger_stage.py"],"dependencies":["hand_1"],"visible_context_refs":["accepted_hand_1"],"validator_ids":["visible"],"command_budget":4,"wall_time_seconds":60,"stop_condition":"visible validator passes"}}
-        elif schema == "spark.schema.json":
-            packet = packet_from_prompt(prompt); crate = packet["hand_crate"]
-            if "src/ledger_stage.py" in crate["allowed_paths"]:
-                (cwd / "src/ledger_stage.py").write_text(STAGE, encoding="utf-8")
+        elif schema is None:
+            text = prompt.decode()
+            hand_1 = "Allowed paths: src/ledger_stage.py" in text
+            if mode != "spark_no_diff" and hand_1:
+                (cwd / "src/ledger_stage.py").write_text("raise SystemExit(9)\n" if mode == "spark_fail_validator" else STAGE, encoding="utf-8")
                 if mode == "spark_out_of_scope":
                     (cwd / "src/solution.py").write_text(SOLUTION, encoding="utf-8")
-            else:
+                elif mode == "spark_validator_mutation":
+                    (cwd / "run_visible.py").write_text("raise SystemExit(0)\n", encoding="utf-8")
+                elif mode == "spark_task_mutation":
+                    (cwd / "TASK.md").write_text("mutated\n", encoding="utf-8")
+            elif mode != "spark_no_diff":
                 (cwd / "src/solution.py").write_text(SOLUTION, encoding="utf-8")
-            payload = {"crate_id":crate["crate_id"],"summary":"fixture execution","files_inspected_claimed":[],"files_changed_claimed":[],"commands_claimed":[],"unresolved_blockers":["runtime unavailable"]}
+            final_path.parent.mkdir(parents=True, exist_ok=True)
+            final_path.write_text("malformed final prose: {not-json", encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0, b"", b"")
         else:
             raise AssertionError(schema)
         final_path.parent.mkdir(parents=True, exist_ok=True)
@@ -124,10 +131,45 @@ def run_gate(output: Path) -> dict[str, Any]:
         outscope = runner.run_full(root / "outscope", "trial-001", "full_outscope", "fixture", "low", 0, packet, fixture_executor("full_out_of_scope"))
         check("full_agent_out_of_scope_rejected", outscope["validation"].get("disposition") == "REJECTED_PATH_VIOLATION")
         planner_subject = root / "planner_subject"; runner.initialize_subject(planner_subject)
-        planner = runner.invoke(root / "planner", planner_subject, "fixture", "low", "read-only", "planner_initial", packet, "planner_initial.schema.json", fixture_executor("planner_null"))
+        planner = runner.invoke_structured(root / "planner", planner_subject, "fixture", "low", "read-only", "planner_initial", packet, "planner_initial.schema.json", fixture_executor("planner_null"))
         check("v21_null_anchor_rejected_by_schema", bool(planner["instance_errors"]))
+        planner_dispatch = json.loads((root / "planner" / "dispatch.json").read_text(encoding="utf-8"))
+        check("planner_calls_remain_schema_bound", "--output-schema" in planner_dispatch["command"] and planner_dispatch["schema"] == "planner_initial.schema.json")
+        surface_executor_called = False
+        def surface_executor(command: list[str], cwd: Path, prompt: bytes, final_path: Path) -> subprocess.CompletedProcess[bytes]:
+            nonlocal surface_executor_called
+            surface_executor_called = True
+            return subprocess.CompletedProcess(command, 0, b"", b"")
+        surface_subject = root / "surface_subject"; surface_subject.mkdir()
+        try:
+            runner.invoke_spark_freeform(root / "stripped_surface", surface_subject, "fixture", "low", b"synthetic\n", surface_executor, surface="stripped")
+            stripped_refused = False
+        except runner.ControllerError as exc:
+            stripped_refused = exc.code == "SPARK_APP_SURFACE_STRIPPED"
+        check("stripped_app_configuration_refused_before_dispatch", stripped_refused and not surface_executor_called)
+        check("benchmark_entrypoint_remains_fail_closed", runner.BENCHMARK_EXECUTION_AUTHORIZED is False)
         chain = runner.run_chain(root / "chain", "trial-001", 0, False, packet, fixture_executor("chain"))
         check("valid_initial_planner_and_spark_hand1_admitted", chain.get("accepted_hand_1", {}).get("visible_validators", {}).get("stage", {}).get("passed", False))
+        hand1_call = root / "chain" / "trial-001" / "split_prelude" / "spark_hand_1" / "call"
+        hand1_dispatch = json.loads((hand1_call / "dispatch.json").read_text(encoding="utf-8"))
+        hand1_prompt = (hand1_call / "prompt.txt").read_text(encoding="utf-8")
+        hand1_receipt = chain["accepted_hand_1"]
+        exact_stage_command = runner.powershell_command(runner.validator_command("stage"))
+        check("spark_execution_is_free_form_on_app_inherited_surface", hand1_dispatch.get("free_form") is True and hand1_dispatch.get("surface") == "app_inherited" and hand1_dispatch.get("output_schema") is None and "--output-schema" not in hand1_dispatch["command"] and "--ignore-user-config" not in hand1_dispatch["command"] and "--ignore-rules" not in hand1_dispatch["command"])
+        check("spark_handoff_contains_exact_validator_command", exact_stage_command in hand1_prompt and hand1_receipt["visible_validators"]["stage"]["shell_command"] == exact_stage_command)
+        check("malformed_spark_final_prose_is_ignored_for_admission", hand1_receipt.get("admitted") is True and hand1_receipt.get("spark_final_prose_used_for_admission") is False and (hand1_call / "final_response.txt").read_text(encoding="utf-8").startswith("malformed"))
+        receipt_bindings = (
+            hand1_receipt.get("prompt_sha256") == runner.sha(hand1_call / "prompt.txt")
+            and hand1_receipt.get("crate_sha256") == runner.sha_bytes(runner.canon(hand1_receipt["crate"]))
+            and hand1_receipt.get("parent_state_sha256") == hand1_receipt["crate"]["parent_state_sha256"]
+            and bool(hand1_receipt.get("patch_sha256"))
+            and bool(hand1_receipt.get("work_state_sha256"))
+            and bool(hand1_receipt.get("resulting_state_sha256"))
+            and hand1_receipt.get("visible_validators", {}).get("stage", {}).get("passed")
+            and hand1_receipt.get("cli_identity") == cli_identity
+            and hand1_receipt.get("command") == hand1_dispatch["command"]
+        )
+        check("controller_receipt_binds_prompt_crate_states_patch_validator_cli_and_command", bool(receipt_bindings), json.dumps(hand1_receipt, sort_keys=True))
         correct = chain.get("candidate")
         chain_no_anchor = runner.run_chain(root / "chain", "trial-001", 0, True, packet, fixture_executor("chain"))
         fork_a = root / "chain" / "trial-001" / "luna_spark_correct_anchor" / "continuation_base"
@@ -145,6 +187,16 @@ def run_gate(output: Path) -> dict[str, Any]:
         second_failure = runner.run_chain(shared_failure, "trial-003", 0, True, packet, fixture_executor("spark_out_of_scope"))
         planner_calls = list((shared_failure / "trial-003" / "split_prelude").glob("planner_initial/call/dispatch.json"))
         check("shared_failed_prelude_is_reused_without_controller_exception", first_failure.get("disposition") == "PRELUDE_HAND1_PATH_VIOLATION" and second_failure.get("disposition") == "PRELUDE_HAND1_PATH_VIOLATION" and second_failure.get("error", {}).get("code") == "PRELUDE_HAND1_PATH_VIOLATION" and len(planner_calls) == 1, json.dumps({"first": first_failure, "second": second_failure}, sort_keys=True, default=str))
+        path_receipt = json.loads((shared_failure / "trial-003" / "split_prelude" / "spark_hand_1" / "controller_receipt.json").read_text(encoding="utf-8"))
+        check("out_of_crate_edit_rejected_even_when_allowed_edit_validates", not path_receipt["admitted"] and path_receipt["disposition"] == "REJECTED_PATH_VIOLATION" and path_receipt["unexpected"] == ["src/solution.py"])
+        no_diff_failure = runner.run_chain(root / "no_diff_failure", "trial-004", 0, False, packet, fixture_executor("spark_no_diff"))
+        check("spark_no_diff_is_rejected", no_diff_failure.get("disposition") == "PRELUDE_HAND1_NO_DIFF")
+        validator_failure = runner.run_chain(root / "validator_failure", "trial-005", 0, False, packet, fixture_executor("spark_fail_validator"))
+        check("claimed_success_with_failing_validator_is_rejected", validator_failure.get("disposition") == "PRELUDE_HAND1_VISIBLE_VALIDATOR_FAILURE")
+        validator_mutation = runner.run_chain(root / "validator_mutation", "trial-006", 0, False, packet, fixture_executor("spark_validator_mutation"))
+        check("validator_mutation_is_rejected", validator_mutation.get("disposition") == "PRELUDE_HAND1_PATH_VIOLATION" and validator_mutation.get("error", {}).get("path") == "run_visible.py")
+        task_mutation = runner.run_chain(root / "task_mutation", "trial-007", 0, False, packet, fixture_executor("spark_task_mutation"))
+        check("task_mutation_is_rejected", task_mutation.get("disposition") == "PRELUDE_HAND1_PATH_VIOLATION" and task_mutation.get("error", {}).get("path") == "TASK.md")
         try:
             runner.create_fork(root / "chain" / "trial-001" / "split_prelude" / "accepted_state", fork_a)
             idempotent = False
@@ -191,7 +243,7 @@ def run_gate(output: Path) -> dict[str, Any]:
     check("duplicate_or_missing_pair_suppresses_capability_verdicts", duplicate_result["disposition"] == "PARTIAL_UNPAIRED_NO_CAPABILITY_VERDICT" and not duplicate_result["comparison_rules_applied"] and duplicate_result["anchor_mechanism_verdict"] is None, json.dumps(duplicate_result, sort_keys=True))
     sol_regression = runner.build_comparison(complete_comparison_table(["pass", "pass", "pass"], ["fail", "fail", "fail"], ["pass", "pass", "fail"]))
     check("sol_replication_expression_remains_unchanged", sol_regression["sol_replication_verdict"] == "TASK_NON_INFORMATIVE_FOR_SOL_REPLICATION" and sol_regression["anchor_mechanism_verdict"] == "ANCHOR_CAUSAL_SIGNAL_ON_FROZEN_TASK", json.dumps(sol_regression, sort_keys=True))
-    result = {"schema":"luna-sol-anchor-replication/controller-contract-gate@2.2.2","protocol_revision":"2.2.2","code_paths":["require_cli_identity","run_full","run_chain","apply_hand","create_fork","grade_candidate","seal_final_receipt","extract_remote_error","build_comparison"],"cli_identity":cli_identity,"hashes":{"runner_sha256":runner.sha(RUNNER_PATH),"schema_hashes":{p.name:runner.sha(p) for p in runner.SCHEMAS.glob("*.json")},"prompt_hashes":{p.name:runner.sha(p) for p in runner.PROMPTS.glob("*.txt")},"task_packet_sha256":runner.sha(runner.TASK / "task_packet.json"),"hidden_grader_sha256":runner.sha(runner.PRIVATE / "hidden_grader.py"),"visible_bundle_sha256":fresh_consistency["build"]["visible_bundle_sha256"],"task_visible_consistency_receipt_sha256":runner.sha(saved_consistency_path)},"tests":checks,"all_pass":all(x["result"] == "PASS" for x in checks)}
+    result = {"schema":"luna-sol-anchor-replication/controller-contract-gate@2.2.3","protocol_revision":"2.2.3","code_paths":["require_cli_identity","invoke_structured","spark_execution_command","invoke_spark_freeform","render_spark_handoff","require_spark_execution_surface","run_full","run_chain","apply_hand","create_fork","grade_candidate","seal_final_receipt","extract_remote_error","build_comparison"],"cli_identity":cli_identity,"hashes":{"runner_sha256":runner.sha(RUNNER_PATH),"schema_hashes":{p.name:runner.sha(p) for p in runner.SCHEMAS.glob("*.json")},"prompt_hashes":{p.name:runner.sha(p) for p in runner.PROMPTS.glob("*.txt")},"task_packet_sha256":runner.sha(runner.TASK / "task_packet.json"),"hidden_grader_sha256":runner.sha(runner.PRIVATE / "hidden_grader.py"),"visible_bundle_sha256":fresh_consistency["build"]["visible_bundle_sha256"],"task_visible_consistency_receipt_sha256":runner.sha(saved_consistency_path)},"tests":checks,"all_pass":all(x["result"] == "PASS" for x in checks)}
     runner.write(output, runner.canon(result))
     return result
 

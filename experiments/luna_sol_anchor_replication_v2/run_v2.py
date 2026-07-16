@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute, seal, grade, and report the frozen Luna/Sol v2.2.2 episode."""
+"""Controller for the frozen Luna/Sol task and v2.2.3 Spark interface."""
 from __future__ import annotations
 
 import argparse
@@ -30,6 +30,8 @@ CLI_SHA256 = "efdb3540ef74b9909408c8d38da79483454797b36f471e3e004fc2bf2b70e22a"
 CLI_VERSION = "codex-cli 0.144.5"
 PREFERRED_PYTHON = Path(r"C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe")
 EXPERIMENT_TAG = "LUNA_SOL_ANCHOR_REPLICATION_V2_2_2"
+SPARK_INTERFACE_REVISION = "2.2.3"
+BENCHMARK_EXECUTION_AUTHORIZED = False
 
 class ControllerError(RuntimeError):
     def __init__(self, code: str, stage: str, message: str, path: str | None = None):
@@ -138,18 +140,35 @@ def status_paths(root: Path) -> list[str]:
     return paths
 
 def visible_check(root: Path, interpreter: Path = PREFERRED_PYTHON) -> dict[str, Any]:
+    command = validator_command("visible", interpreter)
+    result = run(command, root, 120)
+    return {"command": command, "shell_command": powershell_command(command), "returncode": result.returncode, "stdout": result.stdout.decode(errors="replace"), "stderr": result.stderr.decode(errors="replace"), "passed": result.returncode == 0}
+
+def validator_command(validator_id: str, interpreter: Path = PREFERRED_PYTHON) -> list[str]:
     if not interpreter.is_file():
         raise ControllerError("VISIBLE_VALIDATOR_INTERPRETER_MISSING", "visible_validation", "controller-owned Python interpreter is unavailable", str(interpreter))
-    result = run([str(interpreter), "run_visible.py"], root, 120)
-    return {"command": [str(interpreter), "run_visible.py"], "returncode": result.returncode, "stdout": result.stdout.decode(errors="replace"), "stderr": result.stderr.decode(errors="replace"), "passed": result.returncode == 0}
+    if validator_id == "visible":
+        return [str(interpreter), "run_visible.py"]
+    if validator_id == "stage":
+        code = (
+            "import pathlib,subprocess,sys,tempfile;"
+            "tmp=tempfile.TemporaryDirectory(prefix='luna-stage-visible-');"
+            "out=pathlib.Path(tmp.name)/'normalized.json';"
+            "result=subprocess.run([sys.executable,'src/ledger_stage.py','data/sample_ledger.json',str(out)]);"
+            "raise SystemExit(0 if result.returncode == 0 and out.is_file() else 1)"
+        )
+        return [str(interpreter), "-c", code]
+    raise ControllerError("VISIBLE_VALIDATOR_ID_UNKNOWN", "visible_validation", f"unknown controller validator: {validator_id}")
+
+def powershell_command(argv: list[str]) -> str:
+    return "& " + " ".join("'" + value.replace("'", "''") + "'" for value in argv)
 
 def stage_check(root: Path, interpreter: Path = PREFERRED_PYTHON) -> dict[str, Any]:
     if not interpreter.is_file():
         raise ControllerError("VISIBLE_VALIDATOR_INTERPRETER_MISSING", "visible_validation", "controller-owned Python interpreter is unavailable", str(interpreter))
-    with tempfile.TemporaryDirectory(prefix="luna-stage-check-") as temp:
-        output = Path(temp) / "normalized.json"
-        result = run([str(interpreter), "src/ledger_stage.py", "data/sample_ledger.json", str(output)], root, 120)
-        return {"command": [str(interpreter), "src/ledger_stage.py", "data/sample_ledger.json", str(output)], "returncode": result.returncode, "stdout": result.stdout.decode(errors="replace"), "stderr": result.stderr.decode(errors="replace"), "passed": result.returncode == 0 and output.is_file()}
+    command = validator_command("stage", interpreter)
+    result = run(command, root, 120)
+    return {"command": command, "shell_command": powershell_command(command), "returncode": result.returncode, "stdout": result.stdout.decode(errors="replace"), "stderr": result.stderr.decode(errors="replace"), "passed": result.returncode == 0}
 
 def text_check(root: Path) -> dict[str, Any]:
     value = root / "value.txt"
@@ -263,7 +282,7 @@ def extract_remote_error(stdout: bytes) -> dict[str, Any] | None:
 
 Executor = Callable[[list[str], Path, bytes, Path], subprocess.CompletedProcess[bytes]]
 
-def invoke(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, base_name: str, packet: dict[str, Any], schema_name: str, executor: Executor | None = None) -> dict[str, Any]:
+def invoke_structured(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, base_name: str, packet: dict[str, Any], schema_name: str, executor: Executor | None = None) -> dict[str, Any]:
     cli_identity = require_cli_identity()
     call_dir.mkdir(parents=True, exist_ok=True)
     base = (PROMPTS / f"{base_name}_base.txt").read_bytes()
@@ -312,6 +331,80 @@ def invoke(call_dir: Path, cwd: Path, model: str, effort: str, sandbox: str, bas
     write(call_dir / "completion.json", canon(receipt))
     return receipt
 
+# Historical administrative scripts import this name. Current production call
+# sites use the explicit structured/free-form names below.
+invoke = invoke_structured
+
+def require_spark_execution_surface(command: list[str], surface: str = "app_inherited") -> None:
+    if surface != "app_inherited" or "--ignore-user-config" in command or "--ignore-rules" in command:
+        raise ControllerError("SPARK_APP_SURFACE_STRIPPED", "spark_dispatch", "Spark execution must inherit the writable app configuration")
+    if "--output-schema" in command:
+        raise ControllerError("SPARK_OUTPUT_SCHEMA_FORBIDDEN", "spark_dispatch", "free-form Spark execution must not use an output schema")
+    try:
+        sandbox = command[command.index("--sandbox") + 1]
+    except (ValueError, IndexError) as exc:
+        raise ControllerError("SPARK_SANDBOX_MISSING", "spark_dispatch", "Spark execution command has no sandbox binding") from exc
+    if sandbox != "workspace-write":
+        raise ControllerError("SPARK_WRITABLE_SURFACE_REQUIRED", "spark_dispatch", f"Spark execution sandbox was {sandbox!r}, not workspace-write")
+
+def render_spark_handoff(crate: dict[str, Any], packet: dict[str, Any], interpreter: Path = PREFERRED_PYTHON) -> bytes:
+    validator_commands = [powershell_command(validator_command(name, interpreter)) for name in crate["validator_ids"]]
+    task_text = str((packet.get("task_packet") or {}).get("task_text") or "").strip()
+    sections = [
+        "SPARK EXECUTION HANDOFF",
+        "",
+        "Visible task context:",
+        task_text,
+        "",
+        f"Crate: {crate['crate_id']}",
+        f"Objective: {crate['objective']}",
+        "Allowed paths: " + ", ".join(crate["allowed_paths"]),
+        "Forbidden paths: " + ", ".join(crate["forbidden_paths"]),
+        "Dependencies: " + (", ".join(crate["dependencies"]) or "none"),
+        "Visible context references: " + (", ".join(crate["visible_context_refs"]) or "none"),
+        f"Command budget: {crate['command_budget']}",
+        f"Wall-time budget: {crate['wall_time_seconds']} seconds",
+        f"Stop condition: {crate['stop_condition']}",
+        "",
+        "Exact acceptance command" + ("s" if len(validator_commands) != 1 else "") + ":",
+        *validator_commands,
+        "",
+        "Execute only this crate now. Inspect the visible repository as needed, edit only allowed paths, and do not modify forbidden paths. Run every exact acceptance command after editing and do not finish unless each exits 0. Do not produce a JSON report; a concise normal final response is sufficient because the controller will admit or reject the observed diff independently.",
+        "",
+    ]
+    return "\n".join(sections).encode()
+
+def spark_execution_command(cwd: Path, final_path: Path, model: str = "gpt-5.3-codex-spark", effort: str = "low") -> list[str]:
+    return [str(CLI), "exec", "--model", model, "--sandbox", "workspace-write", "--ephemeral", "--json", "--output-last-message", str(final_path), "--config", f'model_reasoning_effort="{effort}"', "--config", 'web_search="disabled"', "--config", "sandbox_workspace_write.network_access=false", "--config", "features.multi_agent=false", "--config", "agents.max_depth=1", "--config", "agents.max_threads=1", "--config", 'history.persistence="none"', "--config", 'approval_policy="never"', "-C", str(cwd), "-"]
+
+def invoke_spark_freeform(call_dir: Path, cwd: Path, model: str, effort: str, prompt: bytes, executor: Executor | None = None, surface: str = "app_inherited") -> dict[str, Any]:
+    cli_identity = require_cli_identity()
+    call_dir.mkdir(parents=True, exist_ok=True)
+    prompt_path = call_dir / "prompt.txt"; write(prompt_path, prompt)
+    final_path = call_dir / "final_response.txt"
+    command = spark_execution_command(cwd, final_path, model, effort)
+    require_spark_execution_surface(command, surface)
+    dispatch = {"started_at": now(), "model": model, "effort": effort, "sandbox": "workspace-write", "cwd": str(cwd), "command": command, "prompt_sha256": sha(prompt_path), "free_form": True, "surface": surface, "output_schema": None, "cli_identity": cli_identity}
+    write(call_dir / "dispatch.json", canon(dispatch))
+    started = time.time()
+    try:
+        result = executor(command, cwd, prompt, final_path) if executor else subprocess.run(command, cwd=cwd, input=prompt, capture_output=True, timeout=900)
+        timed_out = False
+    except subprocess.TimeoutExpired as exc:
+        result = subprocess.CompletedProcess(command, 124, exc.stdout or b"", exc.stderr or b"")
+        timed_out = True
+    write(call_dir / "events.jsonl", result.stdout)
+    write(call_dir / "stderr.txt", result.stderr)
+    final_bytes = final_path.read_bytes() if final_path.is_file() else b""
+    if final_bytes:
+        write(final_path, final_bytes)
+    administrative_error = extract_remote_error(result.stdout)
+    if administrative_error is not None:
+        administrative_error["agent_output_observed"] = bool(final_bytes)
+    receipt = {"completed_at": now(), "duration_seconds": round(time.time() - started, 3), "exit_code": result.returncode, "timed_out": timed_out, "stdout_sha256": sha(call_dir / "events.jsonl"), "stderr_sha256": sha(call_dir / "stderr.txt"), "final_response_sha256": sha_bytes(final_bytes), "prompt_sha256": sha(prompt_path), "usage": extract_usage(result.stdout), "role_violations": has_role_violation(result.stdout), "final_present": bool(final_bytes), "administrative_error": administrative_error, "free_form": True, "surface": surface, "output_schema": None, "cli_identity": cli_identity, "command": command}
+    write(call_dir / "completion.json", canon(receipt))
+    return receipt
+
 def require_keys(value: Any, keys: list[str], label: str) -> None:
     if not isinstance(value, dict) or set(value) != set(keys):
         raise ValueError(f"{label} keys invalid: {sorted(value) if isinstance(value, dict) else type(value)}")
@@ -350,7 +443,7 @@ def validate_spark(response: dict[str, Any], parent_state: str, crate: dict[str,
 def run_full(run_dir: Path, trial: str, arm: str, model: str, effort: str, order: int, packet: dict[str, Any], executor: Executor | None = None, interpreter: Path = PREFERRED_PYTHON) -> dict[str, Any]:
     subject = run_dir / trial / arm / "subject"; initialize_subject(subject)
     parent_state = tree_state(subject)
-    call = invoke(run_dir / trial / arm / "call", subject, model, effort, "workspace-write", "full_agent", packet, "full_agent.schema.json", executor)
+    call = invoke_structured(run_dir / trial / arm / "call", subject, model, effort, "workspace-write", "full_agent", packet, "full_agent.schema.json", executor)
     outcome = {"call": call}
     try:
         if call["final_json"] is None:
@@ -381,19 +474,47 @@ def copy_state(source: Path, destination: Path) -> None:
     if result.returncode: raise RuntimeError(result.stderr.decode(errors="replace"))
 
 def apply_hand(base: Path, work: Path, destination: Path, allowed: set[str], call_outcome: dict[str, Any], interpreter: Path = PREFERRED_PYTHON) -> dict[str, Any]:
-    response = call_outcome.get("final_json")
-    if not response:
-        raise ControllerError("SPARK_ADVISORY_REPORT_MISSING", "spark_report_validation", "no final Spark advisory report JSON")
-    validate_spark(response, tree_state(base), call_outcome["crate"])
-    admission = candidate_check(work, allowed, tree_state(base), interpreter, ["stage"] if allowed == {"src/ledger_stage.py"} else ["visible"])
-    if admission.get("disposition") == "NO_CANDIDATE_NO_DIFF":
-        raise ControllerError("PRELUDE_HAND1_NO_DIFF" if allowed == {"src/ledger_stage.py"} else "HAND2_NO_DIFF", "candidate_admission", "Spark produced no in-scope diff")
-    if admission.get("unexpected"):
-        raise ControllerError("PRELUDE_HAND1_PATH_VIOLATION" if allowed == {"src/ledger_stage.py"} else "HAND2_PATH_VIOLATION", "path_bounds", "Spark changed paths outside its crate", ",".join(admission["unexpected"]))
-    if not admission.get("accepted"):
-        raise ControllerError("PRELUDE_HAND1_VISIBLE_VALIDATOR_FAILURE" if allowed == {"src/ledger_stage.py"} else "HAND2_VISIBLE_VALIDATOR_FAILURE", "visible_validation", "controller-owned visible validator failed")
+    crate = call_outcome["crate"]
+    parent_state = tree_state(base)
+    admission = candidate_check(work, allowed, parent_state, interpreter, list(crate["validator_ids"]))
+    receipt_path = Path(call_outcome["controller_receipt_path"])
     patch = git(["diff", "--binary", "--no-ext-diff"], work)
     if patch.returncode: raise RuntimeError(patch.stderr.decode(errors="replace"))
+    receipt = {
+        "schema": "luna-sol-anchor-replication/spark-hand-controller-receipt@2.2.3",
+        "protocol_revision": SPARK_INTERFACE_REVISION,
+        "created_at": now(),
+        "crate": crate,
+        "crate_sha256": sha_bytes(canon(crate)),
+        "prompt_sha256": call_outcome["prompt_sha256"],
+        "parent_state_sha256": parent_state,
+        "work_state_sha256": tree_state(work),
+        "patch_sha256": sha_bytes(patch.stdout),
+        "resulting_state_sha256": None,
+        "changed": admission.get("changed", []),
+        "unexpected": admission.get("unexpected", []),
+        "disposition": admission.get("disposition"),
+        "admitted": False,
+        "visible_validators": admission.get("visible_validators", {}),
+        "spark_exit_code": call_outcome["exit_code"],
+        "spark_final_response_sha256": call_outcome["final_response_sha256"],
+        "spark_final_prose_used_for_admission": False,
+        "cli_identity": call_outcome["cli_identity"],
+        "command": call_outcome["command"],
+    }
+    def seal_receipt() -> None:
+        write(receipt_path, canon(receipt))
+        call_outcome["controller_receipt"] = receipt
+        write(Path(call_outcome["outcome_path"]), canon(call_outcome))
+    if admission.get("disposition") == "NO_CANDIDATE_NO_DIFF":
+        seal_receipt()
+        raise ControllerError("PRELUDE_HAND1_NO_DIFF" if allowed == {"src/ledger_stage.py"} else "HAND2_NO_DIFF", "candidate_admission", "Spark produced no in-scope diff")
+    if admission.get("unexpected"):
+        seal_receipt()
+        raise ControllerError("PRELUDE_HAND1_PATH_VIOLATION" if allowed == {"src/ledger_stage.py"} else "HAND2_PATH_VIOLATION", "path_bounds", "Spark changed paths outside its crate", ",".join(admission["unexpected"]))
+    if not admission.get("accepted"):
+        seal_receipt()
+        raise ControllerError("PRELUDE_HAND1_VISIBLE_VALIDATOR_FAILURE" if allowed == {"src/ledger_stage.py"} else "HAND2_VISIBLE_VALIDATOR_FAILURE", "visible_validation", "controller-owned visible validator failed")
     copy_state(base, destination)
     if patch.stdout:
         result = run(["git", "apply", "--binary", "-"], destination, input_bytes=patch.stdout)
@@ -401,18 +522,23 @@ def apply_hand(base: Path, work: Path, destination: Path, allowed: set[str], cal
     for relative in [p for p in admission["changed"] if p == "data/normalized_ledger.json"]:
         source_file = work / relative; target_file = destination / relative
         target_file.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(source_file, target_file)
-    return {"patch_sha256": sha_bytes(patch.stdout), "resulting_state_sha256": tree_state(destination), "changed": admission["changed"], "visible_validators": admission["visible_validators"], "response": response}
+    receipt.update({"resulting_state_sha256": tree_state(destination), "disposition": "CANDIDATE_ADMITTED", "admitted": True})
+    seal_receipt()
+    return receipt
 
 def run_hand(run_dir: Path, trial: str, arm: str, phase: str, model: str, effort: str, sandbox: str, subject: Path, crate: dict[str, Any], packet: dict[str, Any], executor: Executor | None = None) -> dict[str, Any]:
     packet = dict(packet); packet["hand_crate"] = crate
-    call = invoke(run_dir / trial / arm / phase / "call", subject, model, effort, sandbox, "spark", packet, "spark.schema.json", executor)
-    call["crate"] = crate
-    write(run_dir / trial / arm / phase / "outcome.json", canon(call))
+    phase_dir = run_dir / trial / arm / phase
+    parent_state = tree_state(subject)
+    prompt = render_spark_handoff(crate, packet)
+    call = invoke_spark_freeform(phase_dir / "call", subject, model, effort, prompt, executor)
+    call.update({"crate": crate, "parent_state_sha256": parent_state, "controller_receipt_path": str(phase_dir / "controller_receipt.json"), "outcome_path": str(phase_dir / "outcome.json")})
+    write(phase_dir / "outcome.json", canon(call))
     return call
 
 def controller_crate(crate: dict[str, Any], parent_state: str, anchor_sha: str, trial: str, schema_name: str, prompt_name: str) -> dict[str, Any]:
     value = dict(crate)
-    value.update({"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "parent_state_sha256": parent_state, "anchor_sha256": anchor_sha, "required_receipt_schema_sha256": sha(SCHEMAS / "spark.schema.json"), "schema_sha256": sha(SCHEMAS / schema_name), "prompt_sha256": sha(PROMPTS / prompt_name)})
+    value.update({"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "parent_state_sha256": parent_state, "anchor_sha256": anchor_sha, "controller_receipt_schema": "luna-sol-anchor-replication/spark-hand-controller-receipt@2.2.3", "schema_sha256": sha(SCHEMAS / schema_name), "prompt_sha256": sha(PROMPTS / prompt_name)})
     return value
 
 def create_fork(source: Path, destination: Path) -> None:
@@ -498,7 +624,7 @@ def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_bas
         if not reuse:
             initialize_subject(base)
             initial_packet = {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(base), "public_validator_catalog": public_catalog(), "remaining_budget": {"planner_calls": 3, "spark_calls": 3}}
-            first = invoke(prelude / "planner_initial" / "call", base, "gpt-5.6-luna", "high", "read-only", "planner_initial", initial_packet, "planner_initial.schema.json", executor)
+            first = invoke_structured(prelude / "planner_initial" / "call", base, "gpt-5.6-luna", "high", "read-only", "planner_initial", initial_packet, "planner_initial.schema.json", executor)
             result["planner_initial"] = first
             if first["final_json"] is None or first["instance_errors"]:
                 raise ControllerError("NOT_RUN_PRELUDE_PLANNER_REJECTED", "planner_validation", "initial planner report failed schema or was absent")
@@ -513,17 +639,18 @@ def run_chain(run_dir: Path, trial: str, order: int, no_anchor: bool, packet_bas
             accepted1 = prelude / "accepted_state"
             saved = json.loads((prelude / "anchor.json").read_text(encoding="utf-8")); anchor, anchor_sha = saved["anchor_state"], saved["anchor_sha256"]
             hand1 = json.loads((prelude / "spark_hand_1" / "outcome.json").read_text(encoding="utf-8"))
+            result["accepted_hand_1"] = json.loads((prelude / "spark_hand_1" / "controller_receipt.json").read_text(encoding="utf-8"))
         fork = run_dir / trial / arm; fork_base = fork / "continuation_base"; create_fork(accepted1, fork_base)
-        continuation_packet = {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(fork_base), "accepted_hand_1_receipt": hand1.get("final_json"), "public_validator_catalog": public_catalog(), "remaining_budget": {"planner_calls": 2, "spark_calls": 2}}
+        continuation_packet = {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(fork_base), "accepted_hand_1_receipt": result["accepted_hand_1"], "public_validator_catalog": public_catalog(), "remaining_budget": {"planner_calls": 2, "spark_calls": 2}}
         if not no_anchor: continuation_packet["current_anchor"] = anchor
-        cont = invoke(fork / "planner_continuation" / "call", fork_base, "gpt-5.6-luna", "high", "read-only", "planner_continuation", continuation_packet, "planner_continuation.schema.json", executor)
+        cont = invoke_structured(fork / "planner_continuation" / "call", fork_base, "gpt-5.6-luna", "high", "read-only", "planner_continuation", continuation_packet, "planner_continuation.schema.json", executor)
         result["planner_continuation"] = cont
         if cont["final_json"] is None or cont["instance_errors"]:
             raise ControllerError("CONTINUATION_PLANNER_REJECTED", "continuation_validation", "continuation planner report failed schema or was absent")
         anchor2, crate2_semantic = validate_planner(cont["final_json"], "hand_2")
         crate2 = controller_crate(crate2_semantic, tree_state(fork_base), sha_bytes(canon(anchor2)), trial, "planner_continuation.schema.json", "planner_continuation_base.txt")
         hand2_work = fork / "spark_hand_2" / "work"; copy_state(fork_base, hand2_work)
-        hand2 = run_hand(run_dir, trial, arm, "spark_hand_2", "gpt-5.3-codex-spark", "low", "workspace-write", hand2_work, crate2, {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(hand2_work), "accepted_hand_1_receipt": hand1.get("final_json"), "hand_crate": crate2, "public_validator_catalog": public_catalog()}, executor)
+        hand2 = run_hand(run_dir, trial, arm, "spark_hand_2", "gpt-5.3-codex-spark", "low", "workspace-write", hand2_work, crate2, {"task_id": "derived_ledger_rollup_v2", "trial_id": trial, "task_packet": task_packet(), "visible_state_capsule": state_capsule(hand2_work), "accepted_hand_1_receipt": result["accepted_hand_1"], "hand_crate": crate2, "public_validator_catalog": public_catalog()}, executor)
         result["spark_hand_2"] = hand2
         final = fork / "final_candidate"; result["final"] = apply_hand(fork_base, hand2_work, final, {"src/solution.py"}, hand2, interpreter)
         check = candidate_check(final, {"src/ledger_stage.py", "src/solution.py"}, tree_state(fork_base), interpreter); result["validation"] = check; result["candidate"] = str(final) if check["accepted"] else None
@@ -560,6 +687,8 @@ def main() -> int:
     parser.add_argument("--prior-partial-run", type=Path, required=True); parser.add_argument("--schedule-source", type=Path, required=True)
     parser.add_argument("--preflight-receipt", type=Path, required=True); parser.add_argument("--contract-gate", type=Path, required=True); parser.add_argument("--canary-receipt", type=Path, required=True)
     args = parser.parse_args()
+    if not BENCHMARK_EXECUTION_AUTHORIZED:
+        raise SystemExit("v2.2.3 authorizes the administrative Spark interface and synthetic canaries only; benchmark execution requires a separate explicit decision")
     try:
         cli_identity = require_cli_identity()
     except ControllerError as exc:
