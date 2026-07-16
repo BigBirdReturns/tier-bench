@@ -1,0 +1,7 @@
+2026-07-16T23:29:10.405728Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-16T23:29:14.570080Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Raw value.txt; Write-Output '---'; Format-Hex -Path value.txt"` rejected: blocked by policy
+2026-07-16T23:29:18.668544Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Set-Content -Path value.txt -Value '1' -NoNewline; Format-Hex -Path value.txt"` rejected: blocked by policy
+2026-07-16T23:29:21.318991Z ERROR codex_core::tools::router: error=patch rejected: writing is blocked by read-only sandbox; rejected by user approval settings
+2026-07-16T23:29:22.167230Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Format-Hex -Path value.txt'` rejected: blocked by policy
+2026-07-16T23:29:23.071082Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Format-Hex value.txt'` rejected: blocked by policy
+2026-07-16T23:29:23.917173Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$b = Get-Content value.txt -Encoding Byte; $b -join '"' '"` rejected: blocked by policy

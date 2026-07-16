@@ -1,0 +1,1 @@
+Change value.txt from 0 to 1. Make no other edits. Before finishing, inspect the raw bytes yourself and confirm they are exactly hex 31 0A. If they are not, correct them. You may choose any editing and inspection method.

@@ -1,0 +1,1 @@
+{"capability_evidence":false,"changed":[],"duration_seconds":7.729,"exit_code":0,"forbidden_preserved":true,"passed":false,"replicate":1,"strategy":"local_validator","usage":{"cached_input_tokens":37632,"input_tokens":39606,"output_tokens":1146,"reasoning_output_tokens":717},"value_hex":"30 0a","verifier_preserved":true}

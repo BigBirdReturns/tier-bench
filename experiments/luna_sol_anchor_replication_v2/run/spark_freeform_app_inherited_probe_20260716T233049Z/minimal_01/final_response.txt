@@ -1,0 +1,3 @@
+Updated. `value.txt` now contains exactly `1` followed by one LF newline, with no other edits.  
+
+[`value.txt`](D:\Projects\Tier-Bench\worktrees\luna-sol-anchor-replication-v2\experiments\luna_sol_anchor_replication_v2\run\spark_freeform_app_inherited_probe_20260716T233049Z\minimal_01\subject\value.txt)

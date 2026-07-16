@@ -1,0 +1,11 @@
+Implemented `summarize(records)` in [`src/solution.py`](src/solution.py) with the required behavior:
+
+- Filters only records where `eligible` is `True`
+- Sums `amount` by `account`
+- Returns a list of `{"account": ..., "total": ...}` objects sorted by account
+- Does not mutate input records
+- Empty input naturally returns an empty list
+
+Verified with acceptance command:
+`& "C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" verify.py`  
+Result: `VERIFY_OK` (exit code `0`).

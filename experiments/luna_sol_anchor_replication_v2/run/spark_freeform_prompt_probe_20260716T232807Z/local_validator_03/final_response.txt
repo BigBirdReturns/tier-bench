@@ -1,0 +1,7 @@
+I could not complete this because the workspace is running in a `read-only` mode, and every write attempt to `value.txt` was blocked by policy.
+
+`value.txt` is currently `0` (confirmed), but I am unable to change it to `1` under current permissions, so I also cannot run `verify.ps1` in a state that can pass.
+
+If you can enable write access for this workspace (or run this in a writable copy), I can immediately re-run the edit and execute:
+
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\verify.ps1`

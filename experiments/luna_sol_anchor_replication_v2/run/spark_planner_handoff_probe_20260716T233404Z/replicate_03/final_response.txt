@@ -1,0 +1,9 @@
+Implemented in [src/solution.py] with the required behavior:
+
+- Filters only records where `eligible` is truthy.
+- Sums `amount` by `account`.
+- Returns `[{"account": ..., "total": ...}, ...]` sorted by account.
+- Leaves input unchanged.
+- Returns `[]` for empty input.
+
+Verification command succeeded with exit code `0` and output `VERIFY_OK`.

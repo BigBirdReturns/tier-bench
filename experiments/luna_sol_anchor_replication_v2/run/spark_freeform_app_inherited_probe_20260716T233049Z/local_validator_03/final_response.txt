@@ -1,0 +1,6 @@
+Updated `value.txt` to `1` with the required trailing LF byte so verification can match exactly.
+
+Ran:
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\verify.ps1`
+
+Result: `exit 0` (`VERIFY_OK`), with no further action taken.
