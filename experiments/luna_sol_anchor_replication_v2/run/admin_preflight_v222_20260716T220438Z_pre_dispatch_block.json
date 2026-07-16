@@ -1,0 +1,30 @@
+{
+  "schema": "luna-sol-anchor-replication/pre-dispatch-block@2.2.2",
+  "protocol_revision": "2.2.2",
+  "observed_at": "2026-07-16T22:04:38Z",
+  "stage": "administrative_schema_preflight",
+  "disposition": "PRE_DISPATCH_BLOCK_MISSING_FROZEN_CLI",
+  "intended_output": "experiments/luna_sol_anchor_replication_v2/run/admin_preflight_v222_20260716T220438Z",
+  "required_cli": {
+    "path": "C:\\Users\\BAM-Desktop\\AppData\\Local\\OpenAI\\Codex\\bin\\3135b80b111fd431\\codex.exe",
+    "sha256": "2caacad1f7b8b3e9b2527b9bff9630cfbb30ec25d8d8c018c9d55a2bec348032",
+    "version": "codex-cli 0.144.2",
+    "exists": false
+  },
+  "installed_store_resource_observation": {
+    "path": "C:\\Program Files\\WindowsApps\\OpenAI.Codex_26.707.12708.0_x64__2p2nqsd0c76g0\\app\\resources\\codex.exe",
+    "sha256": "efdb3540ef74b9909408c8d38da79483454797b36f471e3e004fc2bf2b70e22a",
+    "standalone_execution": "ACCESS_DENIED",
+    "accepted_as_substitute": false
+  },
+  "counters": {
+    "provider_calls": 0,
+    "model_calls": 0,
+    "spark_calls": 0,
+    "subject_calls": 0,
+    "packet_disclosures": 0,
+    "retries": 0,
+    "hidden_grader_executions": 0
+  },
+  "evidence_note": "The preflight script checked CLI existence before creating its intended output directory or dispatching a process. No provider request occurred."
+}
