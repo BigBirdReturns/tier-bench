@@ -21,6 +21,27 @@ Choose one of these mutually exclusive paths:
 
 No authority currently permits path 2, and the repository cannot perform path 1 without the missing bytes or an external installation/restoration action.
 
+## Additive app-to-CLI diagnostic, 2026-07-16
+
+After this proposal was written, the Codex app command environment exposed a
+runnable user-space copy of the current executable:
+
+- candidate path: `C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\494ae9d46ab9b3eb\codex.exe`
+- candidate SHA-256: `efdb3540ef74b9909408c8d38da79483454797b36f471e3e004fc2bf2b70e22a`
+- candidate version: `codex-cli 0.144.5`
+
+The operator authorized Spark-only diagnostic calls before any benchmark
+start. With that candidate path explicitly substituted at invocation time,
+`gpt-5.3-codex-spark` at `low` reasoning passed both the strict union-schema
+smoke and the synthetic one-file crate-scope smoke. Raw evidence and the
+non-verdict boundary are recorded in
+`SPARK_APP_CLI_BRIDGE_SMOKE_20260716.md` and its referenced run directories.
+
+This diagnostic establishes that the app can launch a child CLI process which
+dispatches to Spark. It does not by itself authorize path 2 for the frozen
+benchmark. If path 2 is chosen, this exact candidate identity is now the
+minimal known runnable surface to freeze and test prospectively.
+
 ## Affected files for path 2
 
 - `experiments/luna_sol_anchor_replication_v2/run_v2.py`
