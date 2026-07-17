@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "task_id": "t3_null_filter_001",
+  "source_commit": "74d150ef84386193179799bb7f936acd678dea0d",
+  "packet_sha256": "462d5d7659523a95bf7a67c5bfaf96d251f35a6cb4bf0132299b47f8081f8497",
+  "prompt_sha256": "dd4c89b5b635a81930681490c94b9491682b8bd3835294c62be6db73d9354171",
+  "candidate_sha256": "a4d5de3a7a1a7a89260ef4ebd94306c9389bcbce93de95b2466817893467a95f",
+  "raw_response_sha256": "a4d5de3a7a1a7a89260ef4ebd94306c9389bcbce93de95b2466817893467a95f",
+  "thread_id": "7b5ac90b-eeed-4b5c-abca-ca192b360853",
+  "usage": {
+    "input_tokens": 1628,
+    "output_tokens": 1459
+  },
+  "usage_available": true,
+  "event_stream_capture_kind": "ollama-local-api-receipt-jsonl",
+  "coordinator_id": "local-qwen-visible-repair-v1-coordinator",
+  "solver_equals_grader": false,
+  "grader_output_sha256": "53e71ca94df9bc653f9b62481565678780a7a96dd422906609bd1345904c87dc",
+  "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+  "hidden_grader_runs": 2,
+  "hidden_grader_deterministic": true,
+  "outcome": "fail",
+  "timed_out": false,
+  "timeout_seconds": 30.0,
+  "visible_returncode": 1,
+  "hidden_returncodes": [
+    1,
+    1
+  ],
+  "cost_basis": "real-billed",
+  "cost_usd": 0.0
+}

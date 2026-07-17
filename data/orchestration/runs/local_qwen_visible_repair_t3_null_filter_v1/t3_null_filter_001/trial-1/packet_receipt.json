@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "task_id": "t3_null_filter_001",
+  "source_commit": "74d150ef84386193179799bb7f936acd678dea0d",
+  "manifest_path": "tasks/t3_null_filter_001.json",
+  "manifest_sha256": "3eb998a8511bac6087df5a584b78cfd48b4d0726f5d754f495771f9bc5b2de8b",
+  "packet_sha256": "9e9054c957a258fcf93207f500105bea1861bd4a4fd52e478298bd09423ef0b9",
+  "prompt_sha256": "c89a190c70ba4d49063d7aae6119c6b35beebac52f74310aa075da04aa2cb02b",
+  "hidden_graders": [
+    {
+      "path": "fixtures/t3_null_filter_001/hidden_tests.py",
+      "sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5"
+    }
+  ],
+  "solver_scope": "<SOLVER_SCOPE>",
+  "peer_conclusions_included": false,
+  "repair_stage": 1,
+  "parent_candidate_sha256": "67ce6ddcf94bc4becbeeefb4829522e1e97809b13473aef7a4d4473bb780fe28",
+  "parent_grade_receipt_sha256": "e881728f3e5cde457e92b0d55af7e5fe90b086998af5a5e1b1e5c1b64c03f1c4",
+  "visible_failure_sha256": "288baf9a366b05044c37f6320e2f808409ef871b7ba813deb4dc8ed1ee837bbe"
+}

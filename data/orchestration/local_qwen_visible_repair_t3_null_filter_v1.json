@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "run_id": "local_qwen_visible_repair_t3_null_filter_v1",
-  "status": "unmeasured",
-  "measurement_claim": false,
+  "status": "sealed",
+  "measurement_claim": true,
   "engine": {
     "engine_id": "ollama_qwen3_5_9b_q4_k_m_visible_repair",
     "model": "qwen3.5:9b-q4_K_M",
@@ -16,7 +16,7 @@
     "peer_lineage": "unmeasured_external",
     "source_commit": "74d150ef84386193179799bb7f936acd678dea0d",
     "independent_before_exchange": true,
-    "state": "planned"
+    "state": "independent_run_sealed"
   },
   "task_set": [
     "t3_null_filter_001"
@@ -39,28 +39,263 @@
     }
   },
   "k": 3,
-  "trials": [],
+  "trials": [
+    {
+      "trial_id": "ollama_qwen3_5_9b_q4_k_m_visible_repair_t3_null_filter_001_1",
+      "sequence": 1,
+      "task_id": "t3_null_filter_001",
+      "rung": "visible_repair_1",
+      "model": "qwen3.5:9b-q4_K_M",
+      "effort": "one_visible_repair_think_false",
+      "trial": 1,
+      "solver_id": "ollama_qwen3_5_9b_q4_k_m_visible_repair:91ee8256-65c0-47d9-b323-88793cff526c",
+      "executor_surface": "ollama-local",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "route",
+        "decision_state": "unmeasured",
+        "reason": "start at the cheapest unmeasured rung",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "visible_repair_1",
+            "observations": 0,
+            "decisive": 0,
+            "passes": 0,
+            "failures": 0,
+            "window_size": 0,
+            "window_passes": 0,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "unmeasured"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-1/candidate.py",
+        "sha256": "accb5ca0043fbfaeeca5163204ea0c6b24e452f1be70614ba7a71b4f8362f422",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "fail",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:local-qwen-visible-repair-v1-coordinator",
+        "candidate_sha256": "accb5ca0043fbfaeeca5163204ea0c6b24e452f1be70614ba7a71b4f8362f422",
+        "hidden_grader_path": "fixtures/t3_null_filter_001/hidden_tests.py",
+        "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+        "grader_output_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-1/grader_outputs.json",
+        "grader_output_sha256": "3b26ba044e7dcb8e91c4d955fe40f3d31ac90442ee862b64c707c1e21e6d63bf"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "real-billed",
+        "input_tokens": 1515,
+        "output_tokens": 2542,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "9e9054c957a258fcf93207f500105bea1861bd4a4fd52e478298bd09423ef0b9",
+        "prompt_sha256": "c89a190c70ba4d49063d7aae6119c6b35beebac52f74310aa075da04aa2cb02b",
+        "solver_thread_id": "91ee8256-65c0-47d9-b323-88793cff526c",
+        "raw_response_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-1/raw_response.txt",
+        "raw_response_sha256": "accb5ca0043fbfaeeca5163204ea0c6b24e452f1be70614ba7a71b4f8362f422",
+        "event_stream_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-1/events.jsonl",
+        "event_stream_sha256": "acae44487d5bc2280ead2ff67655c58ca26723abdc94f7743e7690559c8b82fb",
+        "event_stream_capture_kind": "ollama-local-api-receipt-jsonl",
+        "administration_receipt_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-1/administration_receipt.json",
+        "administration_receipt_sha256": "09f9d127d967d23399a0f6a92e108a53441415dd38d066da1d7b18547709c222"
+      }
+    },
+    {
+      "trial_id": "ollama_qwen3_5_9b_q4_k_m_visible_repair_t3_null_filter_001_2",
+      "sequence": 2,
+      "task_id": "t3_null_filter_001",
+      "rung": "visible_repair_1",
+      "model": "qwen3.5:9b-q4_K_M",
+      "effort": "one_visible_repair_think_false",
+      "trial": 2,
+      "solver_id": "ollama_qwen3_5_9b_q4_k_m_visible_repair:450817cb-a757-43d4-98a6-0adae25dd0ae",
+      "executor_surface": "ollama-local",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "visible_repair_1",
+            "observations": 1,
+            "decisive": 1,
+            "passes": 0,
+            "failures": 1,
+            "window_size": 1,
+            "window_passes": 0,
+            "window_failures": 1,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-2/candidate.py",
+        "sha256": "b9ac7fb3ac0c73688ecbaa602d15edc41b8a7a45e517096f5bdbc9f4fe848c92",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "fail",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:local-qwen-visible-repair-v1-coordinator",
+        "candidate_sha256": "b9ac7fb3ac0c73688ecbaa602d15edc41b8a7a45e517096f5bdbc9f4fe848c92",
+        "hidden_grader_path": "fixtures/t3_null_filter_001/hidden_tests.py",
+        "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+        "grader_output_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-2/grader_outputs.json",
+        "grader_output_sha256": "43c6624c5014fc1b2e4bc21418888a8aee54f99265b38d5e6a2326837eb82031"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "real-billed",
+        "input_tokens": 1632,
+        "output_tokens": 1366,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "cb33800fc77d889244cf54defb5c55ca4f94005600214337de9199e5999c862a",
+        "prompt_sha256": "4dca93e51eb772318a05c0f7e30c15dffc10719c9f6af12f67dfe3efc866a929",
+        "solver_thread_id": "450817cb-a757-43d4-98a6-0adae25dd0ae",
+        "raw_response_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-2/raw_response.txt",
+        "raw_response_sha256": "b9ac7fb3ac0c73688ecbaa602d15edc41b8a7a45e517096f5bdbc9f4fe848c92",
+        "event_stream_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-2/events.jsonl",
+        "event_stream_sha256": "44bcc95bed3c350191733f90789f2eb6df9d80591698cf7240e391689a057981",
+        "event_stream_capture_kind": "ollama-local-api-receipt-jsonl",
+        "administration_receipt_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-2/administration_receipt.json",
+        "administration_receipt_sha256": "4a27547fc81c3e2a7a8fb2241c919e36558d05961b5eae22c4fb8875efdc11d1"
+      }
+    },
+    {
+      "trial_id": "ollama_qwen3_5_9b_q4_k_m_visible_repair_t3_null_filter_001_3",
+      "sequence": 3,
+      "task_id": "t3_null_filter_001",
+      "rung": "visible_repair_1",
+      "model": "qwen3.5:9b-q4_K_M",
+      "effort": "one_visible_repair_think_false",
+      "trial": 3,
+      "solver_id": "ollama_qwen3_5_9b_q4_k_m_visible_repair:7b5ac90b-eeed-4b5c-abca-ca192b360853",
+      "executor_surface": "ollama-local",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "visible_repair_1",
+            "observations": 2,
+            "decisive": 2,
+            "passes": 0,
+            "failures": 2,
+            "window_size": 2,
+            "window_passes": 0,
+            "window_failures": 2,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-3/candidate.py",
+        "sha256": "a4d5de3a7a1a7a89260ef4ebd94306c9389bcbce93de95b2466817893467a95f",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "fail",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:local-qwen-visible-repair-v1-coordinator",
+        "candidate_sha256": "a4d5de3a7a1a7a89260ef4ebd94306c9389bcbce93de95b2466817893467a95f",
+        "hidden_grader_path": "fixtures/t3_null_filter_001/hidden_tests.py",
+        "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+        "grader_output_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-3/grader_outputs.json",
+        "grader_output_sha256": "53e71ca94df9bc653f9b62481565678780a7a96dd422906609bd1345904c87dc"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "real-billed",
+        "input_tokens": 1628,
+        "output_tokens": 1459,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "462d5d7659523a95bf7a67c5bfaf96d251f35a6cb4bf0132299b47f8081f8497",
+        "prompt_sha256": "dd4c89b5b635a81930681490c94b9491682b8bd3835294c62be6db73d9354171",
+        "solver_thread_id": "7b5ac90b-eeed-4b5c-abca-ca192b360853",
+        "raw_response_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-3/raw_response.txt",
+        "raw_response_sha256": "a4d5de3a7a1a7a89260ef4ebd94306c9389bcbce93de95b2466817893467a95f",
+        "event_stream_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-3/events.jsonl",
+        "event_stream_sha256": "709b03f10a3c2dc9a38870738428bec8353f9ba3564399bf5bc3df35d8cd1204",
+        "event_stream_capture_kind": "ollama-local-api-receipt-jsonl",
+        "administration_receipt_path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-3/administration_receipt.json",
+        "administration_receipt_sha256": "c8a8fa27a461ea99639b4f47156821ccecb3c2132ce2f262d5e79ad2319489e5"
+      }
+    }
+  ],
   "decisions": [
     {
       "task_id": "t3_null_filter_001",
-      "state": "unmeasured",
-      "action": "route",
-      "route_to": "visible_repair_1",
-      "escalation_from": null,
-      "abstained": false,
-      "reason": "start at the cheapest unmeasured rung",
+      "state": "wall",
+      "action": "abstain",
+      "route_to": null,
+      "escalation_from": "visible_repair_1",
+      "abstained": true,
+      "reason": "top available rung is a measured wall; access escalation is a human gate",
       "evidence": [
         {
           "rung": "visible_repair_1",
-          "observations": 0,
-          "decisive": 0,
+          "observations": 3,
+          "decisive": 3,
           "passes": 0,
-          "failures": 0,
-          "window_size": 0,
+          "failures": 3,
+          "window_size": 3,
           "window_passes": 0,
-          "window_failures": 0,
+          "window_failures": 3,
           "required_k": 3,
-          "state": "unmeasured"
+          "state": "wall"
         }
       ]
     }
@@ -81,8 +316,8 @@
       "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-*/"
     ],
     "verifier": "repair packet hashes, manifest hidden grader, residue broker, and orchestration receipt validator",
-    "gap": "no repair calls or hidden-graded repair receipts yet",
-    "closure_decision": "open",
+    "gap": "none for this engine run; peer comparison remains separate",
+    "closure_decision": "sealed",
     "failure_default": "retain the no-think 0/3 wall and make no repair-gain claim"
   }
 }

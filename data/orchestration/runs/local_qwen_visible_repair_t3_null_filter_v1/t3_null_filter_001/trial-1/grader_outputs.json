@@ -1,0 +1,48 @@
+{
+  "compile": {
+    "command": [
+      "C:\\Users\\BAM-Desktop\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "-m",
+      "py_compile",
+      "input.py"
+    ],
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "  File \"input.py\", line 179\n    though spec says types don't mix. Safe to assume valid ops here.\n                              ^\nSyntaxError: unterminated string literal (detected at line 179)\n",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "visible": {
+    "command": [
+      "python",
+      "input.py"
+    ],
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "  File \"D:\\Projects\\Tier-Bench\\worktrees\\residue-bridge-v1\\tmp\\local_qwen_visible_repair_t3_null_filter_v1\\trial-1\\grade.building\\work\\input.py\", line 179\n    though spec says types don't mix. Safe to assume valid ops here.\n                              ^\nSyntaxError: unterminated string literal (detected at line 179)\n",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "hidden_1": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 1,
+    "stdout": "SCORE 0/10  (candidate failed to load: SyntaxError('unterminated string literal (detected at line 179)', ('D:\\\\Projects\\\\Tier-Bench\\\\worktrees\\\\residue-bridge-v1\\\\tmp\\\\local_qwen_visible_repair_t3_null_filter_v1\\\\trial-1\\\\grade.building\\\\work\\\\input.py', 179, 43, \"                though spec says types don't mix. Safe to assume valid ops here.\", 179, 43)))\n",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "hidden_2": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 1,
+    "stdout": "SCORE 0/10  (candidate failed to load: SyntaxError('unterminated string literal (detected at line 179)', ('D:\\\\Projects\\\\Tier-Bench\\\\worktrees\\\\residue-bridge-v1\\\\tmp\\\\local_qwen_visible_repair_t3_null_filter_v1\\\\trial-1\\\\grade.building\\\\work\\\\input.py', 179, 43, \"                though spec says types don't mix. Safe to assume valid ops here.\", 179, 43)))\n",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  }
+}
