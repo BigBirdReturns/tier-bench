@@ -1,0 +1,31 @@
+{
+  "schema": "tier-bench/sol-root-matched-config/reachability-receipt@0.3",
+  "observed_at": "2026-07-17T07:03:34.9102638Z",
+  "state": "reachable_unverified",
+  "repo": "BigBirdReturns/tier-bench",
+  "remote_url": "https://github.com/BigBirdReturns/tier-bench.git",
+  "branch": "codex/luna-sol-anchor-replication-v2",
+  "artifact_commit": "886059bb6f743b8edc6cef7080873ee86e168176",
+  "handoff_commit": "1d6443ff344ae74e7de598a38ee2f0d7e0e69291",
+  "remote_oid_observed": "1d6443ff344ae74e7de598a38ee2f0d7e0e69291",
+  "manifest": {
+    "path": "experiments/sol_root_matched_config/.cart0/000.000.json",
+    "blob_sha256": "c4d05b3d9e713a856f4ff8f9d656d659b3a5022589adf0bc1ba8c320ae643d77",
+    "hash_basis": "git_blob_bytes"
+  },
+  "public_read_probe": {
+    "credential_helper_disabled": true,
+    "remote_main_oid": "a27bae171dfc453d5545549e140666d880193682",
+    "result": "publicly_readable"
+  },
+  "push": {
+    "force": false,
+    "fast_forward_guard": true,
+    "pr_opened": false,
+    "merge_performed": false
+  },
+  "next_required_event": "cold_claude_verification_receipt_on_claude_namespace",
+  "canonical_custody_closed": false,
+  "provider_calls": 0,
+  "scientific_observations": 0
+}

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 from pathlib import Path
 import shutil
@@ -14,7 +15,10 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPERIMENT = ROOT / "experiments" / "sol_root_matched_config"
 sys.path.insert(0, str(EXPERIMENT))
 
-from build_machine_continuation_v0_3 import DEFAULT_OUTPUT, build_manifest, verify_manifest  # noqa: E402
+from build_machine_continuation_v0_3 import DEFAULT_OUTPUT, blob, build_manifest, commit_oid, verify_manifest  # noqa: E402
+
+
+REACHABILITY = EXPERIMENT / "reachability_receipt_v0_3.json"
 
 
 def main() -> int:
@@ -38,6 +42,19 @@ def main() -> int:
         assert verify_manifest(git, broken)["all_pass"] is False
     finally:
         shutil.rmtree(parent, ignore_errors=True)
+    checks += 1
+
+    reachability = json.loads(REACHABILITY.read_text(encoding="utf-8"))
+    assert reachability["schema"] == "tier-bench/sol-root-matched-config/reachability-receipt@0.3"
+    assert reachability["state"] == "reachable_unverified"
+    assert reachability["artifact_commit"] == source
+    handoff = commit_oid(git, reachability["handoff_commit"])
+    assert handoff == reachability["remote_oid_observed"]
+    manifest_blob = blob(git, handoff, reachability["manifest"]["path"])
+    assert hashlib.sha256(manifest_blob).hexdigest() == reachability["manifest"]["blob_sha256"]
+    assert reachability["push"] == {"force": False, "fast_forward_guard": True, "pr_opened": False, "merge_performed": False}
+    assert reachability["canonical_custody_closed"] is False
+    assert reachability["provider_calls"] == 0
     checks += 1
 
     print(f"OK - {checks} machine-continuation checks; zero provider calls, zero scientific observations")
