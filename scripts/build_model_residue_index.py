@@ -57,6 +57,12 @@ def snapshot_source(root: Path, rel: str, namespace: str, write: bool) -> dict:
         destination.write_bytes(data)
     elif not destination.is_file() or destination.read_bytes() != data:
         raise ValueError(f"snapshot drift: {destination}")
+    elif subprocess.run(
+        ["git", "-c", f"safe.directory={REPO.as_posix()}", "-C", str(REPO),
+         "ls-files", "--error-unmatch", destination.relative_to(REPO).as_posix()],
+        capture_output=True,
+    ).returncode != 0:
+        raise ValueError(f"snapshot is present but not tracked: {destination}")
     return {
         "source_id": f"{namespace}:{rel.replace(chr(92), '/')}",
         "snapshot_path": destination.relative_to(REPO).as_posix(),

@@ -23,6 +23,7 @@ llm_costs.jsonl
 !data/control-results/*.jsonl
 # Raw orchestration event streams are sealed evidence, not disposable telemetry.
 !data/orchestration/**/*.jsonl
+!data/model_residue/**/*.jsonl
 # OSS replay event snapshots are likewise hash-bound administration evidence.
 !data/oss-replay/**/*.jsonl
 !data/oss_replay/*.jsonl
