@@ -1,0 +1,55 @@
+{
+  "schema": "tier-bench/sol-root-matched-config/cold-verification-receipt@0.3-cloud",
+  "verdict": "verified_with_divergence",
+  "verifier": {
+    "engine": "claude",
+    "model": "claude-fable-5",
+    "surface": "claude-code-remote cloud session",
+    "session": "2a40687a-81a7-5aa9-8f71-452505e1604a",
+    "platform": "linux",
+    "environment_independence": "fresh cloud container; no shared filesystem with the artifact-producing machine or with the prior claude verification worktree"
+  },
+  "timestamp_utc": "2026-07-17T07:14:05Z",
+  "target": {
+    "repo": "BigBirdReturns/tier-bench",
+    "branch": "codex/luna-sol-anchor-replication-v2",
+    "commit": "9d293e4c5060fa23d51bce19f6c32b8a476ceaff",
+    "reachability": "fetched from origin; detached checkout in isolated worktree; oid verified equal to authorized target"
+  },
+  "method": {
+    "offline_check": "no network/provider imports found in test or compiler sources (grep: requests|urllib|http.client|socket|anthropic|openai)",
+    "provider_calls": 0,
+    "scientific_observations": 0,
+    "authority_created": false
+  },
+  "results": {
+    "test_sol_root_matched_config.py": {"pass": true, "checks": 16},
+    "test_sol_root_continuation.py": {
+      "pass": false,
+      "failing_check": "receipt_matches_subjects",
+      "passing_checks_within_suite": "all others, including all seven subject_sha256 matches and verifier_sha256 match"
+    },
+    "test_sol_root_matched_config_v0_3.py": {"pass": true, "checks": 7},
+    "test_sol_root_machine_continuation_v0_3.py": {"pass": true, "checks": 3},
+    "build_machine_continuation_v0_3 verify": {
+      "pass": true,
+      "all_blob_hashes_verified": true,
+      "manifest_sha256": "c4d05b3d9e713a856f4ff8f9d656d659b3a5022589adf0bc1ba8c320ae643d77",
+      "artifact_commit": "886059bb6f743b8edc6cef7080873ee86e168176",
+      "agreement_with_prior_claude_receipt": "manifest_sha256 and artifact_commit match the values reported by the local claude verification (a8bf448 lineage)"
+    }
+  },
+  "divergence": {
+    "subject": "experiments/sol_root_matched_config/.cart0/700.100.RECEIPT.json (v0.2 continuation packet receipt)",
+    "root_cause": "the committed receipt embeds machine-local absolute paths (D:\\Projects\\Tier-Bench\\worktrees\\luna-sol-anchor-replication-v2\\...) in checks[].detail for exists:* checks; verify_continuation.py's receipt_matches_subjects performs deep equality on the full receipt dict, so the check can only pass on the machine and directory where the receipt was built",
+    "evidence": "all seven subject_sha256 values and verifier_sha256 recomputed in this environment MATCH the committed receipt; only the environment-dependent detail strings differ",
+    "classification": "portability defect in the v0.2 receipt format, not a content divergence; the v0.3 artifacts under custody fully reproduce",
+    "note": "the prior local claude verification passed this check because it ran on the same machine and worktree path where the receipt was built; same-machine verification structurally cannot detect this defect class. This is the failure mode the cross-machine custody layer exists to catch, and it is the same defect class the paired review had already identified in prose (machine-local paths are cache addresses, not scientific addresses).",
+    "suggested_remedy": "additive, for the successor packet already agreed (schema-versioned 000.000.json): store repo-relative paths in check details, or exclude environment-dependent details from the receipt_matches_subjects comparison as is already done for receipt_size_limit; requires separate authorization"
+  },
+  "state_assertion": {
+    "claimed_transition": "none",
+    "reason": "verification of the v0.3 custody subject reproduced fully, but the run surfaced a deterministic cross-machine failure in the committed v0.2 continuation receipt; per protocol a divergence is preserved and cannot close the gate by itself. Disposition of whether this blocks cross_engine_verified_unmerged for the v0.3 subject (whose own artifacts reproduced) belongs to the operator.",
+    "prohibited_and_honored": ["no PR", "no merge", "no provider call", "no canary", "no benchmark", "no force-push", "no push outside claude/anchor-crate-cloud-rep-vmvjbf"]
+  }
+}
