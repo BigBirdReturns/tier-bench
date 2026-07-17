@@ -1,0 +1,1 @@
+Change value.txt from 0 to 1. Make no other edits. Finish when value.txt contains exactly the character 1 followed by one LF newline.

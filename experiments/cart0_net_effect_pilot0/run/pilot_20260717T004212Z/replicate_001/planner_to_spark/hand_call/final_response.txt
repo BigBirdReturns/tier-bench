@@ -1,0 +1,21 @@
+Implemented crate `300.200.CRATE_001.md` requirements in the authorized source files only.
+
+- Updated `[src/windowing.py](/D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_001/planner_to_spark_subject/src/windowing.py)`:
+  - Implemented `select_events(events, start, end)`
+  - Preserves input immutability
+  - Deduplicates by `id` using highest integer `revision`, tie-break by later source index
+  - Drops cancelled winners
+  - Normalizes each output row to exactly: `id`, `service`, `timestamp`, `impact`(int), `suppressed`(default False), `revision`(int), `source_index`
+  - Applies window `start <= timestamp < end`
+  - Sorts by `(timestamp, id)`
+
+- Updated `[src/summary.py](/D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_001/planner_to_spark_subject/src/summary.py)`:
+  - Implemented `summarize(events)`
+  - Returns `{"services": [...], "total_actionable_impact": ...}`
+  - Groups by service, sorts services by name
+  - Counts `event_count`, `actionable_count` (excluding suppressed), `actionable_impact` (sum of unsuppressed impacts)
+  - Returns `{"services": [], "total_actionable_impact": 0}` for empty input
+
+Validation command run (exact):
+- `& 'C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' 'verify.py'`
+- Result: `VISIBLE_OK`

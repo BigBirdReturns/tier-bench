@@ -1,0 +1,7 @@
+Done.  
+Edited only `value.txt` from `0` to `1`.
+
+Raw byte check on `value.txt`:
+- `31 0A` (exactly)
+
+No further changes were made.

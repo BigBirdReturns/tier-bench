@@ -1,0 +1,70 @@
+{
+  "schema": "tier-bench/sol-root-matched-config/cold-verification-receipt@0.3",
+  "observed_at": "2026-07-17T07:07:39Z",
+  "verifier_engine": "claude",
+  "verifier_model": "claude-opus-4-8",
+  "verification_kind": "cold_cross_engine",
+  "state": "reachable_verified",
+  "prior_state": "reachable_unverified",
+  "repo": "BigBirdReturns/tier-bench",
+  "remote_url": "https://github.com/BigBirdReturns/tier-bench.git",
+  "source_branch": "codex/luna-sol-anchor-replication-v2",
+  "verified_commit": "9d293e4c5060fa23d51bce19f6c32b8a476ceaff",
+  "artifact_commit": "886059bb6f743b8edc6cef7080873ee86e168176",
+  "cold_fetch": {
+    "ref": "refs/heads/codex/luna-sol-anchor-replication-v2",
+    "fetch_head_oid": "9d293e4c5060fa23d51bce19f6c32b8a476ceaff",
+    "matches_target": true,
+    "public_reachable": true,
+    "checked_out_detached": true
+  },
+  "toolchain": {
+    "git": "2.55.0.windows.3",
+    "python": "3.12.10",
+    "platform": "win32",
+    "pythondontwritebytecode": true
+  },
+  "offline_checks": {
+    "test_sol_root_matched_config.py": {"checks": 16, "exit": 0},
+    "test_sol_root_continuation.py": {"checks": 2, "exit": 0},
+    "test_sol_root_matched_config_v0_3.py": {"checks": 7, "exit": 0},
+    "test_sol_root_machine_continuation_v0_3.py": {"checks": 3, "exit": 0},
+    "total_checks": 28,
+    "all_pass": true
+  },
+  "build_verify": {
+    "command": "python experiments/sol_root_matched_config/build_machine_continuation_v0_3.py verify --git git",
+    "all_pass": true,
+    "artifact_commit": "886059bb6f743b8edc6cef7080873ee86e168176",
+    "manifest_sha256": "c4d05b3d9e713a856f4ff8f9d656d659b3a5022589adf0bc1ba8c320ae643d77",
+    "checks": {
+      "all_blob_hashes_verified": true,
+      "authority_is_nonexpanding": true,
+      "evidence_refs_complete": true,
+      "exact_manifest_match": true,
+      "provider_calls_zero": true
+    },
+    "provider_calls": 0,
+    "scientific_observations": 0
+  },
+  "independent_blob_hashes": {
+    "hash_basis": "git_blob_bytes",
+    "PROTOCOL_PROPOSAL_V0_3.md": "bcc777dfed662403bcf7757491af2d5fc402dffa",
+    "compile_proposal_v0_3.py": "50be64e68a592f3ea590a46c26adffcc7f253f11",
+    ".cart0/000.000.json": "3f0568e9fee6300d54611c7ac35a3e33f1cfe212",
+    "reachability_receipt_v0_3.json": "54c256ac5a0246f538561682af9db344cdbe0477"
+  },
+  "constraints_honored": {
+    "provider_call": false,
+    "canary": false,
+    "benchmark": false,
+    "scientific_observation": false,
+    "pr_opened": false,
+    "merge_performed": false,
+    "force_push": false
+  },
+  "divergence": null,
+  "result": "verified_reproduced",
+  "provider_calls": 0,
+  "scientific_observations": 0
+}

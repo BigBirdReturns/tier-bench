@@ -1,0 +1,15 @@
+2026-07-17T00:00:40.818696Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:00:40.818735Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:00:40.827377Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-17T00:00:41.077181Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:00:41.077204Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:00:48.365407Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.8 seconds
+Output:
+Traceback (most recent call last):
+  File "D:\Projects\Tier-Bench\worktrees\luna-sol-anchor-replication-v2\experiments\luna_sol_anchor_replication_v2\run\admin_canaries_v223_spark_20260717T000024Z\replicate_002\work\run_visible.py", line 11, in <module>
+    assert summarize(records) == [
+           ^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+
+2026-07-17T00:00:54.299832Z  WARN codex_mcp::rmcp_client: failed to initialize MCP client during shutdown: MCP startup failed: program not found

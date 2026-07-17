@@ -1,0 +1,6 @@
+2026-07-17T00:00:26.120570Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:00:26.120608Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:00:26.129471Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-17T00:00:26.382172Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:00:26.382197Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:00:39.200544Z  WARN codex_mcp::rmcp_client: failed to initialize MCP client during shutdown: MCP startup failed: program not found

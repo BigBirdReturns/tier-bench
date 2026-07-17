@@ -37,6 +37,23 @@ jobs:
           python tests/test_tier_pilot_admin.py
           python tests/test_tier_pilot_bridge.py
           python tests/test_tier_pilot_activation.py
+      - name: Sol-root matched-config proposal compiler (zero model calls)
+        run: |
+          python -m py_compile experiments/sol_root_matched_config/compile_proposal.py experiments/sol_root_matched_config/verify_continuation.py tests/test_sol_root_matched_config.py tests/test_sol_root_continuation.py
+          python tests/test_sol_root_matched_config.py
+          python experiments/sol_root_matched_config/verify_continuation.py verify
+          python tests/test_sol_root_continuation.py
+          python -m py_compile experiments/sol_root_matched_config/compile_proposal_v0_3.py tests/test_sol_root_matched_config_v0_3.py
+          python tests/test_sol_root_matched_config_v0_3.py
+          python -m py_compile experiments/sol_root_matched_config/build_machine_continuation_v0_3.py tests/test_sol_root_machine_continuation_v0_3.py
+          python experiments/sol_root_matched_config/build_machine_continuation_v0_3.py verify --git git
+          python tests/test_sol_root_machine_continuation_v0_3.py
+          python -m py_compile experiments/sol_root_matched_config/activation_v0_3/build_activation_v0_3.py experiments/sol_root_matched_config/activation_v0_3/runner.py tests/test_sol_root_activation_v0_3.py
+          python experiments/sol_root_matched_config/activation_v0_3/build_activation_v0_3.py verify
+          python tests/test_sol_root_activation_v0_3.py
+          python -m py_compile experiments/sol_root_matched_config/activation_v0_3/verify_activation_run_v0_3.py tests/test_sol_root_activation_run_v0_3.py
+          python experiments/sol_root_matched_config/activation_v0_3/verify_activation_run_v0_3.py verify
+          python tests/test_sol_root_activation_run_v0_3.py
       - name: UI-capture lane end-to-end ($0, temp files)
         run: python experiments/breadth/ui_capture_smoke.py
       - name: waterline schema + evidence-layer enforcement

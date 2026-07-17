@@ -1,0 +1,153 @@
+diff --git a/.cart0/020.100.REPOSITORY.md b/.cart0/020.100.REPOSITORY.md
+index e130210..bc14ba1 100644
+--- a/.cart0/020.100.REPOSITORY.md
++++ b/.cart0/020.100.REPOSITORY.md
+@@ -1,3 +1,8 @@
+ # 020.100 REPOSITORY
+ 
+-STATUS: UNPLANNED
++STATUS: PLANNED
++
++- Normative implementation modules: `src/windowing.py`, `src/summary.py`.
++- Normative behavior is defined by `docs/rules/100.temporal.md`,
++  `110.normalization.md`, and `120.aggregation.md`.
++- Acceptance is the exact command in `.cart0/500.100.VALIDATOR.md`.
+diff --git a/.cart0/300.100.WORK_GRAPH.md b/.cart0/300.100.WORK_GRAPH.md
+index 188ed8c..0e22e5a 100644
+--- a/.cart0/300.100.WORK_GRAPH.md
++++ b/.cart0/300.100.WORK_GRAPH.md
+@@ -1,3 +1,8 @@
+ # 300.100 WORK GRAPH
+ 
+-STATUS: UNPLANNED
++STATUS: COMPLETE
++
++1. `CRATE_001`: implement temporal deduplication, normalization, filtering,
++   sorting, and service aggregation.
++2. Run the exact validator.
++3. Record the result in the receipt card.
+diff --git a/.cart0/300.200.CRATE_001.md b/.cart0/300.200.CRATE_001.md
+index 47fc32e..bb6f978 100644
+--- a/.cart0/300.200.CRATE_001.md
++++ b/.cart0/300.200.CRATE_001.md
+@@ -1,3 +1,12 @@
+ # 300.200 CRATE 001
+ 
+-STATUS: UNPLANNED
++STATUS: COMPLETE
++
++Implementation scope:
++
++- `select_events`: deduplicate all rows by string id using integer revision,
++  later source row as tie-breaker, discard winning cancellations, then apply
++  the half-open timestamp window and emit fresh normalized objects sorted by
++  `(timestamp, id)`.
++- `summarize`: group normalized rows by service, exclude suppressed rows from
++  actionable totals, sort services by name, and compute the grand total.
+diff --git a/.cart0/600.100.DECISIONS.md b/.cart0/600.100.DECISIONS.md
+index ff23a7d..e7c3461 100644
+--- a/.cart0/600.100.DECISIONS.md
++++ b/.cart0/600.100.DECISIONS.md
+@@ -1,3 +1,10 @@
+ # 600.100 DECISIONS
+ 
+-STATUS: UNPLANNED
++STATUS: RECORDED
++
++- Preserve caller-owned event dictionaries by constructing normalized output
++  dictionaries only after winner selection.
++- Track source position during deduplication so equal revisions select the
++  later input row deterministically.
++- Use integer conversions for revision and impact at the normalization and
++  aggregation boundaries required by the rules.
+diff --git a/.cart0/700.100.RECEIPT.md b/.cart0/700.100.RECEIPT.md
+index 188c1a0..cc51f29 100644
+--- a/.cart0/700.100.RECEIPT.md
++++ b/.cart0/700.100.RECEIPT.md
+@@ -1,3 +1,7 @@
+ # 700.100 RECEIPT
+ 
+-STATUS: EMPTY
++STATUS: COMPLETE
++
++- Implemented `select_events` and `summarize` in the authorized source files.
++- Exact validator: `& 'C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' 'verify.py'`
++- Result: `VISIBLE_OK` (exit code 0).
+diff --git a/src/summary.py b/src/summary.py
+index a191b5f..c219409 100644
+--- a/src/summary.py
++++ b/src/summary.py
+@@ -1,3 +1,29 @@
+ def summarize(events):
+     """Return sorted per-service actionable incident totals."""
+-    raise NotImplementedError
++    grouped = {}
++    for event in events:
++        service = event["service"]
++        totals = grouped.setdefault(
++            service,
++            {"event_count": 0, "actionable_count": 0, "actionable_impact": 0},
++        )
++        totals["event_count"] += 1
++        if not event.get("suppressed", False):
++            totals["actionable_count"] += 1
++            totals["actionable_impact"] += int(event["impact"])
++
++    services = [
++        {
++            "service": service,
++            "event_count": totals["event_count"],
++            "actionable_count": totals["actionable_count"],
++            "actionable_impact": totals["actionable_impact"],
++        }
++        for service, totals in sorted(grouped.items())
++    ]
++    return {
++        "services": services,
++        "total_actionable_impact": sum(
++            service["actionable_impact"] for service in services
++        ),
++    }
+diff --git a/src/windowing.py b/src/windowing.py
+index ce832c4..c446791 100644
+--- a/src/windowing.py
++++ b/src/windowing.py
+@@ -1,3 +1,37 @@
+ def select_events(events, start, end):
+     """Return normalized, deduplicated events in the half-open window."""
+-    raise NotImplementedError
++    winners = {}
++
++    for source_index, event in enumerate(events):
++        event_id = event["id"]
++        revision = int(event["revision"])
++        current = winners.get(event_id)
++        if current is None or (revision, source_index) >= (
++            current["revision"], current["source_index"]
++        ):
++            winners[event_id] = {
++                "event": event,
++                "revision": revision,
++                "source_index": source_index,
++            }
++
++    selected = []
++    for winner in winners.values():
++        event = winner["event"]
++        timestamp = event["timestamp"]
++        if event.get("status") == "cancelled":
++            continue
++        if start <= timestamp < end:
++            selected.append(
++                {
++                    "id": event["id"],
++                    "service": event["service"],
++                    "timestamp": timestamp,
++                    "impact": int(event["impact"]),
++                    "suppressed": event.get("suppressed", False),
++                    "revision": winner["revision"],
++                    "source_index": winner["source_index"],
++                }
++            )
++
++    return sorted(selected, key=lambda event: (event["timestamp"], event["id"]))

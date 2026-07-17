@@ -1,0 +1,146 @@
+{
+  "all_pass": true,
+  "authority_created": false,
+  "checks": [
+    {
+      "detail": "experiments/sol_root_matched_config/.cart0/000.000.INDEX.md",
+      "name": "exists:000.000.INDEX.md",
+      "pass": true
+    },
+    {
+      "detail": "experiments/sol_root_matched_config/.cart0/000.100.AUTHORITY.md",
+      "name": "exists:000.100.AUTHORITY.md",
+      "pass": true
+    },
+    {
+      "detail": "experiments/sol_root_matched_config/.cart0/010.100.STATE.md",
+      "name": "exists:010.100.STATE.md",
+      "pass": true
+    },
+    {
+      "detail": "experiments/sol_root_matched_config/.cart0/020.100.ARTIFACTS.md",
+      "name": "exists:020.100.ARTIFACTS.md",
+      "pass": true
+    },
+    {
+      "detail": "experiments/sol_root_matched_config/.cart0/300.100.NEXT_TRANSITION.md",
+      "name": "exists:300.100.NEXT_TRANSITION.md",
+      "pass": true
+    },
+    {
+      "detail": "experiments/sol_root_matched_config/.cart0/500.100.VERIFICATION.md",
+      "name": "exists:500.100.VERIFICATION.md",
+      "pass": true
+    },
+    {
+      "detail": "experiments/sol_root_matched_config/.cart0/ENTRY_PROMPT.txt",
+      "name": "exists:ENTRY_PROMPT.txt",
+      "pass": true
+    },
+    {
+      "detail": {
+        "000.000.INDEX.md": 806,
+        "000.100.AUTHORITY.md": 961,
+        "010.100.STATE.md": 1359,
+        "020.100.ARTIFACTS.md": 1304,
+        "300.100.NEXT_TRANSITION.md": 814,
+        "500.100.VERIFICATION.md": 580,
+        "ENTRY_PROMPT.txt": 457
+      },
+      "name": "subject_file_size_limit",
+      "pass": true
+    },
+    {
+      "detail": 6281,
+      "name": "subject_total_size_limit",
+      "pass": true
+    },
+    {
+      "detail": [
+        "000.100.AUTHORITY.md",
+        "010.100.STATE.md",
+        "020.100.ARTIFACTS.md",
+        "300.100.NEXT_TRANSITION.md",
+        "500.100.VERIFICATION.md",
+        "700.100.RECEIPT.json",
+        "ENTRY_PROMPT.txt"
+      ],
+      "name": "index_links_complete",
+      "pass": true
+    },
+    {
+      "detail": [
+        "000.100.AUTHORITY.md",
+        "010.100.STATE.md",
+        "020.100.ARTIFACTS.md",
+        "300.100.NEXT_TRANSITION.md",
+        "500.100.VERIFICATION.md",
+        "700.100.RECEIPT.json",
+        "ENTRY_PROMPT.txt"
+      ],
+      "name": "index_links_resolve",
+      "pass": true
+    },
+    {
+      "detail": [
+        "no provider call",
+        "gated unless",
+        "never treat a proposal ceiling as call authority",
+        "preserve every prior raw output and receipt",
+        "check `docs/agents/queue.md`"
+      ],
+      "name": "authority_prohibitions",
+      "pass": true
+    },
+    {
+      "detail": "000.000.INDEX.md",
+      "name": "entry_routes_to_index",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "name": "entry_denies_provider_calls",
+      "pass": true
+    },
+    {
+      "detail": [
+        "codex exec",
+        "--model gpt-",
+        "provider.invoke",
+        "run_benchmark"
+      ],
+      "name": "no_provider_command",
+      "pass": true
+    },
+    {
+      "detail": [],
+      "name": "repo_pointers_resolve",
+      "pass": true
+    }
+  ],
+  "entry_address": "000.000.INDEX.md",
+  "limits": {
+    "max_receipt_bytes": 5500,
+    "max_subject_file_bytes": 2500,
+    "max_subject_total_bytes": 10000
+  },
+  "observed": {
+    "conservative_token_proxy_bytes_div_4": 1571,
+    "subject_files": 7,
+    "subject_total_bytes": 6281
+  },
+  "packet_root": "experiments/sol_root_matched_config/.cart0",
+  "provider_calls": 0,
+  "schema": "tier_bench.sol_root_continuation_receipt.v0.2",
+  "scientific_observations": 0,
+  "subject_sha256": {
+    "000.000.INDEX.md": "3fef4a990db9d85a4de29353f448b7725faea0d761e5111b611b8e3307ef7536",
+    "000.100.AUTHORITY.md": "17426e4ec34081a42258fa7c6532155aa577c00b411b7e2fb79167fa7dbe6c4f",
+    "010.100.STATE.md": "c4cd0d5eca7829665a063951d8988a021116e8621bbc4204ad665d911d90b4d0",
+    "020.100.ARTIFACTS.md": "8d2d7a78e806a6a3be5ea9128bfe240fd3d7f5f53692dd9e79e600a0f9de6831",
+    "300.100.NEXT_TRANSITION.md": "026129a04929392cb5a8951f19155bc2a2555b3520568847776f4f19c4414598",
+    "500.100.VERIFICATION.md": "efeafc0ef1f6c810102c0d814233403ba85118a8ed19b66203f36cab3995d5b6",
+    "ENTRY_PROMPT.txt": "5b35acbb31e0b7a1247cd9f53cc7a92c5a460c52837907515267cdee7e0e899b"
+  },
+  "verifier_sha256": "5d2bee5bb1f22e939e9512127778f42a0d482f5678ecc888fae2a9ebc6c54397"
+}

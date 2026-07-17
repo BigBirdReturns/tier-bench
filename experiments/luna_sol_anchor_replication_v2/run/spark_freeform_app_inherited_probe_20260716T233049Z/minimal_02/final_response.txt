@@ -1,0 +1,3 @@
+Updated `value.txt` to contain exactly:
+
+`1` + one newline.

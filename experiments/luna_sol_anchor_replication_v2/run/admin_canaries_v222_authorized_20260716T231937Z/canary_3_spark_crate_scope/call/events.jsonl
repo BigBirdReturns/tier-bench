@@ -1,0 +1,8 @@
+{"type":"thread.started","thread_id":"019f6d3a-d584-7463-b8e4-a0991261f2a7"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"command_execution","command":"\"C:\\\\WINDOWS\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\" -Command 'Get-Content -Path value.txt'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"\"C:\\\\WINDOWS\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\" -Command 'Get-Content -Path value.txt'","aggregated_output":"0\r\n","exit_code":0,"status":"completed"}}
+{"type":"item.started","item":{"id":"item_1","type":"command_execution","command":"\"C:\\\\WINDOWS\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\" -Command 'Set-Content -Path value.txt -Value \"1`n\"'","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"command_execution","command":"\"C:\\\\WINDOWS\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\" -Command 'Set-Content -Path value.txt -Value \"1`n\"'","aggregated_output":"","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_2","type":"agent_message","text":"{\"crate_id\":\"admin-canary-v222-spark-crate\",\"summary\":\"Updated value.txt from `0` to `1` with newline, and made no other file changes.\",\"files_inspected_claimed\":[\"value.txt\"],\"files_changed_claimed\":[\"value.txt\"],\"commands_claimed\":[\"Get-Content -Path value.txt\",\"Set-Content -Path value.txt -Value \\\"1`n\\\"\"],\"unresolved_blockers\":[]}"}}
+{"type":"turn.completed","usage":{"input_tokens":29984,"cached_input_tokens":19584,"output_tokens":478,"reasoning_output_tokens":185}}

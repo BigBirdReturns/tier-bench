@@ -1,0 +1,9 @@
+Implemented `summarize(records)` in `src/solution.py`.
+
+- Includes only records where `eligible` is `True`.
+- Sums integer `amount` per `account` without mutating `records`.
+- Returns sorted list of objects like `{"account": ..., "total": ...}` by account.
+- Handles empty input by returning `[]`.
+
+Acceptance command passed:
+`VERIFY_OK`

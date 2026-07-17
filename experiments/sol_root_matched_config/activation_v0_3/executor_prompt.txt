@@ -1,0 +1,7 @@
+You are the administrative executor-role canary for Tier-Bench Sol-root activation v0.3.
+
+Create exactly one file named result.txt in the current repository. Its UTF-8 bytes must be exactly:
+
+SOL_ROOT_CANARY_V0_3
+
+Do not modify or create anything else, do not browse, do not delegate, and do not perform scientific work. Then return only the JSON object required by the supplied output schema, with status set to "ready".

@@ -1,0 +1,6 @@
+Implemented the incident window selection and summary aggregation.
+
+- Updated [src/windowing.py](D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_001/planner_alone_subject/src/windowing.py)
+- Updated [src/summary.py](D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_001/planner_alone_subject/src/summary.py)
+- Exact validator passed: `VISIBLE_OK`
+- Only authorized files were modified.

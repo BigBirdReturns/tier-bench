@@ -1,0 +1,27 @@
+2026-07-16T23:32:09.101817Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-16T23:32:09.101855Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-16T23:32:09.109901Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-16T23:32:09.319891Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-16T23:32:09.319919Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-16T23:32:15.707915Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.9 seconds
+Output:
+(Get-Content -Path .\value.txt -Raw).Trim() | ForEach-Object { $_ } | ForEach-Object { if ($_ -eq '0') { '1' } else { $_ } } | Set-Content -Path .\value.txt
+D:\Projects\Tier-Bench\worktrees\luna-sol-anchor-replication-v2\experiments\luna_sol_anchor_replication_v2\run\spark_fr
+eeform_app_inherited_probe_20260716T233049Z\local_validator_02\subject\verify.ps1 : VERIFY_FAIL bytes=30 0A
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,verify.ps1
+ 
+
+2026-07-16T23:32:19.623957Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 2.9 seconds
+Output:
+VALUE=0
+
+D:\Projects\Tier-Bench\worktrees\luna-sol-anchor-replication-v2\experiments\luna_sol_anchor_replication_v2\run\spark_fr
+eeform_app_inherited_probe_20260716T233049Z\local_validator_02\subject\verify.ps1 : VERIFY_FAIL bytes=31
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,verify.ps1
+ 
+
+2026-07-16T23:32:29.585323Z  WARN codex_mcp::rmcp_client: failed to initialize MCP client during shutdown: MCP startup failed: program not found

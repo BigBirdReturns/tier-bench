@@ -1,0 +1,10 @@
+{"type":"thread.started","thread_id":"019f67d7-3f85-7b02-b6e2-d631023e8df4"}
+{"type":"turn.started"}
+{"type":"item.started","item":{"id":"item_0","type":"command_execution","command":"\"C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe\" -Command \"Get-Content -Raw -LiteralPath .\\\\value.txt\"","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_0","type":"command_execution","command":"\"C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe\" -Command \"Get-Content -Raw -LiteralPath .\\\\value.txt\"","aggregated_output":"0\r\n\r\n","exit_code":0,"status":"completed"}}
+{"type":"item.started","item":{"id":"item_1","type":"file_change","changes":[{"path":"C:\\Users\\BAM-DE~1\\AppData\\Local\\Temp\\luna-v22-canaries-0_dyo40b\\full_repo\\value.txt","kind":"update"}],"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_1","type":"file_change","changes":[{"path":"C:\\Users\\BAM-DE~1\\AppData\\Local\\Temp\\luna-v22-canaries-0_dyo40b\\full_repo\\value.txt","kind":"update"}],"status":"completed"}}
+{"type":"item.started","item":{"id":"item_2","type":"command_execution","command":"\"C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe\" -Command \"Get-Content -Raw -LiteralPath .\\\\value.txt\"","aggregated_output":"","exit_code":null,"status":"in_progress"}}
+{"type":"item.completed","item":{"id":"item_2","type":"command_execution","command":"\"C:\\\\Program Files\\\\PowerShell\\\\7\\\\pwsh.exe\" -Command \"Get-Content -Raw -LiteralPath .\\\\value.txt\"","aggregated_output":"1\n\r\n","exit_code":0,"status":"completed"}}
+{"type":"item.completed","item":{"id":"item_3","type":"agent_message","text":"{\"summary\":\"Changed value.txt from 0 to 1.\",\"files_inspected_claimed\":[\"value.txt\"],\"files_changed_claimed\":[\"value.txt\"],\"commands_claimed\":[\"Get-Content value.txt\"],\"unresolved_blockers\":[]}"}}
+{"type":"turn.completed","usage":{"input_tokens":47587,"cached_input_tokens":22016,"output_tokens":454,"reasoning_output_tokens":163}}

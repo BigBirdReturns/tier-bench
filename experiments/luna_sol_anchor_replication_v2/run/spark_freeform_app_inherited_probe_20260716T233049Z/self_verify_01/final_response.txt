@@ -1,0 +1,5 @@
+Changed `value.txt` to exactly `0x31 0x0A` bytes and confirmed it.
+
+Verification output:
+- Length: `2` bytes
+- Raw hex: `31 0A`

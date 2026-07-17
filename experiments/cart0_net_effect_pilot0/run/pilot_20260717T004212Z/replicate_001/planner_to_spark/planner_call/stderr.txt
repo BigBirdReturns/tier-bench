@@ -1,0 +1,34 @@
+2026-07-17T00:43:59.708806Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:43:59.708846Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:43:59.718851Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-17T00:44:00.286020Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:44:00.286046Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-17T00:44:10.852136Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1 seconds
+Output:
+# 000.000 INDEX
+
+- Authority: `.cart0/000.100.AUTHORITY.md`
+- Task: `.cart0/010.100.TASK.md`
+- Repository map: `.cart0/020.100.REPOSITORY.md`
+- Work graph: `.cart0/300.100.WORK_GRAPH.md`
+- Active crate: `.cart0/300.200.CRATE_001.md`
+- Validator: `.cart0/500.100.VALIDATOR.md`
+- Decisions: `.cart0/600.100.DECISIONS.md`
+- Receipt slot: `.cart0/700.100.RECEIPT.md`
+
+
+--- files ---
+
+2026-07-17T00:46:04.148554Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 0.8 seconds
+Output:
+Traceback (most recent call last):
+  File "D:\Projects\Tier-Bench\worktrees\luna-sol-anchor-replication-v2\experiments\cart0_net_effect_pilot0\run\pilot_20260717T004212Z\replicate_001\planner_to_spark_subject\verify.py", line 15, in <module>
+    selected = select_events(events, 10, 20)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Projects\Tier-Bench\worktrees\luna-sol-anchor-replication-v2\experiments\cart0_net_effect_pilot0\run\pilot_20260717T004212Z\replicate_001\planner_to_spark_subject\src\windowing.py", line 3, in select_events
+    raise NotImplementedError
+NotImplementedError
+
+2026-07-17T00:46:50.255461Z  WARN codex_mcp::rmcp_client: failed to initialize MCP client during shutdown: MCP startup failed: program not found

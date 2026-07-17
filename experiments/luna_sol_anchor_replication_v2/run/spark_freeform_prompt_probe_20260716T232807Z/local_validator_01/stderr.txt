@@ -1,0 +1,4 @@
+2026-07-16T23:29:25.324485Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-16T23:29:30.078615Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Set-Content -Path .\\value.txt -Value 1"` rejected: blocked by policy
+2026-07-16T23:29:31.041087Z ERROR codex_core::tools::router: error=patch rejected: writing is blocked by read-only sandbox; rejected by user approval settings
+2026-07-16T23:29:31.821793Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "powershell -NoProfile -ExecutionPolicy Bypass -File .\\verify.ps1"` rejected: blocked by policy

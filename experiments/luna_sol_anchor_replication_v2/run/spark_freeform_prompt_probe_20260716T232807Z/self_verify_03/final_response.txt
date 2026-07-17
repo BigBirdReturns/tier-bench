@@ -1,0 +1,12 @@
+I’m not able to complete this change in this sandbox because write commands are blocked by policy (`Set-Content`/`apply_patch` are rejected), and I’m also currently blocked from further shell reads.
+
+Current verified state before the block:
+- `value.txt` contained `0` (from `Get-Content -Raw value.txt`).
+
+You can apply and verify this in your environment with:
+
+1. `Set-Content -Path value.txt -Value '1' -NoNewline`
+2. `Format-Hex value.txt`
+
+If it’s not `31 0A`, use:
+- `Format-Hex value.txt` to inspect, then rewrite with `Set-Content -Path value.txt -Value '1' -NoNewline` until it reports `31 0A`.

@@ -1,0 +1,5 @@
+Blocked by sandbox policy: the workspace is read-only, so I couldn’t write `value.txt` (the write attempt was rejected).
+
+Please allow a write-enabled session, and I’ll set `value.txt` to exactly:
+
+`1\n`

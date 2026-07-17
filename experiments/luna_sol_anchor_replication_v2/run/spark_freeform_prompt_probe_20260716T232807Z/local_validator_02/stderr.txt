@@ -1,0 +1,3 @@
+2026-07-16T23:29:33.302487Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-16T23:29:38.632761Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Set-Content -Path .\\value.txt -Value '1'
+powershell -NoProfile -ExecutionPolicy Bypass -File .\\verify.ps1"` rejected: blocked by policy

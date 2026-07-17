@@ -1,0 +1,7 @@
+`value.txt` currently contains `0` and raw bytes are:
+
+- `30 0A`
+
+I could not change it in this session because filesystem write operations are blocked by policy (the edit step is rejected as read-only), so I cannot correct it here.  
+
+If you want, I can do it immediately once write access is enabled.

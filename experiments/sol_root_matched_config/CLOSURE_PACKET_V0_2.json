@@ -1,0 +1,40 @@
+{
+  "schema": "tier-bench/closure-packet@1",
+  "status": "proposal",
+  "requested_outcome": "Admit protocol revision 0.2 and its deterministic compiler as the sole basis for preparing a separately reviewable administrative role-canary freeze candidate.",
+  "authority": {
+    "queue_row": "SOL-ROOT-MATCHED-CONFIG-V0.2",
+    "operator_authorization": "Prepare protocol v0.2, deterministic catalog/schedule compiler, offline regression tests, and proposal-only administrative canary budget; authorize no provider or benchmark activity.",
+    "lane": "driver"
+  },
+  "predicates": [
+    "Every artifact remains proposal_only_unactivated_unfrozen.",
+    "The screenshot inventory is represented accurately and separately from CLI invocation equivalence.",
+    "Catalog projection excludes hidden entries and marks every role unverified.",
+    "Call ceilings are compiler-derived and width-extension promotion is explicit.",
+    "A role-admissible catalog can mechanically reduce later schedules.",
+    "Sol baseline continuation is optional and trigger-bound.",
+    "Cached input and reasoning output are not double-counted.",
+    "Administrative canaries mint zero scientific observations.",
+    "No provider command, model call, benchmark task, hidden vector, scientific freeze, grade, or benchmark execution occurs."
+  ],
+  "burden_holder": "Sol proposal author until deterministic verification is green; operator for any later activation decision.",
+  "evidence": [
+    "PROTOCOL_PROPOSAL_V0_2.md",
+    "compile_proposal.py",
+    "design_proposal_v0_2.json",
+    "display_inventory_v0_2.json",
+    "generated/catalog_projection_v0_2.json",
+    "generated/call_budget_proposal_v0_2.json",
+    "generated/administrative_canary_budget_proposal_v0_2.json",
+    "generated/offline_verification_receipt_v0_2.json",
+    "../../tests/test_sol_root_matched_config.py"
+  ],
+  "verifier": {
+    "command": "python tests/test_sol_root_matched_config.py",
+    "expected": "all checks pass; zero provider calls; zero scientific observations"
+  },
+  "gap": "No role canary packet, live role-admissibility receipt, task, validator, hidden grader, randomization schedule, quota freeze, or scientific activation exists.",
+  "closure_decision": "proposal_preparation_only",
+  "failure_default": "unactivated_unmeasured_no_provider_dispatch"
+}

@@ -1,0 +1,1 @@
+Done. `value.txt` was changed to the required contents (`0x31 0x0A`) and `powershell -NoProfile -ExecutionPolicy Bypass -File .\verify.ps1` now exits `0` (`VERIFY_OK`).

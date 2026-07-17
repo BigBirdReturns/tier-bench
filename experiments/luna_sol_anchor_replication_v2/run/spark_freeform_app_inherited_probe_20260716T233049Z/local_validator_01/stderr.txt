@@ -1,0 +1,15 @@
+2026-07-16T23:31:44.698818Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-16T23:31:44.698864Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-16T23:31:44.707813Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-16T23:31:47.663177Z  WARN codex_core_skills::loader: ignoring interface.icon_small: icon path with '..' must resolve under plugin assets/
+2026-07-16T23:31:47.663202Z  WARN codex_core_skills::loader: ignoring interface.icon_large: icon path with '..' must resolve under plugin assets/
+2026-07-16T23:31:59.227737Z ERROR codex_core::tools::router: error=Exit code: 1
+Wall time: 1.9 seconds
+Output:
+D:\Projects\Tier-Bench\worktrees\luna-sol-anchor-replication-v2\experiments\luna_sol_anchor_replication_v2\run\spark_fr
+eeform_app_inherited_probe_20260716T233049Z\local_validator_01\subject\verify.ps1 : VERIFY_FAIL bytes=31 0D 0A
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException,verify.ps1
+ 
+
+2026-07-16T23:32:08.515673Z  WARN codex_mcp::rmcp_client: failed to initialize MCP client during shutdown: MCP startup failed: program not found

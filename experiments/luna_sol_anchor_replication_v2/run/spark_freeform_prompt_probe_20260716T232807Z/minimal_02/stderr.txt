@@ -1,0 +1,2 @@
+2026-07-16T23:28:20.656481Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-16T23:28:24.894882Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "[System.IO.File]::WriteAllText((Resolve-Path .\\value.txt), \"1"'`n")'` rejected: blocked by policy

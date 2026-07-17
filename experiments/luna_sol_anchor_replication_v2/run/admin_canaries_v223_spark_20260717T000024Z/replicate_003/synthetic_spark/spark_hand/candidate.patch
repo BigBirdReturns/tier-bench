@@ -1,0 +1,25 @@
+diff --git a/src/solution.py b/src/solution.py
+index 4170324..ba53dac 100644
+--- a/src/solution.py
++++ b/src/solution.py
+@@ -1,3 +1,19 @@
+ def summarize(records):
+     """Return sorted per-account totals for eligible records."""
+-    raise NotImplementedError
++    totals = {}
++    for record in records:
++        if not record.get("eligible"):
++            continue
++
++        account = record.get("account")
++        amount = record.get("amount", 0)
++
++        if account in totals:
++            totals[account] += amount
++        else:
++            totals[account] = amount
++
++    return [
++        {"account": account, "total": totals[account]}
++        for account in sorted(totals.keys())
++    ]

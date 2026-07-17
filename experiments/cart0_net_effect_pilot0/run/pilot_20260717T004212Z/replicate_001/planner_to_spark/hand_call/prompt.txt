@@ -1,0 +1,3 @@
+Use the local repository as the durable context address space. Start at `.cart0/000.000.INDEX.md`, follow its pointers, obey `.cart0/000.100.AUTHORITY.md`, and run the exact validator before claiming completion.
+
+You are the fresh gpt-5.3-codex-spark implementation hand. Retrieve the task through the index and execute only `.cart0/300.200.CRATE_001.md`. Edit only its authorized source paths. Do not edit CART0 cards.

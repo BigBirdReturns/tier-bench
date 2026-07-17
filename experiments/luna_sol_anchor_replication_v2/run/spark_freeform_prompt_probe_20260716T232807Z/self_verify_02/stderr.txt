@@ -1,0 +1,8 @@
+2026-07-16T23:28:51.075184Z  WARN codex_core::shell_snapshot: Failed to create shell snapshot for powershell: Shell snapshot not supported yet for PowerShell
+2026-07-16T23:28:55.519654Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Format-Hex -Path .\\value.txt"` rejected: blocked by policy
+2026-07-16T23:28:56.340942Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$b=[System.IO.File]::ReadAllBytes((Resolve-Path .'"\\value.txt)); "'$b | ForEach-Object { $_.ToString('"'X2') } -join ' '"` rejected: blocked by policy
+2026-07-16T23:29:01.238208Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Encoding Byte -Path .\\value.txt | ForEach-Object { \"{0:X2}\" -f "'$_ }'` rejected: blocked by policy
+2026-07-16T23:29:02.694411Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'certutil -f -encodehex value.txt - 0x10'` rejected: blocked by policy
+2026-07-16T23:29:03.658160Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$c = Get-Content -Encoding Byte .'"\\value.txt; "'$c'` rejected: blocked by policy
+2026-07-16T23:29:06.401456Z ERROR codex_core::tools::router: error=`"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Set-Content -Path .\\value.txt -Value \"1\""` rejected: blocked by policy
+2026-07-16T23:29:07.229553Z ERROR codex_core::tools::router: error=patch rejected: writing is blocked by read-only sandbox; rejected by user approval settings

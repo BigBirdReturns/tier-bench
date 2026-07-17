@@ -1,0 +1,1 @@
+{"capability_evidence":false,"changed":["src/solution.py"],"duration_seconds":11.545,"exit_code":0,"passed":true,"replicate":3,"usage":{"cached_input_tokens":38912,"input_tokens":50180,"output_tokens":1351,"reasoning_output_tokens":672},"validator_exit_code":0,"validator_stderr":"","validator_stdout":"VERIFY_OK\r\n"}

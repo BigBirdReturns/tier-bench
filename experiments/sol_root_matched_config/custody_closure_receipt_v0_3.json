@@ -1,0 +1,46 @@
+{
+  "schema": "tier-bench/sol-root-matched-config/custody-closure-receipt@0.3",
+  "observed_at": "2026-07-17T07:26:06Z",
+  "state": "custody_closed",
+  "prior_canonical_state": "cross_engine_verified_unmerged",
+  "source_receipt": {
+    "path": "experiments/sol_root_matched_config/cold_verification_receipt_v0_3.claude.json",
+    "merge_commit": "a8b4f548cb8c22096c8a771656bb89fc27ffa786",
+    "recorded_state": "reachable_verified",
+    "canonical_state": "cross_engine_verified_unmerged",
+    "normalization": {
+      "kind": "nonsemantic_enum_correction",
+      "basis": "The v0.3 custody contract names the successful cold-verification state cross_engine_verified_unmerged.",
+      "original_receipt_preserved": true,
+      "verification_evidence_changed": false
+    }
+  },
+  "closure": {
+    "pr_number": 106,
+    "url": "https://github.com/BigBirdReturns/tier-bench/pull/106",
+    "base_branch": "codex/luna-sol-anchor-replication-v2",
+    "base_commit": "9d293e4c5060fa23d51bce19f6c32b8a476ceaff",
+    "head_branch": "claude/luna-sol-anchor-replication-v2",
+    "head_commit": "7723b566441e715370b97d49c20f21f917a9cd51",
+    "merge_commit": "a8b4f548cb8c22096c8a771656bb89fc27ffa786",
+    "merged_at": "2026-07-17T07:26:06Z",
+    "ci": {
+      "workflow": "breadth-durability",
+      "run_id": 29563002094,
+      "run_number": 179,
+      "conclusion": "success"
+    }
+  },
+  "constraints_honored": {
+    "provider_call": false,
+    "canary": false,
+    "benchmark": false,
+    "scientific_observation": false,
+    "task_or_grader_change": false,
+    "hidden_vector_change": false,
+    "scientific_schedule_freeze": false
+  },
+  "provider_calls": 0,
+  "scientific_observations": 0,
+  "next_required_event": "separately_ratified_activation_and_canary_freeze"
+}

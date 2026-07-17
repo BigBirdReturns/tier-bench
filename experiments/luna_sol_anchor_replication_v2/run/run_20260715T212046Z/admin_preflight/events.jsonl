@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f67a7-8b72-7053-a714-d2d1f2800595"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"{\"kind\":\"spark_receipt\",\"payload\":{\"commands\":[],\"files_changed\":[],\"files_inspected\":[],\"final_state_claim\":\"\",\"status\":\"completed\",\"summary\":\"\",\"unresolved_blockers\":[],\"visible_validators\":[]}}"}}
+{"type":"turn.completed","usage":{"input_tokens":11915,"cached_input_tokens":0,"output_tokens":691,"reasoning_output_tokens":637}}

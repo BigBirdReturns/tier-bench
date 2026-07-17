@@ -1,0 +1,6 @@
+Implemented the requested functions.
+
+- [`src/windowing.py`](D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_002/planner_alone_subject/src/windowing.py)
+- [`src/summary.py`](D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_002/planner_alone_subject/src/summary.py)
+
+Exact validator result: `VISIBLE_OK`.

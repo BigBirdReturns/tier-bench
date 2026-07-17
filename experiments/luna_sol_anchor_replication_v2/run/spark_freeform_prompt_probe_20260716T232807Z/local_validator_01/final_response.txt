@@ -1,0 +1,11 @@
+I’m blocked by the environment’s policy: both write operations and PowerShell execution are denied (`policy`/`read-only` restrictions), so I cannot complete this as requested in this session.
+
+What I couldn’t do:
+- Edit `value.txt` from `0` to `1` (write blocked).
+- Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\verify.ps1` (execution blocked).
+
+Run these in your environment:
+- `Set-Content -Path .\value.txt -Value 1`
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\verify.ps1`
+
+If you want, I can provide a one-command PowerShell one-liner or a minimal fallback sequence to run safely.

@@ -1,0 +1,3 @@
+`value.txt` was updated from `0\n` to `1\n`, and the raw bytes now match exactly:
+
+`31 0A`

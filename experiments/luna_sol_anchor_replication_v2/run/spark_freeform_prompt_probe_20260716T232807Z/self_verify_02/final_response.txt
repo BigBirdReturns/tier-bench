@@ -1,0 +1,11 @@
+Attempted update completed with constraints:
+
+- `value.txt` current text is `0`
+- Raw byte check shows `48 0A` (ASCII `0\n`), not `31 0A`
+
+I could not change it because this workspace is read-only; both shell write and `apply_patch` edits were blocked by policy.
+
+To complete locally, run in your shell:
+`Set-Content -Path value.txt -Value "1"`
+Then verify:
+`(Get-Content .\value.txt -Encoding Byte) -join ' '` should output `49 10` (hex `31 0A`).

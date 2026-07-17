@@ -1,0 +1,1 @@
+Return the smallest valid payload with kind "spark_receipt" and neutral or empty values.

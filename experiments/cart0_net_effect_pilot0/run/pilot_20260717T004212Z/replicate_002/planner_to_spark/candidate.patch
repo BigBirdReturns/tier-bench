@@ -1,0 +1,75 @@
+diff --git a/src/summary.py b/src/summary.py
+index a191b5f..345ea23 100644
+--- a/src/summary.py
++++ b/src/summary.py
+@@ -1,3 +1,25 @@
+ def summarize(events):
+     """Return sorted per-service actionable incident totals."""
+-    raise NotImplementedError
++    services = {}
++    total_actionable_impact = 0
++
++    for event in events:
++        service = event["service"]
++        service_data = services.setdefault(
++            service, {"event_count": 0, "actionable_count": 0, "actionable_impact": 0}
++        )
++        service_data["event_count"] += 1
++
++        if not event["suppressed"]:
++            service_data["actionable_count"] += 1
++            service_data["actionable_impact"] += event["impact"]
++            total_actionable_impact += event["impact"]
++
++    result = {
++        "services": [
++            {"service": service, **services[service]}
++            for service in sorted(services)
++        ],
++        "total_actionable_impact": total_actionable_impact,
++    }
++    return result
+diff --git a/src/windowing.py b/src/windowing.py
+index ce832c4..3dc6e9f 100644
+--- a/src/windowing.py
++++ b/src/windowing.py
+@@ -1,3 +1,38 @@
+ def select_events(events, start, end):
+     """Return normalized, deduplicated events in the half-open window."""
+-    raise NotImplementedError
++    winners = {}
++    for source_index, event in enumerate(events):
++        event_id = event.get("id")
++        if event_id is None:
++            continue
++
++        revision = event.get("revision", 0)
++        if revision is None:
++            revision = 0
++
++        winning = winners.get(event_id)
++        if winning is None or revision > winning[0] or (
++            revision == winning[0] and source_index > winning[1]
++        ):
++            winners[event_id] = (revision, source_index, event)
++
++    results = []
++    for _, (revision, source_index, event) in winners.items():
++        if event.get("status") == "cancelled":
++            continue
++        timestamp = event.get("timestamp")
++        if timestamp is None or not (start <= timestamp < end):
++            continue
++        results.append(
++            {
++                "id": event["id"],
++                "service": event["service"],
++                "timestamp": timestamp,
++                "impact": int(event.get("impact", 0)),
++                "suppressed": bool(event.get("suppressed", False)),
++                "revision": int(revision),
++                "source_index": source_index,
++            }
++        )
++
++    return sorted(results, key=lambda item: (item["timestamp"], item["id"]))

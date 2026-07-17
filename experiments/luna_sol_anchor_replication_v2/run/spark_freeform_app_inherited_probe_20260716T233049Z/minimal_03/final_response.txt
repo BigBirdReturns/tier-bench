@@ -1,0 +1,1 @@
+Done. `value.txt` is now exactly `1` followed by a single LF newline.

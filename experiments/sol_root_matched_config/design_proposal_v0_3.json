@@ -1,0 +1,75 @@
+{
+  "schema": "tier-bench/sol-root-matched-config/design-proposal@0.3",
+  "status": "proposal_only_unactivated_unfrozen",
+  "pinned_owner_cell_id": "gpt-5.6-sol@high#standard",
+  "catalog_authority": {
+    "primary": "codex_debug_models_json",
+    "client_version": "0.144.5",
+    "catalog_command": ["debug", "models"],
+    "executable_sha256": "efdb3540ef74b9909408c8d38da79483454797b36f471e3e004fc2bf2b70e22a",
+    "display_screenshot_role": "corroboration_only",
+    "invocation_equivalence_proven": false
+  },
+  "reporting": {
+    "gross_token_ratio_points": [0.4, 0.5, 0.6],
+    "schedule_may_depend_on_ratio_points": false
+  },
+  "atomic_direct": {
+    "gate_observations_per_cell": 2,
+    "confirmation_crates": 4,
+    "confirmation_replicates": 2,
+    "executor_confirmation_cap": 12
+  },
+  "frozen_plan_direct": {
+    "families": 3,
+    "widths": [2, 4, 8, 16, 32],
+    "executor_cells": 4,
+    "baseline_call_ceiling": 2,
+    "plan_calls_per_family_width": 1,
+    "closeout_calls_per_executor_graph": 1
+  },
+  "composition_validation": {
+    "positive_families": 2,
+    "widths": [4, 16],
+    "executor_cells": 2,
+    "baseline_call_ceiling": 2,
+    "negative_tasks": 6,
+    "negative_width": 1,
+    "negative_executor_cells": 1,
+    "additivity_tolerance_status": "GATED_UNFROZEN",
+    "failure_default": "composition_rejected_fresh_end_to_end_required"
+  },
+  "holdout_direct": {
+    "repositories": 3,
+    "positive_families": 6,
+    "seeds": 2,
+    "widths": [8, 16, 32],
+    "baseline_call_ceiling": 2,
+    "negative_tasks": 24,
+    "negative_width": 4
+  },
+  "paired_sentinels": {
+    "engines": ["openai", "anthropic"],
+    "phase_count": 4,
+    "boundaries_per_phase": 2,
+    "probes_per_engine_per_boundary": 3,
+    "packet_bytes_must_match": true,
+    "divergence_default": "split_epoch_or_investigate"
+  },
+  "deferred_topology_c": {
+    "activation_gate": "direct_a_quality_noninferior_and_median_ratio_below_1",
+    "coordinator_confirmation_cap": 6,
+    "coordinator_pairs": 4,
+    "families": 3,
+    "widths": [2, 4, 8, 16, 32],
+    "composition_pairs": 1,
+    "composition_families": 2,
+    "composition_widths": [4, 16],
+    "negative_tasks": 3,
+    "negative_width": 1
+  },
+  "repair": {
+    "maximum_repairs_per_failed_hand_crate": 1,
+    "screening_and_plan_retries": 0
+  }
+}

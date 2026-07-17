@@ -1,0 +1,130 @@
+diff --git a/.cart0/020.100.REPOSITORY.md b/.cart0/020.100.REPOSITORY.md
+index e130210..eba7856 100644
+--- a/.cart0/020.100.REPOSITORY.md
++++ b/.cart0/020.100.REPOSITORY.md
+@@ -1,3 +1,27 @@
+ # 020.100 REPOSITORY
+ 
+-STATUS: UNPLANNED
++STATUS: PLANNED
++
++## Normative inputs
++
++- `TASK.md` — task statement: implement `select_events` and `summarize`; preserve the task, rules, validator, authority card, and package initializer.
++- `.cart0/010.100.TASK.md` — planning address for `TASK.md` and `docs/rules/*.md`.
++- `docs/rules/100.temporal.md` — global revision deduplication, cancellation, half-open window, input immutability, and `(timestamp, id)` ordering.
++- `docs/rules/110.normalization.md` — exact seven-key selected-event shape, integer `impact`/`revision`, default `suppressed=False`.
++- `docs/rules/120.aggregation.md` — service grouping, sorted services, and suppression-aware totals.
++
++## Implementation targets
++
++- `src/windowing.py` — `select_events(events, start, end)`; currently raises `NotImplementedError`.
++- `src/summary.py` — `summarize(events)`; currently raises `NotImplementedError`.
++
++## Protected acceptance and support files
++
++- `verify.py` — visible acceptance validator; do not edit.
++- `src/__init__.py` — package initializer; do not edit.
++- `docs/rules/` and `TASK.md` — normative inputs; do not edit.
++- `.cart0/000.000.INDEX.md` and `.cart0/000.100.AUTHORITY.md` — durable context and authority; do not edit.
++
++## Planning surface
++
++The only planning cards authorized for this planning hand are `.cart0/020.100.REPOSITORY.md`, `.cart0/300.100.WORK_GRAPH.md`, `.cart0/300.200.CRATE_001.md`, `.cart0/600.100.DECISIONS.md`, and `.cart0/700.100.RECEIPT.md`.
+diff --git a/.cart0/300.100.WORK_GRAPH.md b/.cart0/300.100.WORK_GRAPH.md
+index 188ed8c..36c65ae 100644
+--- a/.cart0/300.100.WORK_GRAPH.md
++++ b/.cart0/300.100.WORK_GRAPH.md
+@@ -1,3 +1,12 @@
+ # 300.100 WORK GRAPH
+ 
+-STATUS: UNPLANNED
++STATUS: PLANNED
++
++## One-node graph
++
++`W1: CRATE_001` — implement the two missing functions: `select_events` in `src/windowing.py` and `summarize` in `src/summary.py`.
++
++- Dependencies: none; all required behavior is specified by `.cart0/010.100.TASK.md` and `docs/rules/100.temporal.md`, `docs/rules/110.normalization.md`, and `docs/rules/120.aggregation.md`.
++- Authorized files: exactly `src/windowing.py` and `src/summary.py`, as recorded in `.cart0/300.200.CRATE_001.md`.
++- Acceptance: run the exact command at `.cart0/500.100.VALIDATOR.md`; it must complete successfully and print `VISIBLE_OK`.
++- Completion condition: both functions are implemented within the crate boundary, the validator passes, and no protected file is changed.
+diff --git a/.cart0/300.200.CRATE_001.md b/.cart0/300.200.CRATE_001.md
+index 47fc32e..1432174 100644
+--- a/.cart0/300.200.CRATE_001.md
++++ b/.cart0/300.200.CRATE_001.md
+@@ -1,3 +1,31 @@
+-# 300.200 CRATE 001
++# 300.200 CRATE_001
+ 
+-STATUS: UNPLANNED
++STATUS: READY_FOR_IMPLEMENTATION
++
++## Exact authorization
++
++The implementation hand may edit exactly these two files:
++
++- `src/windowing.py`
++- `src/summary.py`
++
++No other file is authorized by this crate. In particular, do not edit `TASK.md`, `docs/rules/*`, `verify.py`, `.cart0/000.000.INDEX.md`, `.cart0/000.100.AUTHORITY.md`, or `src/__init__.py`.
++
++## Work order and behavior
++
++1. In `src/windowing.py`, implement `select_events` by enumerating the input with zero-based source indices, retaining per string `id` the greatest integer `revision` and, on a revision tie, the later source row. Perform this deduplication before applying `start <= timestamp < end`. Exclude a winning row whose status is `cancelled`; do not mutate `events`.
++2. For each retained in-window row, create a new object with exactly `id`, `service`, `timestamp`, `impact`, `suppressed`, `revision`, and `source_index`. Convert `impact` and `revision` to integers, use `False` when `suppressed` is absent, preserve the winning row's original source index, and sort the result by `(timestamp, id)`.
++3. In `src/summary.py`, implement `summarize` by grouping normalized events by `service`, sorting service objects by service, counting every event in `event_count`, and counting/summing only events with `suppressed` false for `actionable_count` and `actionable_impact`. Return `services` plus `total_actionable_impact`; empty input returns empty services and zero total.
++
++## Addresses and acceptance
++
++- Task: `.cart0/010.100.TASK.md` and `TASK.md`.
++- Temporal rule: `docs/rules/100.temporal.md`.
++- Normalization rule: `docs/rules/110.normalization.md`.
++- Aggregation rule: `docs/rules/120.aggregation.md`.
++- Exact validator address: `.cart0/500.100.VALIDATOR.md`.
++- Exact validator command:
++
++```powershell
++& 'C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' 'verify.py'
++```
+diff --git a/.cart0/600.100.DECISIONS.md b/.cart0/600.100.DECISIONS.md
+index ff23a7d..2af88b5 100644
+--- a/.cart0/600.100.DECISIONS.md
++++ b/.cart0/600.100.DECISIONS.md
+@@ -1,3 +1,10 @@
+ # 600.100 DECISIONS
+ 
+-STATUS: UNPLANNED
++STATUS: RECORDED
++
++- D1 — Deduplicate all input rows by `id` before window filtering. The winning revision may be outside the requested window, and a cancelled winner removes that id entirely; this follows `docs/rules/100.temporal.md`.
++- D2 — Compare revisions as integers and resolve equal revisions in favor of the later source row. Preserve that row's zero-based original index as `source_index`; this makes the normalization provenance deterministic under `docs/rules/100.temporal.md` and `docs/rules/110.normalization.md`.
++- D3 — Construct fresh normalized dictionaries with exactly the seven keys named in `docs/rules/110.normalization.md`; only `impact` and `revision` are explicitly integer-converted, and missing `suppressed` is `False`.
++- D4 — Apply the half-open predicate `start <= timestamp < end` and sort selected output by `(timestamp, id)`; this is the temporal contract in `docs/rules/100.temporal.md`.
++- D5 — In `summarize`, suppressed events remain in `event_count` but contribute neither actionable count nor impact; sort service records by service and sum actionable impact globally, per `docs/rules/120.aggregation.md`.
++- D6 — Keep the implementation hand bounded to exactly `src/windowing.py` and `src/summary.py`; acceptance is the exact command at `.cart0/500.100.VALIDATOR.md`. No source implementation is performed by this planning hand.
+diff --git a/.cart0/700.100.RECEIPT.md b/.cart0/700.100.RECEIPT.md
+index 188c1a0..cdf617b 100644
+--- a/.cart0/700.100.RECEIPT.md
++++ b/.cart0/700.100.RECEIPT.md
+@@ -1,3 +1,19 @@
+ # 700.100 RECEIPT
+ 
+-STATUS: EMPTY
++STATUS: HANDOFF_READY
++
++Planning handoff to the implementation hand:
++
++- Repository map: `.cart0/020.100.REPOSITORY.md`.
++- One-node work graph: `.cart0/300.100.WORK_GRAPH.md` (`W1: CRATE_001`).
++- Bounded authorization and behavior: `.cart0/300.200.CRATE_001.md`; the only authorized edits are `src/windowing.py` and `src/summary.py`.
++- Recorded decisions: `.cart0/600.100.DECISIONS.md`.
++- Normative task/rules: `.cart0/010.100.TASK.md`, `TASK.md`, `docs/rules/100.temporal.md`, `docs/rules/110.normalization.md`, and `docs/rules/120.aggregation.md`.
++- Exact validator: `.cart0/500.100.VALIDATOR.md`.
++- Exact acceptance command:
++
++```powershell
++& 'C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' 'verify.py'
++```
++
++Expected visible success marker: `VISIBLE_OK`. The planning-time validator invocation reached `src/windowing.py:3` and stopped on its pre-existing `NotImplementedError`; no implementation was executed by this hand. The implementation hand must run the same validator after completing `CRATE_001` and replace this pending outcome with the actual result.

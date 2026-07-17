@@ -1,0 +1,1 @@
+{"case_count":6,"cases_sha256":"b01d914f6ef50573431abed0458665e38e3e89f8a613ba2e155ce499f01f26a9","hidden_grader":{"path":"task/private/hidden_grader.py","sha256":"7524396b027a10242e648e089870f4e8cbf2fc28a921c4ee685a43fadb03bf2d"},"schema":"luna-sol-anchor-replication/hidden-fixtures@1","task_id":"derived_ledger_rollup_v2"}

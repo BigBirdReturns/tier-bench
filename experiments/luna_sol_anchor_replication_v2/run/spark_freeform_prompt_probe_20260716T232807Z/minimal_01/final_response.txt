@@ -1,0 +1,8 @@
+I could read `value.txt` (it contained `0`), but the environment is currently read-only for writes, so I can’t modify it here.  
+Please rerun in a writable session or grant write permission; then run:
+
+```powershell
+[System.IO.File]::WriteAllText((Join-Path (Get-Location) "value.txt"), "1`n")
+```
+
+That will make it exactly `1` plus one LF newline.

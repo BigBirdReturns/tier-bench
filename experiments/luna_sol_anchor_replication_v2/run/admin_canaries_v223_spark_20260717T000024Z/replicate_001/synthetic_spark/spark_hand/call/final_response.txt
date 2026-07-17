@@ -1,0 +1,11 @@
+Implemented `summarize(records)` in `src/solution.py`.
+
+- Filters to records with `eligible == True`
+- Sums `amount` by `account`
+- Returns `{"account": ..., "total": ...}` objects
+- Sorts by account key
+- Uses a new accumulator so input is not mutated
+- Returns `[]` for empty input
+
+Validation run:
+- `python.exe run_visible.py` → `VISIBLE_OK`

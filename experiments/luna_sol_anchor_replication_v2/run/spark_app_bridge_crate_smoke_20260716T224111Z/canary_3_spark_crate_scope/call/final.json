@@ -1,0 +1,1 @@
+{"crate_id":"admin-canary-v222-spark-crate","summary":"Edited value.txt to satisfy the stop condition: changed content from `0` to `1` (single line), with no other files modified.","files_inspected_claimed":["value.txt"],"files_changed_claimed":["value.txt"],"commands_claimed":["Get-Content -Path value.txt","Set-Content -Path value.txt -Value \"1\""],"unresolved_blockers":[]}

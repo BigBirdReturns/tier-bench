@@ -1,0 +1,9 @@
+I couldn’t complete the edit because the environment is read-only (`restricted` filesystem policy) and the write attempt was blocked.
+
+Use this command in your writable environment to make the exact requested change:
+
+```powershell
+[System.IO.File]::WriteAllText('value.txt', "1`n", [System.Text.UTF8Encoding]::new($false))
+```
+
+It will set `value.txt` to exactly one `1` followed by one LF newline.

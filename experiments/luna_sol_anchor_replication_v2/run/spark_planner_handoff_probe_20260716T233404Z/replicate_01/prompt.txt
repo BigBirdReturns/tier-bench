@@ -1,0 +1,9 @@
+PLANNER HANDOFF
+
+Objective: Implement summarize(records) in src/solution.py. Include only records whose eligible field is true, sum integer amount values by account, and return a list of objects sorted by account. Do not mutate the input. Empty input returns an empty list.
+
+Allowed edit: src/solution.py
+Forbidden edits: verify.py, forbidden.txt, src/__init__.py
+Acceptance command: & "C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe" verify.py
+
+Execute the plan now. Use the acceptance command after editing and do not finish until it exits 0. Do not produce a JSON report; give a concise normal final response.

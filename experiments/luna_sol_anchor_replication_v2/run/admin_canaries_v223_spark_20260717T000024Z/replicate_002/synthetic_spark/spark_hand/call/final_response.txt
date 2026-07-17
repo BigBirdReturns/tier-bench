@@ -1,0 +1,12 @@
+Implemented in `src/solution.py`:
+
+- `summarize(records)` now:
+  - Returns `[]` for empty input.
+  - Filters only records where `eligible` is `True`.
+  - Sums integer `amount` values per `account`.
+  - Returns a sorted list of `{"account": ..., "total": ...}` dictionaries.
+  - Does not mutate `records` (iterates without assignment back into input).
+
+Acceptance command executed successfully:
+
+- `python run_visible.py` completed with `VISIBLE_OK` (exit code `0`).

@@ -1,0 +1,7 @@
+I couldn't complete it in this environment.
+
+Attempted command was rejected by policy (`blocked by policy`), so I was unable to write `value.txt` or run:
+
+`powershell -NoProfile -ExecutionPolicy Bypass -File .\verify.ps1`.
+
+Please provide a writable session/permission and I’ll perform it immediately, including running `verify.ps1` until it exits `0` as requested.

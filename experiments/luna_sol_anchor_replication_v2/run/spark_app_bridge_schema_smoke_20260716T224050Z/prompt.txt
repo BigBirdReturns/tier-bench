@@ -1,0 +1,1 @@
+Return the smallest neutral object satisfying all three required properties: initial_planner, continuation_planner, and spark_report. Use the exact action values required by their embedded schemas and empty arrays where allowed.

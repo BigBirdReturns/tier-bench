@@ -1,0 +1,5 @@
+`value.txt` has been set to the correct value and `verify.ps1` now exits successfully.
+
+Result:
+- `value.txt`: bytes `31 0A` (UTF-8 text `1\n`)
+- `powershell -NoProfile -ExecutionPolicy Bypass -File .\verify.ps1`: exited `0` with `VERIFY_OK`
