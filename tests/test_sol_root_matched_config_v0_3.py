@@ -85,6 +85,21 @@ def main() -> int:
     assert custody["pr_authorized"] is False and custody["merge_authorized"] is False
     checks += 1
 
+    cold = json.loads((EXPERIMENT / "cold_verification_receipt_v0_3.claude.json").read_text(encoding="utf-8"))
+    closure = json.loads((EXPERIMENT / "custody_closure_receipt_v0_3.json").read_text(encoding="utf-8"))
+    transitions = {(item["from"], item["to"]) for item in custody["transitions"]}
+    source = closure["source_receipt"]
+    assert cold["state"] == source["recorded_state"] == "reachable_verified"
+    assert source["canonical_state"] == "cross_engine_verified_unmerged"
+    assert ("reachable_unverified", source["canonical_state"]) in transitions
+    assert (source["canonical_state"], closure["state"]) in transitions
+    assert source["normalization"]["original_receipt_preserved"] is True
+    assert source["normalization"]["verification_evidence_changed"] is False
+    assert closure["closure"]["merge_commit"] == source["merge_commit"]
+    assert closure["closure"]["ci"]["conclusion"] == "success"
+    assert closure["provider_calls"] == 0 and closure["scientific_observations"] == 0
+    checks += 1
+
     receipt = verification(catalog, design, schedule, acceptance, custody)
     assert receipt["all_pass"] is True and receipt["provider_calls"] == 0
     tampered = copy.deepcopy(schedule)
