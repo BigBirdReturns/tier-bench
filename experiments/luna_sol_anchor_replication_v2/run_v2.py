@@ -25,7 +25,7 @@ VISIBLE = TASK / "subject_bundle"
 PRIVATE = TASK / "private"
 PROMPTS = ROOT / "prompts"
 SCHEMAS = PROMPTS / "schemas"
-CLI = Path(r"C:\Users\BAM-Desktop\AppData\Local\OpenAI\Codex\bin\494ae9d46ab9b3eb\codex.exe")
+CLI = Path(r"C:\Users\BAM-Desktop\AppData\Local\Programs\OpenAI\Codex\bin\codex.exe")
 CLI_SHA256 = "efdb3540ef74b9909408c8d38da79483454797b36f471e3e004fc2bf2b70e22a"
 CLI_VERSION = "codex-cli 0.144.5"
 PREFERRED_PYTHON = Path(r"C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe")
@@ -335,7 +335,7 @@ def invoke_structured(call_dir: Path, cwd: Path, model: str, effort: str, sandbo
 # sites use the explicit structured/free-form names below.
 invoke = invoke_structured
 
-def require_spark_execution_surface(command: list[str], surface: str = "app_inherited") -> None:
+def require_spark_execution_surface(command: list[str], surface: str = "app_inherited", *, allow_isolated_repo_full_access: bool = False) -> None:
     if surface != "app_inherited" or "--ignore-user-config" in command or "--ignore-rules" in command:
         raise ControllerError("SPARK_APP_SURFACE_STRIPPED", "spark_dispatch", "Spark execution must inherit the writable app configuration")
     if "--output-schema" in command:
@@ -344,8 +344,11 @@ def require_spark_execution_surface(command: list[str], surface: str = "app_inhe
         sandbox = command[command.index("--sandbox") + 1]
     except (ValueError, IndexError) as exc:
         raise ControllerError("SPARK_SANDBOX_MISSING", "spark_dispatch", "Spark execution command has no sandbox binding") from exc
-    if sandbox != "workspace-write":
-        raise ControllerError("SPARK_WRITABLE_SURFACE_REQUIRED", "spark_dispatch", f"Spark execution sandbox was {sandbox!r}, not workspace-write")
+    allowed = {"workspace-write"}
+    if allow_isolated_repo_full_access:
+        allowed.add("danger-full-access")
+    if sandbox not in allowed:
+        raise ControllerError("SPARK_WRITABLE_SURFACE_REQUIRED", "spark_dispatch", f"Spark execution sandbox was {sandbox!r}, expected one of {sorted(allowed)!r}")
 
 def render_spark_handoff(crate: dict[str, Any], packet: dict[str, Any], interpreter: Path = PREFERRED_PYTHON) -> bytes:
     validator_commands = [powershell_command(validator_command(name, interpreter)) for name in crate["validator_ids"]]
@@ -374,8 +377,10 @@ def render_spark_handoff(crate: dict[str, Any], packet: dict[str, Any], interpre
     ]
     return "\n".join(sections).encode()
 
-def spark_execution_command(cwd: Path, final_path: Path, model: str = "gpt-5.3-codex-spark", effort: str = "low") -> list[str]:
-    return [str(CLI), "exec", "--model", model, "--sandbox", "workspace-write", "--ephemeral", "--json", "--output-last-message", str(final_path), "--config", f'model_reasoning_effort="{effort}"', "--config", 'web_search="disabled"', "--config", "sandbox_workspace_write.network_access=false", "--config", "features.multi_agent=false", "--config", "agents.max_depth=1", "--config", "agents.max_threads=1", "--config", 'history.persistence="none"', "--config", 'approval_policy="never"', "-C", str(cwd), "-"]
+def spark_execution_command(cwd: Path, final_path: Path, model: str = "gpt-5.3-codex-spark", effort: str = "low", *, sandbox: str = "workspace-write") -> list[str]:
+    if sandbox not in {"workspace-write", "danger-full-access"}:
+        raise ValueError(f"unsupported Spark sandbox: {sandbox}")
+    return [str(CLI), "exec", "--model", model, "--sandbox", sandbox, "--ephemeral", "--json", "--output-last-message", str(final_path), "--config", f'model_reasoning_effort="{effort}"', "--config", 'web_search="disabled"', "--config", "sandbox_workspace_write.network_access=false", "--config", "features.multi_agent=false", "--config", "agents.max_depth=1", "--config", "agents.max_threads=1", "--config", 'history.persistence="none"', "--config", 'approval_policy="never"', "-C", str(cwd), "-"]
 
 def invoke_spark_freeform(call_dir: Path, cwd: Path, model: str, effort: str, prompt: bytes, executor: Executor | None = None, surface: str = "app_inherited") -> dict[str, Any]:
     cli_identity = require_cli_identity()

@@ -133,7 +133,7 @@ def repo_bytes(root: Path) -> int:
 
 
 def init_subject(path: Path) -> None:
-    validator = runner.powershell_command([str(runner.PREFERRED_PYTHON), "verify.py"])
+    validator = runner.powershell_command([str(runner.PREFERRED_PYTHON), "-B", "verify.py"])
     files = {
         "TASK.md": TASK,
         "docs/rules/100.temporal.md": TEMPORAL,
@@ -175,10 +175,11 @@ def call_prompt(role: str) -> bytes:
 
 
 class PilotController:
-    def __init__(self, output: Path):
+    def __init__(self, output: Path, *, isolated_repo_full_access: bool):
         self.output = output
         self.calls: list[dict[str, Any]] = []
         self.cli_identity = runner.require_cli_identity()
+        self.isolated_repo_full_access = isolated_repo_full_access
 
     def invoke(self, call_dir: Path, cwd: Path, model: str, effort: str, role: str) -> dict[str, Any]:
         if len(self.calls) >= MAX_CALLS:
@@ -187,8 +188,9 @@ class PilotController:
         prompt = call_prompt(role)
         prompt_path = call_dir / "prompt.txt"; runner.write(prompt_path, prompt)
         final_path = call_dir / "final_response.txt"
-        command = runner.spark_execution_command(cwd, final_path, model, effort)
-        runner.require_spark_execution_surface(command)
+        sandbox = "danger-full-access" if self.isolated_repo_full_access else "workspace-write"
+        command = runner.spark_execution_command(cwd, final_path, model, effort, sandbox=sandbox)
+        runner.require_spark_execution_surface(command, allow_isolated_repo_full_access=self.isolated_repo_full_access)
         dispatch = {"call_index": len(self.calls) + 1, "role": role, "model": model, "effort": effort, "cwd": str(cwd), "command": command, "prompt_sha256": runner.sha(prompt_path), "cli_identity": self.cli_identity, "surface": "app_inherited", "free_form": True, "output_schema": None}
         runner.write(call_dir / "dispatch.json", runner.canon(dispatch))
         started = time.time()
@@ -208,7 +210,7 @@ class PilotController:
 
 
 def validator(subject: Path) -> dict[str, Any]:
-    command = [str(runner.PREFERRED_PYTHON), "verify.py"]
+    command = [str(runner.PREFERRED_PYTHON), "-B", "verify.py"]
     result = runner.run(command, subject, 120)
     return {"command": command, "shell_command": runner.powershell_command(command), "returncode": result.returncode, "stdout": result.stdout.decode(errors="replace"), "stderr": result.stderr.decode(errors="replace"), "passed": result.returncode == 0}
 
@@ -227,7 +229,7 @@ SOURCE_PATHS = {"src/windowing.py", "src/summary.py"}
 
 
 def write_planning_fixture(subject: Path) -> None:
-    exact = runner.powershell_command([str(runner.PREFERRED_PYTHON), "verify.py"])
+    exact = runner.powershell_command([str(runner.PREFERRED_PYTHON), "-B", "verify.py"])
     runner.write(subject / ".cart0/020.100.REPOSITORY.md", "# 020.100 REPOSITORY\n\nSources: src/windowing.py, src/summary.py. Rules and task are pointer-addressed.\n")
     runner.write(subject / ".cart0/300.100.WORK_GRAPH.md", "# 300.100 WORK GRAPH\n\nOne node: 300.200.CRATE_001.\n")
     runner.write(subject / ".cart0/300.200.CRATE_001.md", f"# 300.200 CRATE 001\n\nAllowed: src/windowing.py, src/summary.py\nPointers: .cart0/010.100.TASK.md, .cart0/500.100.VALIDATOR.md\nValidator: {exact}\n")
@@ -299,9 +301,10 @@ def self_test() -> dict[str, Any]:
         invalid = Path(temp) / "invalid"; init_subject(invalid); write_planning_fixture(invalid); runner.write(invalid / "TASK.md", "mutated\n")
         negative_context = context_gate(invalid, Path(temp) / "negative_evidence")
         spark_prompt = call_prompt("spark_hand")
-        command = runner.spark_execution_command(Path("<SUBJECT>"), Path("<FINAL>"), HAND_MODEL, HAND_EFFORT)
-        runner.require_spark_execution_surface(command)
-        result = {"schema": "tier-bench/cart0-net-effect-self-test@0", "runner_sha256": runner.sha(Path(__file__).resolve()), "preregistration_sha256": runner.sha(ROOT / "PREREGISTRATION.md"), "initial_validator_fails": not initial["passed"], "reference_validator_passes": reference["passed"], "reference_validator_stdout": reference.get("stdout"), "reference_validator_stderr": reference.get("stderr"), "reference_changed_paths": changed, "initial_repo_bytes": initial_bytes, "under_context_bound": initial_bytes <= MAX_REPO_BYTES, "valid_planning_context_passes": positive_context["passed"], "task_mutation_context_fails": not negative_context["passed"] and "TASK.md" in negative_context["unexpected"], "spark_prompt_uses_repo_pointers_not_task_payload": b".cart0/000.000.INDEX.md" in spark_prompt and TASK.encode() not in spark_prompt, "freeform_command_has_no_output_schema": "--output-schema" not in command, "all_pass": not initial["passed"] and reference["passed"] and changed == ["src/summary.py", "src/windowing.py"] and initial_bytes <= MAX_REPO_BYTES and positive_context["passed"] and not negative_context["passed"] and "TASK.md" in negative_context["unexpected"] and b".cart0/000.000.INDEX.md" in spark_prompt and TASK.encode() not in spark_prompt and "--output-schema" not in command}
+        command = runner.spark_execution_command(Path("<SUBJECT>"), Path("<FINAL>"), HAND_MODEL, HAND_EFFORT, sandbox="danger-full-access")
+        runner.require_spark_execution_surface(command, allow_isolated_repo_full_access=True)
+        explicit_write_route = command[command.index("--sandbox") + 1] == "danger-full-access"
+        result = {"schema": "tier-bench/cart0-net-effect-self-test@0", "runner_sha256": runner.sha(Path(__file__).resolve()), "preregistration_sha256": runner.sha(ROOT / "PREREGISTRATION.md"), "initial_validator_fails": not initial["passed"], "reference_validator_passes": reference["passed"], "reference_validator_stdout": reference.get("stdout"), "reference_validator_stderr": reference.get("stderr"), "reference_changed_paths": changed, "initial_repo_bytes": initial_bytes, "under_context_bound": initial_bytes <= MAX_REPO_BYTES, "valid_planning_context_passes": positive_context["passed"], "task_mutation_context_fails": not negative_context["passed"] and "TASK.md" in negative_context["unexpected"], "spark_prompt_uses_repo_pointers_not_task_payload": b".cart0/000.000.INDEX.md" in spark_prompt and TASK.encode() not in spark_prompt, "freeform_command_has_no_output_schema": "--output-schema" not in command, "explicit_isolated_repo_write_route": explicit_write_route, "all_pass": not initial["passed"] and reference["passed"] and changed == ["src/summary.py", "src/windowing.py"] and initial_bytes <= MAX_REPO_BYTES and positive_context["passed"] and not negative_context["passed"] and "TASK.md" in negative_context["unexpected"] and b".cart0/000.000.INDEX.md" in spark_prompt and TASK.encode() not in spark_prompt and "--output-schema" not in command and explicit_write_route}
         return result
 
 
@@ -322,6 +325,7 @@ def main() -> int:
     parser.add_argument("--suite-commit")
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--self-test-output", type=Path)
+    parser.add_argument("--isolated-repo-full-access", action="store_true", help="explicitly allow model commands full access inside disposable subject repositories")
     args = parser.parse_args()
     if args.self_test:
         result = self_test()
@@ -331,12 +335,14 @@ def main() -> int:
         print(json.dumps(result, indent=2, sort_keys=True)); return 0 if result["all_pass"] else 1
     if args.output is None or not args.suite_commit:
         raise SystemExit("output and --suite-commit are required")
+    if not args.isolated_repo_full_access:
+        raise SystemExit("live pilot requires explicit --isolated-repo-full-access; workspace-write is known to be read-only on this host")
     head = runner.git(["rev-parse", "HEAD"], REPO)
     observed_head = head.stdout.decode().strip()
     if head.returncode or observed_head != args.suite_commit:
         raise SystemExit(f"suite commit mismatch: requested {args.suite_commit}, observed {observed_head}")
     output = args.output.resolve(); output.mkdir(parents=True, exist_ok=False)
-    controller = PilotController(output)
+    controller = PilotController(output, isolated_repo_full_access=True)
     freeze = model_freeze(); runner.write(output / "model_freeze.json", runner.canon(freeze))
     cases = []
     for replicate in range(1, 3):
