@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "classification": "administrative_transport_canary_not_in_k_window",
+  "model": "qwen3.5:9b-q4_K_M",
+  "transport": "ollama-loopback",
+  "prompt": "Return only OK.",
+  "conditions": {
+    "think": false,
+    "temperature": 0.2,
+    "seed": 101,
+    "num_predict": 32
+  },
+  "observed": {
+    "done": true,
+    "done_reason": "stop",
+    "response": "OK",
+    "thinking_characters": 0,
+    "prompt_tokens": 16,
+    "output_tokens": 2,
+    "elapsed_ms": 19979
+  }
+}

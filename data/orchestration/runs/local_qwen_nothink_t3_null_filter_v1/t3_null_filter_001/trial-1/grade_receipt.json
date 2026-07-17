@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "task_id": "t3_null_filter_001",
+  "source_commit": "bb40a859a58dbf9a7be700ed972fb70507e32f2f",
+  "packet_sha256": "3b2969c1e9fd85cf0819f740e846930d2c67e6677731657c989abce941572305",
+  "prompt_sha256": "bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd",
+  "candidate_sha256": "67ce6ddcf94bc4becbeeefb4829522e1e97809b13473aef7a4d4473bb780fe28",
+  "raw_response_sha256": "67ce6ddcf94bc4becbeeefb4829522e1e97809b13473aef7a4d4473bb780fe28",
+  "thread_id": "3b3b3837-da5a-4fcf-a93b-776f995f5192",
+  "usage": {
+    "input_tokens": 974,
+    "output_tokens": 1131
+  },
+  "usage_available": true,
+  "event_stream_capture_kind": "ollama-local-api-receipt-jsonl",
+  "coordinator_id": "local-qwen-nothink-v1-coordinator",
+  "solver_equals_grader": false,
+  "grader_output_sha256": "16e01f43807d716f2b7afc030fcda069596c8415c785382a7b844d4a819aa011",
+  "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+  "hidden_grader_runs": 2,
+  "hidden_grader_deterministic": true,
+  "outcome": "fail",
+  "timed_out": false,
+  "timeout_seconds": 30.0,
+  "visible_returncode": 1,
+  "hidden_returncodes": [
+    1,
+    1
+  ],
+  "cost_basis": "real-billed",
+  "cost_usd": 0.0
+}

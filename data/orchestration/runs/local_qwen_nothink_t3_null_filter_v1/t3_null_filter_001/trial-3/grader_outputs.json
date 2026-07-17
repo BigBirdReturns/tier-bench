@@ -1,0 +1,48 @@
+{
+  "compile": {
+    "command": [
+      "C:\\Users\\BAM-Desktop\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "-m",
+      "py_compile",
+      "input.py"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "visible": {
+    "command": [
+      "python",
+      "input.py"
+    ],
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "Traceback (most recent call last):\n  File \"D:\\Projects\\Tier-Bench\\worktrees\\residue-bridge-v1\\tmp\\local_qwen_nothink_t3_null_filter_v1\\trial-3\\grade.building\\work\\input.py\", line 148, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"D:\\Projects\\Tier-Bench\\worktrees\\residue-bridge-v1\\tmp\\local_qwen_nothink_t3_null_filter_v1\\trial-3\\grade.building\\work\\input.py\", line 137, in main\n    got = select_ids(*args)\n          ^^^^^^^^^^^^^^^^^\n  File \"D:\\Projects\\Tier-Bench\\worktrees\\residue-bridge-v1\\tmp\\local_qwen_nothink_t3_null_filter_v1\\trial-3\\grade.building\\work\\input.py\", line 116, in select_ids\n    cond_result = eval_cond(condition)\n                  ^^^^^^^^^^^^^^^^^^^^\n  File \"D:\\Projects\\Tier-Bench\\worktrees\\residue-bridge-v1\\tmp\\local_qwen_nothink_t3_null_filter_v1\\trial-3\\grade.building\\work\\input.py\", line 52, in eval_cond\n    rec_val = records[field]  # guaranteed to exist per spec\n              ~~~~~~~^^^^^^^\nTypeError: list indices must be integers or slices, not str\n",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "hidden_1": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 1,
+    "stdout": "SCORE 0/10\n  FAIL [[{'id': 1, 'price': 50, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': 'b'}, {'id': 3, 'price': 99, 'cat': 'a'}], ['cmp', 'price', '>', 100]]: raised TypeError\n  FAIL [[{'id': 1, 'price': 50, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': 'b'}, {'id': 3, 'price': 99, 'cat': 'a'}], ['not', ['cmp', 'cat', '==', 'a']]]: raised TypeError\n  FAIL [[{'id': 1, 'price': 50, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': 'b'}, {'id': 3, 'price': 99, 'cat': 'a'}], ['and', ['cmp', 'price', '<', 100], ['cmp', 'cat', '==', 'a']]]: raised TypeError\n  FAIL [[{'id': 1, 'price': None, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': None}, {'id': 3, 'price': 50, 'cat': 'b'}], ['cmp', 'price', '>', 100]]: raised TypeError\n  FAIL [[{'id': 1, 'price': None, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': None}, {'id': 3, 'price': 50, 'cat': 'b'}], ['not', ['cmp', 'price', '>', 100]]]: raised TypeError\n  FAIL [[{'id': 1, 'price': None, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': None}, {'id': 3, 'price': 50, 'cat': 'b'}], ['not', ['cmp', 'cat', '!=', 'b']]]: raised TypeError\n",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "hidden_2": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 1,
+    "stdout": "SCORE 0/10\n  FAIL [[{'id': 1, 'price': 50, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': 'b'}, {'id': 3, 'price': 99, 'cat': 'a'}], ['cmp', 'price', '>', 100]]: raised TypeError\n  FAIL [[{'id': 1, 'price': 50, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': 'b'}, {'id': 3, 'price': 99, 'cat': 'a'}], ['not', ['cmp', 'cat', '==', 'a']]]: raised TypeError\n  FAIL [[{'id': 1, 'price': 50, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': 'b'}, {'id': 3, 'price': 99, 'cat': 'a'}], ['and', ['cmp', 'price', '<', 100], ['cmp', 'cat', '==', 'a']]]: raised TypeError\n  FAIL [[{'id': 1, 'price': None, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': None}, {'id': 3, 'price': 50, 'cat': 'b'}], ['cmp', 'price', '>', 100]]: raised TypeError\n  FAIL [[{'id': 1, 'price': None, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': None}, {'id': 3, 'price': 50, 'cat': 'b'}], ['not', ['cmp', 'price', '>', 100]]]: raised TypeError\n  FAIL [[{'id': 1, 'price': None, 'cat': 'a'}, {'id': 2, 'price': 150, 'cat': None}, {'id': 3, 'price': 50, 'cat': 'b'}], ['not', ['cmp', 'cat', '!=', 'b']]]: raised TypeError\n",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  }
+}

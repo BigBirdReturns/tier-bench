@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "run_id": "local_qwen_nothink_t3_null_filter_v1",
-  "status": "unmeasured",
-  "measurement_claim": false,
+  "status": "sealed",
+  "measurement_claim": true,
   "engine": {
     "engine_id": "ollama_qwen3_5_9b_q4_k_m_nothink",
     "model": "qwen3.5:9b-q4_K_M",
@@ -16,7 +16,7 @@
     "peer_lineage": "unmeasured_external",
     "source_commit": "bb40a859a58dbf9a7be700ed972fb70507e32f2f",
     "independent_before_exchange": true,
-    "state": "planned"
+    "state": "independent_run_sealed"
   },
   "task_set": [
     "t3_null_filter_001"
@@ -39,28 +39,263 @@
     }
   },
   "k": 3,
-  "trials": [],
+  "trials": [
+    {
+      "trial_id": "ollama_qwen3_5_9b_q4_k_m_nothink_t3_null_filter_001_1",
+      "sequence": 1,
+      "task_id": "t3_null_filter_001",
+      "rung": "local_q4_nothink",
+      "model": "qwen3.5:9b-q4_K_M",
+      "effort": "temperature_0.2_seeded_think_false",
+      "trial": 1,
+      "solver_id": "ollama_qwen3_5_9b_q4_k_m_nothink:3b3b3837-da5a-4fcf-a93b-776f995f5192",
+      "executor_surface": "ollama-local",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "route",
+        "decision_state": "unmeasured",
+        "reason": "start at the cheapest unmeasured rung",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "local_q4_nothink",
+            "observations": 0,
+            "decisive": 0,
+            "passes": 0,
+            "failures": 0,
+            "window_size": 0,
+            "window_passes": 0,
+            "window_failures": 0,
+            "required_k": 3,
+            "state": "unmeasured"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-1/candidate.py",
+        "sha256": "67ce6ddcf94bc4becbeeefb4829522e1e97809b13473aef7a4d4473bb780fe28",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "fail",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:local-qwen-nothink-v1-coordinator",
+        "candidate_sha256": "67ce6ddcf94bc4becbeeefb4829522e1e97809b13473aef7a4d4473bb780fe28",
+        "hidden_grader_path": "fixtures/t3_null_filter_001/hidden_tests.py",
+        "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+        "grader_output_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-1/grader_outputs.json",
+        "grader_output_sha256": "16e01f43807d716f2b7afc030fcda069596c8415c785382a7b844d4a819aa011"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "real-billed",
+        "input_tokens": 974,
+        "output_tokens": 1131,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "3b2969c1e9fd85cf0819f740e846930d2c67e6677731657c989abce941572305",
+        "prompt_sha256": "bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd",
+        "solver_thread_id": "3b3b3837-da5a-4fcf-a93b-776f995f5192",
+        "raw_response_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-1/raw_response.txt",
+        "raw_response_sha256": "67ce6ddcf94bc4becbeeefb4829522e1e97809b13473aef7a4d4473bb780fe28",
+        "event_stream_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-1/events.jsonl",
+        "event_stream_sha256": "02baa1ac0ea16d9b322aa20d0964be503bc957056c6ecbb787a125ed29b3215a",
+        "event_stream_capture_kind": "ollama-local-api-receipt-jsonl",
+        "administration_receipt_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-1/administration_receipt.json",
+        "administration_receipt_sha256": "3ee0727f7a6cd5e874b743d42ecbf143a182b864331bb851baf750942b76af27"
+      }
+    },
+    {
+      "trial_id": "ollama_qwen3_5_9b_q4_k_m_nothink_t3_null_filter_001_2",
+      "sequence": 2,
+      "task_id": "t3_null_filter_001",
+      "rung": "local_q4_nothink",
+      "model": "qwen3.5:9b-q4_K_M",
+      "effort": "temperature_0.2_seeded_think_false",
+      "trial": 2,
+      "solver_id": "ollama_qwen3_5_9b_q4_k_m_nothink:dbb7c521-3e08-4a7a-8a2b-72be5d7a3c18",
+      "executor_surface": "ollama-local",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "local_q4_nothink",
+            "observations": 1,
+            "decisive": 1,
+            "passes": 0,
+            "failures": 1,
+            "window_size": 1,
+            "window_passes": 0,
+            "window_failures": 1,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-2/candidate.py",
+        "sha256": "562d37e5fac7d91d3cac3f7283d54ab813b6fff057867610fe55fd75024a56f1",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "fail",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:local-qwen-nothink-v1-coordinator",
+        "candidate_sha256": "562d37e5fac7d91d3cac3f7283d54ab813b6fff057867610fe55fd75024a56f1",
+        "hidden_grader_path": "fixtures/t3_null_filter_001/hidden_tests.py",
+        "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+        "grader_output_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-2/grader_outputs.json",
+        "grader_output_sha256": "bc8966d3e62ef4e093f9b36cea3ec097ecfa89deacf7b132964a6002d776e452"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "real-billed",
+        "input_tokens": 974,
+        "output_tokens": 1247,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "3b2969c1e9fd85cf0819f740e846930d2c67e6677731657c989abce941572305",
+        "prompt_sha256": "bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd",
+        "solver_thread_id": "dbb7c521-3e08-4a7a-8a2b-72be5d7a3c18",
+        "raw_response_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-2/raw_response.txt",
+        "raw_response_sha256": "562d37e5fac7d91d3cac3f7283d54ab813b6fff057867610fe55fd75024a56f1",
+        "event_stream_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-2/events.jsonl",
+        "event_stream_sha256": "51ec53e3d8b6b6bf9ad8c63f2efa4194df77d860428f2785076fb7d077df373a",
+        "event_stream_capture_kind": "ollama-local-api-receipt-jsonl",
+        "administration_receipt_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-2/administration_receipt.json",
+        "administration_receipt_sha256": "a8b9437b1b92c4863fc0e441943f2ea306cc9f4c875642388849f305d6ed2e9e"
+      }
+    },
+    {
+      "trial_id": "ollama_qwen3_5_9b_q4_k_m_nothink_t3_null_filter_001_3",
+      "sequence": 3,
+      "task_id": "t3_null_filter_001",
+      "rung": "local_q4_nothink",
+      "model": "qwen3.5:9b-q4_K_M",
+      "effort": "temperature_0.2_seeded_think_false",
+      "trial": 3,
+      "solver_id": "ollama_qwen3_5_9b_q4_k_m_nothink:fea47e83-526c-48e6-bcd3-c3f8735b2762",
+      "executor_surface": "ollama-local",
+      "route": {
+        "selected_by": "residue_broker",
+        "action": "collect_more",
+        "decision_state": "collecting",
+        "reason": "fewer than K decisive receipts; errors and partials do not buy escalation",
+        "escalation_from": null,
+        "evidence": [
+          {
+            "rung": "local_q4_nothink",
+            "observations": 2,
+            "decisive": 2,
+            "passes": 0,
+            "failures": 2,
+            "window_size": 2,
+            "window_passes": 0,
+            "window_failures": 2,
+            "required_k": 3,
+            "state": "collecting"
+          }
+        ]
+      },
+      "candidate": {
+        "path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-3/candidate.py",
+        "sha256": "796d554cc394445781322dfc213d0eb41b258c1c61363dd0ce7e9e923cd00ef1",
+        "sealed_before_grading": true
+      },
+      "verdict": {
+        "outcome": "fail",
+        "source": "coordinator_rerun",
+        "rerun_verified": true,
+        "graded_by": "coordinator:local-qwen-nothink-v1-coordinator",
+        "candidate_sha256": "796d554cc394445781322dfc213d0eb41b258c1c61363dd0ce7e9e923cd00ef1",
+        "hidden_grader_path": "fixtures/t3_null_filter_001/hidden_tests.py",
+        "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+        "grader_output_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-3/grader_outputs.json",
+        "grader_output_sha256": "190952ae23666cb305e23b5e069fb56257b09464c3eb52b4f63d9e0e311c3390"
+      },
+      "spend": {
+        "cost_usd": 0.0,
+        "cost_basis": "real-billed",
+        "input_tokens": 974,
+        "output_tokens": 1243,
+        "cache_read_tokens": 0,
+        "reasoning_output_tokens": 0,
+        "usage_available": true,
+        "usage_note": ""
+      },
+      "replay": {
+        "is_replay": false
+      },
+      "abstention": {
+        "abstained": false,
+        "reason": ""
+      },
+      "provenance": {
+        "hidden_grader_visible_to_solver": false,
+        "solver_packet_sha256": "3b2969c1e9fd85cf0819f740e846930d2c67e6677731657c989abce941572305",
+        "prompt_sha256": "bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd",
+        "solver_thread_id": "fea47e83-526c-48e6-bcd3-c3f8735b2762",
+        "raw_response_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-3/raw_response.txt",
+        "raw_response_sha256": "796d554cc394445781322dfc213d0eb41b258c1c61363dd0ce7e9e923cd00ef1",
+        "event_stream_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-3/events.jsonl",
+        "event_stream_sha256": "d324603fa6c8c581faebfc7cc8ace443e016b98b88c3a97d869aedb94f29f358",
+        "event_stream_capture_kind": "ollama-local-api-receipt-jsonl",
+        "administration_receipt_path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-3/administration_receipt.json",
+        "administration_receipt_sha256": "3104903b7a142f3a053fc7435adab0abcdddd5681e338ff12c5953326c5886c0"
+      }
+    }
+  ],
   "decisions": [
     {
       "task_id": "t3_null_filter_001",
-      "state": "unmeasured",
-      "action": "route",
-      "route_to": "local_q4_nothink",
-      "escalation_from": null,
-      "abstained": false,
-      "reason": "start at the cheapest unmeasured rung",
+      "state": "wall",
+      "action": "abstain",
+      "route_to": null,
+      "escalation_from": "local_q4_nothink",
+      "abstained": true,
+      "reason": "top available rung is a measured wall; access escalation is a human gate",
       "evidence": [
         {
           "rung": "local_q4_nothink",
-          "observations": 0,
-          "decisive": 0,
+          "observations": 3,
+          "decisive": 3,
           "passes": 0,
-          "failures": 0,
-          "window_size": 0,
+          "failures": 3,
+          "window_size": 3,
           "window_passes": 0,
-          "window_failures": 0,
+          "window_failures": 3,
           "required_k": 3,
-          "state": "unmeasured"
+          "state": "wall"
         }
       ]
     }
@@ -81,8 +316,8 @@
       "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-*/"
     ],
     "verifier": "the manifest hidden grader, residue broker, and orchestration receipt validator",
-    "gap": "transport canary passed; no scientific calls or hidden-graded receipts yet",
-    "closure_decision": "open",
+    "gap": "none for this engine run; peer comparison remains separate",
+    "closure_decision": "sealed",
     "failure_default": "preserve the prior conditional wall and make no broader capability claim"
   }
 }
