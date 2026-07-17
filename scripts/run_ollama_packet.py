@@ -58,6 +58,7 @@ def main() -> int:
         raise ValueError("Ollama response was incomplete")
 
     args.raw_response.write_text(native["response"], encoding="utf-8")
+    thinking = native.get("thinking") if isinstance(native.get("thinking"), str) else ""
     event = {
         "type": "ollama.completed",
         "capture_kind": "ollama-local-api-receipt-jsonl",
@@ -79,6 +80,9 @@ def main() -> int:
             )
         },
         "response_sha256": sha256(args.raw_response),
+        "response_characters": len(native["response"]),
+        "thinking_characters": len(thinking),
+        "thinking_sha256": hashlib.sha256(thinking.encode("utf-8")).hexdigest(),
     }
     args.events.write_text(json.dumps(event, sort_keys=True) + "\n", encoding="utf-8")
     receipt = {
@@ -94,6 +98,9 @@ def main() -> int:
         "model": args.model,
         "temperature": args.temperature,
         "seed": args.seed,
+        "response_characters": len(native["response"]),
+        "thinking_characters": len(thinking),
+        "thinking_sha256": hashlib.sha256(thinking.encode("utf-8")).hexdigest(),
     }
     args.administration_receipt.write_text(
         json.dumps(receipt, indent=2) + "\n", encoding="utf-8"

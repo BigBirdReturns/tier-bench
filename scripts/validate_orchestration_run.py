@@ -481,7 +481,7 @@ def main() -> int:
         for error in failures:
             print(f"  - {error}", file=sys.stderr)
         return 1
-    print(f"OK — {len(files)} ARC-C run file(s) satisfy floor-first routing, independent hidden grading, provenance, spend, replay, abstention, and closure rules")
+    print(f"OK — {len(files)} residue run file(s) satisfy floor-first routing, independent hidden grading, provenance, spend, replay, abstention, and closure rules")
     return 0
 
 

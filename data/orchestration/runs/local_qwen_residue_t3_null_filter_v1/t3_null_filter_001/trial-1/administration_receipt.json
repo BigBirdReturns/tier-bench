@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "thread_id": "579d2755-c4f1-4f93-a9b7-1b36f3477659",
+  "prompt_sha256": "bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd",
+  "response_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "event_snapshot_sha256": "3d18f55918ee3e8c4e6649059ffc4560457179de5e11d95ceece8e2c454d187a",
+  "event_stream_capture_kind": "ollama-local-api-receipt-jsonl",
+  "tool_calls": 0,
+  "transport": "ollama-loopback",
+  "url": "http://127.0.0.1:11434/api/generate",
+  "model": "qwen3.5:9b-q4_K_M",
+  "temperature": 0.2,
+  "seed": 101
+}
