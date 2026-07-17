@@ -1,0 +1,14 @@
+{
+  "schema": "tier-bench/sol-root-matched-config/display-inventory@0.2",
+  "status": "proposal_only_unactivated_unfrozen",
+  "source_evidence": "Operator-supplied Codex desktop screenshot, 2026-07-16/17; family-name alignment only, not invocation equivalence.",
+  "labels": [
+    {"label": "5.6 Sol", "cli_slug": "gpt-5.6-sol"},
+    {"label": "5.6 Terra", "cli_slug": "gpt-5.6-terra"},
+    {"label": "5.6 Luna", "cli_slug": "gpt-5.6-luna"},
+    {"label": "5.5", "cli_slug": "gpt-5.5"},
+    {"label": "5.4", "cli_slug": "gpt-5.4"},
+    {"label": "5.4 Mini", "cli_slug": "gpt-5.4-mini"},
+    {"label": "5.3 Codex Spark", "cli_slug": "gpt-5.3-codex-spark"}
+  ]
+}

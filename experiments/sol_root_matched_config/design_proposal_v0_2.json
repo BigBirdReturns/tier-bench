@@ -1,0 +1,64 @@
+{
+  "schema": "tier-bench/sol-root-matched-config/design-proposal@0.2",
+  "status": "proposal_only_unactivated_unfrozen",
+  "catalog_cell_basis": "advertised_ceiling",
+  "promotion_caps": {
+    "sol_after_gate": 3,
+    "hands_after_gate": 12,
+    "coordinators_after_gate": 6,
+    "sol_for_topology": 3,
+    "hands_for_topology": 4,
+    "coordinator_hand_pairs_for_topology": 4,
+    "sol_for_end_to_end": 2,
+    "hands_for_end_to_end": 2,
+    "coordinator_hand_pairs_for_end_to_end": 2,
+    "direct_cells_for_width_extension": 2,
+    "coordinator_pairs_for_width_extension": 1
+  },
+  "atomic": {
+    "gate_observations_per_cell": 2,
+    "confirmation_crates": 4,
+    "confirmation_replicates": 2
+  },
+  "frozen_plan_topology": {
+    "families": 3,
+    "base_widths": [2, 4, 8],
+    "extension_width": 16,
+    "extension_hands": 2,
+    "extension_pairs": 2
+  },
+  "end_to_end": {
+    "positive_families": 6,
+    "coordinator_families": 3,
+    "base_widths": [2, 4, 8],
+    "extension_widths": [16, 32],
+    "root_owner_min_calls": 1,
+    "root_owner_call_ceiling": 2,
+    "root_continuation_policy": "controller_triggered_only",
+    "negative_controls": {
+      "tasks": 6,
+      "coordinator_sensitive_tasks": 3,
+      "delegated_width_ceiling": 1
+    }
+  },
+  "holdout": {
+    "repositories": 3,
+    "positive_families": 6,
+    "seeds": 2,
+    "width_pair_8_16": [8, 16],
+    "width_pair_16_32": [16, 32],
+    "negative_boundary_tasks": 24,
+    "negative_delegated_width_ceiling": 4
+  },
+  "sentinels": {
+    "phase_count": 4,
+    "boundaries_per_phase": 2,
+    "calls_per_boundary": 6,
+    "calls_per_forced_epoch_split": 12
+  },
+  "administrative_canaries": {
+    "roles": ["owner", "executor", "coordinator"],
+    "calls_per_cell_per_role": 1,
+    "retry_policy": "none"
+  }
+}

@@ -37,6 +37,10 @@ jobs:
           python tests/test_tier_pilot_admin.py
           python tests/test_tier_pilot_bridge.py
           python tests/test_tier_pilot_activation.py
+      - name: Sol-root matched-config proposal compiler (zero model calls)
+        run: |
+          python -m py_compile experiments/sol_root_matched_config/compile_proposal.py tests/test_sol_root_matched_config.py
+          python tests/test_sol_root_matched_config.py
       - name: UI-capture lane end-to-end ($0, temp files)
         run: python experiments/breadth/ui_capture_smoke.py
       - name: waterline schema + evidence-layer enforcement
