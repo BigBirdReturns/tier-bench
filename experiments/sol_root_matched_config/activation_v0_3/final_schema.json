@@ -3,7 +3,8 @@
   "additionalProperties": false,
   "properties": {
     "status": {
-      "const": "ready"
+      "const": "ready",
+      "type": "string"
     }
   },
   "required": [
