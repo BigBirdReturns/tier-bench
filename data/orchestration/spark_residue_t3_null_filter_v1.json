@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "run_id": "spark_residue_t3_null_filter_v1",
+  "status": "unmeasured",
+  "measurement_claim": false,
+  "engine": {
+    "engine_id": "codex_gpt_5_3_spark",
+    "model": "gpt-5.3-codex-spark",
+    "lineage": "openai",
+    "surface": "codex-subscription",
+    "role": "independent_solver"
+  },
+  "pairing": {
+    "pair_id": "spark_residue_t3_null_filter_v1_unpaired",
+    "peer_engine_id": "unmeasured_peer",
+    "peer_lineage": "unmeasured_external",
+    "source_commit": "2fdcd67d176b6c1e7870c53e3b2bdefbc8c002d0",
+    "independent_before_exchange": true,
+    "state": "planned"
+  },
+  "task_set": [
+    "t3_null_filter_001"
+  ],
+  "task_manifests": [
+    {
+      "task_id": "t3_null_filter_001",
+      "path": "tasks/t3_null_filter_001.json",
+      "sha256": "3eb998a8511bac6087df5a584b78cfd48b4d0726f5d754f495771f9bc5b2de8b"
+    }
+  ],
+  "rungs": [
+    "spark_low"
+  ],
+  "rung_bindings": {
+    "spark_low": {
+      "model": "gpt-5.3-codex-spark",
+      "effort": "low",
+      "surface": "codex-subscription"
+    }
+  },
+  "k": 3,
+  "trials": [],
+  "decisions": [
+    {
+      "task_id": "t3_null_filter_001",
+      "state": "unmeasured",
+      "action": "route",
+      "route_to": "spark_low",
+      "escalation_from": null,
+      "abstained": false,
+      "reason": "start at the cheapest unmeasured rung",
+      "evidence": [
+        {
+          "rung": "spark_low",
+          "observations": 0,
+          "decisive": 0,
+          "passes": 0,
+          "failures": 0,
+          "window_size": 0,
+          "window_passes": 0,
+          "window_failures": 0,
+          "required_k": 3,
+          "state": "unmeasured"
+        }
+      ]
+    }
+  ],
+  "burden": {
+    "requested_outcome": "measure whether Spark low clears the hidden SQL three-valued-logic knot in three independent attempts",
+    "claimant": "SPARK-RESIDUE-BRIDGE-V1 coordinator",
+    "authority": "the source-commit task manifest, unchanged hidden grader, and K-of-K residue broker",
+    "predicates": [
+      "exactly three independent Spark low solver calls with no retries",
+      "hidden grader absent from every solver packet and solver context",
+      "each candidate sealed before coordinator grading",
+      "each verdict independently reproduced by the unchanged hidden grader",
+      "visible-only local-first results remain mechanism evidence and do not enter this run"
+    ],
+    "burden_holder": "whoever asserts a Spark routing or capability conclusion from this run",
+    "evidence": [
+      "data/orchestration/runs/spark_residue_t3_null_filter_v1/t3_null_filter_001/trial-*/"
+    ],
+    "verifier": "the manifest hidden grader, residue broker, and orchestration receipt validator",
+    "gap": "no provider calls or hidden-graded receipts yet",
+    "closure_decision": "open",
+    "failure_default": "remain unmeasured and make no capability claim"
+  }
+}

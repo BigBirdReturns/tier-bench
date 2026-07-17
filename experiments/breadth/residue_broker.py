@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pure ARC-C routing policy: floor first, escalate only on a measured wall.
+"""Pure residue routing policy: floor first, escalate only on a measured wall.
 
 The broker never calls a model and never grades a candidate.  It reduces sealed
 trial receipts into the next allowed action.  Keeping this layer pure makes the
@@ -58,7 +58,7 @@ def rung_evidence(trials: list[dict], rung: str, k: int) -> dict:
 
 
 def decision_for_task(trials: list[dict], task_id: str, rungs: list[str], k: int) -> dict:
-    """Compute the only route ARC-C currently permits for ``task_id``."""
+    """Compute the only route the residue policy permits for ``task_id``."""
     task_rows = sorted(
         (r for r in trials if r.get("task_id") == task_id),
         key=lambda r: (r.get("sequence", 0), r.get("trial_id", "")),
@@ -165,7 +165,7 @@ def route_was_allowed(run: dict, trial: dict) -> tuple[bool, dict]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("run", type=Path, help="ARC-C run JSON")
+    parser.add_argument("run", type=Path, help="residue run JSON")
     parser.add_argument("--write", action="store_true", help="replace recorded decisions atomically")
     args = parser.parse_args()
     run = json.loads(args.run.read_text(encoding="utf-8"))

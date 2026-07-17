@@ -16,6 +16,7 @@ from experiments.breadth.residue_broker import decision_for_task, decisions_for_
 import validate_orchestration_run as validator  # noqa: E402
 
 PLAN = REPO / "data/orchestration/arc_c_almanac_v1.json"
+SPARK_PLAN = REPO / "data/orchestration/spark_residue_t3_null_filter_v1.json"
 
 
 def _sha(path: Path) -> str:
@@ -93,6 +94,11 @@ def test_committed_codex_run_is_sealed_after_source_bound_refill():
     assert run["burden"]["gap"] == (
         "none; the sealed peer comparison is preserved as a separate artifact"
     )
+
+
+def test_validator_admits_source_bound_non_almanac_hidden_manifest():
+    run = json.loads(SPARK_PLAN.read_text(encoding="utf-8"))
+    assert validator.validate_run(run) == []
 
 
 def test_validator_hashes_manifests_at_pinned_source_commit_not_checkout():

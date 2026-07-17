@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/orchestration_run.schema.json",
-  "title": "ARC-C orchestration-pattern benchmark run",
+  "title": "Residue-broker orchestration benchmark run",
   "description": "A sealed run plan plus trial receipts. scripts/validate_orchestration_run.py enforces cross-row routing, hash, hidden-grading, replay, spend, abstention, and closure rules.",
   "type": "object",
   "required": ["schema_version", "run_id", "status", "measurement_claim", "engine", "pairing", "task_set", "task_manifests", "rungs", "rung_bindings", "k", "trials", "decisions", "burden"],

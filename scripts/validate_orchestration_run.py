@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate ARC-C orchestration run plans and sealed trial receipts.
+"""Validate residue-broker run plans and sealed trial receipts.
 
 This validator is deliberately stronger than the JSON schema.  It verifies
 hashes, hidden-grader declarations, independent grading, floor-first routing,
@@ -125,9 +125,7 @@ def _manifest_info(run: dict, repo: Path, errors: list[str]) -> dict[str, dict]:
                     f"expected {tid!r}"
                 )
             if not manifest.get("hidden_files") or not manifest.get("hidden_run_command"):
-                errors.append(f"task {tid}: ARC-C admits hidden-graded manifests only")
-            if not relpath.startswith("tasks/almanac_"):
-                errors.append(f"task {tid}: ARC-C v1 admits the real almanac knot corpus only")
+                errors.append(f"task {tid}: residue runs admit hidden-graded manifests only")
             result[tid] = {"path": repo / relpath, "manifest": manifest}
     return result
 
