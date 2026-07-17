@@ -285,7 +285,8 @@ def _check_trial(run: dict, trial: dict, manifests: dict[str, dict], repo: Path,
     capture_kind = provenance.get("event_stream_capture_kind")
     if capture_kind is not None and capture_kind not in {
             "provider-raw-jsonl", "coordinator-derived-codex-app-thread-snapshot",
-            "claude-code-subagent-transcript", "codex-desktop-rollout-jsonl"}:
+            "claude-code-subagent-transcript", "codex-desktop-rollout-jsonl",
+            "ollama-local-api-receipt-jsonl"}:
         errors.append(f"{label}: invalid provenance.event_stream_capture_kind")
 
     spend = trial.get("spend")

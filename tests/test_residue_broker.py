@@ -6,6 +6,7 @@ import copy
 import hashlib
 import json
 import sys
+import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -14,6 +15,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 
 from experiments.breadth.residue_broker import decision_for_task, decisions_for_run  # noqa: E402
 import validate_orchestration_run as validator  # noqa: E402
+from grade_solver_packet import _events  # noqa: E402
 
 PLAN = REPO / "data/orchestration/arc_c_almanac_v1.json"
 SPARK_PLAN = REPO / "data/orchestration/spark_residue_t3_null_filter_v1.json"
@@ -99,6 +101,23 @@ def test_committed_codex_run_is_sealed_after_source_bound_refill():
 def test_validator_admits_source_bound_non_almanac_hidden_manifest():
     run = json.loads(SPARK_PLAN.read_text(encoding="utf-8"))
     assert validator.validate_run(run) == []
+
+
+def test_ollama_receipt_exposes_identity_and_usage():
+    event = {
+        "type": "ollama.completed",
+        "request_id": "local-test-request",
+        "usage": {"input_tokens": 11, "output_tokens": 7},
+    }
+    with tempfile.TemporaryDirectory() as temp:
+        path = Path(temp) / "events.jsonl"
+        path.write_text(json.dumps(event) + "\n", encoding="utf-8")
+        parsed = _events(path)
+    assert parsed == {
+        "thread_id": "local-test-request",
+        "usage": {"input_tokens": 11, "output_tokens": 7},
+        "capture_kind": "ollama-local-api-receipt-jsonl",
+    }
 
 
 def test_validator_hashes_manifests_at_pinned_source_commit_not_checkout():

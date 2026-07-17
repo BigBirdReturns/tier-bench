@@ -82,6 +82,10 @@ def _events(path: Path | None) -> dict:
             data["thread_id"] = event.get("thread_id")
         if event.get("type") == "turn.completed":
             data["usage"] = event.get("usage", {})
+        if event.get("type") == "ollama.completed":
+            data["thread_id"] = event.get("request_id")
+            data["usage"] = event.get("usage", {})
+            data["capture_kind"] = "ollama-local-api-receipt-jsonl"
         if event.get("type") == "session_meta":
             payload = event.get("payload") or {}
             if payload.get("id"):
@@ -115,7 +119,8 @@ def grade(receipt_path: Path, solver: Path, raw_response: Path, out_dir: Path,
           coordinator_id: str, events_path: Path | None = None,
           repo: Path = REPO,
           timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
-          candidate_out: Path | None = None) -> dict:
+          candidate_out: Path | None = None,
+          cost_basis: str = "subscription-derived") -> dict:
     if timeout_seconds <= 0:
         raise ValueError("timeout_seconds must be positive")
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -191,7 +196,7 @@ def grade(receipt_path: Path, solver: Path, raw_response: Path, out_dir: Path,
             "timeout_seconds": timeout_seconds,
             "visible_returncode": visible_result["returncode"],
             "hidden_returncodes": [hidden_one["returncode"], hidden_two["returncode"]],
-            "cost_basis": "subscription-derived", "cost_usd": 0.0,
+            "cost_basis": cost_basis, "cost_usd": 0.0,
         }
         if grade_receipt["solver_equals_grader"]:
             grade_receipt["outcome"] = "error"
@@ -215,11 +220,17 @@ def main() -> int:
     parser.add_argument("--coordinator-id", required=True)
     parser.add_argument("--timeout-seconds", type=float, default=DEFAULT_TIMEOUT_SECONDS)
     parser.add_argument("--candidate-out", type=Path)
+    parser.add_argument(
+        "--cost-basis",
+        choices=("real-billed", "shadow-estimated", "subscription-derived"),
+        default="subscription-derived",
+    )
     args = parser.parse_args()
     result = grade(args.receipt, args.solver, args.raw_response, args.out,
                    args.coordinator_id, args.events,
                    timeout_seconds=args.timeout_seconds,
-                   candidate_out=args.candidate_out)
+                   candidate_out=args.candidate_out,
+                   cost_basis=args.cost_basis)
     print(json.dumps(result, indent=2))
     return 0 if result["outcome"] == "pass" else 1
 
