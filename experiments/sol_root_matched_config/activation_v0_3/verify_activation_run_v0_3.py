@@ -62,7 +62,7 @@ def events(path: Path) -> list[dict[str, Any]]:
 
 
 def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    return hashlib.sha256(path.read_bytes().replace(b"\r\n", b"\n")).hexdigest()
 
 
 def config_value(command: list[str], key: str) -> str | None:

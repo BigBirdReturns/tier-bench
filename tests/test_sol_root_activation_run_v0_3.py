@@ -29,6 +29,8 @@ def main() -> int:
             destination = copied / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(RUN / relative, destination)
+            destination.write_bytes(destination.read_bytes().replace(b"\r\n", b"\n"))
+        assert build_receipt(copied) == receipt
         stderr = copied / "c01/stderr.txt"
         stderr.write_text(stderr.read_text(encoding="utf-8").replace("read-only sandbox", "workspace-write sandbox"), encoding="utf-8")
         try:
