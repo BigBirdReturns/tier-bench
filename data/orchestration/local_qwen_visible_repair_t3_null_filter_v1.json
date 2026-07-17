@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "run_id": "local_qwen_visible_repair_t3_null_filter_v1",
+  "status": "unmeasured",
+  "measurement_claim": false,
+  "engine": {
+    "engine_id": "ollama_qwen3_5_9b_q4_k_m_visible_repair",
+    "model": "qwen3.5:9b-q4_K_M",
+    "lineage": "qwen",
+    "surface": "ollama-local",
+    "role": "independent_solver"
+  },
+  "pairing": {
+    "pair_id": "local_qwen_visible_repair_t3_null_filter_v1_unpaired",
+    "peer_engine_id": "unmeasured_peer",
+    "peer_lineage": "unmeasured_external",
+    "source_commit": "74d150ef84386193179799bb7f936acd678dea0d",
+    "independent_before_exchange": true,
+    "state": "planned"
+  },
+  "task_set": [
+    "t3_null_filter_001"
+  ],
+  "task_manifests": [
+    {
+      "task_id": "t3_null_filter_001",
+      "path": "tasks/t3_null_filter_001.json",
+      "sha256": "3eb998a8511bac6087df5a584b78cfd48b4d0726f5d754f495771f9bc5b2de8b"
+    }
+  ],
+  "rungs": [
+    "visible_repair_1"
+  ],
+  "rung_bindings": {
+    "visible_repair_1": {
+      "model": "qwen3.5:9b-q4_K_M",
+      "effort": "one_visible_repair_think_false",
+      "surface": "ollama-local"
+    }
+  },
+  "k": 3,
+  "trials": [],
+  "decisions": [
+    {
+      "task_id": "t3_null_filter_001",
+      "state": "unmeasured",
+      "action": "route",
+      "route_to": "visible_repair_1",
+      "escalation_from": null,
+      "abstained": false,
+      "reason": "start at the cheapest unmeasured rung",
+      "evidence": [
+        {
+          "rung": "visible_repair_1",
+          "observations": 0,
+          "decisive": 0,
+          "passes": 0,
+          "failures": 0,
+          "window_size": 0,
+          "window_passes": 0,
+          "window_failures": 0,
+          "required_k": 3,
+          "state": "unmeasured"
+        }
+      ]
+    }
+  ],
+  "burden": {
+    "requested_outcome": "measure whether one repository-driven visible-error repair clears the repeated local-Qwen binding defect without hidden leakage",
+    "claimant": "LOCAL-QWEN-VISIBLE-REPAIR-V1 coordinator",
+    "authority": "sealed parent candidates, their visible command results, the unchanged hidden grader, and K-of-K residue broker",
+    "predicates": [
+      "exactly three repair calls, each bound to one distinct sealed no-think parent candidate",
+      "repair subjects see only parent source and visible command output, never hidden output or grader bytes",
+      "think false, temperature 0.2, seeds 101, 202, and 303",
+      "each repair sealed before coordinator grading and hidden-graded twice",
+      "no retry or second repair turn"
+    ],
+    "burden_holder": "whoever asserts that repository-driven visible refinement repairs or cannot repair this residue",
+    "evidence": [
+      "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/t3_null_filter_001/trial-*/"
+    ],
+    "verifier": "repair packet hashes, manifest hidden grader, residue broker, and orchestration receipt validator",
+    "gap": "no repair calls or hidden-graded repair receipts yet",
+    "closure_decision": "open",
+    "failure_default": "retain the no-think 0/3 wall and make no repair-gain claim"
+  }
+}
