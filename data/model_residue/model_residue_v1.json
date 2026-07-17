@@ -1,0 +1,724 @@
+{
+  "schema_version": 1,
+  "artifact": "offline_model_residue_index",
+  "local_first_commit": "147f3bf3a1d34a3ca7858e1a7ab58746ac9f063f",
+  "sources": [
+    {
+      "source_id": "local-first:BENCHMARKS.md",
+      "snapshot_path": "data/model_residue/sources/local-first/BENCHMARKS.md",
+      "sha256": "c951b0ed8ea03ed14cfa158bd9871cfbc3b401b699504cb4d27dbc52960e2713",
+      "bytes": 2884
+    },
+    {
+      "source_id": "local-first:benchmarks/ROBUST_BASELINE.md",
+      "snapshot_path": "data/model_residue/sources/local-first/benchmarks/ROBUST_BASELINE.md",
+      "sha256": "5326b488882ab9a1ca202528ee45dd1bafc9e6dd9583655ab5dd24d3017317bb",
+      "bytes": 2588
+    },
+    {
+      "source_id": "local-first:benchmarks/REPO_RELAY.md",
+      "snapshot_path": "data/model_residue/sources/local-first/benchmarks/REPO_RELAY.md",
+      "sha256": "affa60dda4dd56369dc1c32d5f935e60b607a085809bf9c65ab2e094764a2bb2",
+      "bytes": 4952
+    },
+    {
+      "source_id": "local-first:benchmarks/REVIEW_QUALITY.md",
+      "snapshot_path": "data/model_residue/sources/local-first/benchmarks/REVIEW_QUALITY.md",
+      "sha256": "9bb28744ee5f3a3e18ada1cd0da2120bc82ddaf9493fd7a03566fc265e605b5a",
+      "bytes": 4218
+    },
+    {
+      "source_id": "local-first:local_first.py",
+      "snapshot_path": "data/model_residue/sources/local-first/local_first.py",
+      "sha256": "3c57008bcf72fd12c6636f23d729034e622cd33806408c07a3b4a6318a06a38d",
+      "bytes": 16341
+    },
+    {
+      "source_id": "local-first:benchmarks/run_races.py",
+      "snapshot_path": "data/model_residue/sources/local-first/benchmarks/run_races.py",
+      "sha256": "8abee803679ef38d381111823355f875e5f02365e1485b5366e17f9562b992db",
+      "bytes": 7729
+    },
+    {
+      "source_id": "token-parity-proof:RESULT.md",
+      "snapshot_path": "data/model_residue/sources/token-parity-proof/RESULT.md",
+      "sha256": "007912926a727f3cf264427410ea59ce4616745af8222d8a558e89d0a4cdbfc3",
+      "bytes": 5369
+    },
+    {
+      "source_id": "token-parity-proof:robust-race-20260717T1340/results.jsonl",
+      "snapshot_path": "data/model_residue/sources/token-parity-proof/robust-race-20260717T1340/results.jsonl",
+      "sha256": "a70c2151dec378e33b85e3492a54b46bebc8ae184c606295eefe798ef50b3f4a",
+      "bytes": 10955
+    },
+    {
+      "source_id": "token-parity-proof:robust-race-hard-20260717T1350/results.jsonl",
+      "snapshot_path": "data/model_residue/sources/token-parity-proof/robust-race-hard-20260717T1350/results.jsonl",
+      "sha256": "b384690e68478630ec54105bf6e2bf23ce941ec4228e11b8f20a7cd36889b83e",
+      "bytes": 5524
+    },
+    {
+      "source_id": "token-parity-proof:relay-run-eager-20260717T1450/summary.json",
+      "snapshot_path": "data/model_residue/sources/token-parity-proof/relay-run-eager-20260717T1450/summary.json",
+      "sha256": "127ee7c1c949048eb4030353d0e3c9f0ad1f91692543aa719fa71f9d10b239db",
+      "bytes": 6842
+    },
+    {
+      "source_id": "token-parity-proof:relay-review-run-20260717T1520/summary.json",
+      "snapshot_path": "data/model_residue/sources/token-parity-proof/relay-review-run-20260717T1520/summary.json",
+      "sha256": "f0c08b9152cfd1db20de970978e7384b20df4dbd51d0191938752b91d1be5dd1",
+      "bytes": 11783
+    },
+    {
+      "source_id": "token-parity-proof:review-quality-run-20260717T1550/summary.json",
+      "snapshot_path": "data/model_residue/sources/token-parity-proof/review-quality-run-20260717T1550/summary.json",
+      "sha256": "0ddef36c9011ac2ebad50738c520a7e1734a1ad4fbe6017757b400fda92aa57a",
+      "bytes": 5616
+    },
+    {
+      "source_id": "token-parity-proof:review-quality-run-r2-20260717T1610/summary.json",
+      "snapshot_path": "data/model_residue/sources/token-parity-proof/review-quality-run-r2-20260717T1610/summary.json",
+      "sha256": "7f45422842d1ffbf143370dc2f258da4e70c85dfd260f0d77538d6eb04d808be",
+      "bytes": 5652
+    }
+  ],
+  "coverage": {
+    "models": {
+      "gpt-5.6-sol": {
+        "evidence": [
+          "robust_sol_vs_spark",
+          "arc_c_almanac_v1"
+        ],
+        "residue": "18/18 robust first-pass clears; use after Spark validator failure or for high-risk cross-checks"
+      },
+      "gpt-5.3-codex-spark": {
+        "evidence": [
+          "robust_sol_vs_spark",
+          "repo_relay",
+          "blind_review_quality",
+          "spark_residue_t3_null_filter_v1"
+        ],
+        "residue": "18/18 robust first-pass clears and 17/18 race wins; peer review is advisory and generated validators are not acceptance oracles"
+      },
+      "terra:version-unspecified": {
+        "evidence": [
+          "route_discovery"
+        ],
+        "residue": "bounded target generation sharply reduced tokens on one small task; planner handoff added cost",
+        "identity_gap": "the retained report does not preserve a Terra version"
+      },
+      "qwen2.5:7b": {
+        "evidence": [
+          "route_discovery"
+        ],
+        "residue": "955-token integrated-controller success on the one-task mechanism probe only"
+      },
+      "qwen3.5:9b-q4_K_M": {
+        "evidence": [
+          "local_qwen_nothink_t3_null_filter_v1",
+          "local_qwen_residue_t3_null_filter_v1",
+          "local_qwen_visible_repair_t3_null_filter_v1"
+        ],
+        "residue": "default thinking emitted empty finals; think:false exposed a repeatable record-binding bug; one visible-error full-file repair diagnosed but did not integrate the fix"
+      },
+      "claude-fable-5": {
+        "evidence": [
+          "arc_c_almanac_claude_v1"
+        ],
+        "residue": "sealed hidden-graded ARC-C receipts; consult the embedded run decisions for task-level clears and walls"
+      }
+    },
+    "orchestration_runs": [
+      {
+        "run_id": "arc_c_almanac_claude_v1",
+        "run_path": "data/orchestration/arc_c_almanac_claude_v1.json",
+        "run_sha256": "ee433d1e5c550cfe1b551d4308d91f967032cf2dfbfc3a15b322a11c32875d11",
+        "status": "sealed",
+        "measurement_claim": true,
+        "engine": {
+          "engine_id": "claude_fable_5",
+          "model": "claude-fable-5",
+          "lineage": "anthropic",
+          "surface": "claude-code-agent-tool",
+          "role": "independent_solver"
+        },
+        "source_commit": "3d3837165ac9e046acf2cecc27e01f9c41c302e5",
+        "rung_bindings": {
+          "floor": {
+            "model": "claude-fable-5",
+            "effort": "low",
+            "surface": "claude-code-agent-tool"
+          },
+          "effort_medium": {
+            "model": "claude-fable-5",
+            "effort": "medium",
+            "surface": "claude-code-agent-tool"
+          },
+          "effort_high": {
+            "model": "claude-fable-5",
+            "effort": "high",
+            "surface": "claude-code-agent-tool"
+          },
+          "effort_max": {
+            "model": "claude-fable-5",
+            "effort": "max",
+            "surface": "claude-code-agent-tool"
+          }
+        },
+        "trial_count": 9,
+        "outcomes": {
+          "pass": 9
+        },
+        "tokens": {
+          "input": 36,
+          "output": 56
+        },
+        "decisions": [
+          {
+            "task_id": "almanac_exception_class_001",
+            "state": "cleared",
+            "action": "seal",
+            "route_to": "floor",
+            "escalation_from": null,
+            "abstained": false,
+            "reason": "K-of-K decisive receipts clear this rung",
+            "evidence": [
+              {
+                "rung": "floor",
+                "observations": 3,
+                "decisive": 3,
+                "passes": 3,
+                "failures": 0,
+                "window_size": 3,
+                "window_passes": 3,
+                "window_failures": 0,
+                "required_k": 3,
+                "state": "clears"
+              }
+            ]
+          },
+          {
+            "task_id": "almanac_record_binding_001",
+            "state": "cleared",
+            "action": "seal",
+            "route_to": "floor",
+            "escalation_from": null,
+            "abstained": false,
+            "reason": "K-of-K decisive receipts clear this rung",
+            "evidence": [
+              {
+                "rung": "floor",
+                "observations": 3,
+                "decisive": 3,
+                "passes": 3,
+                "failures": 0,
+                "window_size": 3,
+                "window_passes": 3,
+                "window_failures": 0,
+                "required_k": 3,
+                "state": "clears"
+              }
+            ]
+          },
+          {
+            "task_id": "almanac_rule_boundary_001",
+            "state": "cleared",
+            "action": "seal",
+            "route_to": "floor",
+            "escalation_from": null,
+            "abstained": false,
+            "reason": "K-of-K decisive receipts clear this rung",
+            "evidence": [
+              {
+                "rung": "floor",
+                "observations": 3,
+                "decisive": 3,
+                "passes": 3,
+                "failures": 0,
+                "window_size": 3,
+                "window_passes": 3,
+                "window_failures": 0,
+                "required_k": 3,
+                "state": "clears"
+              }
+            ]
+          }
+        ],
+        "gap": "none; the sealed peer comparison is preserved as a separate artifact"
+      },
+      {
+        "run_id": "arc_c_almanac_v1",
+        "run_path": "data/orchestration/arc_c_almanac_v1.json",
+        "run_sha256": "80f6a83d1a17864f1972cc99af39d55575bd0f1b8f0caa423a7185ec3bb2c25d",
+        "status": "sealed",
+        "measurement_claim": true,
+        "engine": {
+          "engine_id": "codex_gpt_5_6_sol",
+          "model": "gpt-5.6-sol",
+          "lineage": "openai",
+          "surface": "codex-subscription",
+          "role": "independent_solver"
+        },
+        "source_commit": "3d3837165ac9e046acf2cecc27e01f9c41c302e5",
+        "rung_bindings": {
+          "floor": {
+            "model": "gpt-5.6-sol",
+            "effort": "low",
+            "surface": "codex-subscription"
+          },
+          "effort_medium": {
+            "model": "gpt-5.6-sol",
+            "effort": "medium",
+            "surface": "codex-subscription"
+          },
+          "effort_high": {
+            "model": "gpt-5.6-sol",
+            "effort": "high",
+            "surface": "codex-subscription"
+          },
+          "effort_max": {
+            "model": "gpt-5.6-sol",
+            "effort": "xhigh",
+            "surface": "codex-subscription"
+          }
+        },
+        "trial_count": 9,
+        "outcomes": {
+          "pass": 9
+        },
+        "tokens": {
+          "input": 109497,
+          "output": 4927
+        },
+        "decisions": [
+          {
+            "task_id": "almanac_exception_class_001",
+            "state": "cleared",
+            "action": "seal",
+            "route_to": "floor",
+            "escalation_from": null,
+            "abstained": false,
+            "reason": "K-of-K decisive receipts clear this rung",
+            "evidence": [
+              {
+                "rung": "floor",
+                "observations": 3,
+                "decisive": 3,
+                "passes": 3,
+                "failures": 0,
+                "window_size": 3,
+                "window_passes": 3,
+                "window_failures": 0,
+                "required_k": 3,
+                "state": "clears"
+              }
+            ]
+          },
+          {
+            "task_id": "almanac_record_binding_001",
+            "state": "cleared",
+            "action": "seal",
+            "route_to": "floor",
+            "escalation_from": null,
+            "abstained": false,
+            "reason": "K-of-K decisive receipts clear this rung",
+            "evidence": [
+              {
+                "rung": "floor",
+                "observations": 3,
+                "decisive": 3,
+                "passes": 3,
+                "failures": 0,
+                "window_size": 3,
+                "window_passes": 3,
+                "window_failures": 0,
+                "required_k": 3,
+                "state": "clears"
+              }
+            ]
+          },
+          {
+            "task_id": "almanac_rule_boundary_001",
+            "state": "cleared",
+            "action": "seal",
+            "route_to": "floor",
+            "escalation_from": null,
+            "abstained": false,
+            "reason": "K-of-K decisive receipts clear this rung",
+            "evidence": [
+              {
+                "rung": "floor",
+                "observations": 3,
+                "decisive": 3,
+                "passes": 3,
+                "failures": 0,
+                "window_size": 3,
+                "window_passes": 3,
+                "window_failures": 0,
+                "required_k": 3,
+                "state": "clears"
+              }
+            ]
+          }
+        ],
+        "gap": "none; the sealed peer comparison is preserved as a separate artifact"
+      },
+      {
+        "run_id": "local_qwen_nothink_t3_null_filter_v1",
+        "run_path": "data/orchestration/local_qwen_nothink_t3_null_filter_v1.json",
+        "run_sha256": "726fd11603d3dfdf03552cdc6005f225ee1f5b46ddfa492fe0ecbd864086316c",
+        "status": "sealed",
+        "measurement_claim": true,
+        "engine": {
+          "engine_id": "ollama_qwen3_5_9b_q4_k_m_nothink",
+          "model": "qwen3.5:9b-q4_K_M",
+          "lineage": "qwen",
+          "surface": "ollama-local",
+          "role": "independent_solver"
+        },
+        "source_commit": "bb40a859a58dbf9a7be700ed972fb70507e32f2f",
+        "rung_bindings": {
+          "local_q4_nothink": {
+            "model": "qwen3.5:9b-q4_K_M",
+            "effort": "temperature_0.2_seeded_think_false",
+            "surface": "ollama-local"
+          }
+        },
+        "trial_count": 3,
+        "outcomes": {
+          "fail": 3
+        },
+        "tokens": {
+          "input": 2922,
+          "output": 3621
+        },
+        "decisions": [
+          {
+            "task_id": "t3_null_filter_001",
+            "state": "wall",
+            "action": "abstain",
+            "route_to": null,
+            "escalation_from": "local_q4_nothink",
+            "abstained": true,
+            "reason": "top available rung is a measured wall; access escalation is a human gate",
+            "evidence": [
+              {
+                "rung": "local_q4_nothink",
+                "observations": 3,
+                "decisive": 3,
+                "passes": 0,
+                "failures": 3,
+                "window_size": 3,
+                "window_passes": 0,
+                "window_failures": 3,
+                "required_k": 3,
+                "state": "wall"
+              }
+            ]
+          }
+        ],
+        "gap": "none for this engine run; peer comparison remains separate",
+        "report": {
+          "path": "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/REPORT.md",
+          "sha256": "ffa35cef26ab565a845f5d1e64a2757beba6f35e255e892a1081fb0b776c2bab",
+          "text": "# Local Qwen no-think residue: SQL null-filter knot\n\n## Durable conclusion\n\nThe prior empty-final wall was a model/transport-condition failure, not evidence\nthat the model attempted and failed the SQL task. Setting Ollama `think:false`\nchanged that boundary: all three fresh calls emitted full Python programs.\n\nUnder the resulting frozen condition, `qwen3.5:9b-q4_K_M` still hit a sealed\n0/3 task wall. All three independent seeds made the same implementation error:\ninside a per-record evaluator they used `records[field]`, indexing the outer\nlist with a string, instead of indexing the current record. Every candidate\ncompiled, then the visible command crashed with `TypeError: list indices must\nbe integers or slices, not str`; both hidden reruns also failed. The residue\nbroker therefore abstained.\n\nThis conclusion is scoped to this model, quantization, prompt, task, and\nsampling condition. It does not establish a general inability to implement\nthree-valued logic.\n\n## Controlled comparison\n\nThe only model condition changed from `local_qwen_residue_t3_null_filter_v1`\nwas Ollama `think:false`. Model, task bytes, prompt hash, temperature, seeds,\nfresh-context rule, no-tool rule, three-call ceiling, grading, and broker policy\nwere held fixed. The administrative canary is preserved separately and is not\npart of either scientific K-window.\n\n| Trial | Seed | Input tokens | Output tokens | Final chars | Wall time | Visible | Hidden reruns | Repeated residue |\n|---:|---:|---:|---:|---:|---:|---|---|---|\n| 1 | 101 | 974 | 1,131 | 4,395 | 34.03 s | fail | fail, fail | `records[field]` |\n| 2 | 202 | 974 | 1,247 | 4,796 | 37.07 s | fail | fail, fail | `records[field]` |\n| 3 | 303 | 974 | 1,243 | 4,768 | 36.75 s | fail | fail, fail | `records[field]` |\n\nPacket SHA-256:\n`3b2969c1e9fd85cf0819f740e846930d2c67e6677731657c989abce941572305`.\nPrompt SHA-256:\n`bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd`.\nHidden grader SHA-256:\n`183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5`.\n\n## Next deterministic task\n\nThe next justified experiment is a visible-error repair relay: give each failed\ncandidate only its visible traceback, ask for one full-file correction under\nthe same no-think condition, then grade the sealed repair against the unchanged\nhidden grader. That tests whether repository-driven refinement removes the\nstable binding defect without leaking hidden evidence.\n"
+        }
+      },
+      {
+        "run_id": "local_qwen_residue_t3_null_filter_v1",
+        "run_path": "data/orchestration/local_qwen_residue_t3_null_filter_v1.json",
+        "run_sha256": "6c4dbd582579cf1bdab56d7c2b1aa4a00c15e9064bf6d953fafef5ece44f9e15",
+        "status": "sealed",
+        "measurement_claim": true,
+        "engine": {
+          "engine_id": "ollama_qwen3_5_9b_q4_k_m",
+          "model": "qwen3.5:9b-q4_K_M",
+          "lineage": "qwen",
+          "surface": "ollama-local",
+          "role": "independent_solver"
+        },
+        "source_commit": "817fff8cfe6ce49a0bfe7742a5083c72d3773d33",
+        "rung_bindings": {
+          "local_q4": {
+            "model": "qwen3.5:9b-q4_K_M",
+            "effort": "temperature_0.2_seeded",
+            "surface": "ollama-local"
+          }
+        },
+        "trial_count": 3,
+        "outcomes": {
+          "fail": 3
+        },
+        "tokens": {
+          "input": 2916,
+          "output": 21660
+        },
+        "decisions": [
+          {
+            "task_id": "t3_null_filter_001",
+            "state": "wall",
+            "action": "abstain",
+            "route_to": null,
+            "escalation_from": "local_q4",
+            "abstained": true,
+            "reason": "top available rung is a measured wall; access escalation is a human gate",
+            "evidence": [
+              {
+                "rung": "local_q4",
+                "observations": 3,
+                "decisive": 3,
+                "passes": 0,
+                "failures": 3,
+                "window_size": 3,
+                "window_passes": 0,
+                "window_failures": 3,
+                "required_k": 3,
+                "state": "wall"
+              }
+            ]
+          }
+        ],
+        "gap": "none for this engine run; peer comparison remains separate",
+        "report": {
+          "path": "data/orchestration/runs/local_qwen_residue_t3_null_filter_v1/REPORT.md",
+          "sha256": "bf792b582b7bf468e414cc13402629bf8e53f588fe9862d29a2922f61efcf3e6",
+          "text": "# Local Qwen residue: SQL null-filter knot\n\n## Result\n\n`qwen3.5:9b-q4_K_M` hit a sealed 0/3 wall on `t3_null_filter_001`.\nThe residue broker therefore abstained at the only measured rung. This is a\nlocal-Qwen observation, not Spark evidence.\n\n## Frozen condition\n\n- Transport: local Ollama loopback (`127.0.0.1:11434`)\n- Packet: prompt plus `input.py`; no hidden grader, peer conclusion, or tool access\n- Sampling: temperature 0.2; fresh seeds 101, 202, and 303\n- Calls: exactly three; no retries\n- Packet SHA-256: `3bc8c2a66165d88195fd972ed00c07d9170d12a48d40a39655b29be977626021`\n- Prompt SHA-256: `bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd`\n- Hidden grader SHA-256: `183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5`\n\n## Receipts\n\n| Trial | Seed | Input tokens | Output tokens | Final chars | Thinking chars | Wall time | Hidden grade |\n|---:|---:|---:|---:|---:|---:|---:|---|\n| 1 | 101 | 972 | 7,220 | 0 | not captured | 233.98 s | fail twice |\n| 2 | 202 | 972 | 7,220 | 0 | 27,748 | 219.07 s | fail twice |\n| 3 | 303 | 972 | 7,220 | 0 | 29,277 | 217.02 s | fail twice |\n\nAll three final candidates are the empty byte string, SHA-256\n`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.\nThe visible command exits zero for an empty Python file, while the deciding\nhidden grader exits one on both coordinator reruns. This is exactly why the\nhidden receipt, not the visible validator, controls the capability claim.\n\nTrial 1 completed before reasoning-length fields were added to the local\ntransport receipt, so its thinking character count is intentionally recorded\nas unavailable. Its native token counters, empty final response, hashes, and\ndouble hidden-grade result are preserved.\n\n## Durable residue\n\nUnder this condition, the model spends the full 7,220-token generation budget\nwithout emitting a final answer. The next deterministic task is therefore not\n\"fix SQL three-valued logic.\" It is to test the transport/model boundary with\nan explicit reasoning budget or thinking-disabled condition as a new rung,\nwhile preserving this 0/3 layer unchanged.\n"
+        }
+      },
+      {
+        "run_id": "local_qwen_visible_repair_t3_null_filter_v1",
+        "run_path": "data/orchestration/local_qwen_visible_repair_t3_null_filter_v1.json",
+        "run_sha256": "e83d4602eec1687cba70d41ee38fdf86eedd363f6f1b72ee068d1615b6a66b36",
+        "status": "sealed",
+        "measurement_claim": true,
+        "engine": {
+          "engine_id": "ollama_qwen3_5_9b_q4_k_m_visible_repair",
+          "model": "qwen3.5:9b-q4_K_M",
+          "lineage": "qwen",
+          "surface": "ollama-local",
+          "role": "independent_solver"
+        },
+        "source_commit": "74d150ef84386193179799bb7f936acd678dea0d",
+        "rung_bindings": {
+          "visible_repair_1": {
+            "model": "qwen3.5:9b-q4_K_M",
+            "effort": "one_visible_repair_think_false",
+            "surface": "ollama-local"
+          }
+        },
+        "trial_count": 3,
+        "outcomes": {
+          "fail": 3
+        },
+        "tokens": {
+          "input": 4775,
+          "output": 5367
+        },
+        "decisions": [
+          {
+            "task_id": "t3_null_filter_001",
+            "state": "wall",
+            "action": "abstain",
+            "route_to": null,
+            "escalation_from": "visible_repair_1",
+            "abstained": true,
+            "reason": "top available rung is a measured wall; access escalation is a human gate",
+            "evidence": [
+              {
+                "rung": "visible_repair_1",
+                "observations": 3,
+                "decisive": 3,
+                "passes": 0,
+                "failures": 3,
+                "window_size": 3,
+                "window_passes": 0,
+                "window_failures": 3,
+                "required_k": 3,
+                "state": "wall"
+              }
+            ]
+          }
+        ],
+        "gap": "none for this engine run; peer comparison remains separate",
+        "report": {
+          "path": "data/orchestration/runs/local_qwen_visible_repair_t3_null_filter_v1/REPORT.md",
+          "sha256": "b03a09dd7008665f6b4dd939b8edb5bdefb8e413deb7e0703b0fe093d563982f",
+          "text": "# Local Qwen visible-error repair residue\n\n## Result\n\nOne repository-driven visible-error repair did not clear the stable binding\ndefect. The repair rung sealed at 0/3 and the residue broker abstained.\n\nEach repair subject received one distinct sealed parent candidate plus only its\nvisible command, exit code, stdout, and traceback. Repair packets excluded the\nhidden grader and hidden outputs, and bound the parent candidate and normalized\nvisible-failure hashes. Subjects ran with `qwen3.5:9b-q4_K_M`, Ollama\n`think:false`, temperature 0.2, seeds 101/202/303, fresh context, and no tools.\nThere were exactly three calls and no retries.\n\n## Receipts\n\n| Repair | Input tokens | Output tokens | Wall time | Compile | Visible | Hidden reruns | Residue |\n|---:|---:|---:|---:|---|---|---|---|\n| 1 | 1,515 | 2,542 | 116.39 s | fail | fail | fail, fail | syntax-corrupt full-file merge |\n| 2 | 1,632 | 1,366 | 47.92 s | pass | fail | fail, fail | added `rec=` call without changing evaluator signature |\n| 3 | 1,628 | 1,459 | 51.17 s | pass | fail | fail, fail | passed a second positional argument to a one-argument evaluator |\n\nAll three repairs identified that the evaluator needed the current record. The\nfailure was integration: each output changed only part of the required\nfunction boundary or corrupted the surrounding file. This is a durable 3/3\ndiagnosis-versus-integration split, not an inference from one bad completion.\n\n## Cross-layer conclusion\n\nThe three additive K-windows now separate three failure layers:\n\n1. Default Ollama thinking: 0/3 empty final responses after 7,220 output tokens.\n2. `think:false` one-shot: 0/3 complete programs, all with the same\n   `records[field]` binding bug.\n3. One visible-error repair: 0/3; all diagnosed the bug, none integrated a\n   valid full-file fix.\n\nTherefore the durable conclusion is not simply \"Qwen cannot solve the task.\"\nUnder these exact conditions, disabling thinking fixes response emission, but\nthe model has a repeatable full-file state-integration weakness that one\ntraceback-driven repair does not remove.\n\nThe next justified design change is smaller edit scope: ask for a localized\npatch to the evaluator boundary and let the repository apply and validate it,\nrather than asking the model to regenerate the entire file. That would be a\nnew experiment, not a reinterpretation or retry of this sealed wall.\n"
+        }
+      },
+      {
+        "run_id": "spark_residue_t3_null_filter_v1",
+        "run_path": "data/orchestration/spark_residue_t3_null_filter_v1.json",
+        "run_sha256": "ce2ea58ed03fadc6f07906fc783fd45012878dcde779902a474fa7ec80fef1b2",
+        "status": "unmeasured",
+        "measurement_claim": false,
+        "engine": {
+          "engine_id": "codex_gpt_5_3_spark",
+          "model": "gpt-5.3-codex-spark",
+          "lineage": "openai",
+          "surface": "codex-subscription",
+          "role": "independent_solver"
+        },
+        "source_commit": "b180d165ab355c9fce13d1bee24f2a30d5b0084d",
+        "rung_bindings": {
+          "spark_low": {
+            "model": "gpt-5.3-codex-spark",
+            "effort": "low",
+            "surface": "codex-subscription"
+          }
+        },
+        "trial_count": 0,
+        "outcomes": {},
+        "tokens": {
+          "input": 0,
+          "output": 0
+        },
+        "decisions": [
+          {
+            "task_id": "t3_null_filter_001",
+            "state": "unmeasured",
+            "action": "route",
+            "route_to": "spark_low",
+            "escalation_from": null,
+            "abstained": false,
+            "reason": "start at the cheapest unmeasured rung",
+            "evidence": [
+              {
+                "rung": "spark_low",
+                "observations": 0,
+                "decisive": 0,
+                "passes": 0,
+                "failures": 0,
+                "window_size": 0,
+                "window_passes": 0,
+                "window_failures": 0,
+                "required_k": 3,
+                "state": "unmeasured"
+              }
+            ]
+          }
+        ],
+        "gap": "no provider calls or hidden-graded receipts yet"
+      }
+    ],
+    "route_discovery": [
+      {
+        "route": "Direct standard Terra agent",
+        "model_tokens": "106,030",
+        "cloud_tokens": "106,030",
+        "observed_wall": "~46.9 s",
+        "gain_vs_direct": "baseline"
+      },
+      {
+        "route": "Cloud planner + standard Terra agent",
+        "model_tokens": "181,692",
+        "cloud_tokens": "181,692",
+        "observed_wall": "not combined",
+        "gain_vs_direct": "71.36% worse"
+      },
+      {
+        "route": "Local planner + standard Terra agent",
+        "model_tokens": "99,290",
+        "cloud_tokens": "98,675",
+        "observed_wall": "not combined",
+        "gain_vs_direct": "6.36%"
+      },
+      {
+        "route": "Lean Terra agent",
+        "model_tokens": "50,692",
+        "cloud_tokens": "50,692",
+        "observed_wall": "30.96 s",
+        "gain_vs_direct": "52.19%"
+      },
+      {
+        "route": "Bounded Terra candidate, manual controller",
+        "model_tokens": "8,791",
+        "cloud_tokens": "8,791",
+        "observed_wall": "5.90 s generation",
+        "gain_vs_direct": "91.71%"
+      },
+      {
+        "route": "Bounded Terra candidate, integrated controller",
+        "model_tokens": "9,151",
+        "cloud_tokens": "9,151",
+        "observed_wall": "7.6 s end to end",
+        "gain_vs_direct": "91.37%"
+      },
+      {
+        "route": "Bounded Spark 5.3 candidate",
+        "model_tokens": "6,926",
+        "cloud_tokens": "separate Spark timer",
+        "observed_wall": "5.20 s end to end",
+        "gain_vs_direct": "93.47%"
+      },
+      {
+        "route": "Default Spark refinement controller",
+        "model_tokens": "7,238",
+        "cloud_tokens": "separate Spark timer",
+        "observed_wall": "3.91 s end to end",
+        "gain_vs_direct": "93.17%"
+      },
+      {
+        "route": "Qwen 2.5 integrated controller",
+        "model_tokens": "955",
+        "cloud_tokens": "0",
+        "observed_wall": "16.3 s end to end",
+        "gain_vs_direct": "99.10%"
+      }
+    ],
+    "robust_sol_vs_spark": {
+      "design": "six deterministic single-file Python tasks, three matched replicates",
+      "arms": {
+        "sol": {
+          "model": "gpt-5.6-sol",
+          "runs": 18,
+          "passes": 18,
+          "median_seconds": 10.7035,
+          "median_tokens": 10382.0,
+          "total_tokens": 190126,
+          "refinement_attempts": [
+            1
+          ]
+        },
+        "spark": {
+          "model": "gpt-5.3-codex-spark",
+          "runs": 18,
+          "passes": 18,
+          "median_seconds": 7.062,
+          "median_tokens": 8828.5,
+          "total_tokens": 167147,
+          "refinement_attempts": [
+            1
+          ]
+        }
+      },
+      "paired_wins": {
+        "spark": 17,
+        "sol": 1
+      },
+      "pairs": 18,
+      "spark_median_wall_reduction_percent": 34.02,
+      "spark_median_token_reduction_percent": 14.96,
+      "scope": "first-pass bounded execution; no measured repair-loop quality"
+    },
+    "repo_relay": {
+      "planner_model_tokens": 0,
+      "eager_final_validator": "5/5",
+      "review_selected_slower_candidate_stages": "2/3",
+      "review_added_spark_tokens": 21895,
+      "source": "local-first:benchmarks/REPO_RELAY.md"
+    },
+    "blind_review_quality": {
+      "result": "sometimes useful critique, not a correctness oracle",
+      "generated_validator_result": "missed shared defects or introduced a false failure",
+      "authority": "repository-owned validators",
+      "source": "local-first:benchmarks/REVIEW_QUALITY.md"
+    }
+  },
+  "gaps": [
+    "The Spark hidden-graded Tier-Bench run is unmeasured because tenant policy blocked external packet transfer; zero Spark calls were made there.",
+    "Early Terra and Qwen 2.5 route discovery is retained as report-level evidence, not a K=3 hidden-graded capability map.",
+    "The original token-parity-proof tree was not a Git repository; selected raw results and summaries are now snapshotted byte-for-byte here.",
+    "This index covers models evidenced by the selected committed reports and sealed orchestration runs; it does not claim unobserved configurations."
+  ]
+}

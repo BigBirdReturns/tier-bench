@@ -1,0 +1,139 @@
+{
+  "status": "passed",
+  "model": "gpt-5.3-codex-spark",
+  "planner_model_tokens": 0,
+  "review_tokens": 11696,
+  "completed": [
+    "patch"
+  ],
+  "final_validator_exit": 0,
+  "stages": [
+    {
+      "task": "patch",
+      "status": "promoted",
+      "leader_clone": 3,
+      "winner_clone": 2,
+      "winner_seconds": 21.86,
+      "winner_tokens": 9520,
+      "winner_refinement_attempt": 1,
+      "canonical_before_sha256": "e34ae9791947562f5a5d5288ad7df782c5f5cfb3e8ce084192233a3f1013993b",
+      "canonical_after_sha256": "0405fd789a550a79272acb0531285d367ceb8719d3b749732b271f49f498ad0a",
+      "canonical_validator_exit": 0,
+      "review": {
+        "status": "reviewed",
+        "reviewer_clone": 3,
+        "reviewer_model": "gpt-5.3-codex-spark",
+        "selected_label": "candidate_1",
+        "selected_clone": 2,
+        "leader_selected_itself": false,
+        "labels": {
+          "candidate_1": {
+            "clone": 2,
+            "target_sha256": "0405fd789a550a79272acb0531285d367ceb8719d3b749732b271f49f498ad0a"
+          },
+          "candidate_2": {
+            "clone": 1,
+            "target_sha256": "88a4355e9bf901b0392b34e9b459794388639567ebfaa24a630fb1a31f8c03fd"
+          },
+          "candidate_3": {
+            "clone": 3,
+            "target_sha256": "9ed67dc46af19c959264cc72dba98b058fe627e9b6c0583335e97602dee6bfe9"
+          }
+        },
+        "review_tokens": 11696,
+        "payload": {
+          "selected": "candidate_1",
+          "scores": [
+            {
+              "candidate": "candidate_1",
+              "score": 9,
+              "reason": "Implements all required behaviors cleanly: deep copy, ordered in-place updates on copy, strict op/path/index validation, proper ~ escaping, list '-' append/delete checks, and non-mutating failure semantics via ValueError on invalid ops."
+            },
+            {
+              "candidate": "candidate_2",
+              "score": 8,
+              "reason": "Correct core logic and validation, but unnecessarily restricts `operations` to `list`, reducing compliance with broader iterable input expectations; generally robust otherwise."
+            },
+            {
+              "candidate": "candidate_3",
+              "score": 7,
+              "reason": "Mostly correct for main cases, but lacks explicit `/` root rejection, has unnecessary constraints/ambiguities around malformed paths, and also forces `operations` to be a list; less strict and less aligned with the stated contract."
+            }
+          ],
+          "reason": "Candidate 1 is the strongest match overall: it best adheres to all stated requirements with better input-shape permissiveness and clear, maintainable traversal/validation structure."
+        }
+      },
+      "racers": [
+        {
+          "clone": 1,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\review-quality-run-r2-20260717T1610\\01_patch\\clone_01",
+          "validated_seconds": 19.422,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_review_window": false,
+          "cloud_tokens": 9999,
+          "refinement_attempt": 1,
+          "target_sha256": "88a4355e9bf901b0392b34e9b459794388639567ebfaa24a630fb1a31f8c03fd",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6690,
+            "cached_input_tokens": 5632,
+            "output_tokens": 3309,
+            "validator_exit": 0,
+            "validator_seconds": 2.672,
+            "cloud_tokens": 9999,
+            "status": "passed"
+          }
+        },
+        {
+          "clone": 2,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\review-quality-run-r2-20260717T1610\\01_patch\\clone_02",
+          "validated_seconds": 21.86,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_review_window": false,
+          "cloud_tokens": 9520,
+          "refinement_attempt": 1,
+          "target_sha256": "0405fd789a550a79272acb0531285d367ceb8719d3b749732b271f49f498ad0a",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6690,
+            "cached_input_tokens": 5632,
+            "output_tokens": 2830,
+            "validator_exit": 0,
+            "validator_seconds": 2.61,
+            "cloud_tokens": 9520,
+            "status": "passed"
+          }
+        },
+        {
+          "clone": 3,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\review-quality-run-r2-20260717T1610\\01_patch\\clone_03",
+          "validated_seconds": 16.36,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_review_window": false,
+          "cloud_tokens": 9924,
+          "refinement_attempt": 1,
+          "target_sha256": "9ed67dc46af19c959264cc72dba98b058fe627e9b6c0583335e97602dee6bfe9",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6690,
+            "cached_input_tokens": 5632,
+            "output_tokens": 3234,
+            "validator_exit": 0,
+            "validator_seconds": 1.969,
+            "cloud_tokens": 9924,
+            "status": "passed"
+          }
+        }
+      ]
+    }
+  ]
+}

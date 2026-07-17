@@ -1,0 +1,182 @@
+{
+  "status": "passed",
+  "model": "gpt-5.3-codex-spark",
+  "planner_model_tokens": 0,
+  "completed": [
+    "parse",
+    "summarize",
+    "render"
+  ],
+  "final_validator_exit": 0,
+  "stages": [
+    {
+      "task": "parse",
+      "status": "promoted",
+      "winner_clone": 1,
+      "winner_seconds": 2.906,
+      "winner_tokens": 8008,
+      "winner_refinement_attempt": 1,
+      "canonical_before_sha256": "c493357b33e3f5540b1ed69e575738d161d7a99471fddc1e9d5165a1d39049fe",
+      "canonical_after_sha256": "a1d6b502c6bd02289ffd95c1a9e8c446ce8de596772b435c70af1effb3b1acee",
+      "canonical_validator_exit": 0,
+      "racers": [
+        {
+          "clone": 1,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-run-eager-20260717T1450\\01_parse\\clone_01",
+          "validated_seconds": 2.906,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_winner": false,
+          "cloud_tokens": 8008,
+          "refinement_attempt": 1,
+          "target_sha256": "a1d6b502c6bd02289ffd95c1a9e8c446ce8de596772b435c70af1effb3b1acee",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 7325,
+            "cached_input_tokens": 0,
+            "output_tokens": 683,
+            "validator_exit": 0,
+            "validator_seconds": 0.094,
+            "cloud_tokens": 8008,
+            "status": "passed"
+          }
+        },
+        {
+          "clone": 2,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-run-eager-20260717T1450\\01_parse\\clone_02",
+          "validated_seconds": 2.906,
+          "controller_exit": 0,
+          "independent_validator_exit": null,
+          "passed": false,
+          "not_validated_after_winner": true,
+          "cloud_tokens": 7851,
+          "refinement_attempt": 1,
+          "target_sha256": "95835389f498672000fa4f8a0028e311689f7a11a66452682b1659a482c7b8c4",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 7325,
+            "cached_input_tokens": 5632,
+            "output_tokens": 526,
+            "validator_exit": 0,
+            "validator_seconds": 0.094,
+            "cloud_tokens": 7851,
+            "status": "passed"
+          }
+        }
+      ]
+    },
+    {
+      "task": "summarize",
+      "status": "promoted",
+      "winner_clone": 2,
+      "winner_seconds": 1.968,
+      "winner_tokens": 7296,
+      "winner_refinement_attempt": 1,
+      "canonical_before_sha256": "1811228111431ae1b27573a6d18a9dabeddc30e439afba2c5c66c055c65681fc",
+      "canonical_after_sha256": "7d1070d7373344b5f6e112853dfbe8dd0f1043af497d6fbfca936de32a110028",
+      "canonical_validator_exit": 0,
+      "racers": [
+        {
+          "clone": 1,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-run-eager-20260717T1450\\02_summarize\\clone_01",
+          "validated_seconds": 2.078,
+          "controller_exit": 1,
+          "independent_validator_exit": null,
+          "passed": false,
+          "not_validated_after_winner": true,
+          "cloud_tokens": null,
+          "refinement_attempt": null,
+          "target_sha256": "1811228111431ae1b27573a6d18a9dabeddc30e439afba2c5c66c055c65681fc",
+          "payload": {
+            "status": "invalid_output"
+          }
+        },
+        {
+          "clone": 2,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-run-eager-20260717T1450\\02_summarize\\clone_02",
+          "validated_seconds": 1.968,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_winner": false,
+          "cloud_tokens": 7296,
+          "refinement_attempt": 1,
+          "target_sha256": "7d1070d7373344b5f6e112853dfbe8dd0f1043af497d6fbfca936de32a110028",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6929,
+            "cached_input_tokens": 5632,
+            "output_tokens": 367,
+            "validator_exit": 0,
+            "validator_seconds": 0.078,
+            "cloud_tokens": 7296,
+            "status": "passed"
+          }
+        }
+      ]
+    },
+    {
+      "task": "render",
+      "status": "promoted",
+      "winner_clone": 2,
+      "winner_seconds": 2.5,
+      "winner_tokens": 7158,
+      "winner_refinement_attempt": 1,
+      "canonical_before_sha256": "5ec00ea4bc67ae4765e6b2a39106d08f1ac9e233b30f1b8fae5c93bfc60da2cd",
+      "canonical_after_sha256": "6b1f794c110225598bed87fe52806e879d21459780600d7328364bbdaa563b19",
+      "canonical_validator_exit": 0,
+      "racers": [
+        {
+          "clone": 1,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-run-eager-20260717T1450\\03_render\\clone_01",
+          "validated_seconds": 2.61,
+          "controller_exit": 0,
+          "independent_validator_exit": null,
+          "passed": false,
+          "not_validated_after_winner": true,
+          "cloud_tokens": 7094,
+          "refinement_attempt": 1,
+          "target_sha256": "6ed6439cd68540b8ad2ce3e040675d1af1157451defce71cc5fca9fce6c27e03",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6770,
+            "cached_input_tokens": 5632,
+            "output_tokens": 324,
+            "validator_exit": 0,
+            "validator_seconds": 0.078,
+            "cloud_tokens": 7094,
+            "status": "passed"
+          }
+        },
+        {
+          "clone": 2,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-run-eager-20260717T1450\\03_render\\clone_02",
+          "validated_seconds": 2.5,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_winner": false,
+          "cloud_tokens": 7158,
+          "refinement_attempt": 1,
+          "target_sha256": "6b1f794c110225598bed87fe52806e879d21459780600d7328364bbdaa563b19",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6770,
+            "cached_input_tokens": 5632,
+            "output_tokens": 388,
+            "validator_exit": 0,
+            "validator_seconds": 0.078,
+            "cloud_tokens": 7158,
+            "status": "passed"
+          }
+        }
+      ]
+    }
+  ]
+}

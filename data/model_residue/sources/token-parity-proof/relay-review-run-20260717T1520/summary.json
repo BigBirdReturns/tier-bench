@@ -1,0 +1,299 @@
+{
+  "status": "passed",
+  "model": "gpt-5.3-codex-spark",
+  "planner_model_tokens": 0,
+  "review_tokens": 21895,
+  "completed": [
+    "parse",
+    "summarize",
+    "render"
+  ],
+  "final_validator_exit": 0,
+  "stages": [
+    {
+      "task": "parse",
+      "status": "promoted",
+      "leader_clone": 1,
+      "winner_clone": 2,
+      "winner_seconds": 3.656,
+      "winner_tokens": 7914,
+      "winner_refinement_attempt": 1,
+      "canonical_before_sha256": "c493357b33e3f5540b1ed69e575738d161d7a99471fddc1e9d5165a1d39049fe",
+      "canonical_after_sha256": "320bbe9722e86f18ad69998f256e0b12b6c09ab399f70e07f82eafec868404ce",
+      "canonical_validator_exit": 0,
+      "review": {
+        "status": "reviewed",
+        "reviewer_clone": 1,
+        "reviewer_model": "gpt-5.3-codex-spark",
+        "selected_label": "candidate_1",
+        "selected_clone": 2,
+        "leader_selected_itself": false,
+        "labels": {
+          "candidate_1": {
+            "clone": 2,
+            "target_sha256": "320bbe9722e86f18ad69998f256e0b12b6c09ab399f70e07f82eafec868404ce"
+          },
+          "candidate_2": {
+            "clone": 1,
+            "target_sha256": "664a660d3f0eb9d160e24dcf6b376e14a63ddb8b539a19c39c7ce455bc782e49"
+          }
+        },
+        "review_tokens": 7335,
+        "payload": {
+          "selected": "candidate_1",
+          "scores": [
+            {
+              "candidate": "candidate_1",
+              "score": 10,
+              "reason": "Correctly handles all specified rules: ignores blank lines, enforces exactly 3 comma fields, strips each field, validates nonempty account and kind in {credit,debit}, parses int amount, raises ValueError on violations, preserves order."
+            },
+            {
+              "candidate": "candidate_2",
+              "score": 10,
+              "reason": "Same functional behavior and boundary handling as candidate_1; equally adheres to requirements and readability is similarly clean."
+            }
+          ],
+          "reason": "Both are functionally equivalent and high quality; candidate_1 is selected as a tie-breaker because its control flow/messages are slightly tighter and equally compliant."
+        }
+      },
+      "racers": [
+        {
+          "clone": 1,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-review-run-20260717T1520\\01_parse\\clone_01",
+          "validated_seconds": 3.421,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_winner": false,
+          "cloud_tokens": 7978,
+          "refinement_attempt": 1,
+          "target_sha256": "664a660d3f0eb9d160e24dcf6b376e14a63ddb8b539a19c39c7ce455bc782e49",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 7313,
+            "cached_input_tokens": 5632,
+            "output_tokens": 665,
+            "validator_exit": 0,
+            "validator_seconds": 0.14,
+            "cloud_tokens": 7978,
+            "status": "passed"
+          }
+        },
+        {
+          "clone": 2,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-review-run-20260717T1520\\01_parse\\clone_02",
+          "validated_seconds": 3.656,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_winner": false,
+          "cloud_tokens": 7914,
+          "refinement_attempt": 1,
+          "target_sha256": "320bbe9722e86f18ad69998f256e0b12b6c09ab399f70e07f82eafec868404ce",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 7313,
+            "cached_input_tokens": 5632,
+            "output_tokens": 601,
+            "validator_exit": 0,
+            "validator_seconds": 0.141,
+            "cloud_tokens": 7914,
+            "status": "passed"
+          }
+        }
+      ]
+    },
+    {
+      "task": "summarize",
+      "status": "promoted",
+      "leader_clone": 1,
+      "winner_clone": 1,
+      "winner_seconds": 3.469,
+      "winner_tokens": 7368,
+      "winner_refinement_attempt": 1,
+      "canonical_before_sha256": "1811228111431ae1b27573a6d18a9dabeddc30e439afba2c5c66c055c65681fc",
+      "canonical_after_sha256": "3741e71890d39bbf56df8cd772b0b1d751cb03f8052fffe55429ced9dcb62005",
+      "canonical_validator_exit": 0,
+      "review": {
+        "status": "reviewed",
+        "reviewer_clone": 1,
+        "reviewer_model": "gpt-5.3-codex-spark",
+        "selected_label": "candidate_1",
+        "selected_clone": 1,
+        "leader_selected_itself": true,
+        "labels": {
+          "candidate_1": {
+            "clone": 1,
+            "target_sha256": "3741e71890d39bbf56df8cd772b0b1d751cb03f8052fffe55429ced9dcb62005"
+          },
+          "candidate_2": {
+            "clone": 2,
+            "target_sha256": "cfcf1bba4ad5724e19d1188b8f16951a41cfa380b0468aa8e37e330e6fab9085"
+          }
+        },
+        "review_tokens": 7178,
+        "payload": {
+          "selected": "candidate_1",
+          "scores": [
+            {
+              "candidate": "candidate_1",
+              "score": 10,
+              "reason": "Implements required balance aggregation exactly, handles credit/debit plus ValueError for unknown kinds, preserves input immutability, and returns balances in sorted account order."
+            },
+            {
+              "candidate": "candidate_2",
+              "score": 9,
+              "reason": "Functionally identical to candidate_1, but includes an unused `Iterable` import, which is unnecessary noise against clarity/maintainability."
+            }
+          ],
+          "reason": "Both satisfy the correctness and edge-case requirements in the prompt, but candidate_1 is cleaner and more disciplined in scope by avoiding dead imports."
+        }
+      },
+      "racers": [
+        {
+          "clone": 1,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-review-run-20260717T1520\\02_summarize\\clone_01",
+          "validated_seconds": 3.469,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_winner": false,
+          "cloud_tokens": 7368,
+          "refinement_attempt": 1,
+          "target_sha256": "3741e71890d39bbf56df8cd772b0b1d751cb03f8052fffe55429ced9dcb62005",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6921,
+            "cached_input_tokens": 5632,
+            "output_tokens": 447,
+            "validator_exit": 0,
+            "validator_seconds": 0.125,
+            "cloud_tokens": 7368,
+            "status": "passed"
+          }
+        },
+        {
+          "clone": 2,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-review-run-20260717T1520\\02_summarize\\clone_02",
+          "validated_seconds": 7.75,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_winner": false,
+          "cloud_tokens": 7267,
+          "refinement_attempt": 1,
+          "target_sha256": "cfcf1bba4ad5724e19d1188b8f16951a41cfa380b0468aa8e37e330e6fab9085",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6921,
+            "cached_input_tokens": 5632,
+            "output_tokens": 346,
+            "validator_exit": 0,
+            "validator_seconds": 0.14,
+            "cloud_tokens": 7267,
+            "status": "passed"
+          }
+        }
+      ]
+    },
+    {
+      "task": "render",
+      "status": "promoted",
+      "leader_clone": 1,
+      "winner_clone": 2,
+      "winner_seconds": 2.875,
+      "winner_tokens": 7157,
+      "winner_refinement_attempt": 1,
+      "canonical_before_sha256": "5ec00ea4bc67ae4765e6b2a39106d08f1ac9e233b30f1b8fae5c93bfc60da2cd",
+      "canonical_after_sha256": "57c5efb8b99f3c4a995105a6765d0cd37e121bc5560d3eb23dbdce370098eda4",
+      "canonical_validator_exit": 0,
+      "review": {
+        "status": "reviewed",
+        "reviewer_clone": 1,
+        "reviewer_model": "gpt-5.3-codex-spark",
+        "selected_label": "candidate_2",
+        "selected_clone": 2,
+        "leader_selected_itself": false,
+        "labels": {
+          "candidate_1": {
+            "clone": 1,
+            "target_sha256": "0a211b8ddf10e7ceb0bae5a5de7c90b8e406de2f556eda629e4b026e6c32fdb4"
+          },
+          "candidate_2": {
+            "clone": 2,
+            "target_sha256": "57c5efb8b99f3c4a995105a6765d0cd37e121bc5560d3eb23dbdce370098eda4"
+          }
+        },
+        "review_tokens": 7382,
+        "payload": {
+          "selected": "candidate_2",
+          "scores": [
+            {
+              "candidate": "candidate_1",
+              "score": 10,
+              "reason": "Meets all requirements: sorted output, signed formatting via +d, total line, newline-terminated string."
+            },
+            {
+              "candidate": "candidate_2",
+              "score": 10,
+              "reason": "Same required behavior as candidate_1, with equivalent correctness and clearer/leaner implementation by aggregating total during the same sorted iteration."
+            }
+          ],
+          "reason": "Both candidates are correct and style-appropriate; candidate_2 is marginally cleaner and slightly more efficient by avoiding a second pass for total computation."
+        }
+      },
+      "racers": [
+        {
+          "clone": 1,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-review-run-20260717T1520\\03_render\\clone_01",
+          "validated_seconds": 2.438,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_winner": false,
+          "cloud_tokens": 7143,
+          "refinement_attempt": 1,
+          "target_sha256": "0a211b8ddf10e7ceb0bae5a5de7c90b8e406de2f556eda629e4b026e6c32fdb4",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6768,
+            "cached_input_tokens": 5632,
+            "output_tokens": 375,
+            "validator_exit": 0,
+            "validator_seconds": 0.14,
+            "cloud_tokens": 7143,
+            "status": "passed"
+          }
+        },
+        {
+          "clone": 2,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\relay-review-run-20260717T1520\\03_render\\clone_02",
+          "validated_seconds": 2.875,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_winner": false,
+          "cloud_tokens": 7157,
+          "refinement_attempt": 1,
+          "target_sha256": "57c5efb8b99f3c4a995105a6765d0cd37e121bc5560d3eb23dbdce370098eda4",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6768,
+            "cached_input_tokens": 5632,
+            "output_tokens": 389,
+            "validator_exit": 0,
+            "validator_seconds": 0.141,
+            "cloud_tokens": 7157,
+            "status": "passed"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "status": "passed",
+  "model": "gpt-5.3-codex-spark",
+  "planner_model_tokens": 0,
+  "review_tokens": 11487,
+  "completed": [
+    "patch"
+  ],
+  "final_validator_exit": 0,
+  "stages": [
+    {
+      "task": "patch",
+      "status": "promoted",
+      "leader_clone": 2,
+      "winner_clone": 3,
+      "winner_seconds": 7.907,
+      "winner_tokens": 9433,
+      "winner_refinement_attempt": 1,
+      "canonical_before_sha256": "e34ae9791947562f5a5d5288ad7df782c5f5cfb3e8ce084192233a3f1013993b",
+      "canonical_after_sha256": "5342192edfa99fefd257187ac44bf199710b068d5f184728ad29ab6281c7e407",
+      "canonical_validator_exit": 0,
+      "review": {
+        "status": "reviewed",
+        "reviewer_clone": 2,
+        "reviewer_model": "gpt-5.3-codex-spark",
+        "selected_label": "candidate_1",
+        "selected_clone": 3,
+        "leader_selected_itself": false,
+        "labels": {
+          "candidate_1": {
+            "clone": 3,
+            "target_sha256": "5342192edfa99fefd257187ac44bf199710b068d5f184728ad29ab6281c7e407"
+          },
+          "candidate_2": {
+            "clone": 2,
+            "target_sha256": "7ea00938b17828646294a720bae340dd40dbd29ba63cd81e460a85b38d15a02b"
+          },
+          "candidate_3": {
+            "clone": 1,
+            "target_sha256": "c9a576f46255c065fa95712c21e5e2d2f6c2c38d2083d317f19ed7ce1b7edb6d"
+          }
+        },
+        "review_tokens": 11487,
+        "payload": {
+          "selected": "candidate_1",
+          "scores": [
+            {
+              "candidate": "candidate_1",
+              "score": 9,
+              "reason": "Full deep-copy semantics, strict ordered application, atomic by construction, correct op/path/index validations, and correct JSON Pointer escaping order while allowing valid edge traversal behavior."
+            },
+            {
+              "candidate": "candidate_2",
+              "score": 7,
+              "reason": "Generally correct and readable, but rejects delete operations with a `value` (not required by spec) and incorrectly normalizes paths using `lstrip('/')`, which distorts JSON Pointer paths with multiple leading slashes."
+            },
+            {
+              "candidate": "candidate_3",
+              "score": 5,
+              "reason": "Rejects empty JSON Pointer segments (e.g., keys named `\"\"`, `/a/`), which can be valid in JSON Pointer, and is otherwise mostly correct but less robust in handling full pointer semantics."
+            }
+          ],
+          "reason": "candidate_1 most consistently matches the stated contract across traversal, mutability, escaping, and failure behavior, with only minor nonfunctional rough edges versus hidden-spec edge cases."
+        }
+      },
+      "racers": [
+        {
+          "clone": 1,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\review-quality-run-20260717T1550\\01_patch\\clone_01",
+          "validated_seconds": 4.625,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_review_window": false,
+          "cloud_tokens": 8272,
+          "refinement_attempt": 1,
+          "target_sha256": "c9a576f46255c065fa95712c21e5e2d2f6c2c38d2083d317f19ed7ce1b7edb6d",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6682,
+            "cached_input_tokens": 5632,
+            "output_tokens": 1590,
+            "validator_exit": 0,
+            "validator_seconds": 0.125,
+            "cloud_tokens": 8272,
+            "status": "passed"
+          }
+        },
+        {
+          "clone": 2,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\review-quality-run-20260717T1550\\01_patch\\clone_02",
+          "validated_seconds": 4.188,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_review_window": false,
+          "cloud_tokens": 8523,
+          "refinement_attempt": 1,
+          "target_sha256": "7ea00938b17828646294a720bae340dd40dbd29ba63cd81e460a85b38d15a02b",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6682,
+            "cached_input_tokens": 5632,
+            "output_tokens": 1841,
+            "validator_exit": 0,
+            "validator_seconds": 0.141,
+            "cloud_tokens": 8523,
+            "status": "passed"
+          }
+        },
+        {
+          "clone": 3,
+          "repo": "C:\\Users\\BAM-Desktop\\Documents\\Tier Bench\\token-parity-proof\\review-quality-run-20260717T1550\\01_patch\\clone_03",
+          "validated_seconds": 7.907,
+          "controller_exit": 0,
+          "independent_validator_exit": 0,
+          "passed": true,
+          "not_validated_after_review_window": false,
+          "cloud_tokens": 9433,
+          "refinement_attempt": 1,
+          "target_sha256": "5342192edfa99fefd257187ac44bf199710b068d5f184728ad29ab6281c7e407",
+          "payload": {
+            "model": "cloud:gpt-5.3-codex-spark",
+            "refinement_attempt": 1,
+            "input_tokens": 6682,
+            "cached_input_tokens": 5632,
+            "output_tokens": 2751,
+            "validator_exit": 0,
+            "validator_seconds": 0.125,
+            "cloud_tokens": 9433,
+            "status": "passed"
+          }
+        }
+      ]
+    }
+  ]
+}
