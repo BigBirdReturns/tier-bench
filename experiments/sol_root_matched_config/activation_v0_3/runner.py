@@ -6,7 +6,6 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 from typing import Any
@@ -31,6 +30,12 @@ def file_sha256(path: Path) -> str:
 
 def freeze_sha256(freeze: dict[str, Any]) -> str:
     return hashlib.sha256(canonical(freeze)).hexdigest()
+
+
+def call_directory_name(sequence: int) -> str:
+    """Keep Windows evidence paths below MAX_PATH; cell identity lives in cell.json."""
+    require(isinstance(sequence, int) and 0 <= sequence <= 58, "invalid call sequence")
+    return f"c{sequence:02d}"
 
 
 def validate_authorization(freeze: dict[str, Any], authorization: dict[str, Any]) -> str:
@@ -103,11 +108,16 @@ def run(freeze_path: Path, receipt_path: Path, authorization_path: Path, cli: Pa
     require(version.returncode == 0 and version.stdout.strip() == EXPECTED_CLI_VERSION, "CLI version differs from freeze")
     run_root = evidence_root / digest
     require(not run_root.exists(), f"refusing to overwrite evidence root {run_root}")
+    longest_hook = run_root / call_directory_name(58) / "subject" / ".git" / "hooks" / "applypatch-msg.sample"
+    if sys.platform == "win32":
+        require(len(str(longest_hook)) < 248, f"evidence root leaves insufficient Windows path headroom: {longest_hook}")
     run_root.mkdir(parents=True)
     (run_root / "authorization.json").write_bytes(canonical(authorization))
 
     for item in freeze["schedule"]:
-        call_root = run_root / f"{item['sequence']:02d}_{item['role']}_{item['cell_id'].replace('@', '_').replace('#', '_')}"
+        call_root = run_root / call_directory_name(item["sequence"])
+        call_root.mkdir()
+        (call_root / "cell.json").write_bytes(canonical({"cell_id": item["cell_id"], "role": item["role"], "sequence": item["sequence"]}))
         repo = call_root / "subject"
         prepare_repo(repo)
         final_path = call_root / "final.json"

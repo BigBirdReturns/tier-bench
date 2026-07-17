@@ -1,0 +1,14 @@
+{
+  "attempted_call_count": 0,
+  "authorization_copy_sha256": "e419b86587a9b33d77f3b5cfcb97ad8427afc27816d79a4c4fa8516478d5702f",
+  "error": "git init failed before dispatch because the first evidence path reached 260 characters and Windows could not create .git/hooks/applypatch-msg.sample",
+  "evidence_root": "../run/activation_v0_3/41007f35d5ae0a6a337af6df1c210ede1ef83b2e58e28d7975531ff757c65089/",
+  "event_files": 0,
+  "freeze_sha256": "41007f35d5ae0a6a337af6df1c210ede1ef83b2e58e28d7975531ff757c65089",
+  "no_retry_contract_breached": false,
+  "preservation": "partial pre-dispatch evidence preserved unchanged",
+  "provider_calls": 0,
+  "schema": "tier-bench/sol-root-activation/predispatch-failure-receipt@0.3",
+  "scientific_observations": 0,
+  "status": "predispatch_failed_superseded_freeze_required"
+}
