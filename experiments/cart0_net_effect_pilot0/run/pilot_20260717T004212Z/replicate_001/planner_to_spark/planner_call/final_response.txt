@@ -1,0 +1,13 @@
+Planning hand complete.
+
+Updated the five permitted cards:
+
+- [Repository map](D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_001/planner_to_spark_subject/.cart0/020.100.REPOSITORY.md)
+- [Work graph](D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_001/planner_to_spark_subject/.cart0/300.100.WORK_GRAPH.md)
+- [CRATE_001](D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_001/planner_to_spark_subject/.cart0/300.200.CRATE_001.md)
+- [Decisions](D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_001/planner_to_spark_subject/.cart0/600.100.DECISIONS.md)
+- [Handoff receipt](D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/cart0_net_effect_pilot0/run/pilot_20260717T004212Z/replicate_001/planner_to_spark_subject/.cart0/700.100.RECEIPT.md)
+
+No planning placeholders remain. CRATE_001 authorizes exactly `src/windowing.py` and `src/summary.py`; source was not edited.
+
+The exact validator was run and currently fails at the intentional `NotImplementedError` in `src/windowing.py`.

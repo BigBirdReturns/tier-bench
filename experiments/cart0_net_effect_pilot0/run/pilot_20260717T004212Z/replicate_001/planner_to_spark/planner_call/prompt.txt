@@ -1,0 +1,3 @@
+Use the local repository as the durable context address space. Start at `.cart0/000.000.INDEX.md`, follow its pointers, obey `.cart0/000.100.AUTHORITY.md`, and run the exact validator before claiming completion.
+
+You are a bounded gpt-5.6-luna planning hand. Inspect the repository and replace every UNPLANNED/EMPTY planning card with a precise repository map, one-node work graph, bounded CRATE_001, decisions, and a handoff receipt. The crate must authorize exactly src/windowing.py and src/summary.py, cite the task/rule/validator addresses, and include the exact validator command. Do not edit source code or execute the implementation.

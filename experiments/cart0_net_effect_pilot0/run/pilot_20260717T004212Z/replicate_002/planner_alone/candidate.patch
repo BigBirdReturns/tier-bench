@@ -1,0 +1,134 @@
+diff --git a/.cart0/020.100.REPOSITORY.md b/.cart0/020.100.REPOSITORY.md
+index e130210..42c6306 100644
+--- a/.cart0/020.100.REPOSITORY.md
++++ b/.cart0/020.100.REPOSITORY.md
+@@ -1,3 +1,10 @@
+ # 020.100 REPOSITORY
+ 
+-STATUS: UNPLANNED
++STATUS: COMPLETE
++
++Implementation surface:
++- `src/windowing.py`: deduplicate by integer revision before cancellation and
++  half-open window filtering; return fresh normalized records sorted by
++  `(timestamp, id)`.
++- `src/summary.py`: aggregate normalized records by service and exclude
++  suppressed records from actionable metrics.
+diff --git a/.cart0/300.100.WORK_GRAPH.md b/.cart0/300.100.WORK_GRAPH.md
+index 188ed8c..8379fe2 100644
+--- a/.cart0/300.100.WORK_GRAPH.md
++++ b/.cart0/300.100.WORK_GRAPH.md
+@@ -1,3 +1,7 @@
+ # 300.100 WORK GRAPH
+ 
+-STATUS: UNPLANNED
++STATUS: COMPLETE
++
++1. [x] Implement temporal selection and normalization in `src/windowing.py`.
++2. [x] Implement per-service aggregation in `src/summary.py`.
++3. [x] Run the exact validator and write the receipt.
+diff --git a/.cart0/300.200.CRATE_001.md b/.cart0/300.200.CRATE_001.md
+index 47fc32e..54e4d8f 100644
+--- a/.cart0/300.200.CRATE_001.md
++++ b/.cart0/300.200.CRATE_001.md
+@@ -1,3 +1,6 @@
+ # 300.200 CRATE 001
+ 
+-STATUS: UNPLANNED
++STATUS: COMPLETE
++
++Scope: `select_events` and `summarize` only. Preserve input objects and emit
++the exact field contracts from `docs/rules/`.
+diff --git a/.cart0/600.100.DECISIONS.md b/.cart0/600.100.DECISIONS.md
+index ff23a7d..39fc52b 100644
+--- a/.cart0/600.100.DECISIONS.md
++++ b/.cart0/600.100.DECISIONS.md
+@@ -1,3 +1,9 @@
+ # 600.100 DECISIONS
+ 
+-STATUS: UNPLANNED
++STATUS: RECORDED
++
++- Deduplication scans all source rows before applying the requested window.
++- Winner selection compares `int(revision)` and replaces on equal revisions
++  so the later source row wins.
++- Normalized output is freshly constructed with `source_index` from the
++  original input and is sorted by `(timestamp, id)`.
+diff --git a/.cart0/700.100.RECEIPT.md b/.cart0/700.100.RECEIPT.md
+index 188c1a0..d9f74b9 100644
+--- a/.cart0/700.100.RECEIPT.md
++++ b/.cart0/700.100.RECEIPT.md
+@@ -1,3 +1,10 @@
+ # 700.100 RECEIPT
+ 
+-STATUS: EMPTY
++STATUS: COMPLETE
++
++Implemented `select_events` and `summarize` in the authorized source files.
++
++Validator:
++`& 'C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' 'verify.py'`
++
++Result: `VISIBLE_OK`
+diff --git a/src/summary.py b/src/summary.py
+index a191b5f..65f6e13 100644
+--- a/src/summary.py
++++ b/src/summary.py
+@@ -1,3 +1,22 @@
+ def summarize(events):
+     """Return sorted per-service actionable incident totals."""
+-    raise NotImplementedError
++    grouped = {}
++    for event in events:
++        service = event["service"]
++        totals = grouped.setdefault(service, {
++            "service": service,
++            "event_count": 0,
++            "actionable_count": 0,
++            "actionable_impact": 0,
++        })
++        totals["event_count"] += 1
++        if not event["suppressed"]:
++            totals["actionable_count"] += 1
++            totals["actionable_impact"] += int(event["impact"])
++
++    return {
++        "services": [grouped[service] for service in sorted(grouped)],
++        "total_actionable_impact": sum(
++            totals["actionable_impact"] for totals in grouped.values()
++        ),
++    }
+diff --git a/src/windowing.py b/src/windowing.py
+index ce832c4..42d7408 100644
+--- a/src/windowing.py
++++ b/src/windowing.py
+@@ -1,3 +1,28 @@
+ def select_events(events, start, end):
+     """Return normalized, deduplicated events in the half-open window."""
+-    raise NotImplementedError
++    winners = {}
++
++    for source_index, event in enumerate(events):
++        revision = int(event["revision"])
++        current = winners.get(event["id"])
++        if current is None or revision >= current[0]:
++            winners[event["id"]] = (revision, source_index, event)
++
++    selected = []
++    for revision, source_index, event in winners.values():
++        if event.get("status") == "cancelled":
++            continue
++        timestamp = event["timestamp"]
++        if not (start <= timestamp < end):
++            continue
++        selected.append({
++            "id": event["id"],
++            "service": event["service"],
++            "timestamp": timestamp,
++            "impact": int(event["impact"]),
++            "suppressed": bool(event.get("suppressed", False)),
++            "revision": revision,
++            "source_index": source_index,
++        })
++
++    return sorted(selected, key=lambda event: (event["timestamp"], event["id"]))
