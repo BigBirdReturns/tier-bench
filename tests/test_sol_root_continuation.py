@@ -34,6 +34,10 @@ def main() -> int:
     try:
         copied = parent / ".cart0"
         shutil.copytree(PACKET, copied)
+        relocated = verify_committed(copied)
+        assert relocated["all_pass"] is True, relocated
+        checks += 1
+
         index = copied / "000.000.INDEX.md"
         index.write_text(index.read_text(encoding="utf-8").replace("300.100.NEXT_TRANSITION.md", "300.100.MISSING.md"), encoding="utf-8")
         broken = inspect_packet(copied)

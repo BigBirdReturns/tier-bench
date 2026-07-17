@@ -3,37 +3,37 @@
   "authority_created": false,
   "checks": [
     {
-      "detail": "D:\\Projects\\Tier-Bench\\worktrees\\luna-sol-anchor-replication-v2\\experiments\\sol_root_matched_config\\.cart0\\000.000.INDEX.md",
+      "detail": "experiments/sol_root_matched_config/.cart0/000.000.INDEX.md",
       "name": "exists:000.000.INDEX.md",
       "pass": true
     },
     {
-      "detail": "D:\\Projects\\Tier-Bench\\worktrees\\luna-sol-anchor-replication-v2\\experiments\\sol_root_matched_config\\.cart0\\000.100.AUTHORITY.md",
+      "detail": "experiments/sol_root_matched_config/.cart0/000.100.AUTHORITY.md",
       "name": "exists:000.100.AUTHORITY.md",
       "pass": true
     },
     {
-      "detail": "D:\\Projects\\Tier-Bench\\worktrees\\luna-sol-anchor-replication-v2\\experiments\\sol_root_matched_config\\.cart0\\010.100.STATE.md",
+      "detail": "experiments/sol_root_matched_config/.cart0/010.100.STATE.md",
       "name": "exists:010.100.STATE.md",
       "pass": true
     },
     {
-      "detail": "D:\\Projects\\Tier-Bench\\worktrees\\luna-sol-anchor-replication-v2\\experiments\\sol_root_matched_config\\.cart0\\020.100.ARTIFACTS.md",
+      "detail": "experiments/sol_root_matched_config/.cart0/020.100.ARTIFACTS.md",
       "name": "exists:020.100.ARTIFACTS.md",
       "pass": true
     },
     {
-      "detail": "D:\\Projects\\Tier-Bench\\worktrees\\luna-sol-anchor-replication-v2\\experiments\\sol_root_matched_config\\.cart0\\300.100.NEXT_TRANSITION.md",
+      "detail": "experiments/sol_root_matched_config/.cart0/300.100.NEXT_TRANSITION.md",
       "name": "exists:300.100.NEXT_TRANSITION.md",
       "pass": true
     },
     {
-      "detail": "D:\\Projects\\Tier-Bench\\worktrees\\luna-sol-anchor-replication-v2\\experiments\\sol_root_matched_config\\.cart0\\500.100.VERIFICATION.md",
+      "detail": "experiments/sol_root_matched_config/.cart0/500.100.VERIFICATION.md",
       "name": "exists:500.100.VERIFICATION.md",
       "pass": true
     },
     {
-      "detail": "D:\\Projects\\Tier-Bench\\worktrees\\luna-sol-anchor-replication-v2\\experiments\\sol_root_matched_config\\.cart0\\ENTRY_PROMPT.txt",
+      "detail": "experiments/sol_root_matched_config/.cart0/ENTRY_PROMPT.txt",
       "name": "exists:ENTRY_PROMPT.txt",
       "pass": true
     },
@@ -142,5 +142,5 @@
     "500.100.VERIFICATION.md": "efeafc0ef1f6c810102c0d814233403ba85118a8ed19b66203f36cab3995d5b6",
     "ENTRY_PROMPT.txt": "5b35acbb31e0b7a1247cd9f53cc7a92c5a460c52837907515267cdee7e0e899b"
   },
-  "verifier_sha256": "0c74700ef87508fa2da7858e51c924d69d337487eefa609ad4ea68206a0dc56c"
+  "verifier_sha256": "5d2bee5bb1f22e939e9512127778f42a0d482f5678ecc888fae2a9ebc6c54397"
 }
