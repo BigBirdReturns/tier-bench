@@ -1,0 +1,19 @@
+SPARK EXECUTION HANDOFF
+
+Visible task context:
+Implement summarize(records) in src/solution.py. Include only records whose eligible field is true, sum integer amount values by account, and return a list of objects sorted by account. Do not mutate the input. Empty input returns an empty list.
+
+Crate: synthetic-v223-002
+Objective: Implement summarize(records) in src/solution.py. Include only records whose eligible field is true, sum integer amount values by account, and return a list of objects sorted by account. Do not mutate the input. Empty input returns an empty list.
+Allowed paths: src/solution.py
+Forbidden paths: run_visible.py, forbidden.txt, src/__init__.py
+Dependencies: none
+Visible context references: synthetic task text, run_visible.py
+Command budget: 6
+Wall-time budget: 180 seconds
+Stop condition: Stop only after the exact visible validator command exits 0.
+
+Exact acceptance command:
+& 'C:\Users\BAM-Desktop\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' 'run_visible.py'
+
+Execute only this crate now. Inspect the visible repository as needed, edit only allowed paths, and do not modify forbidden paths. Run every exact acceptance command after editing and do not finish unless each exits 0. Do not produce a JSON report; a concise normal final response is sufficient because the controller will admit or reject the observed diff independently.
