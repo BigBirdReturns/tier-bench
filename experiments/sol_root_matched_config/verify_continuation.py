@@ -12,6 +12,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 PACKET = Path(__file__).resolve().parent / ".cart0"
+PACKET_ROOT = "experiments/sol_root_matched_config/.cart0"
 ENTRY = "000.000.INDEX.md"
 SUBJECT_FILES = (
     ENTRY,
@@ -64,7 +65,7 @@ def inspect_packet(packet: Path = PACKET, verifier: Path | None = None) -> dict:
     data: dict[str, bytes] = {}
     for name in SUBJECT_FILES:
         path = packet / name
-        check(f"exists:{name}", path.is_file(), str(path))
+        check(f"exists:{name}", path.is_file(), f"{PACKET_ROOT}/{name}")
         if path.is_file():
             data[name] = normalized(path.read_bytes())
 
@@ -104,7 +105,7 @@ def inspect_packet(packet: Path = PACKET, verifier: Path | None = None) -> dict:
     receipt = {
         "schema": "tier_bench.sol_root_continuation_receipt.v0.2",
         "entry_address": ENTRY,
-        "packet_root": "experiments/sol_root_matched_config/.cart0",
+        "packet_root": PACKET_ROOT,
         "limits": {
             "max_subject_file_bytes": MAX_SUBJECT_FILE_BYTES,
             "max_subject_total_bytes": MAX_SUBJECT_TOTAL_BYTES,
@@ -148,7 +149,7 @@ def verify_committed(packet: Path = PACKET) -> dict:
     expected["checks"].append({
         "name": "receipt_matches_subjects",
         "pass": committed == comparable,
-        "detail": str(receipt_path),
+        "detail": f"{PACKET_ROOT}/{RECEIPT}",
     })
     expected["all_pass"] = all(item["pass"] for item in expected["checks"])
     return expected
