@@ -1,0 +1,24 @@
+{
+  "accepted_executor_calls": 0,
+  "accepted_owner_calls": 0,
+  "attempted_provider_requests": 1,
+  "error_class": "invalid_json_schema",
+  "error_message": "status property required an explicit type key",
+  "evidence": {
+    "authorization_json_sha256": "efc7155521f763c1cfa45929739390141668c9c613adaebf54de732c6a393c33",
+    "cell_json_sha256": "1b4eccbd0996391a68fb61b43f1393869d71ab70f5fb5af4ac8f08e1ece3bbea",
+    "command_json_sha256": "098433eb712dfc5c7549f513bde84837d049efc2cdca55e89a8b3a6544d06ee1",
+    "events_jsonl_sha256": "3bfd227034755576529726275385f44c960cfcbaf28661fcfd3480517df2b21",
+    "root": "../run/activation_v0_3/2c376043b6aad896411f3c66c6a8a048186328d8eb5b9e7b143fb08d80de9c2a/",
+    "stderr_txt_sha256": "831cd2f5c6ddd7404d645529d9bc807bc88baafeefba35ec838c01d2adc02ca6"
+  },
+  "executor_calls_attempted": 0,
+  "freeze_sha256": "2c376043b6aad896411f3c66c6a8a048186328d8eb5b9e7b143fb08d80de9c2a",
+  "model_generation_observed": false,
+  "no_retry_contract_breached": false,
+  "provider_reported_usage_observed": false,
+  "schema": "tier-bench/sol-root-activation/provider-rejection-receipt@0.3",
+  "scientific_observations": 0,
+  "status": "owner_request_rejected_stopped_without_retry",
+  "stopped_at_utc": "2026-07-17T08:02:41Z"
+}

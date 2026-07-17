@@ -160,6 +160,8 @@ def build() -> dict[str, Any]:
 
 def receipt(freeze: dict[str, Any]) -> dict[str, Any]:
     schedule = freeze.get("schedule", [])
+    output_schema = load(HERE / "final_schema.json")
+    properties = output_schema.get("properties", {})
     checks = {
         "status_is_unratified": freeze.get("status") == "awaiting_prospective_operator_ratification",
         "exactly_59_calls": len(schedule) == 59 == freeze.get("execution_contract", {}).get("administrative_calls"),
@@ -169,6 +171,7 @@ def receipt(freeze: dict[str, Any]) -> dict[str, Any]:
         "zero_scientific_calls": freeze.get("execution_contract", {}).get("scientific_calls") == 0,
         "zero_provider_calls_during_build": freeze.get("provider_calls") == 0,
         "provider_identity_limit_explicit": freeze.get("identity_evidence", {}).get("provider_side_actual_model_attestation_available") is False,
+        "output_schema_properties_explicitly_typed": isinstance(properties, dict) and bool(properties) and all(isinstance(spec, dict) and isinstance(spec.get("type"), str) for spec in properties.values()),
     }
     return {
         "schema": f"{PREFIX}/offline-verification-receipt@0.3",

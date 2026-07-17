@@ -38,6 +38,8 @@ def main() -> int:
     assert len({item["cell_id"] for item in schedule[1:]}) == 58
     assert all(item["role"] == "executor" for item in schedule[1:])
     assert all(item["service_tier_config"] == ("default" if item["catalog_tier"] == "standard" else "priority") for item in schedule)
+    output_schema = json.loads((ACTIVATION / "final_schema.json").read_text(encoding="utf-8"))
+    assert output_schema["properties"]["status"] == {"const": "ready", "type": "string"}
     assert receipt(freeze)["all_pass"] is True
     assert call_directory_name(0) == "c00" and call_directory_name(58) == "c58"
     assert len(str(Path("D:/Projects/Tier-Bench/worktrees/luna-sol-anchor-replication-v2/experiments/sol_root_matched_config/run/activation_v0_3") / ("0" * 64) / call_directory_name(58) / "subject" / ".git" / "hooks" / "applypatch-msg.sample")) < 248
