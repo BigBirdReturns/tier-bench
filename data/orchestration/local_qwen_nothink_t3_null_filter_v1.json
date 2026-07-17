@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "run_id": "local_qwen_nothink_t3_null_filter_v1",
+  "status": "unmeasured",
+  "measurement_claim": false,
+  "engine": {
+    "engine_id": "ollama_qwen3_5_9b_q4_k_m_nothink",
+    "model": "qwen3.5:9b-q4_K_M",
+    "lineage": "qwen",
+    "surface": "ollama-local",
+    "role": "independent_solver"
+  },
+  "pairing": {
+    "pair_id": "local_qwen_nothink_t3_null_filter_v1_unpaired",
+    "peer_engine_id": "unmeasured_peer",
+    "peer_lineage": "unmeasured_external",
+    "source_commit": "bb40a859a58dbf9a7be700ed972fb70507e32f2f",
+    "independent_before_exchange": true,
+    "state": "planned"
+  },
+  "task_set": [
+    "t3_null_filter_001"
+  ],
+  "task_manifests": [
+    {
+      "task_id": "t3_null_filter_001",
+      "path": "tasks/t3_null_filter_001.json",
+      "sha256": "3eb998a8511bac6087df5a584b78cfd48b4d0726f5d754f495771f9bc5b2de8b"
+    }
+  ],
+  "rungs": [
+    "local_q4_nothink"
+  ],
+  "rung_bindings": {
+    "local_q4_nothink": {
+      "model": "qwen3.5:9b-q4_K_M",
+      "effort": "temperature_0.2_seeded_think_false",
+      "surface": "ollama-local"
+    }
+  },
+  "k": 3,
+  "trials": [],
+  "decisions": [
+    {
+      "task_id": "t3_null_filter_001",
+      "state": "unmeasured",
+      "action": "route",
+      "route_to": "local_q4_nothink",
+      "escalation_from": null,
+      "abstained": false,
+      "reason": "start at the cheapest unmeasured rung",
+      "evidence": [
+        {
+          "rung": "local_q4_nothink",
+          "observations": 0,
+          "decisive": 0,
+          "passes": 0,
+          "failures": 0,
+          "window_size": 0,
+          "window_passes": 0,
+          "window_failures": 0,
+          "required_k": 3,
+          "state": "unmeasured"
+        }
+      ]
+    }
+  ],
+  "burden": {
+    "requested_outcome": "isolate whether disabling Ollama thinking lets local Qwen emit and solve the hidden SQL three-valued-logic task",
+    "claimant": "LOCAL-QWEN-NOTHINK-V1 coordinator",
+    "authority": "the source-commit task manifest, unchanged hidden grader, and K-of-K residue broker",
+    "predicates": [
+      "exactly three local Ollama calls with think false, fresh context, and no retries",
+      "temperature 0.2 with seeds 101, 202, and 303",
+      "all other task, prompt, packet, model, grading, and broker conditions match the prior 0/3 run",
+      "hidden grader absent from every solver packet and solver context",
+      "each candidate sealed before coordinator grading and graded twice"
+    ],
+    "burden_holder": "whoever attributes the prior wall to task capability rather than the thinking boundary",
+    "evidence": [
+      "data/orchestration/runs/local_qwen_nothink_t3_null_filter_v1/t3_null_filter_001/trial-*/"
+    ],
+    "verifier": "the manifest hidden grader, residue broker, and orchestration receipt validator",
+    "gap": "transport canary passed; no scientific calls or hidden-graded receipts yet",
+    "closure_decision": "open",
+    "failure_default": "preserve the prior conditional wall and make no broader capability claim"
+  }
+}

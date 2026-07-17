@@ -20,6 +20,7 @@ def main() -> int:
     parser.add_argument("--model", required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--temperature", type=float, default=0.2)
+    parser.add_argument("--think", choices=("default", "true", "false"), default="default")
     parser.add_argument("--raw-response", type=Path, required=True)
     parser.add_argument("--events", type=Path, required=True)
     parser.add_argument("--administration-receipt", type=Path, required=True)
@@ -46,6 +47,8 @@ def main() -> int:
             "seed": args.seed,
         },
     }
+    if args.think != "default":
+        payload["think"] = args.think == "true"
     request = urllib.request.Request(
         args.url,
         data=json.dumps(payload).encode("utf-8"),
@@ -68,6 +71,7 @@ def main() -> int:
         "done": native.get("done"),
         "done_reason": native.get("done_reason"),
         "options": payload["options"],
+        "think": args.think,
         "usage": {
             "input_tokens": int(native.get("prompt_eval_count", 0) or 0),
             "output_tokens": int(native.get("eval_count", 0) or 0),
@@ -98,6 +102,7 @@ def main() -> int:
         "model": args.model,
         "temperature": args.temperature,
         "seed": args.seed,
+        "think": args.think,
         "response_characters": len(native["response"]),
         "thinking_characters": len(thinking),
         "thinking_sha256": hashlib.sha256(thinking.encode("utf-8")).hexdigest(),
