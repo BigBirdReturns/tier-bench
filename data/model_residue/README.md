@@ -23,6 +23,12 @@ raw CLI JSONL, exact returned source, stderr, validator output, token/time
 receipts, and a deterministic summary. This is effort-routing evidence, not a
 substitute for the separately blocked private hidden-grade cell.
 
+`fable_effort_public_v1/` currently preserves one green native Claude CLI
+administrative canary for `claude-fable-5@low`. The canary established the
+real result-envelope, session-identity, inherited-context, auxiliary-model,
+and cost-accounting boundaries. It contains zero scientific observations;
+the matched 27-cell Fable matrix remains pending.
+
 Rebuild and verify on this workstation:
 
 ```powershell

@@ -124,9 +124,10 @@
       },
       "claude-fable-5": {
         "evidence": [
-          "arc_c_almanac_claude_v1"
+          "arc_c_almanac_claude_v1",
+          "fable_effort_public_v1_canary"
         ],
-        "residue": "sealed hidden-graded ARC-C receipts; consult the embedded run decisions for task-level clears and walls"
+        "residue": "sealed hidden-graded ARC-C receipts plus one green native-CLI low-effort administrative canary; the public low/medium/high matrix has zero scientific cells so far"
       }
     },
     "orchestration_runs": [
@@ -2104,6 +2105,137 @@
         }
       ]
     },
+    "fable_effort_public_v1_canary": {
+      "measurement_class": "administrative_transport_canary",
+      "model": "claude-fable-5",
+      "effort": "low",
+      "surface": "native_claude_cli_print_json",
+      "passed": true,
+      "provider_calls": 1,
+      "scientific_observations": 0,
+      "session_id": "2a40687a-81a7-5aa9-8f71-452505e1604a",
+      "total_cost_usd": 0.7171500000000001,
+      "model_usage": {
+        "claude-fable-5": {
+          "cacheCreationInputTokens": 30295,
+          "cacheReadInputTokens": 89859,
+          "contextWindow": 1000000,
+          "costUSD": 0.716439,
+          "inputTokens": 8,
+          "maxOutputTokens": 64000,
+          "outputTokens": 412,
+          "webSearchRequests": 0
+        },
+        "claude-haiku-4-5-20251001": {
+          "cacheCreationInputTokens": 0,
+          "cacheReadInputTokens": 0,
+          "contextWindow": 200000,
+          "costUSD": 0.0007109999999999999,
+          "inputTokens": 641,
+          "maxOutputTokens": 32000,
+          "outputTokens": 14,
+          "webSearchRequests": 0
+        }
+      },
+      "boundary_observation": {
+        "byte_exactness": "value.txt written as exactly b'1\n' - passes the same exact-bytes check that rejected the v2.2.2 Spark canary (b'1\n\r\n')",
+        "context_inheritance": {
+          "cache_read_input_tokens": 89859,
+          "finding": "~90k cache-read tokens on a 9-line task: the call ran inside the tier-bench tree and inherited repository context (CLAUDE.md chain). Matrix work dirs must live OUTSIDE the repo tree, or this inheritance must be declared as part of the measured surface"
+        },
+        "cost_per_call_usd": 0.7171500000000001,
+        "envelope_fields_observed": [
+          "api_error_status",
+          "duration_api_ms",
+          "duration_ms",
+          "fast_mode_state",
+          "is_error",
+          "modelUsage",
+          "num_turns",
+          "permission_denials",
+          "result",
+          "session_id",
+          "stop_reason",
+          "subtype",
+          "terminal_reason",
+          "time_origin_ms",
+          "time_to_request_from_spawn_ms",
+          "time_to_request_ms",
+          "total_cost_usd",
+          "ttft_ms",
+          "ttft_stream_ms",
+          "type",
+          "usage",
+          "uuid",
+          "warm_spare_claimed"
+        ],
+        "matrix_cost_projection_usd_27_calls": 19.36,
+        "observation": "single-line JSON envelope on stdout; empty stderr; final model prose lives ONLY in the 'result' field; no event stream is emitted at --output-format json (stream-json exists for per-event records and is the option if the matrix needs events.jsonl parity with Spark)",
+        "secondary_model_usage": {
+          "finding": "claude-haiku-4-5 appears alongside fable-5 in modelUsage: the CLI spends auxiliary haiku tokens; per-call cost attribution must sum modelUsage, not assume single-model",
+          "models": [
+            "claude-haiku-4-5-20251001",
+            "claude-fable-5"
+          ]
+        },
+        "session_identity": {
+          "finding": "nested CLI call reported the PARENT session's ID - the print-mode call is attributed to the invoking session, not issued a fresh one; fresh-call isolation for the matrix must use explicit --session-id per trial or be recorded as parent-attributed",
+          "session_id": "2a40687a-81a7-5aa9-8f71-452505e1604a"
+        }
+      },
+      "artifacts": [
+        {
+          "path": "data/model_residue/fable_effort_public_v1/FABLE_EXECUTION_SURFACE_FREEZE.json",
+          "sha256": "01d6845b9439f2548d4e511982b3dbc88642e9cc4161fb15c88ac151f40fe729",
+          "bytes": 538
+        },
+        {
+          "path": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/fable_hand/boundary_observation.json",
+          "sha256": "3c27540209fd785acffa97dd65277696a0762250e2ca4502f6be2afce0ff6741",
+          "bytes": 2060
+        },
+        {
+          "path": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/fable_hand/call/completion.json",
+          "sha256": "e8923d8af698952e6e706952009f0eb35709d20996bfc06339e89825c5c94903",
+          "bytes": 2210
+        },
+        {
+          "path": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/fable_hand/call/dispatch.json",
+          "sha256": "da8ae60bcc7ebe696888dde11d7915643982bce604c7234dc0822330469f4dc3",
+          "bytes": 959
+        },
+        {
+          "path": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/fable_hand/call/final_response.txt",
+          "sha256": "bcfe90c2e8961774c6cb46f591ae1d887094255d8bf75af5a4a57baa8e37a7f0",
+          "bytes": 124
+        },
+        {
+          "path": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/fable_hand/call/prompt.txt",
+          "sha256": "9b7522b16564d6c2309399bc60f61b19db5a9c9faca4e61c489d537ae438da65",
+          "bytes": 505
+        },
+        {
+          "path": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/fable_hand/call/stderr.txt",
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "bytes": 0
+        },
+        {
+          "path": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/fable_hand/call/stdout_raw.txt",
+          "sha256": "a020024b13a52c187476f1b854b451d86127af7376a3df85685f01e891d25a5c",
+          "bytes": 1673
+        },
+        {
+          "path": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/fable_hand/candidate.patch",
+          "sha256": "ab40430b801295c659a85bf15e0475b961851cccd2c72b45bc5a5d69f14d6874",
+          "bytes": 122
+        },
+        {
+          "path": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/fable_hand/outcome.json",
+          "sha256": "46d02abbc8096f9940781714af49153a68083fdcebe5ecad50ef2cb46d3b1673",
+          "bytes": 488
+        }
+      ]
+    },
     "repo_relay": {
       "planner_model_tokens": 0,
       "eager_final_validator": "5/5",
@@ -2122,6 +2254,7 @@
     "The Spark hidden-graded Tier-Bench run is unmeasured because tenant policy blocked external packet transfer; zero Spark calls were made there.",
     "Early Terra and Qwen 2.5 route discovery is retained as report-level evidence, not a K=3 hidden-graded capability map.",
     "The original token-parity-proof tree was not a Git repository; selected raw results and summaries are now snapshotted byte-for-byte here.",
-    "This index covers models evidenced by the selected committed reports and sealed orchestration runs; it does not claim unobserved configurations."
+    "This index covers models evidenced by the selected committed reports and sealed orchestration runs; it does not claim unobserved configurations.",
+    "The Fable public effort matrix has one green administrative canary and zero scientific cells; its 27-call low/medium/high matrix remains pending."
   ]
 }

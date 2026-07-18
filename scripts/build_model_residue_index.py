@@ -232,6 +232,45 @@ def spark_effort_matrix() -> dict:
     }
 
 
+def fable_effort_canary() -> dict:
+    root = REPO / "data/model_residue/fable_effort_public_v1"
+    canary = root / "canary_20260718T012100Z/replicate_001/fable_hand"
+    surface_path = root / "FABLE_EXECUTION_SURFACE_FREEZE.json"
+    boundary_path = canary / "boundary_observation.json"
+    completion_path = canary / "call/completion.json"
+    outcome_path = canary / "outcome.json"
+    surface = json.loads(surface_path.read_text(encoding="utf-8"))
+    boundary = json.loads(boundary_path.read_text(encoding="utf-8"))
+    completion = json.loads(completion_path.read_text(encoding="utf-8"))
+    outcome = json.loads(outcome_path.read_text(encoding="utf-8"))
+    relative_files = (
+        "FABLE_EXECUTION_SURFACE_FREEZE.json",
+        "canary_20260718T012100Z/replicate_001/fable_hand/boundary_observation.json",
+        "canary_20260718T012100Z/replicate_001/fable_hand/call/completion.json",
+        "canary_20260718T012100Z/replicate_001/fable_hand/call/dispatch.json",
+        "canary_20260718T012100Z/replicate_001/fable_hand/call/final_response.txt",
+        "canary_20260718T012100Z/replicate_001/fable_hand/call/prompt.txt",
+        "canary_20260718T012100Z/replicate_001/fable_hand/call/stderr.txt",
+        "canary_20260718T012100Z/replicate_001/fable_hand/call/stdout_raw.txt",
+        "canary_20260718T012100Z/replicate_001/fable_hand/candidate.patch",
+        "canary_20260718T012100Z/replicate_001/fable_hand/outcome.json",
+    )
+    return {
+        "measurement_class": "administrative_transport_canary",
+        "model": surface["model"],
+        "effort": "low",
+        "surface": surface["surface"],
+        "passed": outcome["verdict"] == "pass" and all(outcome["checks"].values()),
+        "provider_calls": outcome["provider_calls"],
+        "scientific_observations": outcome["scientific_observations"],
+        "session_id": completion["session_id"],
+        "total_cost_usd": completion["total_cost_usd"],
+        "model_usage": completion["modelUsage"],
+        "boundary_observation": boundary,
+        "artifacts": [tracked_repo_file(root / relative) for relative in relative_files],
+    }
+
+
 def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
     sources = []
     for rel in LOCAL_FIRST_FILES:
@@ -247,6 +286,7 @@ def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
         )
     robust = robust_result(rows)
     spark_matrix = spark_effort_matrix()
+    fable_canary = fable_effort_canary()
     runs = [summarize_run(path) for path in sorted((REPO / "data/orchestration").glob("*.json"))]
     by_model = defaultdict(list)
     for run in runs:
@@ -276,8 +316,8 @@ def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
             "residue": "default thinking emitted empty finals; think:false exposed a repeatable record-binding bug; one visible-error full-file repair diagnosed but did not integrate the fix",
         },
         "claude-fable-5": {
-            "evidence": by_model.get("claude-fable-5", []),
-            "residue": "sealed hidden-graded ARC-C receipts; consult the embedded run decisions for task-level clears and walls",
+            "evidence": [*by_model.get("claude-fable-5", []), "fable_effort_public_v1_canary"],
+            "residue": "sealed hidden-graded ARC-C receipts plus one green native-CLI low-effort administrative canary; the public low/medium/high matrix has zero scientific cells so far",
         },
     }
     return {
@@ -291,6 +331,7 @@ def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
             "route_discovery": route_rows(benchmarks_text),
             "robust_sol_vs_spark": robust,
             "spark_effort_public_v1": spark_matrix,
+            "fable_effort_public_v1_canary": fable_canary,
             "repo_relay": {
                 "planner_model_tokens": 0,
                 "eager_final_validator": "5/5",
@@ -310,6 +351,7 @@ def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
             "Early Terra and Qwen 2.5 route discovery is retained as report-level evidence, not a K=3 hidden-graded capability map.",
             "The original token-parity-proof tree was not a Git repository; selected raw results and summaries are now snapshotted byte-for-byte here.",
             "This index covers models evidenced by the selected committed reports and sealed orchestration runs; it does not claim unobserved configurations.",
+            "The Fable public effort matrix has one green administrative canary and zero scientific cells; its 27-call low/medium/high matrix remains pending.",
         ],
     }
 
