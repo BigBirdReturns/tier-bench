@@ -1,0 +1,8 @@
+You are performing a bounded administrative canary task.
+
+Working directory (your crate): the current directory.
+Allowed write scope: EXACTLY one file, ./value.txt. Do not create, modify, or delete any other file. Do not run git commands.
+
+Task: overwrite ./value.txt so its content is exactly the two bytes: the ASCII digit 1 followed by a single line feed (0x31 0x0A). No carriage return, no trailing characters.
+
+When done, reply with exactly one line: DONE followed by a one-sentence summary.

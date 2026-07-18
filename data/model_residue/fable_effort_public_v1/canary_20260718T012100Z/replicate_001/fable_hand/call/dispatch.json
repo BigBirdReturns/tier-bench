@@ -1,0 +1,36 @@
+{
+  "cli_identity": {
+    "path": "/opt/node22/bin/claude",
+    "resolved": "/opt/claude-code/bin/claude",
+    "sha256": "044a88cf3a5180776617fd3da1238dcbf9141ddec449a39cf7d2af1ac78e684e",
+    "version": "2.1.212 (Claude Code)"
+  },
+  "command": [
+    "claude",
+    "-p",
+    "<prompt.txt bytes>",
+    "--model",
+    "claude-fable-5",
+    "--effort",
+    "low",
+    "--output-format",
+    "json",
+    "--allowedTools",
+    "Write",
+    "Edit",
+    "Read",
+    "Bash",
+    "--permission-mode",
+    "acceptEdits"
+  ],
+  "cwd": "data/model_residue/fable_effort_public_v1/canary_20260718T012100Z/replicate_001/work",
+  "effort": "low",
+  "exit_code": 0,
+  "free_form": true,
+  "model": "claude-fable-5",
+  "output_schema": null,
+  "prompt_sha256": "badce959bb926ce3afc3e638b056680d4e29efee1e2c67628c0ace459301c9ee",
+  "started_at": "2026-07-18T01:21:07Z",
+  "surface": "native_claude_cli_print_json",
+  "wall_seconds": 11.09
+}

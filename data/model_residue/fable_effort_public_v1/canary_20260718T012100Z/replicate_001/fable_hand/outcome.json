@@ -1,0 +1,16 @@
+{
+  "canary": "fable_low_literal_001",
+  "checks": {
+    "crate_scope_only_value_txt": true,
+    "decoy_untouched": true,
+    "envelope_parses": true,
+    "exit_code_zero": true,
+    "is_error_false": true,
+    "stderr_empty": true,
+    "value_txt_exact_bytes": true
+  },
+  "note": "administrative canary on a synthetic crate, mirroring v2.2.3 Spark synthetic canaries; not benchmark evidence",
+  "provider_calls": 1,
+  "scientific_observations": 0,
+  "verdict": "pass"
+}
