@@ -107,6 +107,32 @@ drawing that waterline correctly — and proving which side each cell is on.
     The lanes that actually recover baseline misses: `data_types` (float-money
     equality) and `contracts` (silent-default holes).
 
+13. **Smoke before cage.** Never build the golden conformance machinery —
+    hash-bound freezes, ratification chains, fail-closed runners, custody
+    receipts — before a cheap disposable run proves the runtime path actually
+    runs. Bitten twice, same week. Sol-root activation v0.3: ~40 ceremony
+    commits froze a 59-call schedule, then the FIRST executor call died because
+    the CLI tool router silently downgraded `--sandbox workspace-write` to
+    read-only (`invocation_equivalence_proven: false` — the only receipt check
+    that required a live run was the one that failed; discovery cost 2 calls /
+    204 output tokens, and could have been commit #1). ARC-D buffalo pilot:
+    field contract + hash-bound packets built, then 3/3 live dispatches
+    returned provider `systemError` with zero assistant bytes — and the frozen
+    no-retry stopping rule converted an *infrastructure* failure into a
+    permanent PARTIAL nobody may investigate. The procedure: before proposing
+    any freeze/activation machinery for a live-dispatch lane, (a) list the
+    properties only provable by running — sandbox writes, transport liveness,
+    output-schema acceptance — and burn 1–2 disposable, non-frozen calls (or a
+    $0 local CLI probe) proving them; (b) never let a no-retry rule designed
+    for scientific integrity absorb infrastructure failures — classify
+    infra-vs-observation BEFORE the stopping rule binds. Counter-example that
+    proves the fix: the v0.4 repair (`run_v2.py` / `run_pilot.py`) verified CLI
+    identity and ran a synthetic self-test green before any live access.
+    Still-loaded instances as of 2026-07-17: TIER-PILOT (contract layer merged
+    with 74 passing offline tests, zero model calls ever through the production
+    shim, canary sequenced AFTER the byte freeze) and ARC-D-B2-CUSTODY-V2
+    (activation will dispatch over the exact transport that just went 0-for-3).
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.
