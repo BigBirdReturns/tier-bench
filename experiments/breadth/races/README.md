@@ -178,3 +178,27 @@ separation is self-verification honesty, and W5 proves it is procedural,
 not cognitive. The external deterministic referee is therefore not a
 compensation for cheap-model weakness - it is compensation for what NO
 model reliably does to itself. Receipt: gauntlet_w5_board.json.
+
+## Boss round — Fable, streams crossed (2026-07-18)
+
+Fable ran both instruments last, same rules: certification 3/3 (executing
+counterexamples verified), authoring 2/2 referee-VALID (three foils each,
+zero hangs) and 2/2 blind-fair (66/66). Burn: 68.6k tokens (~$0.96 at
+$10/$50) - the most expensive arm of the day for scores every tier matched.
+Fable's only observable delta, consistent across its runs: unprompted
+verification surplus (fresh-process re-verification, hash-verified rebuild
+determinism, brute-force cross-checks nobody asked for).
+
+## FINAL SYNTHESIS - where the residue actually lives
+
+Across ~70 model-runs, 8 models, 2 vendors, 6 races and 3 gauntlet waves:
+solving never discriminated at any scope tried; authoring validity
+discriminated exactly one model (haiku, 2x false-green, replicated);
+certification proved that defect procedural, not cognitive. The frontier's
+measurable signature is not correctness - it is UNPROMPTED VERIFICATION
+DEPTH, the one behavior that, applied to one's own work, no model exhibits
+reliably under a delivery incentive. Hence the doctrine, now fully
+evidence-backed: cheapest tier solves; any tier authors; a deterministic
+referee (authored once, hardened by every failure it eats) gates
+everything; frontier effort goes exclusively into harnesses, briefs, and
+lessons - the artifacts in this directory.
