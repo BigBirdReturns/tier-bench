@@ -142,3 +142,21 @@ danger-full-access per the v0.4 doctrine). Results:
   the load-bearing residue.
 
 Receipt: race6_cross_vendor_results.json.
+
+## Gauntlet wave 1 — harder shapes, full cross-vendor firehose (2026-07-18)
+
+Three referee-authored work-shapes beyond single functions - w1 multi-file
+package with interface/error-policy knots, w2 bug-hunt (find ALL 4 seeded
+contract defects; visible checks pass on the buggy module; partial fixes
+fail), w3 amendment-chain (later rules override earlier) - each verified
+bidirectionally before dispatch (the harness caught one of the referee's own
+visible-check leaks pre-dispatch). Dispatched simultaneously to seven models
+across both vendors. **21/21 PASS.** Multi-file coherence, defect recall, and
+compounding spec-state do not discriminate any tier of either vendor at this
+scope (~200 lines, complete rule text, deterministic grading). The only
+discriminator remains authoring self-verification reliability (haiku 2x
+false-green; everyone else clean). Waterline is above this scope: next
+escalations are compounding multi-stage chains (own output feeds next stage),
+adversarial certification (certify-or-refute a plausible-but-wrong reference,
+targeting the false-green axis directly), and 10x scope.
+Receipt: gauntlet_wave1_board.json.
