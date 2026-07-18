@@ -34,9 +34,9 @@ def git_init(d):
 
 def main():
     arm, model, effort = sys.argv[1], sys.argv[2], sys.argv[3]
-    expected = json.loads((A / "expected.json").read_text(encoding="utf-8"))
+    expected = json.loads((A / "expected.json").read_text(encoding="utf-8-sig"))
     task_template = (A / "TASK_TEMPLATE.md").read_text(encoding="utf-8")
-    current = json.loads((A / "state0.json").read_text(encoding="utf-8"))
+    current = json.loads((A / "state0.json").read_text(encoding="utf-8-sig"))
     report = {"arm": arm, "model": model, "effort": effort, "stages": {}}
     first_divergence = None
     for k in range(1, 6):
@@ -46,10 +46,10 @@ def main():
         (stage / "MEMO.md").write_text((A / f"MEMO_{k}.md").read_text(encoding="utf-8"), encoding="utf-8")
         git_init(stage)
         start = time.time()
-        rc = codex(stage, model, effort, task_template.format(k=k) + "\n" + (stage / "MEMO.md").read_text(encoding="utf-8"))
+        rc = codex(stage, model, effort, task_template.format(k=k) + "\n" + (stage / "MEMO.md").read_text(encoding="utf-8-sig"))
         secs = round(time.time() - start, 1)
         try:
-            produced = json.loads((stage / "state.json").read_text(encoding="utf-8"))
+            produced = json.loads((stage / "state.json").read_text(encoding="utf-8-sig"))
         except Exception as exc:
             report["stages"][k] = {"rc": rc, "secs": secs, "match": False, "error": f"BAD-JSON:{type(exc).__name__}"}
             first_divergence = first_divergence or k

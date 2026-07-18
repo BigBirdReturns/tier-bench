@@ -176,10 +176,10 @@ def main():
         (d / "MEMO.md").write_text(f"MEMO stage {k+1}/20 - {MEMOS[k][0]}\n\n{MEMOS[k][1]}\n", encoding="utf-8")
         git_init(d)
         start = time.time()
-        rc = codex(d, model, effort, TASK + "\n\n" + (d / "MEMO.md").read_text(encoding="utf-8"))
+        rc = codex(d, model, effort, TASK + "\n\n" + (d / "MEMO.md").read_text(encoding="utf-8-sig"))
         secs = round(time.time() - start, 1)
         try:
-            produced = json.loads((d / "state.json").read_text(encoding="utf-8"))
+            produced = json.loads((d / "state.json").read_text(encoding="utf-8-sig"))
         except Exception as exc:
             report["stages"][k] = {"rc": rc, "secs": secs, "match": False, "err": str(type(exc).__name__)}
             report["first_divergence"] = k

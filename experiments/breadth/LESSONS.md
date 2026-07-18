@@ -163,6 +163,18 @@ drawing that waterline correctly — and proving which side each cell is on.
     machinery as everyone else, 66/66, no coronation, no exception - just the
     referee. The house wasn't haunted. It lacked smoke detectors.
 
+15. **BOM-tolerant reads, or your referee invents a crack.** The 20-stage
+    compounding chain reported spark's "first divergence at stage 10" - the
+    program's only apparent solving failure. Adjudication (never trust the
+    first number - lesson 14, pointed at your own harness): spark had written
+    stage 10 via PowerShell's ConvertTo-Json, which prepends a UTF-8 BOM; the
+    grader's plain `json.loads` choked and the runner scored it a divergence
+    and halted. BOM-tolerant re-grade: 11/11 exact match, no crack, floor
+    intact. Any JSON a model writes on Windows may carry a BOM - read model
+    output with `encoding="utf-8-sig"` everywhere. The near-miss is the point:
+    an unverified referee manufactures false discriminators as readily as a
+    model manufactures false-greens. Verify the verifier.
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.

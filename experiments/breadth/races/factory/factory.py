@@ -101,7 +101,7 @@ def load_mod(path, name):
 
 
 def stub_name(input_path):
-    for node in ast.parse(input_path.read_text(encoding="utf-8")).body:
+    for node in ast.parse(input_path.read_text(encoding="utf-8-sig")).body:
         if isinstance(node, ast.FunctionDef) and node.name != "main":
             return node.name
     raise ValueError("no stub")
@@ -115,7 +115,7 @@ def referee(task_dir, tag):
         ref = getattr(load_mod(task_dir / "reference.py", f"fr_{tag}"), f)
         fm = load_mod(task_dir / "foils.py", f"ff_{tag}")
         foils = {n: getattr(fm, n) for n in dir(fm) if n.startswith("foil_")}
-        vectors = json.loads((task_dir / "vectors.json").read_text(encoding="utf-8"))
+        vectors = json.loads((task_dir / "vectors.json").read_text(encoding="utf-8-sig"))
     except Exception as exc:
         return False, {"broken": f"{type(exc).__name__}: {exc}"}
     detail["vectors"] = len(vectors)
@@ -157,7 +157,7 @@ def fairness(task_dir, tag):
     try:
         f = stub_name(task_dir / "input.py")
         solved = getattr(load_mod(packet / "input.py", f"fs_{tag}"), f)
-        vectors = json.loads((task_dir / "vectors.json").read_text(encoding="utf-8"))
+        vectors = json.loads((task_dir / "vectors.json").read_text(encoding="utf-8-sig"))
         misses = [(a, e, norm(timed_call(solved, a))) for a, e in vectors]
         misses = [(a, e, g) for a, e, g in misses if g != e]
         return ("FAIR" if not misses else "ADJUDICATE"), misses[:3]
