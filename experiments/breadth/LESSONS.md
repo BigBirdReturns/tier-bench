@@ -196,6 +196,27 @@ drawing that waterline correctly — and proving which side each cell is on.
     scoped passes and the drops vanish. The referee (per-requirement isolating
     probes) is what makes the drop visible at all - aggregate pass/fail hides it.
 
+17. **Small samples manufacture findings; K<=5 is a rumor, not a result.
+    (This retracts parts of lessons 16.)** The overnight breadth hunt produced
+    three exciting claims that ALL dissolved under K=10: (a) "monolithic recall
+    degrades ~55% at N=160" - a single high-variance batch that happened to
+    cluster failures; matched K=10 on the SAME seeds got 8/10 clean. (b) "the
+    drop is a Codex-CLI edit-loop artifact, RESOLVED" - edit and emit modes
+    have the IDENTICAL 80% clean rate at N=160 (K=10 each); the edit-loop does
+    not cause the drops. (c) "decomposition into 4x40 passes rescues it (5/5
+    clean)" - P(5/5 clean | 0.8 base rate) = 0.33, not significant; it was luck.
+    What actually survives K=10: cheap-model single-shot recall on 160-1000
+    independent requirements is ~80-100% per run with RARE stochastic
+    imperfections (~1 rule), NOT a capability wall (emit holds to 1000 rules).
+    The one durable real distinction is FAILURE MODE by interface: file-edit
+    fails by silently dropping ~1 rule (insidious - can pass aggregate checks);
+    text-emit fails by producing unparseable output (loud - the referee always
+    catches it). For a verified pipeline, prefer the interface that fails loud.
+    Method rule: report clean-rate with n; never ship an effect measured at
+    K<=5; if a rescue looks perfect, compute P(that many clean | base rate)
+    before believing it. The program's own discipline (lessons 14/15) applied
+    to its own headline results - and most did not survive.
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.
