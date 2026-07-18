@@ -223,3 +223,18 @@ lessons - the artifacts in this directory.
   pointer-addressed context buys economics, not correctness - exactly the
   property that compounds at 10-100x task scale where context binds.
   Receipts: wave3_receipts.json.
+
+## W8 — 20-stage compounding chain (2026-07-18)
+
+Deep-horizon test: 20 sequential dispatches, each fed the model's OWN prior
+output, with genuinely dependent transforms (delta-encode inverted two stages
+later by cumsum, top-3-by-value tie-breaks, an accumulator threaded through
+every stage, pivot insert/gc). Luna: 20/20 exact, zero divergence. Spark:
+11/11 exact, then the runner halted on a UTF-8 BOM its PowerShell write
+introduced (grader bug, since fixed - lesson 15; content was correct). Verdict:
+five-step compounding was trivially inside the floor and twenty steps is too.
+Long-horizon degradation does not appear at 20 dependent stages of crisp
+deterministic rules. The remaining place a crack could live is NOT depth of
+crisp steps - it is ambiguity, genuine open-endedness, or scope where context
+management binds (the one axis CART0 crates measurably help). That is the
+program's open frontier.
