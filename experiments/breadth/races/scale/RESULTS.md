@@ -49,3 +49,19 @@ model attention. Testable (have Spark EMIT the whole function as text instead
 of editing in place) - not yet run. Honest status: breadth requirement-drop is
 confirmed on the GPT+Codex-CLI path and absent on the Claude+Agent-tool path;
 decomposition into <=40-rule passes fixes it on the path where it appears.
+
+## RESOLVED: the breadth "waterline" was a Codex-CLI edit-loop artifact, not the model
+Emit-mode test (Spark receives the spec in-prompt and OUTPUTS the whole
+normalize() as text; no file edit-loop): N=160, 7/7 runs recall 1.0, ZERO
+drops. Compare edit-mode (Spark edits input.py in place via the CLI apply
+loop): ~55% of runs imperfect. Same model, same specs, same effort - the ONLY
+difference is edit-in-place vs emit-as-text. Conclusion: the requirement
+"dropping" was the Codex CLI silently failing to apply some edits in a large
+file, NOT the model omitting rules. This also explains Claude-via-Agent-tool
+being clean (Haiku 3/3): a different editing mechanism. It reframes the
+decomposition rescue: splitting into 4x40 passes helped because smaller files
+mean fewer edits for the lossy apply-loop to drop - a workaround for a TOOLING
+bug, not a model-capability rescue. Net: the solving floor is universal, deep
+(20-stage chains), AND broad (160-320 independent requirements) once the
+model's output is not mangled by a lossy edit interface. Verify-the-verifier
+(lesson 15) applied to the harness itself one more time.
