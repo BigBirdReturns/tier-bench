@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "D:\Projects\Tier-Bench\worktrees\residue-bridge-v1\data\model_residue\spark_effort_public_v1\tasks\stable_unique\validator.py", line 41, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "D:\Projects\Tier-Bench\worktrees\residue-bridge-v1\data\model_residue\spark_effort_public_v1\tasks\stable_unique\validator.py", line 19, in main
+    function = getattr(module, "stable_unique")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'candidate' has no attribute 'stable_unique'
