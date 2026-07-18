@@ -72,3 +72,27 @@ The floor holds even where the spec runs out.
 
 Receipts: `race3_rule_interaction_results.json`,
 `race4_underdetermined_results.json`.
+
+## Cost-normalized verdict (2026-07-18, authoritative Anthropic prices)
+
+Per-1M rates: haiku $1/$5, sonnet $3/$15 (intro $2/$10 through 2026-08-31),
+opus $5/$25, fable $10/$50 — output is exactly 5x input on EVERY tier, so
+relative cost is independent of the unknown input/output split: the ladder is
+haiku:sonnet:opus:fable = 1:3:5:10. Live market cross-check (OpenRouter
+2026-07-18) confirms list prices; GPT-5.6 Sol sits at $5/$30 (output priced
+above opus), GPT-5.6 Luna at $1/$6 (haiku tier).
+
+With every arm scoring 3/3 hidden in every race, cost decides:
+
+| race | cheapest | vs opus solo | vs fable arm |
+|---|---|---|---|
+| race2 crisp knots | haiku solo (~$0.054) | 4.8x cheaper | 12.1x |
+| race3 interaction knots | haiku solo (~$0.060) | 4.3x cheaper | 11.9x |
+| race4 spec gaps | haiku solo (~$0.046) | 5.5x cheaper | 14.5x |
+
+Haiku never needed a token allowance: it used 0.9-1.2x opus's tokens while
+costing 1/5 per token. Driver+hands pairs were the most expensive way to buy
+the same score (driver premium + ~28k tokens/hand session overhead) - at this
+task size the pair's break-even requires the driver to prevent failures that
+never occurred. Dollar figures assume a 90/10 in/out blend; orderings hold for
+any split. Receipt: race_cost_normalized.json.
