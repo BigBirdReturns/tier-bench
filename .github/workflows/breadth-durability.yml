@@ -54,6 +54,10 @@ jobs:
           python -m py_compile experiments/sol_root_matched_config/activation_v0_3/verify_activation_run_v0_3.py tests/test_sol_root_activation_run_v0_3.py
           python experiments/sol_root_matched_config/activation_v0_3/verify_activation_run_v0_3.py verify
           python tests/test_sol_root_activation_run_v0_3.py
+      - name: smoke-before-cage guards (LESSONS rule 13; zero model calls)
+        run: |
+          python -m py_compile tests/test_smoke_before_cage.py
+          python tests/test_smoke_before_cage.py
       - name: UI-capture lane end-to-end ($0, temp files)
         run: python experiments/breadth/ui_capture_smoke.py
       - name: waterline schema + evidence-layer enforcement
