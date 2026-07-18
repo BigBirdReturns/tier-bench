@@ -47,3 +47,28 @@ record; do not flip the ceiling from this file alone.
 Raw receipts: `race1_orchestration_results.json`,
 `race2_model_solo_results.json` (cost bounds are [all-input, all-output] at
 registry prices; harness token totals lack an input/output split).
+
+## Race 3 — rule-interaction knots, solo vs driver+haiku-hands pairs (2026-07-18)
+
+Fresh referee-authored tasks (fee cascade / discount stack / retention slots),
+naive-foil daylight verified before dispatch. **15/15 hidden pass** — even
+haiku solo cleared multi-rule prior-fighting knots. All three drivers
+independently converged on the same strategy: pre-resolve the rule
+interactions in the hand prompt (the driver's product is disambiguation, not
+supervision). Pair failure mode observed: the sonnet driver ended its turn to
+"wait" for its hands and needed a referee nudge — coordination, not quality;
+hand-session overhead ran ~28k tokens per ~25-line function.
+
+## Race 4 — genuinely underdetermined specs, defensible-convention grading (2026-07-18)
+
+Specs with deliberate silent gaps (touching intervals, remainder placement,
+surviving duplicate); graders accept ANY defensible convention but require
+stated properties and cross-vector consistency; both conventions and all foils
+smoke-tested through the real grader path first. **15/15 hidden pass**, zero
+property violations — and every arm chose the SAME convention on every gap
+(touch-merges, keep-first, front-loaded remainder). Spec gaps do not
+discriminate between model tiers: the priors share one consensus default.
+The floor holds even where the spec runs out.
+
+Receipts: `race3_rule_interaction_results.json`,
+`race4_underdetermined_results.json`.

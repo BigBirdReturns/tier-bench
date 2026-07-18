@@ -1,0 +1,49 @@
+{
+ "experiment": "race 4: genuinely underdetermined specs; defensible-convention + property grading",
+ "started_utc": "2026-07-18T03:48:22Z",
+ "tasks": [
+  "t5_merge_gap_001",
+  "t5_round_split_001",
+  "t5_dedupe_gap_001"
+ ],
+ "grading": "determined vectors exact; gap vectors accept either convention but require consistency; round_split purely property-checked; both conventions and foils smoke-tested through the real grader path (one misclassified vector caught and fixed pre-race)",
+ "score": "15/15 hidden pass",
+ "arms": {
+  "haiku_solo": {
+   "ms": 64143,
+   "driver_tokens": 32698,
+   "tools": 17,
+   "hidden": "3/3"
+  },
+  "opus_solo": {
+   "ms": 60345,
+   "driver_tokens": 36178,
+   "tools": 11,
+   "hidden": "3/3"
+  },
+  "pair_sonnet": {
+   "ms": 117517,
+   "driver_tokens": 51765,
+   "hand_tokens": "nested/unmeasured",
+   "hidden": "3/3",
+   "note": "no stall after explicit same-session instruction"
+  },
+  "pair_opus": {
+   "ms": 113719,
+   "driver_tokens": 40950,
+   "hand_tokens": "nested/unmeasured",
+   "hidden": "3/3"
+  },
+  "pair_fable": {
+   "ms": 101363,
+   "driver_tokens": 39127,
+   "hand_tokens": "nested/unmeasured",
+   "hidden": "3/3"
+  }
+ },
+ "findings": [
+  "UNIVERSAL convention convergence: all five arms chose convention 'a' (touch-merges, keep-first, front-loaded remainder) on every gap - spec gaps do not discriminate because model priors share one consensus default",
+  "no property violations anywhere (exact sums on 12-digit totals, no float leakage)",
+  "haiku solo was FASTER than race 3 and cheapest overall on judgment tasks"
+ ]
+}
