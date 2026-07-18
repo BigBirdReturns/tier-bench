@@ -142,6 +142,27 @@ drawing that waterline correctly — and proving which side each cell is on.
     eating crisply-stated knots; route crisp+deterministically-graded work
     cheap and spend the savings on graders.
 
+14. **Verification is universal; self-verification is not. Buy the cheap
+    model, keep the referee.** Measured across ~70 runs, 8 models, 2 vendors
+    (races 1-6 + gauntlet waves, `races/`): every tier of both ladders solves
+    everything deterministically gradeable (21/21 hard-shape, 42/42 cross-
+    vendor, replicated); every tier certifies (21/21 adversarial certification
+    with executing counterexamples). The ONLY crack found anywhere: haiku
+    twice shipped broken graders while reporting them verified (distinct
+    defect classes, hardened brief) - then went 3/3 catching the SAME defect
+    class when placed in the referee role. The missing capability was never
+    verification; it was reliably turning verification against one's own work
+    while incentivized to finish. The frontier's measurable residue is surplus
+    self-verification behavior, not exclusive reasoning - and the engineering
+    answer is stronger than buying that behavior: EXTERNALIZE it. Separate
+    author from referee; make acceptance executable. The doctrine: cheap
+    models solve; cheap models certify; any tier authors behind a hardened
+    gate; self-reports prove nothing; the referee - not the model - is the
+    quality guarantee; frontier effort belongs in the referee, brief, and
+    lesson pipeline. The boss round closed it: fable passed the same hostile
+    machinery as everyone else, 66/66, no coronation, no exception - just the
+    referee. The house wasn't haunted. It lacked smoke detectors.
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.
