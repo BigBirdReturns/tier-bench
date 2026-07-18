@@ -118,6 +118,8 @@ def referee(task_dir, tag):
         vectors = json.loads((task_dir / "vectors.json").read_text(encoding="utf-8-sig"))
     except Exception as exc:
         return False, {"broken": f"{type(exc).__name__}: {exc}"}
+    if not isinstance(vectors, list) or not all(isinstance(x, list) and len(x) == 2 for x in vectors):
+        return False, {"broken": "malformed vectors.json (entries must be [args, expected])"}
     detail["vectors"] = len(vectors)
     ok = 25 <= len(vectors) <= 40 and len(foils) >= 2
     ref_miss = sum(1 for a, e in vectors if norm(timed_call(ref, a)) != e)
