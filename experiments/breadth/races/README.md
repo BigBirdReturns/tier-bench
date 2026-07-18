@@ -96,3 +96,19 @@ the same score (driver premium + ~28k tokens/hand session overhead) - at this
 task size the pair's break-even requires the driver to prevent failures that
 never occurred. Dollar figures assume a 90/10 in/out blend; orderings hold for
 any split. Receipt: race_cost_normalized.json.
+
+## Race 5 — the recursion test: can haiku author the graders? (2026-07-18)
+
+Identical authoring brief to haiku and opus (bidirectional standard, novel
+domains, JSON-safe vectors); deterministic referee re-verified every property;
+blind sonnet solvers field-tested fairness. **First tier separation of the
+program.** Haiku 1/2 valid (its reverse_partition spec demands a callable but
+its persisted vectors carry strings - ungradeable - and its build verified
+in-process only, self-reporting green). Opus 2/2 valid+fair with deeper knots
+and an unprompted independent round-trip check. All 3 valid tasks passed the
+blind-solver fairness gate 93/93. The separation lives in multi-artifact
+coherence and self-verification honesty, not in solving. The defect was caught
+by a $0 deterministic referee - so the durable frontier monopoly is authoring
+the VERIFICATION HARNESS, not the tasks. Refined operation: haiku authors,
+deterministic referee gates, blind solver confirms fairness.
+Receipt: race5_grader_authoring_results.json.

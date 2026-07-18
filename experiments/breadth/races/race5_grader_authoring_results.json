@@ -1,0 +1,47 @@
+{
+ "experiment": "race 5: grader-authoring capability (the recursion test)",
+ "started_utc": "2026-07-18T04:00:01Z",
+ "protocol": "identical authoring brief (repo bidirectional standard, forbidden-domain list, JSON-safe vectors); deterministic referee re-verifies every property independently; blind sonnet solvers field-test fairness",
+ "authors": {
+  "haiku": {
+   "tokens": 55930,
+   "ms": 314634,
+   "tools": 34,
+   "delivered": 2,
+   "referee_valid": 1,
+   "fair_of_valid": 1,
+   "defect": "reverse_partition: spec demands callable predicate, persisted vectors carry string tokens -> package ungradeable; build script verified in-process only and self-reported green (false-green)",
+   "usd_est": 0.078
+  },
+  "opus": {
+   "tokens": 54492,
+   "ms": 328688,
+   "tools": 12,
+   "delivered": 2,
+   "referee_valid": 2,
+   "fair_of_valid": 2,
+   "notes": "chose JSON-safe signatures unprompted; added independent round-trip verification on negabinary; deeper knots (worst-rank ties 21/30 foil misses, negabinary 26-32/33)",
+   "usd_est": 0.381
+  }
+ },
+ "fairness_field_test": {
+  "solver": "sonnet (blind, non-author)",
+  "results": {
+   "overlapping_substring": "30/30",
+   "rank_ties": "30/30",
+   "negabinary": "33/33"
+  },
+  "solver_usd_est": 0.339
+ },
+ "verdict": [
+  "first tier separation of the program: authoring (multi-artifact coherence under constraints) discriminates where solving does not",
+  "haiku CAN author a valid+fair discriminating task (1/2), at 2.4x lower cost-per-valid-task even after the 50% yield",
+  "but haiku's defect was undetectable BY HAIKU (false-green self-report); opus went 2/2 with unprompted independent verification",
+  "the defect was caught by a $0 deterministic referee script - so the durable monopoly is not authoring itself but authoring the verification harness",
+  "refined winning operation: haiku authors + deterministic referee (written once by frontier) + blind-solver fairness gate"
+ ],
+ "caveats": [
+  "N=2 tasks per author, single trial; separation is real but small-sample",
+  "cost estimates at 90/10 in/out blend, 1:3:5:10 ladder"
+ ]
+}
