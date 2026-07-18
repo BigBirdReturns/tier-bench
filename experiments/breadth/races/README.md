@@ -202,3 +202,24 @@ evidence-backed: cheapest tier solves; any tier authors; a deterministic
 referee (authored once, hardened by every failure it eats) gates
 everything; frontier effort goes exclusively into harnesses, briefs, and
 lessons - the artifacts in this directory.
+
+## Wave 3 — factory, chains, and the live CART0 pilot (2026-07-18)
+
+- **Sediment factory** (`factory/factory.py` + `ledger.jsonl`): autonomous
+  spark-authors -> hardened-referee -> luna-blind-fair loop with a growing
+  forbidden-domain feedback list. Batch 1: 10 authored, 7 valid, 7/7 fair,
+  ~35s and $0-marginal each. Spark's at-scale authoring defect rate (30%) is
+  fully contained by the gate; nothing invalid reached the corpus. Verified
+  eval corpora are now effectively free; the scarce input is novel shapes.
+- **K=3 settling**: spark 6/6 x3 on the race-6 set - settled per lesson 6.
+- **W7 compounding chains**: 5 sequential dispatches, model's own output
+  feeding forward, cross-stage dependencies via the state's audit log. Spark
+  AND luna: zero divergence at any stage. Five-step compounding error does
+  not exist at this scope; escalate to 20+ stages or mess.
+- **CART0 net-effect pilot, first live run** (repaired v0.4 path, 2
+  replicates, paired-interpretable): planner-alone vs planner->spark crate
+  handoff both PASS everywhere; the crate arm cut input footprint 34-37% at
+  +5-9% wall. THE FIRST POSITIVE STRUCTURAL DELTA of the program: bounded
+  pointer-addressed context buys economics, not correctness - exactly the
+  property that compounds at 10-100x task scale where context binds.
+  Receipts: wave3_receipts.json.
