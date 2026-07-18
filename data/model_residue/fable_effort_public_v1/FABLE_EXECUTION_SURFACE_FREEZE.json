@@ -1,0 +1,18 @@
+{
+  "canary": "canary_20260718T012100Z/replicate_001",
+  "cli": {
+    "path": "/opt/node22/bin/claude",
+    "resolved": "/opt/claude-code/bin/claude",
+    "sha256": "044a88cf3a5180776617fd3da1238dcbf9141ddec449a39cf7d2af1ac78e684e",
+    "version": "2.1.212 (Claude Code)"
+  },
+  "efforts_planned": [
+    "low",
+    "medium",
+    "high"
+  ],
+  "frozen_at": "2026-07-18T01:21:07Z",
+  "model": "claude-fable-5",
+  "schema": "tier-bench/fable-effort-matrix/surface-freeze@0.1",
+  "surface": "native_claude_cli_print_json"
+}

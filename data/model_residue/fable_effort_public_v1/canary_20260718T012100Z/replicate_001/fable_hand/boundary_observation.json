@@ -1,0 +1,46 @@
+{
+  "byte_exactness": "value.txt written as exactly b'1\n' - passes the same exact-bytes check that rejected the v2.2.2 Spark canary (b'1\n\r\n')",
+  "context_inheritance": {
+    "cache_read_input_tokens": 89859,
+    "finding": "~90k cache-read tokens on a 9-line task: the call ran inside the tier-bench tree and inherited repository context (CLAUDE.md chain). Matrix work dirs must live OUTSIDE the repo tree, or this inheritance must be declared as part of the measured surface"
+  },
+  "cost_per_call_usd": 0.7171500000000001,
+  "envelope_fields_observed": [
+    "api_error_status",
+    "duration_api_ms",
+    "duration_ms",
+    "fast_mode_state",
+    "is_error",
+    "modelUsage",
+    "num_turns",
+    "permission_denials",
+    "result",
+    "session_id",
+    "stop_reason",
+    "subtype",
+    "terminal_reason",
+    "time_origin_ms",
+    "time_to_request_from_spawn_ms",
+    "time_to_request_ms",
+    "total_cost_usd",
+    "ttft_ms",
+    "ttft_stream_ms",
+    "type",
+    "usage",
+    "uuid",
+    "warm_spare_claimed"
+  ],
+  "matrix_cost_projection_usd_27_calls": 19.36,
+  "observation": "single-line JSON envelope on stdout; empty stderr; final model prose lives ONLY in the 'result' field; no event stream is emitted at --output-format json (stream-json exists for per-event records and is the option if the matrix needs events.jsonl parity with Spark)",
+  "secondary_model_usage": {
+    "finding": "claude-haiku-4-5 appears alongside fable-5 in modelUsage: the CLI spends auxiliary haiku tokens; per-call cost attribution must sum modelUsage, not assume single-model",
+    "models": [
+      "claude-haiku-4-5-20251001",
+      "claude-fable-5"
+    ]
+  },
+  "session_identity": {
+    "finding": "nested CLI call reported the PARENT session's ID - the print-mode call is attributed to the invoking session, not issued a fresh one; fresh-call isolation for the matrix must use explicit --session-id per trial or be recorded as parent-attributed",
+    "session_id": "2a40687a-81a7-5aa9-8f71-452505e1604a"
+  }
+}

@@ -1,0 +1,1 @@
+DONE Overwrote ./value.txt so it contains exactly "1" followed by a single line feed (0x31 0x0A), touching no other files.
