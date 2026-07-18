@@ -11,3 +11,7 @@
 {"mode": "decomp", "n": 160, "chunks": 4, "trial": 2, "recall": 1.0, "drops": []}
 {"mode": "decomp", "n": 160, "chunks": 4, "trial": 3, "recall": 1.0, "drops": []}
 {"mode": "decomp", "n": 160, "chunks": 4, "trial": 4, "recall": 1.0, "drops": []}
+{"arm": "claude_haiku_160", "n": 160, "recall": 1.0, "hits": 160, "total": 160, "dropped": []}
+{"arm": "claude_haiku_161", "n": 160, "recall": 1.0, "hits": 161, "total": 161, "dropped": []}
+{"arm": "claude_haiku_162", "n": 160, "recall": 1.0, "hits": 162, "total": 162, "dropped": []}
+{"arm": "claude_sonnet_160", "n": 160, "recall": 1.0, "hits": 160, "total": 160, "dropped": []}

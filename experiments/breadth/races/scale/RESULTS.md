@@ -33,3 +33,19 @@ K=3 rescue confirmation in progress. If it holds, scoping context per pass is
 the first structural intervention with a measured QUALITY delta (not just the
 ~35% context-cost delta CART0 crates showed) - the payoff the crate thesis
 predicted, now at scale.
+
+## Cross-vendor refinement (corrects lesson 16's "general" claim)
+Lesson 16 said the breadth waterline was "general, not Spark-specific" (Luna
+also dropped). More data narrows that: it is general across GPT-cheap via the
+CODEX CLI (Spark 5/10 imperfect runs, Luna dropped 3), but Claude-cheap via
+the AGENT TOOL did NOT exhibit it - Haiku 3/3 clean across distinct ~160-rule
+instances (0 drops / 483 rules), Sonnet 1/1 clean. If Haiku shared Spark's
+~1% per-rule rate, P(0 drops in 483 rules) ~= 0.008 - so the divergence is
+real, not luck. BUT it is confounded by execution surface: GPT ran through
+Codex CLI's edit-apply loop (which may silently fail to apply some edits in a
+very large file), Claude through the Agent tool's Edit/Write. Leading
+alternative hypothesis: the drop is partly a CLI edit-loop artifact, not pure
+model attention. Testable (have Spark EMIT the whole function as text instead
+of editing in place) - not yet run. Honest status: breadth requirement-drop is
+confirmed on the GPT+Codex-CLI path and absent on the Claude+Agent-tool path;
+decomposition into <=40-rule passes fixes it on the path where it appears.
