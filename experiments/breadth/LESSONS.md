@@ -217,6 +217,27 @@ drawing that waterline correctly — and proving which side each cell is on.
     before believing it. The program's own discipline (lessons 14/15) applied
     to its own headline results - and most did not survive.
 
+18. **The moat is session custody, not intelligence - and the counter-
+    architecture is the anchor crate.** Final receipt of the 2026-07-18 program:
+    the session that proved capability is commoditized at every tier of both
+    vendors billed ~$760 API-equivalent - and 92% of it was the ORCHESTRATOR'S
+    OWN main loop (1,171 turns x ~250k-token conversation = 618M cache-read
+    tokens at frontier prices). The workers who did all the measurable labor
+    cost $61; the entire cross-vendor GPT program cost ~$10. The frontier moat
+    is therefore not thinking - it is the architecture that keeps your working
+    state resident in their context window, charging rent on every re-read.
+    Every measurement this program produced converges on the same escape,
+    which is CART0/anchor-crate (the side project the original benchmarks
+    spawned): state lives in YOUR files, pointer-addressed and bounded
+    (measured -35% context at zero quality cost); drivers are SHORT-LIVED and
+    NARROW-CONTEXT, spawned per phase from a handoff crate and discarded;
+    workers are cheap and stateless; referees are deterministic and free.
+    Corollary that must be said out loud: the orchestrator is not exempt.
+    Lesson 7 (efficiency is context) applies MOST to the driver's own loop -
+    a marathon frontier session is the single most expensive object in the
+    entire architecture, and the one every other lesson quietly assumed was
+    free. Run the driver like a crate visitor, not a tenant.
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.
