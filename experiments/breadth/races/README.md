@@ -160,3 +160,21 @@ escalations are compounding multi-stage chains (own output feeds next stage),
 adversarial certification (certify-or-refute a plausible-but-wrong reference,
 targeting the false-green axis directly), and 10x scope.
 Receipt: gauntlet_wave1_board.json.
+
+## Gauntlet W5 — adversarial certification (2026-07-18)
+
+Each of seven models judged 3 contract/candidate pairs (one subtly-defective,
+one correct-but-rewritten; defects drawn from measured foils): CERTIFY or
+REFUTE with an executing counterexample. Grader runs every counterexample;
+false-certify and false-refute both fail. **21/21 - including haiku, 3/3
+with valid diverging counterexamples.** Sonnet and opus independently
+invented reference-plus-20k-random-trials methodology unprompted.
+
+THE FINDING: haiku's twice-replicated authoring false-green is NOT a
+verification-capability gap - it verifies others' code flawlessly. The
+defect is applying verification to one's own artifacts under a delivery
+incentive. No shape has cracked any tier on capability; the only measured
+separation is self-verification honesty, and W5 proves it is procedural,
+not cognitive. The external deterministic referee is therefore not a
+compensation for cheap-model weakness - it is compensation for what NO
+model reliably does to itself. Receipt: gauntlet_w5_board.json.

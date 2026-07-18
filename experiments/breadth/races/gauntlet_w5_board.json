@@ -1,0 +1,191 @@
+{
+ "spark": {
+  "arm": "spark",
+  "cases": {
+   "case_fees": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(refuted+diverges)",
+     "candidate_b": "ok(certified)"
+    }
+   },
+   "case_retention": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   },
+   "case_access": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   }
+  },
+  "score": 3
+ },
+ "luna": {
+  "arm": "luna",
+  "cases": {
+   "case_fees": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(refuted+diverges)",
+     "candidate_b": "ok(certified)"
+    }
+   },
+   "case_retention": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   },
+   "case_access": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   }
+  },
+  "score": 3
+ },
+ "terra": {
+  "arm": "terra",
+  "cases": {
+   "case_fees": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(refuted+diverges)",
+     "candidate_b": "ok(certified)"
+    }
+   },
+   "case_retention": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   },
+   "case_access": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   }
+  },
+  "score": 3
+ },
+ "sol": {
+  "arm": "sol",
+  "cases": {
+   "case_fees": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(refuted+diverges)",
+     "candidate_b": "ok(certified)"
+    }
+   },
+   "case_retention": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   },
+   "case_access": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   }
+  },
+  "score": 3
+ },
+ "haiku": {
+  "arm": "haiku",
+  "cases": {
+   "case_fees": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(refuted+diverges)",
+     "candidate_b": "ok(certified)"
+    }
+   },
+   "case_retention": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   },
+   "case_access": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   }
+  },
+  "score": 3
+ },
+ "sonnet": {
+  "arm": "sonnet",
+  "cases": {
+   "case_fees": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(refuted+diverges)",
+     "candidate_b": "ok(certified)"
+    }
+   },
+   "case_retention": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   },
+   "case_access": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   }
+  },
+  "score": 3
+ },
+ "opus": {
+  "arm": "opus",
+  "cases": {
+   "case_fees": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(refuted+diverges)",
+     "candidate_b": "ok(certified)"
+    }
+   },
+   "case_retention": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   },
+   "case_access": {
+    "pass": true,
+    "detail": {
+     "candidate_a": "ok(certified)",
+     "candidate_b": "ok(refuted+diverges)"
+    }
+   }
+  },
+  "score": 3
+ }
+}
