@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f7293-b067-7ce2-ae59-ac97c73ff3e0"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"def stable_unique(items):\n    \"\"\"Return first occurrence of each value from items, preserving original order.\n\n    Equality is determined using Python ``==`` and works for unhashable values\n    (e.g., lists and dictionaries) without requiring hashing.\n    \"\"\"\n    uniques = []\n    for item in items:\n        for existing in uniques:\n            if item == existing:\n                break\n        else:\n            uniques.append(item)\n    return uniques"}}
+{"type":"turn.completed","usage":{"input_tokens":5995,"cached_input_tokens":0,"output_tokens":571,"reasoning_output_tokens":477}}

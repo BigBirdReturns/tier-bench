@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f7293-3d2e-7e43-8b81-ede8febeaa4c"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"```python\nfrom typing import Any, Iterable, List\n\n\ndef stable_unique(items: Iterable[Any]) -> List[Any]:\n    \"\"\"Return first occurrences from *items* in original order using == equality.\"\"\"\n    unique_items: List[Any] = []\n    for value in items:\n        for existing in unique_items:\n            if existing == value:\n                break\n        else:\n            unique_items.append(value)\n    return unique_items\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":5995,"cached_input_tokens":5632,"output_tokens":518,"reasoning_output_tokens":426}}

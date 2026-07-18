@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f7293-9d45-7422-8aff-b417ed0733e4"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"from typing import Iterable, List, TypeVar\n\nT = TypeVar(\"T\")\n\n\ndef stable_unique(items: Iterable[T]) -> List[T]:\n    unique: List[T] = []\n    for item in items:\n        for existing in unique:\n            if item == existing:\n                break\n        else:\n            unique.append(item)\n    return unique"}}
+{"type":"turn.completed","usage":{"input_tokens":5991,"cached_input_tokens":0,"output_tokens":940,"reasoning_output_tokens":865}}

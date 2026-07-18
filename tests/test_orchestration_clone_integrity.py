@@ -167,6 +167,8 @@ def main() -> int:
                 "git",
                 "-c",
                 "core.autocrlf=true",
+                "-c",
+                "core.longpaths=true",
                 "clone",
                 "--no-local",
                 "--quiet",

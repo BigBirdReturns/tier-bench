@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f7294-1d6d-76f2-98f6-e1730bbdcb96"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"from typing import Iterable, List, TypeVar\n\nT = TypeVar(\"T\")\n\n\ndef stable_unique(items: Iterable[T]) -> List[T]:\n    \"\"\"Return a list of the first occurrence of each value in items, preserving order.\n\n    Equality is determined by Python's `==` operator and no hashing is required.\n    Input items and their members are not mutated.\n    \"\"\"\n    uniques: List[T] = []\n\n    for item in items:\n        for existing in uniques:\n            if existing == item:\n                break\n        else:\n            uniques.append(item)\n\n    return uniques"}}
+{"type":"turn.completed","usage":{"input_tokens":5993,"cached_input_tokens":0,"output_tokens":1067,"reasoning_output_tokens":945}}

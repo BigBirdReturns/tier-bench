@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "measurement_class": "administrative_transport_canary",
+  "suite": "spark_effort_public_v1",
+  "model": "gpt-5.3-codex-spark",
+  "effort": "low",
+  "thread_id": "019f7286-7ec7-7030-aa6c-0f20581616df",
+  "expected_response": "OK",
+  "observed_response": "OK",
+  "passed": true,
+  "scientific_call": false,
+  "usage": {
+    "input_tokens": 5909,
+    "cached_input_tokens": 0,
+    "output_tokens": 33,
+    "reasoning_output_tokens": 26
+  },
+  "artifacts": {
+    "prompt.txt": "115cf04ec05b1f4e919635aabb61474bb2e5ce0a55532d0e01dac67bb912679c",
+    "events.jsonl": "23b00cd8b54fdde57e6883250859fdb8ea67b16da9fa2a882e8bcb393db5c312",
+    "response.txt": "565339bc4d33d72817b583024112eb7f5cdf3e5eef0252d6ec1b9c9a94e12bb3",
+    "stderr.txt": "fe4732b78eb9bf276f24f86bcff2dd7c533f450281781bf80ffafcfbe8200aec"
+  }
+}

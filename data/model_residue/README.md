@@ -16,6 +16,13 @@ byte-for-byte under `sources/`, with SHA-256 and byte count recorded in the
 index. This makes the joined artifact usable offline even though the original
 `token-parity-proof` evidence tree was not a Git repository.
 
+`spark_effort_public_v1/` adds a matched clean-room matrix for
+`gpt-5.3-codex-spark` at low, medium, and high effort. It contains 27 sealed
+first-pass cells (three public-synthetic tasks, three replicates, no retries),
+raw CLI JSONL, exact returned source, stderr, validator output, token/time
+receipts, and a deterministic summary. This is effort-routing evidence, not a
+substitute for the separately blocked private hidden-grade cell.
+
 Rebuild and verify on this workstation:
 
 ```powershell

@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f7293-46ad-79b2-9440-a96eb752e513"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"def stable_unique(items):\n    \"\"\"\n    Return a new list containing the first occurrence of each value in `items`,\n    preserving original order. Equality uses Python's `==` operator, so unhashable\n    items (including nested lists/dicts) are handled naturally.\n    \"\"\"\n    result = []\n    for item in items:\n        for existing in result:\n            if existing == item:\n                break\n        else:\n            result.append(item)\n    return result"}}
+{"type":"turn.completed","usage":{"input_tokens":5995,"cached_input_tokens":0,"output_tokens":501,"reasoning_output_tokens":402}}

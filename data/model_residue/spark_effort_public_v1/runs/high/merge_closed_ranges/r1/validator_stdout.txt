@@ -1,0 +1,1 @@
+PASS merge_closed_ranges

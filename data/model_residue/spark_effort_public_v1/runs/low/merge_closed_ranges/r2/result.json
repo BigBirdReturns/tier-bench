@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "suite": "spark_effort_public_v1",
+  "model": "gpt-5.3-codex-spark",
+  "effort": "low",
+  "task": "merge_closed_ranges",
+  "replicate": 2,
+  "started_at": "2026-07-18T00:14:47.614513Z",
+  "completed_at": "2026-07-18T00:14:52.232045Z",
+  "prompt_path": "data/model_residue/spark_effort_public_v1/tasks/merge_closed_ranges/PROMPT.md",
+  "prompt_sha256": "144adc2258f1d599e0916e8ffdc9f2fc2dc9e562d77a0bcb9b47ce2dbed33dd3",
+  "prompt_bytes": 513,
+  "thread_id": "019f7293-5b83-7573-ade6-f423a7c4f082",
+  "cli_exit_code": 0,
+  "wall_seconds": 4.495915,
+  "usage": {
+    "input_tokens": 6028,
+    "cached_input_tokens": 0,
+    "output_tokens": 522,
+    "reasoning_output_tokens": 288
+  },
+  "event_count": 4,
+  "event_parse_errors": 0,
+  "candidate_sha256": "9e212bc499cfd3e489b0e4d3f80ec59ea7aed1a1a0c6affc92def1ddf230363b",
+  "candidate_bytes": 978,
+  "compile_exit_code": 0,
+  "validator_exit_code": 0,
+  "passed": true,
+  "retry_count": 0,
+  "cost_basis": "subscription-derived"
+}

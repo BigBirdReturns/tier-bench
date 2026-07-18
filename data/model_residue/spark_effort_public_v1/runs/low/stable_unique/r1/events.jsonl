@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f7292-ea30-70c0-987d-08867b1c43a5"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"from collections.abc import Iterable\nfrom typing import Any, List\n\n\ndef stable_unique(items: Iterable[Any]) -> List[Any]:\n    \"\"\"\n    Return a new list containing the first occurrence of each value in `items`,\n    preserving original order and using Python equality (==).\n\n    Works for unhashable values (e.g., dicts, lists) and does not mutate `items`\n    or any of its members.\n    \"\"\"\n    result: List[Any] = []\n    for value in items:\n        for existing in result:\n            if value == existing:\n                break\n        else:\n            result.append(value)\n    return result"}}
+{"type":"turn.completed","usage":{"input_tokens":5991,"cached_input_tokens":0,"output_tokens":420,"reasoning_output_tokens":287}}

@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "suite": "spark_effort_public_v1",
+  "model": "gpt-5.3-codex-spark",
+  "design": "3 clean-room public-synthetic tasks x 3 efforts x 3 fresh replicates; no retries",
+  "scientific_calls": 27,
+  "prompt_hashes": {
+    "stable_unique": "3663725d2a71658b2c363165c3ac5f0534ffa720077aaba370cc732dfc72842f",
+    "merge_closed_ranges": "144adc2258f1d599e0916e8ffdc9f2fc2dc9e562d77a0bcb9b47ce2dbed33dd3",
+    "dependency_batches": "b143b4c37b581931fec49e4c3f7e34d9712457f9ebd3993d3679b987e428d4db"
+  },
+  "efforts": {
+    "low": {
+      "calls": 9,
+      "passes": 8,
+      "pass_rate": 0.8889,
+      "per_task_passes": {
+        "stable_unique": 2,
+        "merge_closed_ranges": 3,
+        "dependency_batches": 3
+      },
+      "median_wall_seconds": 2.679181,
+      "total_wall_seconds": 28.377101,
+      "median_total_tokens": 6595,
+      "total_tokens": 62007,
+      "input_tokens": 54174,
+      "cached_input_tokens": 16896,
+      "output_tokens": 7833,
+      "reasoning_output_tokens": 5792,
+      "cli_failures": 0,
+      "validator_failures": 1
+    },
+    "medium": {
+      "calls": 9,
+      "passes": 9,
+      "pass_rate": 1.0,
+      "per_task_passes": {
+        "stable_unique": 3,
+        "merge_closed_ranges": 3,
+        "dependency_batches": 3
+      },
+      "median_wall_seconds": 3.047953,
+      "total_wall_seconds": 28.493758,
+      "median_total_tokens": 6889,
+      "total_tokens": 66271,
+      "input_tokens": 54170,
+      "cached_input_tokens": 11264,
+      "output_tokens": 12101,
+      "reasoning_output_tokens": 10294,
+      "cli_failures": 0,
+      "validator_failures": 0
+    },
+    "high": {
+      "calls": 9,
+      "passes": 8,
+      "pass_rate": 0.8889,
+      "per_task_passes": {
+        "stable_unique": 2,
+        "merge_closed_ranges": 3,
+        "dependency_batches": 3
+      },
+      "median_wall_seconds": 4.058704,
+      "total_wall_seconds": 35.544655,
+      "median_total_tokens": 7519,
+      "total_tokens": 71126,
+      "input_tokens": 54174,
+      "cached_input_tokens": 16896,
+      "output_tokens": 16952,
+      "reasoning_output_tokens": 14927,
+      "cli_failures": 0,
+      "validator_failures": 1
+    }
+  },
+  "effort_vs_low": {
+    "medium": {
+      "pass_delta": 1,
+      "median_wall_delta_percent": 13.76,
+      "median_total_tokens_delta_percent": 4.46,
+      "total_tokens_delta_percent": 6.88
+    },
+    "high": {
+      "pass_delta": 0,
+      "median_wall_delta_percent": 51.49,
+      "median_total_tokens_delta_percent": 14.01,
+      "total_tokens_delta_percent": 14.71
+    }
+  },
+  "failure_shapes": {
+    "markdown_fence_protocol_violation": 2
+  },
+  "scope": "public-synthetic effort comparison; not private Tier-Bench hidden-grade capability evidence"
+}

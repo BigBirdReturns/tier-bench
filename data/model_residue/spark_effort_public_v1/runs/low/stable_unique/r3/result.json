@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "suite": "spark_effort_public_v1",
+  "model": "gpt-5.3-codex-spark",
+  "effort": "low",
+  "task": "stable_unique",
+  "replicate": 3,
+  "started_at": "2026-07-18T00:14:42.279135Z",
+  "completed_at": "2026-07-18T00:14:44.935257Z",
+  "prompt_path": "data/model_residue/spark_effort_public_v1/tasks/stable_unique/PROMPT.md",
+  "prompt_sha256": "3663725d2a71658b2c363165c3ac5f0534ffa720077aaba370cc732dfc72842f",
+  "prompt_bytes": 448,
+  "thread_id": "019f7293-46ad-79b2-9440-a96eb752e513",
+  "cli_exit_code": 0,
+  "wall_seconds": 2.540196,
+  "usage": {
+    "input_tokens": 5995,
+    "cached_input_tokens": 0,
+    "output_tokens": 501,
+    "reasoning_output_tokens": 402
+  },
+  "event_count": 4,
+  "event_parse_errors": 0,
+  "candidate_sha256": "1a62cdf36a9fe963ebae122c44455993f3339cd97e4274272c03bb04e5699ab0",
+  "candidate_bytes": 458,
+  "compile_exit_code": 0,
+  "validator_exit_code": 0,
+  "passed": true,
+  "retry_count": 0,
+  "cost_basis": "subscription-derived"
+}

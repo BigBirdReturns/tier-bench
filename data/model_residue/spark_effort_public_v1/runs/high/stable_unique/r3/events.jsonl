@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f7294-2e36-7d02-bd24-2dcda6b384e8"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"from typing import Any, Iterable, List, TypeVar\n\nT = TypeVar(\"T\")\n\n\ndef stable_unique(items: Iterable[T]) -> List[T]:\n    \"\"\"Return unique values from items in stable (first-occurrence) order.\n\n    Equality is determined by Python's == operator. Supports unhashable values,\n    including nested lists and dictionaries.\n    \"\"\"\n    result: List[T] = []\n\n    for item in items:\n        if not any(item == existing for existing in result):\n            result.append(item)\n\n    return result"}}
+{"type":"turn.completed","usage":{"input_tokens":5991,"cached_input_tokens":5632,"output_tokens":1302,"reasoning_output_tokens":1190}}

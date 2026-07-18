@@ -42,14 +42,18 @@ def utc_now() -> str:
 
 def run_local_validator(task: str, candidate: Path) -> dict:
     validator = TASK_ROOT / task / "validator.py"
+    environment = dict(os.environ)
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
     compile_result = subprocess.run(
         [sys.executable, "-m", "py_compile", str(candidate)],
         capture_output=True,
+        env=environment,
     )
     if compile_result.returncode == 0:
         validation = subprocess.run(
             [sys.executable, str(validator), str(candidate)],
             capture_output=True,
+            env=environment,
         )
     else:
         validation = subprocess.CompletedProcess([], 99, b"", b"compile failed")
@@ -244,9 +248,29 @@ def summarize() -> dict:
         if row["cli_exit_code"] != 0:
             failure_shapes["provider_or_cli_failure"] += 1
         elif row["compile_exit_code"] != 0:
-            failure_shapes["non_compiling_candidate"] += 1
+            candidate = RUN_ROOT / row["effort"] / row["task"] / f"r{row['replicate']}" / "candidate.py"
+            if candidate.read_bytes().lstrip().startswith(b"```"):
+                failure_shapes["markdown_fence_protocol_violation"] += 1
+            else:
+                failure_shapes["non_compiling_candidate"] += 1
         else:
             failure_shapes["validator_rejection"] += 1
+    low = efforts["low"]
+    effort_vs_low = {}
+    for effort in ("medium", "high"):
+        item = efforts[effort]
+        effort_vs_low[effort] = {
+            "pass_delta": item["passes"] - low["passes"],
+            "median_wall_delta_percent": round(
+                (item["median_wall_seconds"] / low["median_wall_seconds"] - 1) * 100, 2
+            ),
+            "median_total_tokens_delta_percent": round(
+                (item["median_total_tokens"] / low["median_total_tokens"] - 1) * 100, 2
+            ),
+            "total_tokens_delta_percent": round(
+                (item["total_tokens"] / low["total_tokens"] - 1) * 100, 2
+            ),
+        }
     summary = {
         "schema_version": 1,
         "suite": "spark_effort_public_v1",
@@ -255,6 +279,7 @@ def summarize() -> dict:
         "scientific_calls": len(results),
         "prompt_hashes": {task: next(iter(prompt_hashes[task])) for task in TASKS},
         "efforts": efforts,
+        "effort_vs_low": effort_vs_low,
         "failure_shapes": dict(failure_shapes),
         "scope": "public-synthetic effort comparison; not private Tier-Bench hidden-grade capability evidence",
     }
@@ -284,19 +309,47 @@ def summarize() -> dict:
     return summary
 
 
+def verify() -> None:
+    results = load_results(require_complete=True)
+    thread_ids = set()
+    for row in results:
+        prompt = TASK_ROOT / row["task"] / "PROMPT.md"
+        cell = RUN_ROOT / row["effort"] / row["task"] / f"r{row['replicate']}"
+        candidate = cell / "candidate.py"
+        raw_events = (cell / "events.jsonl").read_bytes()
+        events = parse_events(raw_events)
+        assert sha256(prompt.read_bytes()) == row["prompt_sha256"], row
+        assert sha256(candidate.read_bytes()) == row["candidate_sha256"], row
+        assert events["thread_id"] == row["thread_id"], row
+        assert events["usage"] == row["usage"], row
+        assert events["event_count"] == row["event_count"], row
+        assert events["event_parse_errors"] == row["event_parse_errors"] == 0, row
+        assert row["thread_id"] and row["thread_id"] not in thread_ids, row
+        thread_ids.add(row["thread_id"])
+        validation = run_local_validator(row["task"], candidate)
+        actual_pass = row["cli_exit_code"] == 0 and validation["passed"]
+        assert actual_pass == row["passed"], row
+        assert row["retry_count"] == 0, row
+    assert len(thread_ids) == 27
+    print("PASS sealed Spark matrix: 27 cells, 27 unique threads, hashes and grades reproduced")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--run", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--summarize", action="store_true")
+    parser.add_argument("--verify", action="store_true")
     parser.add_argument("--max-new-calls", type=int, default=None)
     parser.add_argument("--codex", type=Path, default=CODEX_DEFAULT)
     args = parser.parse_args()
-    if not (args.self_test or args.run or args.summarize):
-        parser.error("choose --self-test, --run, or --summarize")
+    if not (args.self_test or args.run or args.summarize or args.verify):
+        parser.error("choose --self-test, --run, --summarize, or --verify")
     if args.self_test:
         self_test()
+    if args.verify:
+        verify()
     if args.run:
         if not args.codex.is_file() and shutil.which(str(args.codex)) is None:
             raise FileNotFoundError(args.codex)

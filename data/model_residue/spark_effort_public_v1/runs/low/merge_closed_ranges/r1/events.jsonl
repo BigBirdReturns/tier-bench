@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f7293-5242-7ea3-8a06-5740be055399"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"def merge_closed_ranges(ranges):\n    merged = []\n    normalized = []\n\n    for interval in ranges:\n        start, end = interval\n        if start > end:\n            start, end = end, start\n        normalized.append((start, end))\n\n    normalized.sort(key=lambda x: x[0])\n\n    for start, end in normalized:\n        if not merged:\n            merged.append((start, end))\n            continue\n\n        last_start, last_end = merged[-1]\n        if start <= last_end + 1:\n            merged[-1] = (last_start, max(last_end, end))\n        else:\n            merged.append((start, end))\n\n    return merged"}}
+{"type":"turn.completed","usage":{"input_tokens":6028,"cached_input_tokens":0,"output_tokens":567,"reasoning_output_tokens":424}}

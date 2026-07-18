@@ -1,0 +1,4 @@
+{"type":"thread.started","thread_id":"019f7294-10e6-7200-be1a-12295f3ba1f1"}
+{"type":"turn.started"}
+{"type":"item.completed","item":{"id":"item_0","type":"agent_message","text":"```python\nfrom collections.abc import Iterable\nfrom typing import TypeVar, List\n\nT = TypeVar(\"T\")\n\n\ndef stable_unique(items: Iterable[T]) -> List[T]:\n    \"\"\"\n    Return items' first occurrences in original order, using Python's == equality.\n    Handles unhashable values (e.g., nested lists/dicts) without mutation.\n    \"\"\"\n    unique_items: List[T] = []\n\n    for item in items:\n        for seen in unique_items:\n            if item == seen:\n                break\n        else:\n            unique_items.append(item)\n\n    return unique_items\n```"}}
+{"type":"turn.completed","usage":{"input_tokens":5993,"cached_input_tokens":0,"output_tokens":1541,"reasoning_output_tokens":1414}}

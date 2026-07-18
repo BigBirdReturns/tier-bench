@@ -40,6 +40,19 @@ def sha_file(path: Path) -> str:
     return sha_bytes(path.read_bytes())
 
 
+def tracked_repo_file(path: Path) -> dict:
+    if not path.is_file():
+        raise ValueError(f"missing residue file: {path}")
+    relative = path.relative_to(REPO).as_posix()
+    if subprocess.run(
+        ["git", "-c", f"safe.directory={REPO.as_posix()}", "-C", str(REPO),
+         "ls-files", "--error-unmatch", relative],
+        capture_output=True,
+    ).returncode != 0:
+        raise ValueError(f"residue file is present but not tracked: {path}")
+    return {"path": relative, "sha256": sha_file(path), "bytes": path.stat().st_size}
+
+
 def git_commit(repo: Path) -> str:
     return subprocess.run(
         ["git", "-c", f"safe.directory={repo.as_posix()}", "-C", str(repo),
@@ -167,6 +180,58 @@ def summarize_run(path: Path) -> dict:
     return summary
 
 
+def spark_effort_matrix() -> dict:
+    root = REPO / "data/model_residue/spark_effort_public_v1"
+    summary_path = root / "summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    cells = []
+    for result_path in sorted((root / "runs").glob("*/*/r*/result.json")):
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        cell_dir = result_path.parent
+        artifacts = [
+            tracked_repo_file(cell_dir / name)
+            for name in (
+                "result.json", "events.jsonl", "stderr.txt", "candidate.py",
+                "validator_stdout.txt", "validator_stderr.txt",
+            )
+        ]
+        cells.append({
+            "effort": result["effort"],
+            "task": result["task"],
+            "replicate": result["replicate"],
+            "passed": result["passed"],
+            "thread_id": result["thread_id"],
+            "usage": result["usage"],
+            "wall_seconds": result["wall_seconds"],
+            "artifacts": artifacts,
+        })
+    if len(cells) != 27:
+        raise ValueError(f"Spark effort matrix incomplete: {len(cells)}/27")
+    administrative = []
+    for failure_dir in sorted((root / "administrative_failures").glob("*")):
+        if not failure_dir.is_dir():
+            continue
+        administrative.extend(
+            tracked_repo_file(failure_dir / name)
+            for name in (
+                "result.json", "events.jsonl", "stderr.txt", "candidate.py",
+                "validator_stdout.txt", "validator_stderr.txt",
+            )
+        )
+    canary_dir = root / "administrative_canary/literal_ok_001"
+    canary = [
+        tracked_repo_file(canary_dir / name)
+        for name in ("manifest.json", "prompt.txt", "events.jsonl", "response.txt", "stderr.txt")
+    ]
+    return {
+        "summary_receipt": tracked_repo_file(summary_path),
+        "summary": summary,
+        "cells": cells,
+        "administrative_failure_artifacts": administrative,
+        "administrative_canary_artifacts": canary,
+    }
+
+
 def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
     sources = []
     for rel in LOCAL_FIRST_FILES:
@@ -181,6 +246,7 @@ def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
             if line.strip()
         )
     robust = robust_result(rows)
+    spark_matrix = spark_effort_matrix()
     runs = [summarize_run(path) for path in sorted((REPO / "data/orchestration").glob("*.json"))]
     by_model = defaultdict(list)
     for run in runs:
@@ -193,8 +259,8 @@ def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
             "residue": "18/18 robust first-pass clears; use after Spark validator failure or for high-risk cross-checks",
         },
         "gpt-5.3-codex-spark": {
-            "evidence": ["robust_sol_vs_spark", "repo_relay", "blind_review_quality", *by_model.get("gpt-5.3-codex-spark", [])],
-            "residue": "18/18 robust first-pass clears and 17/18 race wins; peer review is advisory and generated validators are not acceptance oracles",
+            "evidence": ["robust_sol_vs_spark", "spark_effort_public_v1", "repo_relay", "blind_review_quality", *by_model.get("gpt-5.3-codex-spark", [])],
+            "residue": "18/18 robust first-pass clears and 17/18 race wins; on the public effort matrix medium cleared 9/9 while low and high each cleared 8/9, with both misses caused by Markdown-fenced otherwise plausible source",
         },
         "terra:version-unspecified": {
             "evidence": ["route_discovery"],
@@ -224,6 +290,7 @@ def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
             "orchestration_runs": runs,
             "route_discovery": route_rows(benchmarks_text),
             "robust_sol_vs_spark": robust,
+            "spark_effort_public_v1": spark_matrix,
             "repo_relay": {
                 "planner_model_tokens": 0,
                 "eager_final_validator": "5/5",

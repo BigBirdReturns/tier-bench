@@ -1,0 +1,5 @@
+  File "D:\Projects\Tier-Bench\worktrees\residue-bridge-v1\data\model_residue\spark_effort_public_v1\runs\low\stable_unique\r2\candidate.py", line 1
+    ```python
+    ^
+SyntaxError: invalid syntax
+compile failed
