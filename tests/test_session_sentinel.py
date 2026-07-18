@@ -176,6 +176,32 @@ def test_warn_tier_injects_context_on_post_tool_use():
         assert _fire("PostToolUse", transcript, "s2", td) is None
 
 
+def test_pretooluse_does_not_swallow_crossing_warning():
+    # Live-fire finding 2026-07-18 (session ccb7a62c): PreToolUse fires between
+    # the first response and the first PostToolUse; it must not record the tier,
+    # or PostToolUse sees crossed=False and the crossing warning is lost.
+    with tempfile.TemporaryDirectory() as td:
+        transcript = Path(td) / "t.jsonl"
+        with open(transcript, "w") as f:
+            for i in range(4):  # $50 -> WARN
+                f.write(json.dumps(_row(f"w{i}", 250_000)) + "\n")
+        assert _fire("PreToolUse", transcript, "s5", td) is None  # under cap: silent
+        out = _fire("PostToolUse", transcript, "s5", td)
+        assert out is not None, "crossing warning swallowed by PreToolUse"
+        assert "systemMessage" in out  # it must present as a crossing, not a re-warn
+
+
+def test_dated_model_id_prefix_matches_registry():
+    rates = {"claude-haiku-4-5": (1.0, 5.0), "claude-haiku-4": (99.0, 99.0),
+             "claude-fable-5": (10.0, 50.0)}
+    # longest prefix wins; dated transcript ids map to their registry family
+    assert sentinel._rate_for("claude-haiku-4-5-20251001", rates) == (1.0, 5.0)
+    assert sentinel._rate_for("claude-fable-5", rates) == (10.0, 50.0)
+    # no match at all -> dearest registry row (here the synthetic 99-rate key)
+    assert sentinel._rate_for("gpt-99", rates) == (99.0, 99.0)
+    assert sentinel._rate_for("", rates) == (99.0, 99.0)
+
+
 def test_under_notice_stays_silent():
     with tempfile.TemporaryDirectory() as td:
         transcript = Path(td) / "t.jsonl"

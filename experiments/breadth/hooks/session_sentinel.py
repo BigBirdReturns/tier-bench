@@ -125,8 +125,23 @@ def _cache_write_tokens(u: dict) -> int:
     return _num(cc)
 
 
+def _rate_for(model: str, rates: dict[str, tuple[float, float]]) -> tuple[float, float]:
+    """Exact registry hit, else longest prefix match (transcripts carry dated
+    ids like claude-haiku-4-5-20251001 for registry key claude-haiku-4-5),
+    else the pessimistic fallback. Live-fire finding 2026-07-18: without the
+    prefix rule a haiku session was billed at fable rates, ~10x."""
+    hit = rates.get(model)
+    if hit:
+        return hit
+    if model:
+        prefixes = [k for k in rates if model.startswith(k)]
+        if prefixes:
+            return rates[max(prefixes, key=len)]
+    return _fallback_rate(rates)
+
+
 def row_cost_usd(model: str, u: dict, rates: dict[str, tuple[float, float]]) -> float:
-    inp, out = rates.get(model) or _fallback_rate(rates)
+    inp, out = _rate_for(model, rates)
     return (
         _num(u.get("input_tokens")) * inp
         + _num(u.get("output_tokens")) * out
@@ -291,10 +306,14 @@ def _main() -> int:
     except (OSError, ValueError):
         pass
 
+    # `tier` in state means "tier the model has been WARNED about", so only the
+    # warn-emitting branches below may record it. Live-fire finding 2026-07-18:
+    # PreToolUse fires between the first response and the first PostToolUse; if
+    # it records the tier, PostToolUse sees crossed=False and the crossing
+    # warning is swallowed forever.
     tier = tier_of(cost, th)
     prev_tier = state.get("tier")
     crossed = tier is not None and (prev_tier is None or TIERS.index(tier) > TIERS.index(prev_tier))
-    state["tier"] = tier
 
     if event == "PreToolUse":
         if tier == "HARDCAP":
@@ -315,6 +334,7 @@ def _main() -> int:
                 "hookEventName": "UserPromptSubmit",
                 "additionalContext": tier_message(tier, cost, th),
             }})
+            state["tier"] = tier
             state["last_warned_usd"] = cost
         _save(state_file, state)
         return 0
@@ -332,6 +352,7 @@ def _main() -> int:
             if crossed:
                 out["systemMessage"] = f"cost-sentinel: {tier} — {_gauge(cost, th)}"
             _emit(out)
+            state["tier"] = tier
             state["last_warned_usd"] = cost
     _save(state_file, state)
     return 0
