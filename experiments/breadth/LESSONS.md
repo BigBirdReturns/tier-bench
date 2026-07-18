@@ -133,6 +133,15 @@ drawing that waterline correctly — and proving which side each cell is on.
     shim, canary sequenced AFTER the byte freeze) and ARC-D-B2-CUSTODY-V2
     (activation will dispatch over the exact transport that just went 0-for-3).
 
+    *Corroboration for rules 11/12 (2026-07-18, informal, N=1 per arm — see
+    `races/README.md` for receipts):* four models solo (haiku→fable) plus an
+    opus-driver/sonnet-hands DAG all went 12/12+9/9 hidden on the authoring-2/3
+    discriminator knots. The capability gradient showed up ONLY as burn (speed,
+    tool round-trips, verification depth), never as score — and haiku cleared
+    three T3-labelled knots despite its registered T2 ceiling. The floor keeps
+    eating crisply-stated knots; route crisp+deterministically-graded work
+    cheap and spend the savings on graders.
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.
