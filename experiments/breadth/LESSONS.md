@@ -175,6 +175,27 @@ drawing that waterline correctly — and proving which side each cell is on.
     an unverified referee manufactures false discriminators as readily as a
     model manufactures false-greens. Verify the verifier.
 
+16. **Breadth has a waterline that depth and difficulty do not - and
+    decomposition is the fix (quality, not just cost).** The program's floor
+    held against knots, interactions, spec gaps, multi-file work, adversarial
+    certification, and 20-stage compounding chains. It cracked on BREADTH: one
+    spec with N independent requirements. Monolithic Spark at N=160 (11 runs,
+    fresh spec each): 5 clean, 5 dropped 2-5 low-salience one-liner rules
+    (suffix_trim, upper, strip, abs_cap, bool_flip - the boring ones, ~1%
+    per-rule silent omission, still passing visible checks), 1 produced
+    non-importable code. ~55% of runs imperfect. Cross-model: Luna dropped 3/160
+    too - the waterline is general, not Spark-specific. Adjudicated real, not a
+    harness artifact (isolating probes showed rules literally unimplemented).
+    THE FIX: split the 160 rules into 4 scoped passes of 40 (model preserves
+    prior passes, focuses on its 40). Decomposed N=160x4: 5/5 runs perfect,
+    zero drops, zero breaks. Scoping context per pass drove a ~55%-imperfect
+    rate to 0%. This is the crate/DAG thesis (CART0) proven with a QUALITY
+    delta - not just the ~35% context-cost delta the live pilot showed. Cost:
+    4x the calls. Operating rule: past ~50-80 independent requirements in one
+    prompt, cheap models silently drop some; decompose into <=40-requirement
+    scoped passes and the drops vanish. The referee (per-requirement isolating
+    probes) is what makes the drop visible at all - aggregate pass/fail hides it.
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.
