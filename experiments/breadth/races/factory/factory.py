@@ -167,8 +167,8 @@ def fairness(task_dir, tag):
 
 def used_domains():
     domains = list(SEED_FORBIDDEN)
-    if LEDGER.exists():
-        for line in LEDGER.read_text(encoding="utf-8").splitlines():
+    for shard in F.glob("ledger*.jsonl"):
+        for line in shard.read_text(encoding="utf-8").splitlines():
             try:
                 row = json.loads(line)
                 domains.append(row.get("domain") or row.get("task", ""))
@@ -179,13 +179,18 @@ def used_domains():
 
 def main():
     batch, count = sys.argv[1], int(sys.argv[2])
+    theme = sys.argv[3] if len(sys.argv) > 3 else ""
+    ledger = F / f"ledger_{batch}.jsonl"
     for i in range(count):
         work = F / batch / f"pkg_{i:02d}"
         work.mkdir(parents=True, exist_ok=True)
         git_init(work)
         forbidden = ", ".join(d for d in used_domains() if d)
         start = time.time()
-        rc = codex(work, "gpt-5.3-codex-spark", "medium", AUTHOR_BRIEF.format(forbidden=forbidden), 900)
+        brief = AUTHOR_BRIEF.format(forbidden=forbidden)
+        if theme:
+            brief += "\nPreferred domain territory for this package: " + theme + "\n"
+        rc = codex(work, "gpt-5.3-codex-spark", "medium", brief, 900)
         author_secs = round(time.time() - start, 1)
         task_dirs = [d for d in work.iterdir() if d.is_dir() and not d.name.startswith((".", "_"))]
         row = {"batch": batch, "pkg": i, "author_rc": rc, "author_secs": author_secs}
@@ -204,7 +209,7 @@ def main():
                 row["fairness"] = verdict
                 if misses:
                     row["fairness_misses"] = [[a, e, g] for a, e, g in misses]
-        with LEDGER.open("a", encoding="utf-8") as handle:
+        with ledger.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(row) + "\n")
         print(f"pkg_{i:02d}: valid={row.get('valid')} fairness={row.get('fairness', '-')} ({author_secs}s)", flush=True)
     print("FACTORY BATCH COMPLETE", flush=True)
