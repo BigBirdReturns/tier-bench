@@ -68,3 +68,6 @@ tmp/
 # Session-burn hook scratch: per-session byte-offset + running totals (ephemeral,
 # per-container). The committed deliverable is burn_log.jsonl, not this state.
 experiments/breadth/run/.burn_state/
+# Cost-sentinel scratch: per-session byte-offset + accumulated dollars + operator
+# ack files (ephemeral, per-container). Enforcement is the hook, not this state.
+experiments/breadth/run/.sentinel_state/
