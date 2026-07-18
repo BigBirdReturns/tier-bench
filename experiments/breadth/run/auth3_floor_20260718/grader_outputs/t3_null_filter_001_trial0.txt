@@ -1,0 +1,4 @@
+rc=0
+stdout:
+SCORE 10/10
+stderr:

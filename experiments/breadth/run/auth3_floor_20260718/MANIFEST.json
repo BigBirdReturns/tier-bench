@@ -1,0 +1,86 @@
+{
+  "grader": "driver session via experiments/breadth/selfrun/grade.py; hidden vectors injected at grade time only",
+  "grader_discrimination_check": "build_vectors.py --check OK (reference passes all; every paired naive fails >=1 knot vector)",
+  "layer": "auth3-floor-20260718",
+  "ledger_sha256": "e0219d5f2e9405530898342d56b6681d9a37dea5cb6cca65c8d4f6f1a2ee32dd",
+  "result": {
+    "cost_usd_real_billed": 0.0,
+    "t3_accrual_crossover_001": "3/3 settled, hidden pass each",
+    "t3_null_filter_001": "3/3 settled, hidden 10/10 each"
+  },
+  "solver": "claude-haiku-4-5 (Agent-tool subagent, bare framing, fresh context per trial)",
+  "trials": [
+    {
+      "candidate_sha256": "f0c44ff1b2ae1dff667581038098bb71f2851121053a3431ac04b920a8349ea0",
+      "duration_ms": 43968,
+      "grader_output_sha256": "c6b62766f31a8ae7d5dfe7ddac23fba431746726ebd9076e520c46002573f046",
+      "hidden_rerun_rc": 0,
+      "hidden_rerun_stdout_tail": "SCORE 10/10",
+      "identity_note": "provider session IDs not exposed at Agent-tool dispatch; candidate sha256 + subagent-reported usage is the identity retained (fanout-floor precedent)",
+      "outcome": "pass",
+      "subagent_tokens_reported": 30267,
+      "task_id": "t3_null_filter_001",
+      "trial": 0
+    },
+    {
+      "candidate_sha256": "d6941186b447f22178fb0f8c87bcdbacab7ecd64d0ec8b404b99be47784121c7",
+      "duration_ms": 51909,
+      "grader_output_sha256": "c6b62766f31a8ae7d5dfe7ddac23fba431746726ebd9076e520c46002573f046",
+      "hidden_rerun_rc": 0,
+      "hidden_rerun_stdout_tail": "SCORE 10/10",
+      "identity_note": "provider session IDs not exposed at Agent-tool dispatch; candidate sha256 + subagent-reported usage is the identity retained (fanout-floor precedent)",
+      "outcome": "pass",
+      "subagent_tokens_reported": 31359,
+      "task_id": "t3_null_filter_001",
+      "trial": 1
+    },
+    {
+      "candidate_sha256": "3c2d83fea39dbdb0fe5d3d0fd09851574502815bbfa208c9553278794788e5b2",
+      "duration_ms": 44900,
+      "grader_output_sha256": "c6b62766f31a8ae7d5dfe7ddac23fba431746726ebd9076e520c46002573f046",
+      "hidden_rerun_rc": 0,
+      "hidden_rerun_stdout_tail": "SCORE 10/10",
+      "identity_note": "provider session IDs not exposed at Agent-tool dispatch; candidate sha256 + subagent-reported usage is the identity retained (fanout-floor precedent)",
+      "outcome": "pass",
+      "subagent_tokens_reported": 30019,
+      "task_id": "t3_null_filter_001",
+      "trial": 2
+    },
+    {
+      "candidate_sha256": "4f7df70883745e354286a4d3a8be369eaf693cb7b4c6a8b68661a25c62b3d6c2",
+      "duration_ms": 29739,
+      "grader_output_sha256": "c6b62766f31a8ae7d5dfe7ddac23fba431746726ebd9076e520c46002573f046",
+      "hidden_rerun_rc": 0,
+      "hidden_rerun_stdout_tail": "SCORE 10/10",
+      "identity_note": "provider session IDs not exposed at Agent-tool dispatch; candidate sha256 + subagent-reported usage is the identity retained (fanout-floor precedent)",
+      "outcome": "pass",
+      "subagent_tokens_reported": 28802,
+      "task_id": "t3_accrual_crossover_001",
+      "trial": 0
+    },
+    {
+      "candidate_sha256": "20b8cfe475d469b9bf1728f2992b5f8661170c0600a1202d381efc0ab2931e11",
+      "duration_ms": 40181,
+      "grader_output_sha256": "c6b62766f31a8ae7d5dfe7ddac23fba431746726ebd9076e520c46002573f046",
+      "hidden_rerun_rc": 0,
+      "hidden_rerun_stdout_tail": "SCORE 10/10",
+      "identity_note": "provider session IDs not exposed at Agent-tool dispatch; candidate sha256 + subagent-reported usage is the identity retained (fanout-floor precedent)",
+      "outcome": "pass",
+      "subagent_tokens_reported": 29838,
+      "task_id": "t3_accrual_crossover_001",
+      "trial": 1
+    },
+    {
+      "candidate_sha256": "bc45a9267ed0e7dc0eff7e8238ded3cbac73bbb472525f8cf39efa2ddc013724",
+      "duration_ms": 31840,
+      "grader_output_sha256": "c6b62766f31a8ae7d5dfe7ddac23fba431746726ebd9076e520c46002573f046",
+      "hidden_rerun_rc": 0,
+      "hidden_rerun_stdout_tail": "SCORE 10/10",
+      "identity_note": "provider session IDs not exposed at Agent-tool dispatch; candidate sha256 + subagent-reported usage is the identity retained (fanout-floor precedent)",
+      "outcome": "pass",
+      "subagent_tokens_reported": 28745,
+      "task_id": "t3_accrual_crossover_001",
+      "trial": 2
+    }
+  ]
+}

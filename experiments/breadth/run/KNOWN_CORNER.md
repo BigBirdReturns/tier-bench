@@ -14,7 +14,33 @@
 
 This document tracks the classification of tasks across the breadth test suite as they accumulate through layers.
 
-### Current Layer: authoring2-floor-20260713
+### Current Layer: auth3-floor-20260718
+
+**Authoring batch 3 floored — the floor ate BOTH discriminator-shaped knots.**
+`t3_null_filter_001` (felt-contradiction: three-valued NOT/!= over UNKNOWN) and
+`t3_accrual_crossover_001` (derived-quantity: integer floor-compounding stall/
+crossover): each settled **3/3 at the haiku floor on first flooring, hidden
+vectors 10/10 every trial**. Solvers were fresh haiku subagents, bare framing
+(no free-adapt), hidden graders stripped from working copies and prompts at
+prep. Every grade run by the driver via `selfrun/grade.py`; all six hidden
+graders re-run by hand verbatim (outputs sealed); `build_vectors.py --check`
+re-confirmed discrimination (reference passes all, every paired naive fails a
+knot vector) — so the passes are real, not grader rot. **Evidence
+(hash-bound): `run/auth3_floor_20260718/MANIFEST.json`** — six candidate
+sha256s, six verbatim grader outputs + hashes, graded ledger. Cost: $0
+real-billed (shadow subagent tokens only).
+
+**Finding:** these two tasks were purpose-built on the ONLY two measured
+discriminator shapes (LESSONS 11b) to the batch-2 post-review standard — and
+the floor ate them anyway. The solved-band membership therefore still rests on
+a single point (`almanac_rule_boundary_001`, haiku 1/3 → fable-low), plus the
+unsolved ceiling point (P8). Authored knots — even felt-contradiction and
+derived-quantity shaped — keep settling; the only cells that have ever
+separated models arose from *found* boundaries, not authored ones. The
+capture program should bias toward found/OSS-derived boundary cells and
+parametric intensity sweeps around the almanac point.
+
+### Previous Layer: authoring2-floor-20260713
 
 **Authoring batch 2 floored — the floor ate all three embedded knots.**
 `t3_billing_anchor_001`, `t3_window_limit_001`, `t3_due_date_shift_001`: each
