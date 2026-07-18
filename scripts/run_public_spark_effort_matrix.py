@@ -289,6 +289,7 @@ def main() -> int:
     parser.add_argument("--run", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--summarize", action="store_true")
+    parser.add_argument("--max-new-calls", type=int, default=None)
     parser.add_argument("--codex", type=Path, default=CODEX_DEFAULT)
     args = parser.parse_args()
     if not (args.self_test or args.run or args.summarize):
@@ -298,6 +299,8 @@ def main() -> int:
     if args.run:
         if not args.codex.is_file() and shutil.which(str(args.codex)) is None:
             raise FileNotFoundError(args.codex)
+        new_calls = 0
+        stop = False
         for effort in EFFORTS:
             for task in TASKS:
                 for replicate in REPLICATES:
@@ -305,15 +308,26 @@ def main() -> int:
                     if result_path.exists() and args.resume:
                         print(f"SKIP sealed {effort}/{task}/r{replicate}", flush=True)
                         continue
+                    if args.max_new_calls is not None and new_calls >= args.max_new_calls:
+                        stop = True
+                        break
                     result = run_cell(args.codex, task, effort, replicate)
+                    new_calls += 1
                     tokens = result.get("usage", {}).get("input_tokens", 0) + result.get("usage", {}).get("output_tokens", 0)
                     print(
                         f"DONE {effort}/{task}/r{replicate} pass={result['passed']} "
                         f"wall={result['wall_seconds']:.3f}s tokens={tokens}",
                         flush=True,
                     )
-        summary = summarize()
-        print(json.dumps(summary["efforts"], indent=2), flush=True)
+                if stop:
+                    break
+            if stop:
+                break
+        if len(load_results(require_complete=False)) == 27:
+            summary = summarize()
+            print(json.dumps(summary["efforts"], indent=2), flush=True)
+        else:
+            print(f"PARTIAL sealed={len(load_results(require_complete=False))}/27", flush=True)
     elif args.summarize:
         print(json.dumps(summarize(), indent=2))
     return 0
@@ -321,4 +335,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
