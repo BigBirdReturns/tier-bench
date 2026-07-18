@@ -112,3 +112,33 @@ by a $0 deterministic referee - so the durable frontier monopoly is authoring
 the VERIFICATION HARNESS, not the tasks. Refined operation: haiku authors,
 deterministic referee gates, blind solver confirms fairness.
 Receipt: race5_grader_authoring_results.json.
+
+## Race 6 — cross-vendor: the GPT ladder via Codex CLI (2026-07-18)
+
+Live dispatches through the pinned codex-cli 0.144.5 (hash-verified), smoke-
+first (two infra lessons: git-trust requirement; the Windows workspace-write
+sandbox helper is broken - the v0.3 NO-GO class - isolated scratch repos use
+danger-full-access per the v0.4 doctrine). Results:
+
+- **Solving: 42/42 GPT hidden passes** across luna/spark/terra/sol plus an
+  effort sweep and a replication run. Floor universal at every rung of both
+  vendors' ladders; consensus convention 'a' is cross-vendor; effort is pure
+  surcharge on ceiling-saturated work (sol@low = sol@high score at -31% cost).
+- **Cost per identical 6/6**: haiku $0.106 ~ luna $0.116 << spark $0.26 ~
+  terra $0.29 << opus $0.51 << sol@high $1.15. The two vendors' $1 tiers are
+  within 10% - commodity pricing at commodity capability.
+- **Authoring recursion: GPT 8/8 valid + 253/253 blind-fair across all four
+  tiers** including $1 luna ($0.06, 101s). Cheap-tier authoring is not a
+  universal wall.
+- **Haiku control (hardened brief): 1/2 valid - false-green REPLICATES.** Its
+  collatz foil (3n-1) never terminates on 9/25 of its own persisted vectors;
+  its build script has no caps, so the reported verification cannot have run.
+  Second session, second false-green, distinct defect class. The race-5
+  separation is a model-specific self-verification reliability defect, not
+  brief sensitivity - and it discriminates BETWEEN cheap tiers (luna/spark
+  pass it) where solving discriminates nothing.
+- The deterministic referee caught every defect again - once by hanging,
+  which taught it watchdog timeouts. Verification-harness authorship remains
+  the load-bearing residue.
+
+Receipt: race6_cross_vendor_results.json.
