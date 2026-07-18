@@ -10,6 +10,7 @@ fixtures/** -text -whitespace
 data/orchestration/** -text -whitespace
 data/model_residue/spark_effort_public_v1/** -text -whitespace
 data/model_residue/fable_effort_public_v1/** -text -whitespace
+experiments/breadth/run/auth3_floor_20260718/** -text -whitespace
 data/control-results/** -text -whitespace
 experiments/breadth/run/replays/** -text -whitespace
 experiments/breadth/run/task02_edge_family.md -text -whitespace

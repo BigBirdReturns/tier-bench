@@ -11,6 +11,8 @@ import subprocess
 from collections import Counter, defaultdict
 from pathlib import Path
 
+from capture_math import projected_break_even, savings_per_replay
+
 REPO = Path(__file__).resolve().parent.parent
 
 LOCAL_FIRST_FILES = (
@@ -271,6 +273,117 @@ def fable_effort_canary() -> dict:
     }
 
 
+def jsonl_rows(path: Path) -> list[dict]:
+    return [
+        json.loads(line)
+        for line in path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+
+
+def thin_band_evidence() -> dict:
+    """Reduce measured separations, floor absorption, and capture economics."""
+    capture_path = REPO / "data/capture/task02_escape_class_boundary.jsonl"
+    breadth_path = REPO / "experiments/breadth/run/ledger.jsonl"
+    auth3_manifest_path = REPO / "experiments/breadth/run/auth3_floor_20260718/MANIFEST.json"
+    auth3_ledger_path = REPO / "experiments/breadth/run/auth3_floor_20260718/ledger.jsonl"
+
+    captures = [row for row in jsonl_rows(capture_path) if row.get("record_type") == "capture"]
+    if len(captures) != 1:
+        raise ValueError(f"expected one task02 capture row, found {len(captures)}")
+    capture = captures[0]
+    if capture["validated_replays"] != len(capture["replay_evidence"]):
+        raise ValueError("task02 validated replay count does not match replay evidence")
+
+    breadth = jsonl_rows(breadth_path)
+
+    def measured_cell(task_id: str, model: str, phase: str) -> dict:
+        rows = [
+            row for row in breadth
+            if row.get("task_id") == task_id
+            and row.get("model") == model
+            and row.get("phase") == phase
+        ]
+        if not rows:
+            raise ValueError(f"missing thin-band cell: {task_id}/{model}/{phase}")
+        return {
+            "model": model,
+            "phase": phase,
+            "passes": sum(row.get("outcome") == "pass" for row in rows),
+            "trials": len(rows),
+        }
+
+    auth3_manifest = json.loads(auth3_manifest_path.read_text(encoding="utf-8"))
+    auth3_rows = jsonl_rows(auth3_ledger_path)
+    auth3_tasks = {}
+    for task_id in sorted({row["task_id"] for row in auth3_rows}):
+        task_rows = [row for row in auth3_rows if row["task_id"] == task_id]
+        auth3_tasks[task_id] = {
+            "model": task_rows[0]["model"],
+            "passes": sum(row["outcome"] == "pass" for row in task_rows),
+            "trials": len(task_rows),
+        }
+    expected_auth3_cell = {"model": "claude-haiku-4-5", "passes": 3, "trials": 3}
+    if len(auth3_rows) != 6 or any(
+        cell != expected_auth3_cell for cell in auth3_tasks.values()
+    ):
+        raise ValueError("AUTH3 floor evidence is not the expected two 3/3 Haiku cells")
+
+    old_cost = capture["old_path"]["cost_usd_per_trial"]
+    new_cost = capture["new_path"]["cost_usd_per_trial"]
+    savings = savings_per_replay(old_cost, new_cost)
+    projected = projected_break_even(capture["capture_cost_usd"], old_cost, new_cost)
+    validated = capture["validated_replays"]
+
+    return {
+        "definition": "the measured region where the cheap floor is unreliable and a higher-capability model or captured artifact changes hidden-graded acceptance",
+        "observed_model_separations": [
+            {
+                "task_id": "task02_wildcard",
+                "floor": measured_cell("task02_wildcard", "claude-haiku-4-5", "baseline"),
+                "higher": measured_cell("task02_wildcard", "claude-sonnet-5", "baseline"),
+            },
+            {
+                "task_id": "almanac_rule_boundary_001",
+                "floor": measured_cell("almanac_rule_boundary_001", "claude-haiku-4-5", "k3-floor-almanac-20260710"),
+                "higher": measured_cell("almanac_rule_boundary_001", "claude-fable-5", "escalate"),
+            },
+        ],
+        "cheap_floor_absorption": {
+            "authored_discriminator_candidates": auth3_tasks,
+            "result": auth3_manifest["result"],
+            "inference": "authored difficulty shape is not sufficient evidence of thin-band membership; both AUTH3 candidates settled at the cheap floor",
+        },
+        "capture_transfer": {
+            "capture_id": capture["capture_id"],
+            "capture_cost_usd": capture["capture_cost_usd"],
+            "capture_cost_basis": capture["cost_basis"],
+            "floor_replay_cost_usd": old_cost,
+            "retired_frontier_call_cost_usd": new_cost,
+            "savings_per_validated_replay_usd": round(savings, 6),
+            "projected_break_even_replays": projected,
+            "validated_replays": validated,
+            "replays_remaining_to_break_even": max(projected - validated, 0),
+            "retired_value_usd": round(validated * savings, 6),
+            "cost_basis_mix": sorted({
+                capture["cost_basis"],
+                capture["old_path"]["cost_basis"],
+                capture["new_path"]["cost_basis"],
+            }),
+            "state": "amortized" if validated >= projected else "amortizing",
+            "claim": "frontier-expense retirement is demonstrated on two distinct hidden-graded work items but has not reached projected break-even",
+            "free_after_scope": "not literal zero cost: a replay still consumes the floor path; the reusable artifact is free to reuse and retires the repeated frontier call",
+        },
+        "current_conclusion": "two observed model separations define a thin empirical band; two authored candidates fell below it; expensive-once/economical-after transfer is real but not yet amortized",
+        "artifacts": [
+            tracked_repo_file(capture_path),
+            tracked_repo_file(breadth_path),
+            tracked_repo_file(auth3_manifest_path),
+            tracked_repo_file(auth3_ledger_path),
+        ],
+    }
+
+
 def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
     sources = []
     for rel in LOCAL_FIRST_FILES:
@@ -287,6 +400,7 @@ def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
     robust = robust_result(rows)
     spark_matrix = spark_effort_matrix()
     fable_canary = fable_effort_canary()
+    thin_band = thin_band_evidence()
     runs = [summarize_run(path) for path in sorted((REPO / "data/orchestration").glob("*.json"))]
     by_model = defaultdict(list)
     for run in runs:
@@ -332,6 +446,7 @@ def build(local_first: Path, token_parity: Path, write_snapshots: bool) -> dict:
             "robust_sol_vs_spark": robust,
             "spark_effort_public_v1": spark_matrix,
             "fable_effort_public_v1_canary": fable_canary,
+            "thin_band": thin_band,
             "repo_relay": {
                 "planner_model_tokens": 0,
                 "eager_final_validator": "5/5",

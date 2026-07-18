@@ -29,6 +29,14 @@ real result-envelope, session-identity, inherited-context, auxiliary-model,
 and cost-accounting boundaries. It contains zero scientific observations;
 the matched 27-cell Fable matrix remains pending.
 
+The generated `coverage.thin_band` section keeps three different claims from
+being blurred together: observed model separations, authored tasks that were
+absorbed by the cheap floor, and capture-transfer economics. The current
+capture state is deliberately not called free or amortized: the reusable
+artifact has retired two frontier calls on distinct hidden-graded work items,
+but the projected mixed-basis break-even is four validated replays. Reusing the
+artifact itself is free; running the floor model is not.
+
 Rebuild and verify on this workstation:
 
 ```powershell

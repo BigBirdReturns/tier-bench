@@ -190,8 +190,9 @@ This accumulation strategy prevents unnecessary re-work and tracks the frontier 
 
 - **replays2-4-and-ab-20260710**: CLAUDE-2/3 sealed. A/B closes the crossing
   event's wording confound (bare 3/5 vs packet 4/5, zero knot misses with the
-  packet). Replays 2–3 VALIDATED on distinct work items (capture ledger now
-  amortizing 3 of 4); replay04 PARTIAL — the knot regressed through the packet
+  packet). Of the three attempted new work items, only replay03 VALIDATED;
+  replay02 was spoiled by authoring and earned zero credit (capture ledger now
+  amortizing 2 of 4); replay04 PARTIAL — the knot regressed through the packet
   at aggregate-count depth, the first measured limit of scaffold transfer.
 - **rule-boundary-escalation-fable-low-20260713**: the ARC-B almanac residual
   (`almanac_rule_boundary_001`, haiku 1/3) escalated. `fable@low` clears it 3/3

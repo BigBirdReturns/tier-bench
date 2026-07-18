@@ -2236,6 +2236,103 @@
         }
       ]
     },
+    "thin_band": {
+      "definition": "the measured region where the cheap floor is unreliable and a higher-capability model or captured artifact changes hidden-graded acceptance",
+      "observed_model_separations": [
+        {
+          "task_id": "task02_wildcard",
+          "floor": {
+            "model": "claude-haiku-4-5",
+            "phase": "baseline",
+            "passes": 3,
+            "trials": 5
+          },
+          "higher": {
+            "model": "claude-sonnet-5",
+            "phase": "baseline",
+            "passes": 3,
+            "trials": 3
+          }
+        },
+        {
+          "task_id": "almanac_rule_boundary_001",
+          "floor": {
+            "model": "claude-haiku-4-5",
+            "phase": "k3-floor-almanac-20260710",
+            "passes": 1,
+            "trials": 3
+          },
+          "higher": {
+            "model": "claude-fable-5",
+            "phase": "escalate",
+            "passes": 3,
+            "trials": 3
+          }
+        }
+      ],
+      "cheap_floor_absorption": {
+        "authored_discriminator_candidates": {
+          "t3_accrual_crossover_001": {
+            "model": "claude-haiku-4-5",
+            "passes": 3,
+            "trials": 3
+          },
+          "t3_null_filter_001": {
+            "model": "claude-haiku-4-5",
+            "passes": 3,
+            "trials": 3
+          }
+        },
+        "result": {
+          "cost_usd_real_billed": 0.0,
+          "t3_accrual_crossover_001": "3/3 settled, hidden pass each",
+          "t3_null_filter_001": "3/3 settled, hidden 10/10 each"
+        },
+        "inference": "authored difficulty shape is not sufficient evidence of thin-band membership; both AUTH3 candidates settled at the cheap floor"
+      },
+      "capture_transfer": {
+        "capture_id": "task02_escape_class_boundary",
+        "capture_cost_usd": 0.6805,
+        "capture_cost_basis": "real-billed",
+        "floor_replay_cost_usd": 0.04,
+        "retired_frontier_call_cost_usd": 0.227,
+        "savings_per_validated_replay_usd": 0.187,
+        "projected_break_even_replays": 4,
+        "validated_replays": 2,
+        "replays_remaining_to_break_even": 2,
+        "retired_value_usd": 0.374,
+        "cost_basis_mix": [
+          "real-billed",
+          "shadow-estimated"
+        ],
+        "state": "amortizing",
+        "claim": "frontier-expense retirement is demonstrated on two distinct hidden-graded work items but has not reached projected break-even",
+        "free_after_scope": "not literal zero cost: a replay still consumes the floor path; the reusable artifact is free to reuse and retires the repeated frontier call"
+      },
+      "current_conclusion": "two observed model separations define a thin empirical band; two authored candidates fell below it; expensive-once/economical-after transfer is real but not yet amortized",
+      "artifacts": [
+        {
+          "path": "data/capture/task02_escape_class_boundary.jsonl",
+          "sha256": "41b859be50b13fae9c1306f817751a337f0d40232dac86c8cd49620c0446e0fe",
+          "bytes": 8546
+        },
+        {
+          "path": "experiments/breadth/run/ledger.jsonl",
+          "sha256": "4e26a7950999093c943c2e099e603e3cad961b2b232538b25bb5042cb5c27c1c",
+          "bytes": 96577
+        },
+        {
+          "path": "experiments/breadth/run/auth3_floor_20260718/MANIFEST.json",
+          "sha256": "4ce8dd3df11cca3dec977960fc3016b960827090fd96e20ab15f68a2ccca214b",
+          "bytes": 4322
+        },
+        {
+          "path": "experiments/breadth/run/auth3_floor_20260718/ledger.jsonl",
+          "sha256": "e0219d5f2e9405530898342d56b6681d9a37dea5cb6cca65c8d4f6f1a2ee32dd",
+          "bytes": 4242
+        }
+      ]
+    },
     "repo_relay": {
       "planner_model_tokens": 0,
       "eager_final_validator": "5/5",
