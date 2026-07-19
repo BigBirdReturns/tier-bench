@@ -1,0 +1,18 @@
+{
+  "schema": "policy_kernel_decision/v1.0",
+  "decision_id": "05c7b9d25ea0d23e43d80bf1b2c7278da39f90ea44ba2bdd7017e2a70bd461d8",
+  "task_envelope_sha256": "483ded358baa997f94ac026a788d3d0fa5cbdb96b24c3ae93c53e77989f3801f",
+  "cartridge_manifest_sha256": "cded0a85e0755487951ddb4a51d499e80ba4f45ddbd63d39edffbc3c532cc80c",
+  "tank_snapshot_sha256": "6beed73120dcfe438c7020d9b0a7cacc5efc20c67cc908fd23af27eec0704ada",
+  "evidence_refs": [
+    "measured:haiku:t0:format_whitespace"
+  ],
+  "selected_cartridge": "haiku-2024-12",
+  "capability_basis": "measured",
+  "quota_basis": "observed",
+  "route_reason": "P1-1 witness: evidence index has a measured record for haiku-2024-12, but only at T0 -- the task under adjudication is T1, so it must not resolve",
+  "fallback_order": [],
+  "operator_gate": true,
+  "observed_at": "2026-07-19T14:30:00Z",
+  "snapshot_max_age": 3600
+}

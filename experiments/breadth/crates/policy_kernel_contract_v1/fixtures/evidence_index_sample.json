@@ -1,0 +1,9 @@
+{
+  "_comment": "P1-1 negative-fixture support: haiku-2024-12 is measured only at T0 (wrong-tier case); sonnet-2024-12 is hypothesis-only at T1 (hypothesis-only-evidence case); opus-2024-12 is deliberately absent (wrong-cartridge case).",
+  "haiku-2024-12": {
+    "T0": [{"class": "measured", "task": "format_whitespace"}]
+  },
+  "sonnet-2024-12": {
+    "T1": [{"class": "hypothesis", "task": "impl_from_docstring"}]
+  }
+}
