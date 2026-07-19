@@ -275,7 +275,15 @@ drawing that waterline correctly — and proving which side each cell is on.
     capability walls (escalation with the failed attempt as repair evidence),
     multi-phase/resumable state, or frontier-context quota pressure. Caveats:
     K=1, tiny tasks, cumulative-token measure (not final-context; do not mix
-    with lesson 19's 42% figure).
+    with lesson 19's 42% figure). Cross-engine addendum (sealed independently
+    same day, then exchanged — docs/agents/reviews/
+    crate_crossover_cross_engine_20260718.md): Sol's N=10 partial confirms
+    hand-cost parity across its four matched pairs AND shows the 14.8× is the
+    ceremony's upper bound, not its floor — Sol's pointer-only desk cost $0.27
+    vs this run's $2.85 crate-authoring desk (a lean desk loses ~2.4×, still a
+    loss). Ceremony cost is a design variable. Sol also hit a third wall type:
+    12/20 subjects policy-blocked by the disclosure reviewer before any
+    provider spend.
 
 ## What's already built (your toolbelt)
 
