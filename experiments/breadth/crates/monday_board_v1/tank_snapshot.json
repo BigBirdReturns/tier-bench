@@ -1,10 +1,12 @@
 {
   "kind": "operator_status_snapshot",
   "captured": "2026-07-19T13:45-07:00",
-  "source": "operator-supplied /status screenshot in session (staleness warning shown: 'limits may be stale')",
+  "source": "operator-supplied Codex CLI /status screenshot in session (staleness warning shown: 'limits may be stale')",
+  "correction": "2026-07-19 ~15:15 operator correction: both rows are GPT-side buckets — Sol and Spark are SEPARATE buckets at the moment. The desk's first reading of this snapshot misattributed the 63% row to the Anthropic tank; that was wrong and is corrected here. The Anthropic tank has NO committed reading yet.",
   "tanks": [
-    {"tank": "anthropic_weekly", "label": "Weekly limit", "remaining_pct": 63, "resets": "2026-07-24T20:33"},
-    {"tank": "gpt_codex_spark_weekly", "label": "GPT-5.3-Codex-Spark Weekly limit", "remaining_pct": 29, "resets": "2026-07-24T21:24"}
+    {"tank": "gpt_codex_weekly_general", "label": "Weekly limit (Codex general — Sol draws here)", "remaining_pct": 63, "resets": "2026-07-24T20:33"},
+    {"tank": "gpt_codex_spark_weekly", "label": "GPT-5.3-Codex-Spark Weekly limit (separate bucket)", "remaining_pct": 29, "resets": "2026-07-24T21:24"},
+    {"tank": "anthropic_weekly", "label": "Claude weekly", "remaining_pct": null, "resets": null, "note": "no committed reading — operator pastes Claude Code /status to add one"}
   ],
-  "rule": "gauges render ONLY from a committed snapshot like this one; staleness is displayed, never hidden"
+  "rule": "gauges render ONLY from a committed snapshot like this one; staleness is displayed, never hidden; misattributions are corrected additively, never overwritten"
 }
