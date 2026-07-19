@@ -1,5 +1,11 @@
 # Phase-1 transport verdict — SEALED 2026-07-19, desk-adjudicated
 
+> **AMENDED same day after cross-engine audit (SEAL-REFUTED on the categorical
+> claim): see [PHASE1_SEAL_AMENDMENT_20260719.md](PHASE1_SEAL_AMENDMENT_20260719.md).
+> Verdict reclassified ORDINARY-RIG-ADD-DAEMON-BLOCKED / ADOPT-PATH-UNTESTED;
+> operative outcome (phase 1 not passed, PARTIAL, no retry) unchanged. This
+> original is preserved with its defects as provenance.**
+
 **VERDICT: DAEMON-REQUIRED. Phase 1 did not pass. Phase 2 is therefore
 forbidden by the frozen card and was never dispatched — the one-dispatch
 budget is unspent. Smoke sealed PARTIAL per the card's frozen expectation
