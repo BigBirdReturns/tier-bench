@@ -32,7 +32,7 @@ EXPERIMENTS = ROOT / "experiments"
 GRANDFATHERED_FREEZES = {
     "luna_sol_anchor_replication_v2/CLI_SURFACE_V2_2_2_FREEZE.json": "6fe07562101628530abf5c9598057eb7de3858c8d481a8d13b412e578db98ab1",
     "luna_sol_anchor_replication_v2/SPARK_EXECUTION_SURFACE_V2_2_3_FREEZE.json": "284a3f0aa0f468378d7f804cdabd9be1105ce2f460407a29e11e00699af9f3e1",
-    "sol_root_matched_config/activation_v0_3/freeze_candidate.json": "754f8142c3398d626e7972901374e89a35508e082c88578747ddadd90793f568",
+    "sol_root_matched_config/activation_v0_3/freeze_candidate.json": "e2fc77aa845253a1f95be374b026b5b4131772ccf52f6365707afd31f55feb25",
 }
 
 # The properties that can ONLY be proven by running, per rule 13.
@@ -61,18 +61,33 @@ def _refusal(callback, code: str, errors) -> None:
     raise AssertionError(f"expected refusal {code!r}, call was accepted")
 
 
-def _freeze_files():
-    for path in sorted(EXPERIMENTS.rglob("*freeze*.json")):
+def _lf(data: bytes) -> bytes:
+    """Checkout-portable canonical bytes: hash the LF form so Windows CRLF
+    checkouts and Linux LF checkouts agree. The canonical digest is the in-git
+    blob's (LF); pinning a CRLF rendering is the CLAUDE-1b transport-
+    adjudication defect and broke this guard's first CI run."""
+    return data.replace(b"\r\n", b"\n")
+
+
+def _scan(needle: str):
+    """Case-insensitive on every OS: Windows rglob matches FREEZE.json for
+    *freeze*.json, Linux does not — an OS-dependent guard checks different
+    file sets per platform. Uniform rule: substring match on the lowercased
+    name, so both OSes police the identical set."""
+    for path in sorted(EXPERIMENTS.rglob("*.json")):
+        if needle not in path.name.lower():
+            continue
         if "run" in path.relative_to(EXPERIMENTS).parts:
             continue  # sealed run evidence is immutable history, not a cage
         yield path
 
 
+def _freeze_files():
+    yield from _scan("freeze")
+
+
 def _closure_files():
-    for path in sorted(EXPERIMENTS.rglob("*execution_closure_receipt*.json")):
-        if "run" in path.relative_to(EXPERIMENTS).parts:
-            continue
-        yield path
+    yield from _scan("execution_closure_receipt")
 
 
 def test_execution_surface_fail_closes_on_sandbox_drift() -> int:
@@ -113,7 +128,7 @@ def test_new_freezes_bind_a_smoke_receipt() -> int:
     checks = 0
     for path in _freeze_files():
         relative = path.relative_to(EXPERIMENTS).as_posix()
-        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        digest = hashlib.sha256(_lf(path.read_bytes())).hexdigest()
         pinned = GRANDFATHERED_FREEZES.get(relative)
         if pinned is not None:
             assert digest == pinned, (
