@@ -1,0 +1,138 @@
+diff --git a/scripts/burn_report.py b/scripts/burn_report.py
+index 4b6fe6e..f6ee4ab 100644
+--- a/scripts/burn_report.py
++++ b/scripts/burn_report.py
+@@ -153,6 +153,13 @@ def main() -> int:
+         action="store_true",
+         help="output JSON instead of text",
+     )
++    parser.add_argument(
++        "--vendor",
++        type=str,
++        default=None,
++        choices=["anthropic", "openai"],
++        help="filter to a specific vendor (anthropic or openai)",
++    )
+     parser.add_argument(
+         "--selftest",
+         action="store_true",
+@@ -217,6 +224,10 @@ def main() -> int:
+     # Combine all sessions
+     all_sessions = anthropic_sessions + openai_sessions
+ 
++    # Filter by vendor if specified
++    if args.vendor:
++        all_sessions = [s for s in all_sessions if s[3] == args.vendor]
++
+     # Sort: cost_usd DESCENDING, session id ASCENDING
+     all_sessions.sort(key=lambda x: (-x[1], x[0]))
+ 
+@@ -234,16 +245,21 @@ def main() -> int:
+     if args.json:
+         # JSON output mode
+         if not all_sessions:
++            vendors_obj = {}
++            if args.vendor:
++                vendors_obj[args.vendor] = {"total_usd": 0.0, "sessions": 0}
++            else:
++                vendors_obj = {
++                    "anthropic": {"total_usd": 0.0, "sessions": 0},
++                    "openai": {"total_usd": 0.0, "sessions": 0},
++                }
+             obj = {
+                 "sessions": [],
+                 "count": 0,
+                 "total": 0.0,
+                 "median": 0.0,
+                 "p90": 0.0,
+-                "vendors": {
+-                    "anthropic": {"total_usd": 0.0, "sessions": 0},
+-                    "openai": {"total_usd": 0.0, "sessions": 0},
+-                },
++                "vendors": vendors_obj,
+             }
+         else:
+             # Nearest-rank percentile: ceil(p/100 * N) - 1
+@@ -256,16 +272,25 @@ def main() -> int:
+                 {"sid": sid, "cost_usd": cost, "tier": tier, "vendor": vendor}
+                 for sid, cost, tier, vendor in all_sessions
+             ]
++
++            if args.vendor:
++                vendors_obj = {
++                    args.vendor: {"total_usd": round(anthropic_cost if args.vendor == "anthropic" else openai_cost, 6),
++                                  "sessions": anthropic_count if args.vendor == "anthropic" else openai_count},
++                }
++            else:
++                vendors_obj = {
++                    "anthropic": {"total_usd": round(anthropic_cost, 6), "sessions": anthropic_count},
++                    "openai": {"total_usd": round(openai_cost, 6), "sessions": openai_count},
++                }
++
+             obj = {
+                 "sessions": sessions_list,
+                 "count": n,
+                 "total": total,
+                 "median": median,
+                 "p90": p90,
+-                "vendors": {
+-                    "anthropic": {"total_usd": round(anthropic_cost, 6), "sessions": anthropic_count},
+-                    "openai": {"total_usd": round(openai_cost, 6), "sessions": openai_count},
+-                },
++                "vendors": vendors_obj,
+             }
+         print(json.dumps(obj))
+     else:
+diff --git a/scripts/crate_new.py b/scripts/crate_new.py
+index 7b4be7f..8d35ae3 100644
+--- a/scripts/crate_new.py
++++ b/scripts/crate_new.py
+@@ -42,14 +42,27 @@ Driver-authored, frozen. If it seems wrong, it is not: match [010.100](010.100.T
+ 
+ def parse_args(argv: list[str]) -> argparse.Namespace:
+     parser = argparse.ArgumentParser()
+-    parser.add_argument("--name", required=True)
++    parser.add_argument("--name", required=False)
+     parser.add_argument("--dir", required=True)
++    parser.add_argument("--list", action="store_true")
+     return parser.parse_args(argv)
+ 
+ 
+ def main(argv: list[str] | None = None) -> int:
+     args = parse_args(argv if argv is not None else sys.argv[1:])
+     root = Path(args.dir).resolve()
++
++    if args.list:
++        if root.exists():
++            for path in sorted(root.iterdir()):
++                if path.is_dir():
++                    print(path.name)
++        return 0
++
++    if args.name is None:
++        print("error: --name is required unless --list is given")
++        return 1
++
+     crate_dir = root / args.name
+ 
+     if crate_dir.exists():
+diff --git a/scripts/dispatch.py b/scripts/dispatch.py
+index 5210ea6..43ca446 100644
+--- a/scripts/dispatch.py
++++ b/scripts/dispatch.py
+@@ -27,8 +27,15 @@ def main() -> int:
+     parser.add_argument("--referee", required=True, help="Referee command to run")
+     parser.add_argument("--receipt", required=True, help="Receipt file path")
+     parser.add_argument("--referee-timeout", type=int, default=600, help="Referee subprocess timeout in seconds (default: 600)")
++    parser.add_argument("--dry-run", action="store_true", help="Print commands and exit without running them")
+     args = parser.parse_args()
+ 
++    # Handle dry-run mode
++    if args.dry_run:
++        print(args.hand_cmd)
++        print(args.referee)
++        return 0
++
+     arm_dir = Path(args.arm_dir)
+     receipt_path = Path(args.receipt)
+ 

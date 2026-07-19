@@ -27,7 +27,13 @@ def main() -> int:
     parser.add_argument("--referee", required=True, help="Referee command to run")
     parser.add_argument("--receipt", required=True, help="Receipt file path")
     parser.add_argument("--referee-timeout", type=int, default=600, help="Referee subprocess timeout in seconds (default: 600)")
+    parser.add_argument("--dry-run", action="store_true", help="Print resolved commands and exit without running")
     args = parser.parse_args()
+
+    if args.dry_run:
+        print(args.hand_cmd)
+        print(args.referee)
+        return 0
 
     arm_dir = Path(args.arm_dir)
     receipt_path = Path(args.receipt)

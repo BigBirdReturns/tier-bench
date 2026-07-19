@@ -42,13 +42,27 @@ Driver-authored, frozen. If it seems wrong, it is not: match [010.100](010.100.T
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--name", required=True)
+    parser.add_argument("--name", required=False)
     parser.add_argument("--dir", required=True)
+    parser.add_argument("--list", action="store_true", help="List existing crates in --dir")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv if argv is not None else sys.argv[1:])
+
+    if args.list:
+        root = Path(args.dir).resolve()
+        if root.exists() and root.is_dir():
+            for item in sorted(root.iterdir()):
+                if item.is_dir():
+                    print(item.name)
+        return 0
+
+    if args.name is None:
+        print("error: --name is required", file=sys.stderr)
+        return 1
+
     root = Path(args.dir).resolve()
     crate_dir = root / args.name
 

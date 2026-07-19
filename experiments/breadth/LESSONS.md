@@ -260,6 +260,23 @@ drawing that waterline correctly — and proving which side each cell is on.
     ran fable (the doctrine's cheap-hand D is unmeasured and would widen the
     gap), and (c)'s zero is a contract artifact, not a capability floor.
 
+20. **S\* is the capability line, not a bundling threshold.** CRATE-CROSSOVER-1
+    (crossover_v1, 2026-07-18) closed lesson 19's caveat by finally running the
+    honest arms: fable desk + haiku hands ($3.08 all-in) vs plain haiku tenants
+    payload-inline ($0.21), three fresh T1 tasks, both arms 3/3 on the frozen
+    desk referee. The desk lost 14.8× on dollars AND its context refuge
+    vanished: the driver's ceremony alone billed ~786k frontier-priced input
+    tokens — equal to the tenants' entire ~777k haiku-priced spend — before
+    counting the hands. Both arms' hands cost the same per task (~$0.07–0.10);
+    everything above that was ceremony buying nothing a capable tenant needed.
+    Refined law: below the tenant's capability ceiling, dispatch payload-inline
+    and don't look back — no N amortizes the desk over tasks a cheap call
+    one-shots. The desk earns its keep only where cheap-inline FAILS: real
+    capability walls (escalation with the failed attempt as repair evidence),
+    multi-phase/resumable state, or frontier-context quota pressure. Caveats:
+    K=1, tiny tasks, cumulative-token measure (not final-context; do not mix
+    with lesson 19's 42% figure).
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.

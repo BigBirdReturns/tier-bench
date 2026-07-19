@@ -158,6 +158,12 @@ def main() -> int:
         action="store_true",
         help="build a synthetic Codex log, parse it, and exit",
     )
+    parser.add_argument(
+        "--vendor",
+        choices=["anthropic", "openai"],
+        default=None,
+        help="filter sessions to only this vendor",
+    )
     args = parser.parse_args()
     if args.top is not None and args.top < 0:
         parser.error("--top must be >= 0")
@@ -217,6 +223,10 @@ def main() -> int:
     # Combine all sessions
     all_sessions = anthropic_sessions + openai_sessions
 
+    # Filter by vendor if specified
+    if args.vendor:
+        all_sessions = [s for s in all_sessions if s[3] == args.vendor]
+
     # Sort: cost_usd DESCENDING, session id ASCENDING
     all_sessions.sort(key=lambda x: (-x[1], x[0]))
 
@@ -234,16 +244,22 @@ def main() -> int:
     if args.json:
         # JSON output mode
         if not all_sessions:
+            if args.vendor:
+                vendors_obj = {
+                    args.vendor: {"total_usd": 0.0, "sessions": 0},
+                }
+            else:
+                vendors_obj = {
+                    "anthropic": {"total_usd": 0.0, "sessions": 0},
+                    "openai": {"total_usd": 0.0, "sessions": 0},
+                }
             obj = {
                 "sessions": [],
                 "count": 0,
                 "total": 0.0,
                 "median": 0.0,
                 "p90": 0.0,
-                "vendors": {
-                    "anthropic": {"total_usd": 0.0, "sessions": 0},
-                    "openai": {"total_usd": 0.0, "sessions": 0},
-                },
+                "vendors": vendors_obj,
             }
         else:
             # Nearest-rank percentile: ceil(p/100 * N) - 1
@@ -256,16 +272,24 @@ def main() -> int:
                 {"sid": sid, "cost_usd": cost, "tier": tier, "vendor": vendor}
                 for sid, cost, tier, vendor in all_sessions
             ]
+
+            if args.vendor:
+                vendors_obj = {
+                    args.vendor: {"total_usd": round(anthropic_cost if args.vendor == "anthropic" else openai_cost, 6), "sessions": anthropic_count if args.vendor == "anthropic" else openai_count},
+                }
+            else:
+                vendors_obj = {
+                    "anthropic": {"total_usd": round(anthropic_cost, 6), "sessions": anthropic_count},
+                    "openai": {"total_usd": round(openai_cost, 6), "sessions": openai_count},
+                }
+
             obj = {
                 "sessions": sessions_list,
                 "count": n,
                 "total": total,
                 "median": median,
                 "p90": p90,
-                "vendors": {
-                    "anthropic": {"total_usd": round(anthropic_cost, 6), "sessions": anthropic_count},
-                    "openai": {"total_usd": round(openai_cost, 6), "sessions": openai_count},
-                },
+                "vendors": vendors_obj,
             }
         print(json.dumps(obj))
     else:
