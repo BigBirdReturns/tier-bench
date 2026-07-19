@@ -1,0 +1,32 @@
+name: Assemble Monster Wrangler
+
+on:
+  push:
+    branches:
+      - codex/monster-wrangler-v1
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/monster-wrangler-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Reconstruct, verify, and test the exact source archive
+        run: python .monster-wrangler-transfer/assemble.py
+      - name: Publish the verified source tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "build Monster Wrangler controlled-work desk"
+          git push origin HEAD:codex/monster-wrangler-v1
