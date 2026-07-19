@@ -3,19 +3,27 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from pathlib import Path
 import sqlite3
-from typing import Any
+from typing import TYPE_CHECKING, Any
 import uuid
 
 from .desk_common import SCHEMA, TERMINAL, DeskError, canonical, load_json, now
 
+if TYPE_CHECKING:
+    from .desk_runtime import ExecutionResult
+
+
 class DeskStoreQueueMixin:
     def dependencies(self, task_id: str) -> list[dict[str, str]]:
-        rows = self.db().execute(
-            """SELECT d.depends_on id,t.title,t.state
+        rows = (
+            self.db()
+            .execute(
+                """SELECT d.depends_on id,t.title,t.state
                FROM dependencies d JOIN tasks t ON t.id=d.depends_on
                WHERE d.task_id=? ORDER BY d.depends_on""",
-            (task_id,),
-        ).fetchall()
+                (task_id,),
+            )
+            .fetchall()
+        )
         return [dict(row) for row in rows]
 
     def serialize_run(self, row: sqlite3.Row | dict[str, Any]) -> dict[str, Any]:
@@ -25,10 +33,14 @@ class DeskStoreQueueMixin:
         return run
 
     def runs(self, task_id: str, limit: int = 20) -> list[dict[str, Any]]:
-        rows = self.db().execute(
-            "SELECT * FROM runs WHERE task_id=? ORDER BY attempt DESC LIMIT ?",
-            (task_id, limit),
-        ).fetchall()
+        rows = (
+            self.db()
+            .execute(
+                "SELECT * FROM runs WHERE task_id=? ORDER BY attempt DESC LIMIT ?",
+                (task_id, limit),
+            )
+            .fetchall()
+        )
         return [self.serialize_run(row) for row in rows]
 
     def serialize_task(self, row: sqlite3.Row | dict[str, Any], full: bool) -> dict[str, Any]:
@@ -41,7 +53,11 @@ class DeskStoreQueueMixin:
         if full:
             task["runs"] = self.runs(task["id"])
         elif task.get("last_run_id"):
-            last = self.db().execute("SELECT * FROM runs WHERE id=?", (task["last_run_id"],)).fetchone()
+            last = (
+                self.db()
+                .execute("SELECT * FROM runs WHERE id=?", (task["last_run_id"],))
+                .fetchone()
+            )
             task["last_run"] = self.serialize_run(last) if last else None
         else:
             task["last_run"] = None
@@ -52,11 +68,15 @@ class DeskStoreQueueMixin:
         return self.serialize_task(row, full) if row else None
 
     def list_tasks(self) -> list[dict[str, Any]]:
-        rows = self.db().execute(
-            """SELECT * FROM tasks ORDER BY
+        rows = (
+            self.db()
+            .execute(
+                """SELECT * FROM tasks ORDER BY
                CASE state WHEN 'RUNNING' THEN 0 WHEN 'QUEUED' THEN 1 WHEN 'DRAFT' THEN 2 ELSE 3 END,
                priority DESC,created_at DESC LIMIT 500"""
-        ).fetchall()
+            )
+            .fetchall()
+        )
         return [self.serialize_task(row, False) for row in rows]
 
     def transition(self, task_id: str, action: str) -> dict[str, Any]:
@@ -69,21 +89,24 @@ class DeskStoreQueueMixin:
             current = row["state"]
             stamp = now()
             if action == "arm":
-                if current == "RUNNING":
-                    raise DeskError("a running task cannot be armed again")
+                if current != "DRAFT":
+                    raise DeskError("only a draft task can be armed")
                 target = "QUEUED"
                 db.execute(
                     "UPDATE tasks SET state=?,approved_at=?,updated_at=?,last_error=NULL WHERE id=?",
                     (target, stamp, stamp, task_id),
                 )
             elif action == "hold":
-                if current == "RUNNING":
-                    raise DeskError("use cancel to stop a running task")
+                if current != "QUEUED":
+                    raise DeskError("only a queued task can be held")
                 target = "DRAFT"
-                db.execute("UPDATE tasks SET state=?,updated_at=? WHERE id=?", (target, stamp, task_id))
+                db.execute(
+                    "UPDATE tasks SET state=?,updated_at=? WHERE id=?",
+                    (target, stamp, task_id),
+                )
             elif action == "retry":
-                if current not in TERMINAL:
-                    raise DeskError("only a terminal task can be retried")
+                if current not in {"REJECTED", "ERROR", "CANCELED", "INTERRUPTED"}:
+                    raise DeskError("only a failed, canceled, or interrupted task can be retried")
                 target = "QUEUED"
                 db.execute(
                     "UPDATE tasks SET state=?,updated_at=?,last_error=NULL WHERE id=?",
@@ -92,17 +115,22 @@ class DeskStoreQueueMixin:
             elif action == "cancel":
                 if current == "RUNNING":
                     target = current
-                else:
+                elif current in {"DRAFT", "QUEUED"}:
                     target = "CANCELED"
                     db.execute(
                         "UPDATE tasks SET state=?,updated_at=?,last_error=? WHERE id=?",
                         (target, stamp, "canceled by operator", task_id),
                     )
+                else:
+                    raise DeskError("only a draft, queued, or running task can be canceled")
             else:
                 raise DeskError(f"unknown task action: {action}")
             self.event(
-                f"task.{action}", task_id, row["last_run_id"],
-                {"from": current, "to": target}, db,
+                f"task.{action}",
+                task_id,
+                row["last_run_id"],
+                {"from": current, "to": target},
+                db,
             )
             db.execute("COMMIT")
         except Exception:
@@ -113,8 +141,10 @@ class DeskStoreQueueMixin:
         return result
 
     def ready(self, limit: int) -> list[dict[str, Any]]:
-        rows = self.db().execute(
-            """SELECT t.* FROM tasks t
+        rows = (
+            self.db()
+            .execute(
+                """SELECT t.* FROM tasks t
                WHERE t.state='QUEUED'
                  AND (t.scheduled_for IS NULL OR t.scheduled_for<=?)
                  AND NOT EXISTS(
@@ -122,8 +152,10 @@ class DeskStoreQueueMixin:
                    WHERE d.task_id=t.id AND p.state!='ACCEPTED'
                  )
                ORDER BY t.priority DESC,t.created_at ASC LIMIT ?""",
-            (now(), limit),
-        ).fetchall()
+                (now(), limit),
+            )
+            .fetchall()
+        )
         return [self.serialize_task(row, False) for row in rows]
 
     def claim(
@@ -134,6 +166,9 @@ class DeskStoreQueueMixin:
         try:
             task = db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
             if task is None or task["state"] != "QUEUED":
+                db.execute("ROLLBACK")
+                return None
+            if task["scheduled_for"] is not None and task["scheduled_for"] > now():
                 db.execute("ROLLBACK")
                 return None
             blocked = db.execute(
@@ -176,7 +211,7 @@ class DeskStoreQueueMixin:
     def set_pid(self, run_id: str, pid: int) -> None:
         self.db().execute("UPDATE runs SET pid=? WHERE id=?", (pid, run_id))
 
-    def complete(self, run_id: str, result: "ExecutionResult") -> None:
+    def complete(self, run_id: str, result: ExecutionResult) -> bool:
         if result.state not in TERMINAL:
             raise DeskError(f"invalid terminal state: {result.state}")
         db = self.db()
@@ -185,29 +220,44 @@ class DeskStoreQueueMixin:
             run = db.execute("SELECT * FROM runs WHERE id=?", (run_id,)).fetchone()
             if run is None:
                 raise DeskError(f"unknown run: {run_id}")
+            if run["state"] != "RUNNING":
+                db.execute("ROLLBACK")
+                return False
             stamp = now()
             db.execute(
                 """UPDATE runs SET state=?,completed_at=?,receipt_path=?,receipt_json=?,verify_json=?,
                    cost_usd=?,input_tokens=?,output_tokens=?,cache_read_tokens=?,cache_write_tokens=?,
-                   exit_code=?,error=? WHERE id=?""",
+                   exit_code=?,error=? WHERE id=? AND state='RUNNING'""",
                 (
-                    result.state, stamp, result.receipt_path,
+                    result.state,
+                    stamp,
+                    result.receipt_path,
                     canonical(result.receipt) if result.receipt is not None else None,
                     canonical(result.verification) if result.verification is not None else None,
-                    result.cost_usd, result.input_tokens, result.output_tokens,
-                    result.cache_read_tokens, result.cache_write_tokens,
-                    result.exit_code, result.error, run_id,
+                    result.cost_usd,
+                    result.input_tokens,
+                    result.output_tokens,
+                    result.cache_read_tokens,
+                    result.cache_write_tokens,
+                    result.exit_code,
+                    result.error,
+                    run_id,
                 ),
             )
             db.execute(
-                "UPDATE tasks SET state=?,updated_at=?,last_error=? WHERE id=? AND last_run_id=?",
+                """UPDATE tasks SET state=?,updated_at=?,last_error=?
+                   WHERE id=? AND last_run_id=? AND state='RUNNING'""",
                 (result.state, stamp, result.error, run["task_id"], run_id),
             )
             self.event(
-                "task.completed", run["task_id"], run_id,
-                {"state": result.state, "cost_usd": result.cost_usd}, db,
+                "task.completed",
+                run["task_id"],
+                run_id,
+                {"state": result.state, "cost_usd": result.cost_usd},
+                db,
             )
             db.execute("COMMIT")
+            return True
         except Exception:
             db.execute("ROLLBACK")
             raise
@@ -245,31 +295,42 @@ class DeskStoreQueueMixin:
 
     def daily_usage(self) -> dict[str, Any]:
         day = datetime.now(timezone.utc).date().isoformat()
-        row = self.db().execute(
-            """SELECT COUNT(*) tasks,COALESCE(SUM(cost_usd),0) cost_usd,
+        row = (
+            self.db()
+            .execute(
+                """SELECT COUNT(*) tasks,COALESCE(SUM(cost_usd),0) cost_usd,
                COALESCE(SUM(input_tokens),0) input_tokens,
                COALESCE(SUM(output_tokens),0) output_tokens,
                COALESCE(SUM(cache_read_tokens),0) cache_read_tokens,
                COALESCE(SUM(cache_write_tokens),0) cache_write_tokens
                FROM runs WHERE substr(started_at,1,10)=?""",
-            (day,),
-        ).fetchone()
+                (day,),
+            )
+            .fetchone()
+        )
         return dict(row)
 
     def stats(self) -> dict[str, Any]:
-        counts = {row["state"]: row["n"] for row in self.db().execute(
-            "SELECT state,COUNT(*) n FROM tasks GROUP BY state"
-        ).fetchall()}
-        totals = dict(self.db().execute(
-            """SELECT COALESCE(SUM(cost_usd),0) cost_usd,
+        counts = {
+            row["state"]: row["n"]
+            for row in self.db()
+            .execute("SELECT state,COUNT(*) n FROM tasks GROUP BY state")
+            .fetchall()
+        }
+        totals = dict(
+            self.db()
+            .execute(
+                """SELECT COALESCE(SUM(cost_usd),0) cost_usd,
                COALESCE(SUM(input_tokens),0) input_tokens,
                COALESCE(SUM(output_tokens),0) output_tokens,
                COALESCE(SUM(cache_read_tokens),0) cache_read_tokens,
                COALESCE(SUM(cache_write_tokens),0) cache_write_tokens,
                SUM(CASE WHEN state='ACCEPTED' THEN 1 ELSE 0 END) accepted,
-               SUM(CASE WHEN state IN ('ACCEPTED','REJECTED','ERROR') THEN 1 ELSE 0 END) judged
+               SUM(CASE WHEN state IN ('ACCEPTED','REJECTED') THEN 1 ELSE 0 END) judged
                FROM runs"""
-        ).fetchone())
+            )
+            .fetchone()
+        )
         judged = int(totals.pop("judged") or 0)
         accepted = int(totals.pop("accepted") or 0)
         totals["success_rate"] = accepted / judged if judged else None
