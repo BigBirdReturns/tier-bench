@@ -1,0 +1,28 @@
+{
+  "schema": "work-receipt-contract@1",
+  "task_id": "task_unverified",
+  "attempt_id": "attempt_unverified",
+  "predecessor_receipts": [
+    "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+  ],
+  "decision_receipt_sha256": "a0a1a2a3a4a5a6a7a8a9aaabacadaeafa0a1a2a3a4a5a6a7a8a9aaabacadaeaf",
+  "task_envelope_sha256": "b1b2b3b4b5b6b7b8b9babbbcbdbebfb0b1b2b3b4b5b6b7b8b9babbbcbdbebfb0",
+  "base_commit": "0123456789abcdef0123456789abcdef01234567",
+  "scope": {
+    "tier": "T1",
+    "task_type": "implement_from_spec"
+  },
+  "cartridge_manifest_sha256": "c2c3c4c5c6c7c8c9cacbcccdcecfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfc0c1",
+  "runtime_evidence": {
+    "execution_log": "exec_log.txt",
+    "model_used": "claude-opus-4"
+  },
+  "patch_sha256": "d3d4d5d6d7d8d9dadbdcdddedfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfd0d1d2",
+  "referee_spec_sha256": "e4e5e6e7e8e9eaebecedeeefe0e1e2e3e4e5e6e7e8e9eaebecedeeefe0e1e2e3",
+  "referee_result": "PASS",
+  "terminal_state": "ACCEPTED",
+  "unlocks": [],
+  "blocks": [],
+  "external_refs": {},
+  "created_at": "2026-07-19T10:00:00Z"
+}

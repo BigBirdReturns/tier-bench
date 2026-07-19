@@ -1,0 +1,19 @@
+{
+  "schema": "policy_kernel_decision/v1.0",
+  "decision_id": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+  "task_envelope_sha256": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a",
+  "cartridge_manifest_sha256": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1",
+  "tank_snapshot_sha256": "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b",
+  "evidence_refs": [
+    "measured:haiku:t0:format_whitespace"
+  ],
+  "selected_cartridge": "haiku-2024-12",
+  "capability_basis": "measured",
+  "quota_basis": "observed",
+  "route_reason": "Tank snapshot taken 2 hours ago, max_age 1 hour, labeled CURRENT instead of ADVISORY",
+  "fallback_order": ["sonnet-2024-12"],
+  "operator_gate": true,
+  "observed_at": "2026-07-19T14:30:00Z",
+  "snapshot_max_age": 3600,
+  "label": "CURRENT"
+}
