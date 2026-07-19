@@ -54,14 +54,52 @@ class FakeExecutor:
         return True
 
 
+class BlockingExecutor:
+    def __init__(self):
+        self.started = threading.Event()
+        self.release = threading.Event()
+        self.canceled: list[str] = []
+
+    def run(self, task: dict, run: dict) -> ExecutionResult:
+        self.started.set()
+        assert self.release.wait(3), task
+        return ExecutionResult(
+            state="ACCEPTED",
+            receipt={"schema": "tier-bench/tier-run-receipt@1", "state": "ACCEPTED"},
+            verification={"ok": True, "errors": []},
+            receipt_path=str(Path(run["output_dir"]) / "receipt.json"),
+            cost_usd=0.05,
+            input_tokens=100,
+            output_tokens=25,
+            exit_code=0,
+        )
+
+    def cancel(self, run_id: str) -> bool:
+        self.canceled.append(run_id)
+        self.release.set()
+        return True
+
+
 def repo(parent: Path) -> Path:
     path = parent / "repo"
     path.mkdir()
     subprocess.run(["git", "init", "-q"], cwd=path, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "monster-wrangler@example.invalid"],
+        cwd=path,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "Monster Wrangler Test"],
+        cwd=path,
+        check=True,
+    )
     (path / "pilot_backends.json").write_text(
         json.dumps({"schema": "tier-bench/pilot-backends@1", "arms": {"arm_b": {}}}),
         encoding="utf-8",
     )
+    subprocess.run(["git", "add", "pilot_backends.json"], cwd=path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "freeze fixture manifest"], cwd=path, check=True)
     return path
 
 
@@ -117,11 +155,33 @@ def test_validation(parent: Path) -> None:
         raise AssertionError("an unavailable cartridge arm should fail")
 
 
+def test_state_transitions_fail_closed(parent: Path) -> None:
+    root = repo(parent)
+    store = DeskStore(parent / "state" / "desk.sqlite3", root)
+    store.create_task(task("draft", queue_now=False))
+    store.transition("draft", "arm")
+    try:
+        store.transition("draft", "arm")
+    except DeskError as exc:
+        assert "only a draft" in str(exc)
+    else:
+        raise AssertionError("an armed task must not be armed twice")
+    store.transition("draft", "hold")
+    try:
+        store.transition("draft", "retry")
+    except DeskError as exc:
+        assert "only a failed" in str(exc)
+    else:
+        raise AssertionError("a draft task must not be retried")
+
+
 def test_claim_paths(parent: Path) -> None:
     root = repo(parent)
     store = DeskStore(parent / "state" / "desk.sqlite3", root)
     store.create_task(task("paths"))
-    claimed = store.claim("paths", root / ".git" / "tier-runs" / "monster-wrangler", parent / "logs")
+    claimed = store.claim(
+        "paths", root / ".git" / "tier-runs" / "monster-wrangler", parent / "logs"
+    )
     assert claimed is not None
     _, run = claimed
     assert not Path(run["output_dir"]).exists()
@@ -132,25 +192,30 @@ def test_claim_paths(parent: Path) -> None:
 def test_run_envelope(parent: Path) -> None:
     root = repo(parent)
     envelope = parent / "run.json"
-    envelope.write_text(json.dumps({
-        "schema": "tier-bench/tier-run-envelope@1",
-        "repo": str(root),
-        "task_id": "enveloped",
-        "task": "change app.py",
-        "files": ["app.py"],
-        "acceptance": "python -m pytest -q",
-        "manifest": "pilot_backends.json",
-        "arm": "arm_b",
-        "output_dir": str(root / ".git" / "tier-runs" / "enveloped"),
-    }), encoding="utf-8")
+    envelope.write_text(
+        json.dumps(
+            {
+                "schema": "tier-bench/tier-run-envelope@1",
+                "repo": str(root),
+                "task_id": "enveloped",
+                "task": "change app.py",
+                "files": ["app.py"],
+                "acceptance": "python -m pytest -q",
+                "manifest": "pilot_backends.json",
+                "arm": "arm_b",
+                "output_dir": str(root / ".git" / "tier-runs" / "enveloped"),
+            }
+        ),
+        encoding="utf-8",
+    )
     args = tier_parser().parse_args(["run", "--envelope", str(envelope)])
     values = _run_inputs(args)
     assert values["task_id"] == "enveloped"
     assert values["manifest"] == root / "pilot_backends.json"
     try:
-        mixed = tier_parser().parse_args([
-            "run", "--envelope", str(envelope), "--task", "contradiction"
-        ])
+        mixed = tier_parser().parse_args(
+            ["run", "--envelope", str(envelope), "--task", "contradiction"]
+        )
         _run_inputs(mixed)
     except Exception as exc:
         assert "cannot be combined" in str(exc)
@@ -170,6 +235,8 @@ def test_worker_refuses_stale_heartbeat(parent: Path) -> None:
             str(envelope),
             "--heartbeat",
             str(parent / "missing-heartbeat"),
+            "--heartbeat-instance",
+            "expected-instance",
             "--heartbeat-timeout",
             "5",
         ],
@@ -178,7 +245,29 @@ def test_worker_refuses_stale_heartbeat(parent: Path) -> None:
         text=True,
     )
     assert result.returncode == 2
-    assert "heartbeat is absent or stale" in result.stderr
+    assert "heartbeat is absent, stale, or owned by another instance" in result.stderr
+    heartbeat = parent / "owned-by-old-desk"
+    heartbeat.write_text("old-instance 2026-07-19T00:00:00Z\n", encoding="utf-8")
+    wrong_owner = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "tier_runner.desk_worker",
+            "--envelope",
+            str(envelope),
+            "--heartbeat",
+            str(heartbeat),
+            "--heartbeat-instance",
+            "new-instance",
+            "--heartbeat-timeout",
+            "5",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert wrong_owner.returncode == 2
+    assert "owned by another instance" in wrong_owner.stderr
 
 
 def test_dag_order(parent: Path) -> None:
@@ -217,6 +306,27 @@ def test_failure_pauses(parent: Path) -> None:
         scheduler.stop()
 
 
+def test_cancel_cannot_be_overwritten_by_late_success(parent: Path) -> None:
+    root = repo(parent)
+    store = DeskStore(parent / "state" / "desk.sqlite3", root)
+    executor = BlockingExecutor()
+    scheduler = DeskScheduler(store, root, parent / "state", executor)
+    store.create_task(task("cancel-race"))
+    scheduler.start()
+    try:
+        assert executor.started.wait(2)
+        scheduler.cancel_task("cancel-race")
+        canceled = wait_for(store, "cancel-race", "CANCELED")
+        run = canceled["runs"][0]
+        assert run["state"] == "CANCELED"
+        time.sleep(0.1)
+        assert store.get_task("cancel-race")["state"] == "CANCELED"
+        assert executor.canceled == [run["id"]]
+    finally:
+        executor.release.set()
+        scheduler.stop()
+
+
 def test_daily_limit(parent: Path) -> None:
     root = repo(parent)
     store = DeskStore(parent / "state" / "desk.sqlite3", root)
@@ -235,6 +345,27 @@ def test_daily_limit(parent: Path) -> None:
         assert store.get_task("second")["state"] == "QUEUED"
     finally:
         scheduler.stop()
+
+
+def test_success_denominator_excludes_infrastructure_errors(parent: Path) -> None:
+    root = repo(parent)
+    store = DeskStore(parent / "state" / "desk.sqlite3", root)
+    runs = root / ".git" / "tier-runs" / "monster-wrangler"
+    logs = parent / "logs"
+    for task_id, state in (("yes", "ACCEPTED"), ("no", "REJECTED"), ("infra", "ERROR")):
+        store.create_task(task(task_id))
+        claimed = store.claim(task_id, runs, logs)
+        assert claimed is not None
+        _, run = claimed
+        assert store.complete(
+            run["id"],
+            ExecutionResult(
+                state,
+                cost_usd=0.01,
+                error="transport" if state == "ERROR" else None,
+            ),
+        )
+    assert store.stats()["success_rate"] == 0.5
 
 
 def request(url: str, method: str = "GET", body: dict | None = None, token: str | None = None):
@@ -268,6 +399,16 @@ def test_http_token(parent: Path) -> None:
         assert status == 201 and created["task"]["id"] == "api"
         status, check = request(base + "/healthz")
         assert status == 200 and check["instance_id"] == app.instance_id
+        try:
+            with urlopen(
+                Request(base + "/healthz", headers={"Host": "rebind.example"}),
+                timeout=3,
+            ):
+                pass
+        except HTTPError as exc:
+            assert exc.code == 400
+        else:
+            raise AssertionError("a DNS-rebinding Host header should fail")
         status, stopped = request(base + "/api/control/shutdown", "POST", {}, app.token)
         assert status == 200 and stopped["shutting_down"] is True
     finally:
@@ -281,12 +422,15 @@ def main() -> int:
     parent = Path(tempfile.mkdtemp(prefix="tier-desk-"))
     tests = [
         test_validation,
+        test_state_transitions_fail_closed,
         test_claim_paths,
         test_run_envelope,
         test_worker_refuses_stale_heartbeat,
         test_dag_order,
         test_failure_pauses,
+        test_cancel_cannot_be_overwritten_by_late_success,
         test_daily_limit,
+        test_success_denominator_excludes_infrastructure_errors,
         test_http_token,
     ]
     try:
