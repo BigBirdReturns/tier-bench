@@ -118,9 +118,9 @@ work. Failure is equally informative — commit the curve either way.
       LESSONS 19: above three-T1-per-visit on dollars at fable rates; the
       cheap-hand arm and larger-N remain unmeasured; CRATE-CROSSOVER-1 full
       form still open)
-- [ ] dispatch.py: referee timeout is a hard-coded 120s — the ADMIN suite
-      referee (admin_question_test_v1) ran ~4 min, dispatch recorded a false
-      FAIL on a passing attempt; make it a flag
+- [x] dispatch.py: referee timeout flag (`--referee-timeout`, default 600s,
+      TIMEOUT sentinel in receipts; payload-inline haiku, $0.057, 2026-07-18 —
+      closed the false FAIL the 120s hard-cap put on admin_question_test_v1)
 
 ## The arithmetic (why this stretches days into weeks)
 
