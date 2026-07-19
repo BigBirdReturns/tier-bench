@@ -25,12 +25,60 @@ jobs:
           python-version: '3.11'
       - name: Reconstruct, verify, and test the exact source archive
         run: python .monster-wrangler-transfer/assemble.py
-      - name: Publish the verified application source
+      - name: Upload the verified source as immutable Git blobs
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git restore --source=HEAD -- .github/workflows/breadth-durability.yml .github/workflows/monster-wrangler-assemble.yml
-          git add -A
-          git diff --cached --check
-          git commit -m "build Monster Wrangler controlled-work desk"
-          git push origin HEAD:codex/monster-wrangler-v1
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import urllib.request
+
+          paths = [
+              ".github/workflows/breadth-durability.yml",
+              "docs/monster-wrangler.md",
+              "pyproject.toml",
+              "tests/test_monster_wrangler.py",
+              "tier_runner/cli.py",
+              "tier_runner/desk.py",
+              "tier_runner/desk_ui.py",
+          ]
+          endpoint = f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/git/blobs"
+          token = os.environ["GH_TOKEN"]
+          result = {"archive_sha256": "cd55973f767ba12d0e664b264d90afd2703488d27a7aa6875ece1ce0f045e634", "files": {}}
+          for raw_path in paths:
+              data = Path(raw_path).read_bytes()
+              payload = json.dumps({
+                  "content": base64.b64encode(data).decode("ascii"),
+                  "encoding": "base64",
+              }).encode("utf-8")
+              request = urllib.request.Request(
+                  endpoint,
+                  data=payload,
+                  method="POST",
+                  headers={
+                      "Accept": "application/vnd.github+json",
+                      "Authorization": f"Bearer {token}",
+                      "Content-Type": "application/json",
+                      "X-GitHub-Api-Version": "2022-11-28",
+                  },
+              )
+              with urllib.request.urlopen(request) as response:
+                  uploaded = json.load(response)
+              result["files"][raw_path] = {
+                  "bytes": len(data),
+                  "git_blob_sha": uploaded["sha"],
+                  "sha256": hashlib.sha256(data).hexdigest(),
+              }
+          Path("monster-wrangler-blobs.json").write_text(
+              json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: monster-wrangler-git-blobs
+          path: monster-wrangler-blobs.json
+          if-no-files-found: error
