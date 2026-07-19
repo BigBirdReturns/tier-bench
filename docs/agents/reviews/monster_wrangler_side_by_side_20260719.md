@@ -50,3 +50,27 @@ as independently-confirmed prior art.
 Sequencing stays operator-gated: merge order vs the kernel-contract cards
 (#116) and the smoke is the operator's call; this review creates no
 authority.
+
+---
+
+## Cross-engine disposition addendum (2026-07-19, post-Sol audit)
+
+Sol's independent audit (`sol_wrangler_audit_20260719.md`) REFUTES this
+review's aggregate recommendation. Accepted at the desk:
+
+1. **Event-chain finding (new, both scouts missed it):** #119's sealed
+   head/count metadata lives in the same mutable SQLite as the chain;
+   `verify_event_chain()` is exposed but not enforced at scheduler startup or
+   tick — detectable corruption does not stop dispatch. GATE 4 (Sol's):
+   externally anchor the chain head and fail closed on verification at
+   admission.
+2. **Conformance overclaim:** #119's tank/basis machinery does not conform to
+   the frozen policy card as this review implied.
+3. **Disposition change:** "#119 as base" is downgraded from recommendation
+   to HYPOTHESIS. Operative verdict: CHANGES_REQUESTED_BEFORE_EITHER_MERGE;
+   the independently-converged referee-gated closure remains the valuable
+   cross-lineage evidence; #118's heartbeat-supervised modular surface is
+   undervalued above.
+
+The resident desk's original text is preserved unedited above, per
+strike-through-not-delete law.
