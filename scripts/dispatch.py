@@ -46,6 +46,8 @@ def main() -> int:
             cwd=arm_dir,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=120,
         )
         hand_output = hand_result.stdout + hand_result.stderr
@@ -64,6 +66,8 @@ def main() -> int:
             cwd=arm_dir,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=120,
         )
         referee_exit = referee_result.returncode

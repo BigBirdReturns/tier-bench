@@ -1,0 +1,1 @@
+{"arm_dir": ".", "hand_cmd": "echo Read experiments/breadth/crates/dispatch_fix_v1/000.000.INDEX.md and follow it exactly. | claude -p --model haiku --allowedTools \"Read,Glob,Write,Edit,Bash(python:*)\" --output-format json", "pass": true, "referee_exit": 0, "referee_last_line": "PASS dispatch_fix", "log": "experiments\\breadth\\crates\\dispatch_fix_v1\\receipt_1.log"}

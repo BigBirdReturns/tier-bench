@@ -59,6 +59,33 @@ and dies without regret.
     escalate failures one tier. End at sentinel WARN with a receipt and the
     next crate written. Your session is disposable; the repo is not.
 
+## INTERACTIVE DRIVER (the desk, not the workshop)
+
+A long-lived chat session is allowed — talk accumulates at human speed and
+rent on pure talk is pocket change. What is forbidden is bulk entering the
+chat context: file dumps, logs, search results, tool sprawl. The chat is a
+desk where decisions are made, not a workshop where work happens.
+
+Paste to start an interactive driver session:
+
+    Read docs/CRATE_OPS.md and operate as the INTERACTIVE driver: converse
+    normally, but never pull bulk into this context. Any work beyond 2-3
+    trivial tool calls: write a crate (scripts/crate_new.py), freeze a
+    referee, dispatch a hand headless (scripts/dispatch.py or claude -p /
+    codex exec in background), and report back from the receipt — never
+    paste transcripts or file bodies here. Delegate all bulk reads to
+    subagents that return conclusions. Adjudicate receipts, escalate
+    failures one tier, commit deliverables with receipts. The sentinel
+    meters this session; treat NOTICE as a design failure, not a warning.
+
+Measurement: the session's sidecar in `experiments/breadth/run/.sentinel_state/`
+is the growth curve (`cost_usd`, `offset` = transcript bytes); read it with
+`python scripts/burn_report.py`. Control arm for comparison: the 2026-07-18
+driver session that authored this file — $32+ / ~1.6 MB / ~$0.30 per message,
+dominated by cache-read rent on its own tool output. Success: cost per message
+stays flat and total stays ~$1-2 across a comparable day of shipped, receipted
+work. Failure is equally informative — commit the curve either way.
+
 ## Tooling backlog (each item = one crate, built by hands, NOT by a driver)
 
 - [x] `scripts/crate_new.py` (built by spark hand via dispatch.py, 2026-07-18) — scaffold index/task/acceptance/receipt from
@@ -66,7 +93,7 @@ and dies without regret.
 - [x] `scripts/dispatch.py` (built by haiku hand, $0.088, 2026-07-18) — run hand M on crate C headless, capture log,
       meter (sidecar/`--output-format json`/`tokens used`), run referee,
       append receipt row; `--escalate` for the tier ladder
-- [ ] dispatch.py: fix Windows cp1252 log-capture decode (found live 2026-07-18; capture with encoding='utf-8', errors='replace')
+- [x] dispatch.py: fix Windows cp1252 log-capture decode (fixed by haiku hand via dispatch_fix_v1 crate, $0.090, 2026-07-18; capture now encoding='utf-8', errors='replace' — pre-fix the decode error killed the reader thread, stdout came back None, and dispatch crashed with no receipt row at all)
 - [ ] sentinel lifted to user-level settings (all projects metered)
 - [ ] `burn_report` fed from both vendors' logs (one ledger, two tanks)
 - [ ] S* crossover experiment (CRATE-CROSSOVER-1 full form, own queue row)
