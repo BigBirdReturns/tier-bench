@@ -1,0 +1,63 @@
+{
+ "experiment": "four-model solo race, identical DAG (3 knot tasks)",
+ "started_utc": "2026-07-18T03:31:25Z",
+ "grading": "hidden_tests.py from repo fixtures, clean temp dirs, referee-run; 12/12 pass",
+ "arms": {
+  "haiku": {
+   "ms": 114237,
+   "tokens": 38788,
+   "tools": 20,
+   "hidden_score": "3/3",
+   "cost_usd_bounds": [
+    0.039,
+    0.194
+   ]
+  },
+  "sonnet": {
+   "ms": 78196,
+   "tokens": 45785,
+   "tools": 13,
+   "hidden_score": "3/3",
+   "cost_usd_bounds": [
+    0.137,
+    0.687
+   ]
+  },
+  "opus": {
+   "ms": 56008,
+   "tokens": 37416,
+   "tools": 11,
+   "hidden_score": "3/3",
+   "cost_usd_bounds": [
+    0.187,
+    0.935
+   ]
+  },
+  "fable": {
+   "ms": 159752,
+   "tokens": 47077,
+   "tools": 22,
+   "hidden_score": "3/3",
+   "cost_usd_bounds": "model not in repo registry"
+  }
+ },
+ "prices_per_1M_from_repo_registry": {
+  "haiku": {
+   "in": 1.0,
+   "out": 5.0
+  },
+  "sonnet": {
+   "in": 3.0,
+   "out": 15.0
+  },
+  "opus": {
+   "in": 5.0,
+   "out": 25.0
+  }
+ },
+ "caveats": [
+  "token figures are harness totals without input/output split; cost bounds are [all-input, all-output] at repo registry prices \u2014 real cost sits near the input-heavy end",
+  "N=1 per model, three small tasks; speed differences include queue/startup noise",
+  "scratch experiment; not breadth-program floor evidence, no repo ledger rows written"
+ ]
+}

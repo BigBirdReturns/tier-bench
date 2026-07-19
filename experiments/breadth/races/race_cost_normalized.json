@@ -1,0 +1,96 @@
+{
+ "ladder_note": "output=5x input on every Anthropic tier, so relative cost is split-independent; ladder haiku:sonnet:opus:fable = 1:3:5:10 (sonnet intro $2/$10 through 2026-08-31 makes it 2)",
+ "hand_tokens_estimated": 84000,
+ "races": {
+  "race2 (4 models solo, crisp knots)": [
+   {
+    "arm": "haiku solo",
+    "tokens": 38788,
+    "cost_units": 38788,
+    "usd_est_90_10": 0.0543
+   },
+   {
+    "arm": "sonnet solo",
+    "tokens": 45785,
+    "cost_units": 137355,
+    "usd_est_90_10": 0.1923
+   },
+   {
+    "arm": "opus solo",
+    "tokens": 37416,
+    "cost_units": 187080,
+    "usd_est_90_10": 0.2619
+   },
+   {
+    "arm": "fable solo",
+    "tokens": 47077,
+    "cost_units": 470770,
+    "usd_est_90_10": 0.6591
+   }
+  ],
+  "race3 (rule-interaction knots)": [
+   {
+    "arm": "haiku solo",
+    "tokens": 42910,
+    "cost_units": 42910,
+    "usd_est_90_10": 0.0601
+   },
+   {
+    "arm": "opus solo",
+    "tokens": 36944,
+    "cost_units": 184720,
+    "usd_est_90_10": 0.2586
+   },
+   {
+    "arm": "sonnet+haiku",
+    "tokens": 178958,
+    "cost_units": 366196,
+    "usd_est_90_10": 0.5127
+   },
+   {
+    "arm": "opus+haiku",
+    "tokens": 125835,
+    "cost_units": 293175,
+    "usd_est_90_10": 0.4104
+   },
+   {
+    "arm": "fable+haiku",
+    "tokens": 126544,
+    "cost_units": 509440,
+    "usd_est_90_10": 0.7132
+   }
+  ],
+  "race4 (spec gaps / judgment)": [
+   {
+    "arm": "haiku solo",
+    "tokens": 32698,
+    "cost_units": 32698,
+    "usd_est_90_10": 0.0458
+   },
+   {
+    "arm": "opus solo",
+    "tokens": 36178,
+    "cost_units": 180890,
+    "usd_est_90_10": 0.2532
+   },
+   {
+    "arm": "sonnet+haiku",
+    "tokens": 135765,
+    "cost_units": 239295,
+    "usd_est_90_10": 0.335
+   },
+   {
+    "arm": "opus+haiku",
+    "tokens": 124950,
+    "cost_units": 288750,
+    "usd_est_90_10": 0.4042
+   },
+   {
+    "arm": "fable+haiku",
+    "tokens": 123127,
+    "cost_units": 475270,
+    "usd_est_90_10": 0.6654
+   }
+  ]
+ }
+}

@@ -1,0 +1,12 @@
+Create scripts/span_ledger.py (Python 3.10+, stdlib only). It reads a JSONL file of half-open integer spans and reports merged coverage.
+
+CLI: --input PATH (required). Each line should be a JSON object {"start": int, "end": int} for the half-open interval [start, end). Ignore without error: lines that are not valid JSON objects, objects whose start or end is not an integer (booleans are not integers), and spans with end <= start. Lines may be unordered and contain duplicates.
+
+Merge spans that overlap OR touch (a span ending at x merges with one starting at x). Print exactly two lines to stdout then exit 0:
+
+merged: <count>
+covered: <total integers covered>
+
+If the file is missing or has no valid spans, print exactly "no spans" and exit 0.
+
+Verify by running: python tests/test_span_ledger.py (do not modify it or anything under tests/). Reply DONE plus the last line of that command's output.

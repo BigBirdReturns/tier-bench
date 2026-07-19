@@ -1,0 +1,94 @@
+{
+ "experiment": "race 6: cross-vendor (GPT via Codex CLI) - solving ladder, effort sweep, replication, authoring recursion, haiku control",
+ "smoke_lessons": [
+  "CLI requires git-trusted dir",
+  "Windows workspace-write sandbox helper broken (v0.3 NO-GO class) -> danger-full-access for isolated scratch repos"
+ ],
+ "solving_all_6_of_6": {
+  "luna@low": {
+   "usd": 0.116
+  },
+  "spark@low": {
+   "usd": 0.259
+  },
+  "spark@low_rep": {
+   "usd": 0.204
+  },
+  "spark@high": {
+   "usd": 0.285
+  },
+  "terra@low": {
+   "usd": 0.288
+  },
+  "sol@low": {
+   "usd": 0.789
+  },
+  "sol@high": {
+   "usd": 1.146
+  },
+  "claude_comparators": {
+   "haiku": 0.106,
+   "opus": 0.512
+  }
+ },
+ "findings_solving": [
+  "floor universal at every rung of both vendors' ladders; 42/42 GPT hidden passes + replication stable",
+  "convention 'a' chosen by every GPT arm too - consensus prior is cross-vendor",
+  "effort is pure surcharge on ceiling-saturated work: spark high vs low same score +40% cost; sol high vs low same score +45% cost"
+ ],
+ "authoring": {
+  "spark@medium": {
+   "valid": "2/2",
+   "fair": "60/60",
+   "usd": 0.486,
+   "secs": 51
+  },
+  "sol@high": {
+   "valid": "2/2",
+   "fair": "64/64",
+   "usd": 0.775,
+   "secs": 315
+  },
+  "luna@medium": {
+   "valid": "2/2",
+   "fair": "65/65",
+   "usd": 0.06,
+   "secs": 101
+  },
+  "terra@medium": {
+   "valid": "2/2",
+   "fair": "64/64",
+   "usd": 0.153,
+   "secs": 122
+  },
+  "haiku_control_hardened_brief": {
+   "valid": "1/2",
+   "defect": "collatz foil (3n-1) non-terminates on 9/25 of its own persisted vectors; build script has no caps/timeouts so the reported '17/25 misses' verification cannot have run; SECOND false-green (distinct defect class from race 5)",
+   "usd_est": 0.078
+  }
+ },
+ "verdict": [
+  "GPT authoring 8/8 valid+fair across all four tiers incl. $1 luna - cheap-tier authoring is NOT a universal capability wall",
+  "haiku false-green REPLICATES under the hardened brief -> race-5 separation was a model-specific self-verification reliability defect, not brief sensitivity",
+  "the deterministic referee caught every defect both times, including via its own hang (now hardened with watchdog timeouts) - verification harness authorship remains the load-bearing residue"
+ ],
+ "pricing": {
+  "luna": [
+   1,
+   6
+  ],
+  "terra": [
+   2.5,
+   15
+  ],
+  "sol": [
+   5,
+   30
+  ],
+  "spark": [
+   1.75,
+   14
+  ],
+  "cache_discount": 0.1
+ }
+}

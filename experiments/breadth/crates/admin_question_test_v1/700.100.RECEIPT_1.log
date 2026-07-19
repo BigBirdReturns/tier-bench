@@ -1,0 +1,1 @@
+Command 'claude -p "Read experiments/breadth/crates/admin_question_test_v1/010.100.TASK.md and complete the task exactly as specified. Your cwd is the repo root." --model sonnet --allowedTools "Read,Edit,Write,Grep,Glob,Bash,PowerShell" --output-format json --no-session-persistence' timed out after 120 seconds

@@ -1,0 +1,118 @@
+{
+ "w7_chains": {
+  "spark": {
+   "arm": "spark",
+   "model": "gpt-5.3-codex-spark",
+   "effort": "low",
+   "stages": {
+    "1": {
+     "rc": 0,
+     "secs": 27.7,
+     "match": true
+    },
+    "2": {
+     "rc": 0,
+     "secs": 6.0,
+     "match": true
+    },
+    "3": {
+     "rc": 0,
+     "secs": 5.2,
+     "match": true
+    },
+    "4": {
+     "rc": 0,
+     "secs": 5.4,
+     "match": true
+    },
+    "5": {
+     "rc": 0,
+     "secs": 12.1,
+     "match": true
+    }
+   },
+   "first_divergence": null,
+   "final_match": true
+  },
+  "luna": {
+   "arm": "luna",
+   "model": "gpt-5.6-luna",
+   "effort": "low",
+   "stages": {
+    "1": {
+     "rc": 0,
+     "secs": 22.8,
+     "match": true
+    },
+    "2": {
+     "rc": 0,
+     "secs": 20.1,
+     "match": true
+    },
+    "3": {
+     "rc": 0,
+     "secs": 23.3,
+     "match": true
+    },
+    "4": {
+     "rc": 0,
+     "secs": 31.3,
+     "match": true
+    },
+    "5": {
+     "rc": 0,
+     "secs": 24.5,
+     "match": true
+    }
+   },
+   "first_divergence": null,
+   "final_match": true
+  }
+ },
+ "k3_replication": {
+  "spark_race6_set": [
+   "6/6",
+   "6/6",
+   "6/6"
+  ],
+  "status": "settled per lesson 6"
+ },
+ "cart0_pilot_live": {
+  "suite_commit": "6e3789f0659dd462e8f929b6b4c18e9e39f8db86",
+  "replicates": {
+   "1": {
+    "alone": {
+     "pass": true,
+     "in": 299391,
+     "cached": 264704,
+     "out": 6086,
+     "secs": 125.7
+    },
+    "to_spark": {
+     "pass": true,
+     "in": 187987,
+     "cached": 155648,
+     "out": 6358,
+     "secs": 131.4
+    }
+   },
+   "2": {
+    "alone": {
+     "pass": true,
+     "in": 240662,
+     "cached": 205312,
+     "out": 5706,
+     "secs": 120.4
+    },
+    "to_spark": {
+     "pass": true,
+     "in": 158312,
+     "cached": 129280,
+     "out": 6715,
+     "secs": 131.8
+    }
+   }
+  },
+  "verdict": "quality tie 4/4 PASS; crate handoff reduces input footprint 34-37% at +5-9% wall; structure buys context economics, not correctness"
+ }
+}

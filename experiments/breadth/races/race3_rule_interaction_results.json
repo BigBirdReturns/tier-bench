@@ -1,0 +1,49 @@
+{
+ "experiment": "race 3: rule-interaction knots (fresh referee-authored), solo controls vs driver+haiku-hands pairs",
+ "started_utc": "2026-07-18T03:41:18Z",
+ "tasks": [
+  "t4_fee_cascade_001",
+  "t4_discount_stack_001",
+  "t4_retention_001"
+ ],
+ "authoring": "reference + naive foils verified bidirectionally (foils pass visible, fail 2-26 hidden); one equivalent foil caught and replaced pre-race",
+ "score": "15/15 hidden pass",
+ "arms": {
+  "haiku_solo": {
+   "ms": 192316,
+   "driver_tokens": 42910,
+   "tools": 19,
+   "hidden": "3/3"
+  },
+  "opus_solo": {
+   "ms": 68036,
+   "driver_tokens": 36944,
+   "tools": 11,
+   "hidden": "3/3"
+  },
+  "pair_sonnet": {
+   "ms": "~340000 incl. stall",
+   "driver_tokens": 93619,
+   "hand_tokens": 85339,
+   "hidden": "3/3",
+   "incident": "driver ended turn to 'wait' for hands; referee nudge required; hands orphaned at ~28k tokens each"
+  },
+  "pair_opus": {
+   "ms": 115321,
+   "driver_tokens": 41835,
+   "hand_tokens": "nested/unmeasured",
+   "hidden": "3/3"
+  },
+  "pair_fable": {
+   "ms": 124315,
+   "driver_tokens": 42544,
+   "hand_tokens": "nested/unmeasured",
+   "hidden": "3/3"
+  }
+ },
+ "findings": [
+  "multi-rule interaction knots did not crack even haiku solo",
+  "all three drivers independently converged on pre-resolving rule interactions in the hand prompt (disambiguation, not supervision)",
+  "pair failure mode is coordination (turn-ending wait), not quality; ~28k tokens/hand session overhead dominates pair economics"
+ ]
+}

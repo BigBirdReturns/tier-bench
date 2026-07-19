@@ -1,6 +1,42 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/experiments/breadth/hooks/session_sentinel.py\"",
+            "timeout": 10,
+            "statusMessage": "cost sentinel"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/experiments/breadth/hooks/session_sentinel.py\"",
+            "timeout": 10,
+            "statusMessage": "cost sentinel"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/experiments/breadth/hooks/session_sentinel.py\"",
+            "timeout": 10,
+            "statusMessage": "cost sentinel"
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

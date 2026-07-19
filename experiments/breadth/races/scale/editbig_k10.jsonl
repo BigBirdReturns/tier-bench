@@ -1,0 +1,10 @@
+{"mode": "mono", "n": 160, "trial": 0, "recall": 1.0, "drops": []}
+{"mode": "mono", "n": 160, "trial": 1, "recall": 0.9938, "drops": ["f00:round_to"]}
+{"mode": "mono", "n": 160, "trial": 2, "recall": 1.0, "drops": []}
+{"mode": "mono", "n": 160, "trial": 3, "recall": 1.0, "drops": []}
+{"mode": "mono", "n": 160, "trial": 4, "recall": 1.0, "drops": []}
+{"mode": "mono", "n": 160, "trial": 5, "recall": 0.9938, "drops": ["f55:suffix_trim"]}
+{"mode": "mono", "n": 160, "trial": 6, "recall": 1.0, "drops": []}
+{"mode": "mono", "n": 160, "trial": 7, "recall": 1.0, "drops": []}
+{"mode": "mono", "n": 160, "trial": 8, "recall": 1.0, "drops": []}
+{"mode": "mono", "n": 160, "trial": 9, "recall": 1.0, "drops": []}

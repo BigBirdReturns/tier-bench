@@ -1,0 +1,69 @@
+{
+  "autoUpdatesChannel": "latest",
+  "theme": "dark",
+  "skipWorkflowUsageWarning": true,
+  "switchModelsOnFlag": false,
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"C:\\Users\\BAM-Desktop\\.claude\\hooks\\session_sentinel.py\"",
+            "timeout": 10,
+            "statusMessage": "cost sentinel"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"C:\\Users\\BAM-Desktop\\.claude\\hooks\\session_sentinel.py\"",
+            "timeout": 10,
+            "statusMessage": "cost sentinel"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"C:\\Users\\BAM-Desktop\\.claude\\hooks\\session_sentinel.py\"",
+            "timeout": 10,
+            "statusMessage": "cost sentinel"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"C:\\Users\\BAM-Desktop\\.claude\\hooks\\session_burn_hook.py\"",
+            "timeout": 15,
+            "suppressOutput": true,
+            "statusMessage": "logging session burn"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"C:\\Users\\BAM-Desktop\\.claude\\hooks\\session_burn_hook.py\"",
+            "timeout": 15,
+            "suppressOutput": true
+          }
+        ]
+      }
+    ]
+  }
+}

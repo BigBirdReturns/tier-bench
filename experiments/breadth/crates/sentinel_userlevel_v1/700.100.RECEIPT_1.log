@@ -1,0 +1,1 @@
+Command 'claude -p "Read experiments/breadth/crates/sentinel_userlevel_v1/010.100.TASK.md and complete the task exactly as specified. Your cwd is the repo root. Stage only — never modify live settings." --model haiku --allowedTools "Read,Edit,Write,Grep,Glob,Bash,PowerShell" --output-format json --no-session-persistence' timed out after 120 seconds

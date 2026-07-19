@@ -1,0 +1,37 @@
+{
+ "spark": {
+  "w1_pipeline": "PASS",
+  "w2_bughunt": "PASS",
+  "w3_amendments": "PASS"
+ },
+ "luna": {
+  "w1_pipeline": "PASS",
+  "w2_bughunt": "PASS",
+  "w3_amendments": "PASS"
+ },
+ "terra": {
+  "w1_pipeline": "PASS",
+  "w2_bughunt": "PASS",
+  "w3_amendments": "PASS"
+ },
+ "sol": {
+  "w1_pipeline": "PASS",
+  "w2_bughunt": "PASS",
+  "w3_amendments": "PASS"
+ },
+ "haiku": {
+  "w1_pipeline": "PASS",
+  "w2_bughunt": "PASS",
+  "w3_amendments": "PASS"
+ },
+ "sonnet": {
+  "w1_pipeline": "PASS",
+  "w2_bughunt": "PASS",
+  "w3_amendments": "PASS"
+ },
+ "opus": {
+  "w1_pipeline": "PASS",
+  "w2_bughunt": "PASS",
+  "w3_amendments": "PASS"
+ }
+}

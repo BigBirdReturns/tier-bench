@@ -1,0 +1,54 @@
+{
+ "experiment": "three-arm orchestration race",
+ "started_utc": "2026-07-18T03:24:31Z",
+ "tasks": [
+  "t3_null_filter_001",
+  "t3_accrual_crossover_001",
+  "t3_billing_anchor_001"
+ ],
+ "arms": {
+  "A_dag_cheap_hands": {
+   "policy": "opus driver, DAG, sonnet/haiku hands only, driver may not edit",
+   "duration_ms": 116288,
+   "reported_tokens": 42746,
+   "tool_uses": 15,
+   "hands": "3x sonnet, parallel, zero repair rounds",
+   "hidden_score": "3/3"
+  },
+  "B_solo": {
+   "policy": "opus alone, delegation forbidden",
+   "duration_ms": 89743,
+   "reported_tokens": 39944,
+   "tool_uses": 13,
+   "hidden_score": "3/3"
+  },
+  "C_free": {
+   "policy": "opus, free delegation (anthropic default)",
+   "duration_ms": 85847,
+   "reported_tokens": 38807,
+   "tool_uses": 11,
+   "chose": "no delegation at all",
+   "hidden_score": "3/3"
+  }
+ },
+ "caveats": [
+  "reported_tokens is the harness subagent_tokens figure; whether Arm A's nested sonnet hand sessions are included is not decomposable (transcript files were empty)",
+  "N=1 per arm, three small single-file tasks; DAG parallelism has no room to amortize at this scale",
+  "scratch experiment only: NOT breadth-program floor evidence, no repo ledger/queue rows written"
+ ],
+ "grading": "hidden_tests.py from repo fixtures, clean temp dirs, referee-run; all 9/9 pass",
+ "repo_prices_per_1M": {
+  "claude-opus-4-8": {
+   "in": 5.0,
+   "out": 25.0
+  },
+  "claude-sonnet-5": {
+   "in": 3.0,
+   "out": 15.0
+  },
+  "claude-haiku-4-5": {
+   "in": 1.0,
+   "out": 5.0
+  }
+ }
+}

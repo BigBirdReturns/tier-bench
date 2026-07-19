@@ -107,6 +107,184 @@ drawing that waterline correctly — and proving which side each cell is on.
     The lanes that actually recover baseline misses: `data_types` (float-money
     equality) and `contracts` (silent-default holes).
 
+13. **Smoke before cage.** Never build the golden conformance machinery —
+    hash-bound freezes, ratification chains, fail-closed runners, custody
+    receipts — before a cheap disposable run proves the runtime path actually
+    runs. Bitten twice, same week. Sol-root activation v0.3: ~40 ceremony
+    commits froze a 59-call schedule, then the FIRST executor call died because
+    the CLI tool router silently downgraded `--sandbox workspace-write` to
+    read-only (`invocation_equivalence_proven: false` — the only receipt check
+    that required a live run was the one that failed; discovery cost 2 calls /
+    204 output tokens, and could have been commit #1). ARC-D buffalo pilot:
+    field contract + hash-bound packets built, then 3/3 live dispatches
+    returned provider `systemError` with zero assistant bytes — and the frozen
+    no-retry stopping rule converted an *infrastructure* failure into a
+    permanent PARTIAL nobody may investigate. The procedure: before proposing
+    any freeze/activation machinery for a live-dispatch lane, (a) list the
+    properties only provable by running — sandbox writes, transport liveness,
+    output-schema acceptance — and burn 1–2 disposable, non-frozen calls (or a
+    $0 local CLI probe) proving them; (b) never let a no-retry rule designed
+    for scientific integrity absorb infrastructure failures — classify
+    infra-vs-observation BEFORE the stopping rule binds. Counter-example that
+    proves the fix: the v0.4 repair (`run_v2.py` / `run_pilot.py`) verified CLI
+    identity and ran a synthetic self-test green before any live access.
+    Still-loaded instances as of 2026-07-17: TIER-PILOT (contract layer merged
+    with 74 passing offline tests, zero model calls ever through the production
+    shim, canary sequenced AFTER the byte freeze) and ARC-D-B2-CUSTODY-V2
+    (activation will dispatch over the exact transport that just went 0-for-3).
+
+    *Corroboration for rules 11/12 (2026-07-18, informal, N=1 per arm — see
+    `races/README.md` for receipts):* four models solo (haiku→fable) plus an
+    opus-driver/sonnet-hands DAG all went 12/12+9/9 hidden on the authoring-2/3
+    discriminator knots. The capability gradient showed up ONLY as burn (speed,
+    tool round-trips, verification depth), never as score — and haiku cleared
+    three T3-labelled knots despite its registered T2 ceiling. The floor keeps
+    eating crisply-stated knots; route crisp+deterministically-graded work
+    cheap and spend the savings on graders.
+
+14. **Verification is universal; self-verification is not. Buy the cheap
+    model, keep the referee.** Measured across ~70 runs, 8 models, 2 vendors
+    (races 1-6 + gauntlet waves, `races/`): every tier of both ladders solves
+    everything deterministically gradeable (21/21 hard-shape, 42/42 cross-
+    vendor, replicated); every tier certifies (21/21 adversarial certification
+    with executing counterexamples). The ONLY crack found anywhere: haiku
+    twice shipped broken graders while reporting them verified (distinct
+    defect classes, hardened brief) - then went 3/3 catching the SAME defect
+    class when placed in the referee role. The missing capability was never
+    verification; it was reliably turning verification against one's own work
+    while incentivized to finish. The frontier's measurable residue is surplus
+    self-verification behavior, not exclusive reasoning - and the engineering
+    answer is stronger than buying that behavior: EXTERNALIZE it. Separate
+    author from referee; make acceptance executable. The doctrine: cheap
+    models solve; cheap models certify; any tier authors behind a hardened
+    gate; self-reports prove nothing; the referee - not the model - is the
+    quality guarantee; frontier effort belongs in the referee, brief, and
+    lesson pipeline. The boss round closed it: fable passed the same hostile
+    machinery as everyone else, 66/66, no coronation, no exception - just the
+    referee. The house wasn't haunted. It lacked smoke detectors.
+
+15. **BOM-tolerant reads, or your referee invents a crack.** The 20-stage
+    compounding chain reported spark's "first divergence at stage 10" - the
+    program's only apparent solving failure. Adjudication (never trust the
+    first number - lesson 14, pointed at your own harness): spark had written
+    stage 10 via PowerShell's ConvertTo-Json, which prepends a UTF-8 BOM; the
+    grader's plain `json.loads` choked and the runner scored it a divergence
+    and halted. BOM-tolerant re-grade: 11/11 exact match, no crack, floor
+    intact. Any JSON a model writes on Windows may carry a BOM - read model
+    output with `encoding="utf-8-sig"` everywhere. The near-miss is the point:
+    an unverified referee manufactures false discriminators as readily as a
+    model manufactures false-greens. Verify the verifier.
+
+16. **Breadth has a waterline that depth and difficulty do not - and
+    decomposition is the fix (quality, not just cost).** The program's floor
+    held against knots, interactions, spec gaps, multi-file work, adversarial
+    certification, and 20-stage compounding chains. It cracked on BREADTH: one
+    spec with N independent requirements. Monolithic Spark at N=160 (11 runs,
+    fresh spec each): 5 clean, 5 dropped 2-5 low-salience one-liner rules
+    (suffix_trim, upper, strip, abs_cap, bool_flip - the boring ones, ~1%
+    per-rule silent omission, still passing visible checks), 1 produced
+    non-importable code. ~55% of runs imperfect. Cross-model: Luna dropped 3/160
+    too - the waterline is general, not Spark-specific. Adjudicated real, not a
+    harness artifact (isolating probes showed rules literally unimplemented).
+    THE FIX: split the 160 rules into 4 scoped passes of 40 (model preserves
+    prior passes, focuses on its 40). Decomposed N=160x4: 5/5 runs perfect,
+    zero drops, zero breaks. Scoping context per pass drove a ~55%-imperfect
+    rate to 0%. This is the crate/DAG thesis (CART0) proven with a QUALITY
+    delta - not just the ~35% context-cost delta the live pilot showed. Cost:
+    4x the calls. Operating rule: past ~50-80 independent requirements in one
+    prompt, cheap models silently drop some; decompose into <=40-requirement
+    scoped passes and the drops vanish. The referee (per-requirement isolating
+    probes) is what makes the drop visible at all - aggregate pass/fail hides it.
+
+17. **Small samples manufacture findings; K<=5 is a rumor, not a result.
+    (This retracts parts of lessons 16.)** The overnight breadth hunt produced
+    three exciting claims that ALL dissolved under K=10: (a) "monolithic recall
+    degrades ~55% at N=160" - a single high-variance batch that happened to
+    cluster failures; matched K=10 on the SAME seeds got 8/10 clean. (b) "the
+    drop is a Codex-CLI edit-loop artifact, RESOLVED" - edit and emit modes
+    have the IDENTICAL 80% clean rate at N=160 (K=10 each); the edit-loop does
+    not cause the drops. (c) "decomposition into 4x40 passes rescues it (5/5
+    clean)" - P(5/5 clean | 0.8 base rate) = 0.33, not significant; it was luck.
+    What actually survives K=10: cheap-model single-shot recall on 160-1000
+    independent requirements is ~80-100% per run with RARE stochastic
+    imperfections (~1 rule), NOT a capability wall (emit holds to 1000 rules).
+    The one durable real distinction is FAILURE MODE by interface: file-edit
+    fails by silently dropping ~1 rule (insidious - can pass aggregate checks);
+    text-emit fails by producing unparseable output (loud - the referee always
+    catches it). For a verified pipeline, prefer the interface that fails loud.
+    Method rule: report clean-rate with n; never ship an effect measured at
+    K<=5; if a rescue looks perfect, compute P(that many clean | base rate)
+    before believing it. The program's own discipline (lessons 14/15) applied
+    to its own headline results - and most did not survive.
+
+18. **The moat is session custody, not intelligence - and the counter-
+    architecture is the anchor crate.** Final receipt of the 2026-07-18 program:
+    the session that proved capability is commoditized at every tier of both
+    vendors billed ~$760 API-equivalent - and 92% of it was the ORCHESTRATOR'S
+    OWN main loop (1,171 turns x ~250k-token conversation = 618M cache-read
+    tokens at frontier prices). The workers who did all the measurable labor
+    cost $61; the entire cross-vendor GPT program cost ~$10. The frontier moat
+    is therefore not thinking - it is the architecture that keeps your working
+    state resident in their context window, charging rent on every re-read.
+    Every measurement this program produced converges on the same escape,
+    which is CART0/anchor-crate (the side project the original benchmarks
+    spawned): state lives in YOUR files, pointer-addressed and bounded
+    (measured -35% context at zero quality cost); drivers are SHORT-LIVED and
+    NARROW-CONTEXT, spawned per phase from a handoff crate and discarded;
+    workers are cheap and stateless; referees are deterministic and free.
+    Corollary that must be said out loud: the orchestrator is not exempt.
+    Lesson 7 (efficiency is context) applies MOST to the driver's own loop -
+    a marathon frontier session is the single most expensive object in the
+    entire architecture, and the one every other lesson quietly assumed was
+    free. Run the driver like a crate visitor, not a tenant.
+
+19. **S\* is real, it sits above small-task scale, and dollars are the wrong
+    axis to feel it on.** Three independent 07-17/07-18 measurements, different
+    designs, different lineages, same verdict. (a) `amortization_v1` (Claude
+    lane): one desk visit dispatching three T1 hands cost $4.73 vs $2.82 for
+    three plain sessions — 1.67× worse on dollars — but held 79k context once
+    vs 135k summed (~42% less). (b) CART0 net-effect pilot 0 (Sol lane, merged
+    #112): planner-delegates-to-Spark added 47.9% input tokens and 70.7% wall
+    time over planner-alone for identical 2/2 completion. (c) `cart0-bound-1`
+    (Sol lane): the cheap arm achieved ~90% input reduction and then scored
+    0/4 fidelity on a markdown-fence contract violation. Read together: below
+    S\* the ceremony premium is paid in full and refunded only in context
+    (the quota-relevant axis the sentinel actually meters), and the practical
+    failure mode of cheap delegation is not capability but TRANSPORT — fences,
+    sandbox non-equivalence, app systemErrors — which fails before capability
+    is ever measured (lesson: smoke the pipe before building the cage).
+    Routing corollary, now evidence-backed from both sides: payload-inline
+    cheap calls below S\*; crate only what is multi-phase, resumable, or
+    quota-bound; and treat any un-smoked transport as the tallest wall in the
+    stack. Caveats travel with the number: K=1 per arm in (a), both its arms
+    ran fable (the doctrine's cheap-hand D is unmeasured and would widen the
+    gap), and (c)'s zero is a contract artifact, not a capability floor.
+
+20. **S\* is the capability line, not a bundling threshold.** CRATE-CROSSOVER-1
+    (crossover_v1, 2026-07-18) closed lesson 19's caveat by finally running the
+    honest arms: fable desk + haiku hands ($3.08 all-in) vs plain haiku tenants
+    payload-inline ($0.21), three fresh T1 tasks, both arms 3/3 on the frozen
+    desk referee. The desk lost 14.8× on dollars AND its context refuge
+    vanished: the driver's ceremony alone billed ~786k frontier-priced input
+    tokens — equal to the tenants' entire ~777k haiku-priced spend — before
+    counting the hands. Both arms' hands cost the same per task (~$0.07–0.10);
+    everything above that was ceremony buying nothing a capable tenant needed.
+    Refined law: below the tenant's capability ceiling, dispatch payload-inline
+    and don't look back — no N amortizes the desk over tasks a cheap call
+    one-shots. The desk earns its keep only where cheap-inline FAILS: real
+    capability walls (escalation with the failed attempt as repair evidence),
+    multi-phase/resumable state, or frontier-context quota pressure. Caveats:
+    K=1, tiny tasks, cumulative-token measure (not final-context; do not mix
+    with lesson 19's 42% figure). Cross-engine addendum (sealed independently
+    same day, then exchanged — docs/agents/reviews/
+    crate_crossover_cross_engine_20260718.md): Sol's N=10 partial confirms
+    hand-cost parity across its four matched pairs AND shows the 14.8× is the
+    ceremony's upper bound, not its floor — Sol's pointer-only desk cost $0.27
+    vs this run's $2.85 crate-authoring desk (a lean desk loses ~2.4×, still a
+    loss). Ceremony cost is a design variable. Sol also hit a third wall type:
+    12/20 subjects policy-blocked by the disclosure reviewer before any
+    provider spend.
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.
