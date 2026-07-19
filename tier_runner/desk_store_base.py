@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 import sqlite3
 import threading
@@ -8,9 +9,19 @@ from typing import Any
 import uuid
 
 from .desk_common import (
-    DEFAULTS, DeskError, as_bool, as_float, as_int, canonical,
-    load_json, normalize_dependencies, normalize_files, now,
+    DEFAULTS,
+    DeskError,
+    as_bool,
+    as_float,
+    as_int,
+    canonical,
+    committed_blob,
+    load_json,
+    normalize_dependencies,
+    normalize_files,
+    now,
 )
+
 
 class DeskStoreBase:
     def __init__(self, db_path: Path, repo: Path):
@@ -135,7 +146,9 @@ class DeskStoreBase:
         self.update_settings({"paused": False, "pause_reason": ""})
 
     def recover(self) -> None:
-        rows = self.db().execute("SELECT id,last_run_id FROM tasks WHERE state='RUNNING'").fetchall()
+        rows = (
+            self.db().execute("SELECT id,last_run_id FROM tasks WHERE state='RUNNING'").fetchall()
+        )
         if not rows:
             return
         db = self.db()
@@ -160,7 +173,9 @@ class DeskStoreBase:
             raise
 
     def exists(self, task_id: str, db: sqlite3.Connection | None = None) -> bool:
-        return (db or self.db()).execute("SELECT 1 FROM tasks WHERE id=?", (task_id,)).fetchone() is not None
+        return (db or self.db()).execute(
+            "SELECT 1 FROM tasks WHERE id=?", (task_id,)
+        ).fetchone() is not None
 
     def create_task(self, payload: dict[str, Any]) -> dict[str, Any]:
         title = str(payload.get("title", "")).strip()
@@ -190,12 +205,12 @@ class DeskStoreBase:
             manifest = manifest_path.relative_to(self.repo).as_posix()
         except ValueError as exc:
             raise DeskError("backend manifest must live inside the managed repository") from exc
-        if not manifest_path.is_file():
-            raise DeskError(f"backend manifest does not exist: {manifest_path}")
         try:
-            manifest_data = load_json(manifest_path.read_text(encoding="utf-8"), None)
-        except OSError as exc:
-            raise DeskError(f"cannot read backend manifest: {exc}") from exc
+            manifest_data = json.loads(
+                committed_blob(self.repo, manifest, "backend manifest").decode("utf-8")
+            )
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise DeskError(f"committed backend manifest is invalid JSON: {exc}") from exc
         arms = manifest_data.get("arms") if isinstance(manifest_data, dict) else None
         if not isinstance(arms, dict) or arm not in arms:
             raise DeskError(f"backend manifest does not define {arm}")
@@ -229,9 +244,20 @@ class DeskStoreBase:
                   approval_required,approved_at,created_at,updated_at
                 ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
-                    task_id, title, task, canonical(files), acceptance, str(manifest), arm,
-                    priority, state, scheduled_for, int(approval_required),
-                    stamp if state == "QUEUED" else None, stamp, stamp,
+                    task_id,
+                    title,
+                    task,
+                    canonical(files),
+                    acceptance,
+                    str(manifest),
+                    arm,
+                    priority,
+                    state,
+                    scheduled_for,
+                    int(approval_required),
+                    stamp if state == "QUEUED" else None,
+                    stamp,
+                    stamp,
                 ),
             )
             for dependency in dependencies:
