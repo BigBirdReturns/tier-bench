@@ -26,6 +26,7 @@ def main() -> int:
     parser.add_argument("--hand-cmd", required=True, help="Hand command to run")
     parser.add_argument("--referee", required=True, help="Referee command to run")
     parser.add_argument("--receipt", required=True, help="Receipt file path")
+    parser.add_argument("--referee-timeout", type=int, default=600, help="Referee subprocess timeout in seconds (default: 600)")
     args = parser.parse_args()
 
     arm_dir = Path(args.arm_dir)
@@ -68,10 +69,13 @@ def main() -> int:
             text=True,
             encoding="utf-8",
             errors="replace",
-            timeout=120,
+            timeout=args.referee_timeout,
         )
         referee_exit = referee_result.returncode
         referee_output = referee_result.stdout
+    except subprocess.TimeoutExpired:
+        referee_exit = "TIMEOUT"
+        referee_output = f"timed out after {args.referee_timeout} seconds"
     except Exception as e:
         referee_exit = 1
         referee_output = str(e)
