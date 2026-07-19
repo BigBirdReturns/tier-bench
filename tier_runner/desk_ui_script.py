@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-SCRIPT = r'''
+SCRIPT = r"""
 const TOKEN="__TIER_DESK_TOKEN__",S={snap:null,selected:null,task:null};const $=id=>document.getElementById(id);const esc=v=>String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]));
 const money=v=>`$${Number(v||0).toFixed(2)}`;const compact=v=>{let n=Number(v||0);return n>=1e6?`${(n/1e6).toFixed(1)}m`:n>=1e3?`${(n/1e3).toFixed(1)}k`:String(n)};const when=v=>{if(!v)return"—";let d=new Date(v);return isNaN(d)?v:d.toLocaleString([],{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})};
 function toast(m,k="ok"){let n=document.createElement("div");n.className=`toast ${k}`;n.textContent=m;$("toasts").append(n);setTimeout(()=>n.remove(),4500)}
@@ -22,4 +22,4 @@ $("taskForm").onsubmit=async e=>{e.preventDefault();let p={title:$("title").valu
 $("pauseBtn").onclick=async()=>{try{if(S.snap.settings.paused)await api("/api/control/resume",{method:"POST",body:"{}"});else await api("/api/control/pause",{method:"POST",body:JSON.stringify({reason:"operator paused scheduling"})});await refresh()}catch(e){toast(e.message,"error")}};$("stopBtn").onclick=async()=>{if(!confirm("Emergency stop pauses scheduling and terminates every active run. Continue?"))return;try{await api("/api/control/emergency-stop",{method:"POST",body:"{}"});toast("Emergency stop recorded","error");await refresh()}catch(e){toast(e.message,"error")}};
 function openSettings(){let s=S.snap.settings;$("maxWorkers").value=s.max_workers;$("dailyTasks").value=s.daily_task_limit;$("dailyCost").value=s.daily_cost_limit_usd;$("stopOnFailure").checked=s.stop_on_failure;$("settingsModal").classList.add("open")}function closeSettings(){$("settingsModal").classList.remove("open")}$("settingsBtn").onclick=openSettings;$("closeSettings").onclick=closeSettings;$("cancelSettings").onclick=closeSettings;$("settingsModal").onclick=e=>{if(e.target===$("settingsModal"))closeSettings()};$("settingsForm").onsubmit=async e=>{e.preventDefault();let p={max_workers:Number($("maxWorkers").value),daily_task_limit:Number($("dailyTasks").value),daily_cost_limit_usd:Number($("dailyCost").value),stop_on_failure:$("stopOnFailure").checked};try{await api("/api/settings",{method:"POST",body:JSON.stringify(p)});closeSettings();toast("Guardrails saved");await refresh()}catch(e){toast(e.message,"error")}};
 refresh();setInterval(()=>refresh(),1800);
-'''
+"""
