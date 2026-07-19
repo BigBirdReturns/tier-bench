@@ -8,7 +8,21 @@ you can pick the project up cold and keep building it for decades, whoever
 made you, whatever you're called, whatever has replaced Python and GitHub by
 the time you read it.
 
-_Last updated: 2026-07-07, by the session that built everything below._
+_Last updated: 2026-07-18, by a payload-inline haiku hand per CRATE_OPS routing law._
+
+---
+
+## Where the program stands (2026-07-18)
+
+**Operating doctrine:** Sessions now run under docs/CRATE_OPS.md — work lives in files, sessions are visits. Drivers author crates and adjudicate receipts; cheap hands do bulk headless; deterministic referees are the only pass criterion. The cost sentinel + desk-guard meter every session (experiments/breadth/run/.sentinel_state/, scripts/burn_report.py).
+
+**Claude lane (branch claude/smoke-before-cage-residue):** Built the self-metering ops loop — scripts/crate_new.py, scripts/dispatch.py (cp1252 capture fixed), burn_report.py (--top/--json), desk-guard. Eight crates under experiments/breadth/crates/; most PASS at $0.05–0.13 hand cost. Lane total $25.45 over 26 sessions, median $0.10.
+
+**Measured finding (LESSONS.md lesson 19):** Three independent measurements converge — amortization_v1 (desk arm 1.67x dollar cost, 42% context win at N=3 T1 tasks), CART0 net-effect pilot 0 (delegation +47.9% input/+70.7% wall time, no benefit, merged PR #112), cart0-bound-1 (90% input reduction, 0/4 fidelity on a fence violation). Verdict: S* sits above small-task scale; dollars lose, context wins; transport (fences, sandbox non-equivalence, systemErrors) fails before capability is measured.
+
+**Sol lane:** sol-root activation sealed NO-GO on sandbox non-equivalence (PR #111); cart0-spark-bound-1 family sealed transport blocks, no score. In flight: residue-bridge-v1 (offline evidence index) and tier-pilot-production-entry (activation-boundary code, near merge-ready). Tier-pilot machinery merged through activation contracts; activation instance remains operator-gated.
+
+**Pointers:** docs/CRATE_OPS.md (how to run sessions), docs/agents/QUEUE.md (assignment authority), experiments/breadth/LESSONS.md lessons 18–19 (why).
 
 ---
 
