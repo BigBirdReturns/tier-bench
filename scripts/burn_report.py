@@ -16,7 +16,16 @@ def main() -> int:
         type=Path,
         default=Path("experiments/breadth/run/.sentinel_state"),
     )
+    parser.add_argument(
+        "--top",
+        type=int,
+        default=None,
+        metavar="N",
+        help="print only the N most expensive sessions (summary still covers all)",
+    )
     args = parser.parse_args()
+    if args.top is not None and args.top < 0:
+        parser.error("--top must be >= 0")
 
     state_dir = args.state_dir
 
@@ -41,8 +50,9 @@ def main() -> int:
     # Sort: cost_usd DESCENDING, session id ASCENDING
     sessions.sort(key=lambda x: (-x[1], x[0]))
 
-    # Print rows
-    for sid, cost, tier in sessions:
+    # Print rows (optionally limited to the N most expensive; summary covers all)
+    rows = sessions if args.top is None else sessions[: args.top]
+    for sid, cost, tier in rows:
         tier_str = tier if tier is not None else "-"
         print(f"{sid[:8]}  ${cost:.2f}  {tier_str}")
 
