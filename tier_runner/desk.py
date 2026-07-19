@@ -54,10 +54,51 @@ def read_record(path: Path) -> dict[str, Any] | None:
     return value if isinstance(value, dict) else None
 
 
-def write_record(path: Path, value: dict[str, Any]) -> None:
-    path.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
+def _record_bytes(value: dict[str, Any]) -> bytes:
+    return (json.dumps(value, sort_keys=True) + "\n").encode("utf-8")
+
+
+def claim_record(path: Path, value: dict[str, Any]) -> None:
+    try:
+        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError as exc:
+        existing = read_record(path)
+        if existing is None:
+            time.sleep(0.2)
+            existing = read_record(path)
+        if existing is None:
+            raise DeskError(
+                "desk control record exists but is unreadable; refusing takeover"
+            ) from exc
+        pid = int(existing.get("pid", 0)) if existing else 0
+        if pid_alive(pid):
+            raise DeskError(f"desk state is already leased by live pid {pid}") from exc
+        path.unlink(missing_ok=True)
+        try:
+            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        except FileExistsError as retry_exc:
+            raise DeskError("desk state was claimed concurrently") from retry_exc
+    with os.fdopen(descriptor, "wb") as handle:
+        handle.write(_record_bytes(value))
+
+
+def replace_record(path: Path, value: dict[str, Any]) -> None:
+    current = read_record(path)
+    if not current or current.get("instance_id") != value.get("instance_id"):
+        raise DeskError("desk control record ownership changed during startup")
+    temporary = path.with_name(path.name + f".{value['instance_id']}.tmp")
+    temporary.write_bytes(_record_bytes(value))
     if os.name != "nt":
-        path.chmod(0o600)
+        temporary.chmod(0o600)
+    os.replace(temporary, path)
+
+
+def log_tail(path: Path, limit: int = 4000) -> str:
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return ""
+    return data[-limit:].decode("utf-8", errors="replace").strip()
 
 
 def health(record: dict[str, Any]) -> dict[str, Any] | None:
@@ -184,8 +225,14 @@ def run_cli(args: argparse.Namespace) -> int:
 
     existing = read_record(pid_path)
     existing_pid = int(existing.get("pid", 0)) if existing else 0
-    if existing and pid_alive(existing_pid) and health(existing):
-        raise DeskError(f"desk already runs as pid {existing_pid}")
+    if existing and pid_alive(existing_pid):
+        if health(existing):
+            raise DeskError(f"desk already runs as pid {existing_pid}")
+        raise DeskError(
+            f"desk state is held by live but unverified pid {existing_pid}; refusing takeover"
+        )
+    if existing:
+        pid_path.unlink(missing_ok=True)
 
     instance_id = os.environ.get("TIER_DESK_INSTANCE_ID") or secrets.token_hex(16)
     token = os.environ.get("TIER_DESK_CONTROL_TOKEN") or secrets.token_urlsafe(32)
@@ -198,6 +245,13 @@ def run_cli(args: argparse.Namespace) -> int:
         child_env = dict(os.environ)
         child_env["TIER_DESK_INSTANCE_ID"] = instance_id
         child_env["TIER_DESK_CONTROL_TOKEN"] = token
+        package_root = str(Path(__file__).resolve().parents[1])
+        inherited_pythonpath = child_env.get("PYTHONPATH")
+        child_env["PYTHONPATH"] = (
+            package_root
+            if not inherited_pythonpath
+            else package_root + os.pathsep + inherited_pythonpath
+        )
         with log_path.open("a", encoding="utf-8") as log:
             process = subprocess.Popen(
                 daemon_command(args),
@@ -208,15 +262,42 @@ def run_cli(args: argparse.Namespace) -> int:
                 env=child_env,
                 **kwargs,
             )
-        record = {
-            "pid": process.pid,
-            "repo": str(repo),
-            "started_at": now(),
-            "url": f"http://{args.host}:{args.port}/",
-            "instance_id": instance_id,
-            "token": token,
-        }
-        write_record(pid_path, record)
+        deadline = time.time() + 10
+        record = None
+        while time.time() < deadline:
+            if process.poll() is not None:
+                detail = log_tail(log_path)
+                candidate = read_record(pid_path)
+                if candidate and candidate.get("instance_id") == instance_id:
+                    pid_path.unlink(missing_ok=True)
+                raise DeskError(
+                    f"desk process exited during startup with rc={process.returncode}"
+                    + (f": {detail}" if detail else "")
+                )
+            candidate = read_record(pid_path)
+            if (
+                candidate
+                and candidate.get("pid") == process.pid
+                and candidate.get("instance_id") == instance_id
+                and health(candidate)
+            ):
+                record = candidate
+                break
+            time.sleep(0.1)
+        if record is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+            candidate = read_record(pid_path)
+            if candidate and candidate.get("instance_id") == instance_id:
+                pid_path.unlink(missing_ok=True)
+            detail = log_tail(log_path)
+            raise DeskError(
+                "desk did not produce a verified health receipt during startup"
+                + (f": {detail}" if detail else "")
+            )
         print(
             json.dumps(
                 {
@@ -229,41 +310,50 @@ def run_cli(args: argparse.Namespace) -> int:
         )
         return 0
 
-    app = DeskApplication(repo, state_dir, instance_id=instance_id, token=token)
-    if args.max_workers:
-        app.store.update_settings({"max_workers": args.max_workers})
-    server = DeskServer((args.host, args.port), app)
-    host, port = server.server_address[:2]
-    url_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
-    url = f"http://{url_host}:{port}/"
-    record = {
+    provisional = {
         "pid": os.getpid(),
         "repo": str(repo),
         "started_at": now(),
-        "url": url,
+        "url": None,
         "instance_id": instance_id,
         "token": token,
     }
-    write_record(pid_path, record)
-    shutting_down = threading.Event()
-
-    def stop_server(signum: int, frame: Any) -> None:  # noqa: ARG001
-        if not shutting_down.is_set():
-            shutting_down.set()
-            threading.Thread(target=server.shutdown, daemon=True).start()
-
-    signal.signal(signal.SIGTERM, stop_server)
-    signal.signal(signal.SIGINT, stop_server)
-    app.start()
-    print(f"Monster Wrangler is running at {url}")
-    print(f"State: {state_dir}")
-    if not args.no_open:
-        threading.Timer(0.4, lambda: webbrowser.open(url)).start()
+    claim_record(pid_path, provisional)
+    app: DeskApplication | None = None
+    server: DeskServer | None = None
+    app_started = False
     try:
+        app = DeskApplication(repo, state_dir, instance_id=instance_id, token=token)
+        if args.max_workers:
+            app.store.update_settings({"max_workers": args.max_workers})
+        server = DeskServer((args.host, args.port), app)
+        host, port = server.server_address[:2]
+        url_host = "127.0.0.1" if host in {"0.0.0.0", "::"} else host
+        rendered_host = f"[{url_host}]" if ":" in str(url_host) else url_host
+        url = f"http://{rendered_host}:{port}/"
+        record = {**provisional, "url": url}
+        replace_record(pid_path, record)
+        shutting_down = threading.Event()
+
+        def stop_server(signum: int, frame: Any) -> None:  # noqa: ARG001
+            if not shutting_down.is_set():
+                shutting_down.set()
+                threading.Thread(target=server.shutdown, daemon=True).start()
+
+        signal.signal(signal.SIGTERM, stop_server)
+        signal.signal(signal.SIGINT, stop_server)
+        app.start()
+        app_started = True
+        print(f"Monster Wrangler is running at {url}")
+        print(f"State: {state_dir}")
+        if not args.no_open:
+            threading.Timer(0.4, lambda: webbrowser.open(url)).start()
         server.serve_forever(0.4)
     finally:
-        server.server_close()
-        app.stop()
+        if server is not None:
+            server.server_close()
+        if app is not None and app_started:
+            app.stop()
         current = read_record(pid_path)
         if current and current.get("instance_id") == instance_id:
             pid_path.unlink(missing_ok=True)
