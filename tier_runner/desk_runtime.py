@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
+import secrets
 import signal
 import subprocess
 import sys
@@ -33,10 +34,17 @@ class ExecutionResult:
 
 
 class TierRunExecutor:
-    def __init__(self, repo: Path, store: DeskStore, heartbeat: Path):
+    def __init__(
+        self,
+        repo: Path,
+        store: DeskStore,
+        heartbeat: Path,
+        heartbeat_instance: str,
+    ):
         self.repo = repo
         self.store = store
         self.heartbeat = heartbeat
+        self.heartbeat_instance = heartbeat_instance
         self.lock = threading.Lock()
         self.processes: dict[str, subprocess.Popen[str]] = {}
 
@@ -62,6 +70,8 @@ class TierRunExecutor:
             str(envelope_path),
             "--heartbeat",
             str(self.heartbeat),
+            "--heartbeat-instance",
+            self.heartbeat_instance,
         ]
 
     @staticmethod
@@ -106,6 +116,13 @@ class TierRunExecutor:
         envelope_path.write_text(canonical(self.envelope(task, run)) + "\n", encoding="utf-8")
         env = dict(os.environ)
         env["PYTHONUTF8"] = "1"
+        package_root = str(Path(__file__).resolve().parents[1])
+        inherited_pythonpath = env.get("PYTHONPATH")
+        env["PYTHONPATH"] = (
+            package_root
+            if not inherited_pythonpath
+            else package_root + os.pathsep + inherited_pythonpath
+        )
         command = self.command(envelope_path)
         with log_path.open("w", encoding="utf-8", errors="replace") as log:
             log.write("$ " + json.dumps(command, ensure_ascii=False) + "\n\n")
@@ -189,15 +206,22 @@ class DeskScheduler:
         repo: Path,
         state_dir: Path,
         executor: Any | None = None,
+        instance_id: str | None = None,
     ):
         self.store = store
         self.repo = repo
+        self.instance_id = instance_id or secrets.token_hex(16)
         self.runs_dir = common_git_dir(repo) / "tier-runs" / "monster-wrangler"
         self.logs_dir = state_dir / "logs"
         self.heartbeat = state_dir / "heartbeat"
         self.runs_dir.mkdir(parents=True, exist_ok=True)
         self.logs_dir.mkdir(parents=True, exist_ok=True)
-        self.executor = executor or TierRunExecutor(repo, store, self.heartbeat)
+        self.executor = executor or TierRunExecutor(
+            repo,
+            store,
+            self.heartbeat,
+            self.instance_id,
+        )
         self.stop_event = threading.Event()
         self.wake_event = threading.Event()
         self.lock = threading.Lock()
@@ -205,7 +229,16 @@ class DeskScheduler:
         self.thread = threading.Thread(target=self.loop, name="monster-wrangler", daemon=True)
 
     def beat(self) -> None:
-        self.heartbeat.write_text(now() + "\n", encoding="utf-8")
+        temporary = self.heartbeat.with_name(self.heartbeat.name + f".{self.instance_id}.tmp")
+        temporary.write_text(f"{self.instance_id} {now()}\n", encoding="utf-8")
+        os.replace(temporary, self.heartbeat)
+
+    def owns_heartbeat(self) -> bool:
+        try:
+            owner = self.heartbeat.read_text(encoding="utf-8").split(maxsplit=1)[0]
+        except OSError:
+            return False
+        return owner == self.instance_id
 
     def start(self) -> None:
         self.beat()
@@ -217,12 +250,13 @@ class DeskScheduler:
         with self.lock:
             active = list(self.active.items())
         for run_id, (task_id, _) in active:
-            self.executor.cancel(run_id)
             self.store.cancel_running(task_id, "desk stopped by operator")
+            self.executor.cancel(run_id)
         for _, (_, thread) in active:
             thread.join(timeout=12)
         self.thread.join(timeout=10)
-        self.heartbeat.unlink(missing_ok=True)
+        if self.owns_heartbeat():
+            self.heartbeat.unlink(missing_ok=True)
 
     def wake(self) -> None:
         self.wake_event.set()
@@ -246,8 +280,8 @@ class DeskScheduler:
         if task is None:
             raise DeskError(f"unknown task: {task_id}")
         if task["state"] == "RUNNING" and task.get("last_run_id"):
-            self.executor.cancel(task["last_run_id"])
             self.store.cancel_running(task_id, "canceled by operator")
+            self.executor.cancel(task["last_run_id"])
         else:
             self.store.transition(task_id, "cancel")
         self.wake()
@@ -257,42 +291,57 @@ class DeskScheduler:
         with self.lock:
             active = list(self.active.items())
         for run_id, (task_id, _) in active:
-            self.executor.cancel(run_id)
             self.store.cancel_running(task_id, "emergency stop requested")
+            self.executor.cancel(run_id)
         self.wake()
 
     def loop(self) -> None:
+        last_error = ""
         while not self.stop_event.is_set():
-            self.beat()
-            settings = self.store.settings()
-            with self.lock:
-                active_count = len(self.active)
-            if not settings["paused"] and active_count < int(settings["max_workers"]):
-                allowed, reason = self.budget_allows()
-                if not allowed:
-                    self.store.pause(reason)
-                else:
-                    available = int(settings["max_workers"]) - active_count
-                    for task in self.store.ready(available):
-                        allowed, reason = self.budget_allows()
-                        if not allowed:
-                            self.store.pause(reason)
-                            break
-                        claimed = self.store.claim(task["id"], self.runs_dir, self.logs_dir)
-                        if claimed is None:
-                            continue
-                        claimed_task, run = claimed
-                        thread = threading.Thread(
-                            target=self.execute,
-                            args=(claimed_task, run),
-                            name=f"monster-run-{run['id']}",
-                            daemon=True,
-                        )
-                        with self.lock:
-                            self.active[run["id"]] = (claimed_task["id"], thread)
-                        thread.start()
+            try:
+                self.tick()
+                last_error = ""
+            except Exception as exc:
+                message = f"scheduler failure: {type(exc).__name__}: {exc}"
+                if message != last_error:
+                    try:
+                        self.store.pause(message)
+                    except Exception:
+                        pass
+                    last_error = message
             self.wake_event.wait(0.75)
             self.wake_event.clear()
+
+    def tick(self) -> None:
+        self.beat()
+        settings = self.store.settings()
+        with self.lock:
+            active_count = len(self.active)
+        if settings["paused"] or active_count >= int(settings["max_workers"]):
+            return
+        allowed, reason = self.budget_allows()
+        if not allowed:
+            self.store.pause(reason)
+            return
+        available = int(settings["max_workers"]) - active_count
+        for task in self.store.ready(available):
+            allowed, reason = self.budget_allows()
+            if not allowed:
+                self.store.pause(reason)
+                break
+            claimed = self.store.claim(task["id"], self.runs_dir, self.logs_dir)
+            if claimed is None:
+                continue
+            claimed_task, run = claimed
+            thread = threading.Thread(
+                target=self.execute,
+                args=(claimed_task, run),
+                name=f"monster-run-{run['id']}",
+                daemon=True,
+            )
+            with self.lock:
+                self.active[run["id"]] = (claimed_task["id"], thread)
+            thread.start()
 
     def execute(self, task: dict[str, Any], run: dict[str, Any]) -> None:
         try:
@@ -305,6 +354,9 @@ class DeskScheduler:
                 self.store.pause(f"{task['id']} ended {result.state}; operator review required")
         except Exception as exc:
             try:
+                current = self.store.get_task(task["id"], False)
+                if current and current["state"] == "CANCELED":
+                    return
                 self.store.complete(
                     run["id"],
                     ExecutionResult("ERROR", error=f"executor failure: {exc}"),
