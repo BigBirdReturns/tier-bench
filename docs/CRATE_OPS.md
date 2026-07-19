@@ -107,9 +107,20 @@ work. Failure is equally informative — commit the curve either way.
       > `TIER_SENTINEL_BULK_SINGLE` (2000 proxy tokens) and each multiple of
       `TIER_SENTINEL_BULK_TOTAL` (20000) inject a delegate-per-CRATE_OPS
       warning on PostToolUse; sidecar tracks `bulk_tokens` / `bulk_biggest_single`
-- [ ] sentinel lifted to user-level settings (all projects metered)
-- [ ] `burn_report` fed from both vendors' logs (one ledger, two tanks)
-- [ ] S* crossover experiment (CRATE-CROSSOVER-1 full form, own queue row)
+- [x] sentinel lifted to user-level settings (staged + 17/17 referee via
+      sentinel_userlevel_v1 haiku hand, 2026-07-18; APPLY is a gated operator
+      copy — see the crate's staged/APPLY.md)
+- [x] `burn_report` fed from both vendors' logs (burn_two_vendors_v1,
+      2026-07-18: haiku built the parser but priced openai at $1.0M — missing
+      per-1M divisor, caught at desk, sonnet repaired; anthropic $25/26
+      sessions, openai $188/40 sessions)
+- [~] S* crossover experiment — first bracket measured (amortization_v1 +
+      LESSONS 19: above three-T1-per-visit on dollars at fable rates; the
+      cheap-hand arm and larger-N remain unmeasured; CRATE-CROSSOVER-1 full
+      form still open)
+- [ ] dispatch.py: referee timeout is a hard-coded 120s — the ADMIN suite
+      referee (admin_question_test_v1) ran ~4 min, dispatch recorded a false
+      FAIL on a passing attempt; make it a flag
 
 ## The arithmetic (why this stretches days into weeks)
 

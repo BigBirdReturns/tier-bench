@@ -699,6 +699,16 @@ def _rewrite(path: Path, value: dict) -> None:
 
 
 def _reseal_audit_chain(root: Path, evidence: dict) -> None:
+    # Every mapping_reveal path was already introduced once by the fixture's
+    # original reveal commit, so it is present at every commit since. A fresh
+    # reseal must drop it before the new score commit and reintroduce it only
+    # afterwards, or the "reveal path already existed at score commit" replay
+    # guard trips on the pre-existing (unrelated) history.
+    reveal_payloads = {}
+    for audit in evidence["audits"]:
+        reveal_path = root / audit["mapping_reveal"]["path"]
+        reveal_payloads[audit["task_id"]] = json.loads(reveal_path.read_text(encoding="utf-8"))
+        _git(root, "rm", "--quiet", audit["mapping_reveal"]["path"])
     normalized_commit = _commit(
         root, "reseal blinded normalized audit inputs", "2026-01-15T01:05:00Z"
     )
@@ -712,7 +722,7 @@ def _reseal_audit_chain(root: Path, evidence: dict) -> None:
     for audit in evidence["audits"]:
         score_path = root / audit["score_commitment"]["path"]
         reveal_path = root / audit["mapping_reveal"]["path"]
-        reveal = json.loads(reveal_path.read_text(encoding="utf-8"))
+        reveal = reveal_payloads[audit["task_id"]]
         reveal["score_commitment_sha256"] = sha256_file(score_path)
         reveal["revealed_at"] = "2026-01-15T01:07:00Z"
         reveal_path.write_bytes(canonical_json(reveal))
@@ -1104,85 +1114,31 @@ def test_arm_c_question_requires_exact_intervention_interval(tmp_path: Path) -> 
     question = json.loads((root / run["question_receipts"][0]["path"]).read_text(encoding="utf-8"))
     question_id = question["question_id"]
     audit = next(item for item in evidence["audits"] if item["task_id"] == run["task_id"])
+    opaque_c = audit_label(SEED, plan["pilot_id"], run["task_id"], "arm_c")
+    normalized_path = root / audit["normalized_inputs"]["path"]
+    normalized_payload = json.loads(normalized_path.read_text(encoding="utf-8"))
+    entry = next(item for item in normalized_payload["entries"] if item["opaque_label"] == opaque_c)
+    new_state = read_state(composition, root / run["composition_state"]["path"])
+    fresh_normalized = canonical_json(audit_normalized_payload(
+        plan["pilot_id"], run["task_id"], opaque_c,
+        plan["audit_normalization_profile"]["sha256"], new_state,
+    ))
+    artifact_path = root / entry["artifact"]["path"]
+    artifact_path.write_bytes(fresh_normalized)
+    entry["artifact"]["sha256"] = sha256_file(artifact_path)
+    normalized_path.write_bytes(canonical_json(normalized_payload))
+    _reseal_audit_chain(root, evidence)
     reveal_path = root / audit["mapping_reveal"]["path"]
     reveal = json.loads(reveal_path.read_text(encoding="utf-8"))
     reveal["label_map"]["arm_c"]["source_seal_sha256"] = run["arm_seal"]["sha256"]
     reveal_path.write_bytes(canonical_json(reveal))
-    reveal_commit = _commit(root, "refresh reveal for question fixture", "2026-01-15T01:04:00Z")
+    reveal_commit = _commit(root, "refresh reveal for question fixture", "2026-01-15T01:08:00Z")
     audit["mapping_reveal"] = _git_bound_artifact(
         root, audit["mapping_reveal"]["path"], reveal_commit, reveal_commit
     )
     rows = []
     previous = None
     for event, ts in (("start", "2026-01-01T00:00:01Z"), ("stop", "2026-01-01T00:00:06Z")):
-        row = {"arm": "arm_c", "category": "clarification", "event": event,
-               "intervention_id": intervention_id, "previous_event_sha256": previous,
-               "reference_id": question_id, "task_id": run["task_id"], "ts": ts}
-        row["event_sha256"] = event_hash(row)
-        previous = row["event_sha256"]
-        rows.append(row)
-    log_path = root / plan["intervention_log_path"]
-    log_path.write_bytes(b"".join(canonical_json(row) for row in rows))
-    evidence["intervention_log"].update({"sha256": sha256_file(log_path), "head_sha256": previous})
-    _rewrite(evidence_path, evidence)
-    assert close_pilot(plan_path, evidence_path, as_of=datetime(2026, 1, 20, tzinfo=UTC))
-    log_path.write_bytes(b"")
-    evidence["intervention_log"].update({"sha256": sha256_file(log_path), "head_sha256": None})
-    _rewrite(evidence_path, evidence)
-    _must_refuse(plan_path, evidence_path, "has no closed intervention interval")
-    return
-    call_path = root / run["call_receipts"][0]["path"]
-    call = json.loads(call_path.read_text(encoding="utf-8"))
-    question_text = "Choose the exact policy interpretation"
-    question_sha = sha256_bytes(question_text.encode())
-    call["outcome"] = "question"
-    call["output"] = {"kind": "question", "text": question_text, "sha256": question_sha}
-    call_path.write_bytes(canonical_json(call))
-    run["call_receipts"][0]["sha256"] = sha256_file(call_path)
-    question_id = sha256_bytes(f"{run['task_id']}:{call['call_id']}:{question_sha}".encode())
-    intervention_id = "12345678-1234-4234-8234-123456789abc"
-    answered_at = "2026-01-01T00:00:05Z"
-    answer = "Use the literal interpretation"
-    answer_sha = sha256_bytes(answer.encode())
-    state_path = root / run["composition_state"]["path"]
-    state = json.loads(state_path.read_text(encoding="utf-8"))
-    state["calls"] = [call]
-    state["questions"] = [{
-        "question_id": question_id, "call_id": call["call_id"], "question": question_text,
-        "question_sha256": question_sha, "rendered": question_text,
-        "rendered_sha256": question_sha, "question_template_sha256": "f" * 64,
-        "answer": answer, "answer_sha256": answer_sha, "answered_at": answered_at,
-    }]
-    state_path.write_bytes(canonical_json(state))
-    run["composition_state"]["sha256"] = sha256_file(state_path)
-    question_payload = {
-        "schema": "tier-bench/tier-pilot-question-receipt@1", "question_id": question_id,
-        "task_id": run["task_id"], "arm": "arm_c", "intervention_id": intervention_id,
-        "asked_at": call["ledger_call"]["ts"], "answered_at": answered_at,
-        "question_sha256": question_sha, "answer_sha256": answer_sha,
-    }
-    question_ref = _relative_artifact(
-        root, f"artifacts/{run['task_id']}/arm_c/question.json", canonical_json(question_payload)
-    )
-    run["question_receipts"] = [question_ref]
-    seal_path = root / run["arm_seal"]["path"]
-    seal = json.loads(seal_path.read_text(encoding="utf-8"))
-    seal["composition_state_sha256"] = run["composition_state"]["sha256"]
-    seal["question_receipt_sha256s"] = [question_ref["sha256"]]
-    seal_path.write_bytes(canonical_json(seal))
-    run["arm_seal"]["sha256"] = sha256_file(seal_path)
-    audit = next(item for item in evidence["audits"] if item["task_id"] == run["task_id"])
-    reveal_path = root / audit["mapping_reveal"]["path"]
-    reveal = json.loads(reveal_path.read_text(encoding="utf-8"))
-    reveal["label_map"]["arm_c"]["source_seal_sha256"] = run["arm_seal"]["sha256"]
-    reveal_path.write_bytes(canonical_json(reveal))
-    reveal_commit = _commit(root, "refresh reveal for question fixture", "2026-01-15T01:04:00Z")
-    audit["mapping_reveal"] = _git_bound_artifact(
-        root, audit["mapping_reveal"]["path"], reveal_commit, reveal_commit
-    )
-    rows = []
-    previous = None
-    for event, ts in (("start", "2026-01-01T00:00:00Z"), ("stop", "2026-01-01T00:00:10Z")):
         row = {"arm": "arm_c", "category": "clarification", "event": event,
                "intervention_id": intervention_id, "previous_event_sha256": previous,
                "reference_id": question_id, "task_id": run["task_id"], "ts": ts}
@@ -1518,6 +1474,7 @@ def main() -> int:
         test_fixture_provider_evidence_is_inadmissible,
         test_provider_raw_artifact_bijection_rejects_junk_and_aliases,
         test_acceptance_before_after_artifacts_cannot_alias,
+        test_arm_c_question_requires_exact_intervention_interval,
         test_arm_run_must_follow_frozen_schedule,
         test_withheld_audit_commitment_must_open,
         test_operator_authorization_binds_exact_plan,
