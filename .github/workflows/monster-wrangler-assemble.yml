@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - codex/monster-wrangler-v1
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
