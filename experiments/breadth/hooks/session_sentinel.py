@@ -49,6 +49,18 @@ Thresholds (USD, env-overridable):
 
 Operator override for one session:
   echo 400 > experiments/breadth/run/.sentinel_state/<session_id>.ack
+
+DESK GUARD — same mechanism, a different meter: not dollars but tool-result
+TEXT landing in the chat context (proxy tokens = chars // 4), the thing
+every later turn re-pays rent on (CRATE_OPS: the chat is a desk, not a
+workshop). PostToolUse-only: injects once when a single tool_result crosses
+TIER_SENTINEL_BULK_SINGLE, and again at each multiple of
+TIER_SENTINEL_BULK_TOTAL crossed cumulatively. Merges into the same single
+JSON emit as the cost-sentinel warning when both are due.
+
+Desk guard thresholds (proxy tokens, env-overridable):
+  TIER_SENTINEL_BULK_SINGLE  default 2000
+  TIER_SENTINEL_BULK_TOTAL   default 20000
 """
 from __future__ import annotations
 
@@ -76,6 +88,9 @@ _DEFAULTS = {"NOTICE": 10.0, "WARN": 40.0, "CRITICAL": 100.0, "HARDCAP": 200.0}
 # (0 = tier-crossing warning only, no repeats).
 REWARN_STEP = {"NOTICE": 0.0, "WARN": 20.0, "CRITICAL": 10.0, "HARDCAP": 5.0}
 
+# Desk guard thresholds (proxy tokens).
+_BULK_DEFAULTS = {"SINGLE": 2000, "TOTAL": 20000}
+
 
 def thresholds() -> dict[str, float]:
     out = {}
@@ -84,6 +99,18 @@ def thresholds() -> dict[str, float]:
             out[t] = float(os.environ.get(f"TIER_SENTINEL_{t}_USD", _DEFAULTS[t]))
         except ValueError:
             out[t] = _DEFAULTS[t]
+    return out
+
+
+def bulk_thresholds() -> dict[str, int]:
+    """Desk guard thresholds (proxy tokens), env-overridable with fail-open defaults."""
+    out = {}
+    for k in ("SINGLE", "TOTAL"):
+        try:
+            val = os.environ.get(f"TIER_SENTINEL_BULK_{k}", str(_BULK_DEFAULTS[k]))
+            out[k] = int(val)
+        except (ValueError, TypeError):
+            out[k] = _BULK_DEFAULTS[k]
     return out
 
 
@@ -163,6 +190,40 @@ def _usage_of(obj: dict) -> dict | None:
     return None
 
 
+def _tool_result_chars(item: dict) -> int:
+    """Text length of one tool_result block's content. Fail-open: any shape
+    that isn't a plain str or a list of {"type": "text", "text": str} counts
+    0 — never raises."""
+    content = item.get("content")
+    if isinstance(content, str):
+        return len(content)
+    if isinstance(content, list):
+        total = 0
+        for sub in content:
+            if isinstance(sub, dict) and sub.get("type") == "text" and isinstance(sub.get("text"), str):
+                total += len(sub["text"])
+        return total
+    return 0
+
+
+def _bulk_blocks_of(obj: dict) -> list[int]:
+    """Proxy token sizes (chars // 4) for every tool_result block in this
+    row's message.content list. [] if there is none or the shape is
+    malformed — never raises."""
+    try:
+        msg = obj.get("message")
+        content = msg.get("content") if isinstance(msg, dict) else None
+        if not isinstance(content, list):
+            return []
+        return [
+            _tool_result_chars(item) // 4
+            for item in content
+            if isinstance(item, dict) and item.get("type") == "tool_result"
+        ]
+    except Exception:
+        return []
+
+
 def scan_new(transcript: Path, state: dict, rates: dict) -> None:
     """Advance state over new complete transcript lines, accumulating
     state['cost_usd']. Rows sharing a consecutive message.id are one API
@@ -180,6 +241,9 @@ def scan_new(transcript: Path, state: dict, rates: dict) -> None:
     cost = float(state.get("cost_usd", 0.0))
     last_id = state.get("last_msg_id")
     last_cost = float(state.get("last_msg_cost", 0.0))
+    bulk_tokens = int(state.get("bulk_tokens", 0))
+    bulk_biggest_single = int(state.get("bulk_biggest_single", 0))
+    scan_max_single = 0
     for raw in complete.splitlines():
         if not raw.strip():
             continue
@@ -187,6 +251,12 @@ def scan_new(transcript: Path, state: dict, rates: dict) -> None:
             obj = json.loads(raw)
         except (ValueError, UnicodeDecodeError):
             continue
+        for size in _bulk_blocks_of(obj):  # scanned whether or not the row carries usage
+            bulk_tokens += size
+            if size > bulk_biggest_single:
+                bulk_biggest_single = size
+            if size > scan_max_single:
+                scan_max_single = size
         u = _usage_of(obj)
         if u is None:
             continue
@@ -206,6 +276,9 @@ def scan_new(transcript: Path, state: dict, rates: dict) -> None:
         cost_usd=cost,
         last_msg_id=last_id,
         last_msg_cost=last_cost,
+        bulk_tokens=bulk_tokens,
+        bulk_biggest_single=bulk_biggest_single,
+        bulk_pending_single=max(int(state.get("bulk_pending_single", 0)), scan_max_single),
     )
 
 
@@ -246,6 +319,39 @@ def tier_message(tier: str, cost: float, th: dict[str, float]) -> str:
     return (f"[cost-sentinel] {g}. HARD CAP reached — tool calls are now "
             "denied by the harness. Summarize state for the operator and "
             "end the turn.")
+
+
+def _desk_guard_messages(state: dict, bulk_th: dict[str, int]) -> list[str]:
+    """PostToolUse-only. Reads and resets bulk_pending_single (every call,
+    warn or not — the sidecar rule that keeps a PreToolUse/UserPromptSubmit
+    scan from swallowing a pending warning). Returns 0, 1, or 2 messages."""
+    msgs: list[str] = []
+
+    pending = int(state.get("bulk_pending_single", 0))
+    state["bulk_pending_single"] = 0
+    single = bulk_th["SINGLE"]
+    if pending > single:
+        msgs.append(
+            f"[desk-guard] a single tool result of ~{pending} proxy tokens "
+            f"just landed in this chat context (limit {single}). Bulk "
+            "belongs in a hand — delegate per docs/CRATE_OPS.md; every "
+            "future turn re-pays rent on every token of it."
+        )
+
+    bulk_tokens = int(state.get("bulk_tokens", 0))
+    total = bulk_th["TOTAL"]
+    mult = bulk_tokens // total if total > 0 else 0
+    warned_mult = int(state.get("bulk_warned_mult", 0))
+    if mult > warned_mult:
+        state["bulk_warned_mult"] = mult
+        msgs.append(
+            f"[desk-guard] cumulative tool-result bulk in this chat ≈ "
+            f"{bulk_tokens} proxy tokens (crossed {mult} x {total}). Bulk "
+            "belongs in a hand — delegate per docs/CRATE_OPS.md; every "
+            "future turn re-pays rent on every token of it."
+        )
+
+    return msgs
 
 
 def deny_reason(cost: float, th: dict[str, float], ack_path: Path) -> str:
@@ -340,20 +446,31 @@ def _main() -> int:
         return 0
 
     # PostToolUse (and any future event wired here): warn on tier crossing,
-    # then on the tier's re-warn cadence.
+    # then on the tier's re-warn cadence. Desk-guard (bulk) messages are
+    # PostToolUse-only and merge into the same single JSON emit, cost first.
+    messages: list[str] = []
+    system_message = None
     if tier is not None:
         step = REWARN_STEP[tier]
         due = crossed or (step > 0 and cost - float(state.get("last_warned_usd", 0.0)) >= step)
         if due:
-            out = {"hookSpecificOutput": {
-                "hookEventName": "PostToolUse",
-                "additionalContext": tier_message(tier, cost, th),
-            }}
+            messages.append(tier_message(tier, cost, th))
             if crossed:
-                out["systemMessage"] = f"cost-sentinel: {tier} — {_gauge(cost, th)}"
-            _emit(out)
+                system_message = f"cost-sentinel: {tier} — {_gauge(cost, th)}"
             state["tier"] = tier
             state["last_warned_usd"] = cost
+
+    if event == "PostToolUse":
+        messages.extend(_desk_guard_messages(state, bulk_thresholds()))
+
+    if messages:
+        out = {"hookSpecificOutput": {
+            "hookEventName": "PostToolUse",
+            "additionalContext": "\n".join(messages),
+        }}
+        if system_message:
+            out["systemMessage"] = system_message
+        _emit(out)
     _save(state_file, state)
     return 0
 

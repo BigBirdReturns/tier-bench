@@ -78,6 +78,14 @@ Paste to start an interactive driver session:
     failures one tier, commit deliverables with receipts. The sentinel
     meters this session; treat NOTICE as a design failure, not a warning.
 
+**Spend the savings on thinking.** Drivers run at HIGH reasoning effort —
+thinking tokens are stripped from later turns, so they never become rent;
+bulk does. A deep think costs once; a pasted file body bills again on every
+subsequent turn for the life of the session. So the trade is asymmetric: buy
+judgment, not residency. The desk guard (in `session_sentinel.py`) enforces
+the residency half mechanically — big or accumulating tool results inject a
+delegate-it warning — while the effort dial is where the freed budget goes.
+
 Measurement: the session's sidecar in `experiments/breadth/run/.sentinel_state/`
 is the growth curve (`cost_usd`, `offset` = transcript bytes); read it with
 `python scripts/burn_report.py`. Control arm for comparison: the 2026-07-18
@@ -94,6 +102,11 @@ work. Failure is equally informative — commit the curve either way.
       meter (sidecar/`--output-format json`/`tokens used`), run referee,
       append receipt row; `--escalate` for the tier ladder
 - [x] dispatch.py: fix Windows cp1252 log-capture decode (fixed by haiku hand via dispatch_fix_v1 crate, $0.090, 2026-07-18; capture now encoding='utf-8', errors='replace' — pre-fix the decode error killed the reader thread, stdout came back None, and dispatch crashed with no receipt row at all)
+- [x] desk guard (built by hand via desk_guard_v1 crate, 2026-07-18) — sentinel
+      extension metering tool-result BULK in the chat context: single results
+      > `TIER_SENTINEL_BULK_SINGLE` (2000 proxy tokens) and each multiple of
+      `TIER_SENTINEL_BULK_TOTAL` (20000) inject a delegate-per-CRATE_OPS
+      warning on PostToolUse; sidecar tracks `bulk_tokens` / `bulk_biggest_single`
 - [ ] sentinel lifted to user-level settings (all projects metered)
 - [ ] `burn_report` fed from both vendors' logs (one ledger, two tanks)
 - [ ] S* crossover experiment (CRATE-CROSSOVER-1 full form, own queue row)
