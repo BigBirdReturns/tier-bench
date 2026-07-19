@@ -1,0 +1,10 @@
+{
+  "kind": "operator_status_snapshot",
+  "captured": "2026-07-19T13:45-07:00",
+  "source": "operator-supplied /status screenshot in session (staleness warning shown: 'limits may be stale')",
+  "tanks": [
+    {"tank": "anthropic_weekly", "label": "Weekly limit", "remaining_pct": 63, "resets": "2026-07-24T20:33"},
+    {"tank": "gpt_codex_spark_weekly", "label": "GPT-5.3-Codex-Spark Weekly limit", "remaining_pct": 29, "resets": "2026-07-24T21:24"}
+  ],
+  "rule": "gauges render ONLY from a committed snapshot like this one; staleness is displayed, never hidden"
+}

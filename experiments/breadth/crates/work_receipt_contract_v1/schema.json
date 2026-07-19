@@ -75,6 +75,20 @@
           "type": "string",
           "minLength": 1,
           "description": "Specific task type identifier"
+        },
+        "repo": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Repository identity (e.g. canonical remote or name) this scope is bound to (optional; P1-20 batch-1)"
+        },
+        "allowed_paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Ordered set of repository-relative paths this attempt may touch (optional; P1-20 batch-1 — validator enforces well-formedness only, not patch-content conformance)"
         }
       }
     },
@@ -104,6 +118,11 @@
         "tokens_out": {
           "type": "integer",
           "minimum": 0
+        },
+        "execution_log_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Content-addressed SHA256 of the execution log bytes (optional; P2-5 batch-1 — structural field only, independent provenance recomputation is new-machinery, not implemented here)"
         }
       }
     },
