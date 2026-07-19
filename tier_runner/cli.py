@@ -25,15 +25,46 @@ def _parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser("run", help="run one sealed backend call in a disposable worktree")
     run.add_argument("--repo", type=Path, required=True)
-    run.add_argument("--task-id", help="stable id; defaults to a hash of --task")
-    run.add_argument("--task", required=True)
-    run.add_argument("--files", action="append", required=True,
-                     help="allowed file or directory scope; repeat or comma-separate")
-    run.add_argument("--acceptance", required=True, help="trusted operator-supplied shell command")
+    run.add_argument("--task-id", help="stable id; defaults to a hash of the task text")
+    task_source = run.add_mutually_exclusive_group(required=True)
+    task_source.add_argument("--task")
+    task_source.add_argument("--task-file", type=Path)
+    files_source = run.add_mutually_exclusive_group(required=True)
+    files_source.add_argument(
+        "--files", action="append",
+        help="allowed file or directory scope; repeat or comma-separate",
+    )
+    files_source.add_argument(
+        "--files-file", type=Path,
+        help="UTF-8 JSON array of allowed repository-relative scopes",
+    )
+    acceptance_source = run.add_mutually_exclusive_group(required=True)
+    acceptance_source.add_argument(
+        "--acceptance", help="trusted operator-supplied shell command"
+    )
+    acceptance_source.add_argument(
+        "--acceptance-file", type=Path,
+        help="UTF-8 file containing the trusted operator-supplied shell command",
+    )
     run.add_argument("--backend-manifest", type=Path,
                      help="defaults to <repo>/pilot_backends.json")
     run.add_argument("--arm", choices=["arm_a", "arm_b", "arm_c"], default="arm_b")
     run.add_argument("--output-dir", type=Path)
+
+    desk = sub.add_parser(
+        "desk", help="open Monster Wrangler, the persistent local agent control desk"
+    )
+    desk.add_argument("--repo", type=Path, required=True, help="repository managed by the desk")
+    desk.add_argument("--host", default="127.0.0.1")
+    desk.add_argument("--port", type=int, default=8765)
+    desk.add_argument("--state-dir", type=Path)
+    desk.add_argument("--no-open", action="store_true", help="do not open a browser")
+    desk.add_argument("--daemon", action="store_true", help="start detached and return")
+    desk.add_argument("--stop", action="store_true", help="stop the detached desk")
+    desk.add_argument("--status", action="store_true", help="print detached desk status")
+    desk.add_argument("--unsafe-network", action="store_true", help="allow a non-loopback bind")
+    desk.add_argument("--max-workers", type=int, choices=range(1, 9))
+    desk.add_argument("--foreground-child", action="store_true", help=argparse.SUPPRESS)
 
     intervention = sub.add_parser("intervention", help="append operator-time start/stop events")
     intervention_sub = intervention.add_subparsers(dest="event", required=True)
@@ -80,16 +111,43 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    if args.command == "desk":
+        from .desk import DeskError, run_cli
+
+        try:
+            return run_cli(args)
+        except (DeskError, OSError, ValueError) as exc:
+            print(f"monster-wrangler: {exc}", file=sys.stderr)
+            return 2
     try:
         if args.command == "run":
-            task_id = args.task_id or "task-" + hashlib.sha256(args.task.encode()).hexdigest()[:12]
+            task = (
+                args.task
+                if args.task is not None
+                else args.task_file.read_text(encoding="utf-8")
+            )
+            acceptance = (
+                args.acceptance
+                if args.acceptance is not None
+                else args.acceptance_file.read_text(encoding="utf-8")
+            )
+            if args.files is not None:
+                files = args.files
+            else:
+                files_value = json.loads(args.files_file.read_text(encoding="utf-8"))
+                if not isinstance(files_value, list) or not all(
+                    isinstance(item, str) for item in files_value
+                ):
+                    raise ValueError("--files-file must contain a JSON array of strings")
+                files = files_value
+            task_id = args.task_id or "task-" + hashlib.sha256(task.encode()).hexdigest()[:12]
             manifest = args.backend_manifest or (args.repo / "pilot_backends.json")
             receipt = run_task(
                 repo=args.repo,
                 task_id=task_id,
-                task=args.task,
-                files=args.files,
-                acceptance=args.acceptance,
+                task=task,
+                files=files,
+                acceptance=acceptance,
                 manifest=manifest,
                 arm=args.arm,
                 output_dir=args.output_dir,
