@@ -25,10 +25,11 @@ jobs:
           python-version: '3.11'
       - name: Reconstruct, verify, and test the exact source archive
         run: python .monster-wrangler-transfer/assemble.py
-      - name: Publish the verified source tree
+      - name: Publish the verified application source
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git restore --source=HEAD -- .github/workflows/breadth-durability.yml .github/workflows/monster-wrangler-assemble.yml
           git add -A
           git diff --cached --check
           git commit -m "build Monster Wrangler controlled-work desk"
