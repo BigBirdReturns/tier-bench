@@ -1,0 +1,15 @@
+{
+  "tier_bench_commit": "",
+  "gt_version": "",
+  "gt_source_url": "",
+  "gt_sha256": "",
+  "bd_version": "",
+  "bd_source_url": "",
+  "bd_sha256": "",
+  "model_cli_version": "",
+  "model_cli_sha256": "",
+  "adapter_version": "",
+  "preset_bytes_sha256": "",
+  "task_envelope_sha256": "",
+  "acceptance_command_sha256": ""
+}
