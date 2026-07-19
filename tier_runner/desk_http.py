@@ -6,15 +6,17 @@ import json
 import os
 from pathlib import Path
 import secrets
+import subprocess
 import sys
 import threading
 from typing import Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, urlsplit
 
-from .desk_common import MAX_BODY, MAX_LOG, SCHEMA, DeskError, now
+from .desk_common import MAX_BODY, MAX_LOG, SCHEMA, DeskError, committed_blob, now
 from .desk_runtime import DeskScheduler
 from .desk_store import DeskStore
 from .desk_ui import HTML
+
 
 class DeskApplication:
     def __init__(
@@ -28,12 +30,18 @@ class DeskApplication:
     ):
         self.repo = repo
         self.state_dir = state_dir
-        self.store = DeskStore(state_dir / "desk.sqlite3", repo)
-        self.scheduler = DeskScheduler(self.store, repo, state_dir, executor)
         self.instance_id = instance_id or secrets.token_hex(16)
         self.token = token or secrets.token_urlsafe(32)
+        self.store = DeskStore(state_dir / "desk.sqlite3", repo)
+        self.scheduler = DeskScheduler(
+            self.store,
+            repo,
+            state_dir,
+            executor,
+            instance_id=self.instance_id,
+        )
         self.started_at = now()
-        self.manifest_mtime = 0.0
+        self.manifest_blob_id = ""
         self.manifest_cache: dict[str, Any] | None = None
 
     def start(self) -> None:
@@ -43,16 +51,22 @@ class DeskApplication:
         self.scheduler.stop()
 
     def cartridges(self) -> dict[str, Any] | None:
-        path = self.repo / "pilot_backends.json"
-        try:
-            mtime = path.stat().st_mtime
-        except OSError:
+        relative = "pilot_backends.json"
+        path = self.repo / relative
+        identity = subprocess.run(
+            ["git", "rev-parse", f"HEAD:{relative}"],
+            cwd=self.repo,
+            capture_output=True,
+            text=True,
+        )
+        if identity.returncode:
             return None
-        if mtime == self.manifest_mtime:
+        blob_id = identity.stdout.strip()
+        if blob_id == self.manifest_blob_id:
             return self.manifest_cache
         try:
-            raw = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+            raw = json.loads(committed_blob(self.repo, relative, "backend manifest"))
+        except (DeskError, json.JSONDecodeError):
             return None
         arms = raw.get("arms") if isinstance(raw, dict) else {}
         summary = {"path": str(path), "schema": raw.get("schema"), "arms": {}}
@@ -61,9 +75,16 @@ class DeskApplication:
                 if isinstance(value, dict):
                     summary["arms"][name] = {
                         key: value.get(key)
-                        for key in ("model_id", "effort", "surface", "cost_basis", "account", "tier")
+                        for key in (
+                            "model_id",
+                            "effort",
+                            "surface",
+                            "cost_basis",
+                            "account",
+                            "tier",
+                        )
                     }
-        self.manifest_mtime = mtime
+        self.manifest_blob_id = blob_id
         self.manifest_cache = summary
         return summary
 
@@ -72,6 +93,7 @@ class DeskApplication:
         data["started_at"] = self.started_at
         return data
 
+
 class DeskServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
@@ -79,6 +101,8 @@ class DeskServer(ThreadingHTTPServer):
     def __init__(self, address: tuple[str, int], app: DeskApplication):
         super().__init__(address, DeskHandler)
         self.app = app
+        bound_host = str(self.server_address[0])
+        self.allowed_hosts = {"127.0.0.1", "localhost", "::1", bound_host, address[0]}
 
 
 class DeskHandler(BaseHTTPRequestHandler):
@@ -92,6 +116,7 @@ class DeskHandler(BaseHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
         self.send_header("Cache-Control", "no-store")
         self.send_header(
             "Content-Security-Policy",
@@ -131,6 +156,15 @@ class DeskHandler(BaseHTTPRequestHandler):
         if not secrets.compare_digest(supplied, self.server.app.token):
             raise DeskError("missing or invalid desk token")
 
+    def require_host(self) -> None:
+        raw = self.headers.get("Host", "")
+        try:
+            hostname = urlsplit("//" + raw).hostname
+        except ValueError as exc:
+            raise DeskError("invalid Host header") from exc
+        if hostname not in self.server.allowed_hosts:
+            raise DeskError("Host header is not allowed for this local desk")
+
     def body(self) -> dict[str, Any]:
         if "application/json" not in self.headers.get("Content-Type", ""):
             raise DeskError("POST requests must use application/json")
@@ -152,17 +186,20 @@ class DeskHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         parts = [part for part in parsed.path.split("/") if part]
         try:
+            self.require_host()
             if parsed.path == "/":
                 page = HTML.replace("__TIER_DESK_TOKEN__", self.server.app.token)
                 self.send_bytes(page.encode(), "text/html; charset=utf-8")
                 return
             if parsed.path == "/healthz":
-                self.json({
-                    "ok": True,
-                    "schema": SCHEMA,
-                    "instance_id": self.server.app.instance_id,
-                    "time": now(),
-                })
+                self.json(
+                    {
+                        "ok": True,
+                        "schema": SCHEMA,
+                        "instance_id": self.server.app.instance_id,
+                        "time": now(),
+                    }
+                )
                 return
             if parsed.path == "/api/state":
                 self.json({"ok": True, "state": self.server.app.snapshot()})
@@ -181,7 +218,7 @@ class DeskHandler(BaseHTTPRequestHandler):
                     return
                 if parts[3] == "log":
                     queries = parse_qs(parsed.query)
-                    tail = min(int(queries.get("tail", [MAX_LOG])[0]), MAX_LOG)
+                    tail = max(0, min(int(queries.get("tail", [MAX_LOG])[0]), MAX_LOG))
                     path = Path(run["log_path"])
                     if not path.is_file():
                         self.send_bytes(b"", "text/plain; charset=utf-8")
@@ -205,7 +242,8 @@ class DeskHandler(BaseHTTPRequestHandler):
                         self.error(HTTPStatus.NOT_FOUND, "patch not available")
                     else:
                         self.send_bytes(
-                            patch.read_bytes(), "text/x-diff; charset=utf-8",
+                            patch.read_bytes(),
+                            "text/x-diff; charset=utf-8",
                             disposition=f'attachment; filename="{parts[2]}.patch"',
                         )
                     return
@@ -217,6 +255,7 @@ class DeskHandler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         parts = [part for part in path.split("/") if part]
         try:
+            self.require_host()
             self.require_token()
             body = self.body()
             if path == "/api/tasks":
@@ -265,5 +304,3 @@ class DeskHandler(BaseHTTPRequestHandler):
             self.error(status, str(exc))
         except (OSError, ValueError) as exc:
             self.error(HTTPStatus.BAD_REQUEST, str(exc))
-
-
