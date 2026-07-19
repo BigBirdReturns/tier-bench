@@ -61,11 +61,12 @@ and dies without regret.
 
 ## Tooling backlog (each item = one crate, built by hands, NOT by a driver)
 
-- [ ] `scripts/crate_new.py` — scaffold index/task/acceptance/receipt from
+- [x] `scripts/crate_new.py` (built by spark hand via dispatch.py, 2026-07-18) — scaffold index/task/acceptance/receipt from
       template (templates: `experiments/breadth/crates/*_v1/`)
-- [ ] `scripts/dispatch.py` — run hand M on crate C headless, capture log,
+- [x] `scripts/dispatch.py` (built by haiku hand, $0.088, 2026-07-18) — run hand M on crate C headless, capture log,
       meter (sidecar/`--output-format json`/`tokens used`), run referee,
       append receipt row; `--escalate` for the tier ladder
+- [ ] dispatch.py: fix Windows cp1252 log-capture decode (found live 2026-07-18; capture with encoding='utf-8', errors='replace')
 - [ ] sentinel lifted to user-level settings (all projects metered)
 - [ ] `burn_report` fed from both vendors' logs (one ledger, two tanks)
 - [ ] S* crossover experiment (CRATE-CROSSOVER-1 full form, own queue row)
