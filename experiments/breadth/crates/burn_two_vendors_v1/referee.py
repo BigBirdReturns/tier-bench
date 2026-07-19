@@ -30,6 +30,13 @@ try:
               isinstance(vd.get("total_usd"), (int, float)) and isinstance(vd.get("sessions"), int))
     check("anthropic_nonzero", v.get("anthropic", {}).get("sessions", 0) > 0,
           "existing sidecars must still be counted")
+    # REFEREE CORRECTION (v2, 2026-07-18): haiku attempt 1 passed v1's type checks
+    # while reporting openai total_usd ≈ $1,000,974 — a missing per-million-token
+    # divisor. v1 had no sanity bound; adjudication caught it at the desk. Bound:
+    # no local CLI tank plausibly exceeds $10k.
+    for vendor in ("anthropic", "openai"):
+        t = v.get(vendor, {}).get("total_usd", 0)
+        check(f"sane_total_{vendor}", 0 <= t < 10_000, f"${t:,.2f}")
 except Exception as e:  # noqa: BLE001
     check("json_parses", False, str(e))
 

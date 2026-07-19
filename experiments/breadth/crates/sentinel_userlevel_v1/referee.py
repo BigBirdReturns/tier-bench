@@ -41,12 +41,19 @@ except Exception as e:  # noqa: BLE001
     check("staged_settings_valid", False, str(e))
 
 # 3. Staged sentinel runs standalone: no CLAUDE_PROJECT_DIR, HOME/USERPROFILE sandboxed
+# REFEREE CORRECTION (v2, 2026-07-18): v1 sent transcript_path="" — the sentinel
+# no-ops on a missing transcript BY DESIGN (guard at its payload parse), so v1's
+# state_under_home check could never fire. Hand adjudicated NOT at fault; probe
+# now supplies a real (empty) transcript file.
 with tempfile.TemporaryDirectory() as td:
     env = {k: v for k, v in os.environ.items() if k != "CLAUDE_PROJECT_DIR"}
     env["USERPROFILE"] = td
     env["HOME"] = td
+    fake_transcript = Path(td) / "transcript.jsonl"
+    fake_transcript.write_text("", encoding="utf-8")
     payload = json.dumps({"session_id": "referee-test", "cwd": str(Path.cwd()),
-                          "hook_event_name": "PreToolUse", "transcript_path": ""})
+                          "hook_event_name": "PreToolUse",
+                          "transcript_path": str(fake_transcript)})
     r = subprocess.run([sys.executable, str(STAGED / "hooks" / "session_sentinel.py")],
                        input=payload, capture_output=True, text=True, timeout=30, env=env)
     check("staged_sentinel_exit", r.returncode in (0, 2),  # 2 = legitimate hard-cap deny

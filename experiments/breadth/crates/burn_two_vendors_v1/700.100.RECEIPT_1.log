@@ -1,0 +1,1 @@
+Command 'claude -p "Read experiments/breadth/crates/burn_two_vendors_v1/010.100.TASK.md and complete the task exactly as specified. Your cwd is the repo root." --model haiku --allowedTools "Read,Edit,Write,Grep,Glob,Bash" --output-format json --no-session-persistence' timed out after 120 seconds
