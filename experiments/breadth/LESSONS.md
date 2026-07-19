@@ -238,6 +238,28 @@ drawing that waterline correctly — and proving which side each cell is on.
     entire architecture, and the one every other lesson quietly assumed was
     free. Run the driver like a crate visitor, not a tenant.
 
+19. **S\* is real, it sits above small-task scale, and dollars are the wrong
+    axis to feel it on.** Three independent 07-17/07-18 measurements, different
+    designs, different lineages, same verdict. (a) `amortization_v1` (Claude
+    lane): one desk visit dispatching three T1 hands cost $4.73 vs $2.82 for
+    three plain sessions — 1.67× worse on dollars — but held 79k context once
+    vs 135k summed (~42% less). (b) CART0 net-effect pilot 0 (Sol lane, merged
+    #112): planner-delegates-to-Spark added 47.9% input tokens and 70.7% wall
+    time over planner-alone for identical 2/2 completion. (c) `cart0-bound-1`
+    (Sol lane): the cheap arm achieved ~90% input reduction and then scored
+    0/4 fidelity on a markdown-fence contract violation. Read together: below
+    S\* the ceremony premium is paid in full and refunded only in context
+    (the quota-relevant axis the sentinel actually meters), and the practical
+    failure mode of cheap delegation is not capability but TRANSPORT — fences,
+    sandbox non-equivalence, app systemErrors — which fails before capability
+    is ever measured (lesson: smoke the pipe before building the cage).
+    Routing corollary, now evidence-backed from both sides: payload-inline
+    cheap calls below S\*; crate only what is multi-phase, resumable, or
+    quota-bound; and treat any un-smoked transport as the tallest wall in the
+    stack. Caveats travel with the number: K=1 per arm in (a), both its arms
+    ran fable (the doctrine's cheap-hand D is unmeasured and would widen the
+    gap), and (c)'s zero is a contract artifact, not a capability floor.
+
 ## What's already built (your toolbelt)
 
 - `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.

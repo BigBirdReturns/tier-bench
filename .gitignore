@@ -58,6 +58,28 @@ Thumbs.db
 cheatsheet.html
 /index.html
 
+# Blind-packet/key test fixtures that leak to cwd instead of a tempdir
+# (root cause not yet fixed — see spawned cleanup task).
+/tmp_*.json
+/tmp_*.txt
+/tmp_*.md
+/tmp_nested/
+scripts/tmp_*.json
+scripts/tmp_*.txt
+scripts/tmp_*.md
+scripts/tmp_nested/
+
+# Canary/pilot raw sandbox replicas — the receipts, patches, and call logs
+# beside these ARE the deliverable and stay tracked; the full working-tree
+# copy used to run/validate a candidate is disposable scratch.
+experiments/**/run/**/subject/
+experiments/**/run/**/base/
+experiments/**/run/**/work/
+experiments/**/run/**/accepted/
+experiments/**/run/**/empty_git_repo/
+experiments/**/run/**/planner_alone_subject/
+experiments/**/run/**/planner_to_spark_subject/
+
 # Local-only working area — holds the private blind-grade control key
 # (tmp/blind-control-runs/.../control_key.json) that must never be committed.
 tmp/

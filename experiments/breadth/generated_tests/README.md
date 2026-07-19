@@ -5,7 +5,10 @@ test only if it (1) passes the real module and (2) kills >=1 deliberate source
 mutation (proves teeth). Each pins CURRENT behavior of a previously-untested
 module - review before trusting any assertion as intended spec.
 
-Run all: `for f in experiments/breadth/generated_tests/test_*_gen.py; do python "$f"; done`
+Run all: `for f in experiments/breadth/generated_tests/test_*_gen.py; do ( d=$(mktemp -d) && cd "$d" && python "$OLDPWD/$f" ); done`
+(each file writes fixtures to bare relative `tmp_*` paths — run from a throwaway
+dir, not the repo root, or they'll litter it; `pytest experiments/breadth/generated_tests/`
+is chdir-clean via the directory's `conftest.py`.)
 
 | test | module | mutation score |
 |---|---|---|
