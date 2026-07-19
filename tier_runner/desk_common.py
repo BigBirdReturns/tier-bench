@@ -134,9 +134,19 @@ def common_git_dir(repo: Path) -> Path:
     return (repo / path).resolve() if not path.is_absolute() else path.resolve()
 
 
+def committed_blob(repo: Path, relative: str, label: str) -> bytes:
+    result = subprocess.run(
+        ["git", "cat-file", "blob", f"HEAD:{relative}"],
+        cwd=repo,
+        capture_output=True,
+    )
+    if result.returncode:
+        detail = result.stderr.decode("utf-8", errors="replace").strip()
+        raise DeskError(f"{label} is not committed at repository HEAD: {relative}: {detail}")
+    return result.stdout
+
+
 def resolve_state_dir(repo: Path, requested: Path | None) -> Path:
     path = requested.expanduser().resolve() if requested else common_git_dir(repo) / "tier-desk"
     path.mkdir(parents=True, exist_ok=True)
     return path
-
-
