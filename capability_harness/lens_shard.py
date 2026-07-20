@@ -52,6 +52,12 @@ def sidecar_path(shard_dir: str | Path) -> Path:
     return Path(shard_dir).parent / (Path(shard_dir).name + ".sha256")
 
 
+def _rel_key(f: Path, shard: Path) -> str:
+    """Canonical sidecar key: POSIX separators regardless of host OS, so a
+    sidecar written on one platform verifies on another."""
+    return f.relative_to(shard).as_posix()
+
+
 def write_sidecar(shard_dir: str | Path) -> Path:
     """Record sha256 of every shard file. Generated only after a GOLD axm-verify
     PASS, so the sidecar is anchored to a cryptographically verified state."""
@@ -61,7 +67,7 @@ def write_sidecar(shard_dir: str | Path) -> Path:
     for f in sorted(shard.rglob("*")):
         if f.is_file():
             h = hashlib.sha256(f.read_bytes()).hexdigest()
-            lines.append(f"{h}  {f.relative_to(shard)}")
+            lines.append(f"{h}  {_rel_key(f, shard)}")
     out = sidecar_path(shard)
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return out
@@ -71,7 +77,12 @@ def check_sidecar(shard_dir: str | Path) -> bool:
     """Stdlib consistency check: every shard file matches the committed sidecar.
     WEAKER than axm-verify (relies on git for authenticity of the sidecar itself;
     no signature or Merkle proof) — but real: any in-place byte change to the
-    shard that doesn't also rewrite the sidecar fails closed."""
+    shard that doesn't also rewrite the sidecar fails closed.
+
+    Bytes are hashed raw — a CRLF rewrite IS a mismatch and stays one (the
+    .gitattributes `-text` pin is what keeps checkouts byte-exact). When the
+    mismatch is explainable purely by line endings, the error names that so a
+    stale autocrlf checkout is diagnosable without weakening the check."""
     import hashlib
     shard = Path(shard_dir)
     sc = sidecar_path(shard)
@@ -81,12 +92,21 @@ def check_sidecar(shard_dir: str | Path) -> bool:
     for line in sc.read_text(encoding="utf-8").splitlines():
         if line.strip():
             h, _, rel = line.partition("  ")
-            want[rel] = h
-    have = {str(f.relative_to(shard)): hashlib.sha256(f.read_bytes()).hexdigest()
-            for f in sorted(shard.rglob("*")) if f.is_file()}
+            # legacy sidecars written on Windows before the key was canonicalized
+            want[rel.replace("\\", "/")] = h
+    files = {_rel_key(f, shard): f for f in sorted(shard.rglob("*")) if f.is_file()}
+    have = {k: hashlib.sha256(f.read_bytes()).hexdigest() for k, f in files.items()}
     if have != want:
         diff = {k for k in set(want) | set(have) if want.get(k) != have.get(k)}
-        raise ValueError(f"sidecar mismatch on: {sorted(diff)}")
+        crlf_only = all(
+            k in files and k in want
+            and hashlib.sha256(files[k].read_bytes().replace(b"\r\n", b"\n")).hexdigest() == want[k]
+            for k in diff
+        )
+        hint = (" (every differing file matches after CRLF->LF: this is a git "
+                "autocrlf checkout, not tampering — re-checkout the shard with "
+                "the .gitattributes -text pin in place)") if crlf_only else ""
+        raise ValueError(f"sidecar mismatch on: {sorted(diff)}{hint}")
     return True
 
 

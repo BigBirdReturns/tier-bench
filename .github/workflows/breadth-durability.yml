@@ -58,6 +58,11 @@ jobs:
         run: |
           python -m py_compile tests/test_smoke_before_cage.py
           python tests/test_smoke_before_cage.py
+      - name: lens shard sidecar cross-platform + fail-closed (CLAUDE-LENS-SHARD-WIN)
+        run: |
+          python -m py_compile capability_harness/lens_shard.py tests/test_lens_shard_sidecar.py
+          python tests/test_lens_shard_sidecar.py
+          python -m capability_harness.lens_shard memory/lenses/shard
       - name: UI-capture lane end-to-end ($0, temp files)
         run: python experiments/breadth/ui_capture_smoke.py
       - name: waterline schema + evidence-layer enforcement

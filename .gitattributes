@@ -15,6 +15,11 @@ experiments/cart0_anchor_prototype/** -text -whitespace
 scripts/cart0_anchor.py -text -whitespace
 docs/cart0-anchor-prototype.md -text -whitespace
 
+# Sealed AXM lens shard: sidecar + Merkle hashes bind the exact sealed bytes.
+# autocrlf must never rewrite them at checkout (CLAUDE-LENS-SHARD-WIN).
+memory/lenses/shard/** -text -whitespace
+memory/lenses/shard.sha256 -text -whitespace
+
 # Activated pilot execution sources are compared byte-for-byte at runtime.
 # Force LF in both Git and the worktree so newline normalization cannot hide
 # behavior-changing CRLF inside string literals.
