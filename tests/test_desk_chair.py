@@ -139,6 +139,7 @@ def test_valid_return_is_approval_gated_draft_with_zero_wakes_and_custody(tmp_pa
 def test_consumed_request_dedupes_same_head_and_rejects_changed_head_and_replay(tmp_path: Path) -> None:
     store = DeskStore(tmp_path / "desk.sqlite3", local_repo(tmp_path))
     store.register_chair_request(request_payload())
+    store.register_chair_request(request_payload("chair-watch"))
     transport = FakeTransport(
         {REPO: [pull()]},
         {(REPO, 7): ["tier_runner/desk_chair.py"], (REPO, 8): ["tier_runner/desk_chair.py"]},
