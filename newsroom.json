@@ -1,0 +1,281 @@
+{
+  "schema": "tier-bench/newsroom@1",
+  "status": "REVIEW_ONLY",
+  "purpose": "Define the institutional coordination layer above Tier Desk without granting any new execution, validation, merge, or publication authority.",
+  "project_map": [
+    {
+      "id": "tier_bench",
+      "classification": "MEASUREMENT_AND_ROUTING",
+      "authority": "EVIDENCE_ONLY",
+      "paths": ["README.md", "models.json", "harness/", "scripts/route.py"]
+    },
+    {
+      "id": "tier_run",
+      "classification": "EXECUTION_AND_REFEREE",
+      "authority": "TERMINAL_RECEIPT",
+      "paths": ["tier_runner/core.py", "tier_runner/cli.py", "docs/tier-runner.md"]
+    },
+    {
+      "id": "tier_desk",
+      "classification": "LOCAL_CONTROL_PLANE",
+      "authority": "PUBLISHER_GATED_EXECUTION",
+      "paths": ["tier_runner/desk_store_base.py", "tier_runner/desk_store_queue.py", "tier_runner/desk_runtime.py", "docs/monster-wrangler.md"]
+    },
+    {
+      "id": "crate_ops",
+      "classification": "OPERATING_METHOD",
+      "authority": "NONE",
+      "paths": ["docs/CRATE_OPS.md", "experiments/breadth/crates/"]
+    },
+    {
+      "id": "chair_inbox",
+      "classification": "EXTERNAL_SUBMISSION_INTAKE",
+      "authority": "DRAFT_ONLY",
+      "paths": ["tier_runner/desk_chair.py", "tier_runner/desk_store_chair.py", "docs/chat-bridge.md"]
+    },
+    {
+      "id": "newsroom_contract",
+      "classification": "INSTITUTIONAL_COORDINATION_MODEL",
+      "authority": "REVIEW_ONLY",
+      "paths": ["newsroom.json", "schemas/newsroom.schema.json", "scripts/validate_newsroom.py", "docs/newsroom.md"]
+    }
+  ],
+  "publisher": {
+    "kind": "HUMAN",
+    "exclusive_authorities": [
+      "AUTHORIZE_EXECUTION",
+      "AUTHORIZE_PUBLICATION",
+      "MERGE",
+      "CHANGE_CAPS",
+      "ACCEPT_CUSTODY_EXCEPTION"
+    ]
+  },
+  "planes": [
+    "OBSERVATION",
+    "ANALYSIS",
+    "VALIDATION",
+    "EXECUTION",
+    "PUBLICATION"
+  ],
+  "octopode": {
+    "definition": "A durable role charter with a beat, source policy, authority ceiling, decision history, and receipt history; it is not a model session or synthetic personality.",
+    "continuity": [
+      "ROLE_CHARTER",
+      "BEAT",
+      "SOURCE_POLICY",
+      "AUTHORITY_CEILING",
+      "DECISION_HISTORY",
+      "RECEIPT_HISTORY"
+    ],
+    "execution_lanes_are_disposable": true,
+    "lineage_independence_must_be_recorded": true
+  },
+  "roles": [
+    {
+      "id": "assignment_desk",
+      "classification": "INTERNAL_CONTROL",
+      "planes": ["OBSERVATION", "ANALYSIS"],
+      "may": ["TRIAGE", "ASSIGN", "KILL", "EXPIRE", "PREPARE_ACTION"],
+      "must_not": ["AUTHORIZE_EXECUTION", "EXECUTE", "VALIDATE_OWN_WORK", "AUTHORIZE_PUBLICATION", "PUBLISH", "MERGE"]
+    },
+    {
+      "id": "reporter",
+      "classification": "INTERNAL_ANALYSIS",
+      "planes": ["OBSERVATION", "ANALYSIS"],
+      "may": ["REPORT", "REVISE_CORRECTION"],
+      "must_not": ["AUTHORIZE_EXECUTION", "EXECUTE", "VALIDATE_OWN_WORK", "AUTHORIZE_PUBLICATION", "PUBLISH", "MERGE"]
+    },
+    {
+      "id": "copy_desk",
+      "classification": "INTERNAL_ANALYSIS",
+      "planes": ["ANALYSIS"],
+      "may": ["EDIT", "ACCEPT_VERIFIED"],
+      "must_not": ["AUTHORIZE_EXECUTION", "EXECUTE", "VALIDATE_OWN_WORK", "AUTHORIZE_PUBLICATION", "PUBLISH", "MERGE"]
+    },
+    {
+      "id": "referee",
+      "classification": "INDEPENDENT_VALIDATION",
+      "planes": ["VALIDATION"],
+      "may": ["VALIDATE", "ADJUDICATE"],
+      "must_not": ["AUTHOR_CANDIDATE", "AUTHORIZE_EXECUTION", "EXECUTE", "AUTHORIZE_PUBLICATION", "PUBLISH", "MERGE"]
+    },
+    {
+      "id": "auditor",
+      "classification": "INDEPENDENT_VALIDATION",
+      "planes": ["VALIDATION"],
+      "may": ["AUDIT", "CHALLENGE_RECEIPT", "CHALLENGE_INDEPENDENCE"],
+      "must_not": ["AUTHORIZE_EXECUTION", "EXECUTE", "AUTHORIZE_PUBLICATION", "PUBLISH", "MERGE"]
+    },
+    {
+      "id": "archivist",
+      "classification": "INTERNAL_CUSTODY",
+      "planes": ["OBSERVATION", "ANALYSIS"],
+      "may": ["ARCHIVE", "DEDUPLICATE", "INVALIDATE_DOWNSTREAM"],
+      "must_not": ["AUTHORIZE_EXECUTION", "EXECUTE", "VALIDATE", "AUTHORIZE_PUBLICATION", "PUBLISH", "MERGE"]
+    },
+    {
+      "id": "corrections_desk",
+      "classification": "INTERNAL_CONTROL",
+      "planes": ["OBSERVATION", "ANALYSIS"],
+      "may": ["OPEN_CORRECTION", "TRACE_DEPENDENTS"],
+      "must_not": ["AUTHORIZE_EXECUTION", "EXECUTE", "VALIDATE_OWN_WORK", "AUTHORIZE_PUBLICATION", "PUBLISH", "MERGE"]
+    },
+    {
+      "id": "production_desk",
+      "classification": "INTERNAL_EXECUTION",
+      "planes": ["EXECUTION"],
+      "may": ["EXECUTE_AUTHORIZED", "INTERRUPT", "RECORD_INFRASTRUCTURE_ERROR"],
+      "must_not": ["AUTHORIZE_EXECUTION", "AUTHOR_CANDIDATE", "VALIDATE", "AUTHORIZE_PUBLICATION", "PUBLISH", "MERGE"]
+    },
+    {
+      "id": "chair",
+      "classification": "EXTERNAL_UNTRUSTED",
+      "planes": [],
+      "may": ["SUBMIT_EXTERNAL"],
+      "must_not": ["TRIAGE", "ASSIGN", "PREPARE_ACTION", "AUTHORIZE_EXECUTION", "EXECUTE", "VALIDATE", "AUTHORIZE_PUBLICATION", "PUBLISH", "MERGE"]
+    }
+  ],
+  "objects": [
+    {"id": "tip", "trust": "EXTERNAL_UNTRUSTED", "may_enter_action_plane": false},
+    {"id": "assignment", "trust": "LOCAL_CONTROL", "may_enter_action_plane": false},
+    {"id": "submission", "trust": "EXTERNAL_UNTRUSTED", "may_enter_action_plane": false},
+    {"id": "evidence_packet", "trust": "MIXED_EVIDENCE", "may_enter_action_plane": false},
+    {"id": "candidate", "trust": "LOCAL_DERIVED", "may_enter_action_plane": false},
+    {"id": "receipt", "trust": "LOCAL_VERIFIED", "may_enter_action_plane": false},
+    {"id": "edition", "trust": "LOCAL_VERIFIED", "may_enter_action_plane": false},
+    {"id": "correction", "trust": "LOCAL_CONTROL", "may_enter_action_plane": false},
+    {"id": "action_task", "trust": "LOCAL_PUBLISHER_GATED", "may_enter_action_plane": true}
+  ],
+  "epistemic_state_machine": {
+    "states": [
+      "OBSERVED",
+      "TRIAGED",
+      "ASSIGNED",
+      "REPORTED",
+      "SUBMITTED",
+      "VERIFIED",
+      "ACCEPTED",
+      "PUBLISHED",
+      "CORRECTION_OPEN",
+      "CORRECTION_REPORTED",
+      "CORRECTED",
+      "KILLED",
+      "EXPIRED"
+    ],
+    "transitions": [
+      {"from": "OBSERVED", "to": "TRIAGED", "actor": "assignment_desk", "approval": "NONE"},
+      {"from": "TRIAGED", "to": "ASSIGNED", "actor": "assignment_desk", "approval": "NONE"},
+      {"from": "ASSIGNED", "to": "REPORTED", "actor": "reporter", "approval": "NONE"},
+      {"from": "ASSIGNED", "to": "SUBMITTED", "actor": "chair", "approval": "NONE"},
+      {"from": "REPORTED", "to": "VERIFIED", "actor": "referee", "approval": "NONE"},
+      {"from": "SUBMITTED", "to": "VERIFIED", "actor": "referee", "approval": "NONE"},
+      {"from": "VERIFIED", "to": "ACCEPTED", "actor": "copy_desk", "approval": "NONE"},
+      {"from": "ACCEPTED", "to": "PUBLISHED", "actor": "publisher", "approval": "PUBLISHER"},
+      {"from": "ACCEPTED", "to": "CORRECTION_OPEN", "actor": "corrections_desk", "approval": "NONE"},
+      {"from": "PUBLISHED", "to": "CORRECTION_OPEN", "actor": "corrections_desk", "approval": "NONE"},
+      {"from": "CORRECTION_OPEN", "to": "CORRECTION_REPORTED", "actor": "reporter", "approval": "NONE"},
+      {"from": "CORRECTION_REPORTED", "to": "CORRECTED", "actor": "referee", "approval": "NONE"},
+      {"from": "CORRECTED", "to": "PUBLISHED", "actor": "publisher", "approval": "PUBLISHER"},
+      {"from": "OBSERVED", "to": "KILLED", "actor": "assignment_desk", "approval": "NONE"},
+      {"from": "TRIAGED", "to": "KILLED", "actor": "assignment_desk", "approval": "NONE"},
+      {"from": "ASSIGNED", "to": "KILLED", "actor": "assignment_desk", "approval": "NONE"},
+      {"from": "OBSERVED", "to": "EXPIRED", "actor": "assignment_desk", "approval": "NONE"},
+      {"from": "TRIAGED", "to": "EXPIRED", "actor": "assignment_desk", "approval": "NONE"},
+      {"from": "ASSIGNED", "to": "EXPIRED", "actor": "assignment_desk", "approval": "NONE"}
+    ]
+  },
+  "action_state_machine": {
+    "states": ["DRAFT", "QUEUED", "RUNNING", "ACCEPTED", "REJECTED", "ERROR", "CANCELED", "INTERRUPTED"],
+    "transitions": [
+      {"from": "DRAFT", "to": "QUEUED", "actor": "publisher", "approval": "PUBLISHER"},
+      {"from": "QUEUED", "to": "RUNNING", "actor": "production_desk", "approval": "PRIOR_PUBLISHER_AUTHORIZATION"},
+      {"from": "RUNNING", "to": "ACCEPTED", "actor": "referee", "approval": "NONE"},
+      {"from": "RUNNING", "to": "REJECTED", "actor": "referee", "approval": "NONE"},
+      {"from": "RUNNING", "to": "ERROR", "actor": "production_desk", "approval": "NONE"},
+      {"from": "RUNNING", "to": "INTERRUPTED", "actor": "production_desk", "approval": "NONE"},
+      {"from": "DRAFT", "to": "CANCELED", "actor": "publisher", "approval": "PUBLISHER"},
+      {"from": "QUEUED", "to": "CANCELED", "actor": "publisher", "approval": "PUBLISHER"},
+      {"from": "RUNNING", "to": "CANCELED", "actor": "publisher", "approval": "PUBLISHER"},
+      {"from": "REJECTED", "to": "DRAFT", "actor": "assignment_desk", "approval": "PUBLISHER"},
+      {"from": "ERROR", "to": "DRAFT", "actor": "assignment_desk", "approval": "PUBLISHER"},
+      {"from": "CANCELED", "to": "DRAFT", "actor": "assignment_desk", "approval": "PUBLISHER"},
+      {"from": "INTERRUPTED", "to": "DRAFT", "actor": "assignment_desk", "approval": "PUBLISHER"}
+    ]
+  },
+  "editions": [
+    {
+      "id": "daily_project",
+      "cadence": "DAILY",
+      "basis": "HYPOTHESIS",
+      "wip_limit": 12,
+      "inputs": ["TASK_STATE", "RUN_RECEIPTS", "REPOSITORY_DELTAS", "SOURCE_FRESHNESS"],
+      "output": "PROJECT_DELTA_BRIEF",
+      "empty_result": "NO_MATERIAL_CHANGE",
+      "publication_authority": "publisher"
+    },
+    {
+      "id": "weekly_investigations",
+      "cadence": "WEEKLY",
+      "basis": "HYPOTHESIS",
+      "wip_limit": 5,
+      "inputs": ["OPEN_QUESTIONS", "EVIDENCE_PACKETS", "FAILED_ATTEMPTS", "CONTRADICTIONS"],
+      "output": "INVESTIGATION_BRIEF",
+      "empty_result": "NO_MATERIAL_CHANGE",
+      "publication_authority": "publisher"
+    },
+    {
+      "id": "monthly_corrections",
+      "cadence": "MONTHLY",
+      "basis": "HYPOTHESIS",
+      "wip_limit": 20,
+      "inputs": ["ACCEPTED_CLAIMS", "EXPIRED_SOURCES", "CHANGED_ASSUMPTIONS", "FAILED_FORECASTS"],
+      "output": "CORRECTION_LEDGER",
+      "empty_result": "NO_CORRECTION_REQUIRED",
+      "publication_authority": "publisher"
+    }
+  ],
+  "invariants": [
+    {"id": "external-evidence-no-authority", "rule": "An external object may create an observation or approval-gated Draft, but it may not queue, execute, validate, merge, or publish work."},
+    {"id": "role-continuity-not-session", "rule": "An Octopode's continuity lives in repository-custodied charters, decisions, and receipts; every model or tool session is disposable."},
+    {"id": "author-validator-separation", "rule": "The author of a candidate may not be the authority that validates it."},
+    {"id": "publisher-gates-execution", "rule": "Only the publisher may authorize a Draft to enter the execution queue."},
+    {"id": "publisher-gates-publication", "rule": "Only the publisher may move accepted or corrected material into PUBLISHED."},
+    {"id": "receipt-before-acceptance", "rule": "Acceptance requires an independently verified receipt bound to the exact subject and inputs."},
+    {"id": "unmeasured-is-unmeasured", "rule": "Every policy value or claim must distinguish MEASURED, HYPOTHESIS, and UNMEASURED evidence."},
+    {"id": "corrections-propagate", "rule": "A correction opens dependency tracing for every downstream edition, decision, and action that cited the affected evidence."},
+    {"id": "atomic-auditable-transitions", "rule": "Every state transition is atomic, append-only in the event ledger, and attributable to one actor and approval basis."},
+    {"id": "fail-closed-on-missing-evidence", "rule": "Missing custody, incomplete source enumeration, stale evidence, or ambiguous authority stops the transition."},
+    {"id": "independence-is-recorded", "rule": "Different agents are not independent merely because they are separate calls; source, context, model, and validator lineage are recorded."},
+    {"id": "bounded-attention", "rule": "Every standing beat has a finite work-in-progress limit, expiry or kill criteria, and a valid no-material-change result."}
+  ],
+  "implementation_status": {
+    "implemented": [
+      "TIER_RUN_REFEREE_AND_RECEIPTS",
+      "TIER_DESK_DURABLE_TASK_AND_ACTION_STATES",
+      "PUBLISHER_APPROVAL_GATE",
+      "CHAIR_SINGLE_USE_DRAFT_ONLY_INTAKE",
+      "CRATE_OPS_DISPOSABLE_SESSION_METHOD"
+    ],
+    "review_only": [
+      "NEWSROOM_ROLE_REGISTRY",
+      "EPISTEMIC_STATE_MACHINE",
+      "STANDING_EDITIONS",
+      "CORRECTION_DEPENDENCY_TRACING",
+      "OSS_SECURITY_BEATS"
+    ],
+    "explicitly_absent": [
+      "AUTONOMOUS_PUBLICATION",
+      "EXTERNAL_EXECUTION_AUTHORITY",
+      "IMMUTABLE_HEAD_CHAIR_EXECUTOR",
+      "AUTOMATIC_MERGE",
+      "AUTOMATIC_POLICY_REWRITING"
+    ]
+  },
+  "review_questions": [
+    "Which state transitions may each role perform autonomously, and which remain publisher-only?",
+    "Which editions create enough decision value to justify permanent attention and storage costs?",
+    "What constitutes genuine validation independence for each beat?",
+    "Which accepted claims require automatic reopening when a source, assumption, or receipt changes?",
+    "What is the smallest immutable subject snapshot required before any future external validation lane can exist?"
+  ]
+}
