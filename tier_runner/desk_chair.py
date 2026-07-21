@@ -5,20 +5,22 @@ import json
 import os
 from pathlib import PurePosixPath
 import re
-import shlex
 import subprocess
 import threading
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from .desk_common import DeskError, hidden_process_kwargs, now
+from .desk_common import hidden_process_kwargs, now
 
 
 POLL_SECONDS = 300
+PAGE_SIZE = 100
+MAX_OPEN_PULLS = 2_000
+MAX_CHANGED_FILES = 10_000
 MARKER_PREFIX = "<!-- tier-desk-chair:v1"
 MARKER = re.compile(
-    r"<!-- tier-desk-chair:v1 request_id=([A-Za-z0-9._-]{1,80}) "
+    r"<!-- tier-desk-chair:v1 request_id=([A-Za-z0-9._-]{1,80})\s+"
     r"base_sha=([0-9a-f]{40}) -->"
 )
 SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -91,18 +93,38 @@ class GitHubTransport:
         payload = self._gh(endpoint)
         return payload if payload is not None else self._anonymous(repo, endpoint)
 
-    def list_open_pulls(self, repo: str) -> list[dict[str, Any]]:
-        payload = self._json(repo, f"repos/{repo}/pulls?state=open&per_page=100")
-        if not isinstance(payload, list):
-            raise GitHubAccessError(repo, self.last_surface, None)
-        return [item for item in payload if isinstance(item, dict)]
+    def _paginate(self, repo: str, endpoint: str, *, max_items: int) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = []
+        page = 1
+        while True:
+            separator = "&" if "?" in endpoint else "?"
+            payload = self._json(
+                repo,
+                f"{endpoint}{separator}per_page={PAGE_SIZE}&page={page}",
+            )
+            if not isinstance(payload, list):
+                raise GitHubAccessError(repo, self.last_surface, None)
+            page_items = [item for item in payload if isinstance(item, dict)]
+            if len(items) + len(page_items) > max_items:
+                raise GitHubAccessError(repo, "pagination_bound", None)
+            items.extend(page_items)
+            if len(payload) < PAGE_SIZE:
+                return items
+            page += 1
 
-    def list_pull_files(self, repo: str, number: int) -> tuple[list[str], bool]:
-        payload = self._json(repo, f"repos/{repo}/pulls/{number}/files?per_page=100")
-        if not isinstance(payload, list):
-            raise GitHubAccessError(repo, self.last_surface, None)
-        files = [str(item.get("filename", "")) for item in payload if isinstance(item, dict)]
-        return files, len(payload) < 100
+    def list_open_pulls(self, repo: str) -> list[dict[str, Any]]:
+        return self._paginate(repo, f"repos/{repo}/pulls?state=open", max_items=MAX_OPEN_PULLS)
+
+    def list_pull_files(self, repo: str, number: int) -> list[str]:
+        payload = self._paginate(
+            repo,
+            f"repos/{repo}/pulls/{number}/files",
+            max_items=MAX_CHANGED_FILES,
+        )
+        files = [str(item.get("filename", "")) for item in payload]
+        if any(not path for path in files):
+            raise GitHubAccessError(repo, "changed_files_incomplete", None)
+        return files
 
 
 def chair_prompt(request: dict[str, Any]) -> str:
@@ -118,32 +140,14 @@ def chair_prompt(request: dict[str, Any]) -> str:
         "Allowed changed paths:\n"
         f"{paths}\n"
         f"Acceptance command: {request['acceptance']}\n"
-        f"Auto-validate requested: {str(request['auto_validate']).lower()}\n\n"
+        "Auto-validation: disabled; every valid return is held as an approval-gated Draft.\n\n"
         "Create an open GitHub pull request against that exact repository and base commit. "
         "Do not widen the path scope. Put this marker exactly once in the PR body:\n"
         f"{marker}\n"
         "Return the PR URL. Tier Desk will independently bind the repository, PR number, "
-        "head SHA, base SHA, changed paths, and marker."
+        "head SHA, head repository, base SHA, changed paths, and marker. It will not invoke "
+        "a model, execute validation, queue work, or wake the scheduler."
     )
-
-
-def _safe_acceptance(command: str) -> bool:
-    if any(character in command for character in "\r\n;&|><`"):
-        return False
-    try:
-        parts = shlex.split(command, posix=False)
-    except ValueError:
-        return False
-    if not parts:
-        return False
-    executable = parts[0].lower().strip('"')
-    if executable in {"python", "python.exe", "py"}:
-        return "-c" not in parts and (
-            parts[1:3] == ["-m", "pytest"]
-            or (len(parts) > 1 and parts[1] == "-B")
-            or (len(parts) > 1 and parts[1].endswith(".py"))
-        )
-    return executable in {"npm", "npm.cmd"} and len(parts) > 1 and parts[1] in {"test", "run"}
 
 
 def _path_allowed(path: str, allowed: list[str]) -> bool:
@@ -247,17 +251,42 @@ class ChairInbox:
         base_sha: str | None = None,
     ) -> str:
         number, head_sha = self._identity(pr)
+        head_repo = str(pr.get("head", {}).get("repo", {}).get("full_name", ""))
         self.store.record_chair_return(
             repo=repo,
             pr_number=number,
             head_sha=head_sha,
+            head_repo=head_repo,
             request_id=request_id,
             base_sha=base_sha,
             status="REJECTED",
             reason=reason,
-            detail={"url": pr.get("html_url")},
+            detail={
+                "url": pr.get("html_url"),
+                "custody": {
+                    "repo": repo,
+                    "pr_number": number,
+                    "base_sha": base_sha,
+                    "head_sha": head_sha,
+                    "head_repo": head_repo,
+                },
+            },
         )
         return "rejected"
+
+    def _retryable(self, repo: str, pr: dict[str, Any], exc: GitHubAccessError) -> str:
+        number, head_sha = self._identity(pr)
+        self.store.event(
+            "chair.return.access_error",
+            detail={
+                "repo": repo,
+                "pr_number": number,
+                "head_sha": head_sha,
+                "surface": exc.surface,
+                "status": exc.status,
+            },
+        )
+        return "access_errors"
 
     def _process(self, repo: str, pr: dict[str, Any]) -> str:
         number, head_sha = self._identity(pr)
@@ -276,64 +305,63 @@ class ChairInbox:
             return self._reject(repo, pr, "unknown_request", request_id, marker_base)
         if request["repo"] != repo:
             return self._reject(repo, pr, "wrong_repo", request_id, marker_base)
+        if request["status"] != "ACTIVE":
+            return self._reject(repo, pr, "request_consumed", request_id, marker_base)
         pr_base = str(pr.get("base", {}).get("sha", "")).lower()
         base_repo = str(pr.get("base", {}).get("repo", {}).get("full_name", ""))
         if marker_base != request["base_sha"] or pr_base != request["base_sha"] or base_repo != repo:
             return self._reject(repo, pr, "wrong_base", request_id, marker_base)
         head_repo = str(pr.get("head", {}).get("repo", {}).get("full_name", ""))
+        if not head_repo:
+            return self._reject(repo, pr, "missing_head_repo", request_id, marker_base)
         if head_repo != repo and not request["allow_forks"]:
             return self._reject(repo, pr, "fork_not_allowed", request_id, marker_base)
 
-        queue_now = False
-        changed_files: list[str] = []
-        if request["auto_validate"]:
-            if not _safe_acceptance(request["acceptance"]):
-                return self._reject(repo, pr, "unsafe_acceptance", request_id, marker_base)
-            try:
-                changed_files, complete = self.transport.list_pull_files(repo, number)
-            except GitHubAccessError:
-                return self._reject(repo, pr, "changed_files_unavailable", request_id, marker_base)
-            if not complete:
-                return self._reject(repo, pr, "changed_files_incomplete", request_id, marker_base)
-            if not changed_files or not all(
-                _path_allowed(path, request["allowed_paths"]) for path in changed_files
-            ):
-                return self._reject(repo, pr, "changed_paths_outside_contract", request_id, marker_base)
-            queue_now = True
+        try:
+            changed_files = self.transport.list_pull_files(repo, number)
+        except GitHubAccessError as exc:
+            return self._retryable(repo, pr, exc)
+        if not changed_files or not all(
+            _path_allowed(path, request["allowed_paths"]) for path in changed_files
+        ):
+            return self._reject(repo, pr, "changed_paths_outside_contract", request_id, marker_base)
 
+        custody = {
+            "repo": repo,
+            "pr_number": number,
+            "base_sha": marker_base,
+            "head_sha": head_sha,
+            "head_repo": head_repo,
+        }
         task_id = f"chair-{request_id[:40]}-{number}-{head_sha[:8]}"
-        task = self.store.create_task(
-            {
+        task = self.store.accept_chair_return(
+            request_id=request_id,
+            repo=repo,
+            pr_number=number,
+            head_sha=head_sha,
+            head_repo=head_repo,
+            base_sha=marker_base,
+            task={
                 "id": task_id,
                 "title": f"Chair return {repo}#{number}",
                 "task": (
-                    f"Validate the preregistered ChatGPT Chair return {pr.get('html_url')}. "
-                    f"Bind repo={repo}, pr={number}, head_sha={head_sha}, base_sha={marker_base}. "
-                    "Do not merge, push, checkout, or execute code from the pull request."
+                    f"Review the preregistered ChatGPT Chair return {pr.get('html_url')}. "
+                    f"Custody: {json.dumps(custody, sort_keys=True)}. "
+                    "Do not execute, validate, merge, push, or checkout the pull request."
                 ),
                 "files": request["allowed_paths"],
                 "acceptance": request["acceptance"],
                 "manifest": "pilot_backends.json",
                 "arm": "arm_b",
                 "priority": 60,
-                "queue_now": queue_now,
-                "approval_required": False,
-            }
-        )
-        self.store.record_chair_return(
-            repo=repo,
-            pr_number=number,
-            head_sha=head_sha,
-            request_id=request_id,
-            base_sha=marker_base,
-            status="ACCEPTED",
-            task_id=task["id"],
+            },
             detail={
                 "url": pr.get("html_url"),
                 "changed_files": changed_files,
-                "auto_validate": queue_now,
+                "auto_validate": False,
+                "custody": custody,
             },
         )
-        if queue_now:
-            self.wake()
+        if task is None:
+            return self._reject(repo, pr, "request_consumed", request_id, marker_base)
         return "accepted"
