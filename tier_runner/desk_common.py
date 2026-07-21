@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path, PurePosixPath
 import subprocess
 from typing import Any
@@ -19,6 +20,17 @@ DEFAULTS: dict[str, Any] = {
 }
 MAX_BODY = 1_000_000
 MAX_LOG = 200_000
+
+
+def hidden_process_kwargs(
+    platform_name: str = os.name, *, new_process_group: bool = False
+) -> dict[str, object]:
+    if platform_name == "nt":
+        flags = subprocess.CREATE_NO_WINDOW
+        if new_process_group:
+            flags |= subprocess.CREATE_NEW_PROCESS_GROUP
+        return {"creationflags": flags}
+    return {}
 
 
 class DeskError(RuntimeError):
@@ -112,22 +124,32 @@ def as_float(value: Any, label: str, low: float, high: float) -> float:
 
 
 def resolve_repo(path: Path) -> Path:
-    result = subprocess.run(
-        ["git", "-C", str(path.expanduser()), "rev-parse", "--show-toplevel"],
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(path.expanduser()), "rev-parse", "--show-toplevel"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            **hidden_process_kwargs(),
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise DeskError(f"timed out resolving Git repository: {path}") from exc
     if result.returncode:
         raise DeskError(f"not a Git repository: {path}: {result.stderr.strip()}")
     return Path(result.stdout.strip()).resolve()
 
 
 def common_git_dir(repo: Path) -> Path:
-    result = subprocess.run(
-        ["git", "-C", str(repo), "rev-parse", "--git-common-dir"],
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo), "rev-parse", "--git-common-dir"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            **hidden_process_kwargs(),
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise DeskError(f"timed out locating Git common directory: {repo}") from exc
     if result.returncode:
         raise DeskError(f"cannot locate Git common directory: {result.stderr.strip()}")
     path = Path(result.stdout.strip())
@@ -135,11 +157,16 @@ def common_git_dir(repo: Path) -> Path:
 
 
 def committed_blob(repo: Path, relative: str, label: str) -> bytes:
-    result = subprocess.run(
-        ["git", "cat-file", "blob", f"HEAD:{relative}"],
-        cwd=repo,
-        capture_output=True,
-    )
+    try:
+        result = subprocess.run(
+            ["git", "cat-file", "blob", f"HEAD:{relative}"],
+            cwd=repo,
+            capture_output=True,
+            timeout=5,
+            **hidden_process_kwargs(),
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise DeskError(f"timed out reading committed {label}: {relative}") from exc
     if result.returncode:
         detail = result.stderr.decode("utf-8", errors="replace").strip()
         raise DeskError(f"{label} is not committed at repository HEAD: {relative}: {detail}")

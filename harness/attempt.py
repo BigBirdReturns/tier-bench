@@ -24,6 +24,9 @@ def run_attempt(
     tier: Tier,
     model: str,
     prompt_suffix: str = "",
+    *,
+    canonical_root: Path | None = None,
+    establish_canonical: bool = True,
 ) -> tuple[dict, Optional[str]]:
     """Run ONE model attempt at ONE task in a fresh fixture copy.
 
@@ -64,6 +67,8 @@ def run_attempt(
             "status": call.get("status"),
             "estimated_cost": call.get("estimated_cost"),
             "actual_cost": call.get("cost"),
+            "input_tokens": int(call.get("usage", {}).get("input_tokens", 0) or 0),
+            "output_tokens": int(call.get("usage", {}).get("output_tokens", 0) or 0),
         }
 
         # Cost stability guard: if we cannot read actual_cost, mark and fail the row.
@@ -101,9 +106,9 @@ def run_attempt(
             after=after_snapshot,
         )
 
-        root = Path.cwd()
+        root = canonical_root or Path.cwd()
         canonical_match = compare_to_canonical(task.task_id, root, call["content"])
-        if v.pass_all and canonical_match is None:
+        if v.pass_all and canonical_match is None and establish_canonical:
             save_canonical(task.task_id, root, call["content"])
             canonical_match = True
             row["baseline_established"] = True

@@ -9,11 +9,24 @@ import secrets
 import subprocess
 import sys
 import threading
+import time
 from typing import Any
 from urllib.parse import parse_qs, urlparse, urlsplit
 
-from .desk_common import MAX_BODY, MAX_LOG, SCHEMA, DeskError, committed_blob, now
+from .desk_chair import ChairInbox, GitHubTransport, chair_prompt
+from .desk_common import (
+    MAX_BODY,
+    MAX_LOG,
+    SCHEMA,
+    DeskError,
+    committed_blob,
+    hidden_process_kwargs,
+    now,
+)
+from .desk_intake import plan_intent
+from .desk_harvest import harvested_orchestration
 from .desk_runtime import DeskScheduler
+from .desk_sources import DeskSources
 from .desk_store import DeskStore
 from .desk_ui import HTML
 
@@ -27,6 +40,9 @@ class DeskApplication:
         *,
         instance_id: str | None = None,
         token: str | None = None,
+        sources: Any | None = None,
+        chair_transport: Any | None = None,
+        chair_interval: int = 300,
     ):
         self.repo = repo
         self.state_dir = state_dir
@@ -40,56 +56,82 @@ class DeskApplication:
             executor,
             instance_id=self.instance_id,
         )
+        self.sources = sources or DeskSources(repo)
+        self.chair = ChairInbox(
+            self.store,
+            chair_transport or GitHubTransport(),
+            self.scheduler.wake,
+            interval=chair_interval,
+        )
         self.started_at = now()
         self.manifest_blob_id = ""
         self.manifest_cache: dict[str, Any] | None = None
+        self.manifest_checked_at = 0.0
+        self.manifest_lock = threading.Lock()
 
     def start(self) -> None:
         self.scheduler.start()
+        self.chair.start()
 
     def stop(self) -> None:
+        self.chair.stop()
+        stop_sources = getattr(self.sources, "stop", None)
+        if callable(stop_sources):
+            stop_sources()
         self.scheduler.stop()
 
     def cartridges(self) -> dict[str, Any] | None:
-        relative = "pilot_backends.json"
-        path = self.repo / relative
-        identity = subprocess.run(
-            ["git", "rev-parse", f"HEAD:{relative}"],
-            cwd=self.repo,
-            capture_output=True,
-            text=True,
-        )
-        if identity.returncode:
-            return None
-        blob_id = identity.stdout.strip()
-        if blob_id == self.manifest_blob_id:
-            return self.manifest_cache
-        try:
-            raw = json.loads(committed_blob(self.repo, relative, "backend manifest"))
-        except (DeskError, json.JSONDecodeError):
-            return None
-        arms = raw.get("arms") if isinstance(raw, dict) else {}
-        summary = {"path": str(path), "schema": raw.get("schema"), "arms": {}}
-        if isinstance(arms, dict):
-            for name, value in arms.items():
-                if isinstance(value, dict):
-                    summary["arms"][name] = {
-                        key: value.get(key)
-                        for key in (
-                            "model_id",
-                            "effort",
-                            "surface",
-                            "cost_basis",
-                            "account",
-                            "tier",
-                        )
-                    }
-        self.manifest_blob_id = blob_id
-        self.manifest_cache = summary
-        return summary
+        with self.manifest_lock:
+            checked = time.monotonic()
+            if self.manifest_checked_at and checked - self.manifest_checked_at < 60:
+                return self.manifest_cache
+            self.manifest_checked_at = checked
+            relative = "pilot_backends.json"
+            path = self.repo / relative
+            try:
+                identity = subprocess.run(
+                    ["git", "rev-parse", f"HEAD:{relative}"],
+                    cwd=self.repo,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                    **hidden_process_kwargs(),
+                )
+            except (OSError, subprocess.TimeoutExpired):
+                return self.manifest_cache
+            if identity.returncode:
+                return self.manifest_cache
+            blob_id = identity.stdout.strip()
+            if blob_id == self.manifest_blob_id:
+                return self.manifest_cache
+            try:
+                raw = json.loads(committed_blob(self.repo, relative, "backend manifest"))
+            except (DeskError, json.JSONDecodeError):
+                return self.manifest_cache
+            arms = raw.get("arms") if isinstance(raw, dict) else {}
+            summary = {"path": str(path), "schema": raw.get("schema"), "arms": {}}
+            if isinstance(arms, dict):
+                for name, value in arms.items():
+                    if isinstance(value, dict):
+                        summary["arms"][name] = {
+                            key: value.get(key)
+                            for key in (
+                                "model_id",
+                                "effort",
+                                "surface",
+                                "cost_basis",
+                                "account",
+                                "tier",
+                            )
+                        }
+            self.manifest_blob_id = blob_id
+            self.manifest_cache = summary
+            return summary
 
     def snapshot(self) -> dict[str, Any]:
         data = self.store.snapshot(self.cartridges(), self.scheduler.active_ids())
+        data["orchestration"] = harvested_orchestration(self.repo, data.get("cartridges"))
+        data["chair_inbox"] = self.chair.snapshot()
         data["started_at"] = self.started_at
         return data
 
@@ -138,6 +180,8 @@ class DeskHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(data)))
         if disposition:
             self.send_header("Content-Disposition", disposition)
+        if self.close_connection:
+            self.send_header("Connection", "close")
         self.end_headers()
         self.wfile.write(data)
 
@@ -149,6 +193,10 @@ class DeskHandler(BaseHTTPRequestHandler):
         )
 
     def error(self, status: HTTPStatus, message: str) -> None:
+        # Error paths may reject a POST before reading its body. Never reuse a
+        # connection with unread request bytes; Windows can otherwise reset it
+        # before the client receives the JSON error response.
+        self.close_connection = True
         self.json({"ok": False, "error": message}, status)
 
     def require_token(self) -> None:
@@ -203,6 +251,12 @@ class DeskHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/api/state":
                 self.json({"ok": True, "state": self.server.app.snapshot()})
+                return
+            if parsed.path == "/api/dashboard":
+                self.json({"ok": True, "dashboard": self.server.app.sources.snapshot()})
+                return
+            if parsed.path == "/api/chair/requests":
+                self.json({"ok": True, "requests": self.server.app.store.list_chair_requests()})
                 return
             if len(parts) == 3 and parts[:2] == ["api", "tasks"]:
                 task = self.server.app.store.get_task(parts[2])
@@ -263,6 +317,19 @@ class DeskHandler(BaseHTTPRequestHandler):
                 self.server.app.scheduler.wake()
                 self.json({"ok": True, "task": task}, HTTPStatus.CREATED)
                 return
+            if path == "/api/intake/plan":
+                self.json({"ok": True, "plan": plan_intent(self.server.app.repo, body)})
+                return
+            if path == "/api/chair/requests":
+                registered = self.server.app.store.register_chair_request(body)
+                self.json(
+                    {"ok": True, "request": registered, "prompt": chair_prompt(registered)},
+                    HTTPStatus.CREATED,
+                )
+                return
+            if path == "/api/chair/refresh":
+                self.json({"ok": True, "result": self.server.app.chair.poll_once()})
+                return
             if len(parts) == 4 and parts[:2] == ["api", "tasks"]:
                 task_id, action = parts[2], parts[3]
                 if action == "cancel":
@@ -280,6 +347,9 @@ class DeskHandler(BaseHTTPRequestHandler):
                 settings = self.server.app.store.update_settings(body)
                 self.server.app.scheduler.wake()
                 self.json({"ok": True, "settings": settings})
+                return
+            if path == "/api/dashboard/refresh":
+                self.json({"ok": True, "dashboard": self.server.app.sources.snapshot(force=True)})
                 return
             if path == "/api/control/pause":
                 self.server.app.store.pause(str(body.get("reason", "operator paused scheduling")))

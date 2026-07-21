@@ -1,0 +1,36 @@
+{
+  "schema": "tier-bench/cartridges@1",
+  "ladders": {
+    "T0": ["arm_spark", "arm_haiku"],
+    "T1": ["arm_spark", "arm_haiku", "arm_luna"],
+    "T2": ["arm_spark", "arm_luna", "arm_a"],
+    "T3": ["arm_luna", "arm_a", "arm_terra"],
+    "T4": ["arm_a", "arm_terra"]
+  },
+  "arms": {
+    "arm_spark": {
+      "lane": "cheap",
+      "note": "gpt-5.3-codex-spark (codex-cli-subscription-text-emit). Cheap floor for T0-T2, matching desk_driver_loop.py's default --arm."
+    },
+    "arm_haiku": {
+      "lane": "cheap",
+      "note": "claude-haiku-4-5 (claude-code-subscription). Second-lineage cheap option alongside arm_spark, so a T0/T1 floor failure isn't a single-vendor outage."
+    },
+    "arm_luna": {
+      "lane": "frontier",
+      "note": "gpt-5.6-luna (codex-cli-subscription-text-emit). First frontier escalation rung above the cheap floor."
+    },
+    "arm_a": {
+      "lane": "frontier",
+      "note": "gpt-5.6-sol (codex-cli-subscription-text-emit). Primary frontier fallback; matches desk_driver_loop.py's default --escalate-arms tail (arm_luna,arm_a)."
+    },
+    "arm_terra": {
+      "lane": "frontier",
+      "note": "gpt-5.6-terra (codex-cli-subscription-text-emit). Alternate frontier lineage reserved for T3/T4 escalation depth."
+    },
+    "arm_b": {
+      "lane": "local",
+      "note": "qwen3.5:9b-q4_K_M via local Ollama (ollama-local-text-emit). Opt-in only — never placed on a default ladder. Measured 2026-07-19: needed >180s on a T2 task (adapter transport timeout) where arm_spark returned a perfect result in 5.5s, and its one completed attempt hung the referee. Select it explicitly (e.g. desk_driver_loop.py --arm arm_b), never via route.py's automatic ladders."
+    }
+  }
+}

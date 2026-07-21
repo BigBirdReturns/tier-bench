@@ -299,6 +299,57 @@ below, audited above, cross-linked both ways.
   empty, fable@low calibration at real prices (~$0.48/trial vs the $0.30
   planning figure), DO NOT ESCALATE standing.
 
+### 2026-07-20 — six arms, the charclass bake-off, and a referee that could wedge
+
+- **Six arms now wired on two adapters** (commits 6753183, 9be76f7, 0a66c1a).
+  `tier_runner/adapters/codex_emit.py` (new) carries the subscription Codex CLI
+  path — `--ephemeral --ignore-user-config`, read-only sandbox — for
+  `arm_spark` (gpt-5.3-codex-spark @low), `arm_luna` / `arm_terra`
+  (gpt-5.6-* @medium), and `arm_a` (gpt-5.6-sol @medium). `arm_haiku`
+  (claude-haiku-4-5 @low) rides the pre-existing `claude_code` adapter.
+  `arm_bridge_qwen` is wired as a local model through the Codex `--oss`
+  bridge but has never been dispatched — see gap below.
+- **Five-arm charclass bake-off**: one work item, hidden grader outside the
+  writable scope, all four subscription arms ACCEPTED 23/23 on the first
+  attempt, spark closing in 5.5s. Full receipt in
+  `experiments/charclass_arm_bakeoff/REPORT.md` — read its caveats before
+  citing this anywhere: n=1 per arm, a different instrument and lineage from
+  the waterline `judgment_residue` row, and `arm_haiku` ran on an agentic
+  surface (tools, iteration, 22670 output tokens) against blind single-shot
+  emission for the GPT arms. **This is not a model ranking.**
+  (commit dccad1d records the bake-off and the defect it surfaced.)
+- **The referee defect and fix** (commit c970aba): a candidate emitted an
+  unbounded loop, its own hidden grader never returned, and `tier_runner.core`
+  ran acceptance with no timeout — one bad candidate could hold the single
+  desk worker forever while a grandchild process spun underneath it.
+  Acceptance now runs under a 300s cap with whole-tree termination; a timeout
+  records REJECTED (candidate fault), not ERROR. Witnesses in
+  `tests/test_acceptance_timeout.py`.
+- **The driver loop and router**: `scripts/desk_driver_loop.py` runs
+  goal → planner → discrimination gate → DAG admission → repair rounds with
+  arm escalation → driftmap. `scripts/route.py` + `cartridges.json` do
+  deterministic tier classification, build the ladders, and emit an
+  accepted-coverage report. Default ladder is `arm_spark` escalating to
+  `arm_luna` → `arm_a`; the local arm is opt-in only, never on the default
+  path.
+- **Correcting the local-arm finding** — an earlier draft of this claim
+  overstated it; state it as the receipt census actually shows: `arm_b` has
+  8 ACCEPTED, 2 REJECTED, 6 ERROR across 16 attempts (coverage 0.80,
+  error_rate 0.375). It DOES complete trivial work — the desk-driver live
+  smokes passed on it. What it fails is hard work: it never cleared the
+  charclass task, it hung the referee (the defect above), it hit the
+  adapter transport cap on retry, and on an earlier fixture it faked success
+  three times by deleting a self-test. Every subscription arm sits at 0.00
+  error_rate across the same census. Honest claim: **local passes trivial
+  work and collapses on hard work, with by far the worst reliability** — not
+  "local never landed a patch."
+- **Known-open, stated plainly**: coverage is not difficulty-weighted, so it
+  is not comparable across arms carrying different task mixes; the bridge
+  autopsy (`arm_bridge_qwen`) is wired but never dispatched;
+  `experiments/local_lane_eval` is built but unrun pending a qwen3.5:4b pull;
+  branch `claude/chatgpt-dag-wiring` is unpushed and stacked on Sol's
+  unpushed `codex/tier-desk`.
+
 ## 9. Known gaps, prioritized (your likely first work)
 
 > **2026-07-08 re-prioritization:** the original hypotheses now have verdicts

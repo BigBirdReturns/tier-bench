@@ -1,6 +1,6 @@
-# Monster Wrangler
+# Tier Desk
 
-Monster Wrangler is the local-first control desk for `tier run`. It lets an operator define bounded repository work, freeze acceptance before dispatch, express dependencies, leave the browser, and return to durable run logs, patches, verification results, and receipts.
+Tier Desk is the local-first estate dashboard and control desk for `tier run`. Its dashboard reads Claude and Codex subscription windows directly from their installed CLIs, inventories local Git projects and open queue work, and makes source freshness or collector failure visible. Its work view starts with ordinary-language intent. The desk proposes a bounded project scope, an existing repository proof command, and its normal worker lane in human-readable terms; the operator then starts the work or keeps it as a draft. Technical wiring remains inspectable and editable under progressive disclosure. The browser may close while the desk retains durable run logs, patches, verification results, and receipts.
 
 It is intentionally a thin control plane over the existing referee contract. It does not hold provider credentials, call provider APIs directly, apply patches, merge branches, or treat model narration as completion. Every model invocation remains inside the backend adapter named by the repository's committed `pilot_backends.json`.
 
@@ -35,6 +35,8 @@ tierdesk --repo C:\path\to\repo
 ```
 
 ## What one work item contains
+
+A normal operator does not author this packet field by field. `POST /api/intake/plan` derives a reviewable proposal from the stated outcome, the committed top-level project structure, and an existing project test entry point. It fails closed when it cannot find a trustworthy proof command. The UI explains why each boundary was selected and exposes the raw fields only under **Change technical details**.
 
 A work item freezes the following operator-controlled envelope before any model call:
 
@@ -73,11 +75,13 @@ The defaults are intentionally conservative:
 - loopback-only HTTP binding;
 - an emergency stop that pauses scheduling and terminates active child processes.
 
-The run-count limit is the reliable pre-dispatch bound. The cost limit uses telemetry already written to receipts and cannot predict undisclosed subscription-window headroom. A zero cost limit disables only the observed-cost stop, not the daily run limit.
+The run-count limit is the reliable pre-dispatch bound. The cost limit uses telemetry already written to receipts and cannot predict undisclosed subscription-window headroom. A zero cost limit disables only the observed-cost stop, not the daily run limit. On Windows, Desk-launched workers, tier-run children, provider adapters, CLI probes, and planner calls run with `CREATE_NO_WINDOW`; supervised processes combine that flag with `CREATE_NEW_PROCESS_GROUP` so tree cancellation does not punch a console window through the operator's focus layer.
 
 ## Security boundary
 
-Monster Wrangler serves one self-contained page and has no third-party JavaScript or remote assets. Mutating HTTP requests require an unpredictable per-process token embedded in the locally served page. Security headers deny framing, caching, cross-origin connections, and MIME sniffing. Requests with an unexpected `Host` header are rejected to close the usual loopback DNS-rebinding path.
+Tier Desk serves one self-contained page and has no third-party JavaScript or remote assets. The dashboard is the default route; the work graph remains a separate view. Theme preference is device-local under `tier-desk-theme`, applies before first paint, and falls back to the operating-system color scheme. Mutating HTTP requests require an unpredictable per-process token embedded in the locally served page. Security headers deny framing, caching, cross-origin connections, and MIME sniffing. Requests with an unexpected `Host` header are rejected to close the usual loopback DNS-rebinding path.
+
+The dashboard's Claude gauge runs the built-in `/usage` command in print mode with a near-zero budget and verifies the response contains usage windows; the observed path uses zero model tokens. The Codex gauge speaks JSON-RPC to `codex app-server` and reads `account/rateLimits/read`, including separately named buckets such as Spark. Both adapters cache readings, retain their exact source labels and observation times, and return a visible failure instead of substituting local estimates. The estate view discovers repositories below `TIER_DESK_ESTATE_ROOTS` (an `os.pathsep`-separated override) or the enclosing `Projects` directory, then reads branch, dirty paths, worktrees, last commit, and active `docs/agents/QUEUE.md` rows by the table's named `state` column. Its per-command `safe.directory` trust is scoped to the exact repository and never changes global Git configuration. Observer commands are sequential and use `CREATE_NO_WINDOW` on Windows. Estate data is cached for fifteen minutes, concurrent forced refreshes coalesce into one collection, and no scheduler or dashboard timer refreshes it. The explicit dashboard button is the only forced refresh. The work-state poll caches cartridge identity for sixty seconds, so it does not spawn Git on every request. Stopping the desk cancels discovery between repositories and waits for an active observer collection to finish or time out and reap its child.
 
 Binding to a non-loopback address is refused unless `--unsafe-network` is supplied. That flag only permits the bind; it does not add user authentication or TLS. The supported unattended configuration is a loopback-bound process used from the same machine.
 
@@ -93,4 +97,4 @@ The verified-yield display uses only adjudicated `ACCEPTED` and `REJECTED` attem
 
 ## Current boundary
 
-This first vertical slice manages one repository and uses the arms already frozen in `pilot_backends.json`. It does not yet discover live subscription tank state, perform evidence-backed automatic cartridge selection, synchronize with Beads or Gas Town, or apply accepted patches. Those integrations can consume the desk's task and receipt state without changing the referee semantics.
+The Monster Wrangler execution plane still manages one selected repository and uses the arms already frozen in `pilot_backends.json`. Tier Desk now observes the wider local estate and live subscription tank state, but it does not yet use those readings for automatic admission or cartridge selection, synchronize with Beads or Gas Town, or apply accepted patches. Those integrations can consume the desk's task, gauge, estate, and receipt state without changing the referee semantics.

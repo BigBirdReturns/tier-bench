@@ -1,5 +1,7 @@
 def safe_div(a: float, b: float) -> float:
     """Return a/b. If b is 0, return 0.0. Must not raise."""
+    if b == 0:
+        return 0.0
     return a / b
 
 def main():
