@@ -10,14 +10,18 @@ import os
 from pathlib import Path, PurePosixPath
 import re
 import shutil
+import signal
 import subprocess
 import tempfile
 import uuid
 from typing import Any
 
+from .desk_common import hidden_process_kwargs
 from .manifest import Backend, ManifestError, expand_command, load_backend, sha256_file
 
 
+ACCEPTANCE_TIMEOUT_SECONDS = 300.0
+TIMEOUT_RETURNCODE = 124
 RUN_SCHEMA = "tier-bench/tier-run-receipt@1"
 DISPATCH_SCHEMA = "tier-bench/tier-dispatch-receipt@1"
 BACKEND_SCHEMA = "tier-bench/tier-backend-result@1"
@@ -69,6 +73,28 @@ def _read_json_object(path: Path, label: str) -> dict[str, Any]:
     return value
 
 
+def _kill_tree(process: subprocess.Popen) -> None:
+    if process.poll() is not None:
+        return
+    if os.name == "nt":
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            capture_output=True,
+            text=True,
+            check=False,
+            **hidden_process_kwargs(),
+        )
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except (OSError, ProcessLookupError):
+            pass
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+
+
 def _run(
     argv: list[str] | str,
     cwd: Path,
@@ -76,15 +102,46 @@ def _run(
     check: bool = False,
     shell: bool = False,
     env: dict[str, str] | None = None,
+    timeout: float | None = None,
 ) -> subprocess.CompletedProcess:
-    result = subprocess.run(
-        argv,
-        cwd=str(cwd),
-        capture_output=True,
-        text=True,
-        shell=shell,
-        env=env,
-    )
+    if timeout is None:
+        result = subprocess.run(
+            argv,
+            cwd=str(cwd),
+            capture_output=True,
+            text=True,
+            shell=shell,
+            env=env,
+            **hidden_process_kwargs(),
+        )
+    else:
+        # A candidate patch can hang its own grader, and on Windows the spinning
+        # process is a grandchild that outlives a plain child kill; supervise the
+        # whole tree so a hang becomes a terminal verdict instead of a wedged desk.
+        group = (
+            hidden_process_kwargs(new_process_group=True)
+            if os.name == "nt"
+            else {"start_new_session": True}
+        )
+        process = subprocess.Popen(
+            argv,
+            cwd=str(cwd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            shell=shell,
+            env=env,
+            **group,
+        )
+        try:
+            stdout, stderr = process.communicate(timeout=timeout)
+            returncode = process.returncode
+        except subprocess.TimeoutExpired:
+            _kill_tree(process)
+            stdout, stderr = process.communicate()
+            stderr = (stderr or "") + f"\ntier run: command exceeded {timeout:g}s and was terminated\n"
+            returncode = TIMEOUT_RETURNCODE
+        result = subprocess.CompletedProcess(argv, returncode, stdout, stderr)
     if check and result.returncode:
         command = argv if isinstance(argv, str) else " ".join(argv)
         raise RunError(f"command failed ({result.returncode}): {command}\n{result.stderr}")
@@ -474,7 +531,11 @@ def run_task(
     if run_dir.exists() and any(run_dir.iterdir()):
         raise RunError(f"output directory is not empty: {run_dir}")
     run_dir.mkdir(parents=True, exist_ok=True)
-    worktree = common_git / "tier-worktrees" / run_id
+    # Keep the disposable checkout path short. This repository contains valid,
+    # deeply nested evidence paths that exceed Windows' legacy path ceiling
+    # when repeated beneath .git/tier-worktrees/<full-run-id>.
+    worktree_root = common_git.parent.parent / ".tier-worktrees"
+    worktree = worktree_root / ("tier-" + uuid.uuid4().hex[:8])
     prompt_path = run_dir / "prompt.txt"
     dispatch_path = run_dir / "dispatch-receipt.json"
     backend_result_path = run_dir / "backend-result.json"
@@ -555,6 +616,13 @@ def run_task(
         command = expand_command(backend.command, values)
         env = {key: value for key, value in os.environ.items() if not key.startswith("TIER_")}
         env["PYTHONUTF8"] = "1"
+        package_root = str(Path(__file__).resolve().parents[1])
+        inherited_pythonpath = env.get("PYTHONPATH")
+        env["PYTHONPATH"] = (
+            package_root
+            if not inherited_pythonpath
+            else package_root + os.pathsep + inherited_pythonpath
+        )
         backend_process = _run(command, packet, env=env)
         receipt["backend_process"] = _write_process_artifacts(run_dir, "backend", backend_process)
         if backend_process.returncode:
@@ -572,24 +640,36 @@ def run_task(
         if backend_result.get("schema") != BACKEND_SCHEMA:
             raise RunError(f"backend result schema must be {BACKEND_SCHEMA}")
         calls = backend_result.get("calls")
-        if not isinstance(calls, list) or len(calls) != 1:
-            raise RunError("one tier run dispatch must produce exactly one model-call receipt")
-        reported_session = _reported_session_id(calls[0])
-        if reported_session is not None:
-            _register_session(
-                common_git,
-                session_id=reported_session,
-                run_id=run_id,
-                task_id=task_id,
-                arm=arm,
-                dispatch_hash=dispatch_hash,
-            )
-        call = _validate_call(calls[0], backend, dispatch_hash, task_id)
-        ledger_path.write_bytes(_canonical(call))
-        if call["extra"].get("telemetry_complete") is not True:
-            raise RunError("backend call telemetry is incomplete")
-        if call["outcome"] != "pass":
-            raise RunError(f"backend model call outcome is {call['outcome']!r}")
+        if not isinstance(calls, list) or not calls:
+            raise RunError("tier run dispatch produced no model-call receipts")
+        is_benchmark = backend.surface == "ollama-local-benchmark"
+        if not is_benchmark and len(calls) != 1:
+            raise RunError("one file-work dispatch must produce exactly one model-call receipt")
+        if is_benchmark and len(calls) > 20:
+            raise RunError("one benchmark dispatch may contain at most 20 model-call receipts")
+        sealed_calls: list[dict[str, Any]] = []
+        for raw_call in calls:
+            reported_session = _reported_session_id(raw_call)
+            if reported_session is not None:
+                _register_session(
+                    common_git,
+                    session_id=reported_session,
+                    run_id=run_id,
+                    task_id=task_id,
+                    arm=arm,
+                    dispatch_hash=dispatch_hash,
+                )
+            call = _validate_call(raw_call, backend, dispatch_hash, task_id)
+            if call["extra"].get("telemetry_complete") is not True:
+                raise RunError("backend call telemetry is incomplete")
+            if call["outcome"] != "pass":
+                raise RunError(f"backend model call outcome is {call['outcome']!r}")
+            sealed_calls.append(call)
+        if is_benchmark and [call["trial"] for call in sealed_calls] != list(
+            range(1, len(sealed_calls) + 1)
+        ):
+            raise RunError("benchmark call trials must be contiguous and start at one")
+        ledger_path.write_bytes(b"".join(_canonical(call) for call in sealed_calls))
         for name, (path, digest) in _backend_artifacts(backend_result, run_dir).items():
             receipt["artifacts"][f"backend_{name}"] = {
                 "path": path.relative_to(run_dir).as_posix(),
@@ -617,7 +697,13 @@ def run_task(
         acceptance_env = dict(os.environ)
         acceptance_env["PYTHONUTF8"] = "1"
         acceptance_env["PYTHONDONTWRITEBYTECODE"] = "1"
-        acceptance_process = _run(acceptance, worktree, shell=True, env=acceptance_env)
+        acceptance_process = _run(
+            acceptance,
+            worktree,
+            shell=True,
+            env=acceptance_env,
+            timeout=ACCEPTANCE_TIMEOUT_SECONDS,
+        )
         receipt["acceptance"] = _write_process_artifacts(run_dir, "acceptance", acceptance_process)
         changed_after_acceptance = _changed_files(worktree)
         patch_after_acceptance = subprocess.run(
@@ -631,7 +717,13 @@ def run_task(
             raise RunError(
                 "acceptance command mutated the candidate; no tested patch can be emitted"
             )
-        if acceptance_process.returncode:
+        if acceptance_process.returncode == TIMEOUT_RETURNCODE:
+            receipt["state"] = "REJECTED"
+            receipt["errors"].append(
+                f"acceptance exceeded {ACCEPTANCE_TIMEOUT_SECONDS:g}s and was terminated; "
+                "the candidate did not finish its own grader"
+            )
+        elif acceptance_process.returncode:
             receipt["state"] = "REJECTED"
             receipt["errors"].append(f"acceptance failed with rc={acceptance_process.returncode}")
         else:
@@ -838,130 +930,145 @@ def verify_run(run_dir: Path) -> list[str]:
                 errors.append("frozen prompt-template copy hash mismatch")
         if ledger_path and ledger_path.is_file():
             lines = [line for line in ledger_path.read_text(encoding="utf-8").splitlines() if line]
-            if len(lines) != 1:
-                errors.append("ledger must contain exactly one call row")
-            else:
+            backend = dispatch.get("backend")
+            if not isinstance(backend, dict):
+                errors.append("dispatch has no frozen backend snapshot")
+                backend = {}
+            is_benchmark = backend.get("surface") == "ollama-local-benchmark"
+            if not lines:
+                errors.append("ledger must contain at least one call row")
+            elif not is_benchmark and len(lines) != 1:
+                errors.append("file-work ledger must contain exactly one call row")
+            elif is_benchmark and len(lines) > 20:
+                errors.append("benchmark ledger may contain at most 20 call rows")
+            ledger_calls: list[dict[str, Any]] = []
+            for index, line in enumerate(lines, 1):
                 try:
-                    call = json.loads(lines[0])
+                    call = json.loads(line)
                 except json.JSONDecodeError as exc:
-                    errors.append(f"invalid ledger row: {exc}")
+                    errors.append(f"invalid ledger row {index}: {exc}")
+                    continue
+                if not isinstance(call, dict):
+                    errors.append(f"ledger call {index} must be an object")
+                    continue
+                ledger_calls.append(call)
+                if set(call) != CALL_FIELDS:
+                    errors.append(f"ledger call {index} fields do not match ledger.Call")
+                extra = call.get("extra", {})
+                if not isinstance(extra, dict):
+                    errors.append(f"ledger call {index} extra must be an object")
+                    extra = {}
+                if extra.get("dispatch_receipt_sha256") != sha256_file(dispatch_path):
+                    errors.append(f"ledger call {index} does not bind the dispatch receipt")
+                call_bindings = {
+                    "account": backend.get("account"),
+                    "effort": backend.get("effort"),
+                    "model": backend.get("model_id"),
+                    "phase": dispatch.get("arm"),
+                    "task_id": dispatch.get("task_id"),
+                    "tier": backend.get("tier"),
+                }
+                for key, expected in call_bindings.items():
+                    if call.get(key) != expected:
+                        errors.append(
+                            f"ledger call {index} {key} contradicts frozen dispatch"
+                        )
+                extra_bindings = {
+                    "backend_manifest_sha256": dispatch.get("backend_manifest_sha256"),
+                    "backend_surface": backend.get("surface"),
+                    "cost_basis": backend.get("cost_basis"),
+                    "prompt_template_sha256": dispatch.get("prompt_template_sha256"),
+                    "runtime_model_id": backend.get("model_id"),
+                    "tool_versions": backend.get("tool_versions"),
+                }
+                for key, expected in extra_bindings.items():
+                    if extra.get(key) != expected:
+                        errors.append(
+                            f"ledger call {index} extra.{key} contradicts frozen dispatch"
+                        )
+                if extra.get("telemetry_complete") is not True:
+                    errors.append(f"ledger call {index} telemetry is incomplete")
+                if not isinstance(extra.get("session_id"), str) or not extra.get("session_id"):
+                    errors.append(f"ledger call {index} has no session identity")
+                if call.get("outcome") != "pass" and receipt.get("state") == "ACCEPTED":
+                    errors.append(f"accepted receipt has non-pass backend call {index}")
+                for key in (
+                    "input_tokens", "output_tokens", "cache_read_tokens",
+                    "cache_write_tokens", "trial",
+                ):
+                    value = call.get(key)
+                    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                        errors.append(
+                            f"ledger call {index} {key} must be a non-negative integer"
+                        )
+                for key in ("cost_usd", "latency_ms"):
+                    value = call.get(key)
+                    if (
+                        isinstance(value, bool)
+                        or not isinstance(value, (int, float))
+                        or not math.isfinite(float(value))
+                        or value < 0
+                    ):
+                        errors.append(
+                            f"ledger call {index} {key} must be finite and non-negative"
+                        )
+                raw_hash = extra.get("raw_result_sha256")
+                raw_artifact = resolved.get("backend_provider_raw")
+                if raw_hash is not None and (
+                    not raw_artifact or not raw_artifact.is_file()
+                    or sha256_file(raw_artifact) != raw_hash
+                ):
+                    errors.append(
+                        f"provider raw result for call {index} is not hash-bound as an artifact"
+                    )
+                stderr_hash = extra.get("stderr_sha256")
+                stderr_artifact = resolved.get("backend_provider_stderr")
+                if stderr_hash is not None and (
+                    not stderr_artifact or not stderr_artifact.is_file()
+                    or sha256_file(stderr_artifact) != stderr_hash
+                ):
+                    errors.append(
+                        f"provider stderr for call {index} is not hash-bound as an artifact"
+                    )
+            if is_benchmark and [call.get("trial") for call in ledger_calls] != list(
+                range(1, len(ledger_calls) + 1)
+            ):
+                errors.append("benchmark ledger trials must be contiguous and start at one")
+            if backend_result_path and backend_result_path.is_file():
+                try:
+                    backend_result = json.loads(
+                        backend_result_path.read_text(encoding="utf-8")
+                    )
+                except json.JSONDecodeError as exc:
+                    errors.append(f"invalid backend result: {exc}")
                 else:
-                    if not isinstance(call, dict):
-                        errors.append("ledger call must be an object")
-                        call = {}
-                    if set(call) != CALL_FIELDS:
-                        errors.append("ledger call fields do not match ledger.Call")
-                    extra = call.get("extra", {})
-                    if not isinstance(extra, dict):
-                        errors.append("ledger call extra must be an object")
-                        extra = {}
-                    if extra.get("dispatch_receipt_sha256") != sha256_file(dispatch_path):
-                        errors.append("ledger does not bind the dispatch receipt")
-                    if extra.get("backend_manifest_sha256") != dispatch.get(
-                        "backend_manifest_sha256"
-                    ):
-                        errors.append("ledger manifest hash mismatch")
-                    if extra.get("prompt_template_sha256") != dispatch.get(
-                        "prompt_template_sha256"
-                    ):
-                        errors.append("ledger prompt-template hash mismatch")
-                    backend = dispatch.get("backend")
-                    if not isinstance(backend, dict):
-                        errors.append("dispatch has no frozen backend snapshot")
-                        backend = {}
-                    call_bindings = {
-                        "account": backend.get("account"),
-                        "effort": backend.get("effort"),
-                        "model": backend.get("model_id"),
-                        "phase": dispatch.get("arm"),
-                        "task_id": dispatch.get("task_id"),
-                        "tier": backend.get("tier"),
-                    }
-                    for key, expected in call_bindings.items():
-                        if call.get(key) != expected:
-                            errors.append(f"ledger {key} contradicts frozen dispatch")
-                    extra_bindings = {
-                        "backend_manifest_sha256": dispatch.get("backend_manifest_sha256"),
-                        "backend_surface": backend.get("surface"),
-                        "cost_basis": backend.get("cost_basis"),
-                        "prompt_template_sha256": dispatch.get("prompt_template_sha256"),
-                        "runtime_model_id": backend.get("model_id"),
-                        "tool_versions": backend.get("tool_versions"),
-                    }
-                    for key, expected in extra_bindings.items():
-                        if extra.get(key) != expected:
-                            errors.append(f"ledger extra.{key} contradicts frozen dispatch")
-                    if extra.get("telemetry_complete") is not True:
-                        errors.append("ledger telemetry is incomplete")
-                    if not isinstance(extra.get("session_id"), str) or not extra.get("session_id"):
-                        errors.append("ledger has no session identity")
-                    if call.get("outcome") != "pass" and receipt.get("state") == "ACCEPTED":
-                        errors.append("accepted receipt has a non-pass backend call")
-                    for key in (
-                        "input_tokens", "output_tokens", "cache_read_tokens",
-                        "cache_write_tokens", "trial",
-                    ):
-                        value = call.get(key)
-                        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
-                            errors.append(f"ledger {key} must be a non-negative integer")
-                    for key in ("cost_usd", "latency_ms"):
-                        value = call.get(key)
-                        if (
-                            isinstance(value, bool)
-                            or not isinstance(value, (int, float))
-                            or not math.isfinite(float(value))
-                            or value < 0
-                        ):
-                            errors.append(f"ledger {key} must be finite and non-negative")
-                    if backend_result_path and backend_result_path.is_file():
-                        try:
-                            backend_result = json.loads(
-                                backend_result_path.read_text(encoding="utf-8")
-                            )
-                        except json.JSONDecodeError as exc:
-                            errors.append(f"invalid backend result: {exc}")
-                        else:
-                            if not isinstance(backend_result, dict):
-                                errors.append("backend result must be an object")
-                            elif backend_result.get("schema") != BACKEND_SCHEMA:
-                                errors.append("backend result schema mismatch")
-                            elif backend_result.get("calls") != [call]:
+                    if not isinstance(backend_result, dict):
+                        errors.append("backend result must be an object")
+                    elif backend_result.get("schema") != BACKEND_SCHEMA:
+                        errors.append("backend result schema mismatch")
+                    elif backend_result.get("calls") != ledger_calls:
+                        errors.append(
+                            "backend result calls do not equal the sealed ledger rows"
+                        )
+                    declared_artifacts = backend_result.get("artifacts", [])
+                    if not isinstance(declared_artifacts, list):
+                        errors.append("backend result artifacts must be an array")
+                    else:
+                        for artifact in declared_artifacts:
+                            if not isinstance(artifact, dict):
+                                errors.append("backend result artifact must be an object")
+                                continue
+                            name = artifact.get("name")
+                            sealed = resolved.get(f"backend_{name}")
+                            if (
+                                not isinstance(name, str)
+                                or not sealed
+                                or not sealed.is_file()
+                                or artifact.get("sha256") != sha256_file(sealed)
+                                or artifact.get("path")
+                                != sealed.relative_to(run_dir).as_posix()
+                            ):
                                 errors.append(
-                                    "backend result call does not equal sealed ledger row"
+                                    f"backend result artifact {name!r} is not sealed"
                                 )
-                            declared_artifacts = backend_result.get("artifacts", [])
-                            if not isinstance(declared_artifacts, list):
-                                errors.append("backend result artifacts must be an array")
-                            else:
-                                for artifact in declared_artifacts:
-                                    if not isinstance(artifact, dict):
-                                        errors.append("backend result artifact must be an object")
-                                        continue
-                                    name = artifact.get("name")
-                                    sealed = resolved.get(f"backend_{name}")
-                                    if (
-                                        not isinstance(name, str)
-                                        or not sealed
-                                        or not sealed.is_file()
-                                        or artifact.get("sha256") != sha256_file(sealed)
-                                        or artifact.get("path")
-                                        != sealed.relative_to(run_dir).as_posix()
-                                    ):
-                                        errors.append(
-                                            f"backend result artifact {name!r} is not sealed"
-                                        )
-                    raw_hash = extra.get("raw_result_sha256")
-                    raw_artifact = resolved.get("backend_provider_raw")
-                    if raw_hash is not None and (
-                        not raw_artifact or not raw_artifact.is_file()
-                        or sha256_file(raw_artifact) != raw_hash
-                    ):
-                        errors.append("provider raw result is not hash-bound as an artifact")
-                    stderr_hash = extra.get("stderr_sha256")
-                    stderr_artifact = resolved.get("backend_provider_stderr")
-                    if stderr_hash is not None and (
-                        not stderr_artifact or not stderr_artifact.is_file()
-                        or sha256_file(stderr_artifact) != stderr_hash
-                    ):
-                        errors.append("provider stderr is not hash-bound as an artifact")
     return errors

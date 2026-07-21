@@ -211,6 +211,14 @@
       "tier_ceiling": "T2",
       "params_B": 7
     },
+    "qwen3.5:9b-q4_K_M": {
+      "provider": "ollama",
+      "input_per_1M": 0,
+      "output_per_1M": 0,
+      "tier_ceiling": "T2",
+      "params_B": 9.7,
+      "measured_status": "installed floor used by Tier Desk; benchmark pending"
+    },
     "deepseek-coder-v2": {
       "provider": "ollama",
       "input_per_1M": 0,

@@ -9,6 +9,8 @@ import sys
 import threading
 import time
 
+from .desk_common import hidden_process_kwargs
+
 
 class WorkerError(RuntimeError):
     pass
@@ -16,7 +18,7 @@ class WorkerError(RuntimeError):
 
 def _child_kwargs() -> dict[str, object]:
     if os.name == "nt":
-        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+        return hidden_process_kwargs(new_process_group=True)
     return {"start_new_session": True}
 
 
@@ -41,6 +43,7 @@ def _hard_kill(process: subprocess.Popen[object]) -> None:
             capture_output=True,
             text=True,
             check=False,
+            **hidden_process_kwargs(),
         )
         return
     try:

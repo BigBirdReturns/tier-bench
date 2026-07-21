@@ -11,7 +11,7 @@ import sys
 import threading
 from typing import Any
 
-from .desk_common import DeskError, canonical, common_git_dir, now
+from .desk_common import DeskError, canonical, common_git_dir, hidden_process_kwargs, now
 from .desk_store import DeskStore
 
 
@@ -77,7 +77,7 @@ class TierRunExecutor:
     @staticmethod
     def _process_kwargs() -> dict[str, object]:
         if os.name == "nt":
-            return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+            return hidden_process_kwargs(new_process_group=True)
         return {"start_new_session": True}
 
     def cancel(self, run_id: str) -> bool:
@@ -101,6 +101,7 @@ class TierRunExecutor:
                     capture_output=True,
                     text=True,
                     check=False,
+                    **hidden_process_kwargs(),
                 )
             else:
                 try:
@@ -161,6 +162,7 @@ class TierRunExecutor:
             capture_output=True,
             text=True,
             env=env,
+            **hidden_process_kwargs(),
         )
         try:
             verification = json.loads(verify.stdout)
@@ -171,16 +173,17 @@ class TierRunExecutor:
             state = "ERROR"
         if verify.returncode or verification.get("ok") is not True:
             state = "ERROR"
-        call: dict[str, Any] = {}
+        calls: list[dict[str, Any]] = []
         ledger = output / "ledger.jsonl"
         if ledger.is_file():
             try:
                 rows = [line for line in ledger.read_text(encoding="utf-8").splitlines() if line]
-                value = json.loads(rows[-1]) if rows else {}
-                if isinstance(value, dict):
-                    call = value
+                for row in rows:
+                    value = json.loads(row)
+                    if isinstance(value, dict):
+                        calls.append(value)
             except (OSError, json.JSONDecodeError):
-                pass
+                calls = []
         errors = receipt.get("errors") if isinstance(receipt.get("errors"), list) else []
         verify_errors = verification.get("errors") if isinstance(verification, dict) else []
         error = "; ".join(str(item) for item in [*errors, *verify_errors] if item) or None
@@ -189,11 +192,15 @@ class TierRunExecutor:
             receipt=receipt,
             verification=verification,
             receipt_path=str(receipt_path),
-            cost_usd=float(call.get("cost_usd", 0) or 0),
-            input_tokens=int(call.get("input_tokens", 0) or 0),
-            output_tokens=int(call.get("output_tokens", 0) or 0),
-            cache_read_tokens=int(call.get("cache_read_tokens", 0) or 0),
-            cache_write_tokens=int(call.get("cache_write_tokens", 0) or 0),
+            cost_usd=sum(float(call.get("cost_usd", 0) or 0) for call in calls),
+            input_tokens=sum(int(call.get("input_tokens", 0) or 0) for call in calls),
+            output_tokens=sum(int(call.get("output_tokens", 0) or 0) for call in calls),
+            cache_read_tokens=sum(
+                int(call.get("cache_read_tokens", 0) or 0) for call in calls
+            ),
+            cache_write_tokens=sum(
+                int(call.get("cache_write_tokens", 0) or 0) for call in calls
+            ),
             exit_code=exit_code,
             error=error,
         )

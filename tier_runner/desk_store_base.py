@@ -80,9 +80,25 @@ class DeskStoreBase:
               seq INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, kind TEXT NOT NULL,
               task_id TEXT, run_id TEXT, detail_json TEXT NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS chair_requests(
+              request_id TEXT PRIMARY KEY, repo TEXT NOT NULL, base_sha TEXT NOT NULL,
+              allowed_paths_json TEXT NOT NULL, acceptance TEXT NOT NULL,
+              auto_validate INTEGER NOT NULL, allow_forks INTEGER NOT NULL,
+              status TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS chair_returns(
+              repo TEXT NOT NULL, pr_number INTEGER NOT NULL, head_sha TEXT NOT NULL,
+              request_id TEXT, base_sha TEXT, status TEXT NOT NULL, reason TEXT,
+              task_id TEXT, detail_json TEXT NOT NULL, observed_at TEXT NOT NULL,
+              PRIMARY KEY(repo, pr_number, head_sha)
+            );
             CREATE INDEX IF NOT EXISTS idx_task_queue
               ON tasks(state, priority DESC, created_at ASC);
             CREATE INDEX IF NOT EXISTS idx_runs_started ON runs(started_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_chair_requests_repo
+              ON chair_requests(status, repo);
+            CREATE INDEX IF NOT EXISTS idx_chair_returns_observed
+              ON chair_returns(observed_at DESC);
             """
         )
         for key, value in DEFAULTS.items():
@@ -193,8 +209,14 @@ class DeskStoreBase:
         queue_now = as_bool(payload.get("queue_now", False), "queue_now")
         approval_required = as_bool(payload.get("approval_required", False), "approval_required")
         arm = str(payload.get("arm", "arm_b")).strip()
-        if arm not in {"arm_a", "arm_b", "arm_c"}:
-            raise DeskError("arm must be arm_a, arm_b, or arm_c")
+        if (
+            not arm
+            or len(arm) > 80
+            or not all(character.isalnum() or character in "._-" for character in arm)
+        ):
+            raise DeskError(
+                "arm must be a non-empty manifest key using letters, digits, dot, underscore, or dash"
+            )
         manifest_input = Path(str(payload.get("manifest", "pilot_backends.json")).strip())
         manifest_path = (
             manifest_input.resolve()

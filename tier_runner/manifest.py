@@ -115,10 +115,10 @@ def load_backend(
     for key, expected in required_isolation.items():
         if isolation.get(key) is not expected:
             raise ManifestError(f"isolation.{key} must be {expected!r}")
-    tool_versions = _need(data, "tool_versions", dict)
-    if not tool_versions or not all(
+    default_tool_versions = _need(data, "tool_versions", dict)
+    if not default_tool_versions or not all(
         isinstance(key, str) and key and isinstance(value, str) and value
-        for key, value in tool_versions.items()
+        for key, value in default_tool_versions.items()
     ):
         raise ManifestError("tool_versions must bind at least one non-empty name/version")
 
@@ -127,6 +127,14 @@ def load_backend(
     if arm not in arms or not isinstance(arms[arm], dict):
         raise ManifestError(f"manifest has no arm {arm!r}")
     entry = arms[arm]
+    tool_versions = entry.get("tool_versions", default_tool_versions)
+    if not isinstance(tool_versions, dict) or not tool_versions or not all(
+        isinstance(key, str) and key and isinstance(value, str) and value
+        for key, value in tool_versions.items()
+    ):
+        raise ManifestError(
+            f"arms.{arm}.tool_versions must bind at least one non-empty name/version"
+        )
     template_name = _need(entry, "prompt_template", str)
     template = templates.get(template_name)
     if not isinstance(template, dict):

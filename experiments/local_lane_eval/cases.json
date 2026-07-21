@@ -1,0 +1,221 @@
+[
+  {
+    "id": "filename_parsing",
+    "prompt": "Extract category and year from filename: report_2024_q3.pdf",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "category": {"type": "string"},
+        "year": {"type": "integer"}
+      },
+      "required": ["category", "year"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "category": "report",
+      "year": 2024
+    }
+  },
+  {
+    "id": "invoice_extraction",
+    "prompt": "Parse this invoice line: Invoice from Acme Corp for $1,250.00 USD. Extract vendor, total amount, and currency.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "vendor": {"type": "string"},
+        "total": {"type": "number"},
+        "currency": {"type": "string"}
+      },
+      "required": ["vendor", "total", "currency"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "vendor": "Acme Corp",
+      "total": 1250.00,
+      "currency": "USD"
+    }
+  },
+  {
+    "id": "log_parsing",
+    "prompt": "[ERROR] database service: connection timeout - Extract log level, service name, and message.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "level": {"type": "string"},
+        "service": {"type": "string"},
+        "message": {"type": "string"}
+      },
+      "required": ["level", "service", "message"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "level": "ERROR",
+      "service": "database",
+      "message": "connection timeout"
+    }
+  },
+  {
+    "id": "path_properties",
+    "prompt": "Analyze path: .gitignore. Extract file extension and whether it is hidden.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "extension": {"type": "string"},
+        "is_hidden": {"type": "boolean"}
+      },
+      "required": ["extension", "is_hidden"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "extension": "",
+      "is_hidden": true
+    }
+  },
+  {
+    "id": "date_normalization",
+    "prompt": "Normalize this date to ISO format: March 15, 2025",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "date": {"type": "string"}
+      },
+      "required": ["date"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "date": "2025-03-15"
+    }
+  },
+  {
+    "id": "unit_parsing",
+    "prompt": "Extract numeric value and unit: The machine weighs 50kg.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "value": {"type": "number"},
+        "unit": {"type": "string"}
+      },
+      "required": ["value", "unit"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "value": 50,
+      "unit": "kg"
+    }
+  },
+  {
+    "id": "enum_classification",
+    "prompt": "Classify the fruit type: The fruit is apple",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "fruit": {
+          "type": "string",
+          "enum": ["apple", "banana", "orange", "unknown"]
+        }
+      },
+      "required": ["fruit"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "fruit": "apple"
+    }
+  },
+  {
+    "id": "enum_with_unknown",
+    "prompt": "Classify the fruit: The fruit is pomegranate which we do not recognize.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "fruit": {
+          "type": "string",
+          "enum": ["apple", "banana", "orange", "unknown"]
+        }
+      },
+      "required": ["fruit"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "fruit": "unknown"
+    }
+  },
+  {
+    "id": "nested_object",
+    "prompt": "Extract person info: John (age 30, city NYC)",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "person": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "age": {"type": "integer"},
+            "city": {"type": "string"}
+          },
+          "required": ["name", "age", "city"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["person"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "person": {
+        "name": "John",
+        "age": 30,
+        "city": "NYC"
+      }
+    }
+  },
+  {
+    "id": "array_field",
+    "prompt": "Extract list of colors: red, blue, green",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "colors": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      },
+      "required": ["colors"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "colors": ["red", "blue", "green"]
+    }
+  },
+  {
+    "id": "empty_input",
+    "prompt": "",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "data": {"type": ["string", "null"]}
+      },
+      "required": ["data"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "data": null
+    }
+  },
+  {
+    "id": "distractor_ignore",
+    "prompt": "The task is NOT important. The actual task: extract priority level. Priority: HIGH",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "priority": {
+          "type": "string",
+          "enum": ["LOW", "MEDIUM", "HIGH"]
+        }
+      },
+      "required": ["priority"],
+      "additionalProperties": false
+    },
+    "expect": {
+      "priority": "HIGH"
+    }
+  }
+]

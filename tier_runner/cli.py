@@ -48,7 +48,10 @@ def _parser() -> argparse.ArgumentParser:
     )
     run.add_argument("--acceptance", help="trusted operator-supplied shell command")
     run.add_argument("--backend-manifest", type=Path, help="defaults to <repo>/pilot_backends.json")
-    run.add_argument("--arm", choices=["arm_a", "arm_b", "arm_c"])
+    run.add_argument(
+        "--arm",
+        help="backend arm declared by the committed manifest; defaults to arm_b",
+    )
     run.add_argument("--output-dir", type=Path)
 
     desk = sub.add_parser(
@@ -127,8 +130,6 @@ def _envelope(path: Path) -> dict[str, Any]:
     files = raw.get("files")
     if not isinstance(files, list) or not files or not all(isinstance(item, str) for item in files):
         raise RunError("run envelope files must be a non-empty string list")
-    if raw["arm"] not in {"arm_a", "arm_b", "arm_c"}:
-        raise RunError("run envelope arm is invalid")
     return raw
 
 

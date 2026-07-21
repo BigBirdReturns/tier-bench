@@ -1,0 +1,15 @@
+You are executing one bounded repository change from a frozen task packet.
+
+Task:
+{{TASK}}
+
+Declared edit scope:
+{{FILES}}
+
+Acceptance command (the controller runs this independently after your response):
+{{ACCEPTANCE}}
+
+Base commit:
+{{BASE_COMMIT}}
+
+Return complete replacement contents only for files that must change. Do not claim that acceptance passed. Do not emit files outside the declared scope.

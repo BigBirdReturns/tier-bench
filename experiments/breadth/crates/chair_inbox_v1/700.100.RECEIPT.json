@@ -1,0 +1,76 @@
+{
+  "schema": "tier-bench/chair-inbox-receipt@1",
+  "observed_at": "2026-07-21T00:47:18Z",
+  "base_commit": "2f6ccc3a740db98b0687f758c5cedae8006cb1cb",
+  "branch": "codex/chair-inbox-v1",
+  "commit": "the single local commit containing this receipt; verify with git rev-parse HEAD",
+  "isolation": "no-hardlink local clone at D:\\Projects\\Tier-Bench\\worktrees\\codex-chair-inbox-v1; source claude/chatgpt-dag-wiring checkout was not edited",
+  "baseline": {
+    "command": "$env:PYTHONUTF8='1'; python -m pytest -q tests\\test_desk_chair.py",
+    "result": "collection error: ModuleNotFoundError for tier_runner.desk_chair",
+    "established_seams": [
+      "UI already polls /api/state every 1.8 seconds",
+      "Desk already owns task/event persistence and scheduler.wake()",
+      "docs/chat-bridge.md previously assumed a no-tool manual JSON transfer",
+      "no GitHub inbox existed"
+    ]
+  },
+  "implementation": {
+    "contract": "request_id + exact repo + base_sha + allowed paths + acceptance command + auto_validate + default-no-forks",
+    "marker": "<!-- tier-desk-chair:v1 request_id=<id> base_sha=<sha> -->",
+    "polling": "registered repositories every 300 seconds plus token-protected POST /api/chair/refresh",
+    "binding": "repo + PR number + head SHA + base SHA; dedupe repo + PR + head SHA",
+    "default_return": "DRAFT task plus chair.return.accepted event; no scheduler wake",
+    "auto_validate": "queues and wakes only after preregistration, safe command syntax, complete file listing, and allowed-path match",
+    "prohibitions": "no webhook/tunnel, merge, push, checkout, or PR-code execution"
+  },
+  "public_read_witness": {
+    "sandbox_child_gh": {
+      "command": "gh api repos/BigBirdReturns/tier-bench --jq .full_name",
+      "result": "rc=0, BigBirdReturns/tier-bench"
+    },
+    "anonymous_repository_rest": {
+      "command": "GET https://api.github.com/repos/BigBirdReturns/tier-bench",
+      "result": "HTTP 200, private=false, default_branch=main"
+    },
+    "forced_anonymous_poller_fallback": {
+      "command": "GitHubTransport(gh_executable='__tier_desk_missing_gh__').list_open_pulls('BigBirdReturns/tier-bench')",
+      "result": "surface=anonymous-public-rest, open_pulls=15, first_pr=120"
+    },
+    "network_writes": 0
+  },
+  "credential_domains": {
+    "interactive_operator_gh": "not tested from this sandbox; no auth claim made",
+    "chatgpt_github_app": "separate app surface; not tested by this local poller",
+    "codex_github_connector": "separate connector surface; not used",
+    "sandbox_child_gh": "public read succeeded in this process",
+    "anonymous_public_rest": "public fallback succeeded",
+    "tokens": "not read, placed in arguments, events, or logs"
+  },
+  "tests": [
+    {
+      "command": "$env:PYTHONUTF8='1'; python -m pytest -q --basetemp <workspace-temp> tests\\test_desk_chair.py",
+      "result": "6 passed"
+    },
+    {
+      "command": "$env:TEMP=<workspace-temp>; $env:TMP=<workspace-temp>; python -B tests\\test_tier_desk.py",
+      "result": "21/21 passed; zero model calls"
+    },
+    {
+      "command": "python -m py_compile tier_runner\\desk_chair.py tier_runner\\desk_store_chair.py tier_runner\\desk_http.py",
+      "result": "pass"
+    }
+  ],
+  "sha256": {
+    "tier_runner/desk_chair.py": "637c8611792b4cfabf88a1aa08dba442c6ff49109dcdff6b0da5d90a77af0e6c",
+    "tier_runner/desk_store_chair.py": "1f6a4c84a2c5f8c9d017bf740333c8b2a1e94f1dba7053f75fa4d7fd6dafeda0",
+    "tier_runner/desk_store_base.py": "cd6906e04ca74fdf4ba5221e75f306654829e2e895b42a68b09fb20c704a474c",
+    "tier_runner/desk_store.py": "8af20b7bd15e4560491d2fd3b7a90c75f8a7d6573c48c3111487edb1bb28e8fc",
+    "tier_runner/desk_http.py": "924de88260724258b167876428ef46c59ca0e5f5d4e08f2011a7fd41ac15d225",
+    "tests/test_desk_chair.py": "12dd1293525416c5c794524b3a3d453b7eb8fe609267bdba89f95896f03af8b1",
+    "docs/chat-bridge.md": "0389a0a75e1a2f682e147eed61832158cc05344a8e9664a551284e2f42088eef"
+  },
+  "remaining_boundary": "Private/app-backed reads are not claimed until the live Desk process's intended transport proves them. A sandbox child gh result alone neither proves nor disproves operator or app authentication; failures stay per-repository and public polling continues.",
+  "external_provider_model_use": "NO",
+  "disposition": "PASS"
+}

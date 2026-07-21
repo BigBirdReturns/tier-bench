@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.example/schemas/job_contract.schema.json",
+  "title": "Job contract v1 (frozen): describes work, never a worker",
+  "description": "The Trillian bridge's job contract. It names an objective, a writable file scope, and one deterministic acceptance command. It deliberately says nothing about which model, arm, tier, or vendor performs the work: that choice belongs to the router (scripts/route.py) and can change from run to run, or from one model generation to the next, without invalidating any contract already written against this schema.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "objective", "files", "acceptance"],
+  "properties": {
+    "schema": {
+      "const": "tier-bench/job-contract@1",
+      "description": "Pins the contract to this frozen shape so downstream tooling never has to sniff the version."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]{1,80}$",
+      "description": "Optional slug used to reference this job from another job's depends_on."
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What outcome is wanted, in plain language. Never a model instruction or persona."
+    },
+    "files": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "not": {
+          "pattern": "(^/)|(^[A-Za-z]:)|(\\.\\.)|(^\\.git(/|$))",
+          "description": "Rejects absolute paths (POSIX or drive-letter), parent-directory escapes, and anything under .git — the writable scope must stay a relative subset of the working tree."
+        }
+      },
+      "description": "Repo-relative writable scope. Every entry must be relative, contain no '..', and not reach into .git."
+    },
+    "acceptance": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "pattern": "[\\r\\n]",
+        "description": "The acceptance field is one shell command, not a script; a newline means two commands got smuggled into one field."
+      },
+      "description": "One shell command. Exit 0 means the objective is done; any other exit code means it is not."
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_files_changed": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Optional cap on how many files a single attempt may touch."
+        },
+        "max_rounds": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Optional cap on repair/escalation rounds before a lineage is declared failed."
+        }
+      },
+      "description": "Optional numeric guardrails. Both keys are optional; an empty object is valid."
+    },
+    "depends_on": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "description": "Optional list of other job ids that must complete before this one is dispatched."
+    }
+  },
+  "not": {
+    "description": "HARD RULE: the contract never names a model, arm, tier, or vendor/provider. The contract describes the work; a router (not the operator, not the chat model that drafted this JSON) decides who performs it. Baking a model choice into the contract would tie a piece of work to whichever model happened to be current the day the contract was written, and break the moment that model is deprecated, re-priced, or simply beaten by something cheaper. A contract that survives model churn cannot mention one.",
+    "anyOf": [
+      {"required": ["model"]},
+      {"required": ["arm"]},
+      {"required": ["tier"]},
+      {"required": ["vendor"]},
+      {"required": ["provider"]}
+    ]
+  }
+}

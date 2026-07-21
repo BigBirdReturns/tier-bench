@@ -10,7 +10,14 @@ def slugify(text: str) -> str:
     - Collapse multiple hyphens into one
     - Return empty string for empty input
     """
-    raise NotImplementedError
+    result = []
+    for char in text.strip().lower():
+        if char == " " or char == "_":
+            char = "-"
+        if ("a" <= char <= "z") or ("0" <= char <= "9") or char == "-":
+            if char != "-" or not result or result[-1] != "-":
+                result.append(char)
+    return "".join(result)
 
 def main():
     cases = [

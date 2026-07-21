@@ -1,0 +1,71 @@
+=== ORIGINAL TASK ===
+Create experiments/desk_driver_live_smoke/proof.txt as the only implementation change. Its exact bytes must be UTF-8 text DESK_DRIVER_LOOP_LIVE followed by one LF byte. Do not edit any other file.
+
+=== LAST ERROR ===
+backend adapter exited 2
+
+=== PATCH ===
+(no patch produced)
+
+=== LOG TAIL ===
+$ ["C:\\Users\\BAM-Desktop\\AppData\\Local\\Programs\\Python\\Python312\\python.exe", "-m", "tier_runner.desk_worker", "--envelope", "D:\\Projects\\Tier-Bench\\main\\.git\\tier-desk\\logs\\desk-driver-live-smoke\\attempt-001.envelope.json", "--heartbeat", "D:\\Projects\\Tier-Bench\\main\\.git\\tier-desk\\heartbeat", "--heartbeat-instance", "4094484d9ad4b3cc9d114bfaecc58478"]
+
+{
+  "acceptance_command": "python -B tests/test_desk_driver_live_smoke.py",
+  "arm": "arm_b",
+  "artifacts": {
+    "backend_manifest": {
+      "path": "backend-manifest.json",
+      "sha256": "94317906378dbd33b06015bb7d23983b44c39f07a0519069da9a2435aa9ad18e"
+    },
+    "dispatch_receipt": {
+      "path": "dispatch-receipt.json",
+      "sha256": "08222ed4aa5ab9f6fae734f3f25a1943fc9ff8620050d442d3307bfb1bd38574"
+    },
+    "patch": {
+      "path": "change.patch",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "prompt": {
+      "path": "prompt.txt",
+      "sha256": "bb4db0f20d09b38002f86100f55a93ad242413ecb7b39f58b9466c5e1576ee84"
+    },
+    "prompt_template": {
+      "path": "prompt-template.txt",
+      "sha256": "06105fd96f2bdf16be014c2281ade2f46008eda57ee5bc49536acc9cfe090790"
+    }
+  },
+  "backend_manifest": {
+    "path": "pilot_backends.json",
+    "sha256": "94317906378dbd33b06015bb7d23983b44c39f07a0519069da9a2435aa9ad18e"
+  },
+  "backend_process": {
+    "returncode": 2,
+    "stderr_path": "backend.stderr.txt",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stdout_path": "backend.stdout.txt",
+    "stdout_sha256": "28f59f93fdb971ff5f20a569d4f656465accdf930b36f785311b2da2be91ca85"
+  },
+  "base_commit": "12fef632a7625f6377200ef233aeb25c8e966d08",
+  "completed_at": "2026-07-20T05:50:53.850042Z",
+  "errors": [
+    "backend adapter exited 2"
+  ],
+  "files": [
+    "experiments/desk_driver_live_smoke/proof.txt"
+  ],
+  "packet_removed": true,
+  "prompt_template": {
+    "path": ".tier/hands.prompt.txt",
+    "sha256": "06105fd96f2bdf16be014c2281ade2f46008eda57ee5bc49536acc9cfe090790"
+  },
+  "receipt_path": "D:\\Projects\\Tier-Bench\\main\\.git\\tier-runs\\monster-wrangler\\desk-driver-live-smoke\\attempt-001\\receipt.json",
+  "repo": "D:\\Projects\\Tier-Bench\\worktrees\\tier-desk",
+  "run_id": "desk-driver-live-smoke-20260720T055052Z-bdb06867",
+  "schema": "tier-bench/tier-run-receipt@1",
+  "started_at": "2026-07-20T05:50:52.207952Z",
+  "state": "ERROR",
+  "task": "Create experiments/desk_driver_live_smoke/proof.txt as the only implementation change. Its exact bytes must be UTF-8 text DESK_DRIVER_LOOP_LIVE followed by one LF byte. Do not edit any other file.",
+  "task_id": "desk-driver-live-smoke",
+  "worktree_removed": true
+}

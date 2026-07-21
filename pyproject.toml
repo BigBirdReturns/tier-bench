@@ -17,6 +17,21 @@ dev = ["ruff>=0.6.0"]
 capability-harness = "capability_harness.__main__:main"
 tier = "tier_runner.cli:main"
 tierdesk = "tier_runner.desk:main"
+# Policy-layer CLIs. scripts/ has no __init__.py (see [tool.setuptools] note
+# below on why that's fine) so these resolve as "scripts.<module>:main".
+# FOLLOW-UP (do not fix here -- scripts/qualify.py belongs to another agent):
+# scripts/qualify.py does `from route import TIER_INDEX, classify`, a bare
+# same-directory import that only resolves when Python puts scripts/ itself
+# on sys.path[0] (true for `python scripts/qualify.py`, NOT true for this
+# installed console-script wrapper). Until qualify.py's import is changed to
+# `from scripts.route import ...` (or scripts/ grows a real __init__.py),
+# `tier-qualify` will raise ModuleNotFoundError on invocation even though it
+# imports fine; installed callers should run `python scripts/qualify.py`
+# directly in the meantime.
+tier-route = "scripts.route:main"
+tier-qualify = "scripts.qualify:main"
+tier-drive = "scripts.desk_driver_loop:main"
+tier-init = "scripts.tier_init:main"
 
 [build-system]
 requires = ["setuptools>=61"]
@@ -24,7 +39,13 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 # Ship the harness as an importable package; the benchmark itself stays script-run.
-packages = ["capability_harness", "tier_runner", "tier_runner.adapters"]
+# scripts/ is included the same way, additively: it is NOT converted into a
+# conventional package (no __init__.py is added, and no file under it is
+# moved/renamed -- other agents are editing files in there concurrently).
+# setuptools>=61 (required above) supports PEP 420 implicit namespace
+# packages, so listing the bare directory name here is enough to make
+# `scripts.<module>` importable/installable without an __init__.py.
+packages = ["capability_harness", "tier_runner", "tier_runner.adapters", "scripts"]
 
 [tool.ruff]
 line-length = 100
