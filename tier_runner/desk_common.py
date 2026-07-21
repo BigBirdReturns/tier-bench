@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 import json
-import os
 from pathlib import Path, PurePosixPath
 import subprocess
 from typing import Any
+
+from .core import hidden_process_kwargs
 
 
 SCHEMA = "tier-bench/monster-wrangler@1"
@@ -20,17 +21,6 @@ DEFAULTS: dict[str, Any] = {
 }
 MAX_BODY = 1_000_000
 MAX_LOG = 200_000
-
-
-def hidden_process_kwargs(
-    platform_name: str = os.name, *, new_process_group: bool = False
-) -> dict[str, object]:
-    if platform_name == "nt":
-        flags = subprocess.CREATE_NO_WINDOW
-        if new_process_group:
-            flags |= subprocess.CREATE_NEW_PROCESS_GROUP
-        return {"creationflags": flags}
-    return {}
 
 
 class DeskError(RuntimeError):
