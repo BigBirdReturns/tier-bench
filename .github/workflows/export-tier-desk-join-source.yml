@@ -1,0 +1,42 @@
+name: Export Tier Desk join source
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Build source archive
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+
+          root = Path.cwd()
+          out = root / "tier-desk-join-source.zip"
+          excluded_roots = {".git", ".pytest_cache", "__pycache__"}
+          with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+              for path in sorted(root.rglob("*")):
+                  if not path.is_file() or path == out:
+                      continue
+                  rel = path.relative_to(root)
+                  if any(part in excluded_roots for part in rel.parts):
+                      continue
+                  zf.write(path, rel.as_posix())
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tier-desk-join-source
+          path: tier-desk-join-source.zip
+          if-no-files-found: error
+          retention-days: 1
+          compression-level: 0
