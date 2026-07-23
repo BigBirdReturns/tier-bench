@@ -1,0 +1,884 @@
+TASK BOUNDARY: subject_dispatch
+CURRENT TASK: Solve the frozen hidden-free task packet appended below; return only the complete target file.
+FULL CURRENT-STATE EVIDENCE FOLLOWS. Derive constraints and next action.
+
+===== AGENTS.md =====
+# AGENTS.md — Sol's bootstrap (auto-loaded by Codex CLI / desktop)
+
+*You are Sol — the OpenAI/Codex cross-lineage peer on this repo. This file is
+your `CLAUDE.md`: Codex loads it at session start so you do not wake up blind.
+It is committed state, not a paraphrase; when it disagrees with conversational
+memory, the committed record wins.*
+
+## The mission you are part of
+
+Two model lineages — Claude (Anthropic) and GPT (OpenAI) — work on the same
+repository as independent measurement engines: two solvers, two graders, one
+sealed evidence record. The value of the pairing is lineage independence, not
+interchangeable hands or merged opinions.
+
+`docs/agents/QUEUE.md` assigns work. The engine-neutral evidence contract is
+`docs/agents/CROSS_ENGINE_PROTOCOL.md`. The queue decides *what* is authorized;
+the protocol decides *how* independent work is sealed, graded and compared.
+
+## Read these, in order, before acting
+
+1. `docs/agents/QUEUE.md` — the shared assignment authority.
+2. `docs/agents/SOL_HANDOFF.md` — durable project state and exact figures.
+3. `docs/agents/CROSS_ENGINE_PROTOCOL.md` — paired-run and review discipline.
+4. `ROADMAP.md` — arc sequence and budget discipline.
+5. `experiments/breadth/LESSONS.md` — standing measurement rules.
+
+## The two-lane law (epistemic separation)
+
+Every session runs in exactly one lane, declared by the queue row:
+
+- **`lane: driver`** — receives the repository and may run, administer, review
+  and propose. Private material may remain local but is never committed.
+- **`lane: subject` / `lane: instrument`** — receives a generated packet only:
+  no repository checkout, queue, handoff, hidden grader, key, or peer answer.
+
+No session holds both lanes in one context. Knowledge leaks through context, so
+channels between lanes are deterministic scripts and sealed receipts, never a
+freehand paraphrase from a knowing driver.
+
+## Git discipline (collision safety)
+
+- Write only under `codex/*` branches or isolated Codex worktrees. Never push
+  directly to `main` and never modify a `claude/*` branch.
+- Pull requests are the merge point; `breadth-durability` CI is the referee.
+- Claiming a queue task requires a commit that changes its queue state.
+- Preserve raw responses and engine/thread identity before summarizing.
+
+## Hard limits (GATED — proposal-only, both lineages)
+
+Graders, pass criteria, task definitions, hidden vectors, ledger closure rules,
+and cost accounting are GATED under `adapt.py` discipline. Proposals belong in
+review; an engine may not silently change what counts as passing.
+
+- Never award yourself a benchmark verdict. A coordinator injects and reruns
+  the hidden grader only after the candidate is sealed.
+- Never fabricate a receipt. Broken pipelines mint neither PASS nor FAIL.
+- Subscription runs record `cost_basis: subscription-derived`.
+- Paired conclusions remain separate until compatible receipts are sealed.
+
+## Durable cross-engine machinery
+
+- `docs/agents/CROSS_ENGINE_PROTOCOL.md` — roles and independence rules;
+- `scripts/export_solver_packet.py` — hidden-free solver packets;
+- `schemas/orchestration_run.schema.json` — per-engine receipt contract;
+- `scripts/validate_orchestration_run.py` — provenance and routing validator;
+- `scripts/compare_engine_runs.py` — compares without merging disagreements.
+
+## Current standing state (mirror — QUEUE.md is authoritative)
+
+- SOL-1 blind control grading is sealed from fresh desktop thread
+  `019f4d56-c26f-7ec0-9d3e-67819c2270ec` and merged additively. Exact baseline
+  agreement is 48/80, with 32 off by one and zero off by two; see
+  `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`. No aggregate
+  benchmark verdict follows from that agreement report.
+- SOL-2, the Codex adversarial review of ARC-A/ARC-B, is complete with findings
+  at `docs/agents/reviews/sol_arc_ab_review_20260710.md`; remediation is open.
+- ARC-C is pair-sealed. Codex gpt-5.6-sol@low and Claude fable-5@low each clear
+  all three almanac knots 3/3 at floor against source `3d38371`; the committed
+  comparator admits the pair with 3/3 task-decision agreement. The result is a
+  paired orchestration measurement, not a universal capability claim.
+- SOL-4, the residue-recorder constitution review, is complete at
+  `docs/agents/reviews/sol_residue_recorder_constitution_v04_20260712.md`:
+  disposition `CHANGES_REQUESTED_BEFORE_MERGE`, seven P1 and four P2 findings,
+  with 7/7 executable witnesses. ARC-D is the next roadmap arc but has no queue
+  row; the queue remains authoritative for who may claim it.
+- The capture ledger remains *amortizing, 1 of 4*, never "amortized."
+
+===== docs/agents/QUEUE.md =====
+# QUEUE.md — the shared assignment authority (both lineages)
+
+*One queue, two readers. Claude sessions load `CLAUDE.md` → pointed here; Sol
+sessions load `AGENTS.md` → pointed here. A task exists when it has a row; a
+task is claimed when a commit flips its `state`; a task is done when its
+`evidence` path exists and CI is green. Content keys only — never PR numbers.*
+
+## Queue law
+
+1. **Claim before work**: flip `state: open → claimed` (with your session/date
+   in `note`) in a commit on your own branch before starting.
+2. **Lane is binding**: `driver` rows get the repo; `subject`/`instrument`
+   rows get a generated packet only — never both in one context.
+3. **Done needs evidence**: a row closes only by pointing at committed
+   artifacts (receipts, sealed layers, merged PRs) — burden discipline applies.
+4. Owners: `sol` (GPT lineage), `claude` (Anthropic lineage), `either`,
+   `operator` (human-only steps).
+5. Append new rows; never delete history — strike through superseded rows.
+
+## Active queue
+
+| id | task | owner | lane | state | evidence when done | note |
+|----|------|-------|------|-------|--------------------|------|
+| SOL-1 | Blind-grade control packet (80 items, **v2**): return `[{id, score, rationale}]` per packet instructions | sol | **instrument** | **done** — one sealed v2 run, 2026-07-10 | `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`; raw artifact + session record under `data/control-results/_external_grade_runs/sol-1-v2-019f4d56-c26f-7ec0-9d3e-67819c2270ec/` | Exact baseline agreement 48/80; 32 off by one; zero off by two. Operator reported a second attempt, but no second thread/artifact was discoverable, so it is not counted. |
+| SOL-2 | Adversarial review of the capture ledger (`data/capture/`, validator, ROI) + almanac corpus (`tasks/almanac_*`, vectors, graders) — hunt the defect class same-lineage review missed | sol | driver (read-only) | **done** — 2026-07-10 | `docs/agents/reviews/sol_arc_ab_review_20260710.md` | Two P1 closure holes and four P2 durability defects recorded; remediation remains gated and open. |
+| SOL-3 | Independent-architect pass on the Residue Broker (ARC-C) | sol | driver | **superseded / independence precondition lost** | PR #63 plus explicit contamination note | Operator-directed ARC-C implementation began before the coordination merge. This repo-aware author context cannot honestly recreate an independent-before-conclusions architecture pass. |
+| SOL-4 | Adversarial review of `docs/RESIDUE_RECORDER_CONSTITUTION.md` v0.3→v0.4 (`4affafe`→`7d93e87`): find schemes that satisfy §§12.1–12.4 while violating privacy, authority, durability, evaluation independence, or operability | sol | driver (read-only) | **done — 2026-07-12** | `docs/agents/reviews/sol_residue_recorder_constitution_v04_20260712.md` + executable companion | Disposition `CHANGES_REQUESTED_BEFORE_MERGE`: no P0, seven P1, four P2; 7/7 witnesses reproduce. Immutable review commit `f78c726` attached to governance PR #72 by comment `4952508270`. No gated doctrine changed. |
+| ~~CLAUDE-1~~ | ~~Push blind packet to temp repo~~ — superseded: v1 bytes unavailable, SHA `64e33f2a…` irreproducible from any committed state (100-commit sweep, Claude 2026-07-10) | claude | driver | **superseded by CLAUDE-1b** | — | v1 packet existed only in the original session's working copy. |
+| CLAUDE-1b | Verify packet **v2** delivery (coordinator pushed; supersession record `docs/agents/BLIND_CONTROL_V2.md` on codex branch) | claude | driver | **done** — independently verified 2026-07-10 | `docs/agents/BLIND_CONTROL_V2_VERIFICATION.md` | Commit `6771868` / single-file tree / schema / 80 items / no leaks: **confirmed**. Declared SHA `98997bf9…` is the CRLF rendering; canonical in-git digest is `e1a1dc6bfcee26a435e23107d08019870153ceb1cf6e646b46317663ad8afd06` (transport adjudication, not integrity failure). Key-side claims remain single-source until key disclosure. |
+| CLAUDE-2 | Replays 2–4 of the task02 capture: DISTINCT task02-class work items (frozen edge-family variants / almanac knots), floor + scaffold packet, hidden-graded | claude | driver (subjects are cold floor runs) | **done** 2026-07-10 (2 validated + 1 partial; amortizing 3/4) | receipts under `run/replays/`, ledger rows, capture row update | Same-instance repeats do not count; 2 of 4 validated (crossing + replay03); replay02 spoiled 0/3, replay04 1/3 did not. |
+| CLAUDE-3 | Same-session bare-vs-packet A/B on task02 (closes the prompt-wording confound named in the capture row) | claude | driver | **done** 2026-07-10 — confound closed (bare 3/5 vs packet 4/5, zero knot misses in packet arm) | sealed layer + confound note resolved in capture row `gap` | Cheap; shadow-estimated. |
+| CLAUDE-4 | ARC-A P1 hardening: capture closure depends on distinct hash-bound replay events + computed break-even (one shared calculation) | claude | driver | **done** — PR open 2026-07-10 | `scripts/capture_math.py`, hardened `validate_capture_ledger.py`, restructured task02 row, `data/continuity/EPISODES.md` EP-001, 32+8 tests | Bounded repair from main; PR #63 untouched. Defect preserved as provenance (representation could not prove distinctness; claim itself was true). |
+| OP-1 | Create empty private repo `BigBirdReturns/tier-bench-blind-grade-001` (no README/.gitignore) and grant the Claude GitHub integration access | operator | — | **done** 2026-07-10 | repo exists (verified private at add time); Claude integration access verified by clone | Session credential gets 403 on repo creation — human-only step. |
+| ARC-C | Orchestration-pattern benchmark over the real knots | either (lead: claude) | driver | **done — paired seal, 2026-07-12** | `data/orchestration/arc_c_almanac_v1.json`, `data/orchestration/arc_c_almanac_claude_v1.json`, and `data/orchestration/comparisons/arc_c_almanac_cross_engine_v1.json` | Both independent runs are sealed 3/3/3 at floor against source `3d38371`; comparator admits the pair and reports 3/3 task-decision agreement. This closes the pairing claim, not a universal capability claim. |
+| SOL-5 | Refill the excluded Codex ARC-C cells: fresh source-bound (3d38371 bytes) exception-class + record-binding observations, K=3 each at floor, ingest + seal `arc_c_almanac_v1`, then run `scripts/compare_engine_runs.py` against the sealed Claude run | sol | driver | **done — 2026-07-12** | `data/orchestration/arc_c_almanac_v1.json` + `data/orchestration/runs/arc_c_almanac_v1/` + `data/orchestration/comparisons/arc_c_almanac_cross_engine_v1.json` | Six fresh packet-only subjects, distinct thread/turn identities, zero tool calls, exact source-bound prompts. Provider rollouts remain local; committed safe event snapshots and hash-bound administration receipts preserve identity, timing, usage, response, and full-rollout SHA-256 without publishing host context. |
+| ARC-D-PILOT | Design the OSS “buffalo” replay field: preregister a ≤10% harvest prior, model how sparse reusable residue compounds, define the next evidence rungs, and run three bounded packet-only simulations on pinned public OSS work items | sol | driver (subjects are isolated packet-only simulations) | **partial — 3/3 provider system errors, 2026-07-12** | `docs/arc-d-buffalo-field.md` + `data/oss-replay/arc_d_buffalo_pilot_v1/` | Field contract, three hash-bound packets, and four illustrative projections exist. All three fresh projectless threads received exact transported envelopes, then returned `systemError` with no assistant response or reported provider detail. Preserve them as `PARTIAL`; zero observations were graded, no retry is permitted under the frozen stopping rule, and the HARVEST gate remains proposal-only. |
+| ARC-D-PILOT-R1 | Retry the ARC-D packet-only pilot under a separately versioned protocol: capacity preflight first, then at most three sequential dispatches carrying the exact v1 prompt bytes; preserve all outcomes without grading | sol | driver (subjects are fresh isolated packet-only simulations) | **done — responses sealed unadjudicated, 2026-07-12** | `data/oss-replay/arc_d_buffalo_pilot_v2/` | Operator-authorized after immutable v1 merged. Excluded preflight returned exact `CAPACITY_OK`; three sequential fresh projectless subjects received exact v1 prompt blobs and completed with 7,345 / 5,933 / 5,933 UTF-8 response bytes, zero tools, and hash-bound thread/turn/timestamp evidence. CI run #95 was green on evidence commit `ba38e040`. HARVEST remains proposal-only: zero grades and zero harvest verdicts. |
+| ARC-D-HARVEST-CHARTER | Freeze the B2 source-case rubric, adjudicator designation, prospective B4 gate, packet-only grading procedure, disagreement rule, provenance receipt, and failure default before any response disclosure | sol | driver (rubric authoring only; this session may not inspect or grade responses) | **done — merge verified (charter adoption `12bfd61` on main; normalized 2026-07-13 after the condition was satisfied)** | `docs/arc-d-harvest-adjudication.md` + `data/oss-replay/arc_d_buffalo_pilot_v2/harvest_charter.json` + validator/tests | Operator said `go` after confirming no HARVEST response text had appeared. Merge adopts the B2 rubric and prospective B4 rule; no response is graded and no HARVEST evidence is minted by adoption. |
+| ARC-D-B2-PACKETS | Build a deterministic one-response-only packet exporter and fail-closed packet validator for the ratified ARC-D B2 charter; do not grade or dispatch before the exporter merges | sol | driver (administration only; response carriers may be copied mechanically but never displayed or interpreted) | **done — merge verified (exporter `6b4b389` ancestor of main via #82; normalized 2026-07-13)** | `scripts/export_arc_d_b2_packets.py` + `scripts/validate_arc_d_b2_packet.py` + packet/payload schemas + tests | Operator said `do it` after charter merge `12bfd61`. Merge authorizes mechanical packet construction, not dispatch or grading. Each packet excludes repository governance/history, peer grades, other response bytes, and unratified instructions. |
+| ARC-D-B2-GRADE-A | Grade the three ratified ARC-D B2 packets independently with one fresh projectless `gpt-5.6-sol@high` instrument session per packet; preserve raw output and session identity before any comparison | sol | instrument (packet-only; one response per fresh session) | **partial — clean local rerun 3/3 valid, evidence not admitted, 2026-07-12** | `docs/agents/reviews/arc_d_b2_partial_summary_20260712.md` | A second local attempt used three fresh projectless sessions and validated 3/3 payloads and receipt sets. Publication of the grading artifacts remains disallowed, so this is local custody evidence rather than an admitted public Grade A lane. The first 2-valid/1-invalid attempt remains preserved. |
+| ARC-D-B2-GRADE-B | Grade the same three ratified ARC-D B2 packets independently with one fresh projectless `fable-5@high` instrument session per packet; preserve raw output and session identity before any comparison | claude | instrument (packet-only; one response per fresh session) | **attempt-3 SEALED, partial 1/3 admissible — 2026-07-13 (operator-authorized in PR #83)** | `data/oss-replay/arc_d_buffalo_pilot_v2/grades/grade_b/attempt-3/MANIFEST.json` (+ per-item evidence, hash-bound); attempts 1–2 preserved inadmissible | Attempt 3 fixes both review findings: authority hardened fail-closed (AUTHORITATIVE only for role=source_evidence — closes attempt-2's ORIGINAL_PROMPT.md hole) and bare-JSON stated mechanically. attrs: **ADMISSIBLE, B2_CANDIDATE_RESIDUE** — the pairable receipt. httpx_3614: the 4/4 wall BROKE — first content-complete grade (unofficial B2_REFERENCE_AMBIGUOUS) but non-bare reply → preserved inadmissible. httpx_3221: content-complete, unofficial B2_REFERENCE_AMBIGUOUS, non-bare → preserved. Instrument pattern recorded: bare 2/2 on attrs vs fenced 4/4 on httpx packets. Real-billed $5.61. Prior outputs untouched. |
+| ARC-D-B2-COMPARE | Validate the six sealed grade receipts, compare dispositions and cited evidence without averaging, and produce one comparison receipt per item | sol | driver (receipts only after both lanes seal) | **not run — Grade B invalid and Grade A not admitted** | `docs/agents/reviews/arc_d_b2_partial_summary_20260712.md` | The driver validated custody before comparison and refused to compare non-admissible evidence. Failure default `PARTIAL_UNPAIRED`: zero comparison receipts, binding B2 dispositions, candidate residues, or HARVEST claims. |
+| ARC-D-B2-ADMISSION-V2 | Prospectively ratify a private-custody/public-commitment admission contract for fresh ARC-D B2 grading lanes, with no rubric change and no retroactive admission of prior attempts | sol | driver (governance/specification only; no response inspection or grading) | **done — ADOPTED at merge `e7201e1` (exact approved head `8db8e25`; operator-ratified in-session 2026-07-13, executed by the Claude-lane driver; state ADOPTED_PENDING_CUSTODY)** | `docs/arc-d-b2-admission-v2.md` + `data/oss-replay/arc_d_buffalo_pilot_v2/harvest_charter_v2.json` + `docs/agents/reviews/arc_d_b2_admission_v2_fanout_20260712.md` + strict amendment/specification validator/tests + draft receipt interfaces | Operator authorized fan-out after PR #84 merged. Merge adopts only the prospective custody/admission specification and leaves `ADOPTED_PENDING_CUSTODY`; draft operational schemas gain authority only when a later activation receipt binds their final Git blobs. Existing Grade A/B attempts remain `PARTIAL_UNPAIRED`. |
+| ARC-D-B2-CUSTODY-V2 | Implement and activate the admission-v2 custody profile: separate lane venues, default-branch activation receipt, preregistered six-cell attempt/dispatch ledger, exact private Git object validation, authenticated audit receipt verification, and private-to-public derivation | sol | driver (administration only; content-blind fixture/preflight until activation) | **open — UNBLOCKED 2026-07-13 (admission-v2 merged, `e7201e1`); awaiting custodian + verifier designation (operator: deferred) and the activation component build** | future custody profile + activation/preflight/attempt/audit schemas and executable validators/tests | No grader dispatch is lawful when only the amendment has merged. Public-only validation may say `PUBLIC_COMMITMENT_SHAPE_VALID`; it may never self-declare admission. |
+| ARC-D-B2-GRADE-A-V2 | Run three fresh Grade A sessions under the unchanged v1 rubric/packet bytes and active v2 custody contract | sol | instrument (fresh projectless packet-only; one dispatch per preregistered cell) | **open — blocked on ARC-D-B2-CUSTODY-V2 activation** | future private immutable bundles + public authenticated commitments | Prior local Grade A attempts are historical and cannot be wrapped into v2. |
+| ARC-D-B2-GRADE-B-V2 | Run three fresh Grade B sessions under the unchanged v1 rubric/packet bytes and active v2 custody contract | claude | instrument (fresh projectless packet-only; one dispatch per preregistered cell) | **open — blocked on ARC-D-B2-CUSTODY-V2 activation** | future private immutable bundles + public authenticated commitments | Grade B attempts 1–3 are historical and cannot be wrapped into v2; strict one-object/no-fence/no-prose output remains fail-closed. |
+| ARC-D-B2-COMPARE-V2 | Compare only six fully admitted v2 receipts after atomic batch admission, preserving v1 disagreement and B4 rules | sol | driver (private audited receipts only after both lanes admit) | **open — blocked on both v2 grading lanes** | future deterministic comparison receipts | No comparison, B2 binding, B3 artifactization, or HARVEST may occur before the later comparison-receipt merge. |
+| CLAUDE-AUTH2 | Authoring batch 2 — three embedded-knot hidden-graded tasks per LESSONS rule 11 (knot arrives unannounced mid-implementation; no defusing guarantees; NOT counterexample-framed): `t3_billing_anchor_001` (anchor-vs-cascade), `t3_window_limit_001` (boundary-endpoint words), `t3_due_date_shift_001` (modified-following reversal) | claude | driver (grader/oracle authoring is driver-owned; no solver ran) | **done — 2026-07-13** (claimed+built+verified same session on operator "make it so") | `tasks/t3_{billing_anchor,window_limit,due_date_shift}_001.json` + `fixtures/…/input.py` + frozen `hidden_tests.py` ×3 + `experiments/breadth/authoring2/build_vectors.py` (mechanical derivation + `--check` CI drift guard) + `verification_receipt.json` | Key material verified bidirectionally BEFORE freeze: reference passes visible + full hidden score on all three; each paired naive (cascade-clamp / closed-old-end / forward-only) passes the VISIBLE checks but fails the knot vectors — the daylight is the signal. Listed breadth-valid by `breadth_tasks.py`; selfrun prep strips hidden files, prompts clean. **NO model results claimed.** |
+| SOL-6 | Land and verify the authoring2 floor-evidence validator reported at local commit `fbdfdb5` | sol | driver (validator implementation and tests only; no grading) | **open — reported complete locally, but not landed** | a reachable remote commit containing the validator and its tests, followed by CI-green merge evidence | The reported commit exists only on branch `work` in a container with no configured remote. It is absent from this clone, all fetched refs, and the local Codex task/worktree inventory as of 2026-07-13. Transfer the exact bytes by bundle, format-patch, or push; do not reconstruct them from the report. |
+| CART0-BRIDGE-1 | Land the opt-in CART0 `Select -> Compose` payload bridge: bounded source-span cards, actor-relative boundary selection, hash-bound verification/rehydration, deterministic refusal tests, and the preserved zero-model payload A/B | sol | driver (implementation and deterministic no-model tests only) | **claimed — implementation complete locally; review/CI pending, 2026-07-14** | `scripts/cart0_anchor.py` + `tests/test_cart0_anchor.py` + `experiments/cart0_anchor_prototype/` + `docs/cart0-anchor-prototype.md` | Operator authorized in Codex task `019f628b-cb07-7d92-8092-067d7e175baa`; implementation commit `88e5bfb`; claimed-state receipt binds that exact head. Scope excludes provider/model dispatch, gated machinery, benchmark or context-window verdicts, production Genesis signing, and downstream-quality claims. |
+| CART0-PROFILE-1 | Repair the CART0 B4 integration/conformance failures with an independent canonical transition profile, actor/head/reducer/review enforcement, quarantined evidence envelopes, frozen negative and positive vectors, fresh zero-model B0/B4 receipts, and a `cart0@1` Genesis-profile proposal | sol | driver (deterministic no-model implementation, conformance vectors, receipts, and proposal only) | **done — merged `a27bae1`, durability green, 2026-07-14** | repaired bridge/profile + additive conformance/witness vectors + fresh B0/B4 receipts + Git-custodied portable verifier + sealed Claude retest + `cart0@1` proposal | Original repair/receipts are `7805ec5`/`133fdf1`; failed v1 portability artifact remains preserved at `eec76dd`. Remediation is `3292102`, fresh receipts `a30ca1a`, and passing portable archive commit `b3bbdc5` with archive SHA-256 `fb912f39d08681ff60108e0cf5ca7199f339de25bc36bfe1d1c5300602f66bdc`. Claude independently retested from the embedded Git bundle: sealed report SHA-256 `70cc00b9c6f4cc0f74e4679e701f7764494f948eaabd9fd7edacae448cbfd6bc`; post-seal comparison SHA-256 `c8768047fe44a85e0b9a9537d05772a2304436374426115c7cc56b7c4949311c`; no discrepancies. Merge commit `a27bae171dfc453d5545549e140666d880193682` preserved the evidence history and GitHub durability run `29387183670` passed. Boundary terminology is deterministic projection-bound ID, not per-run randomness. Cards remain data; lawful selection stays project-local. |
+| CART0-BOUND-1 | Run only B1 functional-equivalence falsification: compare full pinned project context against a <=256-token-proxy CART0 anchor plus mechanically selected cards on the distinct unchanged hidden-graded tasks `t3_null_filter_001` and `t3_accrual_crossover_001`; preserve prompt, response, provider usage, candidate, and repeated hidden-grade output before comparison | sol | driver administering four fresh packet-only subject calls; subjects are isolated from repository, queue, peer output, and hidden graders | **claimed — operator-authorized in task `019f628b-cb07-7d92-8092-067d7e175baa`, 2026-07-14** | future immutable preregistration, two source-identical packets, four raw provider receipts/candidates, repeated unchanged hidden grades, and a deterministic comparison receipt under `experiments/cart0_bound_1/` | Exact floor is `claude-haiku-4-5-20251001@low` through Claude Code print mode, safe mode, no session persistence, and zero tools; one fresh call per task/arm, no retries; maximum provider ceiling USD 0.15/call and 0.60 total, with `cost_basis: subscription-derived` and cache reads/writes separated. Task bytes, model, effort, permissions, output contract, existing graders, and grade procedure remain identical across arms. Dispatch order is preregistered before disclosure. No card/profile/task/grader/pass-criterion changes after the first response; no peer response disclosure between calls. Missing output or custody is PARTIAL, never FAIL/PASS. Scope excludes B2+, production integration/Genesis custody, hidden-grader mutation, aggregate benchmark verdicts, billing-savings or context-window claims. |
+| TIER-RUNNER | Implement the registered `tier run --repo --task --files --acceptance` daily runner without executing the driver-boundary pilot: disposable worktrees; immutable acceptance; patch + receipt output; append-only intervention events; per-call ledger/dispatch completeness; frozen backend/prompt manifest validation; no model invocation in implementation tests | sol | driver (runner implementation and deterministic fixture tests only; **no pilot task disclosure or model dispatch**) | **done — merged `0bd5110`, 2026-07-13** | `tier_runner/` + `schemas/tier_run_{backend_manifest,receipt}.schema.json` + `tests/test_tier_runner.py` + `docs/tier-runner.md` + CI step; merge `0bd5110`; green run 139 at exact reviewed head `9f779d9` | 15/15 fixture-only tests, zero model calls. Fable reviewed `f16c645`, found one merge-blocking voided-session freshness gap; `9f779d9` closes it and the six non-blocking findings. Merge lands the vehicle only: pilot task disclosure, activation canary, model dispatch, and verdicts remain unauthorized. |
+| TIER-RUNNER-SESSIONENV | Post-merge follow-up on TIER-RUNNER (`9f779d9`): `tier_runner/adapters/claude_code.py::_subscription_env` does not strip ambient `CLAUDE_CODE_SESSION_ID`/`CLAUDE_CODE_REMOTE_SESSION_ID`/`CLAUDE_CODE_CHILD_SESSION`/`CLAUDECODE`; the real `claude` CLI honors the ambient value and reports it as the call's own `session_id` even with `--no-session-persistence`. The merged `_register_session` registry does catch and hard-fail the resulting reuse (fail-closed, no silent taint) — but only from the *second* `tier run` call onward in the natural deployment shape (operator/coordinating session issuing shell commands), with a misleading error. Net effect: the runner cannot complete a multi-task pilot run driven the way this whole program has been driven, unless the operator manually unsets these vars first (undocumented) | sol | driver (adapter fix + regression test only; no pilot task disclosure or model dispatch) | **done — 2026-07-13, fixed by Sol on PR #93, merged `1db8792`** | `docs/agents/reviews/claude_tier_runner_pr91_postmerge_20260713.md` (executable witness: real `claude --safe-mode --no-session-persistence` invocation reports the parent's `CLAUDE_CODE_SESSION_ID` verbatim with the var present, a fresh UUID with it stripped) + fix merged at `1db8792` (adapter-8 `_subscription_env` strips `CLAUDECODE`, `CLAUDE_CODE_CHILD_SESSION`, and all `CLAUDE_CODE_*_SESSION_ID`; 20/20 deterministic regression) + live adapter-8 canary at `74dfd3e`: five planted parent markers stripped, provider minted fresh session `18ba4848-b5bf-46bc-9434-c66c5104f40a`, receipt sha256 `3ab7336bc2e3b43ceab21ab86a234510bdeb1a0c8c56ad75b9678ff803e7d3e6` (`docs/tier-runner-activation-canary-20260713.md`) | Not a merge blocker on the closed TIER-RUNNER row and not a security/corruption finding — the registry fails loud, not silently. Recommended fix: strip the ambient session-identity env keys in `_subscription_env` before invoking `claude`, so a fresh session mints every call regardless of the invoking shell. |
+| TIER-RUNNER-PERMS | Fix the two fail-closed adapter permission P2s from Fable's PR #93 review, before any multi-file pilot work: (1) directory scopes get exact-path `Read`/`Edit` rules, so every edit under a dir scope is denied under `dontAsk`; (2) `Write` is listed in `--tools` but never allow-listed, so new-file tasks cannot run even though core supports scope entries absent at base | claude | driver (adapter fix + deterministic regression tests only; no pilot task disclosure or model dispatch) | **done — merged `9bb2679`, 2026-07-13; adapter-v9 canary accepted** | merge `9bb2679` (exact reviewed head `546edc1`; CI run 153 green; 24/24 zero-call tests) + `docs/tier-runner-activation-canary-20260713.md` + accepted run `adapter-v9-permissions-canary-20260713-20260713T234746Z-73e8df88`, receipt sha256 `ec625c5cb98aa8b775b50af32687cbcb914c388495b3f490482bba547d364cbe` | Adapter v9 adds recursive `/**` rules, scoped `Write`, Glob/Grep discovery without Bash, code-owned version provenance, and literal gitignore escaping. Live canary proved unnamed-file discovery/edit, nested creation, and explicit denial outside scope; no pilot task was disclosed. |
+| AXM-CORE-PREFLIGHT | Repair the three deterministic Windows baseline failures in the shared `axm-core` checkout before pilot task selection: isolate both home-directory tests under `USERPROFILE` as well as `HOME`, and force canonical Forge source/provenance emission to LF so byte offsets remain cross-platform | sol | driver (deterministic repository repair and tests only; **no pilot task selection, disclosure, or model calls**) | **done — axm-core PR #25 merged `cf54f8c`, 2026-07-13** | exact approved head `125de27f547074e8726ebb6abf86c30cb8bdec89`; 44 passed, 2 skipped; merge `cf54f8c90a50d9c4172b94344e54fd28fb3803d6` | Preserved the pre-existing untracked `uv.lock`; production home semantics are unchanged. Fable reproduced the suite and approved with no findings. |
+| TIER-PILOT-COMPOSE | Close the protocol-v1.3/runtime mismatch before freezing `pilot_backends.json`: encode exact Arm A/B/C roles, separate driver and identical cheap hands, per-call receipts, failure-triggered repair/escalation, Arm-A `driver_traces.jsonl`, and Arm-C operator question/answer resume without collapsing calls | sol | driver (GATED schema/ledger proposal + deterministic fixture tests only; **no backend freeze, task disclosure, canary, or model dispatch**) | **done — PR #97 merged `7e14f50`, 2026-07-13** | merge `7e14f50bd1a38517c3bbd7ae92d7b519c7aad144`; `tier_runner/pilot_{manifest,composition}.py` + schemas/tests/docs; 15/15 composition plus 24/24 runner, zero model calls | Cross-lineage reviewed and merged with the production bridge still separately gated. |
+| TIER-PILOT-ADMIN | Implement the pre-disclosure pilot administration layer required by protocol v1.3: exact-three-arm manifest validation and hands parity, task-list/schedule derivation, identical-base enforcement, atomic all-arm voiding, 7-of-10 PARTIAL rule, canonical intervention/ledger completeness, blinded audit sealing, 14-day follow-up state, and fail-closed closeout | sol | driver (GATED administration/closure proposal + deterministic fixture tests only; **no task list, task disclosure, model calls, grades, or verdicts**) | **done — PR #97 merged `7e14f50`, 2026-07-13** | exact head `4781ed5a0bbbe9cb92ed4fc860cf0d386105b37f`; merge `7e14f50bd1a38517c3bbd7ae92d7b519c7aad144`; 30/30 admin, 15/15 composition, 24/24 runner, zero model calls | Fable's conditional P2 was closed by transparent 0/10 PARTIAL handling; pre-reveal seed secrecy remains explicitly behavioral custody. The merged instrument cannot mint pilot evidence or dispatch. |
+| TIER-PILOT-BRIDGE | Implement the separately gated bridge transaction contract from the merged three-arm state machine: maintain one isolated worktree/packet lineage per arm and one fresh provider session per call, dispatch exact rendered prompt bytes, seal provider/call/acceptance transitions, and preserve global session accounting without simulating production activation or operator-resume authority | sol | driver (bridge implementation + deterministic in-process fixture data/tests only; **no backend freeze, task selection/disclosure, live canary, model dispatch, grading, or verdict**) | **done — fixture transaction contract merged at `88f6f45`; production activation blocked** | merge `88f6f45e467477fbc0d5334630e7e2d9798a8dff` carries exact head `51372e70c0ca4cf0c81050a3c51f042b08355c3e`; Fable approved all seven custody claims at reviewed head `dcf6173`; bridge 10/10, ADMIN 35/35 at reviewed head plus targeted fixture-inadmissibility PASS after cleanup, runner 24/24, composition 15/15, zero model calls | Fixture mode never accesses or executes manifest adapter argv; it interprets only canonical data under a code-owned in-process simulator and stamps distinct schemas plus `execution_mode: fixture`, which ADMIN rejects. Fable's three non-blocking findings closed before merge: dead patch authority deleted, evidence-repo Git internals refused, and empty cumulative patch refusal documented. Production adapter identity, prompt byte custody, canonical Arm-C intervention closure, activation canary, ten-task plan, operator ratification, and execution remain separate fail-closed gates. |
+| TIER-PILOT-ACTIVATION | Build the pre-canary production activation boundary: a ratifiable activation schema/receipt binding exact composition and backend manifests, code-owned adapter identity/source hash/help surface, prompt-template bytes, evidence-repository custody, and production dispatch/provider/acceptance schemas; implement the real shim behind that validator while keeping the production entrypoint blocked | sol | driver (GATED activation proposal + deterministic adapter/shim tests only; **no backend freeze, task disclosure, live canary, model dispatch, grading, or verdict**) | **done — contract layer merged `d390a36`, 2026-07-14; no activation instance exists** | merge `d390a3672ac5ebd602c104a0f12b71d382f347bb` carries exact Fable-approved head `12957f877c94063d8e90c81dc29121446cc43288`; activation 3/3, bridge 10/10, ADMIN 35/35, runner 24/24, composition 15/15, zero model calls | Fable approved the reusable contract while naming two P2 ratification gates: transitive source custody and authenticated remote-default verification. Production activation, Arm-C continuation, crash recovery, backend freeze, task disclosure, canary, grading, and verdicts remain blocked. |
+| TIER-PILOT-RATIFICATION-GATES | Close the #99 pre-activation findings before any activation instance can be ratified: bind the full transitive runtime-source custody closure; compare the candidate activation commit with authenticated `git ls-remote` default-branch state rather than trusting a mutable local tracking ref; bind the initially validated dispatch bytes; require LF-exact source identity; bind escalation position; and require the future production bridge to be the sole caller that re-derives activation rather than accepting a hand-built dataclass | sol | driver (activation hardening + deterministic network-fixture tests only; **no activation instance, backend freeze, live canary, task disclosure, model dispatch, grading, or verdict**) | **done — merged `a4a2aa6`, 2026-07-14; no activation instance exists** | merge `a4a2aa630ac5fc5172d929f00dcf87bb31e268e4` carries exact Fable-approved head `050dae3c2709213eaf6c3374201cef2c6cd3b5ed` and implementation `a9568f4`; independently reproduced activation 6/6, bridge 10/10, ADMIN 35/35, runner 24/24, composition 15/15, zero model calls; durability green | Both #99 ratification gates are closed. Authenticated `ls-remote` plus fetch/ancestry replaces local-ref trust; activated local imports and every bound source's package-ancestor `__init__.py` are required in the exact LF source closure. F3–F6 are closed in code/docs; the remaining host-local Git-config trust boundary is explicit. Production entrypoint stays blocked. |
+| TIER-PILOT-RESUME-RECOVERY | Close the final pre-freeze runtime blockers together: implement canonical Arm-C question/answer continuation and fail-closed bridge crash recovery, preserving fresh-session isolation, one-question authority, journal causality, session burning, and no automatic retry after an ambiguous provider boundary | sol | driver (bridge/state-machine implementation + deterministic fixture/adversarial tests only; **no activation instance, backend freeze, live canary, task disclosure, model dispatch, grading, or verdict**) | **claimed — 2026-07-14 on `codex/tier-pilot-resume-recovery`** | future reviewed merge binding the continuation/recovery state machine, executable crash witnesses, docs, and zero-call receipts | Claimed by Sol after operator delegated backend selection and sequencing. One PR is intentional: continuation and recovery share the same custody journal/session transaction boundary. Production entrypoints remain inert throughout. |
+| TIER-PILOT-ADMIN-QUESTION-TEST | Restore the dormant ADMIN Arm-C interval witness: register `test_arm_c_question_requires_exact_intervention_interval` in the manual suite, regenerate its built-in normalized-audit fixture after replacing the Arm-C run, and delete the unreachable legacy body after its early `return` | unassigned | driver (deterministic ADMIN test repair only; **no pilot execution or verdict**) | **open — discovered during TIER-PILOT-RESUME-RECOVERY verification** | `tests/test_tier_pilot_admin.py::test_arm_c_question_requires_exact_intervention_interval` exists but is absent from `main()`; direct execution currently stops on stale `normalized_inputs` before its intended intervention assertion, and a second legacy body is unreachable | Separate pre-existing test-harness residue; it does not weaken the new bridge witnesses or authorize widening the resume/recovery PR. |
+| TIER-PILOT-ACTIVATION-INSTANCE | Freeze the actual pilot backend composition, prompt bytes, complete source/schema closure, evidence root, and operator-ratified activation object after the ratification gates merge; do not dispatch | operator | driver (GATED activation bytes only; **no task disclosure, live canary, model dispatch, grading, or verdict**) | **open — awaits operator backend selections, candidate bytes, and ratification** | future exact activation object on authenticated default branch plus operator ratification chain and independent validation receipt | The reusable contract gates are merged, but contract merge is not activation. Sol may prepare candidate bytes after the operator selects backends; maintainer merge of the operator-approved exact instance bytes is the activation act, and no agent may self-ratify the instance. |
+| TIER-PILOT-CANARY | Execute one bounded manifest-bound production-adapter activation canary after the activation instance merges, proving exact prompt/provider-byte custody, fresh-session isolation, scoped edit/create/deny behavior, and fail-closed evidence replay without disclosing a pilot task | sol | driver (synthetic activation canary only; **no pilot task selection/disclosure, grading, or verdict**) | **open — blocked on TIER-PILOT-ACTIVATION-INSTANCE merge and separate operator authorization** | future immutable canary inputs + raw provider receipt + deterministic validation receipt bound to the merged activation identity | Building the canary path is not authority to invoke it. A model call remains forbidden until the operator authorizes the exact merged activation bytes and bounded canary. |
+
+| CLAUDE-AUTH3 | Authoring batch 3 — two hidden-graded tasks aimed at the ONLY measured discriminator shapes (LESSONS 11b): a felt-contradiction knot (`t3_null_filter_001`, SQL-style three-valued logic where the correct reading fights the boolean prior even after the rule is read) and a derived-quantity knot (`t3_accrual_crossover_001`, integer floor-compounding crossover where formula-thinking diverges from the rules at stall and boundary) | claude | driver (grader/oracle authoring only; NO solver runs, NO grading dispatches) | **done (authoring) — 2026-07-13, same session as claim; NO model results claimed, flooring separately authorized** | `tasks/t3_null_filter_001.json` + `tasks/t3_accrual_crossover_001.json` + `fixtures/t3_null_filter_001/{input.py,hidden_tests.py}` + `fixtures/t3_accrual_crossover_001/{input.py,hidden_tests.py}` + `experiments/breadth/authoring3/{build_vectors.py,verification_receipt.json}` + `tests/test_authoring3_graders.py` + the `authoring batch 3` step in `.github/workflows/breadth-durability.yml` | Authored to the batch-2 post-review standard from the first commit (Sol findings 1–2 are the template). NO model results will be claimed; flooring is a separately authorized future run. |
+
+## Done (most recent first)
+
+| id | task | evidence |
+|----|------|----------|
+| ARC-D (foundation) | OSS replay field admission layer + first real entry (CPython fnmatch character classes ← task02 capture grammar) | `docs/oss-replay-field.md`, `data/oss_replay/field.jsonl`, vendored upstream + provenance, `scripts/validate_oss_replay_field.py` (11 tests, CI), splice-equivalence vector guard; zero replays run, no credit claimed. NOTE: complements the ARC-D-PILOT buffalo lane (`data/oss-replay/`, hyphen — distinct dir, Sol's hash-bound evidence, do not rename); the two lanes converge when the HARVEST gate is ratified |
+| SOL-4 | Cross-lineage adversarial review of Residue Recorder constitution v0.4 | `docs/agents/reviews/sol_residue_recorder_constitution_v04_20260712.md`; review commit `f78c726`; 7/7 executable witnesses; attached to PR #72 |
+| SOL-5 / ARC-C | Refill Codex custody gap and seal the cross-engine pair | Codex + Claude runs 3/3/3; comparator comparable with 3/3 agreement; source `3d38371` |
+| SOL-1 | Non-Anthropic blind grade of the preserved control packet | `docs/agents/reviews/sol_1_blind_control_v2_20260710.md`; thread `019f4d56-c26f-7ec0-9d3e-67819c2270ec`; raw artifact SHA-256 `da69f26d…16af04c` |
+| PACKET-V2 | Supersede unavailable blind-control v1 with private-salted v2 | `docs/agents/BLIND_CONTROL_V2.md`; private delivery commit `6771868`; canonical in-git digest recorded above |
+| SOL-2 | Cross-lineage adversarial review of ARC-A capture + ARC-B almanac | `docs/agents/reviews/sol_arc_ab_review_20260710.md`; executable counterexamples; PR #63 |
+| — | ARC-B: edge-family freeze + almanac corpus | PR #59, layer + CI drift guard |
+| — | Crossing event: first validated replay (amortizing 1/4) | PR #58, `run/replays/task02_wildcard/` |
+| — | ARC-A: frontier capture ledger | PR #57 |
+| — | Blind-grading export/merge pipeline | PR #61 |
+| — | Sol handoff doc | PR #60, `docs/agents/SOL_HANDOFF.md` |
+
+===== data/continuity/CART0_CONTRACT.md =====
+# CART0 — the contract (operator-ratified doctrine, 2026-07-10)
+
+*Evidence preservation of a steering exchange — not a schema, not a reducer.
+CART0 build work remains postponed until ARC-C closes. This file exists because
+briefing-by-conversation evaporates (EP-005); the contract below was ratified
+in-session and must survive it.*
+
+**CART0 is the zero-resolution map that still preserves control** — the
+irreducible state required to continue without unlawfully rewriting what the
+expedition has already learned. It is not a memory document. It is a minimal
+deontic control surface with two coupled parts:
+
+```text
+CART0 projection:  minimum state required to orient the entrant
+CART0 gate:        reassert the applicable constraints before consequential transitions
+```
+
+## The projection (five elements)
+
+1. **Objective + current interpretation** — kept distinct, so mission
+   continuity and plan adaptation cannot be conflated.
+2. **Prohibitions + harvested constraints** — the operational value of dead
+   branches (residue) and GATED machinery.
+3. **Position fix** — current branch, its state, the one presently authorized
+   transition, and the authority that permits it.
+4. **Freshness commitment** — prevents a stale projection from impersonating
+   current authority.
+5. **Retrieval index** — full-resolution history available without keeping it
+   in the cognitive foreground.
+
+## Precision adjustments (part of the contract)
+
+- **Gate binding.** "Enforced by a validator" only permits dropping the prose
+  when invocation is deterministic and mandatory. The projection stays bound to
+  the gate, e.g. `{"gate": "scripts/validate_capture_ledger.py",
+  "gate_version": "<digest>", "required_before": ["capture_closure"]}`.
+  The system remembers the constraint by making circumvention structurally
+  unavailable, not by re-explaining the rule. The gate digest doubles as
+  tamper evidence: editing the gate is a detectable state change, never a
+  silent reinterpretation.
+- **Freshness beyond HEAD.** A projection is semantically stale when the
+  reducer changes even if history did not:
+  `projection_digest = hash(event_head || reducer_digest || projection_profile)`.
+  Distinguishes "new terrain exists" from "same terrain, different
+  authoritative reduction machinery". (Genesis conformance: identity derived,
+  never stored.)
+
+## The execution finding (replay04)
+
+Transfer at boot does not guarantee retention under load: the rule was present
+and lost competition for attention. CART0 must test **availability and
+effective reactivation** separately. Decision-point resurfacing is not a sixth
+map element; it is the execution contract around the map.
+
+## The research hypothesis
+
+> Continuity depends less on how much prior context is retained than on
+> whether the operative constraints are deterministically resurfaced at the
+> transitions where violating them would change project state.
+
+Falsifiable first test: `256-token projection + decision-boundary resurfacing`
+vs `4,096-token projection loaded once` — prediction: the first wins
+specifically on residue-consequence tests, while the larger map may improve
+narrative reconstruction yet still allow an absorbing task to suppress a
+prohibition at the moment it matters.
+
+## Addendum (same steering exchange): actor-relative projection + causal design
+
+- **The position fix is actor-relative** (inside element 3, not a sixth
+  element): it binds `{principal, role, lane, knowledge_boundary,
+  authorized_transition, authority}`. The same repo state permits different
+  actions for different entrants; a map that prescribes a globally valid action
+  to a locally disqualified actor has failed. Known hidden-gradable episode: a
+  repo-aware session grading SOL-1 is contaminated even if every score is
+  substantively correct.
+- **Causal design before the headline sweep** — hold the map constant, vary
+  only the decision boundary: A boot-only (neutral equal-length transition
+  message) · B applicable residue constraint resurfaced · C equal-length
+  irrelevant-but-valid constraint (recency control). Fresh sessions, same
+  model/effort, two-turn protocol, distinct isomorphic edge-family items,
+  hidden grader sees candidates only after sealing. Then the 2x2 factorial
+  (resolution 256/4096 x delivery boot/resurfaced). Prediction: resolution
+  helps reconstruction; resurfacing dominates residue-consequence accuracy.
+- **Constraint dispatch is mechanical**: the transition class
+  (`capture_closure`, `candidate_sealing`, `blind_grading`, …) deterministically
+  selects the bound gates and residue constraints. The model receives the
+  result; it never decides what deserves remembering.
+
+> The mechanism, stated finally: a compact constraint map remains operational
+> only when the system binds each consequential transition to the applicable,
+> version-pinned gate and resurfaces that constraint for the authorized actor
+> at the moment of action. The model does not have to keep remembering; the
+> protocol has to keep refusing to forget.
+
+## Placement
+
+CART0 is a cross-cutting continuity protocol, not an AXM spoke.
+
+- **Research and validation:** Tier Bench owns the experimental corpus, reducers,
+  projections, gates, receipts, and hidden grading until the minimum sufficient
+  continuity residue is empirically established.
+- **Normative custody contract:** once stable, canonical serialization, identity,
+  sealing, and conformance requirements may graduate into an AXM Genesis profile.
+  Genesis verifies the artifact; it does not determine the lawful next action.
+- **Runtime:** reusable reduction, retrieval, and projection machinery may live in
+  AXM Core, while project-specific transition rules and gates remain project-local.
+- **Instances:** each project stores its own continuity event ledger and projections
+  beside the work they govern.
+- **Spoke relationship:** AXM spokes, including axm-hinge, emit consequential state
+  transitions that CART0 may preserve. They do not contain CART0, and CART0 does
+  not replace their domain objects.
+
+> Correction on record (2026-07-10): do NOT put the reducer into Genesis merely
+> because the artifact is Genesis-shaped. The reducer is epistemic authority; Genesis
+> is custody. Genesis owns the sealable wire format (a `continuity-event@1` / `cart0@1`
+> profile: canonical serialization, identifiers, projection-digest construction,
+> conformance vectors, seal/verify rules). The reducer/projection runtime is Core or
+> project-local. Conflating them makes the custody kernel the universal project-state
+> interpreter — the centralization CART0 exists to refuse.
+
+===== ROADMAP.md =====
+# ROADMAP — the AXM build sequence (say-go runway)
+
+**This file is the marching orders.** When Fable (or any driver) is brought in
+with high effort on, the operator says **"go"** and this file is the only thing
+that needs reading. Every next PR is fully specced below — files, schema,
+acceptance criteria — so no frontier token is spent re-deriving a plan that is
+already decided. Do not re-litigate the ordering; it is set.
+
+## The "go" protocol
+
+1. Read **STATE** below. Find the first arc item marked `NEXT`.
+2. If the driver branch (`claude/setup-algstb`) still has an open, unmerged PR,
+   that PR must merge first — see EXECUTION. State is `BLOCKED-UNTIL-MERGE`;
+   report that and stop. One branch, serial PRs.
+3. Otherwise build that one item to a **pushed PR with green CI**, then **STOP
+   and report**. One "go" = one item unless the operator says "keep going".
+4. Update STATE (flip the finished item to `DONE`, the next to `NEXT`) as part
+   of the PR. The record is the plan.
+
+Do not free-run past a merge boundary. Do not start two items at once. Do not
+touch ARC-C or later before ARC-A and ARC-B have landed — the foundation must
+be hard first.
+
+## STATE
+
+> **Firehose status: ARMED.** Arc items are keyed by content (ARC-x), **not** by
+> GitHub PR number — the PR counter is shared with parallel sessions and gets
+> consumed out from under any plan (the numbers this file once predicted, #48–#54,
+> were taken on Jul 9 by burden-discipline/dense-mint/site/front-door/shard-check/
+> authoring-batch PRs). A PR number is assigned at open time and recorded here
+> after the fact.
+
+| Arc | Item | Status |
+|-----|------|--------|
+| — | AXM provenance layer | **DONE / merged** — PR [#47](https://github.com/BigBirdReturns/tier-bench/pull/47) |
+| **ARC-A** | Frontier capture ledger | **DONE** — PR [#57](https://github.com/BigBirdReturns/tier-bench/pull/57) ( schemas + worked task02 row at $0.6805 real-billed, validator with closure rules, ROI: projected break-even 4 replays / needs_replay, 24 tests, CI-wired). Amortization stays open until the replay protocol runs (docs/frontier-capture.md). |
+| **ARC-B** | Edge-family freeze + almanac hidden-knot corpus | **DONE** — PR [#59](https://github.com/BigBirdReturns/tier-bench/pull/59) (2026-07-10): task02 edge-family verdicts frozen as reviewed invariants (mechanically derived from the settled oracle; authority: operator ARC-B go); three almanac knot tasks landed (`tasks/almanac_*.json`, hidden-graded, breadth-valid, vectors derived from the corroborated reference engine with a CI drift guard, key material verified naive-fails/reference-passes); NO model results claimed. |
+| **ARC-C** | Orchestration-pattern benchmark | **DONE — paired seal, 2026-07-12**. Codex gpt-5.6-sol@low and Claude fable-5@low independently clear all three knots 3/3 at floor against source `3d38371`; `arc_c_almanac_cross_engine_v1.json` admits the pair and reports 3/3 task-decision agreement. |
+| **ARC-D** | OSS replay field | **IN PROGRESS — B2 grading PARTIAL_UNPAIRED; grade_b attempt-3 SEALED 1/3, 2026-07-13.** Admission foundation, sealed v2 responses, the B2 charter, and the packet exporter are merged. Sol's clean Grade A attempt v2 validates 3/3 locally but remains unadmitted (publication constraint). Grade B attempts 1 (`f4d4962`) and 2 (`5008f3b`) both admit 0/3 under fail-closed review (attempt-2's attrs receipt fell to the ORIGINAL_PROMPT.md-as-authority hole). Operator `go` (PR #83) authorized attempt 3 under the unchanged charter; it is SEALED: attrs **ADMISSIBLE (B2_CANDIDATE_RESIDUE)** under the hardened source-evidence-only authority rule — the one pairable grade_b receipt; httpx_3614's 4/4 refusal wall BROKE (first content-complete grade, unofficial B2_REFERENCE_AMBIGUOUS) but the reply was non-bare → preserved inadmissible; httpx_3221 likewise content-complete/non-bare. The comparator has not run. No B2 disposition binds, no candidate residue or HARVEST claim mints, and ARC-D remains at B1. |
+| ARC-E | proof-knot closure-packet demo | not yet — burden-discipline docs (PR #48, Jul 9) laid its doctrine; the demo remains open |
+| ARC-F | embodied AXM action-authorization schema | not yet |
+| ARC-G | terrain-divergence simulation packet | not yet |
+
+Landed alongside the arc (context for the next driver, merged Jul 9): burden
+discipline docs (#48), ledger `extra=` crash fix (#49), dense-subject mint (#50),
+SCG identity on the site (#51), front-door routing (#52), tiered lens-shard
+integrity check + `memory/lenses/` sovereign lens shard (#53), authoring batch 1
+— three novel-reasoning hidden-graded tasks (#54).
+
+## EXECUTION mechanics (one branch, serial)
+
+The driver is pinned to `claude/setup-algstb`. So the PRs are **serial**, not
+parallel:
+
+```
+merge PR #N  ->  git fetch origin main
+             ->  git checkout -B claude/setup-algstb origin/main   # a merged PR is finished; never stack on it
+             ->  build PR #N+1
+             ->  push -u origin claude/setup-algstb (retry w/ backoff)
+             ->  open PR, STOP, report
+```
+
+CI that must be green before "done": `breadth-durability` (compile + smokes +
+`waterline.py --check` + the provenance guard) and `validate` (if data/results
+changed). Fix red CI before reporting done — that is part of the PR.
+
+## BUDGET discipline — how not to blow the model limit
+
+**Firehose means dense demarcation, not uncontrolled spend.** Each run must make
+clear which model/effort owns which work: cheap floor for mechanical plumbing and
+settled cells, driver/Fable-class judgment for schema semantics and invariant
+freezes, and the Fable effort gradient (`low → medium → high → xhigh →
+ultracode/max`) only on residual work, walked bottom-up. A max-effort pass
+without lower-rung receipts maps a ceiling, not the frontier.
+
+This is the repo's own thesis applied to building the repo. **Fable's tokens are
+for the judgment residue only.** Every PR below is split:
+
+- **Fable-class (spend here):** schema design, evidence-class adjudication,
+  provenance calls, grader/oracle authoring, invariant freezes. The nameable,
+  judgment part.
+- **Cheap (route to the floor):** JSON plumbing, validators, tests, CI wiring,
+  data entry from ledgers that already exist, docs. Use haiku/sonnet-low; do NOT
+  spend Fable on these.
+
+Standing rules that cap spend (full text: `experiments/breadth/LESSONS.md`):
+**DO NOT ESCALATE** — never spend a frontier token re-confirming a cleared floor.
+**Effort before access** — walk the effort ladder before reaching for a bigger
+model. **Never rerun settled cells.** **K-of-K is a ceiling; one miss is noise.**
+**Adapt freely, never self-grade** (adapt.py FREE/GATED gate). **Never fabricate
+a receipt** — broken pipelines mint neither PASS nor FAIL. **PII never enters the
+repo** — almanac vectors are synthetic only.
+
+**Burden discipline is first-class.** For any PR that introduces a new validator,
+ledger, result class, shard, or authorization path, include a closure packet (see
+`docs/burden-discipline.md`) naming the requested outcome, authority, predicates,
+burden holder, evidence, verifier, gap, closure decision, and failure default. If
+that packet cannot be answered, the state is `proposal`, `partial`, `unmeasured`,
+or another explicit non-closed status — never silently closed.
+
+---
+
+## ARC-A — Frontier capture ledger
+
+**Title:** `Add frontier capture ledger: measure when expensive cognition becomes reusable machinery`
+
+The economic proof. Routing is not proof; the missing object is the ledger that
+records: was expensive cognition converted into reusable machinery, how much did
+it cost, how many future frontier calls did it retire, when did it break even.
+PR #47 already seeded the `capture_ledger` primitive (status: synthesis, flagged
+*captured-not-yet-amortized*) — this PR fills in what that reserved.
+
+**Files**
+```
+docs/frontier-capture.md
+schemas/capture_ledger.schema.json
+schemas/delta_observation.schema.json
+data/capture/task02_escape_class_boundary.jsonl
+scripts/validate_capture_ledger.py
+scripts/capture_roi.py
+tests/test_capture_ledger.py
+tests/test_capture_roi.py
+```
+
+**Core capture schema** (worked task02 example is the acceptance artifact)
+```json
+{
+  "capture_id": "task02_escape_class_boundary",
+  "source_task_id": "task02_wildcard",
+  "driver_model": "claude-sonnet-5",
+  "driver_role": "residue_resolver",
+  "capture_cost_usd": 0.681,
+  "cost_basis": "real-billed",
+  "captured_artifact": {
+    "type": "edge_family + routing_rule",
+    "path": "experiments/breadth/run/task02_edge_family.md",
+    "description": "Backslash-inside-character-class invariant isolated as the rule-boundary residue."
+  },
+  "old_path": {"model": "claude-haiku-4-5", "status": "unstable", "success": "3/5"},
+  "new_path": {"model": "claude-sonnet-5", "status": "cleared", "success": "3/3"},
+  "break_even_reuse_count": null,
+  "validated_replays": 0,
+  "waterline_effect": "task moved from cheap-floor unstable to named sonnet-low residue",
+  "status": "captured_not_yet_amortized"
+}
+```
+
+**Delta taxonomy** (`delta_observation.schema.json`)
+```json
+{"delta_observation": {
+  "from_model": "claude-haiku-4-5", "to_model": "claude-sonnet-5",
+  "task_id": "task02_wildcard",
+  "delta_types": ["edge_delta", "framing_delta", "routing_delta"],
+  "what_lower_missed": "Backslash inside class treated as malformed escape instead of literal.",
+  "what_higher_added": "Committed to literal-backslash interpretation and passed hidden oracle.",
+  "capturable": true, "captured_as": "edge_family"}}
+```
+
+**Acceptance criteria**
+```
+- Capture ledger validates independently of data/results.
+- ROI script computes break-even when old/new path costs exist.
+- Capture entries distinguish real-billed, shadow-estimated, subscription-derived,
+  and repaired/transport-adjudicated evidence.
+- Capture entries include a burden packet: claimant, authority, predicates, burden
+  holder, evidence, verifier, gap, closure decision, and failure default.
+- `captured_not_yet_amortized` is a non-closed ROI state: missing replay evidence
+  defaults to `needs_replay`/`partial`, not accepted amortization.
+- Capture entries can link to waterline task IDs but do not mutate waterline automatically.
+- At least one worked example exists for task02.
+```
+
+**Spend split** — Fable: the delta taxonomy, the evidence-class distinctions, the
+break-even/amortization semantics. Cheap: the schema JSON, the validator, the
+ROI arithmetic, the tests, the task02 row (data already exists in `ledger.jsonl`).
+
+---
+
+## ARC-B — Edge-family + almanac hidden-knot corpus
+
+**Title:** `Freeze task02 edge-family invariants and add almanac hidden-knot vectors`
+
+The new ruler. #47 gives provenance, #48 gives capture economics; #49 gives more
+knots to measure so the project stops being "the wildcard thing." A small corpus
+of black-letter hidden knots: deterministic, source-backed, hidden-graded, built
+around rule-boundary commitments.
+
+**Files**
+```
+experiments/breadth/run/task02_edge_family.md   # frozen as reviewed invariants, not notes
+experiments/almanac/DESIGN.md
+experiments/almanac/VECTORS.md
+experiments/almanac/README.md
+experiments/almanac/generate_vectors.py
+experiments/almanac/hidden_oracle.py
+tasks/almanac_rule_boundary_001.json
+tasks/almanac_record_binding_001.json
+tasks/almanac_exception_class_001.json
+tests/test_almanac_vectors.py
+```
+
+**Knot families**
+```
+1. rule-boundary knot   — a written rule has one underspecified edge; commit correctly.
+2. record-binding knot  — multiple records; bind the claim to the controlling source.
+3. exception-class knot  — general rule applies unless a precise exception holds; classify without moving the boundary.
+4. transport/adjudication knot — candidate looks wrong from serialization damage; classify transport vs capability failure.
+```
+
+**Example task manifest**
+```json
+{
+  "task_id": "almanac_rule_boundary_001", "tier": "T3",
+  "fixture": "experiments/almanac/fixtures/rule_boundary_001",
+  "target_file": "solution.py",
+  "public_spec": "Implement the rule exactly. Some examples are visible; edge cases are hidden.",
+  "hidden_files": ["hidden_oracle.py"], "hidden_run_command": "python hidden_oracle.py",
+  "knot_type": "rule_boundary",
+  "source_basis": ["AXM primitive: black_letter_axm", "AXM primitive: proof_knot"]
+}
+```
+
+**Acceptance criteria**
+```
+- task02 edge-family table is frozen as reviewed invariants, not notes.
+- The invariant table names its closure authority/reviewer; disputed or unreviewed
+  verdicts remain proposal-only and cannot become hidden graders.
+- Almanac tasks have hidden graders and are listed by breadth_tasks.py as capability-valid.
+- At least three hidden-knot tasks exist, but NO model results are claimed yet.
+- Hidden graders are deterministic.
+- Every almanac task links to a primitive source basis from PR #47.
+- No Fable reruns of settled cells.
+```
+
+**Spend split** — Fable: freezing the edge-family invariant table (reviewed
+verdicts, gated by adapt.py) and authoring the hidden oracles/vectors (grader
+authoring is driver-owned). Cheap: task manifests, the generator plumbing, tests,
+the synthetic PII-free vectors' mechanical bits.
+
+---
+
+## The arc, and why this order
+
+```
+provenance (merged, PR #47) -> makes AXM attributable (no unsourced sprawl)
+ARC-A capture ledger        -> makes frontier capture measurable (spend -> machinery)
+ARC-B almanac corpus        -> makes the next benchmark family real (the new ruler)
+ARC-C orchestration-pattern benchmark -> tests pilotfish/Anthropic-style routing against REAL knots
+```
+
+Orchestration (ARC-C) is not next: without ARC-A and ARC-B it degenerates into
+another "frontier orchestrator + cheap workers seems cheaper" routing demo. The
+measured version — *frontier captured this knot grammar; cheap workers replayed
+it; verifier caught failures; waterline moved; capture ledger computed
+amortization* — requires the capture ledger and the knot corpus to exist first.
+
+ARC-D OSS replay field · ARC-E proof-knot closure-packet demo · ARC-F embodied
+AXM action-authorization schema · ARC-G terrain-divergence simulation packet —
+all after the foundation is hard. Do not jump.
+
+===== experiments/breadth/LESSONS.md =====
+# Breadth run — lessons learned (read this before you spend a frontier token)
+
+Hard-won rules from the first end-to-end run. Each one is here because it was
+gotten *wrong* first. If you're the driver (Fable/ultracode) picking this up, read
+this, then `RUNBOOK.md`, then go. The goal is an efficient, honest firehose that
+builds a durable corner of the *settled* world — not a victory lap.
+
+## The doctrine, one line
+
+**Seal what's stopped moving; rent only what hasn't; prove the difference.**
+Settled operational work commoditizes to a cheap sealed artifact. The only thing
+worth a live frontier call is what's still being *derived*. The whole job is
+drawing that waterline correctly — and proving which side each cell is on.
+
+## The rules (and the mistake each one prevents)
+
+1. **Map only hidden-grader tasks.** An agentic solver reads any grader it can see
+   and brutes it, so a task measures capability *only* if the deciding grader is
+   hidden. Use exactly `python experiments/breadth/breadth_tasks.py`. Never the
+   `tasks/*.json` manifests — their grader is the file the solver edits.
+   *(Mistake: the first Phase-1 "cleared everything" was the solver reading the
+   answer key, not capability.)*
+
+2. **Honor DO NOT ESCALATE.** If the cheap floor clears a cell (hidden-graded), it
+   is done. An empty residual means **you do not turn on Fable at all.** Do not pay
+   frontier prices to re-confirm a floor you already measured.
+   *(Mistake: ~1/3 of a pro-plan Fable allotment got burned on calibration —
+   re-confirming a cleared floor. The `limit.py` gate exists to stop exactly this.)*
+
+3. **Escalate effort before access; K-of-K is a ceiling, one miss is noise.** Walk
+   `rungs.ladder()` from the bottom (fable@low → max) and step up only on a *wall*
+   (fails all K). A single miss is noise → run more trials, don't pay more. Only
+   when max-effort walls is *access* even a question — and that's a human call.
+
+4. **The residue is novel reasoning, not richer specs.** A competent cheap model
+   implements to *any* spec you hand it — even hidden-graded, even with a semantic
+   judge (measured: 6/6). You cannot find the frontier gap by making specs harder.
+   The gap lives only where the answer must be *derived* (counterexample
+   construction, task06-shape). Grow the corner with those, not with thicker specs.
+
+5. **Verify grades independently — a model saying "the grader passed" is not the
+   grader passing.** Re-run the hidden grader yourself on the candidate. Two live
+   failures: a Codex PR (#40) logged fabricated `pass` rows (identical timestamps,
+   0 tokens, invented model); and this workflow's "all settled" needed a hand re-run
+   to confirm (it held — but only because it was checked). Trust the grader output,
+   never the narration of it.
+
+6. **K=1 is not "settled".** "Settled" means 3/3 at `clear_thresh=1.0`. A single
+   pass is "cleared once." The `initial` KNOWN_CORNER layer is K=1 provisional.
+
+7. **Efficiency is context, not effort.** The burn was **~170k cache-read tokens
+   per Fable trial** — a bloated solver context, not the reasoning. Fixes: give the
+   solver *only* spec + visible tests + the target file; run trials sequentially from
+   a constant cwd so the 1h prompt cache is written once (cold ~$0.85) and read after
+   (~$0.42). And the cost model is ~40% low: `fable@low` is **~$0.48/trial real**,
+   not the $0.30 in `rungs.py` — update estimates from measured `total_cost_usd`.
+
+8. **Adapt freely, but never self-grade.** `adapt.py` enforces it: FREE changes
+   (solve strategy, prompts, lens choice, trial policy, ordering, effort ladder)
+   apply and log; GATED changes (a grader, pass criteria, a task, cost accounting)
+   are forced to proposal-only for human review. A model that can loosen its own
+   grader will.
+
+9. **Reconcile or don't trust it.** No conclusion stands on books that don't match
+   the bill (`ledger.reconcile`). Separate **real-billed** (Fable CLI `total_cost_usd`)
+   from **shadow** (subagent estimates — no provider bill exists). Your quota burn is
+   only the real-billed rows.
+
+10. **Records accumulate (sediment).** `known_corner.jsonl` is append-only. A re-run
+    DIFFs against the newest layer and only re-probes non-`settled` cells. Old
+    sediment is never re-derived — you pay only to lay down what's new.
+
+11. **Authoring lesson: your own spec wording can defuse the knot, and "find a
+    counterexample" framing makes derivation search-shaped.** Measured on the first
+    purpose-built discriminator tasks (task08/09/10, 2026-07-10): all three cleared or
+    near-cleared the haiku floor. task09 was built as a task02-isomorphic
+    malformed-vs-unsatisfiable knot — but its input guarantee ("you never need to
+    reject a pattern") telegraphed the resolution, so the trap never bit. task08's
+    counterexample construction was cracked 4/5 (the only miss was a domain-bounds
+    slip): once the ask is "return an input that breaks this," a competent cheap
+    solver builds its own brute-force oracle and sweeps — the same search-shaped
+    lifting task06 measured. To wall the floor, the knot must stay embedded in a
+    larger judgment (as in task02, where the degenerate case arrives unannounced
+    mid-implementation), and the spec must not carry a guarantee that resolves it.
+    *(Mistake: authored three "novel-reasoning" tasks and the floor ate them.)*
+
+11b. **Corollary (measured 2026-07-13, authoring batch 2): embedded-unannounced is
+    necessary but not sufficient.** Three rule-11-shaped tasks (anchor-vs-cascade,
+    words-stated window endpoint, modified-following reversal) — each with verified
+    naive-fails/reference-passes daylight, no defusing guarantees, knots arriving
+    mid-implementation — ALL settled 3/3 at the haiku floor on first flooring
+    (9/9 trials, hidden vectors included). A crisply stated rule gets implemented,
+    however deep it is buried: the naive that drifts is a *careless* implementer,
+    and the floor is not careless. The two knots that actually bit
+    (task02 backslash-in-class, almanac lichun) share what these lack: the edge
+    *feels contradictory* to the rule text, or the deciding quantity must be
+    *derived* (bisection-class), not just applied. Author THOSE shapes next;
+    stop authoring crisply-determined boundary rules and expecting them to wall.
+
+12. **Focused lenses have tunnel vision — the sweep needs one open eye.** Measured
+    on a dense subject (`experiments/lens-proofs/dense_orders`): baseline general
+    pass 7/10, frozen-five sweep alone 9/10 (every lens missed the use-after-close
+    the plain pass caught), baseline ∪ lenses **10/10**. `review()` now runs a
+    general pass alongside the lenses by default. Corollary, corroborated three
+    times (two small subjects + one dense): `resource_lifetime` and `concurrency`
+    are NOT cheap-model blind spots — those candidates are permanently retired.
+    The lanes that actually recover baseline misses: `data_types` (float-money
+    equality) and `contracts` (silent-default holes).
+
+## What's already built (your toolbelt)
+
+- `RUNBOOK.md` — the two-phase (+ autonomous "walk away") protocol.
+- `breadth_tasks.py` — the valid (hidden-grader) task set; `is_gameable()` guard.
+- `ledger.py` — per-call telemetry + `reconcile()`.
+- `escalate.py` / `rungs.py` / `limit.py` — the breadth map, the effort ladder, the
+  approaching-the-limit decision packet (quota vs capability-ceiling).
+- `adapt.py` — the FREE/GATED reward-hacking gate.
+- `smoke.py` — proves the grade→ledger→map spine keyless on one task.
+- `build_known_corner.workflow.js` — the orchestrated firehose (parallel floor →
+  escalate-only-walls → seal/accumulate). Run it with the Workflow tool; grow its
+  `CORNER` list to grow the corner.
+- The sealed lens shard (`memory/lenses/`) — the harness lenses, verifiable.
+
+## The move
+
+Point the corner at settled, hidden-graded work. Fan out cheap in parallel. Fire
+the frontier ONLY where cheap genuinely walls. Verify every grade. Seal the settled
+cells as a new sediment layer. Come back with a decision packet, not a bill.
+
+===== experiments/cart0_bound_1/preregistration.json =====
+{
+  "schema": "tier-bench/cart0-bound-1-preregistration@1",
+  "experiment_id": "CART0-BOUND-1",
+  "phase": "B1-functional-equivalence",
+  "claim_commit": "d5672dd",
+  "operator_authorization_task": "019f628b-cb07-7d92-8092-067d7e175baa",
+  "question": "Does a strict CART0 anchor plus selected cards preserve hidden-graded task performance while reducing provider input relative to complete pinned project context?",
+  "tasks": [
+    {
+      "task_id": "t3_null_filter_001",
+      "manifest_path": "tasks/t3_null_filter_001.json",
+      "manifest_sha256": "3eb998a8511bac6087df5a584b78cfd48b4d0726f5d754f495771f9bc5b2de8b",
+      "hidden_grader_path": "fixtures/t3_null_filter_001/hidden_tests.py",
+      "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+      "knot_type": "felt_contradiction"
+    },
+    {
+      "task_id": "t3_accrual_crossover_001",
+      "manifest_path": "tasks/t3_accrual_crossover_001.json",
+      "manifest_sha256": "fadd3d79d7a3ba71d0877573e314f7900e9b5e5b56ddd64bdb50cf1ea21f29df",
+      "hidden_grader_path": "fixtures/t3_accrual_crossover_001/hidden_tests.py",
+      "hidden_grader_sha256": "397804c9d778683f24ffcc2eb51fc5b865602772793ec0eb0a9cae22ecc5cfb9",
+      "knot_type": "derived_quantity"
+    }
+  ],
+  "arms": {
+    "A_full": "The exact frozen task prompt follows complete Git-pinned project evidence named by the B1 anchor specification.",
+    "B_cart0": "The same exact frozen task prompt follows a strict <=256-token-proxy CART0 anchor and mechanically selected admitted cards."
+  },
+  "constants": {
+    "provider": "Anthropic",
+    "model": "claude-haiku-4-5-20251001",
+    "effort": "low",
+    "surface": "Claude Code print mode",
+    "fresh_session": true,
+    "session_persistence": false,
+    "tools": [],
+    "permission_mode": "dontAsk",
+    "safe_mode": true,
+    "system_prompt": "You are a packet-only code solver. Follow the user prompt exactly. Return only the complete requested target file; do not use tools.",
+    "max_budget_usd_per_call": 0.15,
+    "max_budget_usd_total": 0.60,
+    "cost_basis": "subscription-derived",
+    "calls_per_task_arm": 1,
+    "retries": 0,
+    "grader_runs_per_candidate": 2
+  },
+  "dispatch_order": [
+    "t3_null_filter_001/A_full",
+    "t3_null_filter_001/B_cart0",
+    "t3_accrual_crossover_001/B_cart0",
+    "t3_accrual_crossover_001/A_full"
+  ],
+  "frozen_tools": {
+    "export_solver_packet.py": "7b55593996121a38497975392c1b1f01f004a9ee2abd5716b94ed9ac7c989c85",
+    "grade_solver_packet.py": "2657ed107067069689cffb56f94d56092d0c6ed4d751639b4552f81ef7c55015",
+    "cart0_anchor.py": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
+  },
+  "measures": [
+    "unchanged hidden-grade outcome",
+    "prohibited-action violations",
+    "rehydration requests",
+    "incorrect retrievals",
+    "provider input, cache-read, cache-write, and output tokens",
+    "prompt byte and bytes-div-4 proxy counts",
+    "wall time",
+    "provider-reported cost metric"
+  ],
+  "failure_defaults": {
+    "missing_provider_output": "PARTIAL",
+    "missing_custody_or_usage": "PARTIAL",
+    "provider_or_grader_timeout": "PARTIAL",
+    "arm_failure": "preserve; do not retry or repair",
+    "task_grade": "existing hidden grader only; coordinator reruns twice"
+  },
+  "prohibitions": [
+    "Do not change cards, profiles, task bytes, graders, pass criteria, or dispatch order after the first provider response.",
+    "Do not disclose one arm's response to another subject.",
+    "Do not expose the repository, queue, peer output, coordinator receipt, or hidden grader to a subject.",
+    "Do not infer B2 causality, B3 capacity, B5 portability, B6 billing savings, production custody, or a universal context-window result."
+  ],
+  "comparison_rule": "Report the two per-task paired outcomes and telemetry without an aggregate benchmark verdict.",
+  "operational_narrow_win_rule": "Both A and B must pass the unchanged hidden grader on both tasks, and B must reduce provider-reported input_tokens + cache_read_input_tokens + cache_creation_input_tokens by at least 25 percent versus A on each task. Prompt proxy reduction alone remains payload evidence, not an operational win.",
+  "card_freeze_boundary": "The commit containing generated input prompts and hashes must precede every provider dispatch."
+}
+
+
+===== FROZEN TASK PACKET PROMPT (IDENTICAL ACROSS ARMS) =====
+Task: Implement the function specified in the docstring of input.py exactly.
+
+Rules:
+- Return ONLY the full updated content for input.py.
+- Do not add commentary.
+- Make the program print OK and exit 0 when run.
+- The docstring spec is the contract: EVERY rule in it is graded, including cases the visible checks in main() do not exercise. Implement the spec, not just the sample checks.
+- Do not modify any file outside input.py.
+
+Current file content:
+"""Record filtering with UNKNOWN values — the three-valued rules, applied exactly.
+
+Implement:
+
+    def select_ids(records, condition) -> list[int]
+
+`records` is a list of dicts; each has an integer `"id"` plus data fields.
+A data field's value may be `None`, meaning the value is UNKNOWN — the record
+has the field, but its value is not known. `condition` is a nested list AST:
+
+    ["cmp", field, op, value]   op in (">", "<", ">=", "<=", "==", "!=")
+    ["not", cond]
+    ["and", cond1, cond2]
+    ["or",  cond1, cond2]
+
+`value` in a cmp is always a known int or str (never None). In valid inputs a
+compared field is always present on every record, and comparisons never mix
+types.
+
+The rules (complete — every sentence is normative):
+
+1. A condition evaluates to exactly one of TRUE, FALSE, UNKNOWN.
+
+2. A comparison whose record field value is None evaluates to UNKNOWN.
+   Otherwise it evaluates to TRUE or FALSE by the ordinary comparison. This
+   applies to EVERY operator — including "!=": an unknown value is not known
+   to differ from anything, so the result is UNKNOWN, not TRUE.
+
+3. not: TRUE -> FALSE, FALSE -> TRUE, UNKNOWN -> UNKNOWN. The negation of
+   "not known" is still not known.
+
+4. and: FALSE if either side is FALSE; otherwise UNKNOWN if either side is
+   UNKNOWN; otherwise TRUE.
+
+5. or: TRUE if either side is TRUE; otherwise UNKNOWN if either side is
+   UNKNOWN; otherwise FALSE.
+
+6. A record is selected iff the whole condition evaluates to exactly TRUE.
+   UNKNOWN never selects. Return the selected records' "id" values, in input
+   order, as a list of ints.
+
+Notes: pure computation, deterministic, standard library only.
+"""
+
+
+def select_ids(records: list, condition: list) -> list:
+    raise NotImplementedError
+
+
+def main() -> int:
+    recs = [
+        {"id": 1, "price": 50, "cat": "a"},
+        {"id": 2, "price": 150, "cat": "b"},
+        {"id": 3, "price": 99, "cat": "a"},
+    ]
+    checks = [
+        # ordinary all-known cases (no UNKNOWN in play)
+        ((recs, ["cmp", "price", ">", 100]), [2]),
+        ((recs, ["not", ["cmp", "cat", "==", "a"]]), [2]),
+        ((recs, ["and", ["cmp", "price", "<", 100], ["cmp", "cat", "==", "a"]]), [1, 3]),
+    ]
+    ok = True
+    for args, want in checks:
+        got = select_ids(*args)
+        if list(got) != want:
+            print(f"FAIL {args[1]}: got {got}, want {want}")
+            ok = False
+    if ok:
+        print("OK")
+        return 0
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
+
+
+Baseline run (before edits):
+exit=1
+stdout:
+
+stderr:
+Traceback (most recent call last):
+  File "<SOLVER_ROOT>\input.py", line 75, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "<SOLVER_ROOT>\input.py", line 64, in main
+    got = select_ids(*args)
+          ^^^^^^^^^^^^^^^^^
+  File "<SOLVER_ROOT>\input.py", line 47, in select_ids
+    raise NotImplementedError
+NotImplementedError
+
+
+Other files in fixture (read-only context):
+

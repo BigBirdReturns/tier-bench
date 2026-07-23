@@ -1,0 +1,18 @@
+{
+  "schema": "policy_kernel_decision/v1.0",
+  "decision_id": "3d6cef97f4bd5833c5b648378134154695e460ccdf2fd4b94b5c391331df42b4",
+  "task_envelope_sha256": "483ded358baa997f94ac026a788d3d0fa5cbdb96b24c3ae93c53e77989f3801f",
+  "cartridge_manifest_sha256": "cded0a85e0755487951ddb4a51d499e80ba4f45ddbd63d39edffbc3c532cc80c",
+  "tank_snapshot_sha256": "6beed73120dcfe438c7020d9b0a7cacc5efc20c67cc908fd23af27eec0704ada",
+  "evidence_refs": [
+    "hypothesis:models.json:tier_ceilings:haiku"
+  ],
+  "selected_cartridge": "haiku-2024-12",
+  "capability_basis": "hypothesis",
+  "quota_basis": "declared",
+  "route_reason": "P1-4 boundary witness: tank age exactly equals the independently-sourced policy max age -- still within policy, no ADVISORY label required",
+  "fallback_order": ["sonnet-2024-12"],
+  "operator_gate": true,
+  "observed_at": "2026-07-19T14:30:00Z",
+  "snapshot_max_age": 999999
+}

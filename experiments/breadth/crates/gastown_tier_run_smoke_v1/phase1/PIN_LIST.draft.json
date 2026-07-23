@@ -1,0 +1,32 @@
+{
+  "_status": "DRAFT — researched 2026-07-19 (web scout, 18 tool calls, sources in 010.100 card addendum). Becomes final only when downloaded artifact bytes hash-match these pins on this machine.",
+  "tier_bench_commit": "TO_PIN_AT_DISPATCH",
+  "gt_version": "v1.2.1",
+  "gt_source_url": "https://github.com/gastownhall/gastown/releases/download/v1.2.1/gastown_1.2.1_windows_amd64.zip",
+  "gt_sha256": "da0b24860f227f31405c67540af539fee5d06b9fda93b674b7b87ff2a0bcd4d6",
+  "gt_checksums_file": "https://github.com/gastownhall/gastown/releases/download/v1.2.1/gastown_1.2.1_checksums.txt",
+  "bd_version": "v1.1.0",
+  "bd_source_url": "https://github.com/gastownhall/beads/releases/download/v1.1.0/beads_1.1.0_windows_amd64.zip",
+  "bd_sha256": "12b1d37344d3b1543301e21a2b9ed3ab6ae009f0418441f3de5f762b40769a6b",
+  "bd_checksums_file": "https://github.com/gastownhall/beads/releases/download/v1.1.0/checksums.txt",
+  "model_cli_version": "TO_PIN_AT_DISPATCH (claude --version + hash)",
+  "model_cli_sha256": "TO_PIN_AT_DISPATCH",
+  "adapter_version": "TO_PIN_AT_DISPATCH (tier_runner adapter provenance)",
+  "preset_bytes_sha256": "TO_PIN_AT_FREEZE (settings/agents.json preset authored pre-dispatch)",
+  "task_envelope_sha256": "TO_PIN_AT_FREEZE (fixtures/t1_impl_from_docstring)",
+  "acceptance_command_sha256": "TO_PIN_AT_FREEZE",
+  "_config_surface": {
+    "gt_presets": "settings/agents.json (+ settings/config.json rig/town bindings); CLI: gt config agent list|get|set|remove",
+    "gt_formulas": "TOML workflows; project-local overrides in .beads/formulas/",
+    "gt_docs": ["docs/agent-provider-integration.md", "docs/INSTALLING.md", "docs/CONFIGURATION.md"],
+    "bd_verbs": {"create": "bd create \"Title\" -p 0", "ready": "bd ready --json", "claim": "bd update <id> --claim"},
+    "bd_docs": ["AGENT_INSTRUCTIONS.md", "docs/PLUGIN.md", "docs/getting-started/installation.md"]
+  },
+  "_red_flags_frozen": [
+    "gt native Windows = 'minimal CLI-only'; gt up (Dolt + daemon + Deacon/Mayor/Witnesses) requires tmux 3.0+ and MSYS2/WSL — full smoke likely needs WSL; a native-only attempt may hit a shallow, already-documented wall",
+    "gt up boots a long-lived process tree, not a one-shot binary — budget accordingly",
+    "bd ships docs/reference/antivirus.md — Windows AV false-positive risk on first run",
+    "go-module path (steveyegge/*) vs release org (gastownhall/*) mismatch — pin release zips, never go install, to avoid drift",
+    "bd embeds Dolt for default mode; gt lists external Dolt >= 2.0.7 as prereq — verify at install which applies"
+  ]
+}

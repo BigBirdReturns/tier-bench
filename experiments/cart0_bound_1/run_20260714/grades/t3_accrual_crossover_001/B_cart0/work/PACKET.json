@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "task_id": "t3_accrual_crossover_001",
+  "source_commit": "489ba8f53cae513d4a803561deae24a8d5c3eff4",
+  "target_relpath": "input.py",
+  "allowed_files": [
+    "input.py"
+  ],
+  "run_command": [
+    "python",
+    "input.py"
+  ],
+  "prompt_sha256": "6b0937378a9866c9c1b31e7a6e496c52f185ce0b977180d440e379464b6929ec",
+  "visible_files": [
+    {
+      "path": "input.py",
+      "sha256": "20915712d750afba25a89c332f53b7adbda829aad0fb28ab1d84c42d146b901c"
+    },
+    {
+      "path": "PROMPT.md",
+      "sha256": "6b0937378a9866c9c1b31e7a6e496c52f185ce0b977180d440e379464b6929ec"
+    }
+  ],
+  "hidden_material_included": false
+}

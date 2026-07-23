@@ -114,13 +114,39 @@ work. Failure is equally informative — commit the curve either way.
       2026-07-18: haiku built the parser but priced openai at $1.0M — missing
       per-1M divisor, caught at desk, sonnet repaired; anthropic $25/26
       sessions, openai $188/40 sessions)
-- [~] S* crossover experiment — first bracket measured (amortization_v1 +
-      LESSONS 19: above three-T1-per-visit on dollars at fable rates; the
-      cheap-hand arm and larger-N remain unmeasured; CRATE-CROSSOVER-1 full
-      form still open)
+- [x] S* crossover experiment — CLOSED 2026-07-18 (CRATE-CROSSOVER-1 /
+      crossover_v1 + Sol's independent N=10 partial, cross-engine reconciled):
+      S* is the capability line, not a bundling threshold; desk loses 14.8×
+      (full ceremony) to ~2.4× (pointer-only desk) against capable cheap
+      tenants — LESSONS 19-20. Still unmeasured: the desk AT a capability
+      wall (the regime it's predicted to win)
 - [x] dispatch.py: referee timeout flag (`--referee-timeout`, default 600s,
       TIMEOUT sentinel in receipts; payload-inline haiku, $0.057, 2026-07-18 —
       closed the false FAIL the 120s hard-cap put on admin_question_test_v1)
+
+## Cowork (the burst tank — promotional through 2026-08-05)
+
+Claude Cowork is NOT a third quota tank: it draws the same weekly Claude
+limit, with the 5-hour window doubled until Aug 5 ('26). Burst arbitrage,
+not fuel arbitrage. Routing row, consistent with LESSONS 20:
+
+- **Below the haiku capability line** → never Cowork. `claude -p --model
+  haiku` payload-inline; a dime task on frontier window is the anti-pattern.
+- **Above the line, bulk-heavy, multi-file/multi-output** → Cowork packet
+  during the window: repo autopsies, ledger audits, transcript synthesis,
+  doc consolidation. The "does it need sustained files/tools/outputs?"
+  question IS the S* question.
+- **Judgment** → chat/desk, as ever.
+
+Custody rules, binding: Cowork sessions are **crate visitors, never
+tenants** — pointers in, 700.100 receipt out, repo is custodian, session
+disposable. Every packet carries the GATED exclusion list explicitly
+(graders, pass criteria, QUEUE closure — Cowork never loads CLAUDE.md).
+Approval mode: Manual (auto-approval burns extra usage); skip-approvals only
+inside a disposable worktree. Metering gap: Cowork spend lands in NO local
+ledger — every packet receipt must self-report window consumption, and
+burn_report needs a third, hand-fed column before Cowork claims land in any
+arithmetic.
 
 ## The arithmetic (why this stretches days into weeks)
 

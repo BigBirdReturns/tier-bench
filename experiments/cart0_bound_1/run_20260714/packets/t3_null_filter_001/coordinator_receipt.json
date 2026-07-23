@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "task_id": "t3_null_filter_001",
+  "source_commit": "489ba8f53cae513d4a803561deae24a8d5c3eff4",
+  "manifest_path": "tasks/t3_null_filter_001.json",
+  "manifest_sha256": "3eb998a8511bac6087df5a584b78cfd48b4d0726f5d754f495771f9bc5b2de8b",
+  "packet_sha256": "79c2a89fc81188c91a2e703864e9038c08d651fc10b1d52bd6cb2d4c3d25d265",
+  "prompt_sha256": "bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd",
+  "hidden_graders": [
+    {
+      "path": "fixtures/t3_null_filter_001/hidden_tests.py",
+      "sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5"
+    }
+  ],
+  "solver_scope": "<SOLVER_SCOPE>",
+  "peer_conclusions_included": false
+}

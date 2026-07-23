@@ -1,0 +1,12 @@
+{
+  "_comment": "P1-1/P2-1 test fixture: an evidence index where selected_cartridge and every fallback_order entry used by valid_measured_decision resolve to a measurement-class record at tier T1.",
+  "haiku-2024-12": {
+    "T1": [{"class": "measured", "task": "impl_from_docstring"}]
+  },
+  "sonnet-2024-12": {
+    "T1": [{"class": "measured", "task": "impl_from_docstring"}]
+  },
+  "opus-2024-12": {
+    "T1": [{"class": "measured", "task": "impl_from_docstring"}]
+  }
+}

@@ -779,6 +779,22 @@ def verify_run(run_dir: Path) -> list[str]:
         patch = resolved.get("patch")
         if patch and patch.is_file() and not patch.read_bytes():
             errors.append("accepted receipt has an empty patch")
+    elif receipt.get("state") == "REJECTED":
+        if not isinstance(receipt.get("backend_process"), dict):
+            errors.append("rejected receipt is missing its backend process diagnostics")
+        acceptance_result = receipt.get("acceptance")
+        if not isinstance(acceptance_result, dict):
+            errors.append("rejected receipt is missing its acceptance diagnostics")
+        elif acceptance_result.get("returncode") == 0:
+            errors.append("rejected receipt's acceptance process did not report a failure")
+        patch = resolved.get("patch")
+        if not patch or not patch.is_file() or not patch.read_bytes():
+            errors.append("rejected receipt is missing its tested patch")
+    elif receipt.get("state") == "ERROR" and resolved.get("ledger"):
+        if not isinstance(receipt.get("backend_process"), dict):
+            errors.append(
+                "error receipt has a sealed ledger but no backend process diagnostics"
+            )
 
     dispatch_path = resolved.get("dispatch_receipt")
     ledger_path = resolved.get("ledger")
@@ -952,8 +968,9 @@ def verify_run(run_dir: Path) -> list[str]:
                                         )
                     raw_hash = extra.get("raw_result_sha256")
                     raw_artifact = resolved.get("backend_provider_raw")
-                    if raw_hash is not None and (
-                        not raw_artifact or not raw_artifact.is_file()
+                    if backend.get("cost_basis") != "shadow-estimated" and (
+                        not isinstance(raw_hash, str) or not raw_hash
+                        or not raw_artifact or not raw_artifact.is_file()
                         or sha256_file(raw_artifact) != raw_hash
                     ):
                         errors.append("provider raw result is not hash-bound as an artifact")

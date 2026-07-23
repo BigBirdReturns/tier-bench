@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "task_id": "t3_accrual_crossover_001",
+  "source_commit": "489ba8f53cae513d4a803561deae24a8d5c3eff4",
+  "packet_sha256": "a05cb19d874d88daa825b97b24444028902647b93afbe30063933efed5e158a4",
+  "prompt_sha256": "6b0937378a9866c9c1b31e7a6e496c52f185ce0b977180d440e379464b6929ec",
+  "candidate_sha256": "26a948f82f749cd0371985e8259810ef9ec7dbb3ad59e2610a5e0c851cb013b7",
+  "raw_response_sha256": "60992753d516fdd672cb6ce47461433ce63ca0fcf547874131ac5f6c1bc6d8d4",
+  "thread_id": "23e9a4bd-be85-4a3b-8b6d-f3cbc237d1fd",
+  "usage": {
+    "cache_creation": {
+      "ephemeral_1h_input_tokens": 23064,
+      "ephemeral_5m_input_tokens": 0
+    },
+    "cache_creation_input_tokens": 23064,
+    "cache_read_input_tokens": 0,
+    "inference_geo": "not_available",
+    "input_tokens": 9,
+    "iterations": [
+      {
+        "cache_creation": {
+          "ephemeral_1h_input_tokens": 23064,
+          "ephemeral_5m_input_tokens": 0
+        },
+        "cache_creation_input_tokens": 23064,
+        "cache_read_input_tokens": 0,
+        "input_tokens": 9,
+        "output_tokens": 3096,
+        "type": "message"
+      }
+    ],
+    "output_tokens": 3096,
+    "server_tool_use": {
+      "web_fetch_requests": 0,
+      "web_search_requests": 0
+    },
+    "service_tier": "standard",
+    "speed": "standard"
+  },
+  "usage_available": true,
+  "event_stream_capture_kind": "provider-raw-jsonl",
+  "coordinator_id": "codex-sol-driver-019f628b-cb07-7d92-8092-067d7e175baa",
+  "solver_equals_grader": false,
+  "grader_output_sha256": "2ed496eda54d340b36daa161edaefcbfb23964189d6eecb2f01dae44e6f7c4b8",
+  "hidden_grader_sha256": "397804c9d778683f24ffcc2eb51fc5b865602772793ec0eb0a9cae22ecc5cfb9",
+  "hidden_grader_runs": 2,
+  "hidden_grader_deterministic": true,
+  "outcome": "fail",
+  "timed_out": false,
+  "timeout_seconds": 30.0,
+  "visible_returncode": 1,
+  "hidden_returncodes": [
+    1,
+    1
+  ],
+  "cost_basis": "subscription-derived",
+  "cost_usd": 0.0
+}

@@ -1,0 +1,58 @@
+{
+  "schema": "tier-bench/cart0-card-catalog@1",
+  "catalog_id": "residue-context-catalog-bound1",
+  "cards": [
+    {
+      "card_id": "000.100.AUTHORITY",
+      "revision": 1,
+      "summary": "CART0-PROFILE-1 authorized deterministic no-model repair only; model/provider dispatch remained forbidden.",
+      "token_budget": 128,
+      "sources": [
+        {"path": "docs/agents/QUEUE.md", "start_line": 50, "end_line": 51}
+      ],
+      "supersedes": null
+    },
+    {
+      "card_id": "000.100.AUTHORITY",
+      "revision": 2,
+      "summary": "CART0-BOUND-1 authorizes exactly four fresh Haiku 4.5 low B1 calls across two frozen hidden-graded tasks and two arms; no retry, B2+, production, or aggregate verdict is authorized.",
+      "token_budget": 128,
+      "sources": [
+        {"path": "docs/agents/QUEUE.md", "start_line": 3, "end_line": 6},
+        {"path": "docs/agents/QUEUE.md", "start_line": 51, "end_line": 52}
+      ],
+      "supersedes": {"card_id": "000.100.AUTHORITY", "revision": 1}
+    },
+    {
+      "card_id": "000.200.GATED",
+      "revision": 1,
+      "summary": "Do not change graders, pass criteria, tasks, hidden vectors, ledger closure, or cost accounting; seal candidates before the coordinator reruns hidden grading.",
+      "token_budget": 96,
+      "sources": [
+        {"path": "AGENTS.md", "start_line": 48, "end_line": 58}
+      ],
+      "supersedes": null
+    },
+    {
+      "card_id": "010.100.CART0",
+      "revision": 1,
+      "summary": "CART0 is a tiny actor-relative control projection plus a mechanical decision-boundary gate; full evidence stays retrievable outside cognitive foreground.",
+      "token_budget": 128,
+      "sources": [
+        {"path": "data/continuity/CART0_CONTRACT.md", "start_line": 8, "end_line": 29},
+        {"path": "data/continuity/CART0_CONTRACT.md", "start_line": 84, "end_line": 93}
+      ],
+      "supersedes": null
+    },
+    {
+      "card_id": "030.100.BOUND1",
+      "revision": 1,
+      "summary": "B1 holds task bytes, model, effort, permissions, output contract, and unchanged hidden grading constant; it compares full pinned context with CART0 and reports paired outcomes plus token/cache/latency telemetry.",
+      "token_budget": 128,
+      "sources": [
+        {"path": "experiments/cart0_bound_1/preregistration.json", "start_line": 1, "end_line": 84}
+      ],
+      "supersedes": null
+    }
+  ]
+}
