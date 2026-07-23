@@ -16,8 +16,18 @@ import tempfile
 import uuid
 from typing import Any
 
-from .desk_common import hidden_process_kwargs
 from .manifest import Backend, ManifestError, expand_command, load_backend, sha256_file
+
+
+def hidden_process_kwargs(
+    platform_name: str = os.name, *, new_process_group: bool = False
+) -> dict[str, object]:
+    if platform_name == "nt":
+        flags = subprocess.CREATE_NO_WINDOW
+        if new_process_group:
+            flags |= subprocess.CREATE_NEW_PROCESS_GROUP
+        return {"creationflags": flags}
+    return {}
 
 
 ACCEPTANCE_TIMEOUT_SECONDS = 300.0

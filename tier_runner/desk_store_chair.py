@@ -27,6 +27,10 @@ class DeskStoreChairMixin:
             raise DeskError("acceptance must be one non-empty command line")
         allowed_paths = normalize_files(payload.get("allowed_paths"))
         auto_validate = as_bool(payload.get("auto_validate", False), "auto_validate")
+        if auto_validate:
+            raise DeskError(
+                "Chair auto-validation is disabled until an immutable-head executor exists"
+            )
         allow_forks = as_bool(payload.get("allow_forks", False), "allow_forks")
         stamp = now()
         db = self.db()
@@ -47,7 +51,7 @@ class DeskStoreChairMixin:
                     base_sha,
                     canonical(allowed_paths),
                     acceptance,
-                    int(auto_validate),
+                    0,
                     int(allow_forks),
                     "ACTIVE",
                     stamp,
@@ -94,8 +98,9 @@ class DeskStoreChairMixin:
             (repo, pr_number, head_sha),
         ).fetchone() is not None
 
-    def record_chair_return(
+    def _insert_chair_return(
         self,
+        db: Any,
         *,
         repo: str,
         pr_number: int,
@@ -103,30 +108,59 @@ class DeskStoreChairMixin:
         request_id: str | None,
         base_sha: str | None,
         status: str,
+        reason: str | None,
+        task_id: str | None,
+        detail: dict[str, Any],
+    ) -> None:
+        db.execute(
+            """INSERT INTO chair_returns(
+              repo,pr_number,head_sha,request_id,base_sha,status,reason,
+              task_id,detail_json,observed_at
+            ) VALUES(?,?,?,?,?,?,?,?,?,?)""",
+            (
+                repo,
+                pr_number,
+                head_sha,
+                request_id,
+                base_sha,
+                status,
+                reason,
+                task_id,
+                canonical(detail),
+                now(),
+            ),
+        )
+
+    def record_chair_return(
+        self,
+        *,
+        repo: str,
+        pr_number: int,
+        head_sha: str,
+        head_repo: str,
+        request_id: str | None,
+        base_sha: str | None,
+        status: str,
         reason: str | None = None,
         task_id: str | None = None,
         detail: dict[str, Any] | None = None,
     ) -> None:
+        payload = dict(detail or {})
+        payload.setdefault("head_repo", head_repo)
         db = self.db()
         db.execute("BEGIN IMMEDIATE")
         try:
-            db.execute(
-                """INSERT INTO chair_returns(
-                  repo,pr_number,head_sha,request_id,base_sha,status,reason,
-                  task_id,detail_json,observed_at
-                ) VALUES(?,?,?,?,?,?,?,?,?,?)""",
-                (
-                    repo,
-                    pr_number,
-                    head_sha,
-                    request_id,
-                    base_sha,
-                    status,
-                    reason,
-                    task_id,
-                    canonical(detail or {}),
-                    now(),
-                ),
+            self._insert_chair_return(
+                db,
+                repo=repo,
+                pr_number=pr_number,
+                head_sha=head_sha,
+                request_id=request_id,
+                base_sha=base_sha,
+                status=status,
+                reason=reason,
+                task_id=task_id,
+                detail=payload,
             )
             self.event(
                 f"chair.return.{status.lower()}",
@@ -135,6 +169,7 @@ class DeskStoreChairMixin:
                     "repo": repo,
                     "pr_number": pr_number,
                     "head_sha": head_sha,
+                    "head_repo": head_repo,
                     "request_id": request_id,
                     "reason": reason,
                 },
@@ -144,6 +179,102 @@ class DeskStoreChairMixin:
         except Exception:
             db.execute("ROLLBACK")
             raise
+
+    def accept_chair_return(
+        self,
+        *,
+        request_id: str,
+        repo: str,
+        pr_number: int,
+        head_sha: str,
+        head_repo: str,
+        base_sha: str,
+        task: dict[str, Any],
+        detail: dict[str, Any],
+    ) -> dict[str, Any] | None:
+        db = self.db()
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            row = db.execute(
+                "SELECT status FROM chair_requests WHERE request_id=?", (request_id,)
+            ).fetchone()
+            if row is None or row["status"] != "ACTIVE":
+                db.execute("ROLLBACK")
+                return None
+            stamp = now()
+            db.execute(
+                """INSERT INTO tasks(
+                  id,title,task,files_json,acceptance,manifest,arm,priority,state,scheduled_for,
+                  approval_required,approved_at,created_at,updated_at
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    task["id"],
+                    task["title"],
+                    task["task"],
+                    canonical(task["files"]),
+                    task["acceptance"],
+                    task["manifest"],
+                    task["arm"],
+                    int(task["priority"]),
+                    "DRAFT",
+                    None,
+                    1,
+                    None,
+                    stamp,
+                    stamp,
+                ),
+            )
+            self._insert_chair_return(
+                db,
+                repo=repo,
+                pr_number=pr_number,
+                head_sha=head_sha,
+                request_id=request_id,
+                base_sha=base_sha,
+                status="ACCEPTED",
+                reason=None,
+                task_id=task["id"],
+                detail=detail,
+            )
+            updated = db.execute(
+                "UPDATE chair_requests SET status='CONSUMED',updated_at=? "
+                "WHERE request_id=? AND status='ACTIVE'",
+                (stamp, request_id),
+            )
+            if updated.rowcount != 1:
+                raise DeskError("chair request was consumed concurrently")
+            self.event(
+                "task.created",
+                task_id=task["id"],
+                detail={"state": "DRAFT", "source": "chair", "approval_required": True},
+                db=db,
+            )
+            self.event(
+                "chair.return.accepted",
+                task_id=task["id"],
+                detail={
+                    "repo": repo,
+                    "pr_number": pr_number,
+                    "head_sha": head_sha,
+                    "head_repo": head_repo,
+                    "request_id": request_id,
+                    "reason": None,
+                },
+                db=db,
+            )
+            self.event(
+                "chair.request.consumed",
+                task_id=task["id"],
+                detail={"request_id": request_id},
+                db=db,
+            )
+            db.execute("COMMIT")
+        except Exception:
+            db.execute("ROLLBACK")
+            raise
+        result = self.get_task(task["id"], False)
+        assert result is not None
+        return result
 
     def list_chair_returns(self) -> list[dict[str, Any]]:
         result = []
