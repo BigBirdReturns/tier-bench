@@ -1,0 +1,18 @@
+{
+  "schema": "policy_kernel_decision/v1.0",
+  "decision_id": "81af962e8b0994e06378b75d7a2c9534c3348aba6187a902d82abdad2d9473df",
+  "task_envelope_sha256": "483ded358baa997f94ac026a788d3d0fa5cbdb96b24c3ae93c53e77989f3801f",
+  "cartridge_manifest_sha256": "cded0a85e0755487951ddb4a51d499e80ba4f45ddbd63d39edffbc3c532cc80c",
+  "tank_snapshot_sha256": "6beed73120dcfe438c7020d9b0a7cacc5efc20c67cc908fd23af27eec0704ada",
+  "evidence_refs": [
+    "measured:haiku:t1:impl_from_docstring"
+  ],
+  "selected_cartridge": "haiku-2024-12",
+  "capability_basis": "measured",
+  "quota_basis": "observed",
+  "route_reason": "P2-1 witness: selected_cartridge is legitimately measured, but fallback_order leads with an unmeasured/forbidden cartridge that must not ride to execution on the selected cartridge's evidence",
+  "fallback_order": ["shadow-cartridge-unmeasured", "sonnet-2024-12"],
+  "operator_gate": true,
+  "observed_at": "2026-07-19T14:30:00Z",
+  "snapshot_max_age": 3600
+}

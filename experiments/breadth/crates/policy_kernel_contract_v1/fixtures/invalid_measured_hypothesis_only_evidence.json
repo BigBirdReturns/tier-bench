@@ -1,0 +1,18 @@
+{
+  "schema": "policy_kernel_decision/v1.0",
+  "decision_id": "22beab759092d74d5958bd680b73a9aeb36b3122db0e4e4e9275616e6f75d851",
+  "task_envelope_sha256": "483ded358baa997f94ac026a788d3d0fa5cbdb96b24c3ae93c53e77989f3801f",
+  "cartridge_manifest_sha256": "cded0a85e0755487951ddb4a51d499e80ba4f45ddbd63d39edffbc3c532cc80c",
+  "tank_snapshot_sha256": "6beed73120dcfe438c7020d9b0a7cacc5efc20c67cc908fd23af27eec0704ada",
+  "evidence_refs": [
+    "measured:sonnet:t1:impl_from_docstring"
+  ],
+  "selected_cartridge": "sonnet-2024-12",
+  "capability_basis": "measured",
+  "quota_basis": "observed",
+  "route_reason": "P1-1 witness: evidence index has a record for sonnet-2024-12 at T1, but its class is hypothesis, not measured -- declaring capability_basis measured must not resolve against it",
+  "fallback_order": [],
+  "operator_gate": true,
+  "observed_at": "2026-07-19T14:30:00Z",
+  "snapshot_max_age": 3600
+}

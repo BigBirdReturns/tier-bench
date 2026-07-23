@@ -1,0 +1,22 @@
+{
+  "schema": "policy_kernel_decision/v1.0",
+  "decision_id": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "task_envelope_sha256": "4a0bbb7d0773c6eb08c15561b110306c5ccaf175e99d21ab58ff8eda8fe1cacb",
+  "cartridge_manifest_sha256": "684adce22f79c0749d3b49521de5c7128f5d49402cbcd69a2090e06bf9e3fa5a",
+  "tank_snapshot_sha256": "38a7a2be201b8f990741507175d05615d2379f6f35ce187aa24dc02bd6f26458",
+  "evidence_refs": [
+    "hypothesis:models.json:tier_ceilings:haiku",
+    "hypothesis:models.json:tier_ceilings:sonnet"
+  ],
+  "selected_cartridge": "sonnet-2024-12",
+  "capability_basis": "hypothesis",
+  "quota_basis": "declared",
+  "route_reason": "No measured evidence available; tier ceiling from models.json hypothesis used",
+  "fallback_order": ["opus-2024-12"],
+  "operator_gate": {
+    "approved": true,
+    "approver": "system"
+  },
+  "observed_at": "2026-07-19T14:45:00Z",
+  "snapshot_max_age": 7200
+}

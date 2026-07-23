@@ -1,0 +1,149 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Policy Kernel Decision",
+  "description": "Routing decision object from policy kernel. Either a decision or a NO_DECISION refusal.",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/Decision"
+    },
+    {
+      "$ref": "#/definitions/NoDecision"
+    }
+  ],
+  "definitions": {
+    "Decision": {
+      "type": "object",
+      "required": [
+        "schema",
+        "decision_id",
+        "task_envelope_sha256",
+        "cartridge_manifest_sha256",
+        "tank_snapshot_sha256",
+        "evidence_refs",
+        "selected_cartridge",
+        "capability_basis",
+        "quota_basis",
+        "route_reason",
+        "fallback_order",
+        "operator_gate",
+        "observed_at",
+        "snapshot_max_age"
+      ],
+      "properties": {
+        "schema": {
+          "type": "string",
+          "pattern": "^policy_kernel_decision/v[0-9]+\\.[0-9]+$",
+          "description": "Schema version identifier"
+        },
+        "decision_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA256 hash derived deterministically from input hashes, not clock or random"
+        },
+        "task_envelope_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA256 hash of task envelope"
+        },
+        "cartridge_manifest_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA256 hash of cartridge manifest"
+        },
+        "tank_snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$",
+          "description": "SHA256 hash of tank snapshot"
+        },
+        "evidence_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "References to evidence used in decision"
+        },
+        "selected_cartridge": {
+          "type": "string",
+          "description": "Selected cartridge identifier"
+        },
+        "capability_basis": {
+          "type": "string",
+          "enum": ["measured", "hypothesis", "unmeasured"],
+          "description": "Source of capability assessment"
+        },
+        "quota_basis": {
+          "type": "string",
+          "enum": ["observed", "derived", "declared", "unknown"],
+          "description": "Source of quota assessment"
+        },
+        "route_reason": {
+          "type": "string",
+          "description": "Reason for routing decision"
+        },
+        "fallback_order": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ordered list of fallback cartridges"
+        },
+        "operator_gate": {
+          "oneOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "approved": {
+                  "type": "boolean"
+                },
+                "approver": {
+                  "type": "string"
+                }
+              }
+            }
+          ],
+          "description": "Operator approval gate"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Isolated timestamp field, detachable from decision content"
+        },
+        "snapshot_max_age": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum age of tank snapshot in seconds for current headroom representation"
+        },
+        "label": {
+          "type": "string",
+          "enum": ["ADVISORY"],
+          "description": "Optional label for stale snapshots: ADVISORY required when snapshot exceeds max_age"
+        }
+      },
+      "additionalProperties": false
+    },
+    "NoDecision": {
+      "type": "object",
+      "required": ["type", "reason", "observed_at"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["NO_DECISION"],
+          "description": "Terminal refusal marker"
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why the kernel refused to make a decision"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of refusal"
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
