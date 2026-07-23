@@ -4,9 +4,14 @@ Tier Desk has two bounded chat lanes. The preferred **GitHub Chair lane** lets
 a GitHub-capable ChatGPT conversation return an open pull request that the Desk
 discovers. The original **text-only fallback** remains for chat surfaces with
 no tools or filesystem. Neither lane gives the chat model authority to merge,
-push from the Desk, widen path scope, or decide acceptance.
+push from the Desk, widen path scope, decide acceptance, queue work, or execute
+validation.
 
-## GitHub Chair lane (v1)
+Under the newsroom constitution in `docs/newsroom.md`, both lanes are external
+submission intake. A return is evidence. It is not an action task and it cannot
+grant itself authority through a marker or plausible repository identity.
+
+## GitHub Chair lane (v1, intake only)
 
 Preregister the exact return contract through the loopback Desk API. The
 request requires the normal `X-Tier-Desk-Token` header:
@@ -23,9 +28,13 @@ request requires the normal `X-Tier-Desk-Token` header:
 }
 ```
 
+`auto_validate` must be `false`. Registration rejects `true` until a separate
+immutable-head executor exists. The acceptance command is retained as the
+preregistered burden for human review; Chair intake does not run it.
+
 `POST /api/chair/requests` returns the stored request and a deterministic Chair
 prompt. The prompt binds the request id, exact repository, base SHA, allowed
-paths, acceptance command, and auto-validation choice. The PR body must contain
+paths, acceptance command, and Draft-only boundary. The PR body must contain
 this exact marker once:
 
 ```text
@@ -33,18 +42,29 @@ this exact marker once:
 ```
 
 The inbox checks registered repositories every 300 seconds. An operator can
-request the same read-only pass with `POST /api/chair/refresh`. A new return is
-bound to `(repo, PR number, head SHA, base SHA)` and deduplicated by
-`(repo, PR number, head SHA)`, so a changed head is a new return. Exact matches
-append a Desk event and create a visible task. The default is `DRAFT` and does
-not wake scheduling. An explicitly preregistered `auto_validate` request enters
-the queue only after the inbox verifies a single safe acceptance command and a
-complete changed-file list within the registered paths.
+request the same read-only pass with `POST /api/chair/refresh`. Open pull
+requests and changed files are paginated to explicit bounds. The inbox records
+the exact repository, PR number, base SHA, head repository, head SHA, complete
+changed-file set, marker, and return URL.
 
-The inbox rejects missing, duplicate, or malformed markers; unknown requests;
-wrong repositories or bases; forks unless explicitly allowed; incomplete file
-lists; and paths outside the contract. It does not merge, push, checkout, or
-execute PR code. There is no public webhook or tunnel in v1.
+The first qualifying return consumes the registered request atomically with the
+return record and task creation. It creates one approval-gated `DRAFT` and does
+not wake the scheduler. Replaying the request in another PR or changing the
+accepted PR head does not create a second task. A transient GitHub access or
+file-list failure remains retryable instead of being persisted as a terminal
+return.
+
+The Draft is a review record for the submission. It is not validation of the
+pull request and should not be armed as if it were. Tier Desk has not fetched,
+checked out, hashed, or executed the PR head. A future validation flow must
+acquire the immutable head into an isolated workspace and create a new trusted
+local action task after the operator reviews that custody transition.
+
+The inbox rejects missing, duplicate, or malformed markers; unknown or consumed
+requests; wrong repositories or bases; missing head repositories; forks unless
+explicitly allowed; empty or incomplete file enumeration; and paths outside the
+contract. It does not merge, push, checkout, invoke a model, execute acceptance,
+queue work, or wake the scheduler. There is no public webhook or tunnel in v1.
 
 ### Credential surfaces are separate
 
@@ -52,7 +72,7 @@ The interactive operator `gh`, ChatGPT GitHub app, Codex GitHub connector,
 sandbox child `gh`, and anonymous public REST are separate credential domains.
 A sandbox-child `gh auth status` failure is not evidence that the operator or
 an app is logged out. The v1 transport tries process-local `gh api`, then falls
-back to anonymous public REST for public repositories. Private/authenticated
+back to anonymous public REST for public repositories. Private or authenticated
 reads fail closed unless the live Desk process's own transport proves access.
 Polling continues for other registered public repositories, and tokens are
 never put in arguments, events, or logs.

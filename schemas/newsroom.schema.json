@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.example/schemas/newsroom.schema.json",
+  "title": "Tier Desk newsroom constitution v1",
+  "description": "Review-only institutional contract for durable roles, evidence states, publisher-gated action states, standing editions, and authority ceilings. It grants no runtime authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "status",
+    "purpose",
+    "project_map",
+    "publisher",
+    "planes",
+    "octopode",
+    "roles",
+    "objects",
+    "epistemic_state_machine",
+    "action_state_machine",
+    "editions",
+    "invariants",
+    "implementation_status",
+    "review_questions"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/newsroom@1"},
+    "status": {"const": "REVIEW_ONLY"},
+    "purpose": {"type": "string", "minLength": 1, "maxLength": 1000},
+    "project_map": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {"$ref": "#/$defs/component"}
+    },
+    "publisher": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "exclusive_authorities"],
+      "properties": {
+        "kind": {"const": "HUMAN"},
+        "exclusive_authorities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": [
+            "AUTHORIZE_EXECUTION",
+            "AUTHORIZE_PUBLICATION",
+            "MERGE",
+            "CHANGE_CAPS",
+            "ACCEPT_CUSTODY_EXCEPTION"
+          ]}
+        }
+      }
+    },
+    "planes": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/plane"}
+    },
+    "octopode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "definition",
+        "continuity",
+        "execution_lanes_are_disposable",
+        "lineage_independence_must_be_recorded"
+      ],
+      "properties": {
+        "definition": {"type": "string", "minLength": 1},
+        "continuity": {
+          "type": "array",
+          "minItems": 6,
+          "uniqueItems": true,
+          "items": {"enum": [
+            "ROLE_CHARTER",
+            "BEAT",
+            "SOURCE_POLICY",
+            "AUTHORITY_CEILING",
+            "DECISION_HISTORY",
+            "RECEIPT_HISTORY"
+          ]}
+        },
+        "execution_lanes_are_disposable": {"const": true},
+        "lineage_independence_must_be_recorded": {"const": true}
+      }
+    },
+    "roles": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {"$ref": "#/$defs/role"}
+    },
+    "objects": {
+      "type": "array",
+      "minItems": 9,
+      "maxItems": 9,
+      "items": {"$ref": "#/$defs/object"}
+    },
+    "epistemic_state_machine": {"$ref": "#/$defs/stateMachine"},
+    "action_state_machine": {"$ref": "#/$defs/stateMachine"},
+    "editions": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/edition"}
+    },
+    "invariants": {
+      "type": "array",
+      "minItems": 12,
+      "items": {"$ref": "#/$defs/invariant"}
+    },
+    "implementation_status": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["implemented", "review_only", "explicitly_absent"],
+      "properties": {
+        "implemented": {"$ref": "#/$defs/nonEmptyStringSet"},
+        "review_only": {"$ref": "#/$defs/nonEmptyStringSet"},
+        "explicitly_absent": {"$ref": "#/$defs/nonEmptyStringSet"}
+      }
+    },
+    "review_questions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "$defs": {
+    "plane": {
+      "enum": ["OBSERVATION", "ANALYSIS", "VALIDATION", "EXECUTION", "PUBLICATION"]
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "classification", "authority", "paths"],
+      "properties": {
+        "id": {"enum": [
+          "tier_bench",
+          "tier_run",
+          "tier_desk",
+          "crate_ops",
+          "chair_inbox",
+          "newsroom_contract"
+        ]},
+        "classification": {"enum": [
+          "MEASUREMENT_AND_ROUTING",
+          "EXECUTION_AND_REFEREE",
+          "LOCAL_CONTROL_PLANE",
+          "OPERATING_METHOD",
+          "EXTERNAL_SUBMISSION_INTAKE",
+          "INSTITUTIONAL_COORDINATION_MODEL"
+        ]},
+        "authority": {"enum": [
+          "EVIDENCE_ONLY",
+          "TERMINAL_RECEIPT",
+          "PUBLISHER_GATED_EXECUTION",
+          "NONE",
+          "DRAFT_ONLY",
+          "REVIEW_ONLY"
+        ]},
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1, "pattern": "^(?!/)(?![A-Za-z]:)(?!.*\\.\\.).+"}
+        }
+      }
+    },
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "classification", "planes", "may", "must_not"],
+      "properties": {
+        "id": {"enum": [
+          "assignment_desk",
+          "reporter",
+          "copy_desk",
+          "referee",
+          "auditor",
+          "archivist",
+          "corrections_desk",
+          "production_desk",
+          "chair"
+        ]},
+        "classification": {"enum": [
+          "INTERNAL_CONTROL",
+          "INTERNAL_ANALYSIS",
+          "INDEPENDENT_VALIDATION",
+          "INTERNAL_CUSTODY",
+          "INTERNAL_EXECUTION",
+          "EXTERNAL_UNTRUSTED"
+        ]},
+        "planes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/plane"}
+        },
+        "may": {"$ref": "#/$defs/nonEmptyStringSet"},
+        "must_not": {"$ref": "#/$defs/nonEmptyStringSet"}
+      }
+    },
+    "object": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "trust", "may_enter_action_plane"],
+      "properties": {
+        "id": {"enum": [
+          "tip",
+          "assignment",
+          "submission",
+          "evidence_packet",
+          "candidate",
+          "receipt",
+          "edition",
+          "correction",
+          "action_task"
+        ]},
+        "trust": {"enum": [
+          "EXTERNAL_UNTRUSTED",
+          "LOCAL_CONTROL",
+          "MIXED_EVIDENCE",
+          "LOCAL_DERIVED",
+          "LOCAL_VERIFIED",
+          "LOCAL_PUBLISHER_GATED"
+        ]},
+        "may_enter_action_plane": {"type": "boolean"}
+      }
+    },
+    "stateMachine": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["states", "transitions"],
+      "properties": {
+        "states": {"$ref": "#/$defs/nonEmptyStringSet"},
+        "transitions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/transition"}
+        }
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "actor", "approval"],
+      "properties": {
+        "from": {"type": "string", "minLength": 1},
+        "to": {"type": "string", "minLength": 1},
+        "actor": {"type": "string", "minLength": 1},
+        "approval": {"enum": ["NONE", "PUBLISHER", "PRIOR_PUBLISHER_AUTHORIZATION"]}
+      }
+    },
+    "edition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "cadence",
+        "basis",
+        "wip_limit",
+        "inputs",
+        "output",
+        "empty_result",
+        "publication_authority"
+      ],
+      "properties": {
+        "id": {"enum": ["daily_project", "weekly_investigations", "monthly_corrections"]},
+        "cadence": {"enum": ["DAILY", "WEEKLY", "MONTHLY"]},
+        "basis": {"enum": ["MEASURED", "HYPOTHESIS", "UNMEASURED"]},
+        "wip_limit": {"type": "integer", "minimum": 1, "maximum": 1000},
+        "inputs": {"$ref": "#/$defs/nonEmptyStringSet"},
+        "output": {"type": "string", "minLength": 1},
+        "empty_result": {"type": "string", "minLength": 1},
+        "publication_authority": {"const": "publisher"}
+      }
+    },
+    "invariant": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "rule"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9-]{1,80}$"},
+        "rule": {"type": "string", "minLength": 1}
+      }
+    },
+    "nonEmptyStringSet": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}
