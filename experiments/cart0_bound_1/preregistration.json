@@ -1,0 +1,85 @@
+{
+  "schema": "tier-bench/cart0-bound-1-preregistration@1",
+  "experiment_id": "CART0-BOUND-1",
+  "phase": "B1-functional-equivalence",
+  "claim_commit": "d5672dd",
+  "operator_authorization_task": "019f628b-cb07-7d92-8092-067d7e175baa",
+  "question": "Does a strict CART0 anchor plus selected cards preserve hidden-graded task performance while reducing provider input relative to complete pinned project context?",
+  "tasks": [
+    {
+      "task_id": "t3_null_filter_001",
+      "manifest_path": "tasks/t3_null_filter_001.json",
+      "manifest_sha256": "3eb998a8511bac6087df5a584b78cfd48b4d0726f5d754f495771f9bc5b2de8b",
+      "hidden_grader_path": "fixtures/t3_null_filter_001/hidden_tests.py",
+      "hidden_grader_sha256": "183d1539ad94e928ee917aa3958ee8359591312246aa44ccbc58e45c32059dd5",
+      "knot_type": "felt_contradiction"
+    },
+    {
+      "task_id": "t3_accrual_crossover_001",
+      "manifest_path": "tasks/t3_accrual_crossover_001.json",
+      "manifest_sha256": "fadd3d79d7a3ba71d0877573e314f7900e9b5e5b56ddd64bdb50cf1ea21f29df",
+      "hidden_grader_path": "fixtures/t3_accrual_crossover_001/hidden_tests.py",
+      "hidden_grader_sha256": "397804c9d778683f24ffcc2eb51fc5b865602772793ec0eb0a9cae22ecc5cfb9",
+      "knot_type": "derived_quantity"
+    }
+  ],
+  "arms": {
+    "A_full": "The exact frozen task prompt follows complete Git-pinned project evidence named by the B1 anchor specification.",
+    "B_cart0": "The same exact frozen task prompt follows a strict <=256-token-proxy CART0 anchor and mechanically selected admitted cards."
+  },
+  "constants": {
+    "provider": "Anthropic",
+    "model": "claude-haiku-4-5-20251001",
+    "effort": "low",
+    "surface": "Claude Code print mode",
+    "fresh_session": true,
+    "session_persistence": false,
+    "tools": [],
+    "permission_mode": "dontAsk",
+    "safe_mode": true,
+    "system_prompt": "You are a packet-only code solver. Follow the user prompt exactly. Return only the complete requested target file; do not use tools.",
+    "max_budget_usd_per_call": 0.15,
+    "max_budget_usd_total": 0.60,
+    "cost_basis": "subscription-derived",
+    "calls_per_task_arm": 1,
+    "retries": 0,
+    "grader_runs_per_candidate": 2
+  },
+  "dispatch_order": [
+    "t3_null_filter_001/A_full",
+    "t3_null_filter_001/B_cart0",
+    "t3_accrual_crossover_001/B_cart0",
+    "t3_accrual_crossover_001/A_full"
+  ],
+  "frozen_tools": {
+    "export_solver_packet.py": "7b55593996121a38497975392c1b1f01f004a9ee2abd5716b94ed9ac7c989c85",
+    "grade_solver_packet.py": "2657ed107067069689cffb56f94d56092d0c6ed4d751639b4552f81ef7c55015",
+    "cart0_anchor.py": "c25372c1a94f249057be4d90119a85c52d1be786bb61db0181b986b10853cf67"
+  },
+  "measures": [
+    "unchanged hidden-grade outcome",
+    "prohibited-action violations",
+    "rehydration requests",
+    "incorrect retrievals",
+    "provider input, cache-read, cache-write, and output tokens",
+    "prompt byte and bytes-div-4 proxy counts",
+    "wall time",
+    "provider-reported cost metric"
+  ],
+  "failure_defaults": {
+    "missing_provider_output": "PARTIAL",
+    "missing_custody_or_usage": "PARTIAL",
+    "provider_or_grader_timeout": "PARTIAL",
+    "arm_failure": "preserve; do not retry or repair",
+    "task_grade": "existing hidden grader only; coordinator reruns twice"
+  },
+  "prohibitions": [
+    "Do not change cards, profiles, task bytes, graders, pass criteria, or dispatch order after the first provider response.",
+    "Do not disclose one arm's response to another subject.",
+    "Do not expose the repository, queue, peer output, coordinator receipt, or hidden grader to a subject.",
+    "Do not infer B2 causality, B3 capacity, B5 portability, B6 billing savings, production custody, or a universal context-window result."
+  ],
+  "comparison_rule": "Report the two per-task paired outcomes and telemetry without an aggregate benchmark verdict.",
+  "operational_narrow_win_rule": "Both A and B must pass the unchanged hidden grader on both tasks, and B must reduce provider-reported input_tokens + cache_read_input_tokens + cache_creation_input_tokens by at least 25 percent versus A on each task. Prompt proxy reduction alone remains payload evidence, not an operational win.",
+  "card_freeze_boundary": "The commit containing generated input prompts and hashes must precede every provider dispatch."
+}

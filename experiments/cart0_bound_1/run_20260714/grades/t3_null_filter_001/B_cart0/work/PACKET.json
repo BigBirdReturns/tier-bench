@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "task_id": "t3_null_filter_001",
+  "source_commit": "489ba8f53cae513d4a803561deae24a8d5c3eff4",
+  "target_relpath": "input.py",
+  "allowed_files": [
+    "input.py"
+  ],
+  "run_command": [
+    "python",
+    "input.py"
+  ],
+  "prompt_sha256": "bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd",
+  "visible_files": [
+    {
+      "path": "input.py",
+      "sha256": "a65176ee805b1d35b6fb25583ed3b813f8732b2fc4de243a4d840c620122ed2e"
+    },
+    {
+      "path": "PROMPT.md",
+      "sha256": "bd13aca4ee9899f26df03206d6a78eb5e1dc061018ee6d90fb2b07a40c7a1bcd"
+    }
+  ],
+  "hidden_material_included": false
+}

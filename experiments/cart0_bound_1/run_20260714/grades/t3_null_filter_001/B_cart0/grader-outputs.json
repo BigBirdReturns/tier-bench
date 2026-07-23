@@ -1,0 +1,48 @@
+{
+  "compile": {
+    "command": [
+      "C:\\Users\\BAM-Desktop\\.cache\\codex-runtimes\\codex-primary-runtime\\dependencies\\python\\python.exe",
+      "-m",
+      "py_compile",
+      "input.py"
+    ],
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "  File \"input.py\", line 1\n    ```python\n    ^\nSyntaxError: invalid syntax\n",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "visible": {
+    "command": [
+      "python",
+      "input.py"
+    ],
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "  File \"C:\\Users\\BAM-Desktop\\Documents\\Residue\\.codex-worktrees\\cart0-bound-1\\experiments\\cart0_bound_1\\run_20260714\\grades\\t3_null_filter_001\\B_cart0.building\\work\\input.py\", line 1\n    ```python\n    ^\nSyntaxError: invalid syntax\n",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "hidden_1": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 1,
+    "stdout": "SCORE 0/10  (candidate failed to load: SyntaxError('invalid syntax', ('C:\\\\Users\\\\BAM-Desktop\\\\Documents\\\\Residue\\\\.codex-worktrees\\\\cart0-bound-1\\\\experiments\\\\cart0_bound_1\\\\run_20260714\\\\grades\\\\t3_null_filter_001\\\\B_cart0.building\\\\work\\\\input.py', 1, 1, '```python\\n', 1, 2)))\n",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  },
+  "hidden_2": {
+    "command": [
+      "python",
+      "hidden_tests.py"
+    ],
+    "returncode": 1,
+    "stdout": "SCORE 0/10  (candidate failed to load: SyntaxError('invalid syntax', ('C:\\\\Users\\\\BAM-Desktop\\\\Documents\\\\Residue\\\\.codex-worktrees\\\\cart0-bound-1\\\\experiments\\\\cart0_bound_1\\\\run_20260714\\\\grades\\\\t3_null_filter_001\\\\B_cart0.building\\\\work\\\\input.py', 1, 1, '```python\\n', 1, 2)))\n",
+    "stderr": "",
+    "timed_out": false,
+    "timeout_seconds": 30.0
+  }
+}
