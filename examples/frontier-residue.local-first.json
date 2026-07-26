@@ -1,0 +1,55 @@
+{
+  "schema": "tier-bench/frontier-residue-campaign@1",
+  "id": "overnight-local-first-001",
+  "title": "Repair one bounded defect with local patience before frontier spend",
+  "mode": "local_first",
+  "k": 1,
+  "max_trials_per_route": 4,
+  "queue_now": false,
+  "task": {
+    "task": "Fix the declared defect. Preserve unrelated behavior and return only changes inside scope.",
+    "files": [
+      "src/target.py",
+      "tests/test_target.py"
+    ],
+    "acceptance": "python -m pytest -q tests/test_target.py",
+    "priority": 70
+  },
+  "policy": {
+    "max_total_cost_usd": 2.0,
+    "max_remote_trials": 3,
+    "materialize_candidates": true
+  },
+  "routes": [
+    {
+      "id": "local",
+      "label": "Slow resident local cartridge",
+      "manifest": "pilot_backends.json",
+      "arm": "arm_a",
+      "execution_class": "local",
+      "source_access": "source_and_weights",
+      "capability_basis": "measured",
+      "estimated_max_cost_usd": 0
+    },
+    {
+      "id": "open-frontier",
+      "label": "Hosted open-weight frontier",
+      "manifest": "pilot_backends.json",
+      "arm": "arm_b",
+      "execution_class": "remote_open_weight",
+      "source_access": "weights",
+      "capability_basis": "unmeasured",
+      "estimated_max_cost_usd": 0.5
+    },
+    {
+      "id": "closed-frontier",
+      "label": "Closed frontier driver",
+      "manifest": "pilot_backends.json",
+      "arm": "arm_c",
+      "execution_class": "remote_closed",
+      "source_access": "subscription_only",
+      "capability_basis": "measured",
+      "estimated_max_cost_usd": 1.0
+    }
+  ]
+}
