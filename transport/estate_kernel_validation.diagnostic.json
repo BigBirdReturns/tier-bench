@@ -1,0 +1,202 @@
+{
+  "schema": "tier-bench/estate-kernel-validation-diagnostic@1",
+  "python": "3.11.15 (main, Jun 16 2026, 21:41:52) [GCC 13.3.0]",
+  "commands": [
+    {
+      "index": 1,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "py_compile",
+        "tier_runner/estate_common.py",
+        "tier_runner/estate_action_cache.py",
+        "tier_runner/estate_history.py",
+        "tier_runner/work_ir.py",
+        "tier_runner/verifier_factory.py",
+        "tier_runner/attention_broker.py",
+        "tier_runner/estate_kernel.py",
+        "tests/test_estate_kernel.py"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "index": 2,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "tests/test_estate_kernel.py"
+      ],
+      "returncode": 0,
+      "stdout": "ESTATE_KERNEL_TESTS_OK {'tests': 10}\n",
+      "stderr": ""
+    },
+    {
+      "index": 3,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "action-key",
+        "--action",
+        "experiments/estate_kernel/action.json"
+      ],
+      "returncode": 0,
+      "stdout": "{\n  \"action\": {\n    \"acceptance\": {\n      \"digest\": \"14051bdc9a9188b90fe796899790f6730ed68fea978e6a680e8be12e9af63438\",\n      \"kind\": \"hidden_grade\"\n    },\n    \"authority\": [],\n    \"cache_policy\": \"read_write\",\n    \"command\": {\n      \"schema\": \"claims@1\",\n      \"task\": \"extract\"\n    },\n    \"effect\": \"pure\",\n    \"environment\": {\n      \"container_digest\": null,\n      \"platform\": \"windows-x86_64\",\n      \"runtime\": \"python-3.11\",\n      \"variables\": {\n        \"MODE\": \"sealed\"\n      }\n    },\n    \"id\": \"example-action\",\n    \"inputs\": [\n      {\n        \"digest\": \"41cf6794ba4200b839c53531555f0f3998df4cbb01a4d5cb0b94e3ca5e23947d\",\n        \"media_type\": \"text/plain\",\n        \"name\": \"source\",\n        \"role\": \"source\",\n        \"size\": 6\n      }\n    ],\n    \"metadata\": {\n      \"run_label\": \"example-action\"\n    },\n    \"model\": {\n      \"effort\": \"high\",\n      \"model_id\": \"frontier\",\n      \"provider\": \"example\",\n      \"runtime_digest\": \"f6f49843261481156a9b582fcf14c97fcae02dc8402adf93a5aeeead0d5d3dc1\",\n      \"surface\": \"subscription-cli\"\n    },\n    \"operation\": \"model_call\",\n    \"outputs\": [\n      {\n        \"media_type\": \"application/json\",\n        \"name\": \"result\",\n        \"required\": true\n      }\n    ],\n    \"schema\": \"tier-bench/estate-action@1\",\n    \"tool\": {\n      \"digest\": \"886ae736020a7c770761cfe5723f1c3428100bc28b0bdd3d386573cf4a1a10bd\",\n      \"identity\": \"provider-cli\",\n      \"version\": \"1.2.3\"\n    }\n  },\n  \"action_digest\": \"505cdae2533957a78f13e54c6a56490431275949cf9ff46654cb7cef7166ecc6\"\n}\n",
+      "stderr": ""
+    },
+    {
+      "index": 4,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "workflow-validate",
+        "--workflow",
+        "experiments/estate_kernel/workflow.json"
+      ],
+      "returncode": 0,
+      "stdout": "{\n  \"ok\": true,\n  \"workflow\": {\n    \"id\": \"workflow-1\",\n    \"metadata\": {},\n    \"schema\": \"tier-bench/estate-workflow@1\",\n    \"steps\": [\n      {\n        \"acceptance_digest\": \"d5df61d74243bc947cb918e03f0d8269d1889c29377d97cb02a2a4f67f689bf8\",\n        \"authority\": [],\n        \"depends_on\": [],\n        \"id\": \"acquire\",\n        \"title\": \"Acquire\"\n      },\n      {\n        \"acceptance_digest\": \"aa214ea38326805d95661c3ad1643cc07f88e2bae0438ac0448a66d93335ca6e\",\n        \"authority\": [],\n        \"depends_on\": [\n          \"acquire\"\n        ],\n        \"id\": \"transform\",\n        \"title\": \"Transform\"\n      },\n      {\n        \"acceptance_digest\": \"a5d47a4311d759db69e576d9eedd6a02fcfd9cd214129fa8492ee1e9c7343def\",\n        \"authority\": [\n          \"publish\"\n        ],\n        \"depends_on\": [\n          \"transform\"\n        ],\n        \"id\": \"publish\",\n        \"title\": \"Publish\"\n      }\n    ],\n    \"supervisor_strategy\": \"rest_for_one\",\n    \"title\": \"Fixture workflow\"\n  }\n}\n",
+      "stderr": ""
+    },
+    {
+      "index": 5,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "ir-validate",
+        "--ir",
+        "experiments/estate_kernel/work-ir.json",
+        "--executors",
+        "experiments/estate_kernel/executors.json"
+      ],
+      "returncode": 0,
+      "stdout": "{\n  \"executors\": 3,\n  \"ir_id\": \"work-1\",\n  \"nodes\": 3,\n  \"ok\": true\n}\n",
+      "stderr": ""
+    },
+    {
+      "index": 6,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "ir-plan",
+        "--ir",
+        "experiments/estate_kernel/work-ir.json",
+        "--executors",
+        "experiments/estate_kernel/executors.json",
+        "--out",
+        "/tmp/estate-ir-plan.json"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "index": 7,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "ir-verify",
+        "--ir",
+        "experiments/estate_kernel/work-ir.json",
+        "--executors",
+        "experiments/estate_kernel/executors.json",
+        "--plan",
+        "/tmp/estate-ir-plan.json"
+      ],
+      "returncode": 0,
+      "stdout": "{\n  \"errors\": [],\n  \"ok\": true\n}\n",
+      "stderr": ""
+    },
+    {
+      "index": 8,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "verifier-plan",
+        "--spec",
+        "experiments/estate_kernel/verifier.json",
+        "--input",
+        "experiments/estate_kernel/verifier-input.json",
+        "--out",
+        "/tmp/verifier-plan.json"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "index": 9,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "verifier-verify",
+        "--spec",
+        "experiments/estate_kernel/verifier.json",
+        "--input",
+        "experiments/estate_kernel/verifier-input.json",
+        "--plan",
+        "/tmp/verifier-plan.json"
+      ],
+      "returncode": 0,
+      "stdout": "{\n  \"errors\": [],\n  \"ok\": true\n}\n",
+      "stderr": ""
+    },
+    {
+      "index": 10,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "verifier-run",
+        "--plan",
+        "/tmp/verifier-plan.json",
+        "--out",
+        "/tmp/verifier-report.json"
+      ],
+      "returncode": 2,
+      "stdout": "",
+      "stderr": "tierestate: [Errno 2] No such file or directory: '/opt/pyvenv/bin/python'\n"
+    },
+    {
+      "index": 11,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "attention-plan",
+        "--requests",
+        "experiments/estate_kernel/attention-requests.json",
+        "--policy",
+        "experiments/estate_kernel/attention-policy.json",
+        "--out",
+        "/tmp/attention-plan.json"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "index": 12,
+      "command": [
+        "/opt/hostedtoolcache/Python/3.11.15/x64/bin/python",
+        "-m",
+        "tier_runner.estate_kernel",
+        "attention-slo",
+        "--events",
+        "experiments/estate_kernel/attention-events.json",
+        "--out",
+        "/tmp/attention-slo.json"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "all_passed": false
+}
