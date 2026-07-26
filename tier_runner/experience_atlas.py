@@ -8,7 +8,7 @@ clears.
 from __future__ import annotations
 
 import argparse
-from collections import defaultdict
+from collections import defaultdict, deque
 import json
 from pathlib import Path
 import re
