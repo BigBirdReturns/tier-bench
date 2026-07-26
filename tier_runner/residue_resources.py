@@ -9,7 +9,7 @@ from __future__ import annotations
 import copy
 from typing import Any
 
-from .desk_common import DeskError, as_int, now
+from .desk_common import DeskError, as_bool, as_int, now
 from .residue_common import SAFE_RESOURCE
 
 
@@ -79,7 +79,7 @@ class ResidueResourceMixin:
         if not isinstance(payload, dict):
             raise DeskError("campaign payload must be a JSON object")
         declarations = self._normalize_resource_declarations(payload)
-        requested_start = bool(payload.get("queue_now", False))
+        requested_start = as_bool(payload.get("queue_now", False), "campaign queue_now")
         prepared = copy.deepcopy(payload)
         prepared["queue_now"] = False
         campaign = super().create_campaign(prepared)
