@@ -1,11 +1,13 @@
 name: assemble-sovereign-theory
 
 on:
-  push:
-    branches: [agent/sovereign-theory-lab-v1]
   pull_request:
     branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: assemble-sovereign-theory-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
