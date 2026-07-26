@@ -1,0 +1,2345 @@
+{
+  "schema": "tier-bench/sovereign-theory-lab@1",
+  "id": "sovereign-desktop-theory-lab-v1",
+  "title": "Sovereign Desktop Theory Lab",
+  "objective": "Turn industrial inference, caching, routing, and distillation mechanisms into bounded desktop hypotheses whose acceptance, attention, cost, runtime identity, and falsifiers are frozen before execution.",
+  "laws": [
+    "A theory is a prospective claim with a named mechanism and falsifier, never a narrative upgrade.",
+    "Pass and fail observations count only when runtime identity is attested and telemetry is complete.",
+    "Provider, transport, and serialization errors remain non-decisive.",
+    "The same frozen task and external acceptance authority judge every arm.",
+    "Operator attention, wall time, compute, defects, and cost remain separate ledgers.",
+    "A treatment is supported only when every predeclared support predicate clears and no falsifier clears.",
+    "Open-weight residue may enter mechanistic capture; closed-teacher residue remains behavioral.",
+    "The original task cannot prove distilled transfer or amortization by replaying itself."
+  ],
+  "metrics": [
+    {
+      "id": "operator_minutes",
+      "kind": "number",
+      "direction": "minimize",
+      "required": true,
+      "unit": "minutes",
+      "description": "Active operator time attributable to the run."
+    },
+    {
+      "id": "wall_seconds",
+      "kind": "number",
+      "direction": "minimize",
+      "required": true,
+      "unit": "seconds",
+      "description": "Elapsed run time, descriptive unless the task contract binds it."
+    },
+    {
+      "id": "escaped_defects",
+      "kind": "count",
+      "direction": "minimize",
+      "required": true,
+      "unit": "defects",
+      "description": "Defects found by the withheld audit or follow-up window."
+    },
+    {
+      "id": "prefill_compute_tokens",
+      "kind": "count",
+      "direction": "minimize",
+      "required": false,
+      "unit": "tokens",
+      "description": "Selected tokens that required actual model prefill compute."
+    },
+    {
+      "id": "selected_context_tokens",
+      "kind": "count",
+      "direction": "minimize",
+      "required": false,
+      "unit": "tokens",
+      "description": "Tokens admitted by the context compiler."
+    },
+    {
+      "id": "cache_read_tokens",
+      "kind": "count",
+      "direction": "maximize",
+      "required": false,
+      "unit": "tokens",
+      "description": "Tokens served from a compatible observed prefix or KV cache."
+    },
+    {
+      "id": "model_load_seconds",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "seconds",
+      "description": "Runtime and weight load time charged to the run."
+    },
+    {
+      "id": "peak_vram_mb",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "MiB",
+      "description": "Peak accelerator memory."
+    },
+    {
+      "id": "peak_ram_mb",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "MiB",
+      "description": "Peak host memory."
+    },
+    {
+      "id": "disk_read_mb",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "MiB",
+      "description": "Disk reads attributable to context, model, or KV restore."
+    },
+    {
+      "id": "tokens_per_second",
+      "kind": "number",
+      "direction": "maximize",
+      "required": false,
+      "unit": "tokens/s",
+      "description": "Observed decode throughput."
+    },
+    {
+      "id": "draft_accept_rate",
+      "kind": "rate",
+      "direction": "maximize",
+      "required": false,
+      "unit": "fraction",
+      "description": "Fraction of speculative draft tokens accepted by the verifier."
+    },
+    {
+      "id": "target_forward_passes",
+      "kind": "count",
+      "direction": "minimize",
+      "required": false,
+      "unit": "passes",
+      "description": "Target-model forward passes."
+    },
+    {
+      "id": "teacher_calls",
+      "kind": "count",
+      "direction": "minimize",
+      "required": false,
+      "unit": "calls",
+      "description": "Frontier teacher calls consumed."
+    },
+    {
+      "id": "teacher_cost_usd",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "USD",
+      "description": "Observed or reconciled teacher cost."
+    },
+    {
+      "id": "student_cost_usd",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "USD",
+      "description": "Observed student route cost."
+    },
+    {
+      "id": "maintenance_minutes",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "minutes",
+      "description": "Setup, repair, and operational maintenance time."
+    },
+    {
+      "id": "citations_correct_rate",
+      "kind": "rate",
+      "direction": "maximize",
+      "required": false,
+      "unit": "fraction",
+      "description": "Citations that support the bounded claim."
+    },
+    {
+      "id": "source_coverage_rate",
+      "kind": "rate",
+      "direction": "maximize",
+      "required": false,
+      "unit": "fraction",
+      "description": "Required source set covered by the result."
+    },
+    {
+      "id": "intervention_count",
+      "kind": "count",
+      "direction": "minimize",
+      "required": false,
+      "unit": "events",
+      "description": "Clarification, rescue, or manual sequencing events."
+    },
+    {
+      "id": "accepted_jobs_per_attention_hour",
+      "kind": "number",
+      "direction": "maximize",
+      "required": false,
+      "unit": "jobs/hour",
+      "description": "Accepted work normalized by operator active time."
+    },
+    {
+      "id": "training_gpu_hours",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "GPU-hours",
+      "description": "Training or adapter construction compute."
+    },
+    {
+      "id": "capture_build_minutes",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "minutes",
+      "description": "Human build time for a reusable capture artifact."
+    },
+    {
+      "id": "gpu3090_active_seconds",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "seconds",
+      "description": "3090 active time."
+    },
+    {
+      "id": "gpu4060_active_seconds",
+      "kind": "number",
+      "direction": "descriptive",
+      "required": false,
+      "unit": "seconds",
+      "description": "4060 active time."
+    },
+    {
+      "id": "cold_prefill_seconds",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "seconds",
+      "description": "Cold prompt evaluation time."
+    },
+    {
+      "id": "restore_seconds",
+      "kind": "number",
+      "direction": "minimize",
+      "required": false,
+      "unit": "seconds",
+      "description": "Cache restoration time."
+    },
+    {
+      "id": "quality_score",
+      "kind": "number",
+      "direction": "maximize",
+      "required": false,
+      "unit": "score",
+      "description": "Frozen task-specific quality score."
+    },
+    {
+      "id": "context_recall_rate",
+      "kind": "rate",
+      "direction": "maximize",
+      "required": false,
+      "unit": "fraction",
+      "description": "Required evidence recovered into the active packet."
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t3-parse-duration-004",
+      "title": "Hidden duration parser boundary",
+      "family": "bounded-code",
+      "status": "ready",
+      "acceptance_class": "hidden_grade",
+      "source": "tasks/t3_parse_duration_004.json",
+      "selection_contract": "Existing hidden grader; frozen manifest and source revision.",
+      "tags": [
+        "code",
+        "rule-boundary"
+      ]
+    },
+    {
+      "id": "t3-billing-anchor-001",
+      "title": "Billing anchor boundary",
+      "family": "bounded-code",
+      "status": "ready",
+      "acceptance_class": "hidden_grade",
+      "source": "tasks/t3_billing_anchor_001.json",
+      "selection_contract": "Existing hidden grader; frozen manifest and source revision.",
+      "tags": [
+        "code",
+        "calendar"
+      ]
+    },
+    {
+      "id": "t3-window-limit-001",
+      "title": "Sliding-window endpoint boundary",
+      "family": "bounded-code",
+      "status": "ready",
+      "acceptance_class": "hidden_grade",
+      "source": "tasks/t3_window_limit_001.json",
+      "selection_contract": "Existing hidden grader; frozen manifest and source revision.",
+      "tags": [
+        "code",
+        "boundary"
+      ]
+    },
+    {
+      "id": "t4-plan-decomposition-001",
+      "title": "Hidden semantic plan decomposition",
+      "family": "bounded-planning",
+      "status": "ready",
+      "acceptance_class": "hidden_grade",
+      "source": "tasks/t4_plan_decomposition_001.json",
+      "selection_contract": "Existing hidden semantic judge; frozen source revision.",
+      "tags": [
+        "planning"
+      ]
+    },
+    {
+      "id": "task02-wildcard",
+      "title": "Wildcard rule commitment",
+      "family": "counterexample",
+      "status": "ready",
+      "acceptance_class": "hidden_grade",
+      "source": "experiments/tier-uplift/task02_wildcard",
+      "selection_contract": "Existing hidden oracle; no answer-key exposure.",
+      "tags": [
+        "counterexample",
+        "code"
+      ]
+    },
+    {
+      "id": "sd-context-pack-replay",
+      "title": "Source-bound context materialization fixture",
+      "family": "context-reuse",
+      "status": "ready",
+      "acceptance_class": "deterministic",
+      "source": "experiments/sovereign_desktop/desktop_3090_4060.json",
+      "selection_contract": "Materialize and verify the declared pack; performance observations remain separate.",
+      "tags": [
+        "context",
+        "cache"
+      ]
+    },
+    {
+      "id": "sd-slot-cache-replay",
+      "title": "Persistent llama.cpp slot fixture",
+      "family": "cache-reuse",
+      "status": "ready",
+      "acceptance_class": "deterministic",
+      "source": "experiments/sovereign_desktop/desktop_3090_4060.json",
+      "selection_contract": "Bind exact runtime and prefix; compare cold, warm, and restored states.",
+      "tags": [
+        "kv-cache",
+        "llama.cpp"
+      ]
+    },
+    {
+      "id": "sd-scheduler-fixture",
+      "title": "Cache-aware scheduling fixture",
+      "family": "scheduling",
+      "status": "ready",
+      "acceptance_class": "deterministic",
+      "source": "experiments/sovereign_desktop/desktop_3090_4060.json",
+      "selection_contract": "Same DAG and resources; compare frozen scheduler policies.",
+      "tags": [
+        "scheduler",
+        "batching"
+      ]
+    },
+    {
+      "id": "sd-behavioral-capture-fixture",
+      "title": "Behavioral residue fixture",
+      "family": "behavioral-capture",
+      "status": "ready",
+      "acceptance_class": "deterministic",
+      "source": "experiments/sovereign_desktop/distillation_lab.json",
+      "selection_contract": "Closed teacher; only behavioral artifacts permitted; replay remains distinct.",
+      "tags": [
+        "distillation",
+        "closed-teacher"
+      ]
+    },
+    {
+      "id": "sd-mechanistic-capture-fixture",
+      "title": "Mechanistic residue fixture",
+      "family": "mechanistic-capture",
+      "status": "ready",
+      "acceptance_class": "deterministic",
+      "source": "experiments/sovereign_desktop/distillation_lab.json",
+      "selection_contract": "Open donor; source or weight interventions allowed; replay remains distinct.",
+      "tags": [
+        "distillation",
+        "open-weight"
+      ]
+    },
+    {
+      "id": "slot-repeated-document",
+      "title": "Repeated queries against one large source estate",
+      "family": "context-reuse",
+      "status": "operator_task_required",
+      "acceptance_class": "mixed",
+      "source": "prospective real work",
+      "selection_contract": "Freeze source revision, query set, answer key, and citation audit before execution.",
+      "tags": [
+        "long-context"
+      ]
+    },
+    {
+      "id": "slot-repository-archaeology",
+      "title": "Whole-repository archaeology",
+      "family": "retrieval-judgment",
+      "status": "operator_task_required",
+      "acceptance_class": "mixed",
+      "source": "prospective real repository",
+      "selection_contract": "Freeze commits, target facts, forbidden inferences, and coverage key before execution.",
+      "tags": [
+        "repo",
+        "retrieval"
+      ]
+    },
+    {
+      "id": "slot-chat-reconstruction",
+      "title": "Cross-platform chat reconstruction",
+      "family": "retrieval-judgment",
+      "status": "operator_task_required",
+      "acceptance_class": "mixed",
+      "source": "axm-chat prospective slice",
+      "selection_contract": "Freeze identities, chronology key, unresolved claims, and privacy boundary.",
+      "tags": [
+        "chat",
+        "memory"
+      ]
+    },
+    {
+      "id": "slot-speculative-code",
+      "title": "Long local code generation suitable for speculative decoding",
+      "family": "speculative-decode",
+      "status": "operator_task_required",
+      "acceptance_class": "hidden_grade",
+      "source": "prospective code fixture",
+      "selection_contract": "Use same tokenizer family, identical target, frozen sampling, and hidden acceptance.",
+      "tags": [
+        "speculative",
+        "code"
+      ]
+    },
+    {
+      "id": "slot-kv-length-sweep",
+      "title": "Prefix-length and reuse-interval sweep",
+      "family": "cache-reuse",
+      "status": "operator_task_required",
+      "acceptance_class": "deterministic",
+      "source": "synthetic benchmark to freeze",
+      "selection_contract": "Freeze prefix bytes at multiple lengths, reuse intervals, cache tiers, and runtime build.",
+      "tags": [
+        "kv-cache",
+        "sweep"
+      ]
+    },
+    {
+      "id": "slot-compaction-fidelity",
+      "title": "Compaction fidelity under increasing compression",
+      "family": "compaction",
+      "status": "operator_task_required",
+      "acceptance_class": "mixed",
+      "source": "prospective source estate",
+      "selection_contract": "Freeze raw source, required facts, contradiction key, and 2x/4x/8x compaction artifacts before model runs.",
+      "tags": [
+        "compaction",
+        "long-context"
+      ]
+    },
+    {
+      "id": "slot-evidence-graph",
+      "title": "Graph plus embedding evidence retrieval",
+      "family": "retrieval-judgment",
+      "status": "operator_task_required",
+      "acceptance_class": "hidden_grade",
+      "source": "Clifford Number or AXM prospective corpus",
+      "selection_contract": "Freeze required sources, causal refusals, surface law, and citation key.",
+      "tags": [
+        "graph",
+        "evidence"
+      ]
+    },
+    {
+      "id": "slot-night-shift-repair",
+      "title": "Unattended bounded repair with retries",
+      "family": "night-shift",
+      "status": "operator_task_required",
+      "acceptance_class": "hidden_grade",
+      "source": "prospective repository defect",
+      "selection_contract": "Freeze deadline, retry budget, acceptance, and operator intervention ledger.",
+      "tags": [
+        "unattended",
+        "local"
+      ]
+    },
+    {
+      "id": "slot-teacher-curriculum",
+      "title": "Teacher-query curriculum comparison",
+      "family": "teacher-acquisition",
+      "status": "operator_task_required",
+      "acceptance_class": "hidden_grade",
+      "source": "prospective residue family",
+      "selection_contract": "Freeze candidate pool, hidden test set, equal teacher-call budget, and student training budget.",
+      "tags": [
+        "active-learning",
+        "distillation"
+      ]
+    },
+    {
+      "id": "slot-serving-stack",
+      "title": "llama.cpp versus WSL2 vLLM plus LMCache",
+      "family": "serving-stack",
+      "status": "operator_task_required",
+      "acceptance_class": "deterministic",
+      "source": "prospective local serving benchmark",
+      "selection_contract": "Freeze model, quantization, prompt set, cache tier, WSL2 configuration, and maintenance ledger.",
+      "tags": [
+        "serving",
+        "lmcache"
+      ]
+    },
+    {
+      "id": "slot-pd-transfer",
+      "title": "Consumer PCIe prefill/decode disaggregation",
+      "family": "pd-disaggregation",
+      "status": "operator_task_required",
+      "acceptance_class": "deterministic",
+      "source": "prospective same-model benchmark",
+      "selection_contract": "Use the same model/tokenizer/KV format; record transfer bytes, transfer time, TTFT, throughput, and errors.",
+      "tags": [
+        "prefill",
+        "decode",
+        "pcie"
+      ]
+    },
+    {
+      "id": "slot-frontier-repair",
+      "title": "Local attempt plus frontier repair",
+      "family": "frontier-composition",
+      "status": "operator_task_required",
+      "acceptance_class": "hidden_grade",
+      "source": "prospective repository tasks",
+      "selection_contract": "Freeze direct-frontier and local-plus-repair arms, equal tools, hidden audit, and cost accounting.",
+      "tags": [
+        "driver-repair"
+      ]
+    }
+  ],
+  "theories": [
+    {
+      "id": "H01-semantic-prefill",
+      "title": "Semantic prefill beats full-estate rereading",
+      "status": "hypothesis",
+      "priority": 100,
+      "claim": "Source-bound selection and compaction will preserve accepted outcomes while cutting actual prefill compute and operator preparation on sparse-working-set tasks.",
+      "mechanism": "Most long-context jobs need a small evidence subset. The CPU and 4060 retrieval lane can produce a receipted packet, letting the 3090 avoid rereading irrelevant estate bytes.",
+      "prediction": "Selected context should use no more than 35% of full-estate prefill while matching pass rate, operator burden, and escaped defects.",
+      "task_families": [
+        "context-reuse",
+        "retrieval-judgment"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "full-estate",
+          "label": "Full estate in context",
+          "role": "control",
+          "settings": {
+            "context_policy": "full_estate"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "semantic-prefill",
+          "label": "Source-bound selected packet",
+          "role": "treatment",
+          "settings": {
+            "context_policy": "retrieval_compaction",
+            "prefill_worker": "gpu:4060"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "Selected packet must not reduce accepted yield."
+        },
+        {
+          "metric": "prefill_compute_tokens",
+          "op": "ratio_lte_control",
+          "note": "Median prefill compute must fall to 35% or less.",
+          "aggregate": "median",
+          "value": 0.35
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "Operator attention must not increase.",
+          "aggregate": "median"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_lte_control",
+          "note": "A pass-rate loss of ten points falsifies the operational claim.",
+          "value": -0.1
+        },
+        {
+          "metric": "escaped_defects",
+          "op": "gt_control",
+          "note": "More escaped defects falsify the fidelity claim.",
+          "aggregate": "mean"
+        }
+      ],
+      "confounds": [
+        "Retrieval may leak hidden keys.",
+        "Full-context services may apply provider-side caching.",
+        "Token estimates may differ by tokenizer."
+      ],
+      "falsifier": "Loss of at least ten pass-rate points or any higher escaped-defect rate after equal source custody falsifies the operational claim.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H02-stable-prefix-layout",
+      "title": "Stable-prefix layout creates reusable processed context",
+      "status": "hypothesis",
+      "priority": 98,
+      "claim": "Placing estate and campaign material before job-specific material will preserve output while reducing repeated prefill compute.",
+      "mechanism": "Prefix caches reuse only an exact leading token sequence. Dynamic-first prompts destroy the longest common prefix even when most content repeats.",
+      "prediction": "After the first run, stable-prefix ordering should serve at least half of admitted context from cache without changing pass rate.",
+      "task_families": [
+        "context-reuse",
+        "cache-reuse"
+      ],
+      "minimum_distinct_tasks": 2,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "dynamic-first",
+          "label": "Dynamic material precedes stable estate",
+          "role": "control",
+          "settings": {
+            "layout": "dynamic_first",
+            "cache": "enabled"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "stable-prefix",
+          "label": "Estate and campaign blocks first",
+          "role": "treatment",
+          "settings": {
+            "layout": "stable_prefix",
+            "cache": "enabled"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "cache_read_tokens",
+          "op": "ratio_gte_control",
+          "note": "Stable layout should at least double cache-read tokens.",
+          "aggregate": "median",
+          "value": 2.0
+        },
+        {
+          "metric": "prefill_compute_tokens",
+          "op": "ratio_lte_control",
+          "note": "prefill_compute_tokens ratio_lte_control",
+          "aggregate": "median",
+          "value": 0.5
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_lte_control",
+          "note": "pass_rate delta_lte_control",
+          "value": -0.05
+        },
+        {
+          "metric": "prefill_compute_tokens",
+          "op": "gte_control",
+          "note": "No prefill reduction falsifies the mechanism.",
+          "aggregate": "median"
+        }
+      ],
+      "confounds": [
+        "Provider serialization may change token prefixes.",
+        "Chat templates may insert dynamic tokens before user content.",
+        "First-run cold cost must be reported separately."
+      ],
+      "falsifier": "The mechanism is falsified if exact stable ordering does not reduce subsequent prefill under a runtime that reports compatible prefix caching.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H03-slot-restore-break-even",
+      "title": "Persistent slot restore beats cold recompute above a prefix threshold",
+      "status": "hypothesis",
+      "priority": 97,
+      "claim": "For sufficiently large stable prefixes, restoring a compatible llama.cpp slot will be cheaper than recomputing cold prefill.",
+      "mechanism": "Slot restoration trades storage I/O for model prefill. The crossover depends on prefix length, disk bandwidth, runtime build, and KV representation.",
+      "prediction": "Restore should beat cold prefill by at least 25% once the prefix crosses the measured break-even length, with identical acceptance.",
+      "task_families": [
+        "cache-reuse"
+      ],
+      "minimum_distinct_tasks": 2,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "cold-prefill",
+          "label": "Cold prompt evaluation",
+          "role": "control",
+          "settings": {
+            "cache_state": "cold"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "slot-restore",
+          "label": "Restore exact persistent slot",
+          "role": "treatment",
+          "settings": {
+            "cache_state": "persistent_slot_restore"
+          },
+          "resource_hints": [
+            "gpu:3090",
+            "storage:nvme"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "restore_seconds",
+          "op": "ratio_lte_control",
+          "note": "restore_seconds ratio_lte_control",
+          "aggregate": "median",
+          "value": 0.75
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "operator_minutes lte_control",
+          "aggregate": "median"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "restore_seconds",
+          "op": "gte_control",
+          "note": "Restore no faster than cold prefill falsifies the selected threshold.",
+          "aggregate": "median"
+        },
+        {
+          "metric": "pass_rate",
+          "op": "lt_control",
+          "note": "pass_rate lt_control"
+        }
+      ],
+      "confounds": [
+        "OS page cache may warm files.",
+        "Slot serialization size may vary by runtime version.",
+        "Cold runs require model residency to be held constant."
+      ],
+      "falsifier": "At a frozen prefix length, restore time equal to or greater than cold prefill across three tasks falsifies that threshold.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H04-cache-sticky-scheduling",
+      "title": "Cache-sticky scheduling recovers more work per operator return",
+      "status": "hypothesis",
+      "priority": 96,
+      "claim": "Grouping ready jobs by resident model and exact prefix will reduce model reloads and cold prefills without reducing accepted yield.",
+      "mechanism": "The commercial fleet routes toward cache locality. On a desktop, priority can be relaxed because elapsed time is abundant while operator returns are scarce.",
+      "prediction": "Cache-sticky scheduling should halve model-load time and reduce total prefill by at least 30% relative to strict priority order.",
+      "task_families": [
+        "scheduling"
+      ],
+      "minimum_distinct_tasks": 1,
+      "replicates_per_cell": 5,
+      "arms": [
+        {
+          "id": "priority-only",
+          "label": "Strict priority order",
+          "role": "control",
+          "settings": {
+            "scheduler": "priority_only"
+          },
+          "resource_hints": [
+            "gpu:3090",
+            "gpu:4060"
+          ]
+        },
+        {
+          "id": "cache-sticky",
+          "label": "DAG-safe cache-sticky order",
+          "role": "treatment",
+          "settings": {
+            "scheduler": "cache_sticky"
+          },
+          "resource_hints": [
+            "gpu:3090",
+            "gpu:4060"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "model_load_seconds",
+          "op": "ratio_lte_control",
+          "note": "model_load_seconds ratio_lte_control",
+          "aggregate": "sum",
+          "value": 0.5
+        },
+        {
+          "metric": "prefill_compute_tokens",
+          "op": "ratio_lte_control",
+          "note": "prefill_compute_tokens ratio_lte_control",
+          "aggregate": "sum",
+          "value": 0.7
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "operator_minutes lte_control",
+          "aggregate": "sum"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "escaped_defects",
+          "op": "gt_control",
+          "note": "escaped_defects gt_control",
+          "aggregate": "sum"
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "gt_control",
+          "note": "operator_minutes gt_control",
+          "aggregate": "sum"
+        }
+      ],
+      "confounds": [
+        "Task deadlines may make priority binding.",
+        "A tiny job set may not contain repeated runtimes or prefixes.",
+        "Resource telemetry must not double-count overlapping waves."
+      ],
+      "falsifier": "More operator attention or escaped defects under cache-sticky order falsifies the attention-first claim.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H05-4060-semantic-prefill",
+      "title": "The 4060 is valuable as a semantic-prefill worker",
+      "status": "hypothesis",
+      "priority": 95,
+      "claim": "Running retrieval, reranking, compaction, and extraction on the 4060 before 3090 generation will increase accepted output per 3090 second and per operator minute.",
+      "mechanism": "The 4060 produces source-bound context artifacts, not transferable KV tensors. It frees the 3090 from low-value scanning and preserves the large card for generation or training.",
+      "prediction": "The split route should cut 3090 active time by at least 25% while matching pass rate and operator attention.",
+      "task_families": [
+        "context-reuse",
+        "retrieval-judgment"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "3090-monolith",
+          "label": "3090 performs selection and generation",
+          "role": "control",
+          "settings": {
+            "prefill_worker": "gpu:3090",
+            "generator": "gpu:3090"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "4060-plus-3090",
+          "label": "4060 semantic prefill, 3090 generation",
+          "role": "treatment",
+          "settings": {
+            "prefill_worker": "gpu:4060",
+            "generator": "gpu:3090"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "gpu3090_active_seconds",
+          "op": "ratio_lte_control",
+          "note": "gpu3090_active_seconds ratio_lte_control",
+          "aggregate": "median",
+          "value": 0.75
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "operator_minutes lte_control",
+          "aggregate": "median"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_lte_control",
+          "note": "pass_rate delta_lte_control",
+          "value": -0.05
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "gt_control",
+          "note": "operator_minutes gt_control",
+          "aggregate": "median"
+        }
+      ],
+      "confounds": [
+        "Cross-process artifact writing may dominate tiny jobs.",
+        "The 4060 model may have insufficient retrieval quality.",
+        "Concurrent GPU use can change CPU and disk contention."
+      ],
+      "falsifier": "The split is rejected for a task family if it lowers accepted yield or increases operator attention after artifacts and source receipts are held constant.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H06-4060-speculative-draft",
+      "title": "A 4060 draft model can accelerate a 3090 target on compatible tasks",
+      "status": "hypothesis",
+      "priority": 94,
+      "claim": "A small same-tokenizer draft model on the 4060 will reduce target forward passes and improve accepted tokens per second on predictable code and structured-output workloads.",
+      "mechanism": "Speculative decoding converts extra cheap draft compute into fewer expensive target passes. It only wins when draft acceptance and inter-device coordination exceed draft and verification overhead.",
+      "prediction": "At draft acceptance above 55%, the split should improve target throughput by at least 20% with identical final acceptance.",
+      "task_families": [
+        "speculative-decode"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "target-only",
+          "label": "3090 target model only",
+          "role": "control",
+          "settings": {
+            "speculation": "off",
+            "target": "gpu:3090"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "4060-draft",
+          "label": "4060 draft plus 3090 verifier",
+          "role": "treatment",
+          "settings": {
+            "speculation": "draft_model",
+            "draft": "gpu:4060",
+            "target": "gpu:3090"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "tokens_per_second",
+          "op": "ratio_gte_control",
+          "note": "tokens_per_second ratio_gte_control",
+          "aggregate": "median",
+          "value": 1.2
+        },
+        {
+          "metric": "target_forward_passes",
+          "op": "lt_control",
+          "note": "target_forward_passes lt_control",
+          "aggregate": "median"
+        },
+        {
+          "metric": "draft_accept_rate",
+          "op": "gte",
+          "note": "draft_accept_rate gte",
+          "aggregate": "mean",
+          "value": 0.55
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "tokens_per_second",
+          "op": "lte_control",
+          "note": "tokens_per_second lte_control",
+          "aggregate": "median"
+        },
+        {
+          "metric": "draft_accept_rate",
+          "op": "lte",
+          "note": "draft_accept_rate lte",
+          "aggregate": "mean",
+          "value": 0.35
+        }
+      ],
+      "confounds": [
+        "Draft and target must use a compatible tokenizer and generation contract.",
+        "PCIe and runtime queue serialization may erase the gain.",
+        "Sampling settings strongly affect acceptance."
+      ],
+      "falsifier": "No throughput gain or mean draft acceptance at or below 35% falsifies the selected draft configuration.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H07-ram-kv-tier",
+      "title": "Pinned RAM is a useful hot tier for evicted KV state",
+      "status": "hypothesis",
+      "priority": 92,
+      "claim": "Compatible KV restored from pinned host RAM will beat recomputation for reusable prefixes that no longer fit in VRAM.",
+      "mechanism": "RAM offload trades PCIe transfer for transformer prefill. It should win only when transfer time is below recompute time and reuse occurs before eviction.",
+      "prediction": "RAM restore should cut wall time by at least 20% with identical acceptance for prefixes above the measured crossover.",
+      "task_families": [
+        "cache-reuse"
+      ],
+      "minimum_distinct_tasks": 2,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "recompute",
+          "label": "Evict then recompute prefix",
+          "role": "control",
+          "settings": {
+            "kv_tier": "none"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "ram-restore",
+          "label": "Restore from pinned RAM",
+          "role": "treatment",
+          "settings": {
+            "kv_tier": "ram"
+          },
+          "resource_hints": [
+            "gpu:3090",
+            "ram:pinned"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "wall_seconds",
+          "op": "ratio_lte_control",
+          "note": "wall_seconds ratio_lte_control",
+          "aggregate": "median",
+          "value": 0.8
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "wall_seconds",
+          "op": "gte_control",
+          "note": "wall_seconds gte_control",
+          "aggregate": "median"
+        },
+        {
+          "metric": "peak_ram_mb",
+          "op": "gt",
+          "note": "Unbounded host-memory pressure falsifies the desktop operating envelope.",
+          "aggregate": "max",
+          "value": 64000
+        }
+      ],
+      "confounds": [
+        "Pinned memory may reduce system responsiveness.",
+        "Transfer can compete with model weights and other PCIe traffic.",
+        "NUMA placement may matter."
+      ],
+      "falsifier": "The RAM tier is rejected where restore is no faster than recompute or exceeds the declared host-memory envelope.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H08-nvme-kv-tier",
+      "title": "NVMe is a selective cold tier, not a universal KV cache",
+      "status": "hypothesis",
+      "priority": 90,
+      "claim": "NVMe restoration will beat recomputation only for very large prefixes with high reuse probability and predictable prefetch.",
+      "mechanism": "Disk bandwidth and latency are much lower than HBM and RAM. Async write and prefetch can hide some cost, but small or infrequent prefixes should be recomputed.",
+      "prediction": "Only the large-prefix treatment should clear; small-prefix NVMe restore is expected to be falsified.",
+      "task_families": [
+        "cache-reuse"
+      ],
+      "minimum_distinct_tasks": 2,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "recompute",
+          "label": "Recompute after eviction",
+          "role": "control",
+          "settings": {
+            "kv_tier": "none"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "nvme-restore",
+          "label": "Restore from NVMe",
+          "role": "treatment",
+          "settings": {
+            "kv_tier": "nvme",
+            "prefetch": true
+          },
+          "resource_hints": [
+            "gpu:3090",
+            "storage:nvme"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "wall_seconds",
+          "op": "ratio_lte_control",
+          "note": "wall_seconds ratio_lte_control",
+          "aggregate": "median",
+          "value": 0.9
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "wall_seconds",
+          "op": "gte_control",
+          "note": "wall_seconds gte_control",
+          "aggregate": "median"
+        },
+        {
+          "metric": "disk_read_mb",
+          "op": "gt",
+          "note": "Excessive disk traffic falsifies the operating envelope.",
+          "aggregate": "p95",
+          "value": 65536
+        }
+      ],
+      "confounds": [
+        "OS cache may convert NVMe tests into RAM tests.",
+        "Compression format changes I/O and CPU cost.",
+        "Cache file fragmentation can dominate."
+      ],
+      "falsifier": "The NVMe tier is rejected for any prefix class where restore is not faster than recompute after cold-page-cache control.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H09-longest-prefix-reuse",
+      "title": "Block-level longest-prefix reuse survives small source revisions",
+      "status": "hypothesis",
+      "priority": 89,
+      "claim": "Hashing ordered stable blocks and reusing the longest unchanged prefix will preserve more processed state than invalidating the whole pack after any source revision.",
+      "mechanism": "Transformer prefix reuse is contiguous. A later-block change should invalidate that block and its suffix, not earlier unchanged blocks.",
+      "prediction": "Longest-prefix reuse should reduce prefill by at least 40% on append-only or late-block revisions without changing acceptance.",
+      "task_families": [
+        "context-reuse",
+        "cache-reuse"
+      ],
+      "minimum_distinct_tasks": 2,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "whole-pack-invalidate",
+          "label": "Any revision invalidates the pack",
+          "role": "control",
+          "settings": {
+            "invalidation": "whole_pack"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "longest-prefix",
+          "label": "Reuse unchanged leading blocks",
+          "role": "treatment",
+          "settings": {
+            "invalidation": "longest_common_prefix"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "prefill_compute_tokens",
+          "op": "ratio_lte_control",
+          "note": "prefill_compute_tokens ratio_lte_control",
+          "aggregate": "median",
+          "value": 0.6
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "lt_control",
+          "note": "pass_rate lt_control"
+        },
+        {
+          "metric": "prefill_compute_tokens",
+          "op": "gte_control",
+          "note": "prefill_compute_tokens gte_control",
+          "aggregate": "median"
+        }
+      ],
+      "confounds": [
+        "Chat templates may insert revision metadata at the prefix start.",
+        "Block headers must be deterministic.",
+        "A change in an early block legitimately destroys most reuse."
+      ],
+      "falsifier": "No prefill reduction on late-block-only revisions falsifies the block-level reuse implementation.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H10-compaction-loss-budget",
+      "title": "Every task family has a measurable compaction loss budget",
+      "status": "hypothesis",
+      "priority": 88,
+      "claim": "Moderate source compaction will preserve accepted outcomes and lower prefill, while aggressive compaction will cross a family-specific failure boundary.",
+      "mechanism": "Compaction removes redundant surface area but can erase exceptions, chronology, or contradiction evidence. The useful artifact is the measured boundary, not maximum compression.",
+      "prediction": "A 4x compacted packet should often match raw-selected context; an 8x packet is expected to fail on evidentiary tasks.",
+      "task_families": [
+        "compaction",
+        "retrieval-judgment"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "raw-selected",
+          "label": "Raw selected source blocks",
+          "role": "control",
+          "settings": {
+            "compression": "1x"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "compact-2x",
+          "label": "Twofold compaction",
+          "role": "treatment",
+          "settings": {
+            "compression": "2x"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "compact-4x",
+          "label": "Fourfold compaction",
+          "role": "treatment",
+          "settings": {
+            "compression": "4x"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "compact-8x",
+          "label": "Eightfold compaction",
+          "role": "treatment",
+          "settings": {
+            "compression": "8x"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control",
+          "arm": "compact-2x"
+        },
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control",
+          "arm": "compact-4x"
+        },
+        {
+          "metric": "prefill_compute_tokens",
+          "op": "ratio_lte_control",
+          "note": "prefill_compute_tokens ratio_lte_control",
+          "aggregate": "median",
+          "value": 0.3,
+          "arm": "compact-4x"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_lte_control",
+          "note": "pass_rate delta_lte_control",
+          "value": -0.1,
+          "arm": "compact-4x"
+        },
+        {
+          "metric": "citations_correct_rate",
+          "op": "delta_lte_control",
+          "note": "citations_correct_rate delta_lte_control",
+          "aggregate": "mean",
+          "value": -0.05,
+          "arm": "compact-4x"
+        }
+      ],
+      "confounds": [
+        "The compactor may itself use frontier cognition.",
+        "A summary can accidentally encode the hidden key.",
+        "Compression ratios must be measured in the target tokenizer."
+      ],
+      "falsifier": "The operational 4x claim is falsified if pass rate loses ten points or citation correctness loses five points on fresh tasks.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H11-graph-plus-embedding",
+      "title": "Claim-lineage graphs beat embedding-only retrieval on evidentiary work",
+      "status": "hypothesis",
+      "priority": 87,
+      "claim": "Combining embedding retrieval with AXM or Clifford claim-lineage constraints will improve citation correctness and forbidden-inference refusal.",
+      "mechanism": "Embeddings recover semantic neighbors but do not encode custody, temporal order, surface boundaries, or prohibited causal hops. Graph constraints can filter attractive but inadmissible context.",
+      "prediction": "The graph-constrained arm should improve citation correctness by at least five points without reducing source coverage.",
+      "task_families": [
+        "retrieval-judgment"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "embedding-only",
+          "label": "Embedding retrieval only",
+          "role": "control",
+          "settings": {
+            "retrieval": "embedding"
+          },
+          "resource_hints": [
+            "gpu:4060"
+          ]
+        },
+        {
+          "id": "graph-plus-embedding",
+          "label": "Embedding retrieval with claim-lineage constraints",
+          "role": "treatment",
+          "settings": {
+            "retrieval": "embedding_plus_graph"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "cpu"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "citations_correct_rate",
+          "op": "delta_gte_control",
+          "note": "citations_correct_rate delta_gte_control",
+          "aggregate": "mean",
+          "value": 0.05
+        },
+        {
+          "metric": "source_coverage_rate",
+          "op": "gte_control",
+          "note": "source_coverage_rate gte_control",
+          "aggregate": "mean"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "source_coverage_rate",
+          "op": "delta_lte_control",
+          "note": "source_coverage_rate delta_lte_control",
+          "aggregate": "mean",
+          "value": -0.05
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "gt_control",
+          "note": "operator_minutes gt_control",
+          "aggregate": "median"
+        }
+      ],
+      "confounds": [
+        "Graph data may be incomplete.",
+        "Human-authored edges may leak the answer.",
+        "Embedding and graph arms must share the same source corpus."
+      ],
+      "falsifier": "No citation gain, lower coverage, or greater operator burden after equal source custody falsifies the added graph layer.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H12-uncertainty-adaptive-context",
+      "title": "Context budget should scale with uncertainty and evidence burden",
+      "status": "hypothesis",
+      "priority": 86,
+      "claim": "Allocating context dynamically according to unresolved claims, retrieval disagreement, and required evidence will use fewer tokens than a fixed budget while preserving accepted outcomes.",
+      "mechanism": "Easy tasks need little context; ambiguous tasks need more. A fixed window wastes compute on easy jobs and starves hard ones. Uncertainty can become a routing signal.",
+      "prediction": "Adaptive packing should cut median selected tokens by at least 30% without lowering pass rate.",
+      "task_families": [
+        "context-reuse",
+        "retrieval-judgment",
+        "bounded-code"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "fixed-budget",
+          "label": "Fixed context budget",
+          "role": "control",
+          "settings": {
+            "budget_policy": "fixed"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "adaptive-budget",
+          "label": "Budget by uncertainty and burden",
+          "role": "treatment",
+          "settings": {
+            "budget_policy": "uncertainty_adaptive"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "selected_context_tokens",
+          "op": "ratio_lte_control",
+          "note": "selected_context_tokens ratio_lte_control",
+          "aggregate": "median",
+          "value": 0.7
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "operator_minutes lte_control",
+          "aggregate": "median"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_lte_control",
+          "note": "pass_rate delta_lte_control",
+          "value": -0.05
+        },
+        {
+          "metric": "context_recall_rate",
+          "op": "delta_lte_control",
+          "note": "context_recall_rate delta_lte_control",
+          "aggregate": "mean",
+          "value": -0.05
+        }
+      ],
+      "confounds": [
+        "Uncertainty scores may be poorly calibrated.",
+        "Hard tasks can be selected after outcome leakage.",
+        "Budget changes must not alter the acceptance contract."
+      ],
+      "falsifier": "A five-point pass-rate or context-recall loss falsifies the adaptive policy for that task family.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H13-local-bestofn",
+      "title": "Local best-of-N can replace one frontier call on grader-rich work",
+      "status": "hypothesis",
+      "priority": 85,
+      "claim": "Several cheap local attempts selected by an external grader will beat a single frontier attempt on cost per accepted result for some bounded task families.",
+      "mechanism": "When local pass probability is nonzero and the referee is reliable, repeated independent attempts can buy reliability without purchasing frontier judgment.",
+      "prediction": "Best-of-3 should match frontier pass rate with lower teacher cost and no more operator attention on bounded code and counterexample tasks.",
+      "task_families": [
+        "bounded-code",
+        "counterexample"
+      ],
+      "minimum_distinct_tasks": 4,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "frontier-single",
+          "label": "Single frontier attempt",
+          "role": "control",
+          "settings": {
+            "route": "frontier_single"
+          },
+          "resource_hints": [
+            "quota:frontier"
+          ]
+        },
+        {
+          "id": "local-best3",
+          "label": "Three local attempts plus external selection",
+          "role": "treatment",
+          "settings": {
+            "route": "local_best_of_n",
+            "n": 3
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "teacher_cost_usd",
+          "op": "lt_control",
+          "note": "teacher_cost_usd lt_control",
+          "aggregate": "sum"
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "operator_minutes lte_control",
+          "aggregate": "sum"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_lte_control",
+          "note": "pass_rate delta_lte_control",
+          "value": -0.1
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "gt_control",
+          "note": "operator_minutes gt_control",
+          "aggregate": "sum"
+        }
+      ],
+      "confounds": [
+        "Local attempts must be independent.",
+        "The grader must not be visible to the solver.",
+        "Local electricity and elapsed time remain separately reported."
+      ],
+      "falsifier": "A ten-point pass-rate loss or greater operator burden falsifies replacement for the bounded family.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H14-driver-repair",
+      "title": "Local attempt plus frontier repair beats direct frontier execution",
+      "status": "hypothesis",
+      "priority": 84,
+      "claim": "A frontier model should spend judgment tokens on a concrete failed local attempt and grader report rather than redoing all work from scratch.",
+      "mechanism": "The local route supplies search, implementation, and failure evidence. The frontier route diagnoses the remaining residue and emits a bounded repair.",
+      "prediction": "Driver-repair should cut teacher tokens or cost by at least 40% while matching direct frontier acceptance.",
+      "task_families": [
+        "frontier-composition"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "frontier-direct",
+          "label": "Frontier executes from scratch",
+          "role": "control",
+          "settings": {
+            "composition": "frontier_direct"
+          },
+          "resource_hints": [
+            "quota:frontier"
+          ]
+        },
+        {
+          "id": "local-plus-repair",
+          "label": "Local attempt then frontier repair",
+          "role": "treatment",
+          "settings": {
+            "composition": "local_then_frontier_repair"
+          },
+          "resource_hints": [
+            "gpu:3090",
+            "quota:frontier"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "teacher_cost_usd",
+          "op": "ratio_lte_control",
+          "note": "teacher_cost_usd ratio_lte_control",
+          "aggregate": "sum",
+          "value": 0.6
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "operator_minutes lte_control",
+          "aggregate": "sum"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_lte_control",
+          "note": "pass_rate delta_lte_control",
+          "value": -0.05
+        },
+        {
+          "metric": "teacher_cost_usd",
+          "op": "gte_control",
+          "note": "teacher_cost_usd gte_control",
+          "aggregate": "sum"
+        }
+      ],
+      "confounds": [
+        "Bad local output may anchor the frontier.",
+        "The repair packet may exceed direct prompt size.",
+        "Grader reports must not reveal hidden answer keys."
+      ],
+      "falsifier": "No teacher-cost reduction or lower accepted yield falsifies the composition for that family.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H15-repair-trace-curriculum",
+      "title": "Failure and repair traces teach more than final answers alone",
+      "status": "hypothesis",
+      "priority": 83,
+      "claim": "Training or scaffolding on failed attempt, grader diagnosis, and accepted repair will improve a local student's transfer to fresh tasks more than an equal number of final answers.",
+      "mechanism": "The trace exposes the decision boundary and the mechanism of correction. Final answers hide which attractive path was wrong.",
+      "prediction": "With equal teacher calls and student compute, trace curricula should improve fresh-task pass rate by at least ten points.",
+      "task_families": [
+        "teacher-acquisition"
+      ],
+      "minimum_distinct_tasks": 5,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "final-only",
+          "label": "Accepted final answers only",
+          "role": "control",
+          "settings": {
+            "curriculum": "final_only"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "failure-repair-trace",
+          "label": "Failure, grader signal, and repair",
+          "role": "treatment",
+          "settings": {
+            "curriculum": "failure_repair_trace"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_gte_control",
+          "note": "pass_rate delta_gte_control",
+          "value": 0.1
+        },
+        {
+          "metric": "teacher_calls",
+          "op": "lte_control",
+          "note": "teacher_calls lte_control",
+          "aggregate": "sum"
+        },
+        {
+          "metric": "training_gpu_hours",
+          "op": "lte_control",
+          "note": "training_gpu_hours lte_control",
+          "aggregate": "sum"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "lte_control",
+          "note": "pass_rate lte_control"
+        },
+        {
+          "metric": "escaped_defects",
+          "op": "gt_control",
+          "note": "escaped_defects gt_control",
+          "aggregate": "sum"
+        }
+      ],
+      "confounds": [
+        "Grader signals may leak the hidden test.",
+        "Trace length can increase training tokens.",
+        "The student may memorize task identities."
+      ],
+      "falsifier": "No fresh-task pass-rate improvement under equal teacher-call and compute budgets falsifies the trace advantage.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H16-behavioral-residue",
+      "title": "Closed-teacher residue can become local source machinery",
+      "status": "hypothesis",
+      "priority": 82,
+      "claim": "A recurring closed-model advantage can be captured as a scaffold, verifier, routing rule, context compiler, curriculum, or inference policy that lets the local student clear fresh work without teacher access.",
+      "mechanism": "Closed weights remain unavailable, but their bounded successful behavior can be treated as a black-box specification and reproduced by a local composition.",
+      "prediction": "The augmented local arm should match teacher acceptance on distinct replays while using zero teacher calls.",
+      "task_families": [
+        "behavioral-capture"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "local-native",
+          "label": "Local student without capture artifact",
+          "role": "control",
+          "settings": {
+            "capture": "none"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "local-behavioral-artifact",
+          "label": "Local student plus behavioral artifact",
+          "role": "treatment",
+          "settings": {
+            "capture": "behavioral"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_gte_control",
+          "note": "pass_rate delta_gte_control",
+          "value": 0.2
+        },
+        {
+          "metric": "teacher_calls",
+          "op": "lte",
+          "note": "teacher_calls lte",
+          "aggregate": "sum",
+          "value": 0
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "operator_minutes lte_control",
+          "aggregate": "median"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "teacher_calls",
+          "op": "gt",
+          "note": "teacher_calls gt",
+          "aggregate": "sum",
+          "value": 0
+        },
+        {
+          "metric": "pass_rate",
+          "op": "lte_control",
+          "note": "pass_rate lte_control"
+        }
+      ],
+      "confounds": [
+        "Artifact generation may leak hidden test material.",
+        "Replay tasks must be distinct.",
+        "The artifact may encode one task rather than a family rule."
+      ],
+      "falsifier": "Any teacher dependency during replay, or no fresh-task improvement over native local execution, falsifies capture closure.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H17-mechanistic-residue",
+      "title": "Open-weight residue is cheaper to capture through source and weight interventions",
+      "status": "hypothesis",
+      "priority": 81,
+      "claim": "When a teacher exposes weights or runtime source, small adapters or source-level inference policies will reproduce bounded residue with fewer examples and less operator effort than behavioral scaffolds alone.",
+      "mechanism": "Mechanistic access permits ablation, routing instrumentation, LoRA, quantization experiments, and source-level policies that closed teachers cannot expose.",
+      "prediction": "The best mechanistic treatment should beat the behavioral-only treatment on pass rate or capture build cost while remaining teacher-independent.",
+      "task_families": [
+        "mechanistic-capture"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "behavioral-only",
+          "label": "Prompt, context, and verifier artifacts only",
+          "role": "control",
+          "settings": {
+            "capture_lane": "behavioral"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "source-policy",
+          "label": "Source-level inference policy",
+          "role": "treatment",
+          "settings": {
+            "capture_lane": "mechanistic",
+            "artifact": "source_policy"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "lora-adapter",
+          "label": "LoRA or adapter",
+          "role": "treatment",
+          "settings": {
+            "capture_lane": "mechanistic",
+            "artifact": "lora"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "teacher_calls",
+          "op": "lte",
+          "note": "teacher_calls lte",
+          "aggregate": "sum",
+          "value": 0
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "lt_control",
+          "note": "pass_rate lt_control"
+        },
+        {
+          "metric": "capture_build_minutes",
+          "op": "ratio_gte_control",
+          "note": "Twice the build burden without quality gain falsifies the selected mechanistic treatment.",
+          "aggregate": "sum",
+          "value": 2.0
+        }
+      ],
+      "confounds": [
+        "Mechanistic experiments may overfit the donor model.",
+        "Training compute accounting must include failed candidates.",
+        "Open weights do not reveal why a closed teacher succeeded."
+      ],
+      "falsifier": "If source or weight interventions provide no quality or build-cost advantage over behavioral capture, the mechanistic route is not justified for that residue.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H18-llamacpp-vllm-lmcache",
+      "title": "vLLM plus LMCache has a measurable complexity threshold on one desktop",
+      "status": "hypothesis",
+      "priority": 80,
+      "claim": "WSL2 vLLM plus LMCache will beat llama.cpp persistent slots only after workload concurrency, prefix diversity, or KV tier pressure crosses a measurable threshold.",
+      "mechanism": "vLLM and LMCache add paged serving, automatic prefix caching, CPU or disk KV tiers, and prefetch, but they also add WSL2, service, memory, and maintenance overhead.",
+      "prediction": "llama.cpp should win below the threshold; vLLM plus LMCache should win only on larger concurrent or multi-prefix batches.",
+      "task_families": [
+        "serving-stack"
+      ],
+      "minimum_distinct_tasks": 3,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "llamacpp-slots",
+          "label": "Native Windows llama.cpp persistent slots",
+          "role": "control",
+          "settings": {
+            "stack": "llama.cpp",
+            "cache": "slots"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "vllm-lmcache",
+          "label": "WSL2 vLLM with LMCache",
+          "role": "treatment",
+          "settings": {
+            "stack": "vllm_lmcache",
+            "cache": "ram_disk"
+          },
+          "resource_hints": [
+            "gpu:3090",
+            "ram:pinned",
+            "storage:nvme"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "accepted_jobs_per_attention_hour",
+          "op": "gte_control",
+          "note": "accepted_jobs_per_attention_hour gte_control",
+          "aggregate": "mean"
+        },
+        {
+          "metric": "prefill_compute_tokens",
+          "op": "lte_control",
+          "note": "prefill_compute_tokens lte_control",
+          "aggregate": "sum"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "maintenance_minutes",
+          "op": "ratio_gte_control",
+          "note": "maintenance_minutes ratio_gte_control",
+          "aggregate": "sum",
+          "value": 2.0
+        },
+        {
+          "metric": "accepted_jobs_per_attention_hour",
+          "op": "lte_control",
+          "note": "accepted_jobs_per_attention_hour lte_control",
+          "aggregate": "mean"
+        }
+      ],
+      "confounds": [
+        "WSL2 GPU and filesystem overhead may dominate.",
+        "Different serving kernels may change outputs.",
+        "Configuration maturity can bias early runs."
+      ],
+      "falsifier": "If vLLM plus LMCache does not increase accepted jobs per attention hour after its maintenance cost is charged, the added stack is rejected.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H19-consumer-pd-disaggregation",
+      "title": "True prefill/decode disaggregation is probably uneconomic on consumer PCIe",
+      "status": "hypothesis",
+      "priority": 78,
+      "claim": "Moving model-specific KV from a 4060 prefill worker to a 3090 decode worker will not outperform aggregated 3090 serving for the models and prompts that fit this desktop.",
+      "mechanism": "Industrial disaggregation relies on identical model state and very fast KV transfer. Consumer PCIe, asymmetric VRAM, and duplicated model residency make transfer and setup likely more expensive than recomputation.",
+      "prediction": "The disaggregated arm is expected to be slower or impossible for most useful target models; a win would identify a narrow supported regime.",
+      "task_families": [
+        "pd-disaggregation"
+      ],
+      "minimum_distinct_tasks": 2,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "aggregated-3090",
+          "label": "Prefill and decode on 3090",
+          "role": "control",
+          "settings": {
+            "topology": "aggregated"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "4060-prefill-3090-decode",
+          "label": "Same-model prefill on 4060, KV transfer, decode on 3090",
+          "role": "treatment",
+          "settings": {
+            "topology": "pd_disaggregated"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "wall_seconds",
+          "op": "ratio_lte_control",
+          "note": "wall_seconds ratio_lte_control",
+          "aggregate": "median",
+          "value": 0.9
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "wall_seconds",
+          "op": "gte_control",
+          "note": "wall_seconds gte_control",
+          "aggregate": "median"
+        },
+        {
+          "metric": "peak_vram_mb",
+          "op": "gt",
+          "note": "peak_vram_mb gt",
+          "aggregate": "max",
+          "value": 24000
+        }
+      ],
+      "confounds": [
+        "The same model may not fit on the 4060.",
+        "Runtime support may be experimental.",
+        "Transfer telemetry must distinguish TCP, host staging, and direct peer access."
+      ],
+      "falsifier": "The working default remains aggregated if transfer plus duplicated residency is no faster than 3090 recomputation.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H20-night-shift-patience",
+      "title": "Unlimited unattended local time replaces frontier calls on bounded work",
+      "status": "hypothesis",
+      "priority": 77,
+      "claim": "For grader-rich tasks without hard latency requirements, a bounded local retry policy can recover most accepted work while consuming less operator attention and frontier cost.",
+      "mechanism": "The desktop has abundant elapsed time. Independent local attempts, external grading, and deterministic stopping can trade hours of compute for minutes of human attention.",
+      "prediction": "Within an overnight deadline, local retries should match frontier pass rate with lower teacher cost and no more operator interventions.",
+      "task_families": [
+        "night-shift",
+        "bounded-code"
+      ],
+      "minimum_distinct_tasks": 4,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "frontier-now",
+          "label": "One immediate frontier attempt",
+          "role": "control",
+          "settings": {
+            "route": "frontier",
+            "deadline_hours": 1
+          },
+          "resource_hints": [
+            "quota:frontier"
+          ]
+        },
+        {
+          "id": "local-overnight",
+          "label": "Bounded local retries until acceptance or deadline",
+          "role": "treatment",
+          "settings": {
+            "route": "local",
+            "deadline_hours": 10,
+            "max_attempts": 8
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "teacher_cost_usd",
+          "op": "lt_control",
+          "note": "teacher_cost_usd lt_control",
+          "aggregate": "sum"
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "operator_minutes lte_control",
+          "aggregate": "sum"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_lte_control",
+          "note": "pass_rate delta_lte_control",
+          "value": -0.1
+        },
+        {
+          "metric": "intervention_count",
+          "op": "gt_control",
+          "note": "intervention_count gt_control",
+          "aggregate": "sum"
+        }
+      ],
+      "confounds": [
+        "Retries may not be independent.",
+        "A visible grader can be gamed.",
+        "Energy and hardware wear remain reported even when dollar cost is zero."
+      ],
+      "falsifier": "A ten-point pass-rate loss or more interventions falsifies the unattended replacement policy.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H21-active-teacher-selection",
+      "title": "Disagreement-selected teacher calls beat random distillation examples",
+      "status": "hypothesis",
+      "priority": 76,
+      "claim": "Teacher calls chosen where local candidates disagree, fail hidden checks, or express calibrated uncertainty will produce a stronger student per teacher call than random sampling.",
+      "mechanism": "The teacher is most valuable at the local decision boundary. Repeatedly asking it easy questions purchases little new residue.",
+      "prediction": "Active selection should reach the same fresh-task pass rate with at most half the teacher calls.",
+      "task_families": [
+        "teacher-acquisition"
+      ],
+      "minimum_distinct_tasks": 5,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "random-teacher",
+          "label": "Random examples",
+          "role": "control",
+          "settings": {
+            "selection": "random"
+          },
+          "resource_hints": [
+            "quota:frontier",
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "boundary-teacher",
+          "label": "Disagreement and failure-boundary selection",
+          "role": "treatment",
+          "settings": {
+            "selection": "active_boundary"
+          },
+          "resource_hints": [
+            "quota:frontier",
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "teacher_calls",
+          "op": "ratio_lte_control",
+          "note": "teacher_calls ratio_lte_control",
+          "aggregate": "sum",
+          "value": 0.5
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "lt_control",
+          "note": "pass_rate lt_control"
+        },
+        {
+          "metric": "teacher_calls",
+          "op": "gte_control",
+          "note": "teacher_calls gte_control",
+          "aggregate": "sum"
+        }
+      ],
+      "confounds": [
+        "Uncertainty may be miscalibrated.",
+        "Selection can overfit current validators.",
+        "Candidate pool construction may leak outcomes."
+      ],
+      "falsifier": "No teacher-call reduction at equal fresh-task performance falsifies the active-selection policy.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    },
+    {
+      "id": "H22-context-routing-is-capability",
+      "title": "Context compiler quality explains more variance than model size on recurring work",
+      "status": "hypothesis",
+      "priority": 75,
+      "claim": "After a competent local model threshold, the quality of source selection, ordering, compaction, and external verification will explain more accepted-outcome variance than moving one model size rung upward.",
+      "mechanism": "Frontier systems often appear to possess long memory because their execution plane supplies better context and tool state. Improving the plane may move the waterline farther than increasing parameter count.",
+      "prediction": "A smaller model with the strong context compiler should match or beat the larger model with naive context on at least half of recurring task families.",
+      "task_families": [
+        "context-reuse",
+        "retrieval-judgment",
+        "bounded-code",
+        "bounded-planning"
+      ],
+      "minimum_distinct_tasks": 4,
+      "replicates_per_cell": 3,
+      "arms": [
+        {
+          "id": "large-naive",
+          "label": "Larger model with naive context",
+          "role": "control",
+          "settings": {
+            "model_rung": "large",
+            "context": "naive"
+          },
+          "resource_hints": [
+            "gpu:3090"
+          ]
+        },
+        {
+          "id": "small-strong-context",
+          "label": "Smaller model with source-bound compiler and verifier",
+          "role": "treatment",
+          "settings": {
+            "model_rung": "small",
+            "context": "source_bound",
+            "verifier": "external"
+          },
+          "resource_hints": [
+            "gpu:4060",
+            "gpu:3090"
+          ]
+        }
+      ],
+      "support": [
+        {
+          "metric": "pass_rate",
+          "op": "gte_control",
+          "note": "pass_rate gte_control"
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "lte_control",
+          "note": "operator_minutes lte_control",
+          "aggregate": "median"
+        },
+        {
+          "metric": "prefill_compute_tokens",
+          "op": "lte_control",
+          "note": "prefill_compute_tokens lte_control",
+          "aggregate": "median"
+        }
+      ],
+      "falsify": [
+        {
+          "metric": "pass_rate",
+          "op": "delta_lte_control",
+          "note": "pass_rate delta_lte_control",
+          "value": -0.1
+        },
+        {
+          "metric": "operator_minutes",
+          "op": "gt_control",
+          "note": "operator_minutes gt_control",
+          "aggregate": "median"
+        }
+      ],
+      "confounds": [
+        "The small and large model may use different tokenizers.",
+        "Context compiler development cost must be amortized.",
+        "Some tasks may contain irreducible model residue."
+      ],
+      "falsifier": "If the strong context plane cannot close at least half the accepted-yield gap on fresh recurring tasks, model capability remains the dominant variable.",
+      "failure_default": "PARTIAL; preserve the theory and the contaminated evidence separately."
+    }
+  ]
+}
