@@ -1,4 +1,4 @@
-name: diagnose-model-waterline-payload
+name: assemble-model-waterline
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: write
 
 jobs:
-  diagnose:
+  assemble:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,53 +20,62 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Inventory exact payload chunks
+      - name: Decode, verify, and extract exact payload
         run: |
           python - <<'PY'
-          import base64, hashlib, json, pathlib
+          import base64, hashlib, json, pathlib, zipfile
           root = pathlib.Path(".").resolve()
           carriers = sorted((root / "transport").glob("model_waterline_payload.part-*.b64"))
-          records = []
           parts = []
           for path in carriers:
-              raw = path.read_text(encoding="ascii")
-              normalized = "".join(raw.split())
+              normalized = "".join(path.read_text(encoding="ascii").split())
               if normalized:
                   parts.append(normalized)
-              records.append({
-                  "path": path.as_posix(),
-                  "raw_length": len(raw),
-                  "normalized_length": len(normalized),
-                  "raw_sha256": hashlib.sha256(raw.encode()).hexdigest(),
-                  "normalized_sha256": hashlib.sha256(normalized.encode()).hexdigest(),
-                  "prefix": normalized[:24],
-                  "suffix": normalized[-24:],
-              })
           encoded = "".join(parts)
-          diagnosis = {
-              "schema": "tier-bench/model-waterline-payload-diagnosis@1",
-              "chunks": records,
-              "combined_length": len(encoded),
-              "combined_sha256": hashlib.sha256(encoded.encode()).hexdigest(),
-              "expected_zip_sha256": "dfa594dc21813985970b9cd2fb85c0e2fe585b369602a970d0b30e609347da3f",
-          }
-          try:
-              payload = base64.b64decode(encoded, validate=True)
-              diagnosis["decoded_length"] = len(payload)
-              diagnosis["decoded_sha256"] = hashlib.sha256(payload).hexdigest()
-              diagnosis["decode_error"] = None
-          except Exception as exc:
-              diagnosis["decoded_length"] = None
-              diagnosis["decoded_sha256"] = None
-              diagnosis["decode_error"] = f"{type(exc).__name__}: {exc}"
-          target = root / "transport/model_waterline_payload.diagnostic.json"
-          target.write_text(json.dumps(diagnosis, indent=2, sort_keys=True) + "\n")
-          print(json.dumps(diagnosis, indent=2, sort_keys=True))
+          if len(encoded) != 51740:
+              raise SystemExit(f"payload base64 length mismatch: {len(encoded)} != 51740")
+          payload = base64.b64decode(encoded, validate=True)
+          actual = hashlib.sha256(payload).hexdigest()
+          expected = "dfa594dc21813985970b9cd2fb85c0e2fe585b369602a970d0b30e609347da3f"
+          if actual != expected:
+              raise SystemExit(
+                  f"payload sha mismatch from {len(carriers)} chunks: {actual} != {expected}"
+              )
+          archive = root / "transport/model_waterline_payload.zip"
+          archive.write_bytes(payload)
+          with zipfile.ZipFile(archive) as z:
+              names = z.namelist()
+              for name in names:
+                  p = pathlib.PurePosixPath(name)
+                  if p.is_absolute() or ".." in p.parts or p.parts[:1] == (".git",):
+                      raise SystemExit(f"unsafe archive path: {name}")
+              z.extractall(root)
+          manifest = json.loads((root / "PAYLOAD_MANIFEST.json").read_text())
+          for name, record in manifest["files"].items():
+              path = root / name
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              if digest != record["sha256"]:
+                  raise SystemExit(f"file sha mismatch: {name}")
+          print(f"verified {len(manifest['files'])} files from {len(carriers)} chunks")
           PY
-      - name: Commit diagnosis for review
+      - name: Validate assembled source without model calls
         run: |
-          git config user.name "Model Waterline Diagnostic"
+          python -m py_compile \
+            tier_runner/model_waterline.py \
+            scripts/freeze_claude_waterline.py \
+            tests/test_model_waterline.py
+          python tests/test_model_waterline.py
+          python -m tier_runner.model_waterline validate \
+            --protocol experiments/model_waterlines/opus5_fable5/protocol.json \
+            --tasks experiments/model_waterlines/opus5_fable5/tasks.json \
+            --catalog experiments/model_waterlines/catalog.json
+      - name: Commit source and remove one-use transport
+        run: |
+          rm -f transport/model_waterline_payload*
+          rm -f PAYLOAD_MANIFEST.json
+          rm -f .github/workflows/model-waterline-assemble.yml
+          git config user.name "Model Waterline Assembler"
           git config user.email "model-waterline@users.noreply.github.com"
-          git add transport/model_waterline_payload.diagnostic.json
-          git diff --cached --quiet || git commit -m "Record model waterline payload diagnosis"
+          git add -A
+          git commit -m "Assemble model waterline observatory"
           git push origin HEAD:agent/model-waterline-observatory-v1
