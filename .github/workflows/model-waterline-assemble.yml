@@ -3,6 +3,8 @@ name: assemble-model-waterline
 on:
   push:
     branches: [agent/model-waterline-observatory-v1]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
