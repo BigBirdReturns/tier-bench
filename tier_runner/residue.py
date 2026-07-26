@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from .residue_controller import ResidueControllerMixin
 from .residue_query import ResidueQueryMixin
+from .residue_resources import ResidueResourceMixin
 from .residue_schema import ResidueSchemaMixin
 
 
 class ResidueStoreMixin(
-    ResidueControllerMixin, ResidueQueryMixin, ResidueSchemaMixin
+    ResidueResourceMixin, ResidueControllerMixin, ResidueQueryMixin, ResidueSchemaMixin
 ):
     pass
