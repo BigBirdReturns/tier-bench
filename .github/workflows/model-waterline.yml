@@ -1,0 +1,65 @@
+name: model-waterline
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  zero-model-calls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile instrument
+        run: |
+          python -m py_compile \
+            tier_runner/model_waterline.py \
+            scripts/freeze_claude_waterline.py \
+            tests/test_model_waterline.py
+      - name: Exercise waterline law
+        run: python tests/test_model_waterline.py
+      - name: Validate frozen Opus/Fable protocol and experiment catalog
+        run: |
+          python -m tier_runner.model_waterline validate \
+            --protocol experiments/model_waterlines/opus5_fable5/protocol.json \
+            --tasks experiments/model_waterlines/opus5_fable5/tasks.json \
+            --catalog experiments/model_waterlines/catalog.json
+      - name: Compile seven draft calibration campaigns without dispatch
+        run: |
+          python -m tier_runner.model_waterline compile \
+            --protocol experiments/model_waterlines/opus5_fable5/protocol.json \
+            --tasks experiments/model_waterlines/opus5_fable5/tasks.json \
+            --repo . \
+            --out /tmp/opus5-fable5 \
+            --allow-unbound
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path("/tmp/opus5-fable5")
+          index = json.loads((root / "INDEX.json").read_text())
+          assert len(index["campaigns"]) == 7, index
+          for entry in index["campaigns"]:
+              campaign = json.loads((root / entry["path"]).read_text())
+              assert campaign["queue_now"] is False
+              assert campaign["mode"] == "survey"
+              assert campaign["k"] == 3
+              assert len(campaign["routes"]) == 6
+              assert len(campaign["_waterline"]["blocked_routes"]) == 2
+          print("MODEL_WATERLINE_DRAFTS_OK")
+          PY
+      - name: Registry admits Opus 5 without inventing a measured result
+        run: |
+          python - <<'PY'
+          import json
+          registry = json.load(open("models.json", encoding="utf-8"))
+          opus = registry["models"]["claude-opus-5"]
+          assert opus["input_per_1M"] == 5.0
+          assert opus["output_per_1M"] == 25.0
+          assert opus["measured_status"] == "unmeasured"
+          assert registry["roles"]["driver"] == "claude-fable-5"
+          print("OPUS5_REGISTERED_UNMEASURED")
+          PY
