@@ -1,0 +1,72 @@
+name: assemble-model-waterline
+
+on:
+  push:
+    branches: [agent/model-waterline-observatory-v1]
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    if: github.actor == 'BigBirdReturns'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/model-waterline-observatory-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Decode, verify, and extract exact payload
+        env:
+          EXPECTED_ZIP_SHA256: dfa594dc21813985970b9cd2fb85c0e2fe585b369602a970d0b30e609347da3f
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, pathlib, zipfile
+          root = pathlib.Path(".").resolve()
+          carrier = root / "transport/model_waterline_payload.b64"
+          payload = base64.b64decode(carrier.read_text(encoding="ascii"))
+          actual = hashlib.sha256(payload).hexdigest()
+          expected = "dfa594dc21813985970b9cd2fb85c0e2fe585b369602a970d0b30e609347da3f"
+          if actual != expected:
+              raise SystemExit(f"payload sha mismatch: {actual} != {expected}")
+          archive = root / "transport/model_waterline_payload.zip"
+          archive.write_bytes(payload)
+          with zipfile.ZipFile(archive) as z:
+              names = z.namelist()
+              for name in names:
+                  p = pathlib.PurePosixPath(name)
+                  if p.is_absolute() or ".." in p.parts or p.parts[:1] == (".git",):
+                      raise SystemExit(f"unsafe archive path: {name}")
+              z.extractall(root)
+          manifest = json.loads((root / "PAYLOAD_MANIFEST.json").read_text())
+          for name, record in manifest["files"].items():
+              path = root / name
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              if digest != record["sha256"]:
+                  raise SystemExit(f"file sha mismatch: {name}")
+          print(f"verified {len(manifest['files'])} files")
+          PY
+      - name: Validate assembled source without model calls
+        run: |
+          python -m py_compile \
+            tier_runner/model_waterline.py \
+            scripts/freeze_claude_waterline.py \
+            tests/test_model_waterline.py
+          python tests/test_model_waterline.py
+          python -m tier_runner.model_waterline validate \
+            --protocol experiments/model_waterlines/opus5_fable5/protocol.json \
+            --tasks experiments/model_waterlines/opus5_fable5/tasks.json \
+            --catalog experiments/model_waterlines/catalog.json
+      - name: Commit source and remove one-use transport
+        run: |
+          rm -f transport/model_waterline_payload.b64 transport/model_waterline_payload.zip
+          rm -f PAYLOAD_MANIFEST.json
+          rm -f .github/workflows/model-waterline-assemble.yml
+          git config user.name "Model Waterline Assembler"
+          git config user.email "model-waterline@users.noreply.github.com"
+          git add -A
+          git commit -m "Assemble model waterline observatory"
+          git push origin HEAD:agent/model-waterline-observatory-v1
