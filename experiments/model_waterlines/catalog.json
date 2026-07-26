@@ -1,0 +1,1111 @@
+{
+  "schema": "tier-bench/model-waterline-catalog@1",
+  "generated": "2026-07-26",
+  "purpose": "Inventory every economically or operationally meaningful boundary where the same waterline method can recover operator attention or capture frontier residue.",
+  "laws": [
+    "Compare accepted outcomes, not vendor benchmark scores.",
+    "Runtime identity, tools, context, effort, and transport are part of the treatment.",
+    "Errors do not buy capability escalation.",
+    "Subjective work uses blinded or mixed acceptance and never masquerades as deterministic.",
+    "Open-weight winners enter mechanistic capture; closed winners enter behavioral capture.",
+    "Wall-clock latency is secondary unless the task contract says otherwise."
+  ],
+  "experiments": [
+    {
+      "id": "anthropic-haiku45-sonnet5",
+      "domain": "model-tier",
+      "question": "Which recurring task families still require Sonnet 5 after Haiku 4.5 receives the same packet, tools, and referee?",
+      "floor": [
+        "claude-haiku-4-5"
+      ],
+      "ceiling": [
+        "claude-sonnet-5"
+      ],
+      "status": "ready",
+      "acceptance": "deterministic",
+      "residue_target": "Sonnet-only rule commitments, counterexample moves, and repair procedures",
+      "task_families": [
+        "hidden-graded code repair",
+        "structured planning",
+        "classification",
+        "bounded extraction"
+      ]
+    },
+    {
+      "id": "anthropic-sonnet5-opus5",
+      "domain": "model-tier",
+      "question": "Where does Opus 5 buy verified judgment, autonomy, or fewer interventions over Sonnet 5?",
+      "floor": [
+        "claude-sonnet-5"
+      ],
+      "ceiling": [
+        "claude-opus-5"
+      ],
+      "status": "ready",
+      "acceptance": "mixed",
+      "residue_target": "Opus planning and recovery moves that can be frozen into Sonnet scaffolds",
+      "task_families": [
+        "cross-repo repair",
+        "architecture contradiction",
+        "long-document synthesis",
+        "visual implementation"
+      ]
+    },
+    {
+      "id": "anthropic-opus5-fable5",
+      "domain": "model-tier",
+      "question": "Where can Opus 5 replace Fable 5 natively, where can captured Fable residue move the boundary, and where does long-horizon Fable residue remain?",
+      "floor": [
+        "claude-opus-5"
+      ],
+      "ceiling": [
+        "claude-fable-5"
+      ],
+      "status": "ready",
+      "acceptance": "mixed",
+      "protocol": "experiments/model_waterlines/opus5_fable5/protocol.json",
+      "residue_target": "Fable-only direction selection, horizon management, self-audit, and acceptance discovery",
+      "task_families": [
+        "bounded hard repair",
+        "multi-stage migration",
+        "acceptance discovery",
+        "autonomous recovery"
+      ]
+    },
+    {
+      "id": "anthropic-opus5-effort",
+      "domain": "effort",
+      "question": "What is the cheapest Opus 5 effort setting that preserves verified success and attention burden for each task family?",
+      "floor": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "ceiling": [
+        "max"
+      ],
+      "status": "ready",
+      "acceptance": "deterministic",
+      "residue_target": "Effort-sensitive reasoning edges rather than model-name edges",
+      "task_families": [
+        "counterexample construction",
+        "architecture review",
+        "long-horizon planning"
+      ]
+    },
+    {
+      "id": "anthropic-fable5-effort",
+      "domain": "effort",
+      "question": "Which Fable 5 workloads genuinely improve with max effort, and which only consume more quota?",
+      "floor": [
+        "high"
+      ],
+      "ceiling": [
+        "max"
+      ],
+      "status": "ready",
+      "acceptance": "mixed",
+      "residue_target": "Task classes where additional test-time compute changes the accepted outcome",
+      "task_families": [
+        "migration",
+        "research synthesis",
+        "self-verifying implementation"
+      ]
+    },
+    {
+      "id": "anthropic-fable-advisor-opus",
+      "domain": "orchestration",
+      "question": "Can one frozen Fable advisor artifact let Opus 5 complete fresh tasks at lower recurring cost and attention?",
+      "floor": [
+        "opus5-native"
+      ],
+      "ceiling": [
+        "fable-advisor-plus-opus5"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Reusable strategy packets whose derivation cost amortizes across distinct tasks",
+      "task_families": [
+        "architecture planning",
+        "review lenses",
+        "migration sequencing"
+      ]
+    },
+    {
+      "id": "openai-luna-terra",
+      "domain": "model-tier",
+      "question": "Where does Terra first produce a verified capability or attention advantage over Luna?",
+      "floor": [
+        "gpt-5.6-luna"
+      ],
+      "ceiling": [
+        "gpt-5.6-terra"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Terra-only repair and judgment traces teachable to Luna or local hands",
+      "task_families": [
+        "bounded coding",
+        "data transformation",
+        "tool routing"
+      ]
+    },
+    {
+      "id": "openai-terra-sol",
+      "domain": "model-tier",
+      "question": "Which work still requires Sol after Terra receives identical tools, effort, and hidden acceptance?",
+      "floor": [
+        "gpt-5.6-terra"
+      ],
+      "ceiling": [
+        "gpt-5.6-sol"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Sol-only reasoning and orchestration moves",
+      "task_families": [
+        "architecture",
+        "cross-repo debugging",
+        "evidence synthesis"
+      ]
+    },
+    {
+      "id": "openai-sol-solpro",
+      "domain": "model-tier",
+      "question": "Which bounded tasks justify Sol Pro rather than ordinary Sol on cost per accepted result?",
+      "floor": [
+        "gpt-5.6-sol"
+      ],
+      "ceiling": [
+        "gpt-5.6-sol-pro"
+      ],
+      "status": "research",
+      "acceptance": "mixed",
+      "residue_target": "Rare high-horizon or high-reliability residue",
+      "task_families": [
+        "principal architecture",
+        "complex proofs",
+        "long autonomous work"
+      ]
+    },
+    {
+      "id": "openai-effort-ladder",
+      "domain": "effort",
+      "question": "For each GPT-5.6 tier, where does higher effort change the accepted outcome rather than merely token use?",
+      "floor": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "ceiling": [
+        "max"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Effort-sensitive task families and stopping rules",
+      "task_families": [
+        "novel reasoning",
+        "counterexample construction",
+        "repair"
+      ]
+    },
+    {
+      "id": "openai-single-ultra",
+      "domain": "orchestration",
+      "question": "Where does ultra or multi-agent execution repay its coordination and token cost over one Sol session?",
+      "floor": [
+        "single-agent-sol"
+      ],
+      "ceiling": [
+        "ultra-multi-agent"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Parallel decomposition patterns that can be reproduced by Tier Desk",
+      "task_families": [
+        "broad research",
+        "large repository sweeps",
+        "multi-output production"
+      ]
+    },
+    {
+      "id": "openai-direct-programmatic-tools",
+      "domain": "tooling",
+      "question": "When does programmatic tool calling reduce calls, context, errors, or attention versus direct model-authored tool calls?",
+      "floor": [
+        "direct-tool-calls"
+      ],
+      "ceiling": [
+        "programmatic-tool-calling"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Source-level tool policies and compact execution programs",
+      "task_families": [
+        "repository search",
+        "data filtering",
+        "multi-step API work"
+      ]
+    },
+    {
+      "id": "google-flashlite-flash",
+      "domain": "model-tier",
+      "question": "Which structured and multimodal tasks exceed Flash-Lite but do not require Pro?",
+      "floor": [
+        "gemini-flash-lite"
+      ],
+      "ceiling": [
+        "gemini-flash"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Flash-only multimodal and tool-use behaviors",
+      "task_families": [
+        "document extraction",
+        "classification",
+        "screen interpretation"
+      ]
+    },
+    {
+      "id": "google-flash-pro",
+      "domain": "model-tier",
+      "question": "Where does Gemini Pro retain a verified advantage over Flash on our actual work?",
+      "floor": [
+        "gemini-flash"
+      ],
+      "ceiling": [
+        "gemini-pro"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Pro-only long-context, reasoning, and visual judgment",
+      "task_families": [
+        "whole-estate synthesis",
+        "architecture",
+        "complex multimodal documents"
+      ]
+    },
+    {
+      "id": "google-thinking-budget",
+      "domain": "effort",
+      "question": "What thinking budget is sufficient for each Gemini task family?",
+      "floor": [
+        "minimal-thinking"
+      ],
+      "ceiling": [
+        "high-thinking"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Tasks whose quality actually scales with thought budget",
+      "task_families": [
+        "planning",
+        "reasoning",
+        "document synthesis"
+      ]
+    },
+    {
+      "id": "google-computeruse-screenghost",
+      "domain": "tooling",
+      "question": "Where can built-in computer use replace or complement ScreenGhost while preserving visible verification and abort-on-drift?",
+      "floor": [
+        "screen-vision-only"
+      ],
+      "ceiling": [
+        "gemini-computer-use"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "hidden_audit",
+      "residue_target": "Action policies that can be recaptured under local authorization",
+      "task_families": [
+        "browser workflows",
+        "desktop configuration",
+        "visual form entry"
+      ]
+    },
+    {
+      "id": "kimi-k26-k27code",
+      "domain": "model-tier",
+      "question": "Which coding and agent tasks require K2.7 Code rather than K2.6?",
+      "floor": [
+        "kimi-k2.6"
+      ],
+      "ceiling": [
+        "kimi-k2.7-code"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Code-agent deltas reusable in local open models",
+      "task_families": [
+        "code repair",
+        "repository editing",
+        "test generation"
+      ]
+    },
+    {
+      "id": "kimi-k27-k3",
+      "domain": "model-tier",
+      "question": "Which long-horizon or difficult tasks justify K3 over K2.7 Code?",
+      "floor": [
+        "kimi-k2.7-code"
+      ],
+      "ceiling": [
+        "kimi-k3"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "K3-only long-context and agentic residue",
+      "task_families": [
+        "whole-repo migration",
+        "research fanout",
+        "architecture"
+      ]
+    },
+    {
+      "id": "kimi-k3-256k-1m",
+      "domain": "context",
+      "question": "When does K3 1M context produce a verified gain over K3-256K after identical context selection?",
+      "floor": [
+        "k3-256k"
+      ],
+      "ceiling": [
+        "k3-1m"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Task classes that genuinely require the extra context rather than better packing",
+      "task_families": [
+        "whole-estate synthesis",
+        "cross-corpus reconciliation",
+        "long logs"
+      ]
+    },
+    {
+      "id": "kimi-k3-single-swarm",
+      "domain": "orchestration",
+      "question": "When does K3 Swarm improve coverage or elapsed time enough to repay extra calls and evidence adjudication?",
+      "floor": [
+        "k3-single"
+      ],
+      "ceiling": [
+        "k3-swarm"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Parallel search strategies and source-coverage policies",
+      "task_families": [
+        "OSS sweeps",
+        "commodity sweeps",
+        "public-record acquisition"
+      ]
+    },
+    {
+      "id": "kimi-k3-effort",
+      "domain": "effort",
+      "question": "What is the minimum K3 effort that preserves accepted results by task family?",
+      "floor": [
+        "low",
+        "high"
+      ],
+      "ceiling": [
+        "max"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Effort-sensitive K3 behaviors",
+      "task_families": [
+        "coding",
+        "research",
+        "architecture"
+      ]
+    },
+    {
+      "id": "deepseek-v4flash-v4pro",
+      "domain": "model-tier",
+      "question": "Where does V4 Pro retain a verified advantage over V4 Flash, especially beyond simple agent tasks?",
+      "floor": [
+        "deepseek-v4-flash"
+      ],
+      "ceiling": [
+        "deepseek-v4-pro"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Pro-only reasoning and long-horizon moves capturable into open descendants",
+      "task_families": [
+        "coding",
+        "agent loops",
+        "mathematical reasoning",
+        "research"
+      ]
+    },
+    {
+      "id": "deepseek-thinking-nonthinking",
+      "domain": "effort",
+      "question": "Which V4 tasks require thinking mode, and which are cheaper and equally correct without it?",
+      "floor": [
+        "non-thinking"
+      ],
+      "ceiling": [
+        "thinking"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Reasoning-mode routing rules",
+      "task_families": [
+        "structured extraction",
+        "coding",
+        "novel reasoning"
+      ]
+    },
+    {
+      "id": "mistral-ministral-small4",
+      "domain": "model-tier",
+      "question": "Where does Mistral Small 4 first exceed edge-sized Ministral models?",
+      "floor": [
+        "ministral-3b",
+        "ministral-8b"
+      ],
+      "ceiling": [
+        "mistral-small-4"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Small 4 capabilities that can guide local cartridge selection",
+      "task_families": [
+        "local extraction",
+        "coding",
+        "vision",
+        "tool calls"
+      ]
+    },
+    {
+      "id": "mistral-small4-medium35",
+      "domain": "model-tier",
+      "question": "Which tasks justify Medium 3.5 over Small 4 on verified cost per success?",
+      "floor": [
+        "mistral-small-4"
+      ],
+      "ceiling": [
+        "mistral-medium-3.5"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Medium-only judgment residue",
+      "task_families": [
+        "enterprise documents",
+        "complex coding",
+        "multilingual work"
+      ]
+    },
+    {
+      "id": "mistral-medium35-large3",
+      "domain": "model-tier",
+      "question": "Where does Large 3 retain a measurable edge over Medium 3.5?",
+      "floor": [
+        "mistral-medium-3.5"
+      ],
+      "ceiling": [
+        "mistral-large-3"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Large-model residue suitable for open mechanistic study",
+      "task_families": [
+        "architecture",
+        "long-context synthesis",
+        "hard reasoning"
+      ]
+    },
+    {
+      "id": "mistral-localquant-hosted",
+      "domain": "execution-surface",
+      "question": "How much capability is lost to consumer quantization and constrained context versus hosted full-precision Mistral?",
+      "floor": [
+        "local-quant"
+      ],
+      "ceiling": [
+        "hosted-full-precision"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Quantization-sensitive task classes and serving parameters",
+      "task_families": [
+        "code",
+        "long context",
+        "structured output"
+      ]
+    },
+    {
+      "id": "qwen-size-ladder",
+      "domain": "model-tier",
+      "question": "Where are the verified waterlines among Qwen 4B, 9B, 27B, 35B-A3B, and larger hosted models?",
+      "floor": [
+        "qwen-4b",
+        "qwen-9b"
+      ],
+      "ceiling": [
+        "qwen-27b",
+        "qwen-35b-a3b",
+        "qwen-large"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Task-specific local size routing and distillation targets",
+      "task_families": [
+        "coding",
+        "structured extraction",
+        "tool use",
+        "reasoning"
+      ]
+    },
+    {
+      "id": "qwen-thinking-nonthinking",
+      "domain": "effort",
+      "question": "Which Qwen tasks need thinking mode after controlling for context and sampling?",
+      "floor": [
+        "non-thinking"
+      ],
+      "ceiling": [
+        "thinking"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Thinking-mode routing policy",
+      "task_families": [
+        "coding",
+        "constraint reasoning",
+        "planning"
+      ]
+    },
+    {
+      "id": "qwen-local-hosted",
+      "domain": "execution-surface",
+      "question": "Which tasks survive the exact local quant and which require hosted Qwen Plus or full precision?",
+      "floor": [
+        "local-3090-quant"
+      ],
+      "ceiling": [
+        "hosted-qwen"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Quantization and context residue",
+      "task_families": [
+        "repository work",
+        "long-context synthesis",
+        "agent loops"
+      ]
+    },
+    {
+      "id": "same-model-subscription-api",
+      "domain": "execution-surface",
+      "question": "Does the same named model behave equivalently across subscription CLI and API after runtime identity, system surface, tools, and effort are frozen?",
+      "floor": [
+        "subscription"
+      ],
+      "ceiling": [
+        "api"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "mixed",
+      "residue_target": "Surface-specific hidden prompts, tool policies, or quota behavior",
+      "task_families": [
+        "coding agent",
+        "research",
+        "long context"
+      ]
+    },
+    {
+      "id": "same-model-standard-priority",
+      "domain": "execution-surface",
+      "question": "Does priority or fast service change accepted outcomes, timeout rate, or only latency?",
+      "floor": [
+        "standard"
+      ],
+      "ceiling": [
+        "priority-fast"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Transport and capacity effects separated from model capability",
+      "task_families": [
+        "latency-sensitive agents",
+        "large batches"
+      ]
+    },
+    {
+      "id": "same-model-interactive-batch",
+      "domain": "execution-surface",
+      "question": "Which workloads can move from interactive calls to batch without losing acceptance or increasing operator attention?",
+      "floor": [
+        "batch"
+      ],
+      "ceiling": [
+        "interactive"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Batch-safe task envelopes and stopping rules",
+      "task_families": [
+        "bulk extraction",
+        "classification",
+        "independent code tasks"
+      ]
+    },
+    {
+      "id": "openweight-local-hosted",
+      "domain": "execution-surface",
+      "question": "Where does local ownership preserve capability, and where do hosted kernels, memory, or full precision still matter?",
+      "floor": [
+        "local-open-weight"
+      ],
+      "ceiling": [
+        "hosted-open-weight"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Serving and quantization configuration source code",
+      "task_families": [
+        "all repeatable local workloads"
+      ]
+    },
+    {
+      "id": "hardware-4060-3090",
+      "domain": "hardware",
+      "question": "Which local task families clear on the 4060, which require the 3090, and which require remote memory?",
+      "floor": [
+        "gpu-4060"
+      ],
+      "ceiling": [
+        "gpu-3090",
+        "remote-open-weight"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "deterministic",
+      "residue_target": "Hardware-aware cartridge routing with wall-clock treated as secondary",
+      "task_families": [
+        "coding",
+        "embeddings",
+        "vision",
+        "long context"
+      ]
+    },
+    {
+      "id": "context-full-cart0",
+      "domain": "context",
+      "question": "Where can CART0 or AXM-selected context replace full-context residency without losing accepted outcomes?",
+      "floor": [
+        "pointer-packet",
+        "cart0",
+        "axm-query"
+      ],
+      "ceiling": [
+        "full-context"
+      ],
+      "status": "ready",
+      "acceptance": "mixed",
+      "residue_target": "Context selection rules and minimal sufficient packets",
+      "task_families": [
+        "repository archaeology",
+        "cross-corpus synthesis",
+        "session continuation"
+      ]
+    },
+    {
+      "id": "context-retrieval-longwindow",
+      "domain": "context",
+      "question": "When does retrieval plus short context match or beat a million-token context window?",
+      "floor": [
+        "retrieval-short-context"
+      ],
+      "ceiling": [
+        "long-context"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "mixed",
+      "residue_target": "Query planning and source-selection policies",
+      "task_families": [
+        "document estate",
+        "codebase",
+        "chat corpus"
+      ]
+    },
+    {
+      "id": "composition-direct-bestofn",
+      "domain": "orchestration",
+      "question": "Where does best-of-N with a deterministic referee beat one larger-model call on cost per success?",
+      "floor": [
+        "single-cheap"
+      ],
+      "ceiling": [
+        "best-of-n-cheap",
+        "frontier-single"
+      ],
+      "status": "ready",
+      "acceptance": "deterministic",
+      "residue_target": "Sampling-sensitive task families",
+      "task_families": [
+        "structured code generation",
+        "counterexamples",
+        "format-constrained outputs"
+      ]
+    },
+    {
+      "id": "composition-direct-driverrepair",
+      "domain": "orchestration",
+      "question": "Where does cheap hands plus frontier repair outperform direct frontier execution?",
+      "floor": [
+        "cheap-hands"
+      ],
+      "ceiling": [
+        "driver-repair",
+        "frontier-direct"
+      ],
+      "status": "ready",
+      "acceptance": "deterministic",
+      "residue_target": "Repair traces that become apprentice curriculum",
+      "task_families": [
+        "code repair",
+        "refactoring",
+        "integration"
+      ]
+    },
+    {
+      "id": "composition-driver-hands",
+      "domain": "orchestration",
+      "question": "At what capability wall does a frontier driver plus cheap hands repay the coordination ceremony?",
+      "floor": [
+        "cheap-independent-hands"
+      ],
+      "ceiling": [
+        "frontier-driver-cheap-hands"
+      ],
+      "status": "ready",
+      "acceptance": "mixed",
+      "residue_target": "Driver-only planning and adjudication moves",
+      "task_families": [
+        "multi-phase work",
+        "stateful migrations",
+        "cross-repo projects"
+      ]
+    },
+    {
+      "id": "composition-frontier-cheap-nodriver",
+      "domain": "orchestration",
+      "question": "Which tasks need a frontier driver, which accept a cheap driver, and which need no model driver at all?",
+      "floor": [
+        "no-model-driver",
+        "cheap-driver"
+      ],
+      "ceiling": [
+        "frontier-driver"
+      ],
+      "status": "ready",
+      "acceptance": "mixed",
+      "residue_target": "Authority routing and driver boundary",
+      "task_families": [
+        "bounded execution",
+        "planning",
+        "acceptance discovery"
+      ]
+    },
+    {
+      "id": "composition-native-residue",
+      "domain": "capture",
+      "question": "How far can a reusable captured artifact move the native model waterline on fresh work?",
+      "floor": [
+        "native-cheap-model"
+      ],
+      "ceiling": [
+        "residue-augmented-cheap-model",
+        "frontier"
+      ],
+      "status": "ready",
+      "acceptance": "mixed",
+      "residue_target": "The central capture claim, validated by distinct hidden-graded replay",
+      "task_families": [
+        "every recurring frontier residue"
+      ]
+    },
+    {
+      "id": "estate-tierbench-code",
+      "domain": "project-estate",
+      "question": "Which Tier Bench code and protocol tasks now clear locally, which require a frontier, and which frontier moves are capturable?",
+      "floor": [
+        "local-qwen",
+        "cheap-api"
+      ],
+      "ceiling": [
+        "frontier-driver"
+      ],
+      "status": "ready",
+      "acceptance": "deterministic",
+      "residue_target": "Hidden-graded code and protocol repair capability",
+      "task_families": [
+        "T0-T4 hidden tasks",
+        "runner hardening",
+        "schema repair"
+      ]
+    },
+    {
+      "id": "estate-clifford-evidence",
+      "domain": "project-estate",
+      "question": "Where can cheaper models preserve Clifford Number surface, temporal, density, and forbidden-inference law, and where does evidentiary judgment remain?",
+      "floor": [
+        "local-extractor",
+        "cheap-reviewer"
+      ],
+      "ceiling": [
+        "frontier-adjudicator"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "mixed",
+      "residue_target": "Evidentiary-jurisdiction lenses and fault-line detectors",
+      "task_families": [
+        "receipt extraction",
+        "surface classification",
+        "claim narration",
+        "causal refusal"
+      ]
+    },
+    {
+      "id": "estate-axm-pipeline",
+      "domain": "project-estate",
+      "question": "Which source-to-Forge-to-Genesis-to-Spectra stages can be delegated locally without breaking byte lineage or query fidelity?",
+      "floor": [
+        "local-model",
+        "deterministic-compiler"
+      ],
+      "ceiling": [
+        "frontier-extractor-adjudicator"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "deterministic",
+      "residue_target": "Source extraction and claim-lineage scaffolds",
+      "task_families": [
+        "extraction",
+        "normalization",
+        "signed claims",
+        "query"
+      ]
+    },
+    {
+      "id": "estate-axmchat-reconstruction",
+      "domain": "project-estate",
+      "question": "How much cross-platform relationship and project reconstruction can be performed locally from the 10k-record chat estate?",
+      "floor": [
+        "local-retrieval-synthesis"
+      ],
+      "ceiling": [
+        "frontier-long-context"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "mixed",
+      "residue_target": "Chronology, identity, and unresolved-claim reconstruction methods",
+      "task_families": [
+        "relationship recap",
+        "project-state recovery",
+        "task-family mining"
+      ]
+    },
+    {
+      "id": "estate-screenghost-action",
+      "domain": "project-estate",
+      "question": "Which screen-understanding and action tasks can local vision execute under deterministic authorization and visible verification?",
+      "floor": [
+        "local-vision"
+      ],
+      "ceiling": [
+        "frontier-computer-use"
+      ],
+      "status": "needs_adapter",
+      "acceptance": "hidden_audit",
+      "residue_target": "Local perception and action policies with abort-on-drift",
+      "task_families": [
+        "UI navigation",
+        "form entry",
+        "application testing"
+      ]
+    },
+    {
+      "id": "estate-public-record-research",
+      "domain": "project-estate",
+      "question": "Which public-record research passes can run locally or on cheap swarms while preserving source custody and bounded claims?",
+      "floor": [
+        "local-source-worker",
+        "cheap-swarm"
+      ],
+      "ceiling": [
+        "frontier-synthesizer"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "mixed",
+      "residue_target": "Source acquisition, deduplication, contradiction, and citation policies",
+      "task_families": [
+        "official-record sweep",
+        "company topology",
+        "policy chronology"
+      ]
+    },
+    {
+      "id": "estate-repo-archaeology",
+      "domain": "project-estate",
+      "question": "Which whole-repository archaeology tasks can be sequenced locally given unlimited wall time?",
+      "floor": [
+        "local-code-model"
+      ],
+      "ceiling": [
+        "frontier-repo-agent"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "mixed",
+      "residue_target": "Search plans, change archaeology, and state reconciliation",
+      "task_families": [
+        "branch inventory",
+        "feature recovery",
+        "dependency topology"
+      ]
+    },
+    {
+      "id": "estate-document-production",
+      "domain": "project-estate",
+      "question": "Which document, PDF, slide, and spreadsheet artifacts can local models assemble to acceptance without interactive supervision?",
+      "floor": [
+        "local-planner-worker"
+      ],
+      "ceiling": [
+        "frontier-artifact-agent"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "mixed",
+      "residue_target": "Reusable layout, content, and validation scaffolds",
+      "task_families": [
+        "DOCX",
+        "PDF",
+        "slides",
+        "spreadsheets"
+      ]
+    },
+    {
+      "id": "estate-visual-fidelity",
+      "domain": "project-estate",
+      "question": "Where do local or cheaper vision models match frontier visual implementation after deterministic rendering and blinded review?",
+      "floor": [
+        "local-vision-code"
+      ],
+      "ceiling": [
+        "frontier-vision-agent"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "mixed",
+      "residue_target": "Visual discrepancy detectors and design-system lenses",
+      "task_families": [
+        "website reconstruction",
+        "poster systems",
+        "sprite and asset QA"
+      ]
+    },
+    {
+      "id": "estate-unity-scene-compiler",
+      "domain": "project-estate",
+      "question": "Which Unity and embodied-AR build stages can be run locally under scene validation before frontier escalation?",
+      "floor": [
+        "local-code-model",
+        "unity-tests"
+      ],
+      "ceiling": [
+        "frontier-agent"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "deterministic",
+      "residue_target": "Scene, registration, and validation repair procedures",
+      "task_families": [
+        "Unity compile",
+        "scene generation",
+        "registration residuals"
+      ]
+    },
+    {
+      "id": "estate-earcrate-arrangement",
+      "domain": "project-estate",
+      "question": "Which Earcrate analysis and arrangement stages can move to local models and DSP validators?",
+      "floor": [
+        "local-audio-analysis",
+        "local-code-model"
+      ],
+      "ceiling": [
+        "frontier-arranger"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "mixed",
+      "residue_target": "Arrangement, seam, section, and taste-ranking scaffolds",
+      "task_families": [
+        "beat analysis",
+        "section mapping",
+        "arrangement generation",
+        "render comparison"
+      ]
+    },
+    {
+      "id": "estate-axmworld-art-ui",
+      "domain": "project-estate",
+      "question": "Which AXM World UI and art production tasks can be locally iterated until render and interaction gates pass?",
+      "floor": [
+        "local-code-vision"
+      ],
+      "ceiling": [
+        "frontier-design-agent"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "mixed",
+      "residue_target": "Design-system and asset-fidelity procedures",
+      "task_families": [
+        "pixel UI",
+        "sprite directions",
+        "cartridge screens",
+        "mobile gates"
+      ]
+    },
+    {
+      "id": "estate-comment-drafting",
+      "domain": "project-estate",
+      "question": "Which public comments can cheaper models draft to the operator's standard, and where does frontier or operator judgment remain?",
+      "floor": [
+        "local-drafter"
+      ],
+      "ceiling": [
+        "frontier-drafter",
+        "operator"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "blinded_human",
+      "residue_target": "Classification, mechanism, receipts, map widening, and control-question scaffolds",
+      "task_families": [
+        "drive-by",
+        "institutional critique",
+        "technical autopsy"
+      ]
+    },
+    {
+      "id": "estate-personal-triage",
+      "domain": "project-estate",
+      "question": "Which incoming messages, opportunities, and project updates can be locally classified and sequenced without consuming operator attention?",
+      "floor": [
+        "local-classifier"
+      ],
+      "ceiling": [
+        "frontier-advisor",
+        "operator"
+      ],
+      "status": "needs_tasks",
+      "acceptance": "blinded_human",
+      "residue_target": "Operator-specific triage and delegation policy",
+      "task_families": [
+        "inbox triage",
+        "relationship follow-up",
+        "project queueing"
+      ]
+    }
+  ]
+}
