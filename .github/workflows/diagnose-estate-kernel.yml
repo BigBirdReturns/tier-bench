@@ -1,0 +1,97 @@
+name: diagnose-estate-kernel
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: diagnose-estate-kernel-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/estate-kernel-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Record exact payload diagnosis
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import pathlib
+
+          expected = {
+              'estate_kernel_v2_payload.part-000.b64': '14f7ff2da2e026d5aeb31d1bb8c997331a35f5781944e6522d879a70c5cfdecc',
+              'estate_kernel_v2_payload.part-001.b64': 'a6df3a8f655f9609e6c4d2c5ea27497b37fd47072a49d8fa4b5fa686a8cf79a8',
+              'estate_kernel_v2_payload.part-002.b64': 'fa7c5c290f7a58dbcc77d459788a594a9ca856e713a86dd12d9cef9793b5d71a',
+              'estate_kernel_v2_payload.part-003.b64': '5b233a9e1fb80dc9e1d8f8b806407c4ae753ec615dc8a32d82f5dbb9c271110a',
+              'estate_kernel_v2_payload.part-004.b64': 'bee43c41aac8eeb806797a127e8ab072291c6d47432638167c4759e6575fa12d',
+              'estate_kernel_v2_payload.part-005.b64': 'eabee4aa4f27aee6402cf9af4a419365832db46564ab4f7a59193709d66004ff',
+              'estate_kernel_v2_payload.part-006.b64': '57c70e5673b02c60ad4aa8abb10c2fc34963dc64cdd1c025eb5d7bd142907d53',
+              'estate_kernel_v2_payload.part-007.b64': '1d7680938d9806337b8dd7397c4a28d3c1d03a9d9cf005d1c753034cad43486d',
+              'estate_kernel_v2_payload.part-008.b64': 'a459cf0b4249fd8d682dd4d26200755d0eac62a73692476675790ab24ecdc45f',
+              'estate_kernel_v2_payload.part-009.b64': 'aa029006cc36506e58a0f355dc553cac1376cff9003dddd5b24168c4b6b0225c',
+              'estate_kernel_v2_payload.part-010.b64': '9ea4c364ed04369cdfa681281e7e1c8d97a12fa0517770199d20a1c07f53efdc',
+              'estate_kernel_v2_payload.part-011.b64': 'b75c15b0a5508d139c3082642a258c5c282b7270b30f9dff35d36bcfdfe702a7',
+              'estate_kernel_v2_payload.part-012.b64': 'fe4ee0cbe50d13b898cead1f2afcd9a8f577750aee08848c6771553aa4a20f16',
+          }
+          root = pathlib.Path('.').resolve()
+          carriers = sorted((root / 'transport').glob('estate_kernel_v2_payload.part-*.b64'))
+          rows = []
+          normalized_parts = []
+          for path in carriers:
+              raw = path.read_text(encoding='ascii')
+              normalized = ''.join(raw.split())
+              normalized_parts.append(normalized)
+              digest = hashlib.sha256(normalized.encode()).hexdigest()
+              rows.append({
+                  'name': path.name,
+                  'raw_length': len(raw),
+                  'normalized_length': len(normalized),
+                  'sha256': digest,
+                  'expected_sha256': expected.get(path.name),
+                  'matches_expected': digest == expected.get(path.name),
+                  'prefix': normalized[:24],
+                  'suffix': normalized[-24:],
+              })
+          encoded = ''.join(normalized_parts)
+          diagnosis = {
+              'schema': 'tier-bench/estate-kernel-payload-diagnosis@1',
+              'chunks': rows,
+              'chunk_count': len(rows),
+              'combined_length': len(encoded),
+              'combined_sha256': hashlib.sha256(encoded.encode()).hexdigest(),
+              'all_chunks_match': all(row['matches_expected'] for row in rows),
+              'expected_compressed_sha256': 'a1a5f0af0602e1c8854311607c5a4e3119827bcd895db442a83e32282ea00311',
+          }
+          try:
+              compressed = base64.b64decode(encoded, validate=True)
+              diagnosis['decode_error'] = None
+              diagnosis['compressed_length'] = len(compressed)
+              diagnosis['compressed_sha256'] = hashlib.sha256(compressed).hexdigest()
+          except Exception as exc:
+              diagnosis['decode_error'] = f'{type(exc).__name__}: {exc}'
+              diagnosis['compressed_length'] = None
+              diagnosis['compressed_sha256'] = None
+          target = root / 'transport/estate_kernel_v2_diagnostic.json'
+          target.write_text(json.dumps(diagnosis, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(diagnosis, indent=2, sort_keys=True))
+          PY
+      - name: Commit diagnosis
+        run: |
+          git config user.name "Estate Kernel Diagnostic"
+          git config user.email "estate-kernel@users.noreply.github.com"
+          git add transport/estate_kernel_v2_diagnostic.json
+          git diff --cached --quiet || git commit -m "Record Estate Kernel payload diagnosis"
+          git push origin HEAD:agent/estate-kernel-v1
