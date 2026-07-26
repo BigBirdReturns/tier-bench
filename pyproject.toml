@@ -17,6 +17,7 @@ dev = ["ruff>=0.6.0"]
 capability-harness = "capability_harness.__main__:main"
 tier = "tier_runner.cli:main"
 tierdesk = "tier_runner.desk:main"
+tierresidue = "tier_runner.residue_cli:main"
 
 [build-system]
 requires = ["setuptools>=61"]
