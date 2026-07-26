@@ -1,0 +1,87 @@
+name: assemble-sovereign-theory
+
+on:
+  push:
+    branches: [agent/sovereign-theory-lab-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/sovereign-theory-lab-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Decode and verify exact theory payload
+        run: |
+          python - <<'PY'
+          import base64, hashlib, pathlib, zipfile
+          root = pathlib.Path('.').resolve()
+          carriers = sorted((root / 'transport').glob('sovereign_theory_payload.part-*.b64'))
+          if len(carriers) != 6:
+              raise SystemExit(f'expected 6 payload chunks, found {len(carriers)}')
+          encoded = ''.join(''.join(path.read_text(encoding='ascii').split()) for path in carriers)
+          if len(encoded) != 32076:
+              raise SystemExit(f'payload base64 length mismatch: {len(encoded)} != 32076')
+          payload = base64.b64decode(encoded, validate=True)
+          actual = hashlib.sha256(payload).hexdigest()
+          expected = 'c001c6fd952464c77f3705d55c8e478062e5dc73acd66799174bd83dcfa42f9b'
+          if actual != expected:
+              raise SystemExit(f'payload sha mismatch: {actual} != {expected}')
+          archive = root / 'transport/sovereign_theory_payload.zip'
+          archive.write_bytes(payload)
+          with zipfile.ZipFile(archive) as z:
+              for name in z.namelist():
+                  path = pathlib.PurePosixPath(name)
+                  if path.is_absolute() or '..' in path.parts or path.parts[:1] == ('.git',):
+                      raise SystemExit(f'unsafe archive path: {name}')
+              z.extractall(root)
+          print(f'verified {len(payload)} payload bytes from {len(carriers)} chunks')
+          PY
+      - name: Validate theory lab without model calls
+        run: |
+          python -m py_compile \
+            tier_runner/sovereign_theory_common.py \
+            tier_runner/sovereign_theory_schema.py \
+            tier_runner/sovereign_theory_plan.py \
+            tier_runner/sovereign_theory_analysis.py \
+            tier_runner/sovereign_theory.py \
+            tests/test_sovereign_theory.py
+          python tests/test_sovereign_theory.py
+          python -m tier_runner.sovereign_theory validate \
+            --lab experiments/sovereign_desktop/theories.json
+          python -m tier_runner.sovereign_theory plan \
+            --lab experiments/sovereign_desktop/theories.json \
+            --out /tmp/sovereign-theory-plan.json
+          python -m tier_runner.sovereign_theory verify \
+            --lab experiments/sovereign_desktop/theories.json \
+            --plan /tmp/sovereign-theory-plan.json
+          python - <<'PY'
+          import json
+          plan = json.load(open('/tmp/sovereign-theory-plan.json', encoding='utf-8'))
+          assert plan['totals']['theories_selected'] == 22, plan['totals']
+          assert plan['totals']['theories_with_runs'] >= 10, plan['totals']
+          assert plan['totals']['runs'] > 100, plan['totals']
+          assert max(
+              (row['max_position_imbalance'] for row in plan['balance'].values()),
+              default=0,
+          ) <= 1, plan['balance']
+          print('SOVEREIGN_THEORY_PLAN_OK', plan['totals'])
+          PY
+      - name: Commit reviewable source and remove one-use transport
+        run: |
+          rm -f transport/sovereign_theory_payload.part-*.b64
+          rm -f transport/sovereign_theory_payload.zip
+          rm -f .github/workflows/assemble-sovereign-theory.yml
+          git config user.name "Sovereign Theory Assembler"
+          git config user.email "sovereign-theory@users.noreply.github.com"
+          git add -A
+          git commit -m "Assemble Sovereign Theory Lab"
+          git push origin HEAD:agent/sovereign-theory-lab-v1
