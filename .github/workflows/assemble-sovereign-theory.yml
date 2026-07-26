@@ -3,6 +3,8 @@ name: assemble-sovereign-theory
 on:
   push:
     branches: [agent/sovereign-theory-lab-v1]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
