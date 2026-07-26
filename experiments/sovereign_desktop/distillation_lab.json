@@ -1,0 +1,126 @@
+{
+  "schema": "tier-bench/desktop-distillation-lab@1",
+  "id": "bigbird-frontier-residue-lab-v1",
+  "title": "Desktop acquisition queue for closed and open frontier residue",
+  "student": {
+    "model_id": "qwen-local-27b",
+    "source_access": "source_and_weights",
+    "trainable": true,
+    "cost_usd_per_job": 0.05,
+    "operator_minutes_per_job": 1.0
+  },
+  "policy": {
+    "min_distinct_replays": 3,
+    "minimize_before_variants": true,
+    "promotion_authority": "capture_ledger",
+    "failure_default": "open"
+  },
+  "candidates": [
+    {
+      "id": "fable-autonomous-recovery",
+      "task_family": "autonomous-recovery",
+      "claim": "Fable completed a staged recovery sequence after the local floor reached a measured wall.",
+      "teacher": {
+        "model_id": "claude-fable-5",
+        "source_access": "subscription_only",
+        "outcome": "pass",
+        "cost_usd_per_job": 2.5,
+        "operator_minutes_per_job": 18
+      },
+      "floor": {
+        "model_id": "qwen-local-27b",
+        "outcome": "wall",
+        "attempts": 3,
+        "cost_usd_per_job": 0.05,
+        "operator_minutes_per_job": 1
+      },
+      "recurrence": {
+        "jobs_per_month": 8
+      },
+      "evidence": {
+        "task_fingerprint": "d5556116a9fa925a0e278dd7fc66b4899299b701379072fff06677ecb46ee9b9",
+        "teacher_receipt_sha256": "fdadc1b90f066fc66007d4bda30e54741ff801e3c0c345fbc5308645211b1714",
+        "floor_receipt_sha256": "d02238cbcae7f3ed8ee938c5d5be7adce598cfa22ed7fe07951b00e926fccae8",
+        "grader_sha256": "df33199530ed911f49b325f262c1cb6ca3e2e8c5de99b9440e1ff6f6b152ad8b",
+        "source_packet_sha256": "11ed08fd897e7b7f32f2fe1ebff41a9dba87c32ba980bc25efcaa750513660b4"
+      },
+      "suggested_artifacts": [
+        "prompt_scaffold",
+        "routing_rule",
+        "verifier",
+        "curriculum"
+      ],
+      "capture_cost_estimate_usd": 40,
+      "capture_operator_minutes_estimate": 120
+    },
+    {
+      "id": "k3-context-routing",
+      "task_family": "context-routing",
+      "claim": "An open K3 route found a minimal sufficient context selection policy that the local floor applied inconsistently.",
+      "teacher": {
+        "model_id": "kimi-k3-open",
+        "source_access": "weights",
+        "outcome": "pass",
+        "cost_usd_per_job": 1.0,
+        "operator_minutes_per_job": 5
+      },
+      "floor": {
+        "model_id": "qwen-local-27b",
+        "outcome": "unstable",
+        "attempts": 5,
+        "cost_usd_per_job": 0.05,
+        "operator_minutes_per_job": 1
+      },
+      "recurrence": {
+        "jobs_per_month": 20
+      },
+      "evidence": {
+        "task_fingerprint": "f93e06d4864729ec6fb41fc7557b7132b0e0702027d2e63301db7e642526c614",
+        "teacher_receipt_sha256": "21cb902de08bc032dd398b573779269f6d30efd58eda406ae342d68174ff605d",
+        "floor_receipt_sha256": "5fd9b07cf55c4941c934faa79e349e2ac20ea53937cb2754ab0fdc8a0d84ba50",
+        "grader_sha256": "7326b4f3ab36549ff1416328c93a1e3b43d7696446a0062b0c6a7001ef99ce77",
+        "source_packet_sha256": "6bc29cbf2eac5002ffda94d68f8347632ecb1ab8cc505af1f04f67cad31ef284"
+      },
+      "suggested_artifacts": [
+        "context_compiler",
+        "lora",
+        "inference_policy",
+        "verifier"
+      ],
+      "capture_cost_estimate_usd": 12,
+      "capture_operator_minutes_estimate": 45
+    },
+    {
+      "id": "adapter-transport-contamination",
+      "task_family": "transport",
+      "claim": "The local adapter failed before the external grader ran.",
+      "teacher": {
+        "model_id": "frontier-model",
+        "source_access": "api_only",
+        "outcome": "pass",
+        "cost_usd_per_job": 0.5,
+        "operator_minutes_per_job": 2
+      },
+      "floor": {
+        "model_id": "qwen-local-27b",
+        "outcome": "transport_error",
+        "attempts": 3,
+        "cost_usd_per_job": 0,
+        "operator_minutes_per_job": 0
+      },
+      "recurrence": {
+        "jobs_per_month": 5
+      },
+      "evidence": {
+        "task_fingerprint": "ac785fb943e71a17648c3cacd0c98cf773ed7c5f9991e4ca00d0ad41588f36fa",
+        "teacher_receipt_sha256": "ad3cad8819d6314479c7d1931f037a27b3487a62da7536b7c727817fa086121f",
+        "floor_receipt_sha256": "75199e78e699fcbc4c283493197d0b8c6296a6980730f07251272040df1b2544",
+        "grader_sha256": "97dda5c21a70d8b8e4cf7a9c75c7deb5328cb256b100d13d85ecd6372d41abf6",
+        "source_packet_sha256": "af154c65e130702194fb2d8238929ba0722400bd1c11a2f1135cc143309cd157"
+      },
+      "suggested_artifacts": [],
+      "capture_cost_estimate_usd": 5,
+      "capture_operator_minutes_estimate": 10
+    }
+  ]
+}

@@ -1,0 +1,303 @@
+{
+  "schema": "tier-bench/sovereign-desktop-plane@1",
+  "id": "bigbird-desktop-3090-4060-v1",
+  "title": "Attention-first 3090/4060 sovereign desktop plane",
+  "optimization": {
+    "primary": "operator_attention",
+    "wall_clock": "secondary",
+    "max_parallel_jobs": 2
+  },
+  "resources": [
+    {
+      "id": "gpu:3090",
+      "kind": "gpu",
+      "capacity": 1,
+      "memory_gib": 24,
+      "roles": [
+        "large-local",
+        "decode",
+        "train"
+      ],
+      "notes": "Primary resident generation and LoRA lane."
+    },
+    {
+      "id": "gpu:4060",
+      "kind": "gpu",
+      "capacity": 1,
+      "memory_gib": 8,
+      "roles": [
+        "embed",
+        "rerank",
+        "compress",
+        "vision",
+        "draft"
+      ],
+      "notes": "Semantic prefill and utility lane. It does not transfer KV state into the 3090 model."
+    },
+    {
+      "id": "cpu:desktop",
+      "kind": "cpu",
+      "capacity": 8,
+      "roles": [
+        "context-compile",
+        "validation"
+      ]
+    },
+    {
+      "id": "ram:desktop",
+      "kind": "ram",
+      "capacity": 1,
+      "memory_gib": 64,
+      "roles": [
+        "warm-context",
+        "kv-offload"
+      ]
+    },
+    {
+      "id": "nvme:desktop",
+      "kind": "storage",
+      "capacity": 1,
+      "storage_gib": 2000,
+      "roles": [
+        "cold-context",
+        "slot-cache",
+        "artifact-store"
+      ]
+    },
+    {
+      "id": "subscription:claude",
+      "kind": "quota",
+      "capacity": 1,
+      "roles": [
+        "frontier-overflow",
+        "teacher"
+      ]
+    }
+  ],
+  "runtimes": [
+    {
+      "id": "qwen-local-3090",
+      "model_id": "qwen-local-large",
+      "tokenizer_id": "qwen-tokenizer-v1",
+      "runtime_id": "llama.cpp",
+      "runtime_version": "freeze-on-target-machine",
+      "quantization": "Q4_K_M",
+      "resource": "gpu:3090",
+      "execution_class": "local",
+      "source_access": "source_and_weights",
+      "context_limit_tokens": 65536,
+      "load_cost_seconds": 45,
+      "declared_order": 0,
+      "capabilities": {
+        "code": true,
+        "architecture": true,
+        "prefix_cache": true,
+        "fine_tune": true
+      },
+      "cache": {
+        "mode": "persistent_slot",
+        "persistent": true,
+        "slot_save_path": "D:/AI/cache/llama-slots"
+      }
+    },
+    {
+      "id": "utility-local-4060",
+      "model_id": "qwen-utility",
+      "tokenizer_id": "qwen-tokenizer-v1",
+      "runtime_id": "llama.cpp",
+      "runtime_version": "freeze-on-target-machine",
+      "quantization": "Q5_K_M",
+      "resource": "gpu:4060",
+      "execution_class": "local",
+      "source_access": "source_and_weights",
+      "context_limit_tokens": 32768,
+      "load_cost_seconds": 15,
+      "declared_order": 1,
+      "capabilities": {
+        "extract": true,
+        "embed": true,
+        "rerank": true,
+        "prefix_cache": true
+      },
+      "cache": {
+        "mode": "prefix",
+        "persistent": false
+      }
+    },
+    {
+      "id": "claude-frontier",
+      "model_id": "claude-opus-5",
+      "tokenizer_id": "provider-native",
+      "runtime_id": "claude-code",
+      "runtime_version": "freeze-on-target-machine",
+      "quantization": "provider-native",
+      "resource": "subscription:claude",
+      "execution_class": "remote_closed",
+      "source_access": "subscription_only",
+      "context_limit_tokens": 1000000,
+      "load_cost_seconds": 0,
+      "declared_order": 2,
+      "capabilities": {
+        "code": true,
+        "architecture": true,
+        "extract": true,
+        "prefix_cache": true
+      },
+      "cache": {
+        "mode": "prefix",
+        "persistent": false
+      }
+    }
+  ],
+  "context_packs": [
+    {
+      "id": "tier-bench-example",
+      "source_identity": "git:BigBirdReturns/tier-bench",
+      "source_revision": "example-fixture-v1",
+      "source_tokens": 240000,
+      "blocks": [
+        {
+          "id": "estate-constitution",
+          "kind": "instruction",
+          "stability": "estate",
+          "sha256": "ed2d6a697c963dad0acf609261377de3f16f3ada5ff3cd14c3037aa9046b7436",
+          "tokens": 120,
+          "source": "example estate constitution",
+          "content_path": "experiments/sovereign_desktop/context/estate.md"
+        },
+        {
+          "id": "campaign-map",
+          "kind": "memory",
+          "stability": "campaign",
+          "sha256": "fdc7d3a21b04a8b37287dc8d53c802ae309c34e77bcca77f34d1c361f3750cb5",
+          "tokens": 150,
+          "source": "example campaign map",
+          "content_path": "experiments/sovereign_desktop/context/campaign.md"
+        },
+        {
+          "id": "job-evidence",
+          "kind": "retrieval",
+          "stability": "job",
+          "sha256": "44f6642e8ce9f0c986437640ab38a4c53fb2064b9fe04573596c334f8e5cebb9",
+          "tokens": 110,
+          "source": "example bounded evidence",
+          "content_path": "experiments/sovereign_desktop/context/job.md"
+        }
+      ]
+    },
+    {
+      "id": "chat-example",
+      "source_identity": "local:axm-chat",
+      "source_revision": "example-fixture-v1",
+      "source_tokens": 900000,
+      "blocks": [
+        {
+          "id": "chat-query-slice",
+          "kind": "retrieval",
+          "stability": "job",
+          "sha256": "77f71820322ac38d244cfec598c1de1017c34ebf8dc9594ca9b4ed0870c981f8",
+          "tokens": 50,
+          "source": "example chat slice",
+          "content_path": "experiments/sovereign_desktop/context/chat_slice.jsonl"
+        }
+      ]
+    }
+  ],
+  "cache_inventory": [],
+  "jobs": [
+    {
+      "id": "repair-runner",
+      "title": "Repair one bounded Tier Bench runner defect",
+      "task": "Repair one bounded runner defect while preserving existing receipt and isolation behavior.",
+      "files": [
+        "tier_runner/",
+        "tests/test_sovereign_plane.py"
+      ],
+      "context_pack": "tier-bench-example",
+      "context_delivery": "prompt_prefix",
+      "runtime_candidates": [
+        "qwen-local-3090",
+        "claude-frontier"
+      ],
+      "privacy": "sovereign_preferred",
+      "required_capabilities": [
+        "code"
+      ],
+      "priority": 90,
+      "delta_tokens": 1200,
+      "expected_output_tokens": 2000,
+      "depends_on": [],
+      "acceptance": "python tests/test_sovereign_plane.py",
+      "campaign": {
+        "mode": "local_first",
+        "k": 1,
+        "max_trials_per_route": 4,
+        "max_total_cost_usd": 2.0,
+        "max_remote_trials": 2
+      }
+    },
+    {
+      "id": "harden-schema",
+      "title": "Harden the adjacent schema after the repair",
+      "task": "Harden the schema and its fail-closed tests without changing settled behavior.",
+      "files": [
+        "tier_runner/",
+        "tests/test_sovereign_plane.py"
+      ],
+      "context_pack": "tier-bench-example",
+      "context_delivery": "prompt_prefix",
+      "runtime_candidates": [
+        "qwen-local-3090",
+        "claude-frontier"
+      ],
+      "privacy": "sovereign_preferred",
+      "required_capabilities": [
+        "code"
+      ],
+      "priority": 80,
+      "delta_tokens": 900,
+      "expected_output_tokens": 1500,
+      "depends_on": [
+        "repair-runner"
+      ],
+      "acceptance": "python tests/test_sovereign_plane.py",
+      "campaign": {
+        "mode": "local_first",
+        "k": 1,
+        "max_trials_per_route": 4,
+        "max_total_cost_usd": 2.0,
+        "max_remote_trials": 2
+      }
+    },
+    {
+      "id": "mine-chat-family",
+      "title": "Mine one recurring task family from a local chat slice",
+      "task": "Classify the example records into one reusable task-family contract with source identity preserved.",
+      "files": [
+        "experiments/sovereign_desktop/context/chat_slice.jsonl"
+      ],
+      "context_pack": "chat-example",
+      "context_delivery": "read_only_file",
+      "runtime_candidates": [
+        "utility-local-4060",
+        "claude-frontier"
+      ],
+      "privacy": "local_only",
+      "required_capabilities": [
+        "extract"
+      ],
+      "priority": 70,
+      "delta_tokens": 500,
+      "expected_output_tokens": 1000,
+      "depends_on": [],
+      "acceptance": "python -c \"import json; json.loads(open('experiments/sovereign_desktop/context/chat_slice.jsonl').readline())\"",
+      "campaign": {
+        "mode": "local_first",
+        "k": 1,
+        "max_trials_per_route": 4,
+        "max_total_cost_usd": 1.0,
+        "max_remote_trials": 1
+      }
+    }
+  ]
+}
