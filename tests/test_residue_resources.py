@@ -151,9 +151,27 @@ def test_independent_lanes_are_admitted_together(parent: Path) -> None:
     }
 
 
+def test_queue_now_rejects_truthy_strings(parent: Path) -> None:
+    root = repo(parent)
+    store = DeskStore(parent / "state" / "desk.sqlite3", root)
+    invalid = plan("fixture-invalid", "gpu:3090")
+    invalid["queue_now"] = "false"
+    try:
+        store.create_campaign(invalid)
+    except Exception as exc:
+        assert "queue_now must be boolean" in str(exc)
+    else:
+        raise AssertionError("a truthy string must not silently activate a campaign")
+    assert store.get_campaign("fixture-invalid") is None
+
+
 def main() -> int:
     parent = Path(tempfile.mkdtemp(prefix="residue-resource-"))
-    tests = [test_shared_gpu_lane_serializes_campaigns, test_independent_lanes_are_admitted_together]
+    tests = [
+        test_shared_gpu_lane_serializes_campaigns,
+        test_independent_lanes_are_admitted_together,
+        test_queue_now_rejects_truthy_strings,
+    ]
     try:
         for index, test in enumerate(tests):
             case = parent / f"case-{index}"
