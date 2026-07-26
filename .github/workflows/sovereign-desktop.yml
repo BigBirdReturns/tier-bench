@@ -1,0 +1,91 @@
+name: sovereign-desktop
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  zero-model-calls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile desktop plane and distillation lab
+        run: |
+          python -m py_compile \
+            tier_runner/sovereign_common.py \
+            tier_runner/sovereign_schema.py \
+            tier_runner/sovereign_context.py \
+            tier_runner/sovereign_plan.py \
+            tier_runner/sovereign_cache.py \
+            tier_runner/sovereign_plane.py \
+            tier_runner/distillation_schema.py \
+            tier_runner/distillation_plan.py \
+            tier_runner/distillation_lab.py \
+            tests/test_sovereign_plane.py \
+            tests/test_distillation_lab.py
+      - name: Exercise sovereign desktop laws
+        run: python tests/test_sovereign_plane.py
+      - name: Exercise distillation lab laws
+        run: python tests/test_distillation_lab.py
+      - name: Validate, plan, and verify the 3090/4060 fixture
+        run: |
+          python -m tier_runner.sovereign_plane validate \
+            --manifest experiments/sovereign_desktop/desktop_3090_4060.json
+          python -m tier_runner.sovereign_plane plan \
+            --manifest experiments/sovereign_desktop/desktop_3090_4060.json \
+            --out /tmp/sovereign-plan.json
+          python -m tier_runner.sovereign_plane verify \
+            --manifest experiments/sovereign_desktop/desktop_3090_4060.json \
+            --plan /tmp/sovereign-plan.json
+      - name: Materialize and verify a source-bound context pack
+        run: |
+          python -m tier_runner.sovereign_plane materialize \
+            --manifest experiments/sovereign_desktop/desktop_3090_4060.json \
+            --pack tier-bench-example \
+            --repo . \
+            --out-root /tmp/context-packs
+          PACK_DIR="$(find /tmp/context-packs -mindepth 1 -maxdepth 1 -type d | head -1)"
+          test -n "$PACK_DIR"
+          python -m tier_runner.sovereign_plane verify-context --directory "$PACK_DIR"
+      - name: Exercise campaign and cache-control dry paths
+        run: |
+          python -m tier_runner.sovereign_plane campaigns \
+            --manifest experiments/sovereign_desktop/desktop_3090_4060.json \
+            --out-dir /tmp/campaigns
+          python -m tier_runner.sovereign_plane cache-save \
+            --manifest experiments/sovereign_desktop/desktop_3090_4060.json \
+            --runtime qwen-local-3090 \
+            --pack tier-bench-example \
+            --server http://127.0.0.1:8080 \
+            --slot 0 \
+            --filename tier-bench-example.bin \
+            --state-dir /tmp/tier-plane \
+            --dry-run
+          python -m tier_runner.sovereign_plane cache-restore \
+            --manifest experiments/sovereign_desktop/desktop_3090_4060.json \
+            --runtime qwen-local-3090 \
+            --pack tier-bench-example \
+            --server http://127.0.0.1:8080 \
+            --slot 0 \
+            --filename tier-bench-example.bin \
+            --state-dir /tmp/tier-plane \
+            --dry-run
+      - name: Validate, plan, verify, and emit distillation work
+        run: |
+          python -m tier_runner.distillation_lab validate \
+            --lab experiments/sovereign_desktop/distillation_lab.json
+          python -m tier_runner.distillation_lab plan \
+            --lab experiments/sovereign_desktop/distillation_lab.json \
+            --out /tmp/distillation-plan.json
+          python -m tier_runner.distillation_lab verify \
+            --lab experiments/sovereign_desktop/distillation_lab.json \
+            --plan /tmp/distillation-plan.json
+          python -m tier_runner.distillation_lab work-orders \
+            --lab experiments/sovereign_desktop/distillation_lab.json \
+            --out /tmp/distillation-work-orders.json
