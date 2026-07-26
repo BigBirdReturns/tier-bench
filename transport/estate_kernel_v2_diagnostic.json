@@ -1,6 +1,6 @@
 {
-  "all_chunks_match": true,
-  "chunk_count": 12,
+  "all_chunks_match": false,
+  "chunk_count": 13,
   "chunks": [
     {
       "expected_sha256": "14f7ff2da2e026d5aeb31d1bb8c997331a35f5781944e6522d879a70c5cfdecc",
@@ -83,6 +83,16 @@
       "suffix": "YqlhAJpFnEw4+am9Jj8LhVdE"
     },
     {
+      "expected_sha256": "a459cf0b4249fd8d682dd4d26200755d0eac62a73692476675790ab24ecdc45f",
+      "matches_expected": false,
+      "name": "estate_kernel_v2_payload.part-008.b64",
+      "normalized_length": 4034,
+      "prefix": "KBrSnz+qyTB5AASlYzTBkIDg",
+      "raw_length": 4034,
+      "sha256": "1ff704d7b23387f70686a715d7d20b551cbda543f8dbf33d26579e6be405a2c0",
+      "suffix": "xYwYO2Do6x7DFUkj2CBKk0oE"
+    },
+    {
       "expected_sha256": "aa029006cc36506e58a0f355dc553cac1376cff9003dddd5b24168c4b6b0225c",
       "matches_expected": true,
       "name": "estate_kernel_v2_payload.part-009.b64",
@@ -123,11 +133,11 @@
       "suffix": "D+0h4oixxGf7AgAAAAAEWVo="
     }
   ],
-  "combined_length": 44044,
-  "combined_sha256": "4302bb29c1f53ce0fdb1ea2806046d592f4da6e2d0284d104dce5a2ae000e3a4",
-  "compressed_length": 33032,
-  "compressed_sha256": "49df4cddf9dbe64ca324919d3769de7382030fb83c652948d3e7e6274332f1cc",
-  "decode_error": null,
+  "combined_length": 48078,
+  "combined_sha256": "8e6c55f57e7534148d035ece1ca39fd0c426176e90401d448245bcfb37607e71",
+  "compressed_length": null,
+  "compressed_sha256": null,
+  "decode_error": "Error: Invalid base64-encoded string: number of data characters (48077) cannot be 1 more than a multiple of 4",
   "expected_compressed_sha256": "a1a5f0af0602e1c8854311607c5a4e3119827bcd895db442a83e32282ea00311",
   "schema": "tier-bench/estate-kernel-payload-diagnosis@1"
 }
