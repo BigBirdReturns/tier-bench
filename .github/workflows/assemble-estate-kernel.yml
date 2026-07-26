@@ -28,6 +28,7 @@ jobs:
           python - <<'PY'
           import base64, hashlib, json, pathlib, zipfile
           root = pathlib.Path(".").resolve()
+          # Exact ordered payload. Original part-002 is intentionally excluded.
           names = [
               "estate_kernel_clean_payload.part-000.b64",
               "estate_kernel_clean_payload.part-001.b64",
