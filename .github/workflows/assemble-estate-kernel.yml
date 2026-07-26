@@ -28,9 +28,20 @@ jobs:
           python - <<'PY'
           import base64, hashlib, json, pathlib, zipfile
           root = pathlib.Path(".").resolve()
-          carriers = sorted((root / "transport").glob("estate_kernel_clean_payload.part-*.b64"))
-          if len(carriers) != 6:
-              raise SystemExit(f"expected 6 clean chunks, found {len(carriers)}")
+          names = [
+              "estate_kernel_clean_payload.part-000.b64",
+              "estate_kernel_clean_payload.part-001.b64",
+              "estate_kernel_clean_payload.part-0020.b64",
+              "estate_kernel_clean_payload.part-0021.b64",
+              "estate_kernel_clean_payload.part-0022.b64",
+              "estate_kernel_clean_payload.part-003.b64",
+              "estate_kernel_clean_payload.part-004.b64",
+              "estate_kernel_clean_payload.part-005.b64",
+          ]
+          carriers = [root / "transport" / name for name in names]
+          missing = [path.name for path in carriers if not path.is_file()]
+          if missing:
+              raise SystemExit(f"missing clean payload chunks: {missing}")
           encoded = "".join("".join(p.read_text(encoding="ascii").split()) for p in carriers)
           if len(encoded) != 68424:
               raise SystemExit(f"base64 length mismatch: {len(encoded)} != 68424")
