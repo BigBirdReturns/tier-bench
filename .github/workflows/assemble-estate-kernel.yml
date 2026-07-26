@@ -79,8 +79,7 @@ jobs:
             tests/test_estate_kernel.py
           python tests/test_estate_kernel.py
           python -m tier_runner.estate_kernel action-key \
-            --action experiments/estate_kernel/action.json \
-            --runtime experiments/estate_kernel/runtime.json
+            --action experiments/estate_kernel/action.json
           python -m tier_runner.estate_kernel workflow-validate \
             --workflow experiments/estate_kernel/workflow.json
           python -m tier_runner.estate_kernel ir-validate \
@@ -100,9 +99,9 @@ jobs:
             --out /tmp/verifier-plan.json
           python -m tier_runner.estate_kernel verifier-verify \
             --spec experiments/estate_kernel/verifier.json \
+            --input experiments/estate_kernel/verifier-input.json \
             --plan /tmp/verifier-plan.json
           python -m tier_runner.estate_kernel verifier-run \
-            --spec experiments/estate_kernel/verifier.json \
             --plan /tmp/verifier-plan.json \
             --out /tmp/verifier-report.json
           python -m tier_runner.estate_kernel attention-plan \
@@ -110,7 +109,6 @@ jobs:
             --policy experiments/estate_kernel/attention-policy.json \
             --out /tmp/attention-plan.json
           python -m tier_runner.estate_kernel attention-slo \
-            --requests experiments/estate_kernel/attention-requests.json \
             --events experiments/estate_kernel/attention-events.json \
             --out /tmp/attention-slo.json
           python - <<'PY'
