@@ -20,11 +20,15 @@ jobs:
             tier_runner/residue.py \
             tier_runner/residue_cli.py \
             tier_runner/residue_policy.py \
+            tier_runner/residue_resources.py \
             experiments/breadth/residue_broker.py \
-            tests/test_residue_refinery.py
+            tests/test_residue_refinery.py \
+            tests/test_residue_resources.py
       - name: Preserve ARC-C broker behavior
         run: python tests/test_residue_broker.py
       - name: Preserve Monster Wrangler behavior
         run: python tests/test_tier_desk.py
       - name: Exercise local-first and survey campaigns
         run: python tests/test_residue_refinery.py
+      - name: Serialize shared GPUs and admit independent lanes
+        run: python tests/test_residue_resources.py
