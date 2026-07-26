@@ -19,6 +19,8 @@ tier = "tier_runner.cli:main"
 tierdesk = "tier_runner.desk:main"
 tierresidue = "tier_runner.residue_cli:main"
 tierwaterline = "tier_runner.model_waterline:main"
+tierplane = "tier_runner.sovereign_plane:main"
+tierdistill = "tier_runner.distillation_lab:main"
 
 [build-system]
 requires = ["setuptools>=61"]
