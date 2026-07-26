@@ -20,7 +20,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Check whether assembly is still required
+        id: preflight
+        shell: bash
+        run: |
+          if compgen -G 'transport/model_waterline_payload.part-*.b64' > /dev/null; then
+            echo 'assemble=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'assemble=false' >> "$GITHUB_OUTPUT"
+            echo 'Source already assembled; transport is absent.'
+          fi
       - name: Decode, verify, and extract exact payload
+        if: steps.preflight.outputs.assemble == 'true'
         run: |
           python - <<'PY'
           import base64, hashlib, json, pathlib, zipfile
@@ -59,6 +70,7 @@ jobs:
           print(f"verified {len(manifest['files'])} files from {len(carriers)} chunks")
           PY
       - name: Validate assembled source without model calls
+        if: steps.preflight.outputs.assemble == 'true'
         run: |
           python -m py_compile \
             tier_runner/model_waterline.py \
@@ -69,11 +81,11 @@ jobs:
             --protocol experiments/model_waterlines/opus5_fable5/protocol.json \
             --tasks experiments/model_waterlines/opus5_fable5/tasks.json \
             --catalog experiments/model_waterlines/catalog.json
-      - name: Commit source and remove one-use transport
+      - name: Commit source and remove transport
+        if: steps.preflight.outputs.assemble == 'true'
         run: |
           rm -f transport/model_waterline_payload*
           rm -f PAYLOAD_MANIFEST.json
-          rm -f .github/workflows/model-waterline-assemble.yml
           git config user.name "Model Waterline Assembler"
           git config user.email "model-waterline@users.noreply.github.com"
           git add -A
