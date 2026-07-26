@@ -1,0 +1,76 @@
+{
+  "chunks": [
+    {
+      "name": "estate_kernel_clean_payload.part-000.b64",
+      "normalized_length": 12000,
+      "normalized_sha256": "828008d3d28fa49b5ab4b3c21572f2228b7635db66f260eb8f0f9f9c8f1ec276",
+      "prefix": "UEsDBBQAAAAIABu1+lx42kRA",
+      "raw_length": 12000,
+      "suffix": "yWrDMBC9+yuEzzGVTJuAT/mI"
+    },
+    {
+      "name": "estate_kernel_clean_payload.part-001.b64",
+      "normalized_length": 12000,
+      "normalized_sha256": "051ec3b6587e9f1bac0b6cd7f2063b86148c91c8fd37b5be827ea494fe43a4c2",
+      "prefix": "nFqCUeRnIiIv0ZZAyL935Ibs",
+      "raw_length": 12000,
+      "suffix": "+Bc2p6RCPDIRr0NxUEd9kl+v"
+    },
+    {
+      "name": "estate_kernel_clean_payload.part-0020.b64",
+      "normalized_length": 4000,
+      "normalized_sha256": "6f101de0eaed0a82c4877f349588779bb0d113414154a978b14fa60f7417b182",
+      "prefix": "ExF6HUK04abttIXNLpnIl9bF",
+      "raw_length": 4000,
+      "suffix": "+8CkSsfJJ3GXJF1BRvlWl6aO"
+    },
+    {
+      "name": "estate_kernel_clean_payload.part-0021.b64",
+      "normalized_length": 4000,
+      "normalized_sha256": "544a66f43125ba294e2bf1452c345bdb8c88ed5625af4bdb9bb1f009cc33c059",
+      "prefix": "Zf4rzZACBQqxkIu+yrZbzUDC",
+      "raw_length": 4000,
+      "suffix": "wnfnHuuuq+eTvqO+UCA3ZevW"
+    },
+    {
+      "name": "estate_kernel_clean_payload.part-0022.b64",
+      "normalized_length": 4000,
+      "normalized_sha256": "392844c2cb57629396b452435e8041a6432877454e096e12e9577abe63407d25",
+      "prefix": "q4gCFuK1eZavQ6+mqIbHXZ2h",
+      "raw_length": 4000,
+      "suffix": "oawLCK9kXULyakbuFAWxsOjh"
+    },
+    {
+      "name": "estate_kernel_clean_payload.part-003.b64",
+      "normalized_length": 12000,
+      "normalized_sha256": "3b50a03c4e2a1edac1683aa445ba02e69f3ee573f4c3825356a570e5127c05e8",
+      "prefix": "2yqZSxxSes7FNK1/mKpp7aKE",
+      "raw_length": 12000,
+      "suffix": "3mBl2H2FA8LUU8IUHaPNGk7B"
+    },
+    {
+      "name": "estate_kernel_clean_payload.part-004.b64",
+      "normalized_length": 12000,
+      "normalized_sha256": "8d55a2f13a164f9ecf73c7fa538207a993991455838210a5790aaa65f44b5fc8",
+      "prefix": "A28pnGCQ2gCrCCGQYpe47EmP",
+      "raw_length": 12000,
+      "suffix": "2EXAg3tW1gnI+ZmebJuXsGdE"
+    },
+    {
+      "name": "estate_kernel_clean_payload.part-005.b64",
+      "normalized_length": 8424,
+      "normalized_sha256": "3a76b9ade5449ccc04d2d6f0b330f583c7dc073a4fcc027aebb08fcb62c96925",
+      "prefix": "XY3XKeJLxFGFI5psdmAD3MGb",
+      "raw_length": 8424,
+      "suffix": "AAAAABgAGAB9BwAA48AAAAAA"
+    }
+  ],
+  "combined_length": 68424,
+  "combined_sha256": "8cc14345cb6c60891a47351aec79e0dec5b29b181e1138870bae56f9abc3ddfa",
+  "decode_error": null,
+  "decoded_length": 51318,
+  "decoded_sha256": "3837085451744972316670b76856a237676c0e059909dd4cdb897a5ee3440585",
+  "expected_base64_length": 68424,
+  "expected_zip_sha256": "4e4499d5663c2c481137711423dfe9397270e0385f3e6cb47343dd21dd1359ce",
+  "schema": "tier-bench/estate-kernel-payload-diagnostic@1"
+}
