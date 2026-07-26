@@ -79,13 +79,18 @@ jobs:
           ) <= 1, plan['balance']
           print('SOVEREIGN_THEORY_PLAN_OK', plan['totals'])
           PY
-      - name: Commit reviewable source and remove one-use transport
+      - name: Commit reviewable source without workflow mutation
         run: |
           rm -f transport/sovereign_theory_payload.part-*.b64
           rm -f transport/sovereign_theory_payload.zip
-          rm -f .github/workflows/assemble-sovereign-theory.yml
+          rm -f .github/workflows/sovereign-theory.yml
           git config user.name "Sovereign Theory Assembler"
           git config user.email "sovereign-theory@users.noreply.github.com"
-          git add -A
+          git add experiments/sovereign_desktop/theories.json
+          git add tests/test_sovereign_theory.py
+          git add docs/sovereign-theory-lab.md
+          git add docs/agents/claims/sovereign_theory_lab_v1.md
+          git add pyproject.toml
+          git add -u transport
           git commit -m "Assemble Sovereign Theory Lab"
           git push origin HEAD:agent/sovereign-theory-lab-v1
