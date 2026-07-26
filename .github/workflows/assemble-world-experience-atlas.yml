@@ -1,0 +1,95 @@
+name: assemble-world-experience-atlas
+
+on:
+  push:
+    branches: [agent/world-experience-atlas-v1]
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/world-experience-atlas-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Decode, verify, and extract exact payload
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, pathlib, zipfile
+          root = pathlib.Path('.').resolve()
+          carriers = sorted((root / 'transport').glob('world_experience_payload.part-*.b64'))
+          if len(carriers) != 5:
+              raise SystemExit(f'expected 5 payload chunks, found {len(carriers)}')
+          encoded = ''.join(''.join(path.read_text(encoding='ascii').split()) for path in carriers)
+          if len(encoded) != 39944:
+              raise SystemExit(f'payload base64 length mismatch: {len(encoded)} != 39944')
+          payload = base64.b64decode(encoded, validate=True)
+          actual = hashlib.sha256(payload).hexdigest()
+          expected = '76880727d11a3d3ea57d06fa458703505b6f2544b842450a60cf6ac54c1b8755'
+          if actual != expected:
+              raise SystemExit(f'payload sha mismatch: {actual} != {expected}')
+          archive = root / 'transport/world_experience_payload.zip'
+          archive.write_bytes(payload)
+          with zipfile.ZipFile(archive) as z:
+              for name in z.namelist():
+                  path = pathlib.PurePosixPath(name)
+                  if path.is_absolute() or '..' in path.parts or path.parts[:1] == ('.git',):
+                      raise SystemExit(f'unsafe archive path: {name}')
+              z.extractall(root)
+          manifest = json.loads((root / 'PAYLOAD_MANIFEST.json').read_text(encoding='utf-8'))
+          for name, record in manifest['files'].items():
+              path = root / name
+              digest = hashlib.sha256(path.read_bytes()).hexdigest()
+              if digest != record['sha256']:
+                  raise SystemExit(f'file sha mismatch: {name}')
+          print(f"verified {len(manifest['files'])} files from {len(payload)} payload bytes")
+          PY
+      - name: Validate atlas without model calls
+        run: |
+          python -m py_compile tier_runner/experience_atlas.py tests/test_experience_atlas.py
+          python tests/test_experience_atlas.py
+          python -m tier_runner.experience_atlas validate \
+            --atlas experiments/world_experience/atlas.json
+          python -m tier_runner.experience_atlas plan \
+            --atlas experiments/world_experience/atlas.json \
+            --limit 12 \
+            --out /tmp/world-experience-plan.json
+          python -m tier_runner.experience_atlas verify \
+            --atlas experiments/world_experience/atlas.json \
+            --plan /tmp/world-experience-plan.json
+          python - <<'PY'
+          import json
+          plan = json.load(open('/tmp/world-experience-plan.json', encoding='utf-8'))
+          assert plan['totals']['patterns'] >= 12, plan['totals']
+          assert plan['totals']['disciplines'] >= 5, plan['totals']
+          ids = {
+              row['id']
+              for wave in plan['waves']
+              for row in wave['patterns']
+          }
+          for identifier in (
+              'B01-action-cache-cas',
+              'W01-event-history-replay',
+              'C01-typed-work-ir',
+              'U01-attention-broker',
+          ):
+              assert identifier in ids, (identifier, sorted(ids))
+          print('WORLD_EXPERIENCE_PLAN_OK', plan['totals'])
+          PY
+      - name: Commit reviewable source and remove one-use transport
+        run: |
+          rm -f transport/world_experience_payload.part-*.b64
+          rm -f transport/world_experience_payload.zip
+          rm -f PAYLOAD_MANIFEST.json
+          rm -f .github/workflows/assemble-world-experience-atlas.yml
+          git config user.name "World Experience Atlas Assembler"
+          git config user.email "world-experience@users.noreply.github.com"
+          git add -A
+          git commit -m "Assemble World Experience Atlas"
+          git push origin HEAD:agent/world-experience-atlas-v1
