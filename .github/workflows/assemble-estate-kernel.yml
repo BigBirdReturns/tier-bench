@@ -1,4 +1,4 @@
-name: diagnose-estate-kernel-validation
+name: assemble-estate-kernel
 
 on:
   pull_request:
@@ -6,14 +6,14 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: diagnose-estate-kernel-validation-${{ github.event.pull_request.number || github.ref }}
+  group: assemble-estate-kernel-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: write
 
 jobs:
-  diagnose:
+  assemble:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,85 +23,151 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Decode and extract exact payload
+      - name: Decode, verify, and extract exact Estate Kernel payload
         run: |
           python - <<'PY'
-          import base64, hashlib, json, pathlib, zipfile
-          root = pathlib.Path(".").resolve()
-          names = [
-              "estate_kernel_clean_payload.part-000.b64",
-              "estate_kernel_clean_payload.part-001.b64",
-              "estate_kernel_clean_payload.part-0020.b64",
-              "estate_kernel_clean_payload.part-0021.b64",
-              "estate_kernel_clean_payload.part-0022.b64",
-              "estate_kernel_clean_payload.part-003.b64",
-              "estate_kernel_clean_payload.part-004.b64",
-              "estate_kernel_clean_payload.part-005.b64",
-          ]
-          encoded = "".join(
-              "".join((root / "transport" / name).read_text(encoding="ascii").split())
-              for name in names
+          import base64
+          import hashlib
+          import io
+          import json
+          import lzma
+          import pathlib
+          import tarfile
+
+          root = pathlib.Path('.').resolve()
+          carriers = sorted((root / 'transport').glob('estate_kernel_v2_payload.part-*.b64'))
+          if len(carriers) != 13:
+              raise SystemExit(f'expected 13 payload chunks, found {len(carriers)}')
+
+          encoded = ''.join(''.join(path.read_text(encoding='ascii').split()) for path in carriers)
+          if len(encoded) != 48044:
+              raise SystemExit(f'payload base64 length mismatch: {len(encoded)} != 48044')
+
+          compressed = base64.b64decode(encoded, validate=True)
+          compressed_sha = hashlib.sha256(compressed).hexdigest()
+          expected_compressed_sha = 'a1a5f0af0602e1c8854311607c5a4e3119827bcd895db442a83e32282ea00311'
+          if compressed_sha != expected_compressed_sha:
+              raise SystemExit(
+                  f'payload xz sha mismatch: {compressed_sha} != {expected_compressed_sha}'
+              )
+
+          archive = lzma.decompress(compressed)
+          archive_sha = hashlib.sha256(archive).hexdigest()
+          expected_archive_sha = '020fcd6498b7655a23af94a2a880b6e875c9468856c0ca41ea6c0f581d53cbc8'
+          if archive_sha != expected_archive_sha:
+              raise SystemExit(
+                  f'payload tar sha mismatch: {archive_sha} != {expected_archive_sha}'
+              )
+
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:') as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  if (
+                      path.is_absolute()
+                      or '..' in path.parts
+                      or path.parts[:1] == ('.git',)
+                      or member.issym()
+                      or member.islnk()
+                  ):
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+              bundle.extractall(root)
+
+          manifest_path = root / 'PAYLOAD_MANIFEST.json'
+          manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+          if manifest.get('schema') != 'tier-bench/estate-kernel-payload@1':
+              raise SystemExit('unexpected payload manifest schema')
+          for name, record in manifest['files'].items():
+              path = root / name
+              if not path.is_file():
+                  raise SystemExit(f'missing extracted file: {name}')
+              payload = path.read_bytes()
+              digest = hashlib.sha256(payload).hexdigest()
+              if digest != record['sha256']:
+                  raise SystemExit(f'file sha mismatch: {name}')
+              if len(payload) != record['size']:
+                  raise SystemExit(f'file size mismatch: {name}')
+          print(
+              f"verified {len(manifest['files'])} files from "
+              f"{len(compressed)} compressed bytes"
           )
-          payload = base64.b64decode(encoded, validate=True)
-          actual = hashlib.sha256(payload).hexdigest()
-          expected = "3837085451744972316670b76856a237676c0e059909dd4cdb897a5ee3440585"
-          if actual != expected:
-              raise SystemExit(f"payload sha mismatch: {actual} != {expected}")
-          with zipfile.ZipFile(root / "transport/estate_kernel_clean_payload.zip", "w") as out:
-              pass
-          archive = root / "transport/estate_kernel_clean_payload.zip"
-          archive.write_bytes(payload)
-          with zipfile.ZipFile(archive) as z:
-              z.extractall(root)
-          manifest = json.loads((root / "PAYLOAD_MANIFEST.json").read_text(encoding="utf-8"))
-          for name, record in manifest["files"].items():
-              digest = hashlib.sha256((root / name).read_bytes()).hexdigest()
-              if digest != record["sha256"]:
-                  raise SystemExit(f"file sha mismatch: {name}")
           PY
-      - name: Capture every validation command
+      - name: Validate Estate Kernel without model calls
         run: |
+          python -m py_compile \
+            tier_runner/estate_common.py \
+            tier_runner/estate_action_cache.py \
+            tier_runner/estate_history.py \
+            tier_runner/work_ir.py \
+            tier_runner/verifier_factory.py \
+            tier_runner/attention_broker.py \
+            tier_runner/estate_kernel.py \
+            tests/test_estate_kernel.py
+          python tests/test_estate_kernel.py
+      - name: Exercise headless example surfaces
+        run: |
+          python -m tier_runner.estate_kernel action-key \
+            --action experiments/estate_kernel/action.json \
+            > /tmp/action-key.json
+          python -m tier_runner.estate_kernel workflow-validate \
+            --workflow experiments/estate_kernel/workflow.json \
+            > /tmp/workflow.json
+          python -m tier_runner.estate_kernel ir-validate \
+            --ir experiments/estate_kernel/work-ir.json \
+            --executors experiments/estate_kernel/executors.json \
+            > /tmp/ir-validate.json
+          python -m tier_runner.estate_kernel ir-plan \
+            --ir experiments/estate_kernel/work-ir.json \
+            --executors experiments/estate_kernel/executors.json \
+            --out /tmp/physical-plan.json
+          python -m tier_runner.estate_kernel ir-verify \
+            --ir experiments/estate_kernel/work-ir.json \
+            --executors experiments/estate_kernel/executors.json \
+            --plan /tmp/physical-plan.json
+          python -m tier_runner.estate_kernel verifier-plan \
+            --spec experiments/estate_kernel/verifier.json \
+            --input experiments/estate_kernel/verifier-input.json \
+            --out /tmp/verifier-plan.json
+          python -m tier_runner.estate_kernel verifier-verify \
+            --spec experiments/estate_kernel/verifier.json \
+            --input experiments/estate_kernel/verifier-input.json \
+            --plan /tmp/verifier-plan.json
+          python -m tier_runner.estate_kernel verifier-run \
+            --plan /tmp/verifier-plan.json \
+            --out /tmp/verifier-report.json
+          python -m tier_runner.estate_kernel attention-plan \
+            --requests experiments/estate_kernel/attention-requests.json \
+            --policy experiments/estate_kernel/attention-policy.json \
+            --current-time 2026-07-26T18:30:00Z \
+            --out /tmp/attention-plan.json
+          python -m tier_runner.estate_kernel attention-slo \
+            --events experiments/estate_kernel/attention-events.json \
+            --out /tmp/attention-slo.json
           python - <<'PY'
-          import json, pathlib, subprocess, sys
-          root = pathlib.Path(".").resolve()
-          commands = [
-              [sys.executable, "-m", "py_compile", "tier_runner/estate_common.py", "tier_runner/estate_action_cache.py", "tier_runner/estate_history.py", "tier_runner/work_ir.py", "tier_runner/verifier_factory.py", "tier_runner/attention_broker.py", "tier_runner/estate_kernel.py", "tests/test_estate_kernel.py"],
-              [sys.executable, "tests/test_estate_kernel.py"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "action-key", "--action", "experiments/estate_kernel/action.json"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "workflow-validate", "--workflow", "experiments/estate_kernel/workflow.json"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "ir-validate", "--ir", "experiments/estate_kernel/work-ir.json", "--executors", "experiments/estate_kernel/executors.json"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "ir-plan", "--ir", "experiments/estate_kernel/work-ir.json", "--executors", "experiments/estate_kernel/executors.json", "--out", "/tmp/estate-ir-plan.json"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "ir-verify", "--ir", "experiments/estate_kernel/work-ir.json", "--executors", "experiments/estate_kernel/executors.json", "--plan", "/tmp/estate-ir-plan.json"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "verifier-plan", "--spec", "experiments/estate_kernel/verifier.json", "--input", "experiments/estate_kernel/verifier-input.json", "--out", "/tmp/verifier-plan.json"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "verifier-verify", "--spec", "experiments/estate_kernel/verifier.json", "--input", "experiments/estate_kernel/verifier-input.json", "--plan", "/tmp/verifier-plan.json"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "verifier-run", "--plan", "/tmp/verifier-plan.json", "--out", "/tmp/verifier-report.json"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "attention-plan", "--requests", "experiments/estate_kernel/attention-requests.json", "--policy", "experiments/estate_kernel/attention-policy.json", "--out", "/tmp/attention-plan.json"],
-              [sys.executable, "-m", "tier_runner.estate_kernel", "attention-slo", "--events", "experiments/estate_kernel/attention-events.json", "--out", "/tmp/attention-slo.json"],
-          ]
-          rows = []
-          for index, command in enumerate(commands, 1):
-              completed = subprocess.run(command, cwd=root, text=True, capture_output=True)
-              rows.append({
-                  "index": index,
-                  "command": command,
-                  "returncode": completed.returncode,
-                  "stdout": completed.stdout[-4000:],
-                  "stderr": completed.stderr[-4000:],
-              })
-          result = {
-              "schema": "tier-bench/estate-kernel-validation-diagnostic@1",
-              "python": sys.version,
-              "commands": rows,
-              "all_passed": all(row["returncode"] == 0 for row in rows),
-          }
-          target = root / "transport/estate_kernel_validation.diagnostic.json"
-          target.write_text(json.dumps(result, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-          print(json.dumps({"all_passed": result["all_passed"], "codes": [row["returncode"] for row in rows]}, indent=2))
+          import json
+
+          action = json.load(open('/tmp/action-key.json', encoding='utf-8'))
+          plan = json.load(open('/tmp/physical-plan.json', encoding='utf-8'))
+          verifier = json.load(open('/tmp/verifier-report.json', encoding='utf-8'))
+          attention = json.load(open('/tmp/attention-plan.json', encoding='utf-8'))
+
+          assert len(action['action_digest']) == 64, action
+          assert plan['totals']['common_subwork_eliminated'] == 1, plan['totals']
+          assert any(row['state'] == 'PLANNED_SYMBOLIC' for row in plan['nodes']), plan
+          assert verifier['verdict'] == 'PASS', verifier
+          assert attention['totals']['immediate_interruptions'] == 1, attention['totals']
+          assert attention['totals']['scheduled_batches'] == 1, attention['totals']
+          assert attention['totals']['returned_for_evidence'] == 1, attention['totals']
+          print('ESTATE_KERNEL_EXAMPLES_OK')
           PY
-      - name: Commit validation diagnostic
+      - name: Commit reviewable source and remove one-use transport
         run: |
-          git config user.name "Estate Kernel Diagnostic"
+          rm -f transport/estate_kernel_v2_payload.part-*.b64
+          rm -f transport/estate_kernel_payload.part-*.b64
+          rm -f PAYLOAD_MANIFEST.json
+          rm -f .github/workflows/assemble-estate-kernel.yml
+          git config user.name "Estate Kernel Assembler"
           git config user.email "estate-kernel@users.noreply.github.com"
-          git add transport/estate_kernel_validation.diagnostic.json
-          git diff --cached --quiet || git commit -m "Record Estate Kernel validation diagnostics"
+          git add -A
+          git diff --cached --quiet || git commit -m "Assemble Estate Kernel v1"
           git push origin HEAD:agent/estate-kernel-v1
