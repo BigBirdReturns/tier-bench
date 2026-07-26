@@ -1,13 +1,13 @@
 {
   "chunks": [
     {
-      "normalized_length": 10000,
-      "normalized_sha256": "fdddac5a85b70d500b769ebff1867fdc3e2f371db3343ff51200328fe323e2bd",
+      "normalized_length": 0,
+      "normalized_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "path": "/home/runner/work/tier-bench/tier-bench/transport/model_waterline_payload.part-000.b64",
-      "prefix": "UEsDBBQAAAAIAEqY+lzhpbGm",
-      "raw_length": 10000,
-      "raw_sha256": "fdddac5a85b70d500b769ebff1867fdc3e2f371db3343ff51200328fe323e2bd",
-      "suffix": "cMpF4ClYi20uyTB+Gq4fOsyb"
+      "prefix": "",
+      "raw_length": 0,
+      "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "suffix": ""
     },
     {
       "normalized_length": 6000,
@@ -91,11 +91,11 @@
       "suffix": "AAAADQANABcEAABnkwAAAAA="
     }
   ],
-  "combined_length": 55740,
-  "combined_sha256": "f38a6ab3943aed0546db70485b4f847bb23c0a6ea9ea4bf8ddbc3200e5177c3f",
+  "combined_length": 45740,
+  "combined_sha256": "1e01bc758ee9a19e574447f719054041d447d7a8fce5b27fe35de852be633d40",
   "decode_error": null,
-  "decoded_length": 41804,
-  "decoded_sha256": "9cbbe68650e8e10960408a3896a25be1f0ca12d98bd89b6078a20669aace2f86",
+  "decoded_length": 34304,
+  "decoded_sha256": "754baad314542eb281f782cdb8219afe3ab71b7f912317e35d15b92f2c8d52c5",
   "expected_zip_sha256": "dfa594dc21813985970b9cd2fb85c0e2fe585b369602a970d0b30e609347da3f",
   "schema": "tier-bench/model-waterline-payload-diagnosis@1"
 }
