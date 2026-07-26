@@ -1,0 +1,1343 @@
+{
+  "schema": "tier-bench/world-experience-atlas@1",
+  "id": "world-experience-atlas-v1",
+  "title": "World Experience Atlas for the Sovereign Desktop Estate",
+  "objective": "Import mature mechanisms from build systems, distributed systems, databases, HPC, compilers, verification, security, decision science, and human factors as explicit desktop gaps and falsifiable build candidates.",
+  "laws": [
+    "A borrowed pattern is a hypothesis until it improves accepted work or operator attention on this estate.",
+    "The source discipline's mechanism must be preserved; brand-name imitation is insufficient.",
+    "Every pattern names the current gap, desktop translation, first experiment, dependencies, and failure default.",
+    "Reused outputs require exact identity or an independently proved equivalence relation.",
+    "Automation that shifts hidden work to the operator has not improved the system.",
+    "Security, provenance, and rollback are part of capability, not deployment ceremony.",
+    "A more complex subsystem must repay its build and maintenance burden.",
+    "The atlas is a queue and control surface, not evidence that any pattern is already implemented."
+  ],
+  "current_estate": {
+    "implemented": [
+      "durable task queue and bounded repository execution",
+      "frontier residue campaigns",
+      "model waterline measurement",
+      "sovereign desktop context and cache planning",
+      "desktop distillation acquisition plans",
+      "prospectively frozen theory experiments"
+    ],
+    "missing_cross_cutting_layers": [
+      "general action cache",
+      "event-sourced workflow replay",
+      "typed work IR",
+      "incremental materialized views",
+      "verifier factory",
+      "attention broker",
+      "capability lifecycle registry",
+      "uniform trust and supply-chain kernel"
+    ]
+  },
+  "references": [
+    {
+      "id": "bazel-remote-cache",
+      "title": "Bazel Remote Caching",
+      "url": "https://bazel.build/remote/caching",
+      "supports": [
+        "action cache",
+        "content-addressed outputs",
+        "explicit action inputs",
+        "cache poisoning concerns"
+      ]
+    },
+    {
+      "id": "temporal-durable-execution",
+      "title": "Temporal durable execution and replay",
+      "url": "https://docs.temporal.io/temporal",
+      "supports": [
+        "event history",
+        "durable workflows",
+        "replay",
+        "sticky execution"
+      ]
+    },
+    {
+      "id": "erlang-supervision",
+      "title": "Erlang/OTP supervision trees",
+      "url": "https://www.erlang.org/doc/system/design_principles.html",
+      "supports": [
+        "worker supervision",
+        "restart strategies",
+        "fault containment"
+      ]
+    },
+    {
+      "id": "calcite-optimizer",
+      "title": "Apache Calcite query optimizer",
+      "url": "https://calcite.apache.org/",
+      "supports": [
+        "relational intermediate representation",
+        "rule transforms",
+        "cost-based planning",
+        "pushdown"
+      ]
+    },
+    {
+      "id": "differential-dataflow",
+      "title": "Differential Dataflow",
+      "url": "https://www.microsoft.com/en-us/research/publication/differential-dataflow/",
+      "supports": [
+        "incremental recomputation",
+        "iterative materialized views",
+        "change propagation"
+      ]
+    },
+    {
+      "id": "slurm-scheduling",
+      "title": "Slurm scheduling and backfill",
+      "url": "https://slurm.schedmd.com/sched_config.html",
+      "supports": [
+        "backfill",
+        "resource accounting",
+        "job arrays",
+        "preemption"
+      ]
+    },
+    {
+      "id": "egg-equality-saturation",
+      "title": "egg: Fast and Extensible Equality Saturation",
+      "url": "https://doi.org/10.1145/3434304",
+      "supports": [
+        "alternative equivalent plans",
+        "rewrite search",
+        "cost extraction"
+      ]
+    },
+    {
+      "id": "google-mutation-testing",
+      "title": "State of Mutation Testing at Google",
+      "url": "https://research.google/pubs/state-of-mutation-testing-at-google/",
+      "supports": [
+        "mutation testing",
+        "test adequacy",
+        "developer attention filtering"
+      ]
+    },
+    {
+      "id": "google-fuzzing",
+      "title": "FUDGE and scalable fuzzing",
+      "url": "https://research.google/pubs/fudge-fuzz-driver-generation-at-scale/",
+      "supports": [
+        "automated fuzz drivers",
+        "continuous fuzzing",
+        "robustness testing"
+      ]
+    },
+    {
+      "id": "slsa-provenance",
+      "title": "SLSA specification v1.2",
+      "url": "https://slsa.dev/spec/v1.2/",
+      "supports": [
+        "artifact provenance",
+        "build traceability",
+        "supply-chain verification"
+      ]
+    },
+    {
+      "id": "online-llm-bandit",
+      "title": "Online Multi-LLM Selection via Contextual Bandits",
+      "url": "https://ojs.aaai.org/index.php/AAAI/article/view/39672",
+      "supports": [
+        "online adaptive model routing",
+        "budget awareness",
+        "exploration and exploitation"
+      ]
+    },
+    {
+      "id": "attention-sensitive-alerting",
+      "title": "Attention-Sensitive Alerting",
+      "url": "https://www.microsoft.com/en-us/research/publication/attention-sensitive-alerting/",
+      "supports": [
+        "expected interruption cost",
+        "notification deferral",
+        "attention-aware routing"
+      ]
+    },
+    {
+      "id": "email-batching",
+      "title": "Email Duration, Batching and Self-interruption",
+      "url": "https://www.microsoft.com/en-us/research/publication/email-duration-batching-and-self-interruption-patterns-of-email-use-on-productivity-and-stress/",
+      "supports": [
+        "batching",
+        "self interruption",
+        "productivity effects"
+      ]
+    },
+    {
+      "id": "dapper-tracing",
+      "title": "Dapper distributed tracing",
+      "url": "https://research.google/pubs/dapper-a-large-scale-distributed-systems-tracing-infrastructure/",
+      "supports": [
+        "low-overhead tracing",
+        "cross-service causality",
+        "diagnostic reuse"
+      ]
+    }
+  ],
+  "disciplines": [
+    {
+      "id": "build-systems",
+      "title": "Build systems and reproducible execution"
+    },
+    {
+      "id": "durable-workflows",
+      "title": "Durable workflows and supervision"
+    },
+    {
+      "id": "database-systems",
+      "title": "Database optimization and incremental views"
+    },
+    {
+      "id": "hpc-scheduling",
+      "title": "HPC scheduling and resource accounting"
+    },
+    {
+      "id": "compiler-systems",
+      "title": "Compilers and program optimization"
+    },
+    {
+      "id": "verification",
+      "title": "Testing, verification, and fault discovery"
+    },
+    {
+      "id": "security",
+      "title": "Supply-chain and execution security"
+    },
+    {
+      "id": "adaptive-decision",
+      "title": "Adaptive decision science"
+    },
+    {
+      "id": "human-attention",
+      "title": "Human attention and review ergonomics"
+    },
+    {
+      "id": "capability-lifecycle",
+      "title": "Capability lifecycle and continual qualification"
+    },
+    {
+      "id": "observability",
+      "title": "Observability and operational resilience"
+    }
+  ],
+  "patterns": [
+    {
+      "id": "B01-action-cache-cas",
+      "title": "Content-addressed action cache",
+      "discipline": "build-systems",
+      "priority": 100,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Hash the complete action contract and store result metadata separately from immutable output blobs.",
+      "current_gap": "The estate caches model context and receipts, but it does not yet reuse every deterministic or model-assisted action by exact input identity across projects.",
+      "desktop_translation": "Give extraction, retrieval, validation, rendering, tests, model calls, and compilation one action key over source hashes, tool versions, prompts, environment, and expected outputs.",
+      "testable_hypothesis": "At least 30% of repeated bounded work will be satisfiable from an action cache without re-execution, with zero acceptance regression.",
+      "first_experiment": "Replay 100 historical Tier Desk jobs after canonicalizing their action inputs; measure exact reusable hits and poisoned-hit detection.",
+      "references": [
+        "bazel-remote-cache"
+      ],
+      "depends_on": [],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "B02-hermetic-actions",
+      "title": "Hermetic action envelopes",
+      "discipline": "build-systems",
+      "priority": 98,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Declare every input, tool, environment variable, network permission, and output so an action cannot depend on ambient machine state.",
+      "current_gap": "Backend manifests bind models and prompts, but ordinary utilities and future local workers can still inherit undeclared PATH, files, clocks, or network state.",
+      "desktop_translation": "Run each action in a disposable packet with a minimal environment, explicit tool digests, and denied-by-default undeclared reads.",
+      "testable_hypothesis": "Hermetic execution will reduce irreproducible accepted runs and make cross-machine cache reuse safe.",
+      "first_experiment": "Select 30 previously accepted jobs, rerun under a stripped environment, and classify hidden ambient dependencies.",
+      "references": [
+        "bazel-remote-cache",
+        "slsa-provenance"
+      ],
+      "depends_on": [
+        "B01-action-cache-cas"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "B03-incremental-invalidation",
+      "title": "Dependency-directed invalidation",
+      "discipline": "build-systems",
+      "priority": 97,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Invalidate only outputs whose declared dependency closure changed.",
+      "current_gap": "Context packs already distinguish stable and dynamic blocks, but derived artifacts across the estate are not maintained as a unified incremental dependency graph.",
+      "desktop_translation": "Record artifact-to-source edges and compute the minimal dirty subgraph after each Git, chat, source, or model update.",
+      "testable_hypothesis": "Dependency-directed invalidation will cut rebuild work by at least 60% on append-heavy estates without serving stale outputs.",
+      "first_experiment": "Apply 20 controlled source changes to AXM and Clifford fixtures and compare whole-estate rebuild versus minimal invalidation.",
+      "references": [
+        "bazel-remote-cache",
+        "differential-dataflow"
+      ],
+      "depends_on": [
+        "B01-action-cache-cas"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "B04-ephemeral-remote-execution",
+      "title": "Ephemeral sovereign compute extension",
+      "discipline": "build-systems",
+      "priority": 70,
+      "status": "needs-adapter",
+      "scores": {
+        "attention_return": 3,
+        "reuse_radius": 4,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Move a hermetic action to temporary remote hardware while preserving the same input and output contract.",
+      "current_gap": "Remote open-weight compute is conceptual but lacks a standard checkout, execute, seal, and repatriate contract.",
+      "desktop_translation": "Package a source and weight-bound action, run it on rented compute, import only signed outputs and telemetry, then destroy the worker.",
+      "testable_hypothesis": "Checkpointed ephemeral compute will make oversized open-weight experiments practical without transferring control of the estate.",
+      "first_experiment": "Run one open-weight quantization or LoRA action locally and on a temporary remote GPU using identical action digests.",
+      "references": [
+        "bazel-remote-cache",
+        "slsa-provenance"
+      ],
+      "depends_on": [
+        "B02-hermetic-actions",
+        "B03-incremental-invalidation"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "W01-event-history-replay",
+      "title": "Event-sourced durable workflows",
+      "discipline": "durable-workflows",
+      "priority": 100,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Persist state transitions and rebuild workflow state by deterministic replay instead of trusting one mutable row or resident process.",
+      "current_gap": "Monster Wrangler persists task state, but it does not yet expose a general workflow history with code-version replay semantics for every long-running estate process.",
+      "desktop_translation": "Represent each campaign as commands, events, timers, activity results, and versioned transitions; model calls and side effects remain external activities.",
+      "testable_hypothesis": "A crashed or upgraded workflow will resume without redoing accepted work or losing causal state.",
+      "first_experiment": "Kill the scheduler at every transition of a 20-step campaign, restart on changed code, and verify identical terminal state or an explicit version gate.",
+      "references": [
+        "temporal-durable-execution"
+      ],
+      "depends_on": [],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "W02-idempotent-side-effects",
+      "title": "Idempotent side-effect ledger",
+      "discipline": "durable-workflows",
+      "priority": 99,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Bind every external effect to an idempotency key and record intent, attempt, result, and reconciliation.",
+      "current_gap": "Receipts cover model work, but email, calendar, Git writes, browser actions, downloads, and remote jobs can still duplicate after retries.",
+      "desktop_translation": "Add an outbox and effect ledger so retries may repeat computation but cannot repeat a committed external effect.",
+      "testable_hypothesis": "Crash retries will produce exactly one accepted side effect or a visible unresolved reconciliation state.",
+      "first_experiment": "Inject crashes before and after 50 fixture side effects and verify no duplicate commit, message, file write, or campaign start.",
+      "references": [
+        "temporal-durable-execution"
+      ],
+      "depends_on": [
+        "W01-event-history-replay"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "W03-supervision-tree",
+      "title": "Supervisor tree for workers and services",
+      "discipline": "durable-workflows",
+      "priority": 96,
+      "status": "ready",
+      "scores": {
+        "attention_return": 4,
+        "reuse_radius": 5,
+        "implementation_cost": 2,
+        "operational_risk": 2
+      },
+      "mechanism": "Assign restart scope and intensity by dependency: one-for-one, rest-for-one, or one-for-all.",
+      "current_gap": "The Desk has a supervisor, but the growing local runtime, indexers, model servers, cache managers, and browser bridges lack an explicit fault-containment tree.",
+      "desktop_translation": "Model each daemon as a supervised child with health contract, restart budget, dependency ordering, and escalation state.",
+      "testable_hypothesis": "Explicit supervision will reduce full-estate stops and prevent restart storms from hiding structural faults.",
+      "first_experiment": "Run a fault matrix over model server, indexer, cache registry, Desk, and validator failures and measure containment and recovery.",
+      "references": [
+        "erlang-supervision"
+      ],
+      "depends_on": [
+        "W01-event-history-replay"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "W04-compensation-sagas",
+      "title": "Compensating transactions for multi-system work",
+      "discipline": "durable-workflows",
+      "priority": 76,
+      "status": "next",
+      "scores": {
+        "attention_return": 4,
+        "reuse_radius": 4,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "When a multi-step process cannot be atomically committed, record compensating actions for each completed step.",
+      "current_gap": "Cross-repository and connector workflows can partly succeed, leaving valid but unwanted state that manual cleanup must reconstruct.",
+      "desktop_translation": "Require every non-atomic workflow to declare compensation, irreversible boundaries, and operator approval points.",
+      "testable_hypothesis": "Compensation-aware workflows will recover from partial failure with fewer manual forensic steps.",
+      "first_experiment": "Execute a fixture spanning Git branch, generated artifact, calendar event, and message draft, then fail each step and evaluate restoration.",
+      "references": [
+        "temporal-durable-execution"
+      ],
+      "depends_on": [
+        "W02-idempotent-side-effects"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "D01-cost-based-work-optimizer",
+      "title": "Cost-based work optimizer",
+      "discipline": "database-systems",
+      "priority": 96,
+      "status": "next",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Compile work to a logical plan, enumerate valid physical plans, and select using measured cost rather than a fixed ladder.",
+      "current_gap": "The waterline and theory systems measure routes, but production routing still relies mainly on operator-declared order and local preference.",
+      "desktop_translation": "Estimate acceptance probability, attention, cache locality, load cost, context cost, and resource wait for each valid plan.",
+      "testable_hypothesis": "A learned cost model will reduce cost per accepted result without increasing defects or operator attention.",
+      "first_experiment": "Replay 200 historical jobs through fixed routing and an offline cost-based planner using only evidence available at dispatch time.",
+      "references": [
+        "calcite-optimizer",
+        "online-llm-bandit"
+      ],
+      "depends_on": [
+        "C01-typed-work-ir",
+        "B01-action-cache-cas"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "D02-adaptive-cardinality-feedback",
+      "title": "Adaptive plan correction",
+      "discipline": "database-systems",
+      "priority": 72,
+      "status": "research",
+      "scores": {
+        "attention_return": 3,
+        "reuse_radius": 4,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Update estimates when observed retrieval volume, output length, failure rate, or tool selectivity differs from the plan.",
+      "current_gap": "Current plans are frozen correctly for evidence, but production plans do not adapt within declared safe bounds when estimates are wrong.",
+      "desktop_translation": "Permit bounded re-optimization at checkpoint boundaries while preserving the original logical contract and recording the plan change.",
+      "testable_hypothesis": "Adaptive correction will reduce pathological long runs caused by bad context or output estimates.",
+      "first_experiment": "Seed wrong selectivity and output-length estimates into 50 jobs and compare frozen physical plans with checkpointed re-optimization.",
+      "references": [
+        "calcite-optimizer"
+      ],
+      "depends_on": [
+        "D01-cost-based-work-optimizer"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "D03-incremental-materialized-views",
+      "title": "Incremental materialized knowledge views",
+      "discipline": "database-systems",
+      "priority": 99,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 2
+      },
+      "mechanism": "Maintain derived indexes, summaries, graphs, and reports by applying source deltas rather than regenerating the whole result.",
+      "current_gap": "AXM and Clifford preserve source lineage, but many useful projections are still rebuilt or resynthesized from scratch after new evidence.",
+      "desktop_translation": "Treat relationship recaps, project state, source coverage, graph topology, and model waterlines as materialized views with explicit delta rules.",
+      "testable_hypothesis": "Incremental views will keep recurring situational awareness current at a fraction of full regeneration cost.",
+      "first_experiment": "Append, edit, and retract records in a chat and evidence fixture; measure changed outputs and verify unaffected outputs remain byte-identical.",
+      "references": [
+        "differential-dataflow"
+      ],
+      "depends_on": [
+        "B01-action-cache-cas"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "D04-bitemporal-retraction-propagation",
+      "title": "Bitemporal claims and retraction propagation",
+      "discipline": "database-systems",
+      "priority": 94,
+      "status": "next",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Track both when a fact was valid in the world and when the estate learned or revised it, then propagate retractions through dependent views.",
+      "current_gap": "The estate records provenance and fault lines, but downstream summaries can remain semantically stale after an upstream correction.",
+      "desktop_translation": "Add valid-time, transaction-time, support edges, and retraction events to every durable claim and generated projection.",
+      "testable_hypothesis": "A corrected source will automatically mark every dependent conclusion stale, superseded, or still supported.",
+      "first_experiment": "Retract one load-bearing source from a Clifford fixture and verify all affected paths and narratives are invalidated without touching independent claims.",
+      "references": [
+        "differential-dataflow"
+      ],
+      "depends_on": [
+        "D03-incremental-materialized-views"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "H01-backfill-scheduling",
+      "title": "Deadline-safe backfill scheduling",
+      "discipline": "hpc-scheduling",
+      "priority": 95,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 4,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Run lower-priority jobs in resource gaps only when their estimated completion cannot delay reserved higher-priority work.",
+      "current_gap": "Resource lanes serialize contention, but idle gaps are not yet filled using runtime estimates and reservations.",
+      "desktop_translation": "Add duration distributions, deadlines, preemption class, and reservation windows to Tier Desk.",
+      "testable_hypothesis": "Backfill will increase local GPU utilization without delaying operator-promised or dependency-critical work.",
+      "first_experiment": "Replay a month of synthetic and historical queue arrivals under strict priority and conservative backfill.",
+      "references": [
+        "slurm-scheduling"
+      ],
+      "depends_on": [
+        "W01-event-history-replay"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "H02-checkpoint-preemption",
+      "title": "Checkpointable and preemptible local work",
+      "discipline": "hpc-scheduling",
+      "priority": 92,
+      "status": "next",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Persist bounded progress so long local jobs can yield to urgent work and resume without restarting.",
+      "current_gap": "Campaign attempts are isolated, but most model and data-processing activities remain whole-run units.",
+      "desktop_translation": "Define checkpoint contracts for retrieval, document batches, training epochs, code search, and multi-trial generation.",
+      "testable_hypothesis": "Checkpointing will make night-shift local work compatible with urgent foreground use and hardware maintenance.",
+      "first_experiment": "Preempt jobs at random intervals across five task families and compare lost compute, corruption, and operator recovery.",
+      "references": [
+        "slurm-scheduling",
+        "temporal-durable-execution"
+      ],
+      "depends_on": [
+        "W01-event-history-replay",
+        "B01-action-cache-cas"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "H03-parametric-job-arrays",
+      "title": "Parametric job arrays",
+      "discipline": "hpc-scheduling",
+      "priority": 88,
+      "status": "ready",
+      "scores": {
+        "attention_return": 4,
+        "reuse_radius": 4,
+        "implementation_cost": 2,
+        "operational_risk": 2
+      },
+      "mechanism": "Represent systematic sweeps as one indexed job family with shared inputs and per-cell parameters.",
+      "current_gap": "Theory plans produce many runs, but their operational representation can still expand into individually managed jobs.",
+      "desktop_translation": "Compile model, context, quantization, prefix, and retry sweeps into array manifests with one shared source packet.",
+      "testable_hypothesis": "Job arrays will reduce queue and review overhead for large experimental matrices.",
+      "first_experiment": "Compile the 22-theory matrix into array groups and compare control-state size and operator actions.",
+      "references": [
+        "slurm-scheduling"
+      ],
+      "depends_on": [
+        "W01-event-history-replay"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "H04-energy-thermal-accounting",
+      "title": "Energy and thermal-aware scheduling",
+      "discipline": "hpc-scheduling",
+      "priority": 65,
+      "status": "next",
+      "scores": {
+        "attention_return": 3,
+        "reuse_radius": 3,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Treat power, heat, fan noise, and thermal throttling as resources and costs.",
+      "current_gap": "The estate tracks GPU lanes and time but not energy, heat-soak, or apartment-level operating constraints.",
+      "desktop_translation": "Record power draw, temperature, throttling, and time-of-day policy per accepted task.",
+      "testable_hypothesis": "Some overnight schedules and quantizations will yield more accepted work per kWh and less thermal contention.",
+      "first_experiment": "Run identical long jobs at several power limits and ambient windows; compare accepted yield, energy, and maintenance burden.",
+      "references": [
+        "slurm-scheduling"
+      ],
+      "depends_on": [],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "C01-typed-work-ir",
+      "title": "Typed intermediate representation for work",
+      "discipline": "compiler-systems",
+      "priority": 100,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 2
+      },
+      "mechanism": "Lower natural-language goals into a typed graph of sources, transformations, effects, tests, and authority boundaries.",
+      "current_gap": "Campaign JSON describes execution, but there is no general semantic IR shared across research, code, documents, visuals, and personal operations.",
+      "desktop_translation": "Introduce operators such as retrieve, parse, compare, synthesize, execute, verify, publish, and ask, each with typed inputs and outputs.",
+      "testable_hypothesis": "A typed work IR will expose reusable subwork, invalid effects, and deterministic lowering opportunities before a model is called.",
+      "first_experiment": "Encode 25 historical requests in the IR and measure ambiguous fields, reusable operators, and model-free lowering.",
+      "references": [
+        "calcite-optimizer"
+      ],
+      "depends_on": [],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "C02-deterministic-first-lowering",
+      "title": "Deterministic-first lowering",
+      "discipline": "compiler-systems",
+      "priority": 99,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Lower each IR operator to the least expressive adequate executor: parser, SQL, regex, solver, compiler, script, local model, then frontier.",
+      "current_gap": "The router chooses among models well, but many tasks should exit the model economy entirely.",
+      "desktop_translation": "Maintain an executor registry with semantic contracts and proofs of equivalence for deterministic implementations.",
+      "testable_hypothesis": "At least half of recurring sub-operators will become deterministic or validator-selected local code.",
+      "first_experiment": "Decompose 100 recent tasks into IR operators and count which can be executed by existing deterministic tools.",
+      "references": [
+        "calcite-optimizer"
+      ],
+      "depends_on": [
+        "C01-typed-work-ir"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "C03-common-subexpression-partial-evaluation",
+      "title": "Common-subwork elimination and partial evaluation",
+      "discipline": "compiler-systems",
+      "priority": 97,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Compute invariant portions once and reuse them across jobs; precompute stages whose inputs are already known.",
+      "current_gap": "Context prefixes are reused, but repeated searches, source normalization, grading setup, and report fragments are not universally deduplicated.",
+      "desktop_translation": "Hash every IR node and replace duplicate nodes with references to one accepted result.",
+      "testable_hypothesis": "IR-level common-subwork elimination will reduce repeated tool and model calls across campaigns.",
+      "first_experiment": "Compile ten related repository and research tasks together and compare naive versus deduplicated execution graphs.",
+      "references": [
+        "bazel-remote-cache"
+      ],
+      "depends_on": [
+        "C01-typed-work-ir",
+        "B01-action-cache-cas"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "C04-equality-saturation-plans",
+      "title": "Alternative-plan search with equality saturation",
+      "discipline": "compiler-systems",
+      "priority": 60,
+      "status": "research",
+      "scores": {
+        "attention_return": 3,
+        "reuse_radius": 4,
+        "implementation_cost": 5,
+        "operational_risk": 4
+      },
+      "mechanism": "Represent equivalent work plans together, apply sound rewrites, and extract the cheapest plan under current costs.",
+      "current_gap": "The system generally commits to one decomposition before execution and may miss structurally equivalent cheaper plans.",
+      "desktop_translation": "Define verified rewrites such as retrieve-before-summarize, batch-independent-calls, reuse-materialized-view, and solver-before-model.",
+      "testable_hypothesis": "For bounded work, equivalent-plan search will discover lower-cost plans that hand-authored sequencing misses.",
+      "first_experiment": "Build a tiny IR grammar for evidence synthesis and code repair, enumerate verified rewrites, and compare extracted plans with human plans.",
+      "references": [
+        "egg-equality-saturation",
+        "calcite-optimizer"
+      ],
+      "depends_on": [
+        "C01-typed-work-ir",
+        "D01-cost-based-work-optimizer"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "T01-mutation-testing",
+      "title": "Mutation-derived verifier gaps",
+      "discipline": "verification",
+      "priority": 99,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Inject small plausible faults and test whether the existing acceptance system detects them.",
+      "current_gap": "Hidden graders exist for selected tasks, but verifier strength is not continuously measured across the estate.",
+      "desktop_translation": "Generate scoped mutants in code, schemas, policy rules, and evidence claims; retain only actionable survivors.",
+      "testable_hypothesis": "Mutation testing will reveal where green tests still permit the exact failure modes models exploit.",
+      "first_experiment": "Run diff-based mutation over Tier Bench and one AXM pipeline change; classify live mutants and review burden.",
+      "references": [
+        "google-mutation-testing"
+      ],
+      "depends_on": [],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "T02-fuzz-property-generation",
+      "title": "Fuzzing and property-generated acceptance",
+      "discipline": "verification",
+      "priority": 98,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Generate adversarial inputs from interface contracts and invariant properties rather than hand-enumerated examples.",
+      "current_gap": "Many tasks rely on fixed examples and can pass while failing unseen combinations or malformed inputs.",
+      "desktop_translation": "Create reusable fuzz drivers for parsers, schemas, CLI surfaces, context packs, receipts, and model output adapters.",
+      "testable_hypothesis": "Continuous fuzzing will find robustness defects and manufacture fresh hidden-grade cases.",
+      "first_experiment": "Auto-generate drivers for five high-value interfaces and run bounded fuzz campaigns with reproducible seeds.",
+      "references": [
+        "google-fuzzing"
+      ],
+      "depends_on": [],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "T03-metamorphic-differential-testing",
+      "title": "Metamorphic and differential graders",
+      "discipline": "verification",
+      "priority": 97,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "When exact answers are costly, test relations that must remain true under controlled transformations or compare independent implementations.",
+      "current_gap": "Subjective and research tasks often lack cheap exact graders, leaving frontier narration too close to acceptance.",
+      "desktop_translation": "Define transformations such as source reorder, irrelevant-source injection, paraphrase, unit conversion, and alternate solver execution.",
+      "testable_hypothesis": "Metamorphic relations will expand hidden evaluation into tasks that currently require manual judgment.",
+      "first_experiment": "Author ten relations for evidence synthesis, retrieval, visual layouts, and repository planning; measure discriminative power.",
+      "references": [
+        "google-fuzzing"
+      ],
+      "depends_on": [],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "T04-flake-aware-evidence",
+      "title": "Flake-aware evidence adjudication",
+      "discipline": "verification",
+      "priority": 90,
+      "status": "ready",
+      "scores": {
+        "attention_return": 4,
+        "reuse_radius": 4,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Model nondeterministic failures explicitly instead of retrying until a preferred result appears.",
+      "current_gap": "K-receipt evidence separates error from failure, but task-level flakiness and noisy graders are not yet estimated and localized.",
+      "desktop_translation": "Track per-test flake rates, environmental covariates, and Bayesian culprit likelihood; quarantine unstable acceptance.",
+      "testable_hypothesis": "Flake-aware adjudication will prevent false model walls and false clears while reducing wasteful reruns.",
+      "first_experiment": "Introduce controlled flaky tests into 30 campaigns and compare naive K-of-N with a flake-aware classifier.",
+      "references": [
+        "google-mutation-testing"
+      ],
+      "depends_on": [],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "S01-output-taint-tracking",
+      "title": "Taint tracking for model-derived data",
+      "discipline": "security",
+      "priority": 98,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Mark untrusted model output and propagate that label through files, commands, summaries, and effects until independently validated.",
+      "current_gap": "Receipts preserve provenance, but downstream tools can still treat generated text as trusted instructions or authoritative facts.",
+      "desktop_translation": "Add trust labels and permitted transformations to every artifact and IR edge.",
+      "testable_hypothesis": "Taint enforcement will block prompt-injected instructions and unsupported generated claims from reaching privileged effects.",
+      "first_experiment": "Seed malicious and merely incorrect model outputs into a multi-step fixture and verify where trust is upgraded or refused.",
+      "references": [
+        "slsa-provenance"
+      ],
+      "depends_on": [
+        "C01-typed-work-ir"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "S02-capability-egress-kernel",
+      "title": "Capability and egress kernel",
+      "discipline": "security",
+      "priority": 97,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Give each action only explicit object capabilities and network destinations instead of ambient filesystem, shell, and Internet authority.",
+      "current_gap": "Tier Run constrains files and tools, but the wider estate will add browsers, connectors, remote compute, and service daemons.",
+      "desktop_translation": "Issue short-lived capabilities for read, write, execute, network, credential use, and human-visible effects.",
+      "testable_hypothesis": "Capability confinement will contain compromised models and faulty workers without requiring perfect prompt behavior.",
+      "first_experiment": "Run a red-team fixture that attempts path escape, credential discovery, arbitrary egress, and undeclared side effects.",
+      "references": [
+        "slsa-provenance"
+      ],
+      "depends_on": [
+        "S01-output-taint-tracking",
+        "B02-hermetic-actions"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "S03-artifact-attestations",
+      "title": "SLSA-style attestations for models and artifacts",
+      "discipline": "security",
+      "priority": 96,
+      "status": "ready",
+      "scores": {
+        "attention_return": 4,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Attach verifiable provenance describing source, builder, parameters, dependencies, and outputs.",
+      "current_gap": "Code and AXM artifacts are signed selectively, but models, quantizations, adapters, prompts, indexes, and cache files lack one uniform supply-chain statement.",
+      "desktop_translation": "Generate attestations for every promoted model cartridge and capture artifact, with separate builder and verifier identities.",
+      "testable_hypothesis": "Attestations will make machine rebuild, tamper detection, and successor custody materially stronger.",
+      "first_experiment": "Rebuild one local model cartridge and one distillation artifact from declared inputs and compare hashes and provenance.",
+      "references": [
+        "slsa-provenance"
+      ],
+      "depends_on": [
+        "B02-hermetic-actions"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "S04-quarantine-canary-shadow",
+      "title": "Quarantine, canary, and shadow execution",
+      "discipline": "security",
+      "priority": 82,
+      "status": "next",
+      "scores": {
+        "attention_return": 4,
+        "reuse_radius": 4,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Observe new models, prompts, adapters, and policies on duplicated work before granting production authority.",
+      "current_gap": "Waterlines survey models, but deployment qualification and live shadow comparison are not yet a continuous promotion rail.",
+      "desktop_translation": "Route a sampled copy of eligible jobs to the candidate, compare receipts privately, and promote only after bounded criteria.",
+      "testable_hypothesis": "Shadow qualification will detect silent regressions and supply-chain drift before they alter accepted work.",
+      "first_experiment": "Shadow a new local quantization across 50 production-like tasks with no write authority.",
+      "references": [
+        "slsa-provenance",
+        "dapper-tracing"
+      ],
+      "depends_on": [
+        "S01-output-taint-tracking",
+        "W01-event-history-replay"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "A01-contextual-bandit-routing",
+      "title": "Contextual bandit routing",
+      "discipline": "adaptive-decision",
+      "priority": 91,
+      "status": "next",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Use observed task features and accepted outcomes to choose routes while reserving bounded exploration for uncertainty.",
+      "current_gap": "The estate has fixed waterlines and route ladders, but it does not continuously adapt to new models, task drift, and price changes.",
+      "desktop_translation": "Learn a policy over task-family, context, runtime, cache state, and acceptance history, constrained by privacy and authority.",
+      "testable_hypothesis": "Online routing will reduce regret versus static ladders while discovering new model niches.",
+      "first_experiment": "Replay historical tasks in chronological order and compare static routing with an off-policy bandit simulation.",
+      "references": [
+        "online-llm-bandit"
+      ],
+      "depends_on": [
+        "D01-cost-based-work-optimizer"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "A02-value-of-information-teacher-calls",
+      "title": "Value-of-information teacher acquisition",
+      "discipline": "adaptive-decision",
+      "priority": 89,
+      "status": "next",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Spend frontier calls where the expected reduction in future uncertainty or capture cost is highest.",
+      "current_gap": "The distillation lab ranks recurring residue, but teacher-query selection remains mostly hand-designed or disagreement-based.",
+      "desktop_translation": "Estimate information gain over routing, verifier, and capture hypotheses before each teacher call.",
+      "testable_hypothesis": "A fixed teacher budget allocated by value of information will produce more replay-clearing capability than random or recurrence-only selection.",
+      "first_experiment": "Compare random, disagreement, and information-gain teacher selection on one residue family under equal call budget.",
+      "references": [
+        "online-llm-bandit"
+      ],
+      "depends_on": [
+        "A01-contextual-bandit-routing"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "A03-sequential-stopping",
+      "title": "Sequential evidence stopping",
+      "discipline": "adaptive-decision",
+      "priority": 94,
+      "status": "ready",
+      "scores": {
+        "attention_return": 4,
+        "reuse_radius": 4,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Stop experiments when evidence crosses predeclared support, falsification, futility, or safety boundaries.",
+      "current_gap": "K floors prevent one-shot claims, but many sweeps still run a fixed matrix after the result is already obvious or hopeless.",
+      "desktop_translation": "Add alpha-spending or Bayesian decision thresholds while preserving preregistration and optional maximum sample size.",
+      "testable_hypothesis": "Sequential stopping will reduce model and hardware spend without increasing false promotion.",
+      "first_experiment": "Simulate and then run sequential stopping over known settled and unstable Tier Bench cells.",
+      "references": [
+        "online-llm-bandit"
+      ],
+      "depends_on": [],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "A04-pareto-governor",
+      "title": "Pareto governor for quality, attention, cost, and custody",
+      "discipline": "adaptive-decision",
+      "priority": 93,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Preserve a frontier of nondominated routes rather than collapsing all objectives into one score.",
+      "current_gap": "The estate keeps separate ledgers, but operational choice still needs a principled way to present trade-offs without hiding them.",
+      "desktop_translation": "Maintain per-family Pareto sets and let operator policy select among them by context.",
+      "testable_hypothesis": "A Pareto governor will avoid false precision and expose when cheaper work costs more attention or custody.",
+      "first_experiment": "Compute Pareto frontiers from existing waterline and theory fixtures and test policy selections under changed priorities.",
+      "references": [
+        "calcite-optimizer"
+      ],
+      "depends_on": [
+        "D01-cost-based-work-optimizer"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "U01-attention-broker",
+      "title": "Attention-sensitive review broker",
+      "discipline": "human-attention",
+      "priority": 100,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Estimate the cost of interruption and defer non-urgent review requests to opportune moments.",
+      "current_gap": "Attention is measured after work, but the Desk does not yet decide when and how to summon the operator.",
+      "desktop_translation": "Classify review requests by urgency, reversibility, context-loading cost, and deadline; deliver them through batched decision packets.",
+      "testable_hypothesis": "Attention-aware delivery will reduce context switches and active operator minutes per accepted result.",
+      "first_experiment": "Replay one week of hypothetical Desk review events against immediate alerts and bounded review windows.",
+      "references": [
+        "attention-sensitive-alerting",
+        "email-batching"
+      ],
+      "depends_on": [
+        "W01-event-history-replay"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "U02-batched-review-windows",
+      "title": "Batched review windows",
+      "discipline": "human-attention",
+      "priority": 98,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 2,
+        "operational_risk": 1
+      },
+      "mechanism": "Aggregate similar decisions and present them together with shared context and one reattachment cost.",
+      "current_gap": "The user can leave work running, but returns may still arrive as a stream of unrelated micro-decisions.",
+      "desktop_translation": "Group reviews by project, authority type, evidence shape, and required mental model.",
+      "testable_hypothesis": "Batched reviews will reduce operator minutes without increasing missed urgent decisions.",
+      "first_experiment": "Compare 50 simulated mixed review events under immediate, chronological batch, and semantic batch presentation.",
+      "references": [
+        "email-batching"
+      ],
+      "depends_on": [
+        "U01-attention-broker"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "U03-reattachment-packets",
+      "title": "Detachment and reattachment packets",
+      "discipline": "human-attention",
+      "priority": 97,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 2,
+        "operational_risk": 1
+      },
+      "mechanism": "Persist the exact mental state needed to resume work after hours or interruption.",
+      "current_gap": "Receipts preserve machine state, but the operator still reconstructs why the work matters, what changed, and what decision remains.",
+      "desktop_translation": "Emit end-of-shift and return packets containing goals, completed evidence, open decisions, next safe action, and stale assumptions.",
+      "testable_hypothesis": "Reattachment packets will shorten first-intervention time and reduce repeated repository archaeology.",
+      "first_experiment": "Run a two-week crossover study on selected projects using ordinary dashboards versus generated reattachment packets.",
+      "references": [
+        "attention-sensitive-alerting"
+      ],
+      "depends_on": [
+        "W01-event-history-replay",
+        "U01-attention-broker"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "U04-review-debt-escalation",
+      "title": "Review debt and aging policy",
+      "discipline": "human-attention",
+      "priority": 79,
+      "status": "next",
+      "scores": {
+        "attention_return": 4,
+        "reuse_radius": 4,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Track the cost and risk of deferred human decisions and escalate only when delay changes the option set.",
+      "current_gap": "Held work is visible, but the estate does not price decision aging, expiring evidence, or blocked descendants.",
+      "desktop_translation": "Calculate review debt from blocked value, deadline, reversibility, and context decay.",
+      "testable_hypothesis": "Aging policy will surface the few delayed decisions that actually threaten throughput while leaving reversible work quiet.",
+      "first_experiment": "Apply the policy to historical held branches, inbox requests, and campaign gates; compare with chronological review.",
+      "references": [
+        "attention-sensitive-alerting"
+      ],
+      "depends_on": [
+        "U01-attention-broker"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "L01-capability-registry",
+      "title": "Versioned capability registry",
+      "discipline": "capability-lifecycle",
+      "priority": 99,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Register each promoted behavior as a versioned artifact with scope, dependencies, tests, provenance, and owner.",
+      "current_gap": "Captured artifacts exist, but the estate lacks one authoritative inventory of what capability is currently trusted for which task family.",
+      "desktop_translation": "Create capability manifests that point to action digests, models, adapters, verifiers, waterline cells, and replay receipts.",
+      "testable_hypothesis": "A registry will let routing use capabilities rather than brand names and expose unsupported succession claims.",
+      "first_experiment": "Populate manifests for ten existing Tier Bench lenses, composite routes, and local utilities.",
+      "references": [
+        "slsa-provenance"
+      ],
+      "depends_on": [
+        "B01-action-cache-cas",
+        "S03-artifact-attestations"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "L02-drift-requalification",
+      "title": "Continuous drift and requalification",
+      "discipline": "capability-lifecycle",
+      "priority": 96,
+      "status": "next",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Re-run bounded qualification when source distribution, runtime, model, dependency, or grader changes.",
+      "current_gap": "Waterlines are historically sealed but not automatically scheduled for requalification after relevant drift.",
+      "desktop_translation": "Attach invalidation triggers and a lightweight canary corpus to each capability manifest.",
+      "testable_hypothesis": "Drift-triggered requalification will catch silent regressions before they become recurring failures.",
+      "first_experiment": "Change model quantization, runtime version, prompt, and source distribution in fixtures and verify exact requalification scope.",
+      "references": [
+        "slsa-provenance"
+      ],
+      "depends_on": [
+        "L01-capability-registry",
+        "S04-quarantine-canary-shadow"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "L03-promotion-demotion-rollback",
+      "title": "Promotion, demotion, and rollback rail",
+      "discipline": "capability-lifecycle",
+      "priority": 95,
+      "status": "next",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Treat capability trust as a state machine with evidence-governed promotion and automatic or operator-approved demotion.",
+      "current_gap": "Capture closure exists, but operational rollback and route withdrawal are not one unified process.",
+      "desktop_translation": "Define candidate, shadow, admitted, preferred, degraded, quarantined, and retired states with exact transition predicates.",
+      "testable_hypothesis": "A lifecycle rail will reduce time spent diagnosing known-bad routes and make rollback deterministic.",
+      "first_experiment": "Simulate a promoted local adapter that later fails canaries; verify routing withdrawal and prior version restoration.",
+      "references": [
+        "temporal-durable-execution",
+        "slsa-provenance"
+      ],
+      "depends_on": [
+        "L01-capability-registry",
+        "W01-event-history-replay"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "L04-software-before-weights",
+      "title": "Software-first capability capture",
+      "discipline": "capability-lifecycle",
+      "priority": 98,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Attempt to compile residue into rules, context selection, tests, tools, and deterministic code before training weights.",
+      "current_gap": "The distillation lab permits source artifacts, but no policy forces the cheapest and most inspectable capture class to be tried first.",
+      "desktop_translation": "Order capture attempts: deterministic program, verifier, context compiler, prompt scaffold, adapter, LoRA, then larger model.",
+      "testable_hypothesis": "A substantial fraction of frontier residue will collapse into auditable software rather than new model weights.",
+      "first_experiment": "Take five historical frontier repairs and attempt each capture class under equal replay criteria.",
+      "references": [
+        "egg-equality-saturation",
+        "google-mutation-testing"
+      ],
+      "depends_on": [
+        "C02-deterministic-first-lowering",
+        "T01-mutation-testing",
+        "T03-metamorphic-differential-testing"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "O01-causal-tracing",
+      "title": "End-to-end causal tracing",
+      "discipline": "observability",
+      "priority": 98,
+      "status": "ready",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Propagate one trace identity through context selection, model calls, tools, cache, effects, graders, and operator interventions.",
+      "current_gap": "Receipts are rich but distributed across run directories and ledgers, making cross-system latency and failure attribution expensive.",
+      "desktop_translation": "Adopt span and parent relationships with sampled fine-grained telemetry and full evidence links for failures.",
+      "testable_hypothesis": "Causal tracing will reduce diagnosis time and reveal hidden attention, cache, and transport bottlenecks.",
+      "first_experiment": "Instrument one complete local-first campaign and reconstruct the critical path automatically.",
+      "references": [
+        "dapper-tracing"
+      ],
+      "depends_on": [
+        "W01-event-history-replay"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "O02-chaos-failure-injection",
+      "title": "Routine chaos and fault injection",
+      "discipline": "observability",
+      "priority": 84,
+      "status": "next",
+      "scores": {
+        "attention_return": 4,
+        "reuse_radius": 4,
+        "implementation_cost": 4,
+        "operational_risk": 3
+      },
+      "mechanism": "Inject controlled process death, disk pressure, network loss, stale cache, bad clock, and corrupted outputs before production encounters them.",
+      "current_gap": "Theory fixtures include some induced failures, but the operating plane lacks a recurring resilience campaign.",
+      "desktop_translation": "Schedule bounded chaos tests against supervisor, workflow replay, cache, and effect reconciliation contracts.",
+      "testable_hypothesis": "Routine fault injection will convert recovery assumptions into measured capabilities.",
+      "first_experiment": "Run a weekly matrix of ten faults against a disposable estate and require receipt-complete recovery.",
+      "references": [
+        "erlang-supervision",
+        "dapper-tracing"
+      ],
+      "depends_on": [
+        "O01-causal-tracing",
+        "W03-supervision-tree"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "O03-attention-slo",
+      "title": "Attention service-level objectives",
+      "discipline": "observability",
+      "priority": 86,
+      "status": "next",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 4,
+        "implementation_cost": 3,
+        "operational_risk": 2
+      },
+      "mechanism": "Define budgets for operator interruptions, active minutes, decision latency, and blocked-value aging.",
+      "current_gap": "Attention is the stated objective but lacks operational SLOs that can govern the scheduler and trigger design work.",
+      "desktop_translation": "Set project and estate-level error budgets for attention, analogous to reliability budgets.",
+      "testable_hypothesis": "Attention SLOs will make regressions visible and force automation where the operator is still the hidden worker.",
+      "first_experiment": "Measure one month of Desk interventions and propose initial SLOs from actual distributions.",
+      "references": [
+        "attention-sensitive-alerting",
+        "dapper-tracing"
+      ],
+      "depends_on": [
+        "U01-attention-broker",
+        "O01-causal-tracing"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    },
+    {
+      "id": "O04-disaster-rebuild-drill",
+      "title": "Reproducible estate rebuild and disaster drill",
+      "discipline": "observability",
+      "priority": 90,
+      "status": "next",
+      "scores": {
+        "attention_return": 5,
+        "reuse_radius": 5,
+        "implementation_cost": 4,
+        "operational_risk": 2
+      },
+      "mechanism": "Regularly reconstruct the operating estate from signed source, manifests, caches-as-optional accelerants, and external backups.",
+      "current_gap": "Local replication and custody work exists, but the new execution, distillation, and capability layers need one integrated recovery proof.",
+      "desktop_translation": "Automate bare-machine restoration, verify every promoted capability, and report missing secrets or non-reproducible state.",
+      "testable_hypothesis": "A successful drill will prove that no resident process, vendor session, or opaque cache is the real estate.",
+      "first_experiment": "Restore Tier Bench plus one AXM spoke into a clean VM and run gold qualification without using existing work directories.",
+      "references": [
+        "slsa-provenance",
+        "bazel-remote-cache",
+        "temporal-durable-execution"
+      ],
+      "depends_on": [
+        "S03-artifact-attestations",
+        "B01-action-cache-cas",
+        "W01-event-history-replay"
+      ],
+      "failure_default": "Preserve as unimplemented or falsified; do not route production work through the pattern."
+    }
+  ]
+}
