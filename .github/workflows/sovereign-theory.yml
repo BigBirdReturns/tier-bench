@@ -1,0 +1,69 @@
+name: sovereign-theory
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  zero-model-calls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile theory instrument
+        run: |
+          python -m py_compile \
+            tier_runner/sovereign_theory_common.py \
+            tier_runner/sovereign_theory_schema.py \
+            tier_runner/sovereign_theory_plan.py \
+            tier_runner/sovereign_theory_analysis.py \
+            tier_runner/sovereign_theory.py \
+            tests/test_sovereign_theory.py
+      - name: Exercise prospective theory law
+        run: python tests/test_sovereign_theory.py
+      - name: Validate registry
+        run: |
+          python -m tier_runner.sovereign_theory validate \
+            --lab experiments/sovereign_desktop/theories.json
+      - name: Compile and verify deterministic plan
+        run: |
+          python -m tier_runner.sovereign_theory plan \
+            --lab experiments/sovereign_desktop/theories.json \
+            --out /tmp/sovereign-theory-plan.json
+          python -m tier_runner.sovereign_theory verify \
+            --lab experiments/sovereign_desktop/theories.json \
+            --plan /tmp/sovereign-theory-plan.json
+          python - <<'PY'
+          import json
+          plan = json.load(open("/tmp/sovereign-theory-plan.json", encoding="utf-8"))
+          assert plan["totals"]["theories_selected"] == 22
+          assert plan["totals"]["theories_with_runs"] >= 10
+          assert plan["totals"]["runs"] > 100
+          assert max(
+              row["max_position_imbalance"] for row in plan["balance"].values()
+          ) <= 1
+          print("SOVEREIGN_THEORY_PLAN_OK")
+          PY
+      - name: Templates remain non-evidentiary
+        run: |
+          python -m tier_runner.sovereign_theory templates \
+            --lab experiments/sovereign_desktop/theories.json \
+            --plan /tmp/sovereign-theory-plan.json \
+            --out /tmp/sovereign-theory-observations.jsonl
+          python - <<'PY'
+          import json
+          rows = [
+              json.loads(line)
+              for line in open("/tmp/sovereign-theory-observations.jsonl", encoding="utf-8")
+              if line.strip()
+          ]
+          assert rows
+          assert all(row["outcome"] == "partial" for row in rows)
+          assert all(row["runtime"]["attested"] is False for row in rows)
+          assert all(row["receipt_sha256"] == "0" * 64 for row in rows)
+          print("SOVEREIGN_THEORY_TEMPLATES_NON_EVIDENCE")
+          PY
