@@ -86,14 +86,13 @@ jobs:
               assert identifier in ids, (identifier, sorted(ids))
           print('WORLD_EXPERIENCE_PLAN_OK', plan['totals'])
           PY
-      - name: Commit reviewable source and remove one-use transport
+      - name: Commit reviewable non-workflow source
         run: |
-          rm -f transport/world_experience_payload.part-*.b64
           rm -f transport/world_experience_payload.zip
           rm -f PAYLOAD_MANIFEST.json
-          rm -f .github/workflows/assemble-world-experience-atlas.yml
+          rm -f .github/workflows/world-experience-atlas.yml
           git config user.name "World Experience Atlas Assembler"
           git config user.email "world-experience@users.noreply.github.com"
-          git add -A
-          git commit -m "Assemble World Experience Atlas"
+          git add docs experiments pyproject.toml tests tier_runner
+          git commit -m "Assemble World Experience Atlas source"
           git push origin HEAD:agent/world-experience-atlas-v1
