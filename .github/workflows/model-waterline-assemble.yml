@@ -27,12 +27,17 @@ jobs:
           python - <<'PY'
           import base64, hashlib, json, pathlib, zipfile
           root = pathlib.Path(".").resolve()
-          carrier = root / "transport/model_waterline_payload.b64"
-          payload = base64.b64decode(carrier.read_text(encoding="ascii"))
+          carriers = sorted((root / "transport").glob("model_waterline_payload.part-*.b64"))
+          if not carriers:
+              raise SystemExit("no model-waterline payload chunks found")
+          encoded = "".join(path.read_text(encoding="ascii") for path in carriers)
+          payload = base64.b64decode(encoded, validate=True)
           actual = hashlib.sha256(payload).hexdigest()
           expected = "dfa594dc21813985970b9cd2fb85c0e2fe585b369602a970d0b30e609347da3f"
           if actual != expected:
-              raise SystemExit(f"payload sha mismatch: {actual} != {expected}")
+              raise SystemExit(
+                  f"payload sha mismatch from {len(carriers)} chunks: {actual} != {expected}"
+              )
           archive = root / "transport/model_waterline_payload.zip"
           archive.write_bytes(payload)
           with zipfile.ZipFile(archive) as z:
@@ -48,7 +53,7 @@ jobs:
               digest = hashlib.sha256(path.read_bytes()).hexdigest()
               if digest != record["sha256"]:
                   raise SystemExit(f"file sha mismatch: {name}")
-          print(f"verified {len(manifest['files'])} files")
+          print(f"verified {len(manifest['files'])} files from {len(carriers)} chunks")
           PY
       - name: Validate assembled source without model calls
         run: |
@@ -63,7 +68,9 @@ jobs:
             --catalog experiments/model_waterlines/catalog.json
       - name: Commit source and remove one-use transport
         run: |
-          rm -f transport/model_waterline_payload.b64 transport/model_waterline_payload.zip
+          rm -f transport/model_waterline_payload.b64
+          rm -f transport/model_waterline_payload.part-*.b64
+          rm -f transport/model_waterline_payload.zip
           rm -f PAYLOAD_MANIFEST.json
           rm -f .github/workflows/model-waterline-assemble.yml
           git config user.name "Model Waterline Assembler"
