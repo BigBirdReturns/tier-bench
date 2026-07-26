@@ -18,6 +18,7 @@ capability-harness = "capability_harness.__main__:main"
 tier = "tier_runner.cli:main"
 tierdesk = "tier_runner.desk:main"
 tierresidue = "tier_runner.residue_cli:main"
+tierwaterline = "tier_runner.model_waterline:main"
 
 [build-system]
 requires = ["setuptools>=61"]
