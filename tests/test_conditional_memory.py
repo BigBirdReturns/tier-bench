@@ -160,6 +160,16 @@ def fake_receipt(plan: dict, trial: dict, *, loss: float, p95: float, peak: int)
             "topology_ledger": {
                 "stored_parameters": 100 if trial["arm_id"] == "dense" else 200,
                 "conditional_memory_parameters": 0 if trial["arm_id"] == "dense" else 100,
+                "access": {
+                    "conditional_memory": {
+                        "rows": 0 if trial["arm_id"] == "dense" else 64,
+                        "row_width": 0 if trial["arm_id"] == "dense" else 16,
+                        "rows_requested_in_example": 16,
+                        "unique_rows_in_example": seed,
+                        "storage_bytes_requested_in_example": 1024,
+                        "transfer_bytes_requested_in_example": 1024,
+                    }
+                },
             },
         },
         "training": {
@@ -257,6 +267,12 @@ def test_report_promotes_only_after_paired_gates() -> None:
         by_arm = {row["arm_id"]: row for row in report["arms"]}
         assert by_arm["dense"]["decision"] == "control"
         assert by_arm["ple"]["decision"] == "promote"
+        assert by_arm["ple"]["topology_ledger_consistent"] is True
+        observed_rows = [
+            row["unique_rows_in_example"]
+            for row in by_arm["ple"]["access_observations"]
+        ]
+        assert observed_rows == [11, 17, 23, 29]
         assert report["promotable_arms"] == ["ple"]
         assert report["promotion_authorized"] is False
     finally:
