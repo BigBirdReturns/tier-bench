@@ -1,0 +1,81 @@
+{
+  "schema": "tier-bench/kimi3-community-watch@1",
+  "id": "kimi3-community",
+  "excerpt_chars": 800,
+  "retention_days": 90,
+  "training_use": "prohibited",
+  "sources": [
+    {
+      "id": "reddit-kimi3",
+      "kind": "reddit_oauth",
+      "enabled": true,
+      "approval_confirmed": false,
+      "subreddits": [
+        "LocalLLaMA",
+        "LocalLLM",
+        "kimi",
+        "opencode",
+        "SillyTavernAI",
+        "accelerate",
+        "singularity"
+      ],
+      "queries": [
+        "\"Kimi K3\"",
+        "\"Kimi-K3\"",
+        "\"Kimi K3\" MXFP4",
+        "\"Kimi K3\" GGUF",
+        "\"Kimi K3\" vLLM",
+        "\"Kimi K3\" SGLang",
+        "\"Kimi K3\" llama.cpp",
+        "\"Kimi K3\" expert offload",
+        "\"Kimi K3\" 3090",
+        "\"Kimi K3\" KDA",
+        "\"Kimi K3\" AttnRes"
+      ],
+      "include_comments": true,
+      "max_posts_per_query": 50,
+      "max_comments_per_post": 50,
+      "client_id_env": "REDDIT_CLIENT_ID",
+      "client_secret_env": "REDDIT_CLIENT_SECRET",
+      "user_agent_env": "REDDIT_USER_AGENT"
+    },
+    {
+      "id": "github-runtime-sweep",
+      "kind": "github_search",
+      "enabled": true,
+      "token_env": "GITHUB_TOKEN",
+      "max_items_per_query": 50,
+      "queries": [
+        "\"Kimi K3\" repo:vllm-project/vllm",
+        "\"Kimi K3\" repo:ggml-org/llama.cpp",
+        "\"Kimi K3\" repo:huggingface/transformers",
+        "\"Kimi K3\" repo:sgl-project/sglang",
+        "\"Kimi K3\" repo:NVIDIA/TensorRT-LLM",
+        "\"Kimi K3\" repo:ollama/ollama",
+        "\"Kimi K3\" repo:lmstudio-ai/lmstudio-bug-tracker",
+        "\"Kimi K3\" repo:kvcache-ai/Mooncake",
+        "\"Kimi K3\" MXFP4",
+        "\"Kimi K3\" expert offload",
+        "\"Kimi K3\" router",
+        "\"Kimi K3\" tokenizer"
+      ]
+    },
+    {
+      "id": "official-huggingface-revision",
+      "kind": "huggingface_model",
+      "enabled": false,
+      "token_env": "HF_TOKEN",
+      "repos": [
+        "moonshotai/Kimi-K3"
+      ]
+    },
+    {
+      "id": "manual-community-import",
+      "kind": "jsonl_import",
+      "enabled": true,
+      "paths": [
+        "community-import.jsonl"
+      ]
+    }
+  ]
+}
