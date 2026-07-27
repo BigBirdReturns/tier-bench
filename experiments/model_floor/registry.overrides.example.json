@@ -1,0 +1,215 @@
+{
+  "schema": "tier-bench/model-floor-registry-overrides@1",
+  "id": "universal-model-aliases-v1",
+  "models": [
+    {
+      "id": "claude-opus-5",
+      "aliases": [
+        "Claude Opus 5",
+        "Opus 5",
+        "opus-5",
+        "Anthropic Claude Opus 5"
+      ],
+      "official_ids": [
+        "claude-opus-5"
+      ],
+      "surfaces": [
+        {
+          "id": "anthropic:claude-opus-5",
+          "runtime_patterns": [
+            "claude-opus-5(?:-[A-Za-z0-9._-]+)?"
+          ],
+          "status": "ready"
+        }
+      ]
+    },
+    {
+      "id": "claude-fable-5",
+      "aliases": [
+        "Claude Fable 5",
+        "Fable 5",
+        "fable-5",
+        "Anthropic Claude Fable 5"
+      ],
+      "official_ids": [
+        "claude-fable-5"
+      ],
+      "surfaces": [
+        {
+          "id": "anthropic:claude-fable-5",
+          "runtime_patterns": [
+            "claude-fable-5(?:-[A-Za-z0-9._-]+)?"
+          ],
+          "status": "ready"
+        }
+      ]
+    },
+    {
+      "id": "claude-sonnet-5",
+      "aliases": [
+        "Claude Sonnet 5",
+        "Sonnet 5"
+      ],
+      "official_ids": [
+        "claude-sonnet-5"
+      ]
+    },
+    {
+      "id": "claude-haiku-4-5",
+      "aliases": [
+        "Claude Haiku 4.5",
+        "Haiku 4.5"
+      ],
+      "official_ids": [
+        "claude-haiku-4-5"
+      ]
+    },
+    {
+      "id": "claude-opus-4-8",
+      "aliases": [
+        "Claude Opus 4.8",
+        "Opus 4.8"
+      ],
+      "official_ids": [
+        "claude-opus-4-8"
+      ]
+    },
+    {
+      "id": "gpt-5",
+      "aliases": [
+        "GPT-5",
+        "OpenAI GPT-5"
+      ],
+      "official_ids": [
+        "gpt-5"
+      ]
+    },
+    {
+      "id": "gpt-5.1",
+      "aliases": [
+        "GPT-5.1",
+        "OpenAI GPT-5.1"
+      ],
+      "official_ids": [
+        "gpt-5.1"
+      ]
+    },
+    {
+      "id": "gpt-5.2",
+      "aliases": [
+        "GPT-5.2",
+        "OpenAI GPT-5.2"
+      ],
+      "official_ids": [
+        "gpt-5.2"
+      ]
+    },
+    {
+      "id": "gpt-5.5",
+      "aliases": [
+        "GPT-5.5",
+        "OpenAI GPT-5.5"
+      ],
+      "official_ids": [
+        "gpt-5.5"
+      ]
+    },
+    {
+      "id": "gemini-3.1-pro-preview",
+      "aliases": [
+        "Gemini 3.1 Pro Preview",
+        "Gemini 3.1 Pro"
+      ],
+      "official_ids": [
+        "gemini-3.1-pro-preview"
+      ]
+    },
+    {
+      "id": "gemini-3.5-flash",
+      "aliases": [
+        "Gemini 3.5 Flash"
+      ],
+      "official_ids": [
+        "gemini-3.5-flash"
+      ]
+    },
+    {
+      "id": "deepseek-chat",
+      "aliases": [
+        "DeepSeek Chat",
+        "DeepSeek"
+      ],
+      "official_ids": [
+        "deepseek-chat"
+      ]
+    },
+    {
+      "id": "mistral-large-2512",
+      "aliases": [
+        "Mistral Large 2512",
+        "Mistral Large"
+      ],
+      "official_ids": [
+        "mistral-large-2512"
+      ]
+    },
+    {
+      "id": "mistral-small-2506",
+      "aliases": [
+        "Mistral Small 2506",
+        "Mistral Small"
+      ],
+      "official_ids": [
+        "mistral-small-2506"
+      ]
+    },
+    {
+      "id": "kimi-k3",
+      "provider": "moonshot",
+      "family": "kimi-k3",
+      "access": "open_weight",
+      "aliases": [
+        "Kimi K3",
+        "Kimi-K3",
+        "Moonshot Kimi K3",
+        "moonshotai/Kimi-K3"
+      ],
+      "official_ids": [
+        "kimi-k3"
+      ],
+      "metadata": {
+        "registry_status": "operator-added; bind exact checkpoint and runtime revision locally"
+      },
+      "surfaces": [
+        {
+          "id": "local:kimi-k3",
+          "kind": "local_runtime",
+          "status": "unmeasured",
+          "runtime_patterns": [
+            "(?:moonshotai/)?Kimi-?K3(?:-[A-Za-z0-9._-]+)?"
+          ],
+          "runtime_attestation_required": true,
+          "price": {
+            "input_per_million": 0,
+            "output_per_million": 0,
+            "basis": "local compute; energy and hardware accounting external",
+            "currency": "USD"
+          }
+        },
+        {
+          "id": "benchmark:kimi-k3",
+          "kind": "benchmark_report",
+          "status": "unmeasured",
+          "runtime_patterns": [],
+          "runtime_attestation_required": false,
+          "price": {
+            "input_per_million": 0,
+            "output_per_million": 0,
+            "basis": "not applicable to benchmark report",
+            "currency": "USD"
+          }
+        }
+      ]
+    }
+  ]
+}

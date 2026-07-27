@@ -1,0 +1,146 @@
+{
+  "schema": "tier-bench/model-floor-sources@1",
+  "id": "universal-model-floor-sources",
+  "excerpt_chars": 1200,
+  "retention_days": 180,
+  "sources": [
+    {
+      "id": "hf-official-benchmark-catalog",
+      "kind": "hf_official_benchmarks",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "token_env": "HF_TOKEN"
+    },
+    {
+      "id": "hf-swe-bench-verified",
+      "kind": "hf_leaderboard",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "dataset_id": "SWE-bench/SWE-bench_Verified",
+      "token_env": "HF_TOKEN",
+      "benchmark": {
+        "id": "SWE-bench/SWE-bench_Verified",
+        "revision": "rolling-hub-leaderboard",
+        "task_family": "repo-repair",
+        "metric": "resolved_rate",
+        "direction": "higher",
+        "unit": "score",
+        "scaffold": "submission-defined",
+        "tools": "submission-defined",
+        "attempts": 1,
+        "context_policy": "submission-defined",
+        "adequacy_threshold": null
+      }
+    },
+    {
+      "id": "hf-hle",
+      "kind": "hf_leaderboard",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "dataset_id": "cais/hle",
+      "token_env": "HF_TOKEN",
+      "benchmark": {
+        "id": "cais/hle",
+        "revision": "rolling-hub-leaderboard",
+        "task_family": "knowledge-reasoning",
+        "metric": "score",
+        "direction": "higher",
+        "unit": "score",
+        "scaffold": "submission-defined",
+        "tools": "submission-defined",
+        "attempts": 1,
+        "context_policy": "submission-defined",
+        "adequacy_threshold": null
+      }
+    },
+    {
+      "id": "github-model-benchmark-discussions",
+      "kind": "github_search",
+      "enabled": true,
+      "evidence_tier": "assertion",
+      "verified": false,
+      "training_use": "prohibited",
+      "token_env": "GITHUB_TOKEN",
+      "max_items_per_query": 50,
+      "queries": [
+        "\"Claude Opus 5\" benchmark OR eval OR latency OR cost",
+        "\"Claude Fable 5\" benchmark OR eval OR latency OR cost",
+        "\"Kimi K3\" benchmark OR runtime OR offload OR quantization",
+        "\"model leaderboard\" cost latency benchmark",
+        "\"SWE-bench\" Opus Fable",
+        "\"Aider polyglot\" model benchmark",
+        "\"LiveBench\" model results"
+      ]
+    },
+    {
+      "id": "reddit-model-floor",
+      "kind": "reddit_oauth",
+      "enabled": true,
+      "evidence_tier": "assertion",
+      "verified": false,
+      "training_use": "prohibited",
+      "approval_confirmed": false,
+      "subreddits": [
+        "LocalLLaMA",
+        "ClaudeAI",
+        "ChatGPTCoding",
+        "MachineLearning",
+        "singularity"
+      ],
+      "queries": [
+        "\"Claude Opus 5\"",
+        "\"Claude Fable 5\"",
+        "\"Opus 5\" Fable benchmark",
+        "\"Kimi K3\"",
+        "\"model benchmark\" cost",
+        "\"SWE-bench\"",
+        "\"Aider polyglot\""
+      ],
+      "max_posts_per_query": 50,
+      "client_id_env": "REDDIT_CLIENT_ID",
+      "client_secret_env": "REDDIT_CLIENT_SECRET",
+      "user_agent_env": "REDDIT_USER_AGENT"
+    },
+    {
+      "id": "manual-community",
+      "kind": "jsonl_import",
+      "enabled": true,
+      "evidence_tier": "assertion",
+      "verified": false,
+      "training_use": "prohibited",
+      "paths": [
+        "community.manual.jsonl"
+      ]
+    },
+    {
+      "id": "manual-structured-stats",
+      "kind": "jsonl_import",
+      "enabled": false,
+      "evidence_tier": "reproducible_receipt",
+      "verified": false,
+      "training_use": "prohibited",
+      "paths": [
+        "stats.manual.jsonl"
+      ],
+      "benchmark": {
+        "id": "manual-external-benchmark",
+        "revision": "operator-supplied",
+        "task_family": "unclassified",
+        "metric": "score",
+        "direction": "higher",
+        "unit": "score",
+        "scaffold": "operator-supplied",
+        "tools": "operator-supplied",
+        "attempts": 1,
+        "context_policy": "operator-supplied",
+        "adequacy_threshold": null
+      }
+    }
+  ]
+}
