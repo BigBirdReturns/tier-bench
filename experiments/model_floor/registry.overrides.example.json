@@ -8,7 +8,16 @@
         "Claude Opus 5",
         "Opus 5",
         "opus-5",
-        "Anthropic Claude Opus 5"
+        "Anthropic Claude Opus 5",
+        "Claude Opus 5 (Low)",
+        "Claude Opus 5 (Medium)",
+        "Claude Opus 5 (High)",
+        "Claude Opus 5 (Max)",
+        "Claude Opus 5 (Thinking)",
+        "Opus 5 (Low)",
+        "Opus 5 (Medium)",
+        "Opus 5 (High)",
+        "Opus 5 (Max)"
       ],
       "official_ids": [
         "claude-opus-5"
@@ -29,7 +38,11 @@
         "Claude Fable 5",
         "Fable 5",
         "fable-5",
-        "Anthropic Claude Fable 5"
+        "Anthropic Claude Fable 5",
+        "Claude Fable 5 (High)",
+        "Claude Fable 5 (Max)",
+        "Fable 5 (High)",
+        "Fable 5 (Max)"
       ],
       "official_ids": [
         "claude-fable-5"
