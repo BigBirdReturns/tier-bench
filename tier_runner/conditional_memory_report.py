@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import Counter, defaultdict
+import copy
 from pathlib import Path
 import statistics
 from typing import Any, Iterable
@@ -118,6 +119,48 @@ def status_report(plan: dict[str, Any], state_dir: Path) -> dict[str, Any]:
         "missing": missing,
         "invalid": invalid,
         "duplicate_attempts": duplicates,
+    }
+
+
+_ACCESS_OBSERVATION_KEYS = {
+    "rows_requested_in_example",
+    "unique_rows_in_example",
+    "storage_bytes_requested_in_example",
+    "transfer_bytes_requested_in_example",
+}
+
+
+def _static_topology_ledger(value: dict[str, Any]) -> dict[str, Any]:
+    """Remove seed-dependent trace observations from the placement contract.
+
+    The exact observed row set belongs in the receipt and report evidence, but it
+    cannot make an otherwise identical model topology look inconsistent across
+    seeds. Static capacity, placement, dtype, and row-width fields remain bound.
+    """
+    result = copy.deepcopy(value)
+    conditional = result.get("access", {}).get("conditional_memory")
+    if isinstance(conditional, dict):
+        for key in _ACCESS_OBSERVATION_KEYS:
+            conditional.pop(key, None)
+    return result
+
+
+def _access_observation(receipt: dict[str, Any]) -> dict[str, Any] | None:
+    conditional = (
+        receipt["model"]
+        .get("topology_ledger", {})
+        .get("access", {})
+        .get("conditional_memory")
+    )
+    if not isinstance(conditional, dict):
+        return None
+    observed = {key: conditional[key] for key in _ACCESS_OBSERVATION_KEYS if key in conditional}
+    if not observed:
+        return None
+    return {
+        "trial_id": receipt["trial_id"],
+        "seed": receipt["seed"],
+        **observed,
     }
 
 
@@ -245,10 +288,17 @@ def _arm_summary(
     }
     gate_values = [value for key, value in gates.items() if key != "complete_seed_count"]
     decision = "control" if is_baseline else ("promote" if all(gate_values) else "hold")
-    first_ledger = receipts[0]["model"]["topology_ledger"] if receipts else None
-    ledger_consistent = len(
-        {hash_json(row["model"]["topology_ledger"]) for row in receipts}
-    ) <= 1
+    static_ledgers = [
+        _static_topology_ledger(row["model"]["topology_ledger"]) for row in receipts
+    ]
+    first_ledger = static_ledgers[0] if static_ledgers else None
+    ledger_consistent = len({hash_json(row) for row in static_ledgers}) <= 1
+    access_observations = [
+        observation
+        for row in receipts
+        for observation in [_access_observation(row)]
+        if observation is not None
+    ]
     if not ledger_consistent:
         gates["global_integrity"] = False
         if not is_baseline:
@@ -271,6 +321,7 @@ def _arm_summary(
         "paired": paired,
         "topology_ledger": first_ledger,
         "topology_ledger_consistent": ledger_consistent,
+        "access_observations": access_observations,
         "gates": gates,
         "decision": decision,
     }
