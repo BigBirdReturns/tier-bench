@@ -146,11 +146,11 @@ jobs:
             --config experiments/kimi3_observatory/observatory.example.json
           python -m tier_runner.kimi3_observatory community-validate \
             --config experiments/kimi3_observatory/observatory.example.json
-      - name: Commit reviewable source and remove one-use transport
+      - name: Commit reviewable non-workflow source and remove transport
         run: |
           rm -f transport/kimi3_observatory_payload.part-*.b64
           rm -f PAYLOAD_MANIFEST.json
-          rm -f .github/workflows/assemble-kimi3-observatory.yml
+          rm -f .github/workflows/kimi3-observatory.yml
           git config user.name "Kimi3 Observatory Assembler"
           git config user.email "kimi3-observatory@users.noreply.github.com"
           git add -A
