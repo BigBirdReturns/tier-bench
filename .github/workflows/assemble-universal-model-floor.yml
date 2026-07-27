@@ -1,0 +1,164 @@
+name: assemble-universal-model-floor
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: assemble-universal-model-floor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/universal-model-floor-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Decode, verify, and extract exact Universal Model Floor payload
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import io
+          import json
+          import lzma
+          import pathlib
+          import tarfile
+
+          root = pathlib.Path('.').resolve()
+          carriers = sorted((root / 'transport').glob('universal_model_floor_payload.part-*.b64'))
+          expected_chunks = {
+              'universal_model_floor_payload.part-000.b64': '05a1a68c639874f731bd8597ef4881b0f8b73e58bda526f27fa2f152c3f668ac',
+              'universal_model_floor_payload.part-001.b64': 'bc298527cb899fc4c71c3f6aab11f5e27cf8ad0dd31fa97abb599cf298fa6174',
+              'universal_model_floor_payload.part-002.b64': '438042e275b8ed878fca230184a545644f152c026e025ce6cd10fc7cc9ef5623',
+              'universal_model_floor_payload.part-003.b64': '9f65bc86b697d7a138723008b47443cb83595430834f3bfadc456bc8b84be5cf',
+              'universal_model_floor_payload.part-004.b64': 'd2de5877134a57346149d93eae5f77ebf975fa8bc615d8775147eeca91264d9e',
+              'universal_model_floor_payload.part-005.b64': '832a459cd9b56bece9528a5b32492444362d4b2aa9bbf3288a77102b5dafa256',
+              'universal_model_floor_payload.part-006.b64': 'ed8f92199d9e2adcdaf108eb1bb1f7c37add21f2598aa84724ca456644efb011',
+              'universal_model_floor_payload.part-007.b64': 'ea96f1a39b41f576b980d636a4d68a2e439722d1264dc4587326e1dc0b89acfc',
+              'universal_model_floor_payload.part-008.b64': '3f5b21b2885a3202fb5c230c4589b1620ab2f2b23737377063607e25b208a154',
+              'universal_model_floor_payload.part-009.b64': 'cc9002be0f432560358475b131e5865c5eb82b01034ac42089dc8a73212bf29d',
+              'universal_model_floor_payload.part-010.b64': '42b7ef4b419f029ab32409fd845a1eb6ab557d988ac2a9819c0eba1d93cee917',
+              'universal_model_floor_payload.part-011.b64': '3bf438d13543a42f75ffb11642d0ca8681d4ed3d758936c0c6283d20e0c604a6',
+          }
+          if len(carriers) != 12:
+              raise SystemExit(f'expected 12 payload chunks, found {len(carriers)}')
+
+          normalized = []
+          for path in carriers:
+              payload = ''.join(path.read_text(encoding='ascii').split())
+              digest = hashlib.sha256(payload.encode('ascii')).hexdigest()
+              expected = expected_chunks.get(path.name)
+              if expected is None or digest != expected:
+                  raise SystemExit(
+                      f'payload chunk sha mismatch: {path.name}: {digest} != {expected}'
+                  )
+              normalized.append(payload)
+
+          encoded = ''.join(normalized)
+          if len(encoded) != 46956:
+              raise SystemExit(f'payload base64 length mismatch: {len(encoded)} != 46956')
+
+          compressed = base64.b64decode(encoded, validate=True)
+          compressed_sha = hashlib.sha256(compressed).hexdigest()
+          expected_compressed_sha = '0296280f381508e6ce2f23fb6b668b276cecd926c54b90d9ecb79a36097ea606'
+          if compressed_sha != expected_compressed_sha:
+              raise SystemExit(
+                  f'payload xz sha mismatch: {compressed_sha} != {expected_compressed_sha}'
+              )
+
+          archive = lzma.decompress(compressed)
+          archive_sha = hashlib.sha256(archive).hexdigest()
+          expected_archive_sha = 'dad50c25790412dee3d7dce96419f94ac82cd92b6ddfc91db7c28131eb92cb13'
+          if archive_sha != expected_archive_sha:
+              raise SystemExit(
+                  f'payload tar sha mismatch: {archive_sha} != {expected_archive_sha}'
+              )
+
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:') as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  if (
+                      path.is_absolute()
+                      or '..' in path.parts
+                      or path.parts[:1] == ('.git',)
+                      or member.issym()
+                      or member.islnk()
+                  ):
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+              bundle.extractall(root)
+
+          manifest_path = root / 'PAYLOAD_MANIFEST.json'
+          manifest_bytes = manifest_path.read_bytes()
+          manifest_sha = hashlib.sha256(manifest_bytes).hexdigest()
+          expected_manifest_sha = '93ad71075cd7f9a9b06264790e708b91d7b7bdc1e7d0bebc705db4ac4b1f3dd1'
+          if manifest_sha != expected_manifest_sha:
+              raise SystemExit(
+                  f'payload manifest sha mismatch: {manifest_sha} != {expected_manifest_sha}'
+              )
+          manifest = json.loads(manifest_bytes)
+          if manifest.get('schema') != 'tier-bench/universal-model-floor-payload@1':
+              raise SystemExit('unexpected payload manifest schema')
+
+          expected_members = set(manifest['files']) | {'PAYLOAD_MANIFEST.json'}
+          actual_members = {member.name for member in members if member.isfile()}
+          if actual_members != expected_members:
+              raise SystemExit(
+                  f'archive member set mismatch; missing={sorted(expected_members - actual_members)}, '
+                  f'unknown={sorted(actual_members - expected_members)}'
+              )
+
+          for name, record in manifest['files'].items():
+              path = root / name
+              if not path.is_file():
+                  raise SystemExit(f'missing extracted file: {name}')
+              payload = path.read_bytes()
+              digest = hashlib.sha256(payload).hexdigest()
+              if digest != record['sha256']:
+                  raise SystemExit(f'file sha mismatch: {name}')
+              if len(payload) != record['size']:
+                  raise SystemExit(f'file size mismatch: {name}')
+          print(
+              f"verified {len(manifest['files'])} files from "
+              f"{len(compressed)} compressed bytes"
+          )
+          PY
+      - name: Validate Universal Model Floor without model or network calls
+        run: |
+          python -m py_compile \
+            tier_runner/model_floor_common.py \
+            tier_runner/model_identity.py \
+            tier_runner/model_floor_external.py \
+            tier_runner/model_floor.py \
+            tier_runner/model_floor_cli.py \
+            tests/test_model_floor.py
+          python -m unittest discover -s tests -p 'test_model_floor.py' -v
+          python -m tier_runner.model_floor_cli registry-from-models \
+            --models models.json \
+            --overrides experiments/model_floor/registry.overrides.example.json \
+            --id tier-bench-all-models \
+            --out /tmp/model-floor-registry.json
+          python -m tier_runner.model_floor_cli registry-validate \
+            --registry /tmp/model-floor-registry.json
+          python -m tier_runner.model_floor_cli sources-validate \
+            --sources experiments/model_floor/sources.example.json
+      - name: Commit reviewable non-workflow source and remove transport
+        run: |
+          rm -f transport/universal_model_floor_payload.part-*.b64
+          rm -f PAYLOAD_MANIFEST.json
+          rm -f .github/workflows/model-floor.yml
+          git config user.name "Universal Model Floor Assembler"
+          git config user.email "model-floor@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Assemble Universal Model Floor Observatory"
+          git push origin HEAD:agent/universal-model-floor-v1
