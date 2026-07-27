@@ -145,7 +145,7 @@ jobs:
           python -m tier_runner.kimi3_observatory validate \
             --config experiments/kimi3_observatory/observatory.example.json
           python -m tier_runner.kimi3_observatory community-validate \
-            --config experiments/kimi3_observatory/community.example.json
+            --config experiments/kimi3_observatory/observatory.example.json
       - name: Commit reviewable source and remove one-use transport
         run: |
           rm -f transport/kimi3_observatory_payload.part-*.b64
