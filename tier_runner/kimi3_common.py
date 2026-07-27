@@ -32,6 +32,7 @@ PARTIAL_SUFFIXES = {
     ".crdownload",
     ".download",
     ".incomplete",
+    ".lock",
     ".part",
     ".partial",
     ".tmp",

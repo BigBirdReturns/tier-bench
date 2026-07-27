@@ -228,6 +228,21 @@ class Kimi3ObservatoryTests(unittest.TestCase):
             self.assertEqual(scan["totals"]["pending_files"], 1)
             self.assertEqual(scan["pending_files"][0]["reason"], "partial_suffix")
 
+    def test_active_huggingface_lock_is_pending(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            model = base / "model"
+            _model_fixture(model)
+            (model / "model-00017-of-000096.safetensors.lock").write_bytes(b"")
+            scan = scan_model(
+                model,
+                out_dir=base / "state/model",
+                state_dir=base / "state/hash",
+                stable_age_seconds=0,
+            )
+            self.assertEqual(scan["totals"]["pending_files"], 1)
+            self.assertEqual(scan["pending_files"][0]["reason"], "partial_suffix")
+
     def test_dissection_plan_is_bounded(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
