@@ -60,6 +60,161 @@
       }
     },
     {
+      "id": "lmarena-text-style-control-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=text_style_control&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/text-style-control",
+        "revision": "rolling-latest",
+        "task_family": "human-preference",
+        "metric": "arena_rating",
+        "direction": "higher",
+        "unit": "rating",
+        "scaffold": "arena-pairwise-style-controlled",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.rating",
+        "rank": "row.rank",
+        "sample_size": "row.vote_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
+      "id": "lmarena-agent-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=agent&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/agent",
+        "revision": "rolling-latest",
+        "task_family": "agentic",
+        "metric": "ips_score",
+        "direction": "higher",
+        "unit": "score",
+        "scaffold": "arena-agent-aggregate",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.score",
+        "rank": "row.rank",
+        "sample_size": "row.session_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
+      "id": "lmarena-webdev-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=webdev&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/webdev",
+        "revision": "rolling-latest",
+        "task_family": "web-development",
+        "metric": "arena_rating",
+        "direction": "higher",
+        "unit": "rating",
+        "scaffold": "arena-pairwise-webdev",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.rating",
+        "rank": "row.rank",
+        "sample_size": "row.vote_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
+      "id": "lmarena-search-style-control-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=search_style_control&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/search-style-control",
+        "revision": "rolling-latest",
+        "task_family": "search",
+        "metric": "arena_rating",
+        "direction": "higher",
+        "unit": "rating",
+        "scaffold": "arena-pairwise-search-style-controlled",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.rating",
+        "rank": "row.rank",
+        "sample_size": "row.vote_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
+      "id": "lmarena-document-style-control-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=document_style_control&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/document-style-control",
+        "revision": "rolling-latest",
+        "task_family": "document-analysis",
+        "metric": "arena_rating",
+        "direction": "higher",
+        "unit": "rating",
+        "scaffold": "arena-pairwise-document-style-controlled",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.rating",
+        "rank": "row.rank",
+        "sample_size": "row.vote_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
       "id": "github-model-benchmark-discussions",
       "kind": "github_search",
       "enabled": true,
@@ -75,7 +230,11 @@
         "\"model leaderboard\" cost latency benchmark",
         "\"SWE-bench\" Opus Fable",
         "\"Aider polyglot\" model benchmark",
-        "\"LiveBench\" model results"
+        "\"LiveBench\" model results",
+        "\"LM Arena\" model results",
+        "\"Terminal-Bench\" model results",
+        "\"OSWorld\" model results",
+        "\"Berkeley Function Calling Leaderboard\" model results"
       ]
     },
     {
@@ -100,7 +259,10 @@
         "\"Kimi K3\"",
         "\"model benchmark\" cost",
         "\"SWE-bench\"",
-        "\"Aider polyglot\""
+        "\"Aider polyglot\"",
+        "\"LM Arena\"",
+        "\"Terminal-Bench\"",
+        "\"OSWorld\""
       ],
       "max_posts_per_query": 50,
       "client_id_env": "REDDIT_CLIENT_ID",
