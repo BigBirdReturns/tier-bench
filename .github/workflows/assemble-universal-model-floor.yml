@@ -35,7 +35,6 @@ jobs:
           import tarfile
 
           root = pathlib.Path('.').resolve()
-          carriers = sorted((root / 'transport').glob('universal_model_floor_payload.part-*.b64'))
           expected_chunks = {
               'universal_model_floor_payload.part-000.b64': '05a1a68c639874f731bd8597ef4881b0f8b73e58bda526f27fa2f152c3f668ac',
               'universal_model_floor_payload.part-001.b64': 'bc298527cb899fc4c71c3f6aab11f5e27cf8ad0dd31fa97abb599cf298fa6174',
@@ -50,17 +49,25 @@ jobs:
               'universal_model_floor_payload.part-010.b64': '42b7ef4b419f029ab32409fd845a1eb6ab557d988ac2a9819c0eba1d93cee917',
               'universal_model_floor_payload.part-011.b64': '3bf438d13543a42f75ffb11642d0ca8681d4ed3d758936c0c6283d20e0c604a6',
           }
-          if len(carriers) != 12:
-              raise SystemExit(f'expected 12 payload chunks, found {len(carriers)}')
-
+          part_names = [
+              f'universal_model_floor_payload.part-{index:03d}.b64'
+              for index in range(12)
+          ]
           normalized = []
-          for path in carriers:
-              payload = ''.join(path.read_text(encoding='ascii').split())
+          for name in part_names:
+              if name.endswith('part-002.b64'):
+                  repair_a = root / 'transport/universal_model_floor_payload.repair-002a.b64'
+                  repair_b = root / 'transport/universal_model_floor_payload.repair-002b.b64'
+                  payload = ''.join(repair_a.read_text(encoding='ascii').split())
+                  payload += ''.join(repair_b.read_text(encoding='ascii').split())
+              else:
+                  path = root / 'transport' / name
+                  payload = ''.join(path.read_text(encoding='ascii').split())
               digest = hashlib.sha256(payload.encode('ascii')).hexdigest()
-              expected = expected_chunks.get(path.name)
-              if expected is None or digest != expected:
+              expected = expected_chunks[name]
+              if digest != expected:
                   raise SystemExit(
-                      f'payload chunk sha mismatch: {path.name}: {digest} != {expected}'
+                      f'payload chunk sha mismatch: {name}: {digest} != {expected}'
                   )
               normalized.append(payload)
 
@@ -155,6 +162,8 @@ jobs:
       - name: Commit reviewable non-workflow source and remove transport
         run: |
           rm -f transport/universal_model_floor_payload.part-*.b64
+          rm -f transport/universal_model_floor_payload.repair-*.b64
+          rm -f transport/universal_model_floor_payload.diagnostic.json
           rm -f PAYLOAD_MANIFEST.json
           rm -f .github/workflows/model-floor.yml
           git config user.name "Universal Model Floor Assembler"
