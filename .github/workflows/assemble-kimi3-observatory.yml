@@ -1,0 +1,158 @@
+name: assemble-kimi3-observatory
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: assemble-kimi3-observatory-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/kimi3-openweight-observatory-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Decode, verify, and extract exact Kimi3 Observatory payload
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import io
+          import json
+          import lzma
+          import pathlib
+          import tarfile
+
+          root = pathlib.Path('.').resolve()
+          carriers = sorted((root / 'transport').glob('kimi3_observatory_payload.part-*.b64'))
+          expected_chunks = {
+              'kimi3_observatory_payload.part-000.b64': '2d65d88962b504e803a82f41425e7aee4b1dbf8a56054726288fa42316562d2f',
+              'kimi3_observatory_payload.part-001.b64': '58e4cf34ed3faa67c1a5cb40bc7e9445d22e31b4779de843d8fba7a48c5e5361',
+              'kimi3_observatory_payload.part-002.b64': '5ba8db227d3bc8faa84e09f82e50cac0c2fb073d96323b0e872465ed18267d90',
+              'kimi3_observatory_payload.part-003.b64': 'c7c3ef2b0a7ce31003c4f02a23bb4bc3bff083fa14b86193574acfd3c9e68cd6',
+              'kimi3_observatory_payload.part-004.b64': '8542d4cfd6d9b122e133763fef6c89d5b3839f55e6669fff4268ada06684e5ad',
+              'kimi3_observatory_payload.part-005.b64': '3148bb868bdb713f8400f37df01225324e2e6841d6e22af938a77135df82faa2',
+              'kimi3_observatory_payload.part-006.b64': '7e018a759e71af5123d8e2c7ad564d6848e2da62008922aeb338fa98eb5b6de3',
+              'kimi3_observatory_payload.part-007.b64': '5ad5986ef08a20291eec6a2d1376bd21bf24b633a3b0ba7ea8035f83938927c5',
+              'kimi3_observatory_payload.part-008.b64': 'a375aa822cec916aa35348314ec98c970b3e3d7b304c8dffb6ad82ffec129e06',
+              'kimi3_observatory_payload.part-009.b64': 'a2f4490d58c8b1c0625b1c68ca90bbc6d0b553d304cdff1a0e3c0bbc49e6c635',
+              'kimi3_observatory_payload.part-010.b64': 'bdc35edf8a0e1f3454f46c47ea92a0e19ab42f9b2640b1a9cfcba4712cdd5b19',
+              'kimi3_observatory_payload.part-011.b64': '9cbc6cfc6e1ba3ea8d39b57b8969cf9041ca056c9986684fe72e1e4e5a0a72de',
+              'kimi3_observatory_payload.part-012.b64': '6d3fa24f9896d1540b35c3ef07fc572df5f4f5b16c9e6947f74fec5a5304e52b',
+          }
+          if len(carriers) != 13:
+              raise SystemExit(f'expected 13 payload chunks, found {len(carriers)}')
+
+          normalized = []
+          for path in carriers:
+              payload = ''.join(path.read_text(encoding='ascii').split())
+              digest = hashlib.sha256(payload.encode('ascii')).hexdigest()
+              expected = expected_chunks.get(path.name)
+              if expected is None or digest != expected:
+                  raise SystemExit(f'payload chunk sha mismatch: {path.name}: {digest} != {expected}')
+              normalized.append(payload)
+
+          encoded = ''.join(normalized)
+          if len(encoded) != 50752:
+              raise SystemExit(f'payload base64 length mismatch: {len(encoded)} != 50752')
+
+          compressed = base64.b64decode(encoded, validate=True)
+          compressed_sha = hashlib.sha256(compressed).hexdigest()
+          expected_compressed_sha = 'd2dda2d573accf2a5539743664a4e5d1317acf62505510548459cd2d4779240f'
+          if compressed_sha != expected_compressed_sha:
+              raise SystemExit(
+                  f'payload xz sha mismatch: {compressed_sha} != {expected_compressed_sha}'
+              )
+
+          archive = lzma.decompress(compressed)
+          archive_sha = hashlib.sha256(archive).hexdigest()
+          expected_archive_sha = '26e79375fbc3efb7bc8603414024e6363dd967991b16d35ae2033e32eda701a2'
+          if archive_sha != expected_archive_sha:
+              raise SystemExit(
+                  f'payload tar sha mismatch: {archive_sha} != {expected_archive_sha}'
+              )
+
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:') as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  if (
+                      path.is_absolute()
+                      or '..' in path.parts
+                      or path.parts[:1] == ('.git',)
+                      or member.issym()
+                      or member.islnk()
+                  ):
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+              bundle.extractall(root)
+
+          manifest_path = root / 'PAYLOAD_MANIFEST.json'
+          manifest_bytes = manifest_path.read_bytes()
+          manifest_sha = hashlib.sha256(manifest_bytes).hexdigest()
+          expected_manifest_sha = '16e8593fb4c605a47b129c1eb74a0aa29e08efe7b503f61bb823fe5123218c16'
+          if manifest_sha != expected_manifest_sha:
+              raise SystemExit(
+                  f'payload manifest sha mismatch: {manifest_sha} != {expected_manifest_sha}'
+              )
+          manifest = json.loads(manifest_bytes)
+          if manifest.get('schema') != 'tier-bench/kimi3-observatory-payload@1':
+              raise SystemExit('unexpected payload manifest schema')
+
+          expected_members = set(manifest['files']) | {'PAYLOAD_MANIFEST.json'}
+          actual_members = {member.name for member in members if member.isfile()}
+          if actual_members != expected_members:
+              raise SystemExit(
+                  f'archive member set mismatch; missing={sorted(expected_members - actual_members)}, '
+                  f'unknown={sorted(actual_members - expected_members)}'
+              )
+
+          for name, record in manifest['files'].items():
+              path = root / name
+              if not path.is_file():
+                  raise SystemExit(f'missing extracted file: {name}')
+              payload = path.read_bytes()
+              digest = hashlib.sha256(payload).hexdigest()
+              if digest != record['sha256']:
+                  raise SystemExit(f'file sha mismatch: {name}')
+              if len(payload) != record['size']:
+                  raise SystemExit(f'file size mismatch: {name}')
+          print(
+              f"verified {len(manifest['files'])} files from "
+              f"{len(compressed)} compressed bytes"
+          )
+          PY
+      - name: Validate Kimi3 Observatory without model calls
+        run: |
+          python -m py_compile \
+            tier_runner/kimi3_common.py \
+            tier_runner/kimi3_weights.py \
+            tier_runner/kimi3_community.py \
+            tier_runner/kimi3_probe.py \
+            tier_runner/kimi3_observatory.py \
+            tests/test_kimi3_observatory.py
+          python -m unittest discover -s tests -p 'test_kimi3_observatory.py' -v
+          python -m tier_runner.kimi3_observatory validate \
+            --config experiments/kimi3_observatory/observatory.example.json
+          python -m tier_runner.kimi3_observatory community-validate \
+            --config experiments/kimi3_observatory/community.example.json
+      - name: Commit reviewable source and remove one-use transport
+        run: |
+          rm -f transport/kimi3_observatory_payload.part-*.b64
+          rm -f PAYLOAD_MANIFEST.json
+          rm -f .github/workflows/assemble-kimi3-observatory.yml
+          git config user.name "Kimi3 Observatory Assembler"
+          git config user.email "kimi3-observatory@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Assemble Kimi3 Open-Weight Observatory"
+          git push origin HEAD:agent/kimi3-openweight-observatory-v1
