@@ -1,0 +1,24 @@
+{
+  "schema": "tier-bench/kimi3-observatory@1",
+  "id": "kimi3-desktop",
+  "model_root": "D:/Models/Kimi-K3",
+  "state_dir": "D:/TierEstate/Kimi-K3",
+  "grid_root": "D:/TierRuns/Kimi-K3",
+  "community_config": "community.example.json",
+  "stable_age_seconds": 300,
+  "chunk_mib": 256,
+  "frequent_interval_minutes": 30,
+  "nightly_hour": 2,
+  "numeric_patterns": [
+    "router|gate",
+    "experts",
+    "kda|delta",
+    "attnres|attention_residual",
+    "scale|amax"
+  ],
+  "numeric_max_tensors": 1024,
+  "numeric_samples_per_tensor": 128,
+  "defer_heavy_when_exists": [
+    "D:/TierRuns/Kimi-K3/.grid-active"
+  ]
+}
