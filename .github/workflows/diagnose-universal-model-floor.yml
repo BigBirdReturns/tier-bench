@@ -1,0 +1,96 @@
+name: diagnose-universal-model-floor
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: diagnose-universal-model-floor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/universal-model-floor-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Record payload diagnosis
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import pathlib
+
+          expected = {
+              'universal_model_floor_payload.part-000.b64': '05a1a68c639874f731bd8597ef4881b0f8b73e58bda526f27fa2f152c3f668ac',
+              'universal_model_floor_payload.part-001.b64': 'bc298527cb899fc4c71c3f6aab11f5e27cf8ad0dd31fa97abb599cf298fa6174',
+              'universal_model_floor_payload.part-002.b64': '438042e275b8ed878fca230184a545644f152c026e025ce6cd10fc7cc9ef5623',
+              'universal_model_floor_payload.part-003.b64': '9f65bc86b697d7a138723008b47443cb83595430834f3bfadc456bc8b84be5cf',
+              'universal_model_floor_payload.part-004.b64': 'd2de5877134a57346149d93eae5f77ebf975fa8bc615d8775147eeca91264d9e',
+              'universal_model_floor_payload.part-005.b64': '832a459cd9b56bece9528a5b32492444362d4b2aa9bbf3288a77102b5dafa256',
+              'universal_model_floor_payload.part-006.b64': 'ed8f92199d9e2adcdaf108eb1bb1f7c37add21f2598aa84724ca456644efb011',
+              'universal_model_floor_payload.part-007.b64': 'ea96f1a39b41f576b980d636a4d68a2e439722d1264dc4587326e1dc0b89acfc',
+              'universal_model_floor_payload.part-008.b64': '3f5b21b2885a3202fb5c230c4589b1620ab2f2b23737377063607e25b208a154',
+              'universal_model_floor_payload.part-009.b64': 'cc9002be0f432560358475b131e5865c5eb82b01034ac42089dc8a73212bf29d',
+              'universal_model_floor_payload.part-010.b64': '42b7ef4b419f029ab32409fd845a1eb6ab557d988ac2a9819c0eba1d93cee917',
+              'universal_model_floor_payload.part-011.b64': '3bf438d13543a42f75ffb11642d0ca8681d4ed3d758936c0c6283d20e0c604a6',
+          }
+          root = pathlib.Path('.').resolve()
+          carriers = sorted((root / 'transport').glob('universal_model_floor_payload.part-*.b64'))
+          rows = []
+          parts = []
+          for path in carriers:
+              raw = path.read_text(encoding='ascii')
+              normalized = ''.join(raw.split())
+              parts.append(normalized)
+              digest = hashlib.sha256(normalized.encode('ascii')).hexdigest()
+              rows.append({
+                  'name': path.name,
+                  'raw_length': len(raw),
+                  'normalized_length': len(normalized),
+                  'sha256': digest,
+                  'expected_sha256': expected.get(path.name),
+                  'matches_expected': digest == expected.get(path.name),
+                  'prefix': normalized[:24],
+                  'suffix': normalized[-24:],
+              })
+          encoded = ''.join(parts)
+          diagnosis = {
+              'schema': 'tier-bench/universal-model-floor-payload-diagnosis@1',
+              'chunk_count': len(rows),
+              'chunks': rows,
+              'all_chunks_match': len(rows) == len(expected) and all(row['matches_expected'] for row in rows),
+              'combined_length': len(encoded),
+              'combined_sha256': hashlib.sha256(encoded.encode('ascii')).hexdigest(),
+              'expected_compressed_sha256': '0296280f381508e6ce2f23fb6b668b276cecd926c54b90d9ecb79a36097ea606',
+          }
+          try:
+              compressed = base64.b64decode(encoded, validate=True)
+              diagnosis['decode_error'] = None
+              diagnosis['compressed_length'] = len(compressed)
+              diagnosis['compressed_sha256'] = hashlib.sha256(compressed).hexdigest()
+          except Exception as exc:
+              diagnosis['decode_error'] = f'{type(exc).__name__}: {exc}'
+              diagnosis['compressed_length'] = None
+              diagnosis['compressed_sha256'] = None
+          target = root / 'transport/universal_model_floor_payload.diagnostic.json'
+          target.write_text(json.dumps(diagnosis, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print(json.dumps(diagnosis, indent=2, sort_keys=True))
+          PY
+      - name: Commit diagnosis
+        run: |
+          git config user.name "Universal Model Floor Diagnostic"
+          git config user.email "model-floor@users.noreply.github.com"
+          git add transport/universal_model_floor_payload.diagnostic.json
+          git diff --cached --quiet || git commit -m "Record Universal Model Floor payload diagnosis"
+          git push origin HEAD:agent/universal-model-floor-v1
