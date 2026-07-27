@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/ollama_server_attestation.schema.json",
+  "title": "Dedicated Ollama server attestation",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema",
+    "captured_at",
+    "ollama_host",
+    "ollama_version",
+    "server_pid",
+    "executable_path",
+    "executable_sha256",
+    "gpu_uuid",
+    "gpu_name",
+    "gpu_memory_total_mib",
+    "context_length",
+    "launch_environment"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/ollama-server-attestation@1"},
+    "captured_at": {"type": "string", "format": "date-time"},
+    "ollama_host": {"type": "string", "pattern": "^http://(127\\.0\\.0\\.1|\\[::1\\]):[0-9]+$"},
+    "ollama_version": {"type": "string", "minLength": 1},
+    "server_pid": {"type": "integer", "minimum": 1},
+    "executable_path": {"type": "string", "minLength": 1},
+    "executable_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gpu_uuid": {"type": "string", "pattern": "^GPU-[0-9A-Fa-f-]+$"},
+    "gpu_name": {"type": "string", "minLength": 1},
+    "gpu_memory_total_mib": {"type": "number", "exclusiveMinimum": 0},
+    "utility_gpu_uuid": {"type": ["string", "null"]},
+    "context_length": {"type": "integer", "minimum": 1},
+    "launch_environment": {
+      "type": "object",
+      "additionalProperties": {"type": "string"},
+      "required": [
+        "CUDA_VISIBLE_DEVICES",
+        "OLLAMA_CONTEXT_LENGTH",
+        "OLLAMA_HOST",
+        "OLLAMA_MAX_LOADED_MODELS",
+        "OLLAMA_NUM_PARALLEL"
+      ]
+    }
+  }
+}

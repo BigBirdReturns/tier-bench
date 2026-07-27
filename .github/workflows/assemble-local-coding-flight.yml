@@ -1,0 +1,145 @@
+name: assemble-local-coding-flight
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened]
+  workflow_dispatch:
+
+concurrency:
+  group: assemble-local-coding-flight-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/local-coding-flight-v1
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Decode, verify, and extract the exact local coding payload
+        run: |
+          python - <<'PY'
+          import base64
+          import hashlib
+          import io
+          import json
+          import lzma
+          import pathlib
+          import tarfile
+
+          root = pathlib.Path('.').resolve()
+          expected_chunks = {
+              'local_coding_flight_payload.part-000.b64': 'a6c89de7c6616183660379aae9701d7879c821f5ab6b60e1413f7f648e1b60f8',
+              'local_coding_flight_payload.part-001.b64': '860e2f8eba56cc5b62f84fa5c2893a3c53e89bd0df7cb278e2b5f9767aa34653',
+              'local_coding_flight_payload.part-002.b64': 'd60aad2fb9e3be1ffaf4cf244ee2b107974388180df946769f05c19fdb2a5c03',
+              'local_coding_flight_payload.part-003.b64': 'bc4ee07e6fef1bce868f162e6b56bd7b24a60a9566575df7bfa423c4352e87e8',
+          }
+          normalized = []
+          for name, expected in expected_chunks.items():
+              path = root / 'transport' / name
+              payload = ''.join(path.read_text(encoding='ascii').split())
+              digest = hashlib.sha256(payload.encode('ascii')).hexdigest()
+              if digest != expected:
+                  raise SystemExit(
+                      f'payload chunk sha mismatch: {name}: {digest} != {expected}'
+                  )
+              normalized.append(payload)
+
+          encoded = ''.join(normalized)
+          if len(encoded) != 27840:
+              raise SystemExit(f'payload base64 length mismatch: {len(encoded)} != 27840')
+
+          compressed = base64.b64decode(encoded, validate=True)
+          compressed_sha = hashlib.sha256(compressed).hexdigest()
+          expected_compressed_sha = 'ba3f7118868f2321ea774690a314dd99b2579867962e2eed0f3758b54e408855'
+          if compressed_sha != expected_compressed_sha:
+              raise SystemExit(
+                  f'payload xz sha mismatch: {compressed_sha} != {expected_compressed_sha}'
+              )
+
+          archive = lzma.decompress(compressed)
+          archive_sha = hashlib.sha256(archive).hexdigest()
+          expected_archive_sha = 'e33dcff4d854103b7c876d18c877c444613e9dcd4ad81cd4a2e959e722451a48'
+          if archive_sha != expected_archive_sha:
+              raise SystemExit(
+                  f'payload tar sha mismatch: {archive_sha} != {expected_archive_sha}'
+              )
+
+          with tarfile.open(fileobj=io.BytesIO(archive), mode='r:') as bundle:
+              members = bundle.getmembers()
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  if (
+                      path.is_absolute()
+                      or '..' in path.parts
+                      or path.parts[:1] == ('.git',)
+                      or member.issym()
+                      or member.islnk()
+                      or not (member.isfile() or member.isdir())
+                  ):
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+              bundle.extractall(root)
+
+          manifest_path = root / 'PAYLOAD_MANIFEST.json'
+          manifest_bytes = manifest_path.read_bytes()
+          manifest_sha = hashlib.sha256(manifest_bytes).hexdigest()
+          expected_manifest_sha = '6df1df4a6f589ad6b7d3d14b002d0fcab4daadf6df82d1b3f1a718327b0dd217'
+          if manifest_sha != expected_manifest_sha:
+              raise SystemExit(
+                  f'payload manifest sha mismatch: {manifest_sha} != {expected_manifest_sha}'
+              )
+          manifest = json.loads(manifest_bytes)
+          if manifest.get('schema') != 'tier-bench/local-coding-flight-payload@1':
+              raise SystemExit('unexpected payload manifest schema')
+
+          expected_members = set(manifest['files']) | {'PAYLOAD_MANIFEST.json'}
+          actual_members = {member.name for member in members if member.isfile()}
+          if actual_members != expected_members:
+              raise SystemExit(
+                  f'archive member set mismatch; missing={sorted(expected_members - actual_members)}, '
+                  f'unknown={sorted(actual_members - expected_members)}'
+              )
+
+          for name, record in manifest['files'].items():
+              path = root / name
+              if not path.is_file():
+                  raise SystemExit(f'missing extracted file: {name}')
+              payload = path.read_bytes()
+              digest = hashlib.sha256(payload).hexdigest()
+              if digest != record['sha256']:
+                  raise SystemExit(f'file sha mismatch: {name}')
+              if len(payload) != record['size']:
+                  raise SystemExit(f'file size mismatch: {name}')
+          print(
+              f"verified {len(manifest['files'])} files from "
+              f"{len(compressed)} compressed bytes"
+          )
+          PY
+      - name: Validate the local coding flight without model or network calls
+        run: |
+          python -m pip install -e .
+          tiercode --help
+          python -m py_compile \
+            tier_runner/adapters/claude_code_ollama.py \
+            tier_runner/local_coding_flight.py \
+            tests/test_local_coding_flight.py
+          python tests/test_local_coding_flight.py
+          python tests/test_tier_runner.py
+      - name: Commit reviewable source and remove transport
+        run: |
+          rm -f transport/local_coding_flight_payload.part-*.b64
+          rm -f PAYLOAD_MANIFEST.json
+          rm -f .github/workflows/assemble-local-coding-flight.yml
+          git config user.name "Local Coding Flight Assembler"
+          git config user.email "local-coding-flight@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "Assemble attested local coding flight"
+          git push origin HEAD:agent/local-coding-flight-v1
