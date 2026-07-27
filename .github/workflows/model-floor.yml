@@ -1,0 +1,54 @@
+name: model-floor
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zero-model-calls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Compile universal model-floor modules
+        run: |
+          python -m py_compile \
+            tier_runner/model_floor_common.py \
+            tier_runner/model_identity.py \
+            tier_runner/model_floor_external.py \
+            tier_runner/model_floor.py \
+            tier_runner/model_floor_cli.py \
+            tests/test_model_floor.py
+      - name: Run zero-model-call floor tests
+        run: python -m unittest tests.test_model_floor -v
+      - name: Validate operator contracts
+        run: |
+          python -m tier_runner.model_floor_cli registry-from-models \
+            --models models.json \
+            --overrides experiments/model_floor/registry.overrides.example.json \
+            --id ci-all-models \
+            --out /tmp/model-floor-registry.json
+          python -m tier_runner.model_floor_cli registry-validate \
+            --registry /tmp/model-floor-registry.json
+          python -m tier_runner.model_floor_cli sources-validate \
+            --sources experiments/model_floor/sources.example.json
+          python - <<'PY'
+          from pathlib import Path
+          from tier_runner.model_floor import validate_floor_config
+          from tier_runner.model_floor_common import load_json
+
+          config = validate_floor_config(
+              load_json(Path("experiments/model_floor/floor.example.json"))
+          )
+          assert config["minimum_distinct_tasks"] == 10
+          assert len(config["family_rules"]) >= 10
+          print("MODEL_FLOOR_CONTRACTS_OK")
+          PY

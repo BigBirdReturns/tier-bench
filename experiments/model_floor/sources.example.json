@@ -1,0 +1,308 @@
+{
+  "schema": "tier-bench/model-floor-sources@1",
+  "id": "universal-model-floor-sources",
+  "excerpt_chars": 1200,
+  "retention_days": 180,
+  "sources": [
+    {
+      "id": "hf-official-benchmark-catalog",
+      "kind": "hf_official_benchmarks",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "token_env": "HF_TOKEN"
+    },
+    {
+      "id": "hf-swe-bench-verified",
+      "kind": "hf_leaderboard",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "dataset_id": "SWE-bench/SWE-bench_Verified",
+      "token_env": "HF_TOKEN",
+      "benchmark": {
+        "id": "SWE-bench/SWE-bench_Verified",
+        "revision": "rolling-hub-leaderboard",
+        "task_family": "repo-repair",
+        "metric": "resolved_rate",
+        "direction": "higher",
+        "unit": "score",
+        "scaffold": "submission-defined",
+        "tools": "submission-defined",
+        "attempts": 1,
+        "context_policy": "submission-defined",
+        "adequacy_threshold": null
+      }
+    },
+    {
+      "id": "hf-hle",
+      "kind": "hf_leaderboard",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "dataset_id": "cais/hle",
+      "token_env": "HF_TOKEN",
+      "benchmark": {
+        "id": "cais/hle",
+        "revision": "rolling-hub-leaderboard",
+        "task_family": "knowledge-reasoning",
+        "metric": "score",
+        "direction": "higher",
+        "unit": "score",
+        "scaffold": "submission-defined",
+        "tools": "submission-defined",
+        "attempts": 1,
+        "context_policy": "submission-defined",
+        "adequacy_threshold": null
+      }
+    },
+    {
+      "id": "lmarena-text-style-control-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=text_style_control&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/text-style-control",
+        "revision": "rolling-latest",
+        "task_family": "human-preference",
+        "metric": "arena_rating",
+        "direction": "higher",
+        "unit": "rating",
+        "scaffold": "arena-pairwise-style-controlled",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.rating",
+        "rank": "row.rank",
+        "sample_size": "row.vote_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
+      "id": "lmarena-agent-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=agent&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/agent",
+        "revision": "rolling-latest",
+        "task_family": "agentic",
+        "metric": "ips_score",
+        "direction": "higher",
+        "unit": "score",
+        "scaffold": "arena-agent-aggregate",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.score",
+        "rank": "row.rank",
+        "sample_size": "row.session_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
+      "id": "lmarena-webdev-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=webdev&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/webdev",
+        "revision": "rolling-latest",
+        "task_family": "web-development",
+        "metric": "arena_rating",
+        "direction": "higher",
+        "unit": "rating",
+        "scaffold": "arena-pairwise-webdev",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.rating",
+        "rank": "row.rank",
+        "sample_size": "row.vote_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
+      "id": "lmarena-search-style-control-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=search_style_control&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/search-style-control",
+        "revision": "rolling-latest",
+        "task_family": "search",
+        "metric": "arena_rating",
+        "direction": "higher",
+        "unit": "rating",
+        "scaffold": "arena-pairwise-search-style-controlled",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.rating",
+        "rank": "row.rank",
+        "sample_size": "row.vote_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
+      "id": "lmarena-document-style-control-latest",
+      "kind": "http_json",
+      "enabled": true,
+      "evidence_tier": "official_benchmark",
+      "verified": true,
+      "training_use": "prohibited",
+      "url": "https://datasets-server.huggingface.co/rows?dataset=lmarena-ai%2Fleaderboard-dataset&config=document_style_control&split=latest&offset=0&length=100",
+      "benchmark": {
+        "id": "lmarena-ai/document-style-control",
+        "revision": "rolling-latest",
+        "task_family": "document-analysis",
+        "metric": "arena_rating",
+        "direction": "higher",
+        "unit": "rating",
+        "scaffold": "arena-pairwise-document-style-controlled",
+        "tools": "arena-managed",
+        "attempts": 1,
+        "context_policy": "arena-managed",
+        "adequacy_threshold": null
+      },
+      "mapping": {
+        "records": "rows",
+        "id": "row.model_name",
+        "model": "row.model_name",
+        "score": "row.rating",
+        "rank": "row.rank",
+        "sample_size": "row.vote_count",
+        "revision": "row.leaderboard_publish_date"
+      }
+    },
+    {
+      "id": "github-model-benchmark-discussions",
+      "kind": "github_search",
+      "enabled": true,
+      "evidence_tier": "assertion",
+      "verified": false,
+      "training_use": "prohibited",
+      "token_env": "GITHUB_TOKEN",
+      "max_items_per_query": 50,
+      "queries": [
+        "\"Claude Opus 5\" benchmark OR eval OR latency OR cost",
+        "\"Claude Fable 5\" benchmark OR eval OR latency OR cost",
+        "\"Kimi K3\" benchmark OR runtime OR offload OR quantization",
+        "\"model leaderboard\" cost latency benchmark",
+        "\"SWE-bench\" Opus Fable",
+        "\"Aider polyglot\" model benchmark",
+        "\"LiveBench\" model results",
+        "\"LM Arena\" model results",
+        "\"Terminal-Bench\" model results",
+        "\"OSWorld\" model results",
+        "\"Berkeley Function Calling Leaderboard\" model results"
+      ]
+    },
+    {
+      "id": "reddit-model-floor",
+      "kind": "reddit_oauth",
+      "enabled": true,
+      "evidence_tier": "assertion",
+      "verified": false,
+      "training_use": "prohibited",
+      "approval_confirmed": false,
+      "subreddits": [
+        "LocalLLaMA",
+        "ClaudeAI",
+        "ChatGPTCoding",
+        "MachineLearning",
+        "singularity"
+      ],
+      "queries": [
+        "\"Claude Opus 5\"",
+        "\"Claude Fable 5\"",
+        "\"Opus 5\" Fable benchmark",
+        "\"Kimi K3\"",
+        "\"model benchmark\" cost",
+        "\"SWE-bench\"",
+        "\"Aider polyglot\"",
+        "\"LM Arena\"",
+        "\"Terminal-Bench\"",
+        "\"OSWorld\""
+      ],
+      "max_posts_per_query": 50,
+      "client_id_env": "REDDIT_CLIENT_ID",
+      "client_secret_env": "REDDIT_CLIENT_SECRET",
+      "user_agent_env": "REDDIT_USER_AGENT"
+    },
+    {
+      "id": "manual-community",
+      "kind": "jsonl_import",
+      "enabled": true,
+      "evidence_tier": "assertion",
+      "verified": false,
+      "training_use": "prohibited",
+      "paths": [
+        "community.manual.jsonl"
+      ]
+    },
+    {
+      "id": "manual-structured-stats",
+      "kind": "jsonl_import",
+      "enabled": false,
+      "evidence_tier": "reproducible_receipt",
+      "verified": false,
+      "training_use": "prohibited",
+      "paths": [
+        "stats.manual.jsonl"
+      ],
+      "benchmark": {
+        "id": "manual-external-benchmark",
+        "revision": "operator-supplied",
+        "task_family": "unclassified",
+        "metric": "score",
+        "direction": "higher",
+        "unit": "score",
+        "scaffold": "operator-supplied",
+        "tools": "operator-supplied",
+        "attempts": 1,
+        "context_policy": "operator-supplied",
+        "adequacy_threshold": null
+      }
+    }
+  ]
+}
