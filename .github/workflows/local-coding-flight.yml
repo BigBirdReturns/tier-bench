@@ -1,0 +1,75 @@
+name: Local coding flight contract
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/local-coding-flight.yml"
+      - "docs/local-coding-flight.md"
+      - "experiments/local_coding/**"
+      - "scripts/run-local-coding-flight.ps1"
+      - "schemas/local_coding_flight_report.schema.json"
+      - "schemas/ollama_server_attestation.schema.json"
+      - "tests/test_local_coding_flight.py"
+      - "tier_runner/adapters/claude_code_ollama.py"
+      - "tier_runner/local_coding_flight.py"
+      - "pyproject.toml"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/local-coding-flight.yml"
+      - "docs/local-coding-flight.md"
+      - "experiments/local_coding/**"
+      - "scripts/run-local-coding-flight.ps1"
+      - "schemas/local_coding_flight_report.schema.json"
+      - "schemas/ollama_server_attestation.schema.json"
+      - "tests/test_local_coding_flight.py"
+      - "tier_runner/adapters/claude_code_ollama.py"
+      - "tier_runner/local_coding_flight.py"
+      - "pyproject.toml"
+
+permissions:
+  contents: read
+
+jobs:
+  zero-model-contract:
+    name: Zero-model contract (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install the editable command surface
+        run: python -m pip install -e .
+      - name: Verify the installed command
+        run: tiercode --help
+      - name: Compile local coding surfaces
+        run: >-
+          python -m py_compile
+          tier_runner/adapters/claude_code_ollama.py
+          tier_runner/local_coding_flight.py
+          tests/test_local_coding_flight.py
+      - name: Run local coding contract tests
+        run: python tests/test_local_coding_flight.py
+      - name: Run existing tier runner contract tests
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
+        run: python tests/test_tier_runner.py
+      - name: Parse the PowerShell launcher
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "scripts/run-local-coding-flight.ps1"),
+            [ref]$tokens,
+            [ref]$errors
+          )
+          if ($errors.Count -gt 0) {
+            $errors | Format-List | Out-String | Write-Error
+            exit 1
+          }
