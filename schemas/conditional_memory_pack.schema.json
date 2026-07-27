@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/conditional_memory_pack.schema.json",
+  "title": "Tier Bench Conditional Memory Pack",
+  "type": "object",
+  "required": [
+    "schema",
+    "source",
+    "table",
+    "quantization",
+    "quality",
+    "files",
+    "artifact",
+    "pack_sha256",
+    "manifest_sha256"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/conditional-memory-pack@1"},
+    "created_at": {"type": "string"},
+    "source": {"type": "object"},
+    "table": {
+      "type": "object",
+      "required": ["rows", "width", "source_dtype", "source_bytes", "source_sha256"]
+    },
+    "quantization": {
+      "type": "object",
+      "required": ["dtype", "padded_width", "code_row_bytes", "scale_row_bytes"],
+      "properties": {
+        "dtype": {"enum": ["fp32", "fp16", "bf16", "int8", "int4"]},
+        "group_size": {"type": ["integer", "null"]},
+        "padded_width": {"type": "integer"},
+        "groups_per_row": {"type": "integer"},
+        "code_row_bytes": {"type": "integer"},
+        "scale_row_bytes": {"type": "integer"}
+      },
+      "additionalProperties": false
+    },
+    "quality": {"type": "object"},
+    "files": {"type": "object"},
+    "artifact": {"type": "object"},
+    "pack_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "manifest_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}
