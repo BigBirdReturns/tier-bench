@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axm.tools/schemas/axm-adapter-response-1.schema.json",
+  "title": "AXM Estate Lab adapter response",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["format", "adapter_id", "phase", "accepted", "semantic_digest", "observations"],
+  "properties": {
+    "format": {"const": "axm-adapter-response/1"},
+    "adapter_id": {"type": "string", "minLength": 1},
+    "phase": {"enum": ["source", "target"]},
+    "accepted": {"type": "boolean"},
+    "reason": {"type": ["string", "null"]},
+    "semantic_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "observations": {"type": "object"},
+    "response_id": {"type": "string", "pattern": "^adapter1_[0-9a-f]+$"}
+  }
+}

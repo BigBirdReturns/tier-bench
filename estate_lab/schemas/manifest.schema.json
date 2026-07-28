@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axm.tools/schemas/axm-estate-lab-1.schema.json",
+  "title": "AXM Estate Lab manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "estate_id", "policy", "organs", "adapters", "routes"],
+  "properties": {
+    "format": {"const": "axm-estate-lab/1"},
+    "estate_id": {"type": "string", "minLength": 1},
+    "policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum_evidence", "require_determinism", "require_replayability", "prefer_local", "weights"],
+      "properties": {
+        "minimum_evidence": {"type": "integer", "minimum": 0, "maximum": 5},
+        "require_determinism": {"type": "boolean"},
+        "require_replayability": {"type": "boolean"},
+        "prefer_local": {"type": "boolean"},
+        "weights": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["evidence", "determinism", "replayability", "locality", "latency_ms", "cost_microunits", "fragility", "authority_risk"],
+          "properties": {
+            "evidence": {"type": "integer"},
+            "determinism": {"type": "integer"},
+            "replayability": {"type": "integer"},
+            "locality": {"type": "integer"},
+            "latency_ms": {"type": "integer"},
+            "cost_microunits": {"type": "integer"},
+            "fragility": {"type": "integer"},
+            "authority_risk": {"type": "integer"}
+          }
+        }
+      }
+    },
+    "organs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/organ"}
+    },
+    "adapters": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/adapter"}
+    },
+    "routes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/route"}
+    }
+  },
+  "$defs": {
+    "stringArray": {
+      "type": "array",
+      "items": {"type": "string", "minLength": 1},
+      "uniqueItems": true
+    },
+    "evidenceClass": {
+      "enum": ["confirmed", "measured", "reported", "derived", "judgment", "open"]
+    },
+    "probe": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "profile", "command"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "profile": {"type": "string", "minLength": 1},
+        "command": {"$ref": "#/$defs/stringArray"},
+        "timeout_seconds": {"type": "integer", "minimum": 1},
+        "expected_exit_codes": {"type": "array", "minItems": 1, "items": {"type": "integer"}},
+        "evidence_class": {"$ref": "#/$defs/evidenceClass"},
+        "required_paths": {"$ref": "#/$defs/stringArray"}
+      }
+    },
+    "organ": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "repository", "local_names", "function", "owns", "refuses", "capabilities"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "repository": {"type": "string", "pattern": "^[^/]+/[^/]+$"},
+        "local_names": {"$ref": "#/$defs/stringArray"},
+        "function": {"type": "string", "minLength": 1},
+        "owns": {"$ref": "#/$defs/stringArray"},
+        "refuses": {"$ref": "#/$defs/stringArray"},
+        "capabilities": {"$ref": "#/$defs/stringArray"},
+        "probes": {"type": "array", "items": {"$ref": "#/$defs/probe"}}
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "organ_id", "kind", "mode", "capabilities", "local_only", "deterministic", "replayable", "evidence_class"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "organ_id": {"type": "string", "minLength": 1},
+        "kind": {"type": "string", "minLength": 1},
+        "mode": {"enum": ["synthetic", "command", "artifact", "human"]},
+        "capabilities": {"$ref": "#/$defs/stringArray"},
+        "local_only": {"type": "boolean"},
+        "deterministic": {"type": "boolean"},
+        "replayable": {"type": "boolean"},
+        "evidence_class": {"$ref": "#/$defs/evidenceClass"},
+        "default_status": {"enum": ["available", "degraded", "unavailable"]},
+        "command": {"$ref": "#/$defs/stringArray"},
+        "timeout_seconds": {"type": "integer", "minimum": 1},
+        "notes": {"type": "string"}
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence", "determinism", "replayability", "locality", "latency_ms", "cost_microunits", "fragility", "authority_risk"],
+      "properties": {
+        "evidence": {"type": "integer", "minimum": 0, "maximum": 5},
+        "determinism": {"type": "integer", "minimum": 0, "maximum": 5},
+        "replayability": {"type": "integer", "minimum": 0, "maximum": 5},
+        "locality": {"type": "integer", "minimum": 0, "maximum": 5},
+        "latency_ms": {"type": "integer", "minimum": 0},
+        "cost_microunits": {"type": "integer", "minimum": 0},
+        "fragility": {"type": "integer", "minimum": 0, "maximum": 5},
+        "authority_risk": {"type": "integer", "minimum": 0, "maximum": 5}
+      }
+    },
+    "route": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "source_adapter", "target_adapter", "action_prefixes", "required_role", "required_mandate", "tags", "metrics"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "source_adapter": {"type": "string", "minLength": 1},
+        "target_adapter": {"type": "string", "minLength": 1},
+        "action_prefixes": {"$ref": "#/$defs/stringArray"},
+        "required_role": {"type": "string", "minLength": 1},
+        "required_mandate": {"type": "string", "minLength": 1},
+        "tags": {"$ref": "#/$defs/stringArray"},
+        "metrics": {"$ref": "#/$defs/metrics"},
+        "fallback_route_ids": {"$ref": "#/$defs/stringArray"},
+        "notes": {"type": "string"}
+      }
+    }
+  }
+}

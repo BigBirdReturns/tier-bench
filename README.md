@@ -13,6 +13,7 @@ This replaces vibe-based model selection with operational data.
 Reproducible work built on top of the benchmark (all on `main`):
 
 - **[Capability harness](capability_harness/README.md)** — lift a cheap model to the tier above on operational tasks, any provider. `pip install .`, then `capability-harness review mycode.py`.
+- **[AXM Estate Lab](estate_lab/README.md)** — exercise cross-project semantic actions, authority, fallback routing, deterministic state, device substitutions, project probes, and fault recovery with inspectable receipts.
 - **[The living lens shard](memory/lenses/README.md)** — the lens registry sealed as a signed, tamper-evident AXM Genesis shard (`axm-verify` PASS; one-byte tamper fails closed).
 - **[Burden discipline](docs/burden-discipline.md)** — the prosecutor-readable closure-packet rule: every accepted, routed, verified, paid, safe, or ready claim must name the burden, verifier, gap, and failure default.
 - **[Findings page](https://bigbirdreturns.github.io/tier-bench/uplift.html)** — the operational-moat write-up and the "workspace inside/outside" frame.

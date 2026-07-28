@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axm.tools/schemas/axm-estate-lab-run-1.schema.json",
+  "title": "AXM Estate Lab run receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "run_id", "generated_at", "manifest_id", "scenario_digest", "scenario", "execution_mode", "probe_profile", "status", "final_state_hash", "adapter_status", "repository_discovery", "probes", "steps", "routing_trials", "fault_trials", "equivalence", "failures", "invariants", "control_question", "evidence_counts"],
+  "properties": {
+    "format": {"const": "axm-estate-lab-run/1"},
+    "run_id": {"type": "string", "pattern": "^labrun1_[0-9a-f]+$"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "manifest_id": {"type": "string", "pattern": "^manifest1_[0-9a-f]+$"},
+    "scenario_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "scenario": {"type": "object"},
+    "execution_mode": {"enum": ["synthetic", "live"]},
+    "probe_profile": {"type": "string"},
+    "status": {"enum": ["passed", "failed", "refused"]},
+    "final_state_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "adapter_status": {"type": "object", "additionalProperties": {"enum": ["available", "degraded", "unavailable"]}},
+    "repository_discovery": {"type": "object"},
+    "probes": {"type": "array"},
+    "steps": {"type": "array"},
+    "routing_trials": {"type": "array"},
+    "fault_trials": {"type": "array"},
+    "equivalence": {"type": "object"},
+    "failures": {"type": "array", "items": {"type": "string"}},
+    "invariants": {"type": "array", "items": {"type": "string"}},
+    "control_question": {"type": "string"},
+    "evidence_counts": {"type": "object", "additionalProperties": {"type": "integer", "minimum": 0}}
+  }
+}

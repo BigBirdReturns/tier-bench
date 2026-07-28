@@ -1,0 +1,352 @@
+{
+  "actions": [
+    {
+      "authority": {
+        "actor": "bigbird",
+        "mandate": "underdrain.pump.control",
+        "ownership_epoch": 3,
+        "role": "plumber"
+      },
+      "expected": {
+        "after": 45
+      },
+      "operation": "set",
+      "projection": {
+        "audio": {
+          "cue": "pump-spool"
+        },
+        "display": {
+          "gauge": "pump-speed"
+        }
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "route_ids": [
+        "route.underdrain.direct"
+      ],
+      "route_query": {},
+      "semantic_id": "underdrain.pump.speed.set",
+      "state_path": "/pump_room/pump_speed_pct",
+      "step_id": "spin-pump",
+      "subject": "underdrain.pump.speed",
+      "value": 45
+    },
+    {
+      "authority": {
+        "actor": "bigbird",
+        "mandate": "underdrain.pump.control",
+        "ownership_epoch": 3,
+        "role": "plumber"
+      },
+      "expected": {
+        "after": true
+      },
+      "operation": "set",
+      "projection": {
+        "indicator": {
+          "state": "open",
+          "valve": "bypass"
+        }
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "route_ids": [
+        "route.underdrain.screen"
+      ],
+      "route_query": {},
+      "semantic_id": "underdrain.valve.bypass.set",
+      "state_path": "/pump_room/bypass_open",
+      "step_id": "open-bypass",
+      "subject": "underdrain.valve.bypass",
+      "value": true
+    },
+    {
+      "authority": {
+        "actor": "bigbird",
+        "mandate": "underdrain.pump.control",
+        "ownership_epoch": 3,
+        "role": "plumber"
+      },
+      "expected": {
+        "after": true
+      },
+      "operation": "set",
+      "projection": {
+        "audio": {
+          "cue": "purge-flow"
+        },
+        "haptic": {
+          "pattern": "valve-seat"
+        }
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "route_ids": [
+        "route.underdrain.quest"
+      ],
+      "route_query": {},
+      "semantic_id": "underdrain.purge.set",
+      "state_path": "/pump_room/purge_active",
+      "step_id": "start-purge",
+      "subject": "underdrain.purge",
+      "value": true
+    },
+    {
+      "authority": {
+        "actor": "bigbird",
+        "mandate": "underdrain.pump.control",
+        "ownership_epoch": 3,
+        "role": "plumber"
+      },
+      "expected": {
+        "after": "broken"
+      },
+      "operation": "set",
+      "projection": {
+        "audio": {
+          "cue": "fungus-seal-break",
+          "priority": 70
+        },
+        "display": {
+          "camera": "seal-collapse"
+        }
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "route_ids": [
+        "route.underdrain.direct"
+      ],
+      "route_query": {},
+      "semantic_id": "underdrain.fungus.seal.break",
+      "state_path": "/pump_room/fungus_seal",
+      "step_id": "break-fungus-seal",
+      "subject": "underdrain.fungus.seal",
+      "value": "broken"
+    },
+    {
+      "authority": {
+        "actor": "bigbird",
+        "mandate": "underdrain.pump.control",
+        "ownership_epoch": 3,
+        "role": "plumber"
+      },
+      "expected": {
+        "after": 20
+      },
+      "operation": "set",
+      "projection": {
+        "display": {
+          "gauge": "contamination"
+        }
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "route_ids": [
+        "route.underdrain.direct"
+      ],
+      "route_query": {},
+      "semantic_id": "underdrain.contamination.set",
+      "state_path": "/pump_room/contamination_pct",
+      "step_id": "clear-contamination",
+      "subject": "underdrain.contamination",
+      "value": 20
+    },
+    {
+      "authority": {
+        "actor": "bigbird",
+        "mandate": "underdrain.pump.control",
+        "ownership_epoch": 3,
+        "role": "plumber"
+      },
+      "expected": {
+        "after": 82
+      },
+      "operation": "set",
+      "projection": {
+        "audio": {
+          "cue": "flow-restored"
+        },
+        "display": {
+          "map": "district-flow"
+        }
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "route_ids": [
+        "route.underdrain.screen"
+      ],
+      "route_query": {},
+      "semantic_id": "underdrain.flow.set",
+      "state_path": "/pump_room/district_flow_pct",
+      "step_id": "restore-district-flow",
+      "subject": "underdrain.flow",
+      "value": 82
+    },
+    {
+      "authority": {
+        "actor": "bigbird",
+        "mandate": "underdrain.pump.control",
+        "ownership_epoch": 3,
+        "role": "plumber"
+      },
+      "expected": {
+        "after": "pump-room-stable"
+      },
+      "operation": "set",
+      "projection": {
+        "display": {
+          "checkpoint": "pump-room-stable"
+        },
+        "haptic": {
+          "pattern": "success"
+        }
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "route_ids": [
+        "route.underdrain.direct"
+      ],
+      "route_query": {},
+      "semantic_id": "underdrain.checkpoint.set",
+      "state_path": "/pump_room/recovery_checkpoint",
+      "step_id": "commit-recovery",
+      "subject": "underdrain.checkpoint",
+      "value": "pump-room-stable"
+    }
+  ],
+  "equivalence_route_ids": [],
+  "expected_final_state": {
+    "pump_room": {
+      "bypass_open": true,
+      "contamination_pct": 20,
+      "district_flow_pct": 82,
+      "fungus_seal": "broken",
+      "pump_speed_pct": 45,
+      "purge_active": true,
+      "recovery_checkpoint": "pump-room-stable"
+    }
+  },
+  "fault_trials": [
+    {
+      "expected_outcome": "refused:ownership_epoch_stale",
+      "fault": "stale_epoch",
+      "id": "stale-plumber-control-refused",
+      "parameters": {
+        "delta": 1,
+        "step_id": "spin-pump"
+      },
+      "route_id": "route.underdrain.direct"
+    },
+    {
+      "expected_outcome": "faulted:injected_target_refusal",
+      "fault": "target_refusal",
+      "id": "purge-target-refusal-visible",
+      "parameters": {
+        "step_id": "start-purge"
+      },
+      "route_id": "route.underdrain.quest"
+    }
+  ],
+  "format": "axm-estate-scenario/1",
+  "id": "underdrain-pump-room-001",
+  "initial_state": {
+    "_ownership": {
+      "underdrain.checkpoint": {
+        "actor": "bigbird",
+        "epoch": 3,
+        "mandate": "underdrain.pump.control",
+        "role": "plumber"
+      },
+      "underdrain.contamination": {
+        "actor": "bigbird",
+        "epoch": 3,
+        "mandate": "underdrain.pump.control",
+        "role": "plumber"
+      },
+      "underdrain.flow": {
+        "actor": "bigbird",
+        "epoch": 3,
+        "mandate": "underdrain.pump.control",
+        "role": "plumber"
+      },
+      "underdrain.fungus.seal": {
+        "actor": "bigbird",
+        "epoch": 3,
+        "mandate": "underdrain.pump.control",
+        "role": "plumber"
+      },
+      "underdrain.pump.speed": {
+        "actor": "bigbird",
+        "epoch": 3,
+        "mandate": "underdrain.pump.control",
+        "role": "plumber"
+      },
+      "underdrain.purge": {
+        "actor": "bigbird",
+        "epoch": 3,
+        "mandate": "underdrain.pump.control",
+        "role": "plumber"
+      },
+      "underdrain.valve.bypass": {
+        "actor": "bigbird",
+        "epoch": 3,
+        "mandate": "underdrain.pump.control",
+        "role": "plumber"
+      }
+    },
+    "pump_room": {
+      "bypass_open": false,
+      "contamination_pct": 88,
+      "district_flow_pct": 20,
+      "fungus_seal": "intact",
+      "pump_speed_pct": 0,
+      "purge_active": false,
+      "recovery_checkpoint": null
+    }
+  },
+  "invariants": [
+    "The player can name the controlled plumbing state before acting.",
+    "Every action produces a visible causal transition and a recoverable checkpoint.",
+    "Can a cold player operate, fail, recover, and explain how pump, bypass, purge, fungus seal, contamination, and district flow fit together?"
+  ],
+  "kind": "sequence",
+  "objective": "Exercise a legible plumbing recovery procedure across direct, ScreenGhost, and embodied routes while preserving one causal state and recovery checkpoint.",
+  "routing_trials": [
+    {
+      "action_prefix": "underdrain.valve.bypass.set",
+      "candidate_route_ids": [
+        "route.underdrain.screen"
+      ],
+      "constraints": {
+        "required_mandate": "underdrain.pump.control",
+        "required_role": "plumber"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.underdrain.direct",
+      "id": "screen-loss-falls-back-to-direct",
+      "unavailable_route_ids": [
+        "route.underdrain.screen"
+      ]
+    },
+    {
+      "action_prefix": "underdrain.purge.set",
+      "candidate_route_ids": [
+        "route.underdrain.direct",
+        "route.underdrain.screen",
+        "route.underdrain.quest"
+      ],
+      "constraints": {
+        "require_tags": [
+          "quest"
+        ],
+        "required_mandate": "underdrain.pump.control",
+        "required_role": "plumber"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.underdrain.quest",
+      "id": "embodied-request-selects-quest",
+      "unavailable_route_ids": []
+    }
+  ],
+  "title": "Underdrain Pump Room Procedure"
+}
