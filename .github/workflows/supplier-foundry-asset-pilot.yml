@@ -85,22 +85,26 @@ jobs:
           test ! -e supplier_foundry/node_modules
 
       - name: Run the complete Tier Bench regression once
+        id: complete
         if: matrix.python-version == '3.12'
+        continue-on-error: true
         shell: bash
         run: |
-          set -euo pipefail
+          set -o pipefail
           python -m pip install --upgrade pip
           python -m pip install -e . pytest
           python -m pytest -q 2>&1 | tee "$RUNNER_TEMP/tier-bench-complete.log"
 
       - name: Require a pristine source checkout
+        if: always()
         shell: bash
         run: |
           set -euo pipefail
           git diff --check
           test -z "$(git status --porcelain)"
 
-      - name: Upload exact supplier, substitution, and rip-out evidence
+      - name: Upload exact supplier, substitution, rip-out, and regression evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: supplier-foundry-asset-python-${{ matrix.python-version }}
@@ -113,5 +117,9 @@ jobs:
             ${{ runner.temp }}/ripout-verify.json
             ${{ runner.temp }}/npm-tree.txt
             ${{ runner.temp }}/tier-bench-complete.log
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
+
+      - name: Preserve the complete regression result
+        if: matrix.python-version == '3.12' && steps.complete.outcome != 'success'
+        run: exit 1
