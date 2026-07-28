@@ -1,0 +1,52 @@
+{
+  "schema": "tier-bench/playwright-computer@1",
+  "id": "desktop-playwright-computer-01",
+  "title": "Persistent desktop browser computer",
+  "mode": "persistent",
+  "browser": "chromium",
+  "headless": false,
+  "start_url": "about:blank",
+  "paths": {
+    "workspace": "workspace",
+    "profile": "profile",
+    "downloads": "downloads",
+    "artifacts": "artifacts",
+    "secrets": "secrets"
+  },
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "locale": "en-US",
+  "allowed_schemes": [
+    "https",
+    "http",
+    "about",
+    "data"
+  ],
+  "allowed_domains": [],
+  "blocked_domains": [],
+  "deny_private_networks": true,
+  "storage_state_file": "storage-state.json",
+  "trace": true,
+  "record_video": false,
+  "force_open_shadow_dom": false,
+  "policy": {
+    "max_actions_per_batch": 10,
+    "default_timeout_ms": 10000,
+    "navigation_timeout_ms": 45000,
+    "wait_between_actions_ms": 250,
+    "viewport_expansion": 500,
+    "max_visible_text_chars": 24000,
+    "highlight_elements": true,
+    "external_write_requires_approval": true,
+    "sensitive_input_requires_approval": true,
+    "allow_javascript": false,
+    "allow_upload": true,
+    "allow_download": true
+  },
+  "takeover": {
+    "enabled": true,
+    "lease_seconds": 600
+  }
+}
