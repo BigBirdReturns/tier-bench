@@ -67,6 +67,14 @@ def atomic_json(path: Path, value: Any, *, mode: int | None = None) -> None:
     atomic_bytes(path, canonical(value), mode=mode)
 
 
+def write_json(path: Path | None, value: Any) -> None:
+    rendered = json.dumps(value, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+    if path is None:
+        print(rendered, end="")
+        return
+    atomic_bytes(path, rendered.encode("utf-8"))
+
+
 def safe_id(value: Any, label: str, *, limit: int = 160) -> str:
     if not isinstance(value, str) or not value.strip() or len(value) > limit:
         raise PlaywrightComputerError(
