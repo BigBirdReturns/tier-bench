@@ -1,10 +1,9 @@
-"""CLI for project-native Task Computer fixtures, planners, and receipts."""
+"""CLI for project-native Task Computer fixtures, planners, critics, and receipts."""
 from __future__ import annotations
 
 import argparse
 import asyncio
 import json
-import os
 from pathlib import Path
 import sys
 
@@ -13,6 +12,11 @@ from .task_computer_fixtures import ProjectFixtureServer
 from .task_computer_lab import TaskComputerRunner, load_catalog, run_suite, verify_run
 from .task_computer_planner import CommandPlanner, FileExchangePlanner, ReferencePlanner
 from .task_computer_protocol import scenario_by_id
+from .task_computer_team import (
+    CommandCritic,
+    FileExchangeCritic,
+    TeamedPlanner,
+)
 
 DEFAULT_CATALOG = Path("experiments/task_computer/project_scenarios.json")
 
@@ -22,7 +26,7 @@ def parser() -> argparse.ArgumentParser:
         prog="tiertaskcomputer",
         description=(
             "Run project-native browser-computer fixtures with reference, command, or "
-            "shared-file planners and externally verified receipts."
+            "shared-file planners, optional independent critics, and verified receipts."
         ),
     )
     commands = root.add_subparsers(dest="command", required=True)
@@ -41,6 +45,9 @@ def parser() -> argparse.ArgumentParser:
     run.add_argument("--planner-command")
     run.add_argument("--planner-exchange", type=Path)
     run.add_argument("--planner-timeout", type=float, default=1800.0)
+    run.add_argument("--critic-command")
+    run.add_argument("--critic-exchange", type=Path)
+    run.add_argument("--critic-timeout", type=float, default=1800.0)
 
     suite = commands.add_parser("suite")
     suite.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
@@ -62,14 +69,37 @@ def parser() -> argparse.ArgumentParser:
 
 
 def _planner(args: argparse.Namespace, scenario: dict):
+    if args.planner_command and args.planner_exchange:
+        raise PlaywrightComputerError(
+            "choose planner-command or planner-exchange, not both"
+        )
+    if args.critic_command and args.critic_exchange:
+        raise PlaywrightComputerError(
+            "choose critic-command or critic-exchange, not both"
+        )
     if args.planner_command:
-        return CommandPlanner(args.planner_command, timeout_seconds=args.planner_timeout)
-    if args.planner_exchange:
-        return FileExchangePlanner(
+        planner = CommandPlanner(
+            args.planner_command, timeout_seconds=args.planner_timeout
+        )
+    elif args.planner_exchange:
+        planner = FileExchangePlanner(
             args.planner_exchange,
             timeout_seconds=args.planner_timeout,
         )
-    return ReferencePlanner(scenario)
+    else:
+        planner = ReferencePlanner(scenario)
+    if args.critic_command:
+        critic = CommandCritic(
+            args.critic_command, timeout_seconds=args.critic_timeout
+        )
+        return TeamedPlanner(planner, critic)
+    if args.critic_exchange:
+        critic = FileExchangeCritic(
+            args.critic_exchange,
+            timeout_seconds=args.critic_timeout,
+        )
+        return TeamedPlanner(planner, critic)
+    return planner
 
 
 def main(argv: list[str] | None = None) -> int:
