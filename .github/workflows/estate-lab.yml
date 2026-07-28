@@ -1,0 +1,132 @@
+name: AXM Estate Lab
+
+on:
+  push:
+    paths:
+      - "estate_lab/**"
+      - ".github/workflows/estate-lab.yml"
+  pull_request:
+    paths:
+      - "estate_lab/**"
+      - ".github/workflows/estate-lab.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: estate-lab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    name: reference estate Python ${{ matrix.python-version }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Compile and validate contracts
+        run: |
+          set -euo pipefail
+          python -m py_compile estate_lab/*.py estate_lab/scripts/run_reference_lab.py
+          python -m estate_lab validate
+
+      - name: Run the laboratory test suite
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s estate_lab/tests -v \
+            2>&1 | tee "$RUNNER_TEMP/estate-lab-tests.log"
+
+      - name: Run every retained scenario
+        run: |
+          set -euo pipefail
+          python -m estate_lab run-all \
+            --output "$RUNNER_TEMP/estate-lab-runs" \
+            2>&1 | tee "$RUNNER_TEMP/estate-lab-run.log"
+
+      - name: Prove stable run identities and receipt checksums
+        env:
+          ESTATE_LAB_RUNS: ${{ runner.temp }}/estate-lab-runs
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          from estate_lab.manifest import load_manifest, load_scenario
+          from estate_lab.runtime import EstateLab
+
+          root = Path.cwd()
+          manifest = load_manifest(root / "estate_lab/fixtures/estate.example.json")
+          lab = EstateLab(manifest)
+          scenario_dir = root / "estate_lab/fixtures/scenarios"
+          observed = {}
+          for scenario_path in sorted(scenario_dir.glob("*.json")):
+              scenario = load_scenario(scenario_path, manifest)
+              first = lab.run_scenario(scenario)
+              second = EstateLab(manifest).run_scenario(scenario)
+              if first.run_id != second.run_id or first.final_state_hash != second.final_state_hash:
+                  raise SystemExit(f"nondeterministic identity: {scenario.scenario_id}")
+              observed[scenario.scenario_id] = {
+                  "run_id": first.run_id,
+                  "final_state_hash": first.final_state_hash,
+              }
+
+          receipt_root = Path(os.environ["ESTATE_LAB_RUNS"])
+          verified_files = 0
+          for checksum_path in sorted(receipt_root.rglob("CHECKSUMS.sha256")):
+              receipt_dir = checksum_path.parent
+              for line in checksum_path.read_text(encoding="utf-8").splitlines():
+                  expected, relative = line.split("  ", 1)
+                  actual = hashlib.sha256((receipt_dir / relative).read_bytes()).hexdigest()
+                  if actual != expected:
+                      raise SystemExit(f"checksum mismatch: {receipt_dir / relative}")
+                  verified_files += 1
+          if verified_files < 40:
+              raise SystemExit(f"expected at least 40 checksummed files, saw {verified_files}")
+          Path(os.environ["ESTATE_LAB_RUNS"]).joinpath("qualification.json").write_text(
+              json.dumps(
+                  {
+                      "format": "axm-estate-lab-qualification/1",
+                      "status": "PASS",
+                      "scenarios": observed,
+                      "verified_files": verified_files,
+                  },
+                  indent=2,
+                  sort_keys=True,
+              ) + "\n",
+              encoding="utf-8",
+          )
+          print(json.dumps(observed, indent=2, sort_keys=True))
+          PY
+
+      - name: Require a pristine checkout
+        run: |
+          set -euo pipefail
+          git diff --check
+          test -z "$(git status --porcelain)"
+
+      - name: Upload exact laboratory evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: estate-lab-python-${{ matrix.python-version }}
+          path: |
+            ${{ runner.temp }}/estate-lab-runs
+            ${{ runner.temp }}/estate-lab-tests.log
+            ${{ runner.temp }}/estate-lab-run.log
+          if-no-files-found: error
+          retention-days: 30
