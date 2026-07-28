@@ -1,0 +1,134 @@
+# AXM Estate Lab
+
+AXM Estate Lab is the executable integration and routing instrument for the BigBirdReturns project estate. It measures whether a semantic action can cross project boundaries, retain the correct actor and mandate, survive route loss or source drift, commit one deterministic state transition, and emit inspectable receipts. It lives in Tier Bench because its authority is measurement and routing. It does not own cartridge law, human disposition, physical safety, project priority, or the truth of an observed claim.
+
+The laboratory converts the Halcyon Dawn and Enigma harvest into a general estate exercise. The original project demonstrated that a large physical console becomes tractable when generic devices, installation declarations, edge-local feedback, host-side typed bindings, atomic state publication, software twins, and reconnect snapshots are treated as one system. Estate Lab applies that system shape to AXM-ARC, AXM-WORLD, ScreenGhost, agent-runtime, AXM Embodied, AXM Console, Aide, Bloodstream, Hinge, EarCrate, Zombie Adapter, GhostBox, and Organ Evolution.
+
+## What the laboratory proves
+
+A laboratory run has five independent gates. Repository probes establish which project surfaces are present and whether their declared smoke or full checks pass. Route evaluation admits or refuses each candidate from explicit evidence, determinism, replayability, locality, latency, cost, fragility, and authority-risk terms. Semantic execution checks actor, role, mandate, and ownership epoch before state mutation. Equivalence trials run the same action through different embodiments and require the same state, desired-output, and causal-debrief hashes. Fault trials inject stale ownership, route loss, duplicate delivery, semantic mutation, target refusal, and projection corruption, then require the declared refusal or recovery.
+
+Synthetic mode proves the laboratory contract and its deterministic reference fixtures. It does not claim that Quest, ESP32, a sibling repository, or electrical hardware was exercised. Live mode resolves sibling repositories below one workspace, runs the selected probes, and refuses command or artifact adapters whose owning repositories are absent or failed.
+
+## Reference estate
+
+The retained manifest currently classifies 14 organs, 15 adapters, and 18 routes. The five reference scenarios exercise different layers of the estate.
+
+| Scenario | Mechanism under test | Projects exercised |
+|---|---|---|
+| `common-control-proof-001` | One coolant-bypass action through direct, ScreenGhost, agent, Quest, and ESP32 embodiments | Tier Bench, AXM-WORLD, ScreenGhost, agent-runtime, AXM Embodied |
+| `common-ship-handoff-001` | AI source ownership, captain-attributed transfer, and human embodied takeover | agent-runtime, AXM-WORLD, AXM Console, AXM Embodied |
+| `decision-marker-001` | One operator marker routed to proposal, circulation-reference, and hinge-candidate records without execution authority | AXM Console, Aide, Bloodstream, Hinge |
+| `underdrain-pump-room-001` | A legible pump, bypass, purge, fungus-seal, contamination, flow, and recovery procedure | AXM-WORLD, ScreenGhost, AXM Embodied |
+| `estate-circuit-001` | Cross-organ compute planning, live-audio control, organ evolution, and attention candidacy | Zombie Adapter, EarCrate, AXM Tools, GhostBox, AXM Console |
+
+## Run the retained proof
+
+From the Tier Bench repository root:
+
+```bash
+python -m estate_lab validate
+python -m unittest discover -s estate_lab/tests -v
+python -m estate_lab run-all --output .estate-lab-runs
+```
+
+Each scenario writes a content-addressed directory containing the manifest and scenario snapshots, the complete run receipt, semantic events, source and target adapter responses, route evaluations, desired outputs, causal debriefs, probe logs, a Markdown summary, a standalone HTML report, and SHA-256 checksums.
+
+Inspect one route decision without changing state:
+
+```bash
+python -m estate_lab route engineering.coolant_bypass.set \
+  --role engineering \
+  --mandate ship.engineering.control \
+  --candidate route.world.direct \
+  --candidate route.world.screen \
+  --candidate route.world.agent
+```
+
+Require a physical route:
+
+```bash
+python -m estate_lab route engineering.coolant_bypass.set \
+  --role engineering \
+  --mandate ship.engineering.control \
+  --require-tag physical
+```
+
+## Exercise the local project estate
+
+The Windows launcher defaults to the current project topology and keeps output outside the repositories:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File estate_lab/scripts/run_estate_lab.ps1 \
+  -Workspace D:\Projects \
+  -Output D:\Projects\AXM\estate-lab-runs \
+  -ProbeProfile smoke
+```
+
+The equivalent portable command is:
+
+```bash
+python -m estate_lab discover \
+  --workspace /path/to/projects \
+  --mode live \
+  --probe-profile smoke
+
+python -m estate_lab run-all \
+  --workspace /path/to/projects \
+  --mode live \
+  --probe-profile smoke \
+  --output /path/to/estate-lab-runs
+```
+
+Live mode does not silently replace an absent project with its synthetic stand-in. Synthetic adapters are marked degraded, artifact and command adapters are unavailable when their repositories are missing, failed probes make the owning adapter unavailable, and the route ledger states why every rejected route failed.
+
+## Route law
+
+Routing contains a hard gate followed by transparent arithmetic. A candidate must match the semantic action prefix, required role, required mandate, adapter health, minimum evidence, determinism, replayability, locality, latency, cost, and required or forbidden tags. Eligible peer routes are scored from the manifest-owned weights. A fallback route is considered only when no route in the earlier fallback tier is admissible. This prevents a highly scored fallback from silently replacing a healthy declared primary.
+
+The retained default score is:
+
+```text
+100 × evidence
++ 45 × determinism
++ 40 × replayability
++ 20 × locality
+- 1 × latency_ms
+- 2 × cost_microunits
+- 35 × fragility
+- 60 × authority_risk
+```
+
+The score selects among already admissible routes. It cannot make an inadmissible route legal, grant a role, authenticate an actor, promote an evidence class, or authorize a human decision.
+
+## Adapter contract
+
+A semantic route has a source adapter and a target adapter. Synthetic adapters make the contract deterministic in CI. Artifact adapters bind a route to a present project estate without claiming that a process or device was actuated. Command adapters are the live integration seam. They receive one `axm-adapter-request/1` JSON file and must return one `axm-adapter-response/1` object whose semantic digest exactly matches the request.
+
+Command adapters execute with an argv array and `shell=False`. The manifest may use `{repo}`, `{request}`, and `{response}` placeholders. No scenario text becomes shell code. Nonzero exit, timeout, missing response, malformed JSON, adapter identity drift, phase mismatch, refusal, or semantic mutation becomes an explicit fault receipt.
+
+See [`ADAPTER_CONTRACT.md`](ADAPTER_CONTRACT.md) for the complete request and response examples.
+
+## Authority and ownership
+
+Every semantic action names a subject, actor, role, mandate, and ownership epoch. The current state carries the authoritative ownership record for that subject. Actor, role, mandate, epoch, and route authority must all agree before either adapter runs or state changes. A source that loses tracking or control must relinquish its epoch. A later packet from the previous source is stale even when its value appears plausible.
+
+The laboratory models ownership as state because ownership transfer must be replayable and inspectable. AXM Embodied remains the authority for signed physical envelopes and actuation refusal. Estate Lab can prove that an event was rejected under a declared ownership model; it cannot prove that a motor, switch, hand tracker, or operator physically behaved as claimed.
+
+## Project probes
+
+Each organ declares zero or more manifest-owned probes. Probes are grouped by `smoke` and `full`, execute in the resolved repository with a bounded timeout, and retain exit code, duration, stdout hash, stderr hash, and failure reason. Probe commands never run through a shell. Missing executables are skipped by name, missing required paths fail visibly, and repository absence remains `missing` rather than being reused as stale evidence.
+
+The reference smoke profile covers the Estate Lab suite, AXM-ARC type checking, AXM-WORLD type checking, Zombie Adapter golden reconstruction, and Organ Evolution validation when those repositories are present. The full profile declares the projects' deeper test or gate commands. A failed project probe makes that organ's live adapters unavailable for route admission.
+
+## Adding an organ or experiment
+
+Extend `fixtures/estate.example.json` by separating the organ, adapter, and route objects. The organ states its bounded function, what it owns, what it refuses, its local repository names, and any probes. The adapter states one embodiment and evidence class. The route states the semantic action family, source and target adapters, authority requirements, tags, metrics, and explicit fallbacks.
+
+Add a scenario under `fixtures/scenarios/`. An equivalence scenario runs one semantic action independently through several routes and compares route-independent fingerprints. A sequence scenario commits several actions through one shared state. Both forms may include routing and fault trials. The parser rejects unknown fields, duplicate identifiers, unknown references, mismatched action authority, invalid pointers, and fallback cycles.
+
+## Evidence boundary
+
+A passing synthetic run confirms the parser, route arithmetic, authority checks, reducer, adapter non-mutation contract, equivalence comparison, injected-fault handling, receipt construction, and deterministic identifiers. A passing live probe confirms only the declared project command and the bytes retained in its receipt. A physical route remains reported or derived until a commissioned device, raw event stream, calibration record, reconnect trial, and independent replay are present. No software receipt is allowed to borrow the evidentiary status of hardware it did not exercise.
+
+The control question for every extension is whether one semantic action can enter through multiple admitted sources, remain inside one actor and authority envelope, survive route loss and ownership transfer, and reproduce the same committed state, desired outputs, causal debrief, and receipt without importing another organ's law.
