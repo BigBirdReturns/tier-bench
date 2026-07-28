@@ -50,6 +50,7 @@ jobs:
           python tests/test_playwright_computer_hardening.py
           python tests/test_task_computer_lab.py
       - name: Validate operator and project cartridge contracts
+        shell: bash
         run: |
           python -m tier_runner.playwright_computer_cli validate \
             --config experiments/task_computer/playwright.example.json \
@@ -90,7 +91,18 @@ jobs:
       - name: Install pinned Chromium runtime
         run: python -m playwright install --with-deps chromium
       - name: Run complete Playwright and project cartridge tests
+        shell: bash
         run: |
-          python tests/test_playwright_computer.py
-          python tests/test_playwright_computer_hardening.py
-          python tests/test_task_computer_lab.py
+          set -o pipefail
+          {
+            python tests/test_playwright_computer.py
+            python tests/test_playwright_computer_hardening.py
+            python tests/test_task_computer_lab.py
+          } 2>&1 | tee task-computer-test-output.txt
+      - name: Preserve Task Computer test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-computer-test-output
+          path: task-computer-test-output.txt
+          if-no-files-found: error
