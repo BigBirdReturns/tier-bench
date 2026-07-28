@@ -1,0 +1,117 @@
+name: Supplier Foundry asset pilot
+
+on:
+  push:
+    paths:
+      - 'supplier_foundry/**'
+      - '.github/workflows/supplier-foundry-asset-pilot.yml'
+  pull_request:
+    paths:
+      - 'supplier_foundry/**'
+      - '.github/workflows/supplier-foundry-asset-pilot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supplier-foundry-asset-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    name: asset commodity (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: supplier_foundry/package-lock.json
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install the exact locked suppliers
+        working-directory: supplier_foundry
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ls --all > "$RUNNER_TEMP/npm-tree.txt"
+
+      - name: Qualify the AXM-owned source and authority law
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s supplier_foundry/tests -v \
+            2>&1 | tee "$RUNNER_TEMP/supplier-tests.log"
+          python supplier_foundry/verify_asset.py \
+            supplier_foundry/fixtures/two-triangles.gltf \
+            --json "$RUNNER_TEMP/source-semantics.json"
+          sudo unshare --net -- true
+
+      - name: Run both exact providers twice under network quarantine
+        shell: bash
+        env:
+          AXM_SUPPLIER_REQUIRE_NETWORK_QUARANTINE: '1'
+          AXM_SUPPLIER_NETWORK_WRAPPER: 'sudo unshare --net --'
+        run: |
+          set -euo pipefail
+          python supplier_foundry/qualify.py \
+            --output "$RUNNER_TEMP/supplier-foundry" \
+            2>&1 | tee "$RUNNER_TEMP/qualification.log"
+
+      - name: Remove the supplier runtime and finalize from the consumer bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf supplier_foundry/node_modules
+          python "$RUNNER_TEMP/supplier-foundry/bundle/tools/verify_bundle.py" \
+            "$RUNNER_TEMP/supplier-foundry/bundle" --finalize \
+            | tee "$RUNNER_TEMP/ripout-finalize.json"
+          python "$RUNNER_TEMP/supplier-foundry/bundle/tools/verify_bundle.py" \
+            "$RUNNER_TEMP/supplier-foundry/bundle" \
+            | tee "$RUNNER_TEMP/ripout-verify.json"
+          test ! -e supplier_foundry/node_modules
+
+      - name: Run the complete Tier Bench regression once
+        if: matrix.python-version == '3.12'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+          python -m pytest -q 2>&1 | tee "$RUNNER_TEMP/tier-bench-complete.log"
+
+      - name: Require a pristine source checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          test -z "$(git status --porcelain)"
+
+      - name: Upload exact supplier, substitution, and rip-out evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: supplier-foundry-asset-python-${{ matrix.python-version }}
+          path: |
+            ${{ runner.temp }}/supplier-foundry/bundle
+            ${{ runner.temp }}/supplier-tests.log
+            ${{ runner.temp }}/source-semantics.json
+            ${{ runner.temp }}/qualification.log
+            ${{ runner.temp }}/ripout-finalize.json
+            ${{ runner.temp }}/ripout-verify.json
+            ${{ runner.temp }}/npm-tree.txt
+            ${{ runner.temp }}/tier-bench-complete.log
+          if-no-files-found: error
+          retention-days: 30
