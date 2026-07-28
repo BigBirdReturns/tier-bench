@@ -14,12 +14,18 @@ from .playwright_computer_common import (
     canonical,
     load_json,
 )
+from .task_computer_fixture_oracles import install_fixture_oracles
 from .task_computer_protocol import (
     PLAYWRIGHT_TARGET_OPS,
     PROPOSAL_SCHEMA,
     resolve_element,
     validate_proposal,
 )
+
+# Install only the explicitly labeled synthetic visual candidates used by the
+# deterministic project fixtures. This does not participate in real ScreenGhost
+# execution or claim model-derived visual evidence.
+install_fixture_oracles()
 
 
 class Planner(Protocol):
@@ -65,11 +71,19 @@ class ReferencePlanner:
                             "effect": "read",
                             "intent": f"Wait for the current page to expose the target for {step['id']}",
                             "target": None,
-                            "args": {"seconds": min(max(step["retry_seconds"] / 3.0, 0.1), 1.0)},
+                            "args": {
+                                "seconds": min(
+                                    max(step["retry_seconds"] / 3.0, 0.1),
+                                    1.0,
+                                )
+                            },
                         }
                     ],
                     "done": False,
-                    "memory": f"The target for reference step {step['id']} is not yet present. The page may still be settling.",
+                    "memory": (
+                        f"The target for reference step {step['id']} is not yet present. "
+                        "The page may still be settling."
+                    ),
                     "next_goal": step["intent"],
                 }
                 return validate_proposal(proposal, packet)
@@ -91,7 +105,10 @@ class ReferencePlanner:
                 }
             ],
             "done": False,
-            "memory": f"Completed {self.index - 1} of {len(plan)} reference steps before this proposal.",
+            "memory": (
+                f"Completed {self.index - 1} of {len(plan)} reference steps "
+                "before this proposal."
+            ),
             "next_goal": step["intent"],
         }
         return validate_proposal(proposal, packet)
