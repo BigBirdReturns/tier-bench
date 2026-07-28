@@ -4,6 +4,9 @@ on:
   push:
     branches: [agent/axm-estate-lab]
     paths: ['.estate-lab-publication-trigger']
+  pull_request:
+    branches: [main]
+    paths: ['.estate-lab-publication-trigger']
 
 permissions:
   contents: write
