@@ -34,7 +34,7 @@
     "root_env": "TIER_EXCHANGE_ROOT",
     "poll_seconds": 2.0,
     "heartbeat_seconds": 5.0,
-    "lease_seconds": 21600.0,
+    "lease_seconds": 600.0,
     "copy_checkpoints": true,
     "cross_verify": true,
     "verification_loss_tolerance": 0.005,
