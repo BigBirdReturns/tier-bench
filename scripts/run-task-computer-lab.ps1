@@ -10,6 +10,8 @@ param(
     [string]$RunDir,
     [string]$PlannerCommand,
     [string]$PlannerExchange,
+    [string]$CriticCommand,
+    [string]$CriticExchange,
     [string]$Python = "python",
     [switch]$Headed,
     [switch]$Trace
@@ -40,6 +42,8 @@ switch ($Command) {
         if (-not $Trace) { $Arguments += "--no-trace" }
         if ($PlannerCommand) { $Arguments += @("--planner-command", $PlannerCommand) }
         if ($PlannerExchange) { $Arguments += @("--planner-exchange", $PlannerExchange) }
+        if ($CriticCommand) { $Arguments += @("--critic-command", $CriticCommand) }
+        if ($CriticExchange) { $Arguments += @("--critic-exchange", $CriticExchange) }
     }
     "suite" {
         $Arguments += @("suite", "--catalog", $Catalog, "--out-root", $OutRoot)
