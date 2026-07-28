@@ -30,6 +30,7 @@ tiermemory = "tier_runner.conditional_memory_cli:main"
 tiermemorycluster = "tier_runner.conditional_memory_exchange_cli:main"
 tierbrowser = "tier_runner.playwright_computer_cli:main"
 tiertaskcomputer = "tier_runner.task_computer_cli:main"
+tiertaskworker = "tier_runner.task_computer_worker_cli:main"
 
 [build-system]
 requires = ["setuptools>=61"]
