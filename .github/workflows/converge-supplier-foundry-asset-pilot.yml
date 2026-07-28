@@ -1,0 +1,93 @@
+name: Converge Supplier Foundry asset pilot
+
+on:
+  push:
+    branches:
+      - agent/supplier-foundry-asset-pilot
+    paths:
+      - '.github/workflows/converge-supplier-foundry-asset-pilot.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/converge-supplier-foundry-asset-pilot.yml'
+      - 'supplier_foundry/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: converge-supplier-foundry-asset-pilot
+  cancel-in-progress: true
+
+jobs:
+  converge:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/supplier-foundry-asset-pilot
+          fetch-depth: 0
+          show-progress: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Generate the exact transitive package lock
+        working-directory: supplier_foundry
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm ls --all
+
+      - name: Qualify source law and the network namespace
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s supplier_foundry/tests -v
+          python supplier_foundry/verify_asset.py supplier_foundry/fixtures/two-triangles.gltf \
+            --json "$RUNNER_TEMP/source-semantics.json"
+          sudo unshare --net -- true
+
+      - name: Run both exact suppliers twice under network quarantine
+        shell: bash
+        env:
+          AXM_SUPPLIER_REQUIRE_NETWORK_QUARANTINE: '1'
+          AXM_SUPPLIER_NETWORK_WRAPPER: 'sudo unshare --net --'
+        run: |
+          set -euo pipefail
+          python supplier_foundry/qualify.py --output "$RUNNER_TEMP/supplier-foundry"
+
+      - name: Remove every supplier and verify the consumer bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf supplier_foundry/node_modules
+          python "$RUNNER_TEMP/supplier-foundry/bundle/tools/verify_bundle.py" \
+            "$RUNNER_TEMP/supplier-foundry/bundle" --finalize \
+            | tee "$RUNNER_TEMP/ripout-finalize.json"
+          python "$RUNNER_TEMP/supplier-foundry/bundle/tools/verify_bundle.py" \
+            "$RUNNER_TEMP/supplier-foundry/bundle" \
+            | tee "$RUNNER_TEMP/ripout-verify.json"
+          test ! -e supplier_foundry/node_modules
+
+      - name: Publish the exact lock and remove this convergence carrier
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/converge-supplier-foundry-asset-pilot.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add supplier_foundry/package-lock.json
+          git diff --cached --check
+          git commit -m 'Pin and qualify the first Supplier Foundry providers'
+          git push origin HEAD:agent/supplier-foundry-asset-pilot
