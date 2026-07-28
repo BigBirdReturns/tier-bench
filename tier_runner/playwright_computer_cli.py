@@ -12,6 +12,7 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from .playwright_computer import PlaywrightComputer
 from .playwright_computer_common import (
     EventLedger,
     PlaywrightComputerError,
@@ -20,7 +21,6 @@ from .playwright_computer_common import (
     write_json,
 )
 from .playwright_computer_protocol import validate_config
-from .playwright_computer_runtime import PlaywrightComputer
 from .playwright_computer_server import serve_browser_computer
 
 
@@ -58,7 +58,16 @@ def parser() -> argparse.ArgumentParser:
     verify.add_argument("--config", type=Path, required=True)
     verify.add_argument("--root", type=Path, required=True)
 
-    for name in ("status", "observe", "events", "takeover", "release", "shutdown", "act", "batch"):
+    for name in (
+        "status",
+        "observe",
+        "events",
+        "takeover",
+        "release",
+        "shutdown",
+        "act",
+        "batch",
+    ):
         command = commands.add_parser(name)
         command.add_argument("--url", default="http://127.0.0.1:8788")
         command.add_argument("--token-env", default="TIER_BROWSER_TOKEN")
@@ -144,7 +153,10 @@ async def _run_batch(args: argparse.Namespace) -> dict[str, Any]:
 
 async def _verify(args: argparse.Namespace) -> dict[str, Any]:
     config = validate_config(load_json(args.config), root=args.root)
-    ledger = EventLedger(args.root.resolve() / config["paths"]["artifacts"] / "events.jsonl", config["id"])
+    ledger = EventLedger(
+        args.root.resolve() / config["paths"]["artifacts"] / "events.jsonl",
+        config["id"],
+    )
     errors: list[str] = []
     ledger_report = ledger.verify()
     if not ledger_report["ok"]:
@@ -152,7 +164,9 @@ async def _verify(args: argparse.Namespace) -> dict[str, Any]:
     action_root = args.root.resolve() / config["paths"]["artifacts"] / "actions"
     for path in sorted(action_root.glob("*.json")) if action_root.exists() else []:
         value = load_json(path)
-        expected = hash_json({key: item for key, item in value.items() if key != "receipt_sha256"})
+        expected = hash_json(
+            {key: item for key, item in value.items() if key != "receipt_sha256"}
+        )
         if value.get("receipt_sha256") != expected:
             errors.append(f"action receipt hash does not verify: {path.name}")
     return {
@@ -169,7 +183,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "validate":
             config = validate_config(load_json(args.config), root=args.root)
-            write_json(None, {"ok": True, "config": config, "config_sha256": hash_json(config)})
+            write_json(
+                None,
+                {"ok": True, "config": config, "config_sha256": hash_json(config)},
+            )
             return 0
         if args.command == "serve":
             if not 0 <= args.port <= 65535:
@@ -202,9 +219,19 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "status":
             result = _request(url=args.url, token=token, path="/healthz")
         elif args.command == "observe":
-            result = _request(url=args.url, token=token, path="/observe", method="POST", body={})
+            result = _request(
+                url=args.url,
+                token=token,
+                path="/observe",
+                method="POST",
+                body={},
+            )
         elif args.command == "events":
-            result = _request(url=args.url, token=token, path=f"/events?after={args.after}")
+            result = _request(
+                url=args.url,
+                token=token,
+                path=f"/events?after={args.after}",
+            )
         elif args.command == "takeover":
             result = _request(
                 url=args.url,
@@ -222,7 +249,13 @@ def main(argv: list[str] | None = None) -> int:
                 body={"lease_id": args.lease_id},
             )
         elif args.command == "shutdown":
-            result = _request(url=args.url, token=token, path="/shutdown", method="POST", body={})
+            result = _request(
+                url=args.url,
+                token=token,
+                path="/shutdown",
+                method="POST",
+                body={},
+            )
         elif args.command == "act":
             result = _request(
                 url=args.url,
@@ -248,6 +281,7 @@ def main(argv: list[str] | None = None) -> int:
     except (PlaywrightComputerError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"tierbrowser: {exc}", file=sys.stderr)
         return 2
+    return 2
 
 
 if __name__ == "__main__":
