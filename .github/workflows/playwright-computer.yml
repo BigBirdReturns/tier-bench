@@ -43,11 +43,13 @@ jobs:
           tier_runner/task_computer_cli.py
           tests/test_playwright_computer.py
           tests/test_playwright_computer_hardening.py
+          tests/test_playwright_effect_boundaries.py
           tests/test_task_computer_lab.py
       - name: Run zero-browser controls
         run: |
           python tests/test_playwright_computer.py
           python tests/test_playwright_computer_hardening.py
+          python tests/test_playwright_effect_boundaries.py
           python tests/test_task_computer_lab.py
       - name: Validate operator and project cartridge contracts
         shell: bash
@@ -97,6 +99,7 @@ jobs:
           {
             python tests/test_playwright_computer.py
             python tests/test_playwright_computer_hardening.py
+            python tests/test_playwright_effect_boundaries.py
             python tests/test_task_computer_lab.py
           } 2>&1 | tee task-computer-test-output.txt
       - name: Preserve Task Computer test output
