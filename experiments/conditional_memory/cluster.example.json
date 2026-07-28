@@ -1,0 +1,43 @@
+{
+  "schema": "tier-bench/conditional-memory-cluster@1",
+  "id": "home-frontier-dual-egpu-v1",
+  "coordinator": {
+    "id": "desktop-4060",
+    "hostname_env": "TIER_DESKTOP_HOSTNAME",
+    "require_hostname": false,
+    "service_gpu_uuid_env": "TIER_GPU_4060_UUID",
+    "service_gpu_expected_name_contains": "4060"
+  },
+  "worker": {
+    "id": "lg-gram-dual3090",
+    "hostname_env": "TIER_GRAM_HOSTNAME",
+    "require_hostname": false,
+    "seats": [
+      {
+        "id": "gpu.3090-a",
+        "kind": "cuda",
+        "uuid_env": "TIER_GPU_3090_A_UUID",
+        "expected_name_contains": "3090",
+        "require_identity": true
+      },
+      {
+        "id": "gpu.3090-b",
+        "kind": "cuda",
+        "uuid_env": "TIER_GPU_3090_B_UUID",
+        "expected_name_contains": "3090",
+        "require_identity": true
+      }
+    ]
+  },
+  "exchange": {
+    "kind": "shared_filesystem",
+    "root_env": "TIER_EXCHANGE_ROOT",
+    "poll_seconds": 2.0,
+    "heartbeat_seconds": 5.0,
+    "lease_seconds": 21600.0,
+    "copy_checkpoints": true,
+    "cross_verify": true,
+    "verification_loss_tolerance": 0.005,
+    "require_top_token_match": true
+  }
+}

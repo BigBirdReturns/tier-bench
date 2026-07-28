@@ -54,7 +54,6 @@
   },
   "topology": {
     "assignment": "paired_crossover",
-    "service_gpu_uuid_env": "TIER_GPU_4060_UUID",
     "seats": [
       {
         "id": "gpu.3090-a",
@@ -70,8 +69,7 @@
         "expected_name_contains": "3090",
         "require_identity": true
       }
-    ],
-    "service_gpu_expected_name_contains": "4060"
+    ]
   },
   "arms": [
     {
@@ -178,7 +176,7 @@
         "batch_size": 4,
         "warmup_steps": 1,
         "eval_interval": 2,
-        "save_checkpoint": false
+        "save_checkpoint": true
       },
       "measurement": {
         "warmup_steps": 1,
