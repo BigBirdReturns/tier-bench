@@ -1,0 +1,120 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "AXM Supplier Foundry duplicate-geometry fixture"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "SupplierFoundryFixture",
+      "nodes": [0, 1]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "TriangleA",
+      "mesh": 0
+    },
+    {
+      "name": "TriangleB",
+      "mesh": 1,
+      "translation": [2, 0, 0]
+    }
+  ],
+  "meshes": [
+    {
+      "name": "TriangleMeshA",
+      "primitives": [
+        {
+          "attributes": {"POSITION": 0},
+          "indices": 1,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "TriangleMeshB",
+      "primitives": [
+        {
+          "attributes": {"POSITION": 2},
+          "indices": 3,
+          "mode": 4
+        }
+      ]
+    },
+    {
+      "name": "UnusedDuplicateMesh",
+      "primitives": [
+        {
+          "attributes": {"POSITION": 4},
+          "indices": 5,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 132,
+      "uri": "data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAgD8AAAAAAAABAAIAAAAAAAAAAAAAAAAAAAAAAIA/AAAAAAAAAAAAAAAAAACAPwAAAAAAAAEAAgAAAAAAAAAAAAAAAAAAAAAAgD8AAAAAAAAAAAAAAAAAAIA/AAAAAAAAAQACAAAA"
+    }
+  ],
+  "bufferViews": [
+    {"buffer": 0, "byteOffset": 0, "byteLength": 36, "target": 34962},
+    {"buffer": 0, "byteOffset": 36, "byteLength": 6, "target": 34963},
+    {"buffer": 0, "byteOffset": 44, "byteLength": 36, "target": 34962},
+    {"buffer": 0, "byteOffset": 80, "byteLength": 6, "target": 34963},
+    {"buffer": 0, "byteOffset": 88, "byteLength": 36, "target": 34962},
+    {"buffer": 0, "byteOffset": 124, "byteLength": 6, "target": 34963}
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 3,
+      "type": "VEC3",
+      "min": [0, 0, 0],
+      "max": [1, 1, 0]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5123,
+      "count": 3,
+      "type": "SCALAR",
+      "min": [0],
+      "max": [2]
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5126,
+      "count": 3,
+      "type": "VEC3",
+      "min": [0, 0, 0],
+      "max": [1, 1, 0]
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5123,
+      "count": 3,
+      "type": "SCALAR",
+      "min": [0],
+      "max": [2]
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5126,
+      "count": 3,
+      "type": "VEC3",
+      "min": [0, 0, 0],
+      "max": [1, 1, 0]
+    },
+    {
+      "bufferView": 5,
+      "componentType": 5123,
+      "count": 3,
+      "type": "SCALAR",
+      "min": [0],
+      "max": [2]
+    }
+  ]
+}
