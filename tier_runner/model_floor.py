@@ -310,23 +310,23 @@ def load_observations(paths: Iterable[Path]) -> list[dict[str, Any]]:
 
 
 def _comparison_key(benchmark: dict[str, Any]) -> str:
-    return hash_json(
-        {
-            key: benchmark.get(key)
-            for key in (
-                "id",
-                "revision",
-                "task_family",
-                "metric",
-                "direction",
-                "unit",
-                "scaffold",
-                "tools",
-                "attempts",
-                "context_policy",
-            )
-        }
-    )
+    fields = {
+        key: benchmark.get(key)
+        for key in (
+            "id",
+            "revision",
+            "task_family",
+            "metric",
+            "direction",
+            "unit",
+            "scaffold",
+            "tools",
+            "attempts",
+            "context_policy",
+        )
+    }
+    fields["dimensions"] = dict(sorted((benchmark.get("dimensions") or {}).items()))
+    return hash_json(fields)
 
 
 def observations_from_waterline(

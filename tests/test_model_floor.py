@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import io
 import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+from urllib.error import HTTPError
+from urllib.parse import parse_qs, urlsplit
 
 from tier_runner.model_floor import (
     compute_delta_report,
@@ -21,7 +25,7 @@ from tier_runner.model_floor_common import (
     hash_json,
     read_jsonl,
 )
-from tier_runner.model_floor_external import sync_sources, validate_source_config
+from tier_runner.model_floor_external import _request, sync_sources, validate_source_config
 from tier_runner.model_identity import (
     audit_identities,
     registry_from_models_json,
@@ -555,6 +559,224 @@ class ModelFloorTests(unittest.TestCase):
             self.assertEqual(row["result"]["cost_usd"], 12.0)
 
 
+    def test_http_json_paginates_and_preserves_comparison_dimensions(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            temp = Path(temporary)
+            config_path = temp / "sources.json"
+            config = {
+                "schema": SOURCE_CONFIG_SCHEMA,
+                "id": "paged-fixture",
+                "excerpt_chars": 500,
+                "retention_days": 30,
+                "sources": [
+                    {
+                        "id": "paged-leaderboard",
+                        "kind": "http_json",
+                        "enabled": True,
+                        "evidence_tier": "official_benchmark",
+                        "verified": True,
+                        "training_use": "prohibited",
+                        "url": (
+                            "https://example.invalid/rows?"
+                            "dataset=fixture&config=latest&split=latest&offset=0&length=2"
+                        ),
+                        "benchmark": {
+                            "id": "fixture/arena",
+                            "revision": "rolling",
+                            "task_family": "human-preference",
+                            "metric": "rating",
+                            "direction": "higher",
+                            "unit": "rating",
+                            "scaffold": "pairwise",
+                            "tools": "managed",
+                            "attempts": 1,
+                            "context_policy": "managed",
+                        },
+                        "mapping": {
+                            "records": "rows",
+                            "id": "row.model_name",
+                            "model": "row.model_name",
+                            "score": "row.rating",
+                            "revision": "row.publish_date",
+                            "dimensions": {"category": "row.category"},
+                        },
+                        "pagination": {
+                            "kind": "offset_length",
+                            "offset_param": "offset",
+                            "length_param": "length",
+                            "page_size": 2,
+                            "start_offset": 0,
+                            "max_pages": 5,
+                            "total_path": "num_rows_total",
+                            "partial_path": "partial",
+                            "allow_partial": False,
+                        },
+                    }
+                ],
+            }
+            pages = {
+                0: {
+                    "rows": [
+                        {
+                            "row_idx": 0,
+                            "row": {
+                                "model_name": "Claude Opus 5",
+                                "rating": 1300.0,
+                                "category": "overall",
+                                "publish_date": "2026-07-27",
+                            },
+                        },
+                        {
+                            "row_idx": 1,
+                            "row": {
+                                "model_name": "Claude Opus 5",
+                                "rating": 1275.0,
+                                "category": "coding",
+                                "publish_date": "2026-07-27",
+                            },
+                        },
+                    ],
+                    "num_rows_total": 3,
+                    "partial": False,
+                },
+                2: {
+                    "rows": [
+                        {
+                            "row_idx": 2,
+                            "row": {
+                                "model_name": "Claude Fable 5",
+                                "rating": 1320.0,
+                                "category": "overall",
+                                "publish_date": "2026-07-27",
+                            },
+                        }
+                    ],
+                    "num_rows_total": 3,
+                    "partial": False,
+                },
+            }
+            observed_offsets: list[int] = []
+
+            def fake_request_json(url: str, **_: object):
+                query = parse_qs(urlsplit(url).query)
+                offset = int(query["offset"][0])
+                observed_offsets.append(offset)
+                value = pages[offset]
+                payload = json.dumps(value).encode("utf-8")
+                return value, {"etag": f"page-{offset}"}, 200, payload
+
+            with patch(
+                "tier_runner.model_floor_external._request_json",
+                side_effect=fake_request_json,
+            ):
+                receipt = sync_sources(
+                    config,
+                    config_path=config_path,
+                    state_dir=temp / "state",
+                )
+
+            self.assertEqual(observed_offsets, [0, 2])
+            self.assertEqual(receipt["totals"]["sources_succeeded"], 1)
+            self.assertEqual(len(receipt["sources"][0]["snapshots"]), 2)
+            observations = read_jsonl(temp / "state" / "observations.jsonl")
+            self.assertEqual(len(observations), 3)
+            opus = [
+                row
+                for row in observations
+                if row["model"]["declared_id"] == "Claude Opus 5"
+            ]
+            self.assertEqual(len(opus), 2)
+            self.assertEqual(
+                {row["benchmark"]["dimensions"]["category"] for row in opus},
+                {"overall", "coding"},
+            )
+            self.assertEqual(
+                len({row["benchmark"]["comparison_key"] for row in opus}),
+                2,
+            )
+            self.assertEqual(len({row["id"] for row in opus}), 2)
+            for row in observations:
+                validate_observation(row)
+
+    def test_http_json_partial_dataset_fails_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            temp = Path(temporary)
+            config_path = temp / "sources.json"
+            config = {
+                "schema": SOURCE_CONFIG_SCHEMA,
+                "id": "partial-fixture",
+                "excerpt_chars": 500,
+                "retention_days": 30,
+                "sources": [
+                    {
+                        "id": "partial-leaderboard",
+                        "kind": "http_json",
+                        "enabled": True,
+                        "evidence_tier": "official_benchmark",
+                        "verified": True,
+                        "training_use": "prohibited",
+                        "url": "https://example.invalid/rows?offset=0&length=100",
+                        "benchmark": {
+                            "id": "fixture/partial",
+                            "revision": "rolling",
+                            "task_family": "human-preference",
+                            "metric": "rating",
+                            "direction": "higher",
+                            "unit": "rating",
+                            "scaffold": "pairwise",
+                            "tools": "managed",
+                            "attempts": 1,
+                            "context_policy": "managed",
+                        },
+                        "mapping": {
+                            "records": "rows",
+                            "id": "row.model_name",
+                            "model": "row.model_name",
+                            "score": "row.rating",
+                        },
+                        "pagination": {
+                            "kind": "offset_length",
+                            "page_size": 100,
+                            "max_pages": 2,
+                            "total_path": "num_rows_total",
+                            "partial_path": "partial",
+                            "allow_partial": False,
+                        },
+                    }
+                ],
+            }
+            value = {
+                "rows": [
+                    {
+                        "row_idx": 0,
+                        "row": {"model_name": "Claude Opus 5", "rating": 1300.0},
+                    }
+                ],
+                "num_rows_total": 1000,
+                "partial": True,
+            }
+
+            def fake_request_json(url: str, **_: object):
+                payload = json.dumps(value).encode("utf-8")
+                return value, {}, 200, payload
+
+            with patch(
+                "tier_runner.model_floor_external._request_json",
+                side_effect=fake_request_json,
+            ):
+                receipt = sync_sources(
+                    config,
+                    config_path=config_path,
+                    state_dir=temp / "state",
+                )
+
+            self.assertEqual(receipt["totals"]["sources_failed"], 1)
+            self.assertIn("partial dataset view", receipt["errors"][0]["error"])
+            self.assertEqual(
+                read_jsonl(temp / "state" / "observations.jsonl"),
+                [],
+            )
+
     def test_registry_overrides_add_aliases_and_models(self) -> None:
         converted = registry_from_models_json(
             {
@@ -643,7 +865,45 @@ class ModelFloorTests(unittest.TestCase):
             self.assertIn("MultipleInstances IgnoreNew", script)
             self.assertIn("tier_runner.model_floor_cli refresh", script)
             self.assertIn("--protocol-root", script)
-            self.assertIn("--reports-root", script)
+        self.assertIn("--reports-root", script)
+
+    def test_http_429_without_retry_after_uses_bounded_cooldown(self) -> None:
+        class Response:
+            status = 200
+            headers: dict[str, str] = {}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_: object) -> None:
+                return None
+
+            def read(self) -> bytes:
+                return b'{"ok": true}'
+
+        throttled = HTTPError(
+            "https://example.invalid/rows",
+            429,
+            "rate limited",
+            {},
+            io.BytesIO(b"rate limited"),
+        )
+        with (
+            patch(
+                "tier_runner.model_floor_external.urlopen",
+                side_effect=[throttled, Response()],
+            ),
+            patch("tier_runner.model_floor_external.time.sleep") as sleep,
+        ):
+            payload, headers, status = _request(
+                "https://example.invalid/rows",
+                retries=1,
+            )
+
+        self.assertEqual(payload, b'{"ok": true}')
+        self.assertEqual(headers, {})
+        self.assertEqual(status, 200)
+        sleep.assert_called_once_with(60.0)
 
 
 if __name__ == "__main__":

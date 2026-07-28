@@ -87,7 +87,22 @@
         "score": "row.rating",
         "rank": "row.rank",
         "sample_size": "row.vote_count",
-        "revision": "row.leaderboard_publish_date"
+        "revision": "row.leaderboard_publish_date",
+        "dimensions": {
+          "category": "row.category"
+        }
+      },
+      "pagination": {
+        "kind": "offset_length",
+        "offset_param": "offset",
+        "length_param": "length",
+        "page_size": 100,
+        "start_offset": 0,
+        "max_pages": 200,
+        "total_path": "num_rows_total",
+        "partial_path": "partial",
+        "allow_partial": false,
+        "request_interval_seconds": 2.0
       }
     },
     {
@@ -118,7 +133,22 @@
         "score": "row.score",
         "rank": "row.rank",
         "sample_size": "row.session_count",
-        "revision": "row.leaderboard_publish_date"
+        "revision": "row.leaderboard_publish_date",
+        "dimensions": {
+          "category": "row.category"
+        }
+      },
+      "pagination": {
+        "kind": "offset_length",
+        "offset_param": "offset",
+        "length_param": "length",
+        "page_size": 100,
+        "start_offset": 0,
+        "max_pages": 200,
+        "total_path": "num_rows_total",
+        "partial_path": "partial",
+        "allow_partial": false,
+        "request_interval_seconds": 2.0
       }
     },
     {
@@ -149,7 +179,22 @@
         "score": "row.rating",
         "rank": "row.rank",
         "sample_size": "row.vote_count",
-        "revision": "row.leaderboard_publish_date"
+        "revision": "row.leaderboard_publish_date",
+        "dimensions": {
+          "category": "row.category"
+        }
+      },
+      "pagination": {
+        "kind": "offset_length",
+        "offset_param": "offset",
+        "length_param": "length",
+        "page_size": 100,
+        "start_offset": 0,
+        "max_pages": 200,
+        "total_path": "num_rows_total",
+        "partial_path": "partial",
+        "allow_partial": false,
+        "request_interval_seconds": 2.0
       }
     },
     {
@@ -180,7 +225,22 @@
         "score": "row.rating",
         "rank": "row.rank",
         "sample_size": "row.vote_count",
-        "revision": "row.leaderboard_publish_date"
+        "revision": "row.leaderboard_publish_date",
+        "dimensions": {
+          "category": "row.category"
+        }
+      },
+      "pagination": {
+        "kind": "offset_length",
+        "offset_param": "offset",
+        "length_param": "length",
+        "page_size": 100,
+        "start_offset": 0,
+        "max_pages": 200,
+        "total_path": "num_rows_total",
+        "partial_path": "partial",
+        "allow_partial": false,
+        "request_interval_seconds": 2.0
       }
     },
     {
@@ -211,7 +271,22 @@
         "score": "row.rating",
         "rank": "row.rank",
         "sample_size": "row.vote_count",
-        "revision": "row.leaderboard_publish_date"
+        "revision": "row.leaderboard_publish_date",
+        "dimensions": {
+          "category": "row.category"
+        }
+      },
+      "pagination": {
+        "kind": "offset_length",
+        "offset_param": "offset",
+        "length_param": "length",
+        "page_size": 100,
+        "start_offset": 0,
+        "max_pages": 200,
+        "total_path": "num_rows_total",
+        "partial_path": "partial",
+        "allow_partial": false,
+        "request_interval_seconds": 2.0
       }
     },
     {
