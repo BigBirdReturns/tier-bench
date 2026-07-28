@@ -27,7 +27,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install dependency-free package
         run: python -m pip install -e .
-      - name: Compile Playwright computer surfaces
+      - name: Compile Playwright and Task Computer surfaces
         run: >-
           python -m py_compile
           tier_runner/playwright_computer_common.py
@@ -36,33 +36,47 @@ jobs:
           tier_runner/playwright_computer.py
           tier_runner/playwright_computer_server.py
           tier_runner/playwright_computer_cli.py
+          tier_runner/task_computer_protocol.py
+          tier_runner/task_computer_planner.py
+          tier_runner/task_computer_fixtures.py
+          tier_runner/task_computer_lab.py
+          tier_runner/task_computer_cli.py
           tests/test_playwright_computer.py
           tests/test_playwright_computer_hardening.py
+          tests/test_task_computer_lab.py
       - name: Run zero-browser controls
         run: |
           python tests/test_playwright_computer.py
           python tests/test_playwright_computer_hardening.py
-      - name: Validate operator contract
-        run: >-
-          python -m tier_runner.playwright_computer_cli validate
-          --config experiments/task_computer/playwright.example.json
-          --root playwright-computer-ci-root
-      - name: Parse Windows launcher
+          python tests/test_task_computer_lab.py
+      - name: Validate operator and project cartridge contracts
+        run: |
+          python -m tier_runner.playwright_computer_cli validate \
+            --config experiments/task_computer/playwright.example.json \
+            --root playwright-computer-ci-root
+          python -m tier_runner.task_computer_cli list \
+            --catalog experiments/task_computer/project_scenarios.json
+      - name: Parse Windows launchers
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $Tokens = $null
-          $Errors = $null
-          [void][System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path scripts/run-playwright-computer.ps1),
-            [ref]$Tokens,
-            [ref]$Errors
-          )
-          if ($Errors.Count -gt 0) {
-            $Errors | Format-List | Out-String | Write-Error
-            exit 1
+          foreach ($Path in @(
+            "scripts/run-playwright-computer.ps1",
+            "scripts/run-task-computer-lab.ps1"
+          )) {
+            $Tokens = $null
+            $Errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $Path),
+              [ref]$Tokens,
+              [ref]$Errors
+            )
+            if ($Errors.Count -gt 0) {
+              $Errors | Format-List | Out-String | Write-Error
+              exit 1
+            }
           }
-          Write-Host "PLAYWRIGHT_COMPUTER_POWERSHELL_OK"
+          Write-Host "TASK_COMPUTER_POWERSHELL_OK"
 
   chromium-integration:
     runs-on: ubuntu-latest
@@ -71,11 +85,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install Playwright computer
+      - name: Install browser computer
         run: python -m pip install -e ".[browser]"
       - name: Install pinned Chromium runtime
         run: python -m playwright install --with-deps chromium
-      - name: Run complete Playwright computer tests
+      - name: Run complete Playwright and project cartridge tests
         run: |
           python tests/test_playwright_computer.py
           python tests/test_playwright_computer_hardening.py
+          python tests/test_task_computer_lab.py
