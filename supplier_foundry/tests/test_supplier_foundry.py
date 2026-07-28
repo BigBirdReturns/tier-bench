@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import struct
 import sys
 import tempfile
 import unittest
@@ -46,8 +47,6 @@ class SupplierFoundryTests(unittest.TestCase):
         header, encoded = uri.split(",", 1)
         payload = bytearray(base64.b64decode(encoded))
         # Change TriangleA's second vertex x coordinate from 1.0 to 1.5.
-        payload[12:16] = (1.5).hex().encode()[:0]  # keep the mutation explicit below
-        import struct
         struct.pack_into("<f", payload, 12, 1.5)
         original["buffers"][0]["uri"] = header + "," + base64.b64encode(payload).decode("ascii")
         with tempfile.TemporaryDirectory() as tmp:
