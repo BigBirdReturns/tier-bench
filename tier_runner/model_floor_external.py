@@ -73,6 +73,8 @@ MODEL_TOKEN = re.compile(
     r"\b(?:claude|opus|fable|sonnet|haiku|gpt|gemini|qwen|kimi|deepseek|mistral|llama|glm|minimax)[A-Za-z0-9._:/+-]*\b",
     re.I,
 )
+HF_ROWS_HOST = "datasets-server.huggingface.co"
+HF_ROWS_PATH = "/rows"
 
 
 def _clean_text(value: Any, limit: int) -> str:
@@ -82,6 +84,15 @@ def _clean_text(value: Any, limit: int) -> str:
     text = re.sub(r"<[^>]+>", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
     return text[:limit]
+
+
+def _is_hf_rows_url(url: str) -> bool:
+    parsed = urlsplit(url)
+    return (
+        parsed.scheme.lower() == "https"
+        and (parsed.hostname or "").lower() == HF_ROWS_HOST
+        and parsed.path.rstrip("/") == HF_ROWS_PATH
+    )
 
 
 def _request(
@@ -388,6 +399,16 @@ def validate_source_config(raw: Any, *, config_path: Path | None = None) -> dict
                         high=60.0,
                     ),
                 }
+            if (
+                kind == "http_json"
+                and normalized["enabled"]
+                and _is_hf_rows_url(normalized["url"])
+                and "pagination" not in normalized
+            ):
+                raise ModelFloorError(
+                    f"{identifier} must declare pagination for the official "
+                    f"{HF_ROWS_HOST}{HF_ROWS_PATH} endpoint"
+                )
         elif kind == "atom":
             normalized["urls"] = [
                 need_text(item, f"{identifier}.urls[]", limit=2000)
@@ -1111,7 +1132,10 @@ def _sync_http_json(
     receipts: list[dict[str, Any]] = []
     offset = pagination["start_offset"]
     expected_total: int | None = None
+    expected_rows: int | None = None
+    rows_seen = 0
     completed = False
+    is_hf_rows = _is_hf_rows_url(source["url"])
     for _ in range(pagination["max_pages"]):
         uri = _pagination_url(source["url"], pagination, offset)
         value, response_headers, status, payload = _request_json(uri, headers=headers)
@@ -1126,13 +1150,31 @@ def _sync_http_json(
         receipts.append(receipt)
         partial_path = pagination.get("partial_path")
         partial = nested_get(value, partial_path) if partial_path else False
-        if partial is True and not pagination["allow_partial"]:
+        if (
+            partial_path
+            and partial is not False
+            and not pagination["allow_partial"]
+        ):
             raise ModelFloorError(
-                f"{source['id']} returned a partial dataset view at offset {offset}"
+                f"{source['id']} returned a partial dataset view or lacks "
+                f"partial=false attestation at offset {offset}"
             )
         total = _pagination_total(source, value, pagination)
         if expected_total is None:
             expected_total = total
+            if offset > total:
+                raise ModelFloorError(
+                    f"{source['id']} start_offset={offset} exceeds total {total}"
+                )
+            expected_rows = total - offset
+            required_pages = (
+                expected_rows + pagination["page_size"] - 1
+            ) // pagination["page_size"]
+            if required_pages > pagination["max_pages"]:
+                raise ModelFloorError(
+                    f"{source['id']} requires {required_pages} pages, exceeding "
+                    f"max_pages={pagination['max_pages']}"
+                )
         elif total != expected_total:
             raise ModelFloorError(
                 f"{source['id']} total row count changed during pagination: "
@@ -1142,6 +1184,26 @@ def _sync_http_json(
         records = nested_get(value, records_path) if records_path else value
         if not isinstance(records, list):
             raise ModelFloorError(f"{source['id']} mapped records must be an array")
+        if len(records) > pagination["page_size"]:
+            raise ModelFloorError(
+                f"{source['id']} returned {len(records)} rows at offset {offset} "
+                f"for page_size={pagination['page_size']}"
+            )
+        if is_hf_rows:
+            for position, record in enumerate(records):
+                if (
+                    not isinstance(record, dict)
+                    or record.get("row_idx") != offset + position
+                ):
+                    raise ModelFloorError(
+                        f"{source['id']} does not attest contiguous row_idx "
+                        f"at offset {offset + position}"
+                    )
+        rows_seen += len(records)
+        if expected_rows is not None and rows_seen > expected_rows:
+            raise ModelFloorError(
+                f"{source['id']} pagination exceeded declared total {expected_total}"
+            )
         observations.extend(
             _mapped_observations(
                 source,
@@ -1150,8 +1212,7 @@ def _sync_http_json(
                 uri=uri,
             )
         )
-        next_offset = offset + pagination["page_size"]
-        if next_offset >= total:
+        if rows_seen == expected_rows:
             completed = True
             break
         if not records:
@@ -1160,7 +1221,7 @@ def _sync_http_json(
             )
         if pagination["request_interval_seconds"]:
             time.sleep(pagination["request_interval_seconds"])
-        offset = next_offset
+        offset += pagination["page_size"]
     if not completed:
         raise ModelFloorError(
             f"{source['id']} exceeded pagination max_pages={pagination['max_pages']} "

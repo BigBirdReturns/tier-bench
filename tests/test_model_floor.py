@@ -19,6 +19,7 @@ from tier_runner.model_floor import (
 from tier_runner.model_floor_cli import windows_schedule_script
 from tier_runner.model_floor_common import (
     FLOOR_CONFIG_SCHEMA,
+    ModelFloorError,
     OBSERVATION_SCHEMA,
     REGISTRY_SCHEMA,
     SOURCE_CONFIG_SCHEMA,
@@ -772,6 +773,118 @@ class ModelFloorTests(unittest.TestCase):
 
             self.assertEqual(receipt["totals"]["sources_failed"], 1)
             self.assertIn("partial dataset view", receipt["errors"][0]["error"])
+            self.assertEqual(
+                read_jsonl(temp / "state" / "observations.jsonl"),
+                [],
+            )
+
+    def test_enabled_hf_rows_requires_explicit_pagination(self) -> None:
+        config = json.loads(
+            Path("experiments/model_floor/sources.example.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        source = next(
+            row
+            for row in config["sources"]
+            if row["id"] == "lmarena-text-style-control-latest"
+        )
+        source.pop("pagination")
+        config["sources"] = [source]
+        with self.assertRaisesRegex(ModelFloorError, "must declare pagination"):
+            validate_source_config(config)
+
+    def test_hf_rows_rejects_noncontiguous_row_index(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            temp = Path(temporary)
+            config = json.loads(
+                Path("experiments/model_floor/sources.example.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            source = next(
+                row
+                for row in config["sources"]
+                if row["id"] == "lmarena-text-style-control-latest"
+            )
+            source["pagination"]["page_size"] = 2
+            source["pagination"]["max_pages"] = 2
+            source["pagination"]["request_interval_seconds"] = 0
+            config["sources"] = [source]
+            value = {
+                "rows": [
+                    {
+                        "row_idx": 9,
+                        "row": {"model_name": "fixture", "rating": 1},
+                    }
+                ],
+                "num_rows_total": 1,
+                "partial": False,
+            }
+
+            def fake_request_json(url: str, **_: object):
+                payload = json.dumps(value).encode("utf-8")
+                return value, {}, 200, payload
+
+            with patch(
+                "tier_runner.model_floor_external._request_json",
+                side_effect=fake_request_json,
+            ):
+                receipt = sync_sources(
+                    config,
+                    config_path=temp / "sources.json",
+                    state_dir=temp / "state",
+                )
+
+            self.assertEqual(receipt["totals"]["sources_failed"], 1)
+            self.assertIn("contiguous row_idx", receipt["errors"][0]["error"])
+            self.assertEqual(
+                read_jsonl(temp / "state" / "observations.jsonl"),
+                [],
+            )
+
+    def test_hf_rows_refuses_total_beyond_page_ceiling(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            temp = Path(temporary)
+            config = json.loads(
+                Path("experiments/model_floor/sources.example.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            source = next(
+                row
+                for row in config["sources"]
+                if row["id"] == "lmarena-text-style-control-latest"
+            )
+            source["pagination"]["page_size"] = 2
+            source["pagination"]["max_pages"] = 2
+            source["pagination"]["request_interval_seconds"] = 0
+            config["sources"] = [source]
+            value = {
+                "rows": [
+                    {"row_idx": 0, "row": {"model_name": "a", "rating": 1}},
+                    {"row_idx": 1, "row": {"model_name": "b", "rating": 2}},
+                ],
+                "num_rows_total": 5,
+                "partial": False,
+            }
+
+            def fake_request_json(url: str, **_: object):
+                payload = json.dumps(value).encode("utf-8")
+                return value, {}, 200, payload
+
+            with patch(
+                "tier_runner.model_floor_external._request_json",
+                side_effect=fake_request_json,
+            ):
+                receipt = sync_sources(
+                    config,
+                    config_path=temp / "sources.json",
+                    state_dir=temp / "state",
+                )
+
+            self.assertEqual(receipt["totals"]["sources_failed"], 1)
+            self.assertIn("exceeding max_pages=2", receipt["errors"][0]["error"])
             self.assertEqual(
                 read_jsonl(temp / "state" / "observations.jsonl"),
                 [],
