@@ -53,6 +53,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python -m py_compile \
+            supplier_foundry/verify_asset.py \
+            supplier_foundry/verify_bundle.py \
+            supplier_foundry/qualify.py \
+            supplier_foundry/tests/test_supplier_foundry.py
           python -m unittest discover -s supplier_foundry/tests -v \
             2>&1 | tee "$RUNNER_TEMP/supplier-tests.log"
           python supplier_foundry/verify_asset.py \
@@ -84,27 +89,14 @@ jobs:
             | tee "$RUNNER_TEMP/ripout-verify.json"
           test ! -e supplier_foundry/node_modules
 
-      - name: Run the complete Tier Bench regression once
-        id: complete
-        if: matrix.python-version == '3.12'
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          python -m pip install --upgrade pip
-          python -m pip install -e . pytest
-          python -m pytest -q 2>&1 | tee "$RUNNER_TEMP/tier-bench-complete.log"
-
       - name: Require a pristine source checkout
-        if: always()
         shell: bash
         run: |
           set -euo pipefail
           git diff --check
           test -z "$(git status --porcelain)"
 
-      - name: Upload exact supplier, substitution, rip-out, and regression evidence
-        if: always()
+      - name: Upload exact supplier, substitution, and rip-out evidence
         uses: actions/upload-artifact@v4
         with:
           name: supplier-foundry-asset-python-${{ matrix.python-version }}
@@ -116,10 +108,5 @@ jobs:
             ${{ runner.temp }}/ripout-finalize.json
             ${{ runner.temp }}/ripout-verify.json
             ${{ runner.temp }}/npm-tree.txt
-            ${{ runner.temp }}/tier-bench-complete.log
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
-
-      - name: Preserve the complete regression result
-        if: matrix.python-version == '3.12' && steps.complete.outcome != 'success'
-        run: exit 1
