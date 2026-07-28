@@ -2,242 +2,145 @@
 
 ## Classification
 
-The Conditional Memory Lab is a topology-aware model-architecture and deployment instrument for Tier Bench. It compares a matched dense control against learned lookup-memory variants, measures where their bytes reside and move, exports learned tables as independently identified memory packs, and refuses production promotion until the complete paired evidence matrix closes.
-
-The lab treats conditional memory as a distinct capacity class. A dense core performs context-dependent transformation. A conditional table stores stable learned associations whose rows are selected by token or n-gram identity. The Estate remains the authority for mutable facts, decisions, permissions, receipts, and current project state.
-
-## Authority
-
-The following boundaries are invariant:
-
-- Git bytes and the canonical lab document define the experiment.
-- The deterministic plan binds every arm, seed, seat, stage, and promotion gate.
-- GPU seats are resolved by NVIDIA UUID before PyTorch is imported. Ordinal position is not an identity.
-- Every trial receives the same frozen data law for its seed. Train and validation sequences differ, but the synthetic association map does not drift between them.
-- Trial state is append-only. A failed attempt is preserved and a later attempt receives a new directory.
-- Candidate quality is compared to the dense control by the same seed.
-- Performance is measured on the target runtime, not inferred from parameter count.
-- A report may identify a promotable arm, but it always records `promotion_authorized: false`. Routing authority remains outside this module.
-
-## What lands
-
-The module provides:
-
-- strict lab, plan, trial-receipt, report, memory-pack, placement-profile, and pack-evaluation contracts;
-- deterministic paired crossover of every architecture across both RTX 3090 seats;
-- dense, larger-dense, bottom-only fat embedding, PLE plumbing without a table, full PLE, and hashed n-gram memory arms;
-- sparse-gradient lookup tables with a separate SparseAdam optimizer;
-- VRAM, host RAM, pinned RAM, and raw memory-map table placement paths;
-- protection against staging host-resident tables through VRAM during model initialization;
-- a frozen synthetic association and bigram canary with shared train and validation laws;
-- uint16 token-corpus ingestion with source hashes;
-- stored-capacity, active-core, output-head, row-width, row-transfer, placement, and observed-access ledgers;
-- CUDA peak allocation, paired step latency, validation loss, throughput, state hashes, and golden-logit receipts;
-- post-training fp32, fp16, bf16, group-int8, and packed group-int4 memory packs;
-- deterministic pack identities that are independent of the output directory;
-- sampled quantization-error measurements;
-- row-access placement profiles for random, hot-set, and sequential traces;
-- full-model pack replay against the exact frozen validation stream;
-- hardware monitoring and a Windows launcher for concurrent two-seat execution;
-- zero-model control tests and an optional physical PyTorch smoke.
-
-## Experiment matrix
-
-The supplied canary contains seven arms.
-
-| Arm | Question |
-|---|---|
-| `dense` | What does the matched active core achieve without conditional memory? |
-| `ple-no-table` | Do projections, gates, and layer injections create an apparent gain without learned lookup capacity? |
-| `ple-vram` | Does token-indexed per-layer memory improve the frozen task when resident with the core? |
-| `ple-pinned` | Does the same table retain its quality when selected rows cross from pinned host memory? |
-| `fat-embedding` | Is the gain caused by additional token capacity, or specifically by per-layer injection? |
-| `engram-lite` | Does deterministic hashed n-gram memory capture the stable bigram portion of the task? |
-| `big-dense` | Is ordinary active computation the better use of the additional resource budget? |
-
-The smoke profile proves execution and receipt integrity. It contains only two seeds and therefore cannot pass the default three-seed promotion gate. The canary profile is the first evidence-bearing run. The full profile widens the data, seed, and training envelopes only after the canary is clean.
-
-## Physical topology
-
-The intended bench is:
+The Conditional Memory Lab is a topology-aware architecture and deployment instrument. The physical estate is now represented as two distinct hosts:
 
 ```text
-RTX 3090 A   matched experimental seat
-RTX 3090 B   matched experimental seat
-RTX 4060     resident service and presentation lane
-CPU and RAM  control plane, host lookup tier, receipt custody
-NVMe         immutable checkpoints, memory packs, cold mapped tier
+desktop-4060
+  RTX 4060
+  coordination, packet publication, small resident services, collection,
+  report construction, memory-pack custody, and final acceptance
+
+lg-gram-dual3090
+  RTX 3090 eGPU seat A
+  RTX 3090 eGPU seat B
+  independent training, evaluation, profiling, and opposite-seat replay
 ```
 
-The two RTX 3090 cards are independent seats. The lab does not claim transparent VRAM pooling. Each seed-arm trial runs on one seat, while the crossover rotates every arm across both seats over the seed set. This design exposes card, enclosure, thermal, and link effects without making high-bandwidth peer transfer a prerequisite.
+The module does not claim that the three GPUs form one accelerator or that the two RTX 3090 cards expose pooled 48 GB VRAM. Model tensors, activations, KV state, and optimizer collectives do not cross the home network. Work crosses as immutable packets. Results return as checkpoints, receipts, golden outputs, profiles, and cross-verification records.
 
-Set these environment variables to the exact values reported by `nvidia-smi`:
+## Teaming model
+
+Version 1 uses artifact-level teaming because it fits the actual hardware and preserves failure isolation.
+
+1. The desktop compiles the frozen experiment plan and publishes one `run_trial` packet per arm and seed.
+2. The LG Gram launches one child worker per RTX 3090 UUID. The seats claim independent packets and run concurrently.
+3. When a seat finishes a trial, it publishes the receipt and checkpoint atomically.
+4. The opposite RTX 3090 receives a dependent `verify_checkpoint` packet. It reconstructs the exact validation stream, loads the producer checkpoint, and independently checks state identity, validation loss, and top-token order.
+5. The desktop imports both the producer receipt and verifier record. A matrix with incomplete opposite-seat replay cannot clear collection.
+
+This is throughput teaming, adversarial teaming, and evidence teaming. Synchronous DDP or tensor parallelism over the two Thunderbolt eGPUs remains a separate future experiment because host-mediated communication may erase its theoretical benefit.
+
+## Exchange authority
+
+The exchange is a shared filesystem reachable from both computers, normally an SMB share over the local network or Tailscale. The same bytes may appear under different local paths:
+
+```text
+desktop: D:\TierExchange
+LG Gram: Z:\TierExchange
+```
+
+Both hosts set `TIER_EXCHANGE_ROOT` to their local path. Packet identities bind only relative flight paths and SHA-256 values.
+
+A flight contains:
+
+```text
+flights/<flight-id>/
+  manifest.json
+  inputs/
+    lab.json
+    cluster.json
+    plan.json
+  packets/
+  claims/
+  heartbeats/
+  submissions/
+  collections/
+  coordinator/
+```
+
+Publication and submission use temporary files followed by atomic replacement. Claims use exclusive creation. Heartbeats make abandoned work visible, and stale claims may be reclaimed explicitly. Completed attempts are append-only.
+
+## Hardware identity
+
+The coordinator and worker resolve only hardware physically attached to their own hosts.
+
+Desktop:
+
+```powershell
+$env:TIER_GPU_4060_UUID = "GPU-..."
+```
+
+LG Gram:
 
 ```powershell
 $env:TIER_GPU_3090_A_UUID = "GPU-..."
 $env:TIER_GPU_3090_B_UUID = "GPU-..."
-$env:TIER_GPU_4060_UUID   = "GPU-..."
 ```
 
-A CUDA worker receives its UUID through `CUDA_VISIBLE_DEVICES` before importing PyTorch. The selected card then appears to the worker as `cuda:0`. This is intentional and prevents ordinal drift.
+Optional hostname custody can be enabled through `TIER_DESKTOP_HOSTNAME` and `TIER_GRAM_HOSTNAME`. CUDA workers are masked by UUID before PyTorch import. Each child therefore sees its assigned card as `cuda:0`, regardless of Windows ordinal changes.
 
-## Conditional-table execution
+## Experiment matrix
 
-A host-resident table is never moved wholesale to the GPU. The active model is moved while the table parameter is temporarily detached from module traversal. The table remains in host or pinned memory, row selection occurs in that tier, and only selected rows cross to the target device.
+The supplied canary compares:
 
-Lookup gradients are sparse. The active model uses AdamW, with normalization and embedding parameters excluded from weight decay. A trainable memory table uses SparseAdam. This prevents the training harness from allocating or updating a dense gradient for every unselected row and makes table scaling materially representative of conditional memory.
+| Arm | Question |
+|---|---|
+| `dense` | What does the matched active core achieve without conditional memory? |
+| `ple-no-table` | Do the PLE projections and gates create an apparent gain by themselves? |
+| `ple-vram` | Does token-indexed per-layer memory improve quality when resident on the GPU? |
+| `ple-pinned` | Does the same architecture retain utility when selected rows cross from pinned host memory? |
+| `fat-embedding` | Is the gain merely additional token capacity injected once at the input? |
+| `engram-lite` | Does hashed bigram memory capture stable multi-token structure? |
+| `big-dense` | Is ordinary dense capacity the better resource allocation? |
 
-Schema version 1 reserves `prefetch_layers` and `cache_bytes`, but rejects nonzero values because those mechanisms are not yet implemented. The receipt cannot claim prefetch or caching through a configuration field that the runtime ignored.
+Paired crossover rotates every arm across both RTX 3090 seats over the seed set. This exposes enclosure, thermal, Thunderbolt, and card-specific effects without requiring the GPUs to cooperate on one forward pass.
 
-## Frozen association canary
+## Memory-pack lifecycle
 
-The synthetic canary combines three next-token mechanisms:
+A completed table-bearing trial can export its lookup table as fp32, fp16, bf16, group-int8, or packed group-int4. Placement profiling and full-model quality replay remain separate receipts.
 
-```text
-60 percent  token-specific frozen association
-25 percent  deterministic bigram and position law
-15 percent  random continuation
-```
+The coordinator creates `receipt.local.json` beside each collected checkpoint. This local custody receipt preserves the producer receipt identity while rebasing the checkpoint path to the desktop, so later pack export does not depend on a path that exists only on the LG Gram.
 
-Each trial seed creates one association map. Train and validation draw different sequences from that same map. This is the minimum valid shape for testing whether a token-indexed table learned stable associations. Generating a new validation map would measure domain shift and would erase the capability under test.
+## Operator sequence
 
-The dataset fingerprint includes the association-map hash, full train tensor hash, full validation tensor hash, and combined identity. Every arm at a given seed must report the same combined hash. Any mismatch holds the entire matrix.
+Install the same branch and CUDA-compatible PyTorch build on both computers. Create or mount the shared exchange and set `TIER_EXCHANGE_ROOT` independently on each host.
 
-## Trial and state layout
-
-A run writes beneath the selected state directory:
-
-```text
-<state>/
-  <lab-id>/
-    <profile>/
-      <plan-prefix>/
-        <trial-slug>/
-          attempt-001/
-            started.json
-            checkpoint.pt
-            receipt.json
-```
-
-`started.json` proves that the attempt began under a specific plan, seat, source tree, and timestamp. `receipt.json` records either a completed result or the complete failure object and traceback. Existing receipt paths cannot be overwritten.
-
-A completed receipt binds:
-
-```text
-lab and plan hashes
-trial, arm, seed, pair, and seat
-resolved GPU or CPU identity
-module source hashes
-runtime and CUDA identity
-data and association-map fingerprints
-initial and final model-state hashes
-checkpoint path and hash
-topology and access ledger
-optimizer split and gradient policy
-loss trace and validation result
-golden logits
-latency, throughput, peak CUDA memory, and wall time
-```
-
-## Promotion logic
-
-For each candidate and seed, the report pairs the candidate receipt with the dense-control receipt from that seed. Default gates require:
-
-- the declared minimum number of completed paired seeds;
-- mean relative validation-loss improvement at or above the configured threshold;
-- mean p95 step-time regression at or below the configured threshold;
-- mean peak CUDA-memory regression at or below the configured threshold;
-- coverage of both physical seats;
-- preserved final-state and checkpoint identities;
-- one consistent source tree and one dataset fingerprint per seed;
-- no missing, failed, invalid, or duplicate planned receipts.
-
-The report uses `control`, `hold`, or `promote` as an experimental decision. It does not authorize a production route. A separate Tier Bench authority must review the receipts, task relevance, and any downstream acceptance suite.
-
-## Memory packs
-
-A completed table-bearing trial can export its learned lookup table independently from the dense checkpoint. The pack contains:
-
-```text
-manifest.json
-codes.bin
-scales.bin, when quantized
-```
-
-The manifest binds the source receipt, checkpoint, architecture, table key, dimensions, source bytes, quantization layout, per-file hashes, compression ratio, and sampled reconstruction error. It records two identities:
-
-- `pack_sha256`, a deterministic content identity independent of output location and creation time;
-- `manifest_sha256`, the canonical hash of the complete provenance-bearing manifest.
-
-Group-int4 uses signed values from -8 through 7 packed two per byte, with one fp16 scale per row group. Group-int8 uses signed values from -127 through 127 with the same scale shape. Float packs preserve fp32, fp16, or bf16 rows without integer codes.
-
-Pack qualification is deliberately split into two receipts. `pack-profile` measures compressed row access and transfer behavior under an exact key trace. `pack-evaluate` dequantizes the pack into the source checkpoint's existing table allocation in bounded chunks and reruns the complete frozen validation stream. This prevents a fast but inaccurate pack, or an accurate but operationally unusable placement, from passing through one blended number.
-
-## First physical pass
-
-From the repository root:
+Start the persistent worker on the LG Gram:
 
 ```powershell
-python -m pip install -e .
-python -c "import torch; print(torch.__version__, torch.version.cuda, torch.cuda.is_available())"
-python -m tier_runner.conditional_memory_cli probe `
-  --out D:\TierRuns\ConditionalMemory\hardware-probe.json
+.\scripts\run-conditional-memory-worker.ps1 `
+  -ExchangeRoot Z:\TierExchange `
+  -WorkRoot C:\TierWorker\ConditionalMemory
+```
 
+The worker can be installed as an at-startup scheduled task:
+
+```powershell
+.\scripts\run-conditional-memory-worker.ps1 `
+  -ExchangeRoot Z:\TierExchange `
+  -WorkRoot C:\TierWorker\ConditionalMemory `
+  -InstallScheduledTask
+```
+
+Publish and collect from the desktop:
+
+```powershell
 .\scripts\run-conditional-memory-lab.ps1 `
   -Profile smoke `
-  -StateDir D:\TierRuns\ConditionalMemory
+  -ExchangeRoot D:\TierExchange `
+  -CoordinatorState D:\TierRuns\ConditionalMemory\Coordinator
 ```
 
-Review the smoke report and every failed attempt. A clean smoke proves only that the matrix executes on the intended hardware and that the receipts close. Then run:
+The desktop command publishes, polls, and collects. `-PublishOnly` releases the work and returns immediately. `-CollectOnly -FlightId <id>` resumes collection for an existing flight.
 
-```powershell
-.\scripts\run-conditional-memory-lab.ps1 `
-  -Profile canary `
-  -StateDir D:\TierRuns\ConditionalMemory
-```
-
-Do not begin the full profile until the canary has stable data identities, balanced seats, credible timing, and no source or hardware conflicts.
-
-## Pack qualification sequence
-
-Select a completed table-bearing receipt from a checkpoint-preserving profile, then run:
-
-```powershell
-python -m tier_runner.conditional_memory_cli pack-export `
-  --receipt <receipt.json> `
-  --out-dir D:\TierRuns\ConditionalMemory\packs\ple-int4 `
-  --dtype int4 `
-  --group-size 128
-
-python -m tier_runner.conditional_memory_cli pack-validate `
-  --manifest D:\TierRuns\ConditionalMemory\packs\ple-int4\manifest.json
-
-python -m tier_runner.conditional_memory_cli pack-profile `
-  --lab experiments\conditional_memory\lab.example.json `
-  --plan <plan.json> `
-  --seat gpu.3090-a `
-  --manifest D:\TierRuns\ConditionalMemory\packs\ple-int4\manifest.json `
-  --placement pinned_ram `
-  --pattern random `
-  --out D:\TierRuns\ConditionalMemory\packs\ple-int4\profile-pinned-random.json
-
-python -m tier_runner.conditional_memory_cli pack-evaluate `
-  --lab experiments\conditional_memory\lab.example.json `
-  --plan <plan.json> `
-  --receipt <receipt.json> `
-  --manifest D:\TierRuns\ConditionalMemory\packs\ple-int4\manifest.json `
-  --seat gpu.3090-a `
-  --out D:\TierRuns\ConditionalMemory\packs\ple-int4\evaluation.json
-```
-
-Repeat the placement profile for VRAM, host RAM, pinned RAM, and memory mapping, then repeat with sequential and hot-set traces. The pack is useful only when task loss and the real byte path both remain inside the intended envelope.
+After the distributed smoke closes, run `canary`. The `full` profile remains held until the canary proves stable GPU identity, complete opposite-seat verification, credible performance data, and no topology or source conflicts.
 
 ## Qualification boundary
 
-The repository tests prove deterministic planning, strict schema handling, receipt and report hashing, crossover balance, fail-closed drift handling, NVIDIA CSV parsing, sparse-table training on CPU when PyTorch is available, int4 pack round-tripping, placement profiling, and full-model packed-table replay.
+The control tests establish deterministic packet publication, parallel worker processes, checkpoint transfer, opposite-seat replay, collection, and local custody rebasing under a CPU simulation. CI compiles the cluster surfaces, publishes a fourteen-trial and twenty-eight-packet distributed smoke flight, and parses both Windows launchers.
 
-CI does not establish RTX 3090 performance, Thunderbolt behavior, Windows pinned-memory behavior, or a conditional-memory quality gain. Those claims require physical receipts from the target bench. The synthetic canary establishes an architecture and systems result for its exact data law. It does not establish general reasoning, coding, or agent capability.
+Those tests do not establish physical RTX 3090 throughput, simultaneous dual-eGPU stability, Windows pinned-memory behavior, Thunderbolt contention, or an architecture-quality gain. Those claims require receipts from the LG Gram and desktop estate.
 
 ## Failure default
 
-Unknown GPU identities, absent UUIDs, source drift, data drift, duplicate attempts, missing trials, failed trials, malformed receipts, checkpoint mismatch, pack mismatch, unsupported table dtypes, nonzero unimplemented cache settings, and incomplete promotion gates remain visible and hold the experiment.
+Unknown UUIDs, wrong hostnames when hostname custody is enabled, source drift, packet tampering, missing dependencies, stale unreclaimed claims, absent checkpoints, failed opposite-seat replay, incomplete collection, and report conflicts remain visible and hold the experiment. Production routing authority remains outside the module.

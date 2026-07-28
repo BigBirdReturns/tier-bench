@@ -37,9 +37,14 @@ jobs:
           tier_runner/conditional_memory_pack.py
           tier_runner/conditional_memory_report.py
           tier_runner/conditional_memory_cli.py
+          tier_runner/conditional_memory_exchange.py
+          tier_runner/conditional_memory_exchange_cli.py
           tests/test_conditional_memory.py
+          tests/test_conditional_memory_exchange.py
       - name: Run zero-model controls and optional PyTorch smoke
-        run: python tests/test_conditional_memory.py
+        run: |
+          python tests/test_conditional_memory.py
+          python tests/test_conditional_memory_exchange.py
       - name: Freeze and verify the smoke matrix
         shell: bash
         run: |
@@ -53,32 +58,49 @@ jobs:
           python -m tier_runner.conditional_memory_cli verify-plan \
             --lab experiments/conditional_memory/lab.example.json \
             --plan conditional-memory-smoke-plan.json
+          python -m tier_runner.conditional_memory_exchange_cli validate-cluster \
+            --cluster experiments/conditional_memory/cluster.example.json
+          python -m tier_runner.conditional_memory_exchange_cli publish \
+            --lab experiments/conditional_memory/lab.example.json \
+            --cluster experiments/conditional_memory/cluster.example.json \
+            --profile smoke \
+            --exchange-root conditional-memory-ci-exchange \
+            --flight-id ci-smoke \
+            --force-cpu > conditional-memory-flight.json
           python - <<'PY'
           import json
           from pathlib import Path
 
           plan = json.loads(Path("conditional-memory-smoke-plan.json").read_text())
+          flight = json.loads(Path("conditional-memory-flight.json").read_text())
           assert len(plan["trials"]) == 14
+          assert len(flight["manifest"]["packets"]) == 28
           assert all(
               counts == {"gpu.3090-a": 1, "gpu.3090-b": 1}
               for counts in plan["pairing"]["seat_counts"].values()
           )
-          assert plan["resolved"]["promotion"]["min_complete_seeds"] == 3
-          print("CONDITIONAL_MEMORY_PLAN_OK", plan["plan_sha256"])
+          assert flight["manifest"]["authority"]["scheduler"] == "desktop-4060"
+          assert flight["manifest"]["authority"]["execution"] == "lg-gram-dual3090"
+          print("CONDITIONAL_MEMORY_DISTRIBUTED_PLAN_OK", plan["plan_sha256"])
           PY
-      - name: Parse Windows launcher
+      - name: Parse Windows launchers
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $Tokens = $null
-          $Errors = $null
-          [void][System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path scripts/run-conditional-memory-lab.ps1),
-            [ref]$Tokens,
-            [ref]$Errors
-          )
-          if ($Errors.Count -gt 0) {
-            $Errors | Format-List | Out-String | Write-Error
-            exit 1
+          foreach ($Path in @(
+            "scripts/run-conditional-memory-lab.ps1",
+            "scripts/run-conditional-memory-worker.ps1"
+          )) {
+            $Tokens = $null
+            $Errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $Path),
+              [ref]$Tokens,
+              [ref]$Errors
+            )
+            if ($Errors.Count -gt 0) {
+              $Errors | Format-List | Out-String | Write-Error
+              exit 1
+            }
           }
-          Write-Host "CONDITIONAL_MEMORY_POWERSHELL_OK"
+          Write-Host "CONDITIONAL_MEMORY_DISTRIBUTED_POWERSHELL_OK"
