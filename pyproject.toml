@@ -11,6 +11,7 @@ dependencies = []
 # Adapters and dev tooling are opt-in so the core stays dependency-free.
 anthropic = ["anthropic>=0.40"]
 openai = ["openai>=1.0"]
+browser = ["playwright>=1.50,<2"]
 dev = ["ruff>=0.6.0"]
 
 [project.scripts]
@@ -27,6 +28,7 @@ tierkimi = "tier_runner.kimi3_observatory:main"
 tierfloor = "tier_runner.model_floor_cli:main"
 tiermemory = "tier_runner.conditional_memory_cli:main"
 tiermemorycluster = "tier_runner.conditional_memory_exchange_cli:main"
+tierbrowser = "tier_runner.playwright_computer_cli:main"
 
 [build-system]
 requires = ["setuptools>=61"]

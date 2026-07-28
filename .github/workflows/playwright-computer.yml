@@ -1,0 +1,75 @@
+name: playwright-computer
+
+on:
+  pull_request:
+    branches:
+      - main
+      - agent/conditional-memory-lab-v1
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  control-plane:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependency-free package
+        run: python -m pip install -e .
+      - name: Compile Playwright computer surfaces
+        run: >-
+          python -m py_compile
+          tier_runner/playwright_computer_common.py
+          tier_runner/playwright_computer_protocol.py
+          tier_runner/playwright_computer_runtime.py
+          tier_runner/playwright_computer_server.py
+          tier_runner/playwright_computer_cli.py
+          tests/test_playwright_computer.py
+      - name: Run zero-browser controls
+        run: python tests/test_playwright_computer.py
+      - name: Validate operator contract
+        run: >-
+          python -m tier_runner.playwright_computer_cli validate
+          --config experiments/task_computer/playwright.example.json
+          --root playwright-computer-ci-root
+      - name: Parse Windows launcher
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $Tokens = $null
+          $Errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/run-playwright-computer.ps1),
+            [ref]$Tokens,
+            [ref]$Errors
+          )
+          if ($Errors.Count -gt 0) {
+            $Errors | Format-List | Out-String | Write-Error
+            exit 1
+          }
+          Write-Host "PLAYWRIGHT_COMPUTER_POWERSHELL_OK"
+
+  chromium-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Playwright computer
+        run: python -m pip install -e ".[browser]"
+      - name: Install pinned Chromium runtime
+        run: python -m playwright install --with-deps chromium
+      - name: Run complete Playwright computer tests
+        run: python tests/test_playwright_computer.py
