@@ -33,11 +33,15 @@ jobs:
           tier_runner/playwright_computer_common.py
           tier_runner/playwright_computer_protocol.py
           tier_runner/playwright_computer_runtime.py
+          tier_runner/playwright_computer.py
           tier_runner/playwright_computer_server.py
           tier_runner/playwright_computer_cli.py
           tests/test_playwright_computer.py
+          tests/test_playwright_computer_hardening.py
       - name: Run zero-browser controls
-        run: python tests/test_playwright_computer.py
+        run: |
+          python tests/test_playwright_computer.py
+          python tests/test_playwright_computer_hardening.py
       - name: Validate operator contract
         run: >-
           python -m tier_runner.playwright_computer_cli validate
@@ -72,4 +76,6 @@ jobs:
       - name: Install pinned Chromium runtime
         run: python -m playwright install --with-deps chromium
       - name: Run complete Playwright computer tests
-        run: python tests/test_playwright_computer.py
+        run: |
+          python tests/test_playwright_computer.py
+          python tests/test_playwright_computer_hardening.py
