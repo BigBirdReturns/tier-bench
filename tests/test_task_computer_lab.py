@@ -199,14 +199,13 @@ def test_optional_project_browser_suite() -> None:
         return
     parent = Path(tempfile.mkdtemp(prefix="task-computer-projects-"))
     try:
+        catalog = load_catalog(CATALOG)
         cases = [
-            ("tier-desk-approve-underdrain", "base"),
-            ("axm-chat-pull-latest", "base"),
-            ("screen-ghost-visual-fallback", "base"),
-            ("axm-world-underdrain-playtest", "base"),
-            ("tier-desk-approve-underdrain", "dynamic"),
-            ("axm-world-underdrain-playtest", "reordered"),
+            (scenario["id"], variant)
+            for scenario in catalog["scenarios"]
+            for variant in scenario["variants"]
         ]
+        assert len(cases) == 9
         results = []
         for scenario_id, variant in cases:
             receipt, run_dir = asyncio.run(_run_one(parent, scenario_id, variant))
@@ -214,13 +213,23 @@ def test_optional_project_browser_suite() -> None:
             assert receipt["status"] == "ACCEPTED", receipt
             verification = verify_run(run_dir)
             assert verification["ok"], verification
-        by_id = {(scenario, variant): receipt for scenario, variant, receipt, _ in results}
+        by_id = {
+            (scenario, variant): receipt
+            for scenario, variant, receipt, _ in results
+        }
         visual = by_id[("screen-ghost-visual-fallback", "base")]
         assert visual["routes"] == {"screen_ghost": 1}
-        chat = by_id[("axm-chat-pull-latest", "base")]
-        assert any(item["id"] == "download-sync-receipt.json" and item["pass"] for item in chat["acceptance"])
-        world = by_id[("axm-world-underdrain-playtest", "base")]
-        assert world["cold_operator_expected_answers"]["next"].endswith("municipal underworks.")
+        for variant in ("base", "reordered"):
+            chat = by_id[("axm-chat-pull-latest", variant)]
+            assert any(
+                item["id"] == "download-sync-receipt.json" and item["pass"]
+                for item in chat["acceptance"]
+            )
+        for variant in ("base", "reordered", "dynamic"):
+            world = by_id[("axm-world-underdrain-playtest", variant)]
+            assert world["cold_operator_expected_answers"]["next"].endswith(
+                "municipal underworks."
+            )
     finally:
         shutil.rmtree(parent, ignore_errors=True)
 
