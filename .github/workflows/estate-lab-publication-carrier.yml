@@ -53,6 +53,13 @@ jobs:
                       raise SystemExit(f'missing payload for {member.name}')
                   target.write_bytes(source.read())
 
+          # Workflow files are installed by the connected GitHub surface after
+          # source publication. GitHub's runner token is intentionally refused
+          # permission to create, update, or delete workflow definitions.
+          permanent_workflow = Path('.github/workflows/estate-lab.yml')
+          if permanent_workflow.exists():
+              permanent_workflow.unlink()
+
           readme = root / 'README.md'
           text = readme.read_text(encoding='utf-8')
           bullet = '- **[AXM Estate Lab](estate_lab/README.md)** — exercise cross-project semantic actions, authority, fallback routing, deterministic state, device substitutions, project probes, and fault recovery with inspectable receipts.'
@@ -61,14 +68,9 @@ jobs:
               if anchor not in text:
                   raise SystemExit('Tier Bench README capability-program anchor moved')
               readme.write_text(text.replace(anchor + '\n', anchor + '\n' + bullet + '\n', 1), encoding='utf-8', newline='\n')
-
-          Path('.github/workflows/estate-lab-publication-carrier.yml').unlink()
-          Path('.estate-lab-publication-trigger').unlink()
-          for path in parts:
-              path.unlink()
           PY
 
-      - name: Qualify the final tree
+      - name: Qualify the final source tree
         shell: bash
         run: |
           set -euo pipefail
@@ -77,14 +79,16 @@ jobs:
           python -m unittest discover -s estate_lab/tests -v
           rm -rf .estate-lab-runs
           python -m estate_lab run-all --output .estate-lab-runs
+          rm -rf .estate-lab-runs
           git diff --check
+          test ! -e .estate-lab-runs
 
-      - name: Publish the carrier-free source
+      - name: Publish source without workflow or transport mutation
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
-          git commit -m 'Add the AXM Estate Lab'
+          git add README.md estate_lab
+          git commit -m 'Add the AXM Estate Lab source'
           git push origin HEAD:agent/axm-estate-lab
