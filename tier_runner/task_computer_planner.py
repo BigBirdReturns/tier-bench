@@ -14,7 +14,12 @@ from .playwright_computer_common import (
     canonical,
     load_json,
 )
-from .task_computer_protocol import PROPOSAL_SCHEMA, validate_proposal
+from .task_computer_protocol import (
+    PLAYWRIGHT_TARGET_OPS,
+    PROPOSAL_SCHEMA,
+    resolve_element,
+    validate_proposal,
+)
 
 
 class Planner(Protocol):
@@ -27,6 +32,7 @@ class ReferencePlanner:
     def __init__(self, scenario: dict[str, Any]):
         self.scenario = scenario
         self.index = 0
+        self.wait_count = 0
 
     def propose(self, packet: dict[str, Any]) -> dict[str, Any]:
         plan = self.scenario["reference_plan"]
@@ -42,7 +48,33 @@ class ReferencePlanner:
             }
             return validate_proposal(proposal, packet)
         step = plan[self.index]
+        if step["surface"] == "playwright" and step["op"] in PLAYWRIGHT_TARGET_OPS:
+            try:
+                resolve_element(packet["state"], step["target"])
+            except PlaywrightComputerError:
+                self.wait_count += 1
+                proposal = {
+                    "schema": PROPOSAL_SCHEMA,
+                    "packet_sha256": packet["packet_sha256"],
+                    "state_id": packet["state"]["state_id"],
+                    "actions": [
+                        {
+                            "id": f"wait-for-{step['id']}-{self.wait_count:02d}",
+                            "surface": "playwright",
+                            "op": "wait",
+                            "effect": "read",
+                            "intent": f"Wait for the current page to expose the target for {step['id']}",
+                            "target": None,
+                            "args": {"seconds": min(max(step["retry_seconds"] / 3.0, 0.1), 1.0)},
+                        }
+                    ],
+                    "done": False,
+                    "memory": f"The target for reference step {step['id']} is not yet present. The page may still be settling.",
+                    "next_goal": step["intent"],
+                }
+                return validate_proposal(proposal, packet)
         self.index += 1
+        self.wait_count = 0
         proposal = {
             "schema": PROPOSAL_SCHEMA,
             "packet_sha256": packet["packet_sha256"],
