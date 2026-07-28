@@ -37,6 +37,7 @@ jobs:
           tier_runner/playwright_computer_server.py
           tier_runner/playwright_computer_cli.py
           tier_runner/task_computer_protocol.py
+          tier_runner/task_computer_fixture_oracles.py
           tier_runner/task_computer_planner.py
           tier_runner/task_computer_fixtures.py
           tier_runner/task_computer_lab.py
