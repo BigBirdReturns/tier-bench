@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/playwright_computer.schema.json",
+  "title": "Tier Bench Playwright Computer",
+  "type": "object",
+  "required": ["schema", "id", "mode", "paths", "viewport", "policy", "takeover"],
+  "properties": {
+    "schema": {"const": "tier-bench/playwright-computer@1"},
+    "id": {"type": "string", "minLength": 1},
+    "title": {"type": "string"},
+    "mode": {"enum": ["isolated", "persistent", "cdp"]},
+    "browser": {"const": "chromium"},
+    "headless": {"type": "boolean"},
+    "start_url": {"type": "string"},
+    "cdp_url": {"type": "string"},
+    "paths": {
+      "type": "object",
+      "required": ["workspace", "profile", "downloads", "artifacts", "secrets"],
+      "additionalProperties": {"type": "string"}
+    },
+    "viewport": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width": {"type": "integer", "minimum": 320},
+        "height": {"type": "integer", "minimum": 240}
+      },
+      "additionalProperties": false
+    },
+    "locale": {"type": "string"},
+    "user_agent": {"type": "string"},
+    "allowed_schemes": {"type": "array", "items": {"type": "string"}},
+    "allowed_domains": {"type": "array", "items": {"type": "string"}},
+    "blocked_domains": {"type": "array", "items": {"type": "string"}},
+    "deny_private_networks": {"type": "boolean"},
+    "storage_state_file": {"type": "string"},
+    "trace": {"type": "boolean"},
+    "record_video": {"type": "boolean"},
+    "force_open_shadow_dom": {"type": "boolean"},
+    "policy": {"type": "object"},
+    "takeover": {"type": "object"}
+  },
+  "additionalProperties": false
+}
