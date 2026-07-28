@@ -8,7 +8,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import mimetypes
-from pathlib import Path
+import os
 import threading
 import time
 from typing import Any
@@ -17,7 +17,9 @@ from urllib.parse import parse_qs, urlparse
 from .playwright_computer_common import (
     PlaywrightComputerError,
     atomic_json,
+    hash_bytes,
     hash_json,
+    now_utc,
     safe_relative_path,
 )
 from .playwright_computer_runtime import PlaywrightComputer
@@ -143,7 +145,11 @@ class BrowserComputerHandler(BaseHTTPRequestHandler):
         return value
 
     def _error(self, exc: Exception) -> None:
-        status = HTTPStatus.BAD_REQUEST if isinstance(exc, (PlaywrightComputerError, ValueError)) else HTTPStatus.INTERNAL_SERVER_ERROR
+        status = (
+            HTTPStatus.BAD_REQUEST
+            if isinstance(exc, (PlaywrightComputerError, ValueError))
+            else HTTPStatus.INTERNAL_SERVER_ERROR
+        )
         self.server.bridge.computer.ledger.append(
             "server.request.failed",
             detail={"path": self.path, "error": f"{type(exc).__name__}: {exc}"[:4000]},
@@ -158,7 +164,10 @@ class BrowserComputerHandler(BaseHTTPRequestHandler):
                 return
             if parsed.path == "/healthz":
                 health = self.server.bridge.call(self.server.bridge.computer.health(), timeout=10)
-                self._json(HTTPStatus.OK if health["ok"] else HTTPStatus.SERVICE_UNAVAILABLE, health)
+                self._json(
+                    HTTPStatus.OK if health["ok"] else HTTPStatus.SERVICE_UNAVAILABLE,
+                    health,
+                )
                 return
             if not self._require_auth():
                 return
@@ -201,9 +210,10 @@ class BrowserComputerHandler(BaseHTTPRequestHandler):
             if events:
                 break
             time.sleep(0.25)
-        chunks = []
-        for event in events:
-            chunks.append(f"id: {event['seq']}\nevent: {event['kind']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n")
+        chunks = [
+            f"id: {event['seq']}\nevent: {event['kind']}\ndata: {json.dumps(event, ensure_ascii=False)}\n\n"
+            for event in events
+        ]
         if not chunks:
             chunks.append(": keepalive\n\n")
         data = "".join(chunks).encode("utf-8")
@@ -245,11 +255,17 @@ class BrowserComputerHandler(BaseHTTPRequestHandler):
                 return
             body = self._body()
             if parsed.path == "/observe":
-                self._json(HTTPStatus.OK, self.server.bridge.call(self.server.bridge.computer.observe()))
+                self._json(
+                    HTTPStatus.OK,
+                    self.server.bridge.call(self.server.bridge.computer.observe()),
+                )
                 return
             if parsed.path == "/act":
                 action = body.get("action", body)
-                self._json(HTTPStatus.OK, self.server.bridge.call(self.server.bridge.computer.execute(action)))
+                self._json(
+                    HTTPStatus.OK,
+                    self.server.bridge.call(self.server.bridge.computer.execute(action)),
+                )
                 return
             if parsed.path == "/batch":
                 actions = body.get("actions")
@@ -270,12 +286,17 @@ class BrowserComputerHandler(BaseHTTPRequestHandler):
                 self._json(
                     HTTPStatus.OK,
                     self.server.bridge.call(
-                        self.server.bridge.computer.release_takeover(str(body.get("lease_id", "")))
+                        self.server.bridge.computer.release_takeover(
+                            str(body.get("lease_id", ""))
+                        )
                     ),
                 )
                 return
             if parsed.path == "/verify":
-                self._json(HTTPStatus.OK, self.server.bridge.call(self.server.bridge.computer.verify()))
+                self._json(
+                    HTTPStatus.OK,
+                    self.server.bridge.call(self.server.bridge.computer.verify()),
+                )
                 return
             if parsed.path == "/shutdown":
                 result = self.server.bridge.close()
@@ -300,14 +321,15 @@ def serve_browser_computer(
         health = bridge.start()
         server = BrowserComputerServer((host, port), bridge, control_token=control_token)
         address, actual_port = server.server_address[:2]
+        display_address = "127.0.0.1" if str(address) in {"0.0.0.0", "::"} else str(address)
         record = {
             "schema": "tier-bench/playwright-computer-server@1",
             "computer_id": computer.config["id"],
             "pid": os.getpid(),
             "host": str(address),
             "port": int(actual_port),
-            "url": f"http://{address}:{actual_port}/",
-            "started_at": computer.ledger.after(0)[0]["ts"],
+            "url": f"http://{display_address}:{actual_port}/",
+            "started_at": now_utc(),
             "control_token_sha256": hash_json({"token": control_token}),
             "health": health,
         }
@@ -336,10 +358,11 @@ def _dashboard_html() -> str:
 body{font:14px/1.45 system-ui,sans-serif;margin:0;background:#111;color:#eee}header{padding:14px 18px;border-bottom:1px solid #333;display:flex;gap:10px;align-items:center}main{display:grid;grid-template-columns:minmax(0,2fr) minmax(320px,1fr);gap:12px;padding:12px}section{background:#181818;border:1px solid #333;border-radius:8px;padding:12px}img{max-width:100%;border:1px solid #444}pre{white-space:pre-wrap;word-break:break-word;max-height:45vh;overflow:auto}button,input{font:inherit;padding:7px 9px}input{flex:1;background:#222;color:#fff;border:1px solid #555}button{background:#333;color:#fff;border:1px solid #666;border-radius:4px}#status{margin-left:auto}
 </style></head><body><header><strong>Tier Browser Computer</strong><input id="token" type="password" placeholder="Control token"><button onclick="saveToken()">Set token</button><button onclick="observe()">Observe</button><button onclick="takeover()">Take over</button><span id="status"></span></header><main><section><h2>Marked browser state</h2><img id="shot"><pre id="meta"></pre></section><section><h2>Events</h2><pre id="events"></pre></section></main>
 <script>
-let token=sessionStorage.getItem('tier-browser-token')||'';document.getElementById('token').value=token;let seq=0;
+let token=sessionStorage.getItem('tier-browser-token')||'';document.getElementById('token').value=token;let seq=0;let shotUrl='';
 function saveToken(){token=document.getElementById('token').value;sessionStorage.setItem('tier-browser-token',token);refresh()}
 async function api(path,options={}){options.headers={...(options.headers||{}),'X-Tier-Browser-Token':token,'Content-Type':'application/json'};let r=await fetch(path,options);let j=await r.json();if(!r.ok)throw new Error(j.error||r.status);return j}
-async function refresh(){try{let s=await api('/state');document.getElementById('meta').textContent=JSON.stringify({state_id:s.state_id,url:s.url,title:s.title,tabs:s.tabs,elements:s.elements_text,scroll:s.scroll},null,2);let p=encodeURIComponent(s.artifacts.marked_screenshot.path);document.getElementById('shot').src='/artifact?path='+p+'&t='+Date.now();document.getElementById('shot').referrerPolicy='no-referrer';document.getElementById('status').textContent=s.url;let e=await api('/events?after='+seq);for(const x of e.events){seq=x.seq;document.getElementById('events').textContent+=JSON.stringify(x)+'\n'} }catch(e){document.getElementById('status').textContent=e}}
+async function loadShot(path){let r=await fetch('/artifact?path='+encodeURIComponent(path),{headers:{'X-Tier-Browser-Token':token}});if(!r.ok)throw new Error('screenshot '+r.status);let b=await r.blob();if(shotUrl)URL.revokeObjectURL(shotUrl);shotUrl=URL.createObjectURL(b);document.getElementById('shot').src=shotUrl}
+async function refresh(){try{let s=await api('/state');document.getElementById('meta').textContent=JSON.stringify({state_id:s.state_id,url:s.url,title:s.title,tabs:s.tabs,elements:s.elements_text,scroll:s.scroll},null,2);await loadShot(s.artifacts.marked_screenshot.path);document.getElementById('status').textContent=s.url;let e=await api('/events?after='+seq);for(const x of e.events){seq=x.seq;document.getElementById('events').textContent+=JSON.stringify(x)+'\n'} }catch(e){document.getElementById('status').textContent=e}}
 async function observe(){await api('/observe',{method:'POST',body:'{}'});refresh()}
 async function takeover(){let v=await api('/takeover',{method:'POST',body:'{}'});alert('Takeover lease '+v.lease_id+' active. Use the visible browser window, then release through the API or CLI.');refresh()}
 setInterval(refresh,2500);refresh();
