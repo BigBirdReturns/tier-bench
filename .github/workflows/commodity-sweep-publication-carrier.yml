@@ -48,6 +48,11 @@ jobs:
           cat .commodity-sweep-payload-* | base64 -d > "$RUNNER_TEMP/commodity-sweep.tar.xz"
           echo "c8611963179728eb906f3878afe463f2897fa724387e4cf8557b283358abfd56  $RUNNER_TEMP/commodity-sweep.tar.xz" | sha256sum -c -
           tar -xJf "$RUNNER_TEMP/commodity-sweep.tar.xz"
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('estate_lab/errors.py')
+          path.write_text(path.read_text(encoding='utf-8').rstrip('\n') + '\n', encoding='utf-8', newline='\n')
+          PY
 
       - if: steps.gate.outputs.required == 'true'
         name: Qualify Estate Lab 0.2
