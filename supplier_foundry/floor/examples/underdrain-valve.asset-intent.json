@@ -1,0 +1,287 @@
+{
+  "format": "axm-asset-intent/1",
+  "intentId": "assetint1_d723bbc7c6d6d03af1ec9b1392f5f0d1c32ffff432cdd602da91cf3db35b0c88",
+  "authority": "human_owned",
+  "profile": "3d_mechanism",
+  "name": "UNDERDRAIN pressure-release valve assembly",
+  "purpose": "A readable sewer mechanism that the player reaches, turns, holds, damages, repairs, and revisits under combat pressure.",
+  "references": [
+    {
+      "id": "reference.underdrain.mechanism-sheet",
+      "kind": "image",
+      "sha256": "d85277f657b9c8ce1fd43b62dc64e818c26de9fa8b9dd07729243cbe1a520a63",
+      "rights": "owned",
+      "role": "shape_material_interaction"
+    },
+    {
+      "id": "reference.underdrain.world-keyart",
+      "kind": "image",
+      "sha256": "4350f51fb198f3c3a710d437d7fd783a1d8b7e0ff77b2a73f1a3d1e074f3378e",
+      "rights": "owned",
+      "role": "style_lighting"
+    }
+  ],
+  "style": {
+    "familyId": "style.underdrain.sewer-industrial-v1",
+    "shapeLanguage": [
+      "heavy_cast_housing",
+      "readable_red_control",
+      "serviceable_fasteners",
+      "fungal_encroachment"
+    ],
+    "palette": [
+      "oxidized_iron",
+      "wet_black_rubber",
+      "municipal_green",
+      "warning_red",
+      "spore_amber"
+    ],
+    "materialLanguage": [
+      "wet_metal",
+      "rust",
+      "grease",
+      "mineral_scale",
+      "bioluminescent_fungus"
+    ],
+    "forbidden": [
+      "thick_black_outline",
+      "childish_chibi",
+      "unmotivated_glow",
+      "ornament_without_function"
+    ],
+    "scaleReferenceMm": 1200
+  },
+  "gameplay": {
+    "semanticParts": [
+      {
+        "id": "part.housing",
+        "role": "static_body",
+        "required": true
+      },
+      {
+        "id": "part.wheel",
+        "role": "player_control",
+        "required": true
+      },
+      {
+        "id": "part.stem",
+        "role": "moving_linkage",
+        "required": true
+      },
+      {
+        "id": "part.indicator",
+        "role": "state_readout",
+        "required": true
+      },
+      {
+        "id": "part.fungal_growth",
+        "role": "damageable_obstruction",
+        "required": true
+      }
+    ],
+    "sockets": [
+      {
+        "id": "socket.pipe_in",
+        "partId": "part.housing",
+        "kind": "assembly"
+      },
+      {
+        "id": "socket.pipe_out",
+        "partId": "part.housing",
+        "kind": "assembly"
+      },
+      {
+        "id": "socket.hand_left",
+        "partId": "part.wheel",
+        "kind": "interaction"
+      },
+      {
+        "id": "socket.hand_right",
+        "partId": "part.wheel",
+        "kind": "interaction"
+      },
+      {
+        "id": "socket.leak_vfx",
+        "partId": "part.stem",
+        "kind": "vfx"
+      },
+      {
+        "id": "socket.audio",
+        "partId": "part.housing",
+        "kind": "audio"
+      }
+    ],
+    "interactions": [
+      {
+        "id": "interaction.turn",
+        "verb": "turn",
+        "partId": "part.wheel",
+        "socketIds": [
+          "socket.hand_left",
+          "socket.hand_right"
+        ],
+        "authority": "game_law_external"
+      },
+      {
+        "id": "interaction.hold_work",
+        "verb": "hold_to_work",
+        "partId": "part.stem",
+        "socketIds": [
+          "socket.hand_left",
+          "socket.hand_right"
+        ],
+        "authority": "game_law_external"
+      },
+      {
+        "id": "interaction.clear_growth",
+        "verb": "damage_obstruction",
+        "partId": "part.fungal_growth",
+        "socketIds": [],
+        "authority": "game_law_external"
+      }
+    ],
+    "stateMachine": {
+      "states": [
+        "blocked",
+        "serviceable",
+        "engaged",
+        "repaired",
+        "damaged"
+      ],
+      "transitions": [
+        {
+          "from": "blocked",
+          "to": "serviceable",
+          "verb": "damage_obstruction",
+          "authority": "game_law_external"
+        },
+        {
+          "from": "serviceable",
+          "to": "engaged",
+          "verb": "turn",
+          "authority": "game_law_external"
+        },
+        {
+          "from": "engaged",
+          "to": "repaired",
+          "verb": "hold_to_work",
+          "authority": "game_law_external"
+        },
+        {
+          "from": "repaired",
+          "to": "damaged",
+          "verb": "world_consequence",
+          "authority": "game_law_external"
+        }
+      ]
+    },
+    "requiredAnimations": [
+      "wheel_turn",
+      "stem_travel",
+      "indicator_change",
+      "leak_start",
+      "leak_stop"
+    ],
+    "requiredColliders": [
+      "housing_static",
+      "wheel_interaction",
+      "growth_damage",
+      "player_work_trigger"
+    ]
+  },
+  "budgets": [
+    {
+      "platform": "quest_low",
+      "limits": {
+        "maxTriangles": 12000,
+        "maxVertices": 14000,
+        "maxMaterials": 2,
+        "maxTextureBytes": 8388608,
+        "maxDrawCalls": 2,
+        "maxColliderHulls": 8,
+        "maxLoadMilliseconds": 35
+      }
+    },
+    {
+      "platform": "desktop_standard",
+      "limits": {
+        "maxTriangles": 32000,
+        "maxVertices": 36000,
+        "maxMaterials": 3,
+        "maxTextureBytes": 33554432,
+        "maxDrawCalls": 3,
+        "maxColliderHulls": 12,
+        "maxLoadMilliseconds": 20
+      }
+    }
+  ],
+  "acceptance": {
+    "requiredGates": [
+      "identity",
+      "structure",
+      "geometry",
+      "topology",
+      "uv",
+      "materials",
+      "physics",
+      "lod",
+      "engine_import",
+      "runtime_budget",
+      "gameplay_semantics",
+      "style_consistency",
+      "readability",
+      "security",
+      "provenance",
+      "license",
+      "human_correction",
+      "substitution",
+      "migration",
+      "human_acceptance"
+    ],
+    "aggregateScore": null,
+    "requiredVenues": [
+      "neutral_viewer",
+      "unity_editmode",
+      "unity_windows_player",
+      "underdrain_pump_room"
+    ],
+    "requiredHumanRoles": [
+      "asset_artist",
+      "gameplay_designer",
+      "technical_artist"
+    ]
+  },
+  "provenancePolicy": {
+    "retainInputs": true,
+    "retainPrompts": true,
+    "retainSeeds": true,
+    "retainModelWeightsIdentity": true,
+    "retainTransforms": true,
+    "retainHumanEditDeltas": true,
+    "attestation": [
+      "spdx3",
+      "c2pa",
+      "in_toto"
+    ]
+  },
+  "licensePolicy": {
+    "allowed": [
+      "shipping_eligible"
+    ],
+    "review": [
+      "legal_review"
+    ],
+    "prohibited": [
+      "research_only",
+      "blocked",
+      "unknown"
+    ],
+    "worldwideDistributionRequired": true,
+    "creditMustRoundTrip": true
+  },
+  "fallback": {
+    "kind": "procedural_source",
+    "reference": "fallback.underdrain.valve-v1",
+    "mustRemainUsableWithoutSupplier": true
+  }
+}

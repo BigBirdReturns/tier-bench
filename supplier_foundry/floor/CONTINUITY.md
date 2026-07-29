@@ -37,10 +37,7 @@ It may not:
 ## Recovery
 
 ```bash
-python supplier_foundry/floor/asset_floor.py validate \
-  --catalog supplier_foundry/floor/catalog.json \
-  --intent supplier_foundry/floor/examples/underdrain-valve.asset-intent.json \
-  --intent supplier_foundry/floor/examples/underdrain-boss-toad.asset-intent.json
+python supplier_foundry/floor/asset_floor.py validate   --catalog supplier_foundry/floor/catalog.json   --intent supplier_foundry/floor/examples/underdrain-valve.asset-intent.json   --intent supplier_foundry/floor/examples/underdrain-boss-toad.asset-intent.json
 
 python -m unittest discover -s supplier_foundry/floor/tests -v
 ```
