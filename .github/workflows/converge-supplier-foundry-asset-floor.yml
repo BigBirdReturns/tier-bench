@@ -60,9 +60,9 @@ jobs:
             python -m unittest discover -s supplier_foundry/tests -v
           fi
           python supplier_foundry/floor/asset_floor.py validate \
-            supplier_foundry/floor/catalog.json \
-            supplier_foundry/floor/examples/underdrain-valve.asset-intent.json \
-            supplier_foundry/floor/examples/underdrain-boss-toad.asset-intent.json
+            --catalog supplier_foundry/floor/catalog.json \
+            --intent supplier_foundry/floor/examples/underdrain-valve.asset-intent.json \
+            --intent supplier_foundry/floor/examples/underdrain-boss-toad.asset-intent.json
           python supplier_foundry/floor/asset_floor.py report \
             --catalog supplier_foundry/floor/catalog.json \
             --intent supplier_foundry/floor/examples/underdrain-valve.asset-intent.json \
