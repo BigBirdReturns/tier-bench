@@ -1,0 +1,34 @@
+{
+  "format": "axm-action-player-floor-acceptance/1",
+  "status": "contract_accepted",
+  "functionalCommit": "9cc2a1e8e1c1f3722ecbf78828c75e2afc50e895",
+  "reviewedHead": "2451c00ace717900db40d6c72aac162808d01500",
+  "pullRequest": "https://github.com/BigBirdReturns/tier-bench/pull/149",
+  "qualification": {
+    "runId": 30423096163,
+    "python310": {
+      "artifactId": 8712598539,
+      "sha256": "4ffecd74e4f2850e56301d55a41035c8ee9f1573ed0ab1ba87b38e1df50485e6"
+    },
+    "python312": {
+      "artifactId": 8712599363,
+      "sha256": "ec93f6ce2f20238befa7adc73dc2ebcd2f92e235d5b154c93d95ffe10fe63767"
+    }
+  },
+  "records": {
+    "catalogId": "actionfloor1_55eb8869417b3b36a28a309263624fe04ad07028f2254337a2f1548cd03b47d8",
+    "reportId": "actionfloorreport1_190434fd82b36c0877c55a4cde8cd2e4c0c0f64876d59907fa104f522b36f46e",
+    "underdrainIntentId": "playerintent1_91647652ca3f387b114d5fa7cfab416e2d99c5f307098b6426a17f624cdfbe6c"
+  },
+  "acceptedObject": "The ownership, interface, drift, evidence, negative-witness, migration, succession, and reconstruction floor for AXM action player products.",
+  "notAccepted": [
+    "Arc semantic phase and mechanic-learning implementation",
+    "World Unity or Windows player",
+    "any player-plane provider",
+    "independent human evidence",
+    "UNDERDRAIN player product",
+    "Quest or physical action session"
+  ],
+  "productAccepted": false,
+  "authority": "This record accepts the floor contract and its conformance evidence only. It does not accept a game, provider, engine build, player observation, or outcome."
+}
