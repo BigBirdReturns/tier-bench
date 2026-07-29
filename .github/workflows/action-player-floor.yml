@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'action_player_floor/**'
+      - 'ACTION_PLAYER_FLOOR.md'
       - '.github/workflows/action-player-floor.yml'
       - 'README.md'
       - 'HANDOFF.md'
@@ -12,6 +13,7 @@ on:
       - main
     paths:
       - 'action_player_floor/**'
+      - 'ACTION_PLAYER_FLOOR.md'
       - '.github/workflows/action-player-floor.yml'
       - 'README.md'
       - 'HANDOFF.md'
@@ -52,29 +54,58 @@ jobs:
             --witnesses action_player_floor/examples/negative-witnesses.json \
             --changes action_player_floor/examples/change-proposals.json
 
-      - name: Reconstruct the exact floor report
+      - name: Reconstruct and package the complete self-verifying floor
         shell: bash
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/action-player-floor"
-          mkdir -p "$root"
+          mkdir -p \
+            "$root/action_player_floor/examples" \
+            "$root/action_player_floor/tests"
+
           python action_player_floor/floor.py report \
             --catalog action_player_floor/catalog.json \
             --intent action_player_floor/examples/underdrain.player-intent.json \
             --witnesses action_player_floor/examples/negative-witnesses.json \
             --changes action_player_floor/examples/change-proposals.json \
-            --output "$root/floor-report.json"
-          cmp "$root/floor-report.json" action_player_floor/examples/floor-report.json
+            --output "$root/action_player_floor/examples/floor-report.json"
+          cmp \
+            "$root/action_player_floor/examples/floor-report.json" \
+            action_player_floor/examples/floor-report.json
 
-          cp action_player_floor/catalog.json "$root/"
-          cp action_player_floor/examples/underdrain.player-intent.json "$root/"
-          cp action_player_floor/examples/negative-witnesses.json "$root/"
-          cp action_player_floor/examples/change-proposals.json "$root/"
-          cp action_player_floor/README.md "$root/"
-          cp action_player_floor/START_HERE.md "$root/"
-          cp action_player_floor/CONTINUITY.md "$root/"
-          cp action_player_floor/COMMUNITY_MAP.md "$root/"
+          cp ACTION_PLAYER_FLOOR.md "$root/"
+          cp action_player_floor/README.md "$root/action_player_floor/"
+          cp action_player_floor/START_HERE.md "$root/action_player_floor/"
+          cp action_player_floor/CONTINUITY.md "$root/action_player_floor/"
+          cp action_player_floor/COMMUNITY_MAP.md "$root/action_player_floor/"
+          cp action_player_floor/AGENTS.md "$root/action_player_floor/"
+          cp action_player_floor/CLAUDE.md "$root/action_player_floor/"
+          cp action_player_floor/ACCEPTED_FLOOR.json "$root/action_player_floor/"
+          cp action_player_floor/FANOUT.md "$root/action_player_floor/"
+          cp action_player_floor/catalog.json "$root/action_player_floor/"
+          cp action_player_floor/floor.py "$root/action_player_floor/"
+          cp action_player_floor/examples/underdrain.player-intent.json "$root/action_player_floor/examples/"
+          cp action_player_floor/examples/negative-witnesses.json "$root/action_player_floor/examples/"
+          cp action_player_floor/examples/change-proposals.json "$root/action_player_floor/examples/"
+          cp action_player_floor/tests/test_floor.py "$root/action_player_floor/tests/"
           printf '%s\n' "$(git rev-parse HEAD)" > "$root/repository-head.txt"
+
+          python "$root/action_player_floor/floor.py" validate \
+            --catalog "$root/action_player_floor/catalog.json" \
+            --intent "$root/action_player_floor/examples/underdrain.player-intent.json" \
+            --witnesses "$root/action_player_floor/examples/negative-witnesses.json" \
+            --changes "$root/action_player_floor/examples/change-proposals.json"
+          python -m unittest discover -s "$root/action_player_floor/tests" -v
+          python "$root/action_player_floor/floor.py" report \
+            --catalog "$root/action_player_floor/catalog.json" \
+            --intent "$root/action_player_floor/examples/underdrain.player-intent.json" \
+            --witnesses "$root/action_player_floor/examples/negative-witnesses.json" \
+            --changes "$root/action_player_floor/examples/change-proposals.json" \
+            --output "$root/reconstructed-report.json"
+          cmp \
+            "$root/reconstructed-report.json" \
+            "$root/action_player_floor/examples/floor-report.json"
+
           (
             cd "$root"
             find . -type f ! -name SHA256SUMS -printf '%P\0' |
