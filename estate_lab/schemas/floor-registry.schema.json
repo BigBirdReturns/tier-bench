@@ -1,0 +1,108 @@
+{
+  "$id": "https://axm.tools/schemas/interaction-floor-registry-1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adapters": {
+      "items": {
+        "properties": {
+          "adapter_id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "versions": {
+            "items": {
+              "properties": {
+                "adapter_version": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "badges": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "descriptor_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "quality_tier": {
+                  "enum": [
+                    "bronze",
+                    "silver",
+                    "gold",
+                    "platinum"
+                  ]
+                },
+                "submission_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "verified_profiles": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "adapter_version",
+                "descriptor_id",
+                "submission_id",
+                "quality_tier",
+                "verified_profiles",
+                "badges"
+              ],
+              "type": "object"
+            },
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "adapter_id",
+          "versions"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "admission_rule": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "entry_count": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "floor_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "floor_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "format": {
+      "const": "axm-interaction-registry/1"
+    },
+    "registry_id": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "format",
+    "registry_id",
+    "floor_id",
+    "floor_version",
+    "entry_count",
+    "adapters",
+    "admission_rule"
+  ],
+  "title": "Interaction Floor adapter registry",
+  "type": "object"
+}

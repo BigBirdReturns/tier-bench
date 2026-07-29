@@ -1,0 +1,20 @@
+{
+  "expect": {
+    "accepted": true,
+    "health_state": "ready",
+    "outcome": "accepted"
+  },
+  "id": "core-health",
+  "profile": "core@1",
+  "request": {
+    "context": {
+      "correlation_id": "floor-conformance-correlation",
+      "deadline_unix_ms": 4102444800000,
+      "privacy_class": "internal"
+    },
+    "kind": "health",
+    "phase": "source",
+    "sequence": 1,
+    "target_adapter_id": "$ADAPTER_ID"
+  }
+}

@@ -1,0 +1,692 @@
+{
+  "authority_boundary": {
+    "owns": [
+      "portable request, event, response, descriptor, conformance, and registry shapes",
+      "canonical identities and public test vectors",
+      "profile and quality-tier meanings"
+    ],
+    "refuses": [
+      "domain or game law",
+      "physical safety authorization",
+      "human disposition or outcome acceptance",
+      "project priority or scheduling",
+      "truth of an observation",
+      "supplier fitness outside tested vectors"
+    ]
+  },
+  "bindings": [
+    {
+      "id": "command-json@1",
+      "mechanism": "argv with request and response JSON files; shell execution forbidden",
+      "status": "normative-reference"
+    },
+    {
+      "id": "cloudevents-json@1",
+      "mechanism": "structured CloudEvents envelope with request_id as id and semantic_id as type",
+      "status": "mapping"
+    },
+    {
+      "id": "asyncapi@1",
+      "mechanism": "generated event-driven API description for request and response channels",
+      "status": "contract-projection"
+    },
+    {
+      "id": "mqtt5@1",
+      "mechanism": "request/response topics with correlation data and content type",
+      "status": "mapping"
+    },
+    {
+      "id": "websocket-json@1",
+      "mechanism": "one JSON envelope per message with explicit request correlation",
+      "status": "mapping"
+    },
+    {
+      "id": "osc@1",
+      "mechanism": "semantic identifiers map to addresses; authority remains in a companion envelope",
+      "status": "mapping"
+    },
+    {
+      "id": "wasm-component@1",
+      "mechanism": "WIT world with strict request and response imports/exports",
+      "status": "interface-projection"
+    },
+    {
+      "id": "wot-td@1",
+      "mechanism": "Thing Description actions/events map to floor envelopes without becoming authority",
+      "status": "mapping"
+    }
+  ],
+  "canonicalization": {
+    "algorithm": "utf8-sorted-json-sha256-v1",
+    "duplicate_keys": "refused",
+    "encoding": "UTF-8",
+    "hash": "SHA-256",
+    "numbers": "finite JSON numbers only",
+    "object_keys": "lexicographically sorted",
+    "whitespace": "none in identity-bearing bytes"
+  },
+  "distribution": {
+    "artifact_plan": "OCI artifact plus SPDX/CycloneDX and SLSA/Sigstore evidence; publication remains a separate gate",
+    "media_types": [
+      "application/vnd.axm.interaction-request+json",
+      "application/vnd.axm.interaction-response+json",
+      "application/vnd.axm.interaction-adapter+json",
+      "application/vnd.axm.interaction-conformance+json"
+    ]
+  },
+  "envelopes": {
+    "event": "axm-semantic-event/1",
+    "request": "axm-interaction-request/1",
+    "response": "axm-interaction-response/1",
+    "snapshot": "axm-interaction-snapshot/1"
+  },
+  "extensions": {
+    "authority_rule": "extensions may narrow behavior but may not grant authority or change core semantics",
+    "namespace_rule": "reverse-domain or registered axm.* prefix"
+  },
+  "floor_id": "floor1_15cecffbb5464760462b7dbb6ec19fa2",
+  "floor_version": "1.0.0",
+  "format": "axm-interaction-floor/1",
+  "health_states": [
+    "ready",
+    "degraded",
+    "unavailable"
+  ],
+  "operations": [
+    "set",
+    "increment",
+    "append",
+    "remove",
+    "toggle"
+  ],
+  "ordering": {
+    "deadline_rule": "expired requests refuse before side effects",
+    "duplicate_rule": "same event_id and same bytes must be idempotent; same event_id and different bytes must refuse",
+    "event_identity": "content-derived event_id",
+    "idempotency_key": "event_id",
+    "request_identity": "content-derived request_id",
+    "sequence": "monotonic within a declared run when supplied"
+  },
+  "phases": [
+    "source",
+    "target"
+  ],
+  "privacy_classes": [
+    "public",
+    "internal",
+    "confidential",
+    "restricted"
+  ],
+  "profiles": {
+    "accessibility@1": {
+      "purpose": "Declare modalities and fallbacks so accessibility is part of the adapter contract rather than an afterthought.",
+      "requires": [
+        "core@1"
+      ]
+    },
+    "agent-delegation@1": {
+      "purpose": "Preserve human and agent delegation while prohibiting authority escalation.",
+      "requires": [
+        "core@1",
+        "observability@1"
+      ]
+    },
+    "core@1": {
+      "purpose": "Prove envelope identity, bounded authority consumption, semantic non-mutation, and explicit refusal.",
+      "requires": []
+    },
+    "lifecycle@1": {
+      "purpose": "Expose health, snapshot, reset, degraded, and unavailable states without inventing completion.",
+      "requires": [
+        "core@1"
+      ]
+    },
+    "observability@1": {
+      "purpose": "Carry W3C Trace Context and structured evidence without promoting telemetry to authority.",
+      "requires": [
+        "core@1"
+      ]
+    },
+    "privacy@1": {
+      "purpose": "Declare data classes and retention behavior without allowing the adapter to silently downgrade them.",
+      "requires": [
+        "core@1"
+      ]
+    },
+    "replay@1": {
+      "purpose": "Prove deterministic replay and event-id idempotency.",
+      "requires": [
+        "core@1"
+      ]
+    },
+    "supply@1": {
+      "purpose": "Bind license and exact implementation bytes while leaving product acceptance external.",
+      "requires": [
+        "core@1"
+      ]
+    }
+  },
+  "quality_tiers": {
+    "bronze": {
+      "meaning": "portable semantic boundary passes",
+      "profiles": [
+        "core@1"
+      ]
+    },
+    "declared": {
+      "meaning": "descriptor parses; no execution claim",
+      "profiles": []
+    },
+    "gold": {
+      "meaning": "operational evidence, supply bytes, and privacy declarations pass",
+      "profiles": [
+        "core@1",
+        "replay@1",
+        "lifecycle@1",
+        "observability@1",
+        "supply@1",
+        "privacy@1"
+      ]
+    },
+    "platinum": {
+      "meaning": "all profiles plus an independent verifier and a substitution/rip-out receipt",
+      "profiles": [
+        "core@1",
+        "replay@1",
+        "lifecycle@1",
+        "observability@1",
+        "supply@1",
+        "privacy@1",
+        "accessibility@1",
+        "agent-delegation@1"
+      ]
+    },
+    "silver": {
+      "meaning": "replay and failure lifecycle pass",
+      "profiles": [
+        "core@1",
+        "replay@1",
+        "lifecycle@1"
+      ]
+    }
+  },
+  "request_kinds": [
+    "describe",
+    "health",
+    "execute",
+    "snapshot",
+    "reset"
+  ],
+  "summary": "A portable semantic interaction narrow waist for games, agents, browsers, XR, control panels, laboratories, and physical devices.",
+  "title": "AXM Interaction Floor",
+  "vectors": [
+    {
+      "expect": {
+        "accepted": true,
+        "descriptor_id": "$DESCRIPTOR_ID",
+        "outcome": "accepted"
+      },
+      "id": "core-describe",
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "kind": "describe",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": true,
+        "health_state": "ready",
+        "outcome": "accepted"
+      },
+      "id": "core-health",
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "kind": "health",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": true,
+        "outcome": "accepted"
+      },
+      "id": "core-execute-set",
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "event": {
+          "authority": {
+            "actor": "human:conformance-operator",
+            "mandate": "fixture.control",
+            "ownership_epoch": 1,
+            "role": "operator"
+          },
+          "operation": "set",
+          "semantic_id": "fixture.control.set",
+          "state_path": "/fixture/control",
+          "subject": "fixture.control",
+          "value": true
+        },
+        "kind": "execute",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": false,
+        "outcome": "refused",
+        "reason": "request_format_unsupported"
+      },
+      "id": "core-reject-format",
+      "mutate": {
+        "request_format": "example.invalid-request/9"
+      },
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "kind": "health",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": false,
+        "outcome": "refused",
+        "reason": "adapter_target_mismatch"
+      },
+      "id": "core-reject-target",
+      "mutate": {
+        "target_adapter_id": "example.wrong-adapter"
+      },
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "kind": "health",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": false,
+        "outcome": "refused",
+        "reason": "floor_version_unsupported"
+      },
+      "id": "core-reject-floor-major",
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "floor_version": "2.0.0",
+        "kind": "health",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": false,
+        "outcome": "refused",
+        "reason": "request_identity_mismatch"
+      },
+      "id": "core-reject-request-identity",
+      "mutate": {
+        "request_id": "zero"
+      },
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "kind": "health",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": false,
+        "outcome": "refused",
+        "reason": "semantic_digest_mismatch"
+      },
+      "id": "core-reject-semantic-digest",
+      "mutate": {
+        "semantic_digest": "zero"
+      },
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "event": {
+          "authority": {
+            "actor": "human:conformance-operator",
+            "mandate": "fixture.control",
+            "ownership_epoch": 1,
+            "role": "operator"
+          },
+          "operation": "set",
+          "semantic_id": "fixture.control.set",
+          "state_path": "/fixture/control",
+          "subject": "fixture.control",
+          "value": true
+        },
+        "kind": "execute",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": false,
+        "outcome": "refused",
+        "reason": "authority_incomplete"
+      },
+      "id": "core-reject-incomplete-authority",
+      "mutate": {
+        "authority_remove": "role"
+      },
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "event": {
+          "authority": {
+            "actor": "human:conformance-operator",
+            "mandate": "fixture.control",
+            "ownership_epoch": 1,
+            "role": "operator"
+          },
+          "operation": "set",
+          "semantic_id": "fixture.control.set",
+          "state_path": "/fixture/control",
+          "subject": "fixture.control",
+          "value": true
+        },
+        "kind": "execute",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": false,
+        "outcome": "refused",
+        "reason": "request_deadline_expired"
+      },
+      "id": "core-reject-expired",
+      "mutate": {
+        "expire_deadline": true
+      },
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "kind": "health",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": false,
+        "outcome": "refused",
+        "reason": "request_kind_unsupported"
+      },
+      "id": "core-reject-kind",
+      "profile": "core@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "kind": "unsupported-kind",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": true,
+        "outcome": "accepted"
+      },
+      "id": "replay-byte-identical",
+      "profile": "replay@1",
+      "repeats": 3,
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "event": {
+          "authority": {
+            "actor": "human:conformance-operator",
+            "mandate": "fixture.control",
+            "ownership_epoch": 1,
+            "role": "operator"
+          },
+          "operation": "set",
+          "semantic_id": "fixture.control.set",
+          "state_path": "/fixture/control",
+          "subject": "fixture.control",
+          "value": false
+        },
+        "kind": "execute",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": true,
+        "outcome": "accepted"
+      },
+      "id": "lifecycle-snapshot",
+      "profile": "lifecycle@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "kind": "snapshot",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": true,
+        "outcome": "reset"
+      },
+      "id": "lifecycle-reset",
+      "profile": "lifecycle@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal"
+        },
+        "kind": "reset",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": true,
+        "observations": {
+          "traceparent": "$TRACEPARENT"
+        },
+        "outcome": "accepted"
+      },
+      "id": "observability-trace-context",
+      "profile": "observability@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "internal",
+          "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+        },
+        "event": {
+          "authority": {
+            "actor": "human:conformance-operator",
+            "mandate": "fixture.control",
+            "ownership_epoch": 1,
+            "role": "operator"
+          },
+          "operation": "set",
+          "semantic_id": "fixture.control.set",
+          "state_path": "/fixture/control",
+          "subject": "fixture.control",
+          "value": true
+        },
+        "kind": "execute",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": true,
+        "observations": {
+          "privacy_class": "restricted"
+        },
+        "outcome": "accepted"
+      },
+      "id": "privacy-restricted-envelope",
+      "profile": "privacy@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "privacy_class": "restricted"
+        },
+        "event": {
+          "authority": {
+            "actor": "human:conformance-operator",
+            "mandate": "fixture.control",
+            "ownership_epoch": 1,
+            "role": "operator"
+          },
+          "operation": "set",
+          "semantic_id": "fixture.control.set",
+          "state_path": "/fixture/control",
+          "subject": "fixture.control",
+          "value": true
+        },
+        "kind": "execute",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    },
+    {
+      "expect": {
+        "accepted": true,
+        "observations": {
+          "delegation_id": "$DELEGATION_ID",
+          "traceparent": "$TRACEPARENT"
+        },
+        "outcome": "accepted"
+      },
+      "id": "agent-delegation-preserved",
+      "profile": "agent-delegation@1",
+      "request": {
+        "context": {
+          "correlation_id": "floor-conformance-correlation",
+          "deadline_unix_ms": 4102444800000,
+          "delegation": {
+            "delegate": "agent:reference-test",
+            "delegation_id": "delegation-floor-test-001",
+            "may_escalate": false,
+            "principal": "human:conformance-operator",
+            "scope": "fixture.control"
+          },
+          "privacy_class": "internal",
+          "traceparent": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+        },
+        "event": {
+          "authority": {
+            "actor": "human:conformance-operator",
+            "mandate": "fixture.control",
+            "ownership_epoch": 1,
+            "role": "operator"
+          },
+          "operation": "set",
+          "semantic_id": "fixture.control.set",
+          "state_path": "/fixture/control",
+          "subject": "fixture.control",
+          "value": true
+        },
+        "kind": "execute",
+        "phase": "source",
+        "sequence": 1,
+        "target_adapter_id": "$ADAPTER_ID"
+      }
+    }
+  ],
+  "version_negotiation": {
+    "rule": "same major is potentially compatible; claimed minors still require conformance vectors",
+    "unknown_extension": "preserve or explicitly report unsupported; never silently reinterpret",
+    "unknown_major": "refuse"
+  }
+}

@@ -1,0 +1,130 @@
+{
+  "$id": "https://axm.tools/schemas/interaction-floor-gap-ledger-1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "format": {
+      "const": "axm-interaction-gap-ledger/1"
+    },
+    "gaps": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "actors": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "category": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "closure_artifact": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "closure_test": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "dependencies": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "evidence": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          },
+          "failure_mode": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "mechanism": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "owner": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "critical",
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "status": {
+            "enum": [
+              "closed",
+              "in-progress",
+              "open",
+              "deferred",
+              "reference"
+            ]
+          },
+          "title": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "title",
+          "status",
+          "severity",
+          "actors",
+          "mechanism",
+          "failure_mode",
+          "closure_artifact",
+          "closure_test",
+          "owner",
+          "dependencies",
+          "evidence"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "ledger_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "reviewed_as_of": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "scope": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "format",
+    "ledger_id",
+    "reviewed_as_of",
+    "scope",
+    "gaps"
+  ],
+  "title": "Interaction Floor gap ledger",
+  "type": "object"
+}

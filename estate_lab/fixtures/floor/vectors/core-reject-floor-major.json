@@ -1,0 +1,21 @@
+{
+  "expect": {
+    "accepted": false,
+    "outcome": "refused",
+    "reason": "floor_version_unsupported"
+  },
+  "id": "core-reject-floor-major",
+  "profile": "core@1",
+  "request": {
+    "context": {
+      "correlation_id": "floor-conformance-correlation",
+      "deadline_unix_ms": 4102444800000,
+      "privacy_class": "internal"
+    },
+    "floor_version": "2.0.0",
+    "kind": "health",
+    "phase": "source",
+    "sequence": 1,
+    "target_adapter_id": "$ADAPTER_ID"
+  }
+}

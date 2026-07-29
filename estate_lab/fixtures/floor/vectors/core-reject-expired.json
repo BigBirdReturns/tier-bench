@@ -1,0 +1,23 @@
+{
+  "expect": {
+    "accepted": false,
+    "outcome": "refused",
+    "reason": "request_deadline_expired"
+  },
+  "id": "core-reject-expired",
+  "mutate": {
+    "expire_deadline": true
+  },
+  "profile": "core@1",
+  "request": {
+    "context": {
+      "correlation_id": "floor-conformance-correlation",
+      "deadline_unix_ms": 4102444800000,
+      "privacy_class": "internal"
+    },
+    "kind": "health",
+    "phase": "source",
+    "sequence": 1,
+    "target_adapter_id": "$ADAPTER_ID"
+  }
+}

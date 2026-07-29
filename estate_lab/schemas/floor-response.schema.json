@@ -1,0 +1,72 @@
+{
+  "$id": "https://axm.tools/schemas/interaction-floor-response-1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "accepted": {
+      "type": "boolean"
+    },
+    "adapter_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "descriptor_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "format": {
+      "const": "axm-interaction-response/1"
+    },
+    "health": {
+      "type": "object"
+    },
+    "kind": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "observations": {
+      "type": "object"
+    },
+    "outcome": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "request_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "response_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "semantic_digest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "snapshot": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "format",
+    "response_id",
+    "request_id",
+    "adapter_id",
+    "kind",
+    "accepted",
+    "reason",
+    "outcome",
+    "semantic_digest",
+    "observations"
+  ],
+  "title": "Interaction Floor response",
+  "type": "object"
+}

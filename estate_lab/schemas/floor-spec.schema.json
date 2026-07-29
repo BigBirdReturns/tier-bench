@@ -1,0 +1,259 @@
+{
+  "$id": "https://axm.tools/schemas/interaction-floor-spec-1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authority_boundary": {
+      "additionalProperties": false,
+      "properties": {
+        "owns": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "refuses": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "owns",
+        "refuses"
+      ],
+      "type": "object"
+    },
+    "bindings": {
+      "items": {
+        "properties": {
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "mechanism": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "mechanism"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "canonicalization": {
+      "minProperties": 1,
+      "type": "object"
+    },
+    "distribution": {
+      "minProperties": 1,
+      "type": "object"
+    },
+    "envelopes": {
+      "minProperties": 1,
+      "type": "object"
+    },
+    "extensions": {
+      "minProperties": 1,
+      "type": "object"
+    },
+    "floor_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "floor_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "format": {
+      "const": "axm-interaction-floor/1"
+    },
+    "health_states": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "operations": {
+      "items": {
+        "enum": [
+          "set",
+          "increment",
+          "append",
+          "remove",
+          "toggle"
+        ]
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "ordering": {
+      "minProperties": 1,
+      "type": "object"
+    },
+    "phases": {
+      "items": {
+        "enum": [
+          "source",
+          "target"
+        ]
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "privacy_classes": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "profiles": {
+      "additionalProperties": {
+        "properties": {
+          "purpose": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "requires": {
+            "items": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "purpose",
+          "requires"
+        ],
+        "type": "object"
+      },
+      "minProperties": 1,
+      "type": "object"
+    },
+    "quality_tiers": {
+      "minProperties": 5,
+      "required": [
+        "declared",
+        "bronze",
+        "silver",
+        "gold",
+        "platinum"
+      ],
+      "type": "object"
+    },
+    "request_kinds": {
+      "items": {
+        "enum": [
+          "describe",
+          "health",
+          "execute",
+          "snapshot",
+          "reset"
+        ]
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "summary": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "title": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "vectors": {
+      "items": {
+        "properties": {
+          "expect": {
+            "type": "object"
+          },
+          "id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "mutate": {
+            "type": "object"
+          },
+          "profile": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "repeats": {
+            "maximum": 4,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "request": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "profile",
+          "request",
+          "expect"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "version_negotiation": {
+      "minProperties": 1,
+      "type": "object"
+    }
+  },
+  "required": [
+    "format",
+    "floor_id",
+    "floor_version",
+    "title",
+    "summary",
+    "authority_boundary",
+    "canonicalization",
+    "envelopes",
+    "operations",
+    "request_kinds",
+    "phases",
+    "privacy_classes",
+    "health_states",
+    "ordering",
+    "version_negotiation",
+    "extensions",
+    "profiles",
+    "quality_tiers",
+    "bindings",
+    "distribution",
+    "vectors"
+  ],
+  "title": "AXM Interaction Floor specification",
+  "type": "object"
+}

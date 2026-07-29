@@ -1,0 +1,20 @@
+{
+  "expect": {
+    "accepted": false,
+    "outcome": "refused",
+    "reason": "request_kind_unsupported"
+  },
+  "id": "core-reject-kind",
+  "profile": "core@1",
+  "request": {
+    "context": {
+      "correlation_id": "floor-conformance-correlation",
+      "deadline_unix_ms": 4102444800000,
+      "privacy_class": "internal"
+    },
+    "kind": "unsupported-kind",
+    "phase": "source",
+    "sequence": 1,
+    "target_adapter_id": "$ADAPTER_ID"
+  }
+}

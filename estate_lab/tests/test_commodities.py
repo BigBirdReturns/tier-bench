@@ -26,8 +26,8 @@ class CommodityCatalogTests(unittest.TestCase):
         cls.catalog = load_commodity_catalog(CATALOG_PATH)
 
     def test_catalog_is_substantial_and_cross_domain(self) -> None:
-        self.assertGreaterEqual(len(self.catalog.candidates), 50)
-        self.assertGreaterEqual(len({item.category for item in self.catalog.candidates}), 10)
+        self.assertGreaterEqual(len(self.catalog.candidates), 80)
+        self.assertGreaterEqual(len({item.category for item in self.catalog.candidates}), 25)
         self.assertEqual(
             {item.decision for item in self.catalog.candidates},
             {"consume", "adapt", "reference", "reject"},
@@ -38,7 +38,7 @@ class CommodityCatalogTests(unittest.TestCase):
 
     def test_consume_candidates_are_open_and_substitutable(self) -> None:
         rows = select_candidates(self.catalog, decisions=["consume"])
-        self.assertGreaterEqual(len(rows), 8)
+        self.assertGreaterEqual(len(rows), 18)
         for item in rows:
             self.assertIn(item.license_posture, {"permissive", "standard"})
             self.assertIsNotNone(item.substitution_test)
@@ -46,7 +46,7 @@ class CommodityCatalogTests(unittest.TestCase):
 
     def test_adapt_candidates_name_adapter_and_ripout_test(self) -> None:
         rows = select_candidates(self.catalog, decisions=["adapt"])
-        self.assertGreaterEqual(len(rows), 20)
+        self.assertGreaterEqual(len(rows), 35)
         for item in rows:
             self.assertIsNotNone(item.required_adapter)
             self.assertIsNotNone(item.substitution_test)
@@ -87,6 +87,23 @@ class CommodityCatalogTests(unittest.TestCase):
             self.assertEqual(md_path.read_text(encoding="utf-8"), first)
             loaded = json.loads(json_path.read_text(encoding="utf-8"))
             self.assertEqual(loaded, plan)
+
+    def test_public_floor_standards_are_encoded(self) -> None:
+        ids = {item.candidate_id for item in self.catalog.candidates}
+        for candidate_id in (
+            "cloudevents",
+            "asyncapi",
+            "w3c-trace-context",
+            "wasm-component-model",
+            "oci-artifact-specs",
+            "slsa",
+            "spdx",
+            "cyclonedx",
+            "model-context-protocol",
+            "agent2agent",
+            "json-schema-2020-12",
+        ):
+            self.assertIn(candidate_id, ids)
 
     def test_catalog_refuses_identity_drift(self) -> None:
         raw = copy.deepcopy(self.catalog.raw)

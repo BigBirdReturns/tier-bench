@@ -1,0 +1,188 @@
+{
+  "$id": "https://axm.tools/schemas/interaction-floor-request-1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "context": {
+      "properties": {
+        "correlation_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "deadline_unix_ms": {
+          "type": "integer"
+        },
+        "delegation": {
+          "type": "object"
+        },
+        "privacy_class": {
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted"
+          ]
+        },
+        "traceparent": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "privacy_class",
+        "deadline_unix_ms",
+        "correlation_id"
+      ],
+      "type": "object"
+    },
+    "event": {
+      "properties": {
+        "authority": {
+          "properties": {
+            "actor": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "mandate": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "ownership_epoch": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "role": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "actor",
+            "role",
+            "mandate",
+            "ownership_epoch"
+          ],
+          "type": "object"
+        },
+        "causality": {
+          "properties": {
+            "correlation_id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "parent_event_ids": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "run_id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "run_id",
+            "correlation_id",
+            "parent_event_ids"
+          ],
+          "type": "object"
+        },
+        "event_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "format": {
+          "const": "axm-semantic-event/1"
+        },
+        "operation": {
+          "enum": [
+            "set",
+            "increment",
+            "append",
+            "remove",
+            "toggle"
+          ]
+        },
+        "semantic_digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "semantic_id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "state_path": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "subject": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "value": {}
+      },
+      "required": [
+        "format",
+        "event_id",
+        "semantic_id",
+        "subject",
+        "operation",
+        "state_path",
+        "value",
+        "authority",
+        "causality",
+        "semantic_digest"
+      ],
+      "type": "object"
+    },
+    "floor_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "format": {
+      "const": "axm-interaction-request/1"
+    },
+    "kind": {
+      "enum": [
+        "describe",
+        "health",
+        "execute",
+        "snapshot",
+        "reset"
+      ]
+    },
+    "phase": {
+      "enum": [
+        "source",
+        "target"
+      ]
+    },
+    "request_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "target_adapter_id": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "format",
+    "request_id",
+    "floor_version",
+    "target_adapter_id",
+    "kind",
+    "phase",
+    "sequence",
+    "context"
+  ],
+  "title": "Interaction Floor request",
+  "type": "object"
+}

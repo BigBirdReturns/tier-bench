@@ -9,6 +9,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Sequence
 
+from .canonical import load_json, write_json
 from .commodities import (
     build_acquisition_plan,
     load_commodity_catalog,
@@ -17,6 +18,25 @@ from .commodities import (
     write_acquisition_plan,
 )
 from .errors import EstateLabError
+from .floor import (
+    build_floor_description,
+    build_floor_registry,
+    initialize_adapter,
+    load_floor_adapter,
+    load_floor_spec,
+    load_floor_submission,
+    render_asyncapi,
+    render_conformance_summary,
+    render_registry_markdown,
+    run_floor_conformance,
+    validate_floor_registry,
+)
+from .floor_gaps import (
+    build_gap_report,
+    load_gap_ledger,
+    render_gap_report_markdown,
+    write_gap_report,
+)
 from .manifest import load_manifest, load_scenario
 from .routing import choose_route
 from .runtime import EstateLab
@@ -25,6 +45,9 @@ HERE = Path(__file__).resolve().parent
 DEFAULT_MANIFEST = HERE / "fixtures" / "estate.example.json"
 DEFAULT_SCENARIO_DIR = HERE / "fixtures" / "scenarios"
 DEFAULT_COMMODITY_CATALOG = HERE / "fixtures" / "commodities.example.json"
+DEFAULT_FLOOR_SPEC = HERE / "fixtures" / "floor" / "floor.example.json"
+DEFAULT_FLOOR_ADAPTER = HERE / "fixtures" / "floor" / "reference-adapter" / "adapter.json"
+DEFAULT_FLOOR_GAPS = HERE / "fixtures" / "floor" / "floor-gaps.example.json"
 
 
 def _add_runtime_args(parser: argparse.ArgumentParser) -> None:
@@ -38,10 +61,17 @@ def _add_runtime_args(parser: argparse.ArgumentParser) -> None:
     )
 
 
+def _add_floor_spec(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--spec", type=Path, default=DEFAULT_FLOOR_SPEC)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="estate-lab",
-        description="Exercise AXM estate routes, authority, equivalence, faults, and project probes.",
+        description=(
+            "Exercise AXM estate routes and expose a public interaction-floor "
+            "protocol, conformance suite, supplier ledger, and adapter registry."
+        ),
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -90,6 +120,79 @@ def build_parser() -> argparse.ArgumentParser:
     commodities.add_argument("--format", choices=("markdown", "json"), default="markdown")
     commodities.add_argument("--output", type=Path)
 
+    floor = subparsers.add_parser(
+        "floor",
+        help="Use the public Interaction Floor protocol and conformance surfaces.",
+    )
+    floor_sub = floor.add_subparsers(dest="floor_command", required=True)
+
+    floor_validate = floor_sub.add_parser(
+        "validate",
+        help="Validate the floor specification, adapter declaration, and gap ledger.",
+    )
+    _add_floor_spec(floor_validate)
+    floor_validate.add_argument("--adapter", type=Path, default=DEFAULT_FLOOR_ADAPTER)
+    floor_validate.add_argument("--gaps", type=Path, default=DEFAULT_FLOOR_GAPS)
+
+    floor_test = floor_sub.add_parser(
+        "test",
+        help="Run public conformance vectors against one command-json adapter.",
+    )
+    _add_floor_spec(floor_test)
+    floor_test.add_argument("--adapter", type=Path, default=DEFAULT_FLOOR_ADAPTER)
+    floor_test.add_argument("--output", type=Path, default=Path(".floor-conformance"))
+    floor_test.add_argument("--independent-verifier", action="store_true")
+    floor_test.add_argument("--substitution-receipt-sha256")
+    floor_test.add_argument("--json", action="store_true", dest="as_json")
+
+    floor_init = floor_sub.add_parser(
+        "init-adapter",
+        help="Generate a zero-dependency Python adapter starter.",
+    )
+    _add_floor_spec(floor_init)
+    floor_init.add_argument("directory", type=Path)
+    floor_init.add_argument("--adapter-id", required=True)
+    floor_init.add_argument("--name", required=True)
+    floor_init.add_argument("--force", action="store_true")
+
+    floor_registry = floor_sub.add_parser(
+        "registry",
+        help="Build a deterministic adapter registry from passing submissions.",
+    )
+    _add_floor_spec(floor_registry)
+    floor_registry.add_argument("--submission", action="append", type=Path, required=True)
+    floor_registry.add_argument("--format", choices=("json", "markdown"), default="json")
+    floor_registry.add_argument("--output", type=Path)
+
+    floor_verify_submission = floor_sub.add_parser(
+        "verify-submission",
+        help="Verify a content-addressed conformance submission.",
+    )
+    floor_verify_submission.add_argument("submission", type=Path)
+
+    floor_verify_registry = floor_sub.add_parser(
+        "verify-registry",
+        help="Verify a registry identity and entry structure.",
+    )
+    _add_floor_spec(floor_verify_registry)
+    floor_verify_registry.add_argument("registry", type=Path)
+
+    floor_describe = floor_sub.add_parser(
+        "describe",
+        help="Render the public floor as JSON, Markdown, or AsyncAPI YAML.",
+    )
+    _add_floor_spec(floor_describe)
+    floor_describe.add_argument("--format", choices=("json", "markdown", "asyncapi"), default="markdown")
+    floor_describe.add_argument("--output", type=Path)
+
+    floor_gaps = floor_sub.add_parser(
+        "gaps",
+        help="Project the executable interoperability gap ledger.",
+    )
+    floor_gaps.add_argument("--ledger", type=Path, default=DEFAULT_FLOOR_GAPS)
+    floor_gaps.add_argument("--format", choices=("json", "markdown"), default="markdown")
+    floor_gaps.add_argument("--output", type=Path)
+
     return parser
 
 
@@ -108,6 +211,175 @@ def _outcome_json(outcome) -> dict:
     if data.get("receipt_dir") is not None:
         data["receipt_dir"] = str(data["receipt_dir"])
     return data
+
+
+def _write_or_print(path: Path | None, text: str) -> None:
+    if path is None:
+        print(text, end="" if text.endswith("\n") else "\n")
+    else:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8", newline="\n")
+
+
+def _floor_main(args: argparse.Namespace) -> int:
+    if args.floor_command == "validate":
+        spec = load_floor_spec(args.spec)
+        adapter = load_floor_adapter(args.adapter, spec)
+        gaps = load_gap_ledger(args.gaps)
+        print(
+            json.dumps(
+                {
+                    "status": "PASS",
+                    "floor_id": spec.floor_id,
+                    "floor_version": spec.floor_version,
+                    "adapter_id": adapter.adapter_id,
+                    "descriptor_id": adapter.descriptor_id,
+                    "profiles": list(adapter.profiles),
+                    "vectors": len(spec.raw["vectors"]),
+                    "gap_ledger_id": gaps.ledger_id,
+                    "gaps": len(gaps.gaps),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    if args.floor_command == "test":
+        spec = load_floor_spec(args.spec)
+        adapter = load_floor_adapter(args.adapter, spec)
+        submission = run_floor_conformance(
+            spec,
+            adapter,
+            output_root=args.output,
+            independent_verifier=args.independent_verifier,
+            substitution_receipt_sha256=args.substitution_receipt_sha256,
+        )
+        if args.as_json:
+            print(json.dumps(submission.raw, indent=2, sort_keys=True))
+        else:
+            print(render_conformance_summary(submission.raw), end="")
+            print(f"bundle: {args.output / submission.submission_id}")
+        return 0 if submission.result == "pass" else 1
+
+    if args.floor_command == "init-adapter":
+        spec = load_floor_spec(args.spec)
+        adapter = initialize_adapter(
+            args.directory,
+            adapter_id=args.adapter_id,
+            name=args.name,
+            floor_version=spec.floor_version,
+            force=args.force,
+        )
+        print(
+            json.dumps(
+                {
+                    "status": "CREATED",
+                    "directory": str(args.directory),
+                    "adapter_id": adapter.adapter_id,
+                    "descriptor_id": adapter.descriptor_id,
+                    "next": (
+                        f"python -m estate_lab floor test --adapter "
+                        f"{args.directory / 'adapter.json'} --output {args.directory / 'conformance'}"
+                    ),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    if args.floor_command == "registry":
+        spec = load_floor_spec(args.spec)
+        submissions = [load_floor_submission(path) for path in args.submission]
+        registry = build_floor_registry(spec, submissions)
+        if args.format == "json":
+            if args.output is None:
+                print(json.dumps(registry, indent=2, sort_keys=True))
+            else:
+                write_json(args.output, registry)
+        else:
+            _write_or_print(args.output, render_registry_markdown(registry))
+        return 0
+
+    if args.floor_command == "verify-submission":
+        submission = load_floor_submission(args.submission)
+        print(
+            json.dumps(
+                {
+                    "status": "PASS",
+                    "submission_id": submission.submission_id,
+                    "adapter_id": submission.adapter_id,
+                    "adapter_version": submission.adapter_version,
+                    "result": submission.result,
+                    "quality_tier": submission.tier,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    if args.floor_command == "verify-registry":
+        spec = load_floor_spec(args.spec)
+        raw = load_json(args.registry)
+        if not isinstance(raw, dict):
+            raise EstateLabError("registry root must be an object")
+        registry = validate_floor_registry(raw, spec)
+        print(
+            json.dumps(
+                {
+                    "status": "PASS",
+                    "registry_id": registry["registry_id"],
+                    "floor_id": registry["floor_id"],
+                    "entry_count": registry["entry_count"],
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 0
+
+    if args.floor_command == "describe":
+        spec = load_floor_spec(args.spec)
+        description = build_floor_description(spec)
+        if args.format == "json":
+            text = json.dumps(description, indent=2, sort_keys=True) + "\n"
+        elif args.format == "asyncapi":
+            text = render_asyncapi(spec)
+        else:
+            text = "\n".join(
+                [
+                    "# AXM Interaction Floor",
+                    "",
+                    f"Floor: `{description['floor_id']}`",
+                    f"Version: `{description['floor_version']}`",
+                    f"Profiles: {', '.join(description['profiles'])}",
+                    f"Quality tiers: {', '.join(description['quality_tiers'])}",
+                    f"Bindings: {', '.join(description['bindings'])}",
+                    f"Conformance vectors: **{description['vector_count']}**",
+                    "",
+                    "The floor owns portable interaction and conformance shapes. It refuses domain law, "
+                    "physical safety authority, human disposition, project priority, and truth claims.",
+                    "",
+                ]
+            )
+        _write_or_print(args.output, text)
+        return 0
+
+    if args.floor_command == "gaps":
+        ledger = load_gap_ledger(args.ledger)
+        report = build_gap_report(ledger)
+        if args.output is not None:
+            write_gap_report(args.output, report, markdown=args.format == "markdown")
+        else:
+            if args.format == "json":
+                print(json.dumps(report, indent=2, sort_keys=True))
+            else:
+                print(render_gap_report_markdown(report), end="")
+        return 0
+
+    raise EstateLabError(f"unknown floor command: {args.floor_command}")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -202,11 +474,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             plan = build_acquisition_plan(catalog, candidates)
             if args.output is not None:
                 write_acquisition_plan(args.output, plan, markdown=args.format == "markdown")
+            elif args.format == "json":
+                print(json.dumps(plan, indent=2, sort_keys=True))
             else:
-                if args.format == "json":
-                    print(json.dumps(plan, indent=2, sort_keys=True))
-                else:
-                    print(render_acquisition_plan_markdown(plan), end="")
+                print(render_acquisition_plan_markdown(plan), end="")
             return 0
 
         if args.command == "route":
@@ -253,6 +524,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             )
             return 0
+
+        if args.command == "floor":
+            return _floor_main(args)
 
         parser.error(f"unknown command: {args.command}")
     except EstateLabError as exc:

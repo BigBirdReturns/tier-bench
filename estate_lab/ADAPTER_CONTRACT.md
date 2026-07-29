@@ -99,3 +99,9 @@ The runtime substitutes only the three declared placeholders. If `{request}` is 
 | `human_intervention_required` | A human adapter reached a noninteractive run and refused. |
 
 A failed source or target adapter leaves the semantic state unchanged. The fault remains in the run receipt and may be tested as an expected failure.
+
+## Public adapter boundary
+
+The internal `axm-adapter-request/1` contract remains scoped to Estate Lab manifests and route execution. External projects should implement the public `axm-interaction-adapter/1` declaration and `axm-interaction-request/1` / `axm-interaction-response/1` envelopes documented in `FLOOR_SPECIFICATION.md`. The public floor removes organ and repository assumptions while retaining semantic non-mutation, actor and authority preservation, shell-free command execution, lifecycle, replay, privacy, and conformance evidence.
+
+An internal project adapter may expose both contracts. The translation must be explicit and testable. Passing the public floor does not register the adapter as an AXM estate organ, and passing an internal route probe does not certify public interoperability.

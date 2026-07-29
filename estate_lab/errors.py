@@ -40,5 +40,14 @@ class AuthorityRefused(EstateLabError):
 class ProjectionMismatch(EstateLabError):
     """A projection did not reproduce the expected desired-output digest."""
 
+
 class CommodityCatalogError(EstateLabError):
     """The reviewed OSS/community commodity catalog is malformed or unsafe."""
+
+
+class FloorProtocolError(EstateLabError):
+    """The public Interaction Floor protocol or conformance product is invalid."""
+
+
+class FloorGapError(EstateLabError):
+    """The Interaction Floor gap ledger is malformed or internally contradictory."""

@@ -1,0 +1,33 @@
+{
+  "expect": {
+    "accepted": true,
+    "outcome": "accepted"
+  },
+  "id": "replay-byte-identical",
+  "profile": "replay@1",
+  "repeats": 3,
+  "request": {
+    "context": {
+      "correlation_id": "floor-conformance-correlation",
+      "deadline_unix_ms": 4102444800000,
+      "privacy_class": "internal"
+    },
+    "event": {
+      "authority": {
+        "actor": "human:conformance-operator",
+        "mandate": "fixture.control",
+        "ownership_epoch": 1,
+        "role": "operator"
+      },
+      "operation": "set",
+      "semantic_id": "fixture.control.set",
+      "state_path": "/fixture/control",
+      "subject": "fixture.control",
+      "value": false
+    },
+    "kind": "execute",
+    "phase": "source",
+    "sequence": 1,
+    "target_adapter_id": "$ADAPTER_ID"
+  }
+}

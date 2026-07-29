@@ -15,6 +15,13 @@ try {
     python -m estate_lab validate
     if ($LASTEXITCODE -ne 0) { throw "Estate Lab validation failed." }
 
+    python -m estate_lab floor validate
+    if ($LASTEXITCODE -ne 0) { throw "Interaction Floor validation failed." }
+
+    python -m estate_lab floor test `
+        --output (Join-Path $Output "floor-conformance")
+    if ($LASTEXITCODE -ne 0) { throw "Interaction Floor conformance failed." }
+
     python -m unittest discover -s estate_lab/tests -v
     if ($LASTEXITCODE -ne 0) { throw "Estate Lab tests failed." }
 

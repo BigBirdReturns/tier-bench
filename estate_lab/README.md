@@ -1,6 +1,6 @@
 # AXM Estate Lab
 
-AXM Estate Lab is the executable integration and routing instrument for the BigBirdReturns project estate. It measures whether a semantic action can cross project boundaries, retain the correct actor and mandate, survive route loss or source drift, commit one deterministic state transition, and emit inspectable receipts. It lives in Tier Bench because its authority is measurement and routing. It does not own cartridge law, human disposition, physical safety, project priority, or the truth of an observed claim.
+AXM Estate Lab is both the executable integration instrument for the BigBirdReturns project estate and the reference implementation of the public AXM Interaction Floor. The internal laboratory measures whether a semantic action can cross project boundaries, retain the correct actor and mandate, survive route loss or source drift, commit one deterministic state transition, and emit inspectable receipts. The public floor lets an outside project prove the narrower adapter boundary without importing the estate manifest, AXM game law, or repository topology. Both surfaces live in Tier Bench because their authority is measurement and conformance. They do not own cartridge law, human disposition, physical safety, project priority, deployment approval, or the truth of an observed claim.
 
 The laboratory converts the Halcyon Dawn and Enigma harvest into a general estate exercise. The original project demonstrated that a large physical console becomes tractable when generic devices, installation declarations, edge-local feedback, host-side typed bindings, atomic state publication, software twins, and reconnect snapshots are treated as one system. Estate Lab applies that system shape to AXM-ARC, AXM-WORLD, ScreenGhost, agent-runtime, AXM Embodied, AXM Console, Aide, Bloodstream, Hinge, EarCrate, Zombie Adapter, GhostBox, and Organ Evolution.
 
@@ -22,9 +22,34 @@ The retained manifest currently classifies 14 organs, 15 adapters, and 18 routes
 | `underdrain-pump-room-001` | A legible pump, bypass, purge, fungus-seal, contamination, flow, and recovery procedure | AXM-WORLD, ScreenGhost, AXM Embodied |
 | `estate-circuit-001` | Cross-organ compute planning, live-audio control, organ evolution, and attention candidacy | Zombie Adapter, EarCrate, AXM Tools, GhostBox, AXM Console |
 
+## Public Interaction Floor
+
+The public floor closes the gap between a strong internal harness and a usable external compatibility target. Its normative specification, adapter declaration, request and response envelopes, profiles, quality tiers, bindings, conformance submission, registry, and gap ledger are all machine-readable and content-addressed. The retained floor currently contains eight profiles, five quality tiers, eight binding definitions, seventeen dynamic vectors plus static profile checks, a zero-dependency reference adapter, a zero-dependency starter generator, and a forty-item executable gap ledger.
+
+```bash
+python -m estate_lab floor validate
+python -m estate_lab floor describe
+python -m estate_lab floor test --output .floor-conformance
+python -m estate_lab floor gaps
+```
+
+Generate a third-party adapter that does not depend on Estate Lab at runtime:
+
+```bash
+python -m estate_lab floor init-adapter ./my-adapter \
+  --adapter-id org.example.my-adapter \
+  --name "Example Adapter"
+
+python -m estate_lab floor test \
+  --adapter ./my-adapter/adapter.json \
+  --output ./my-adapter/conformance
+```
+
+The reference adapter passes every claimed profile and reaches gold. Platinum remains intentionally unavailable to self-certification because it requires an independent verifier and a supplier substitution or rip-out receipt. See [`FLOOR_SPECIFICATION.md`](FLOOR_SPECIFICATION.md), [`FLOOR_CONFORMANCE.md`](FLOOR_CONFORMANCE.md), [`FLOOR_GOVERNANCE.md`](FLOOR_GOVERNANCE.md), [`FLOOR_BINDINGS.md`](FLOOR_BINDINGS.md), and [`ADOPTING_FLOOR.md`](ADOPTING_FLOOR.md).
+
 ## OSS and commodity acquisition ledger
 
-The reviewed catalog at `fixtures/commodities.example.json` covers 55 public projects and standards across bridge simulators, cockpit hardware, embedded I/O, declarative firmware, input abstraction, show control, event automation, telemetry and replay, hardware-in-the-loop, digital twins, and transport. It records one of four dispositions for each candidate: consume unchanged, adapt behind an AXM-owned boundary, retain as a design reference, or reject while preserving the reason.
+The reviewed catalog at `fixtures/commodities.example.json` covers 81 public projects and standards across 27 capability categories. It records 18 consume decisions, 37 bounded adapters, 25 design references, and one preserved rejection. Version 0.3 adds the standards and governance layer needed for external adoption, including CloudEvents, AsyncAPI, W3C Trace Context, OpenTelemetry semantic conventions, W3C Web of Things, Sparkplug, the WebAssembly Component Model, OCI and ORAS, Sigstore, SLSA, SPDX, CycloneDX, JSON Schema, MCP, A2A, and public conformance-program references.
 
 Every consumed or adapted supplier names a substitution test. Every adapted supplier names its adapter contract. Every candidate names the authority it may not acquire. The catalog identity is content-derived, so a changed decision, source, license posture, risk, or acquisition boundary changes the catalog ID. See [`COMMODITY_SWEEP.md`](COMMODITY_SWEEP.md) for the cross-community analysis and the first ten supplier fixture families.
 
@@ -61,6 +86,9 @@ From the Tier Bench repository root:
 
 ```bash
 python -m estate_lab validate
+python -m estate_lab commodities --format json
+python -m estate_lab floor validate
+python -m estate_lab floor test --output .floor-conformance
 python -m unittest discover -s estate_lab/tests -v
 python -m estate_lab run-all --output .estate-lab-runs
 ```
@@ -134,13 +162,13 @@ The retained default score is:
 
 The score selects among already admissible routes. It cannot make an inadmissible route legal, grant a role, authenticate an actor, promote an evidence class, or authorize a human decision.
 
-## Adapter contract
+## Adapter contracts
 
-A semantic route has a source adapter and a target adapter. Synthetic adapters make the contract deterministic in CI. Artifact adapters bind a route to a present project estate without claiming that a process or device was actuated. Command adapters are the live integration seam. They receive one `axm-adapter-request/1` JSON file and must return one `axm-adapter-response/1` object whose semantic digest exactly matches the request.
+The internal estate route contract and the public floor contract are separate by design. Internal source and target adapters remain bound to an estate organ and receive `axm-adapter-request/1` objects. The public floor uses `axm-interaction-request/1`, `axm-semantic-event/1`, `axm-interaction-response/1`, and a standalone `axm-interaction-adapter/1` declaration. An outside implementation can therefore prove protocol compatibility without claiming a place in the AXM estate.
 
-Command adapters execute with an argv array and `shell=False`. The manifest may use `{repo}`, `{request}`, and `{response}` placeholders. No scenario text becomes shell code. Nonzero exit, timeout, missing response, malformed JSON, adapter identity drift, phase mismatch, refusal, or semantic mutation becomes an explicit fault receipt.
+Both command bindings execute with argv arrays and `shell=False`. No scenario or event value becomes shell code. Nonzero exit, timeout, missing response, malformed JSON, identity drift, refusal mismatch, semantic mutation, or response nondeterminism becomes explicit evidence.
 
-See [`ADAPTER_CONTRACT.md`](ADAPTER_CONTRACT.md) for the complete request and response examples.
+See [`ADAPTER_CONTRACT.md`](ADAPTER_CONTRACT.md) for the internal route seam and [`FLOOR_SPECIFICATION.md`](FLOOR_SPECIFICATION.md) for the external narrow waist.
 
 ## Authority and ownership
 

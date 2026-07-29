@@ -52,7 +52,7 @@ class ManifestTests(unittest.TestCase):
     def test_machine_readable_schemas_parse(self) -> None:
         schema_dir = HERE / "schemas"
         schemas = sorted(schema_dir.glob("*.schema.json"))
-        self.assertEqual(len(schemas), 6)
+        self.assertEqual(len(schemas), 13)
         for path in schemas:
             value = json.loads(path.read_text(encoding="utf-8"))
             self.assertEqual(value["$schema"], "https://json-schema.org/draft/2020-12/schema")

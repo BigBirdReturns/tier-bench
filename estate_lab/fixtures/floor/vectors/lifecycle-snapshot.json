@@ -1,0 +1,19 @@
+{
+  "expect": {
+    "accepted": true,
+    "outcome": "accepted"
+  },
+  "id": "lifecycle-snapshot",
+  "profile": "lifecycle@1",
+  "request": {
+    "context": {
+      "correlation_id": "floor-conformance-correlation",
+      "deadline_unix_ms": 4102444800000,
+      "privacy_class": "internal"
+    },
+    "kind": "snapshot",
+    "phase": "source",
+    "sequence": 1,
+    "target_adapter_id": "$ADAPTER_ID"
+  }
+}

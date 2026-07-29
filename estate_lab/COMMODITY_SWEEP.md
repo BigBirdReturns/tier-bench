@@ -13,7 +13,13 @@ Estate Lab now records that distinction in `fixtures/commodities.example.json`, 
 - `reference`: harvest design and test evidence without a runtime dependency;
 - `reject`: retain the refusal so a retired or unsafe option is not repeatedly rediscovered.
 
-The catalog is content-addressed. Every consumed or adapted supplier names a substitution test. Every adapted supplier names its required adapter. Every candidate states what authority it may not acquire.
+The catalog is content-addressed. Every consumed or adapted supplier names a substitution test. Every adapted supplier names its required adapter. Every candidate states what authority it may not acquire. Version 0.3 expands the ledger to 81 candidates across 27 categories: 18 are consumed as narrow standards or permissive commodities, 37 require AXM-owned adapters, 25 remain references, and one retired dependency remains rejected.
+
+## The standards seam that was still missing
+
+The first sweep found implementations. The wider sweep found the public interoperability and governance substrate that lets those implementations meet at one floor. CloudEvents supplies common event metadata. AsyncAPI supplies a generated event-driven contract. W3C Trace Context and OpenTelemetry supply correlation conventions. W3C Web of Things and Sparkplug supply device-description and lifecycle patterns. The WebAssembly Component Model and WIT supply a sandboxed language-neutral boundary. OCI and ORAS supply artifact distribution. Sigstore, SLSA, in-toto, SPDX, CycloneDX, and TUF supply complementary release, provenance, inventory, and update evidence. JSON Schema supplies portable structural validation. MCP and A2A supply agent transport surfaces. Kubernetes conformance and Home Assistant's Integration Quality Scale supply public certification and integration-quality governance precedents.
+
+None of those standards should become a second semantic authority. They are consumed or adapted as projections around `axm-interaction-request/1`, `axm-semantic-event/1`, `axm-interaction-response/1`, and the public conformance submission. The floor specification and vectors remain the narrow waist.
 
 ## Community map
 
@@ -61,15 +67,16 @@ OpenXR, SDL, Unity Input System, OpenTrack, FreePIE, Joypad OS, QMK, ZMK, OpenDe
 
 The first acquisition train is:
 
-1. TinyUSB for device-side USB.
-2. HIDAPI for host-side HID discovery and reports.
-3. OpenXR actions, SDL gamepad mappings, and Unity Input System event traces for physical input normalization.
-4. MCAP for raw timestamped stream custody.
-5. MQTT 5 for asynchronous device sessions and retained desired/reported state.
-6. DCS-BIOS, MobiFlight, and CockpitOS as panel-metadata, configuration, replay, and firmware suppliers.
-7. WLED, OLA, and Bitfocus Companion as replaceable output and operator-surface appliances.
-8. OpenHTF and labgrid as physical test and board-resource suppliers.
-9. Node-RED only as a bounded adapter host for long-tail protocols.
+1. JSON Schema, CloudEvents, AsyncAPI, W3C Trace Context, and the floor command binding for public protocol and contract interoperability.
+2. OCI artifact layouts, SLSA, SPDX, and CycloneDX for portable release, provenance, and inventory evidence.
+3. TinyUSB for device-side USB and HIDAPI for host-side HID discovery and reports.
+4. OpenXR actions, SDL gamepad mappings, and Unity Input System event traces for physical input normalization.
+5. MCAP for raw timestamped stream custody.
+6. MQTT 5 for asynchronous device sessions and retained desired/reported state.
+7. DCS-BIOS, MobiFlight, and CockpitOS as panel-metadata, configuration, replay, and firmware suppliers.
+8. WLED, OLA, and Bitfocus Companion as replaceable output and operator-surface appliances.
+9. OpenHTF and labgrid as physical test and board-resource suppliers.
+10. Node-RED only as a bounded adapter host for long-tail protocols.
 
 Each enters through a supplier qualification rather than an architectural migration. The original source, semantic declaration, replay vectors, and independent verifier must survive removal of the supplier.
 
@@ -99,15 +106,17 @@ That layer should remain small. Everything below it should become a measured sup
 
 The catalog is a reviewed decision ledger, not proof that any upstream works for AXM. Estate Lab should add the following executable supplier families:
 
-1. `usb.hid.roundtrip/v1`: TinyUSB device plus HIDAPI host, enumeration, feature reports, unplug, reconnect, and duplicate delivery.
-2. `panel.mapping.translate/v1`: one MobiFlight configuration and one CockpitOS label set compiled into the same AXM surface declaration.
-3. `light.desired-output/v1`: WLED, OLA/QLC+, and a software twin driven by one exact desired-light program.
-4. `operator.surface/v1`: Bitfocus Companion and the AXM browser twin driven by one button and feedback declaration.
-5. `stream.custody.mcap/v1`: Python and TypeScript writers/readers producing cross-readable raw-event streams with exact payload identity.
-6. `device.session.mqtt5/v1`: retained state, session expiry, reconnect, duplicate delivery, and idempotent reducer behavior against two brokers.
-7. `physical.commission/v1`: OpenHTF phases over a labgrid-managed board, including flash, calibration, I/O, disconnect, reconnect, and replay.
-8. `xr.binding/v1`: OpenXR and Unity action bindings producing the same normalized action and ownership-loss behavior.
-9. `telemetry.visualization/v1`: Foxglove, Open MCT, and the standalone report reconstructing the same selected series and event counts.
-10. `transport.frontier/v1`: MQTT 5 versus Zenoh under declared LAN loss, latency, discovery, and query workloads.
+1. `floor.binding.roundtrip/v1`: command JSON, CloudEvents, MQTT 5, WebSocket, and WIT bindings recover the same request, response, and conformance identities.
+4. `floor.release.resurrection/v1`: OCI, SPDX, CycloneDX, SLSA, and an independent verifier recover a floor release without Git or hosted services.
+5. `usb.hid.roundtrip/v1`: TinyUSB device plus HIDAPI host, enumeration, feature reports, unplug, reconnect, and duplicate delivery.
+4. `panel.mapping.translate/v1`: one MobiFlight configuration and one CockpitOS label set compiled into the same AXM surface declaration.
+5. `light.desired-output/v1`: WLED, OLA/QLC+, and a software twin driven by one exact desired-light program.
+6. `operator.surface/v1`: Bitfocus Companion and the AXM browser twin driven by one button and feedback declaration.
+7. `stream.custody.mcap/v1`: Python and TypeScript writers/readers producing cross-readable raw-event streams with exact payload identity.
+8. `device.session.mqtt5/v1`: retained state, session expiry, reconnect, duplicate delivery, and idempotent reducer behavior against two brokers.
+9. `physical.commission/v1`: OpenHTF phases over a labgrid-managed board, including flash, calibration, I/O, disconnect, reconnect, and replay.
+10. `xr.binding/v1`: OpenXR and Unity action bindings producing the same normalized action and ownership-loss behavior.
+11. `telemetry.visualization/v1`: Foxglove, Open MCT, and the standalone report reconstructing the same selected series and event counts.
+12. `transport.frontier/v1`: MQTT 5 versus Zenoh under declared LAN loss, latency, discovery, and query workloads.
 
 The controlling question is whether every lower layer can be replaced while the semantic action, authority result, committed state, desired outputs, replay evidence, and causal debrief remain reproducible without that supplier.

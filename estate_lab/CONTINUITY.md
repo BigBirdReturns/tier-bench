@@ -44,3 +44,11 @@ A supplier update is a new qualification, never a silent package bump. The repla
 ## Recovery
 
 The laboratory has no mutable database. Recovery consists of restoring the source tree, manifest, scenario fixtures, and any separately retained receipt bundles. A receipt is complete when its `CHECKSUMS.sha256` validates and its manifest and scenario snapshots are present. CI artifacts are convenience copies, not the only custody location.
+
+## Public floor continuity
+
+The Interaction Floor is now a stable public mission inside Estate Lab. A successor must preserve the floor specification, canonical identity algorithm, valid and invalid vectors, adapter starter, conformance tier law, registry admission law, gap ledger, and detached verification path. The internal estate manifest may evolve without changing the public floor.
+
+A future floor change must state whether it is patch, minor, or major. Existing vector bytes remain retained. A breaking canonicalization, authority, identity, or refusal change requires a new major. A successor may replace the Python verifier only after an independent implementation accepts every valid vector and rejects every invalid vector.
+
+The floor must remain usable by a project that has no AXM repositories, no Tier Bench manifest, no GitHub access, and no hosted service. The command-json binding and frozen schemas are the resurrection floor. OCI, Sigstore, package managers, hosted registries, and generated SDKs are distribution conveniences rather than permanent trust roots.

@@ -1,7 +1,17 @@
 # Estate Lab fixtures
 
-`estate.example.json` is the human-owned map of project organs, adapters, routes, probes, authority requirements, fallback edges, and routing metrics. It is an executable estate model rather than an automatic discovery result. Repository discovery may report whether the mapped projects are present and healthy, but it may not invent or edit organ anatomy.
+`estate.example.json` is the retained internal estate manifest. The five scenarios under `scenarios/` exercise routing, authority, deterministic state, handoff, fault recovery, and cross-organ action flow.
 
-`scenarios/` contains the retained conformance and product experiments. Equivalence scenarios compare route-independent fingerprints from one action. Sequence scenarios exercise several controlled transitions over one state. Routing trials test route selection and refusal. Fault trials test explicit failure, idempotence, or fallback behavior.
+`commodities.example.json` is the reviewed 81-candidate supplier and standards ledger. It is an acquisition map, not a claim that every upstream has been integrated.
 
-A fixture change alters the experiment. Preserve the prior bytes in Git, state why the test changed, and do not compare new results to old results without acknowledging the changed manifest or scenario digest.
+The `floor/` directory is the public interoperability surface:
+
+```text
+floor.example.json                 normative floor specification
+floor-gaps.example.json            executable gap ledger
+reference-adapter/adapter.json     public adapter declaration
+reference-adapter/adapter.py       zero-dependency reference implementation
+vectors/*.json                     individual public vectors
+```
+
+The floor fixtures do not require the internal estate manifest. A third-party implementation may use only the floor specification, schemas, vectors, and command binding.

@@ -2689,10 +2689,1243 @@
         "project_url": "https://github.com/eclipse-zenoh/zenoh",
         "repository": "eclipse-zenoh/zenoh"
       }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "event metadata",
+        "source/type/id/time",
+        "protocol bindings",
+        "JSON formats"
+      ],
+      "category": "interop-standard",
+      "community_signal": "Graduated CNCF specification with broad SDK and transport adoption.",
+      "decision": "consume",
+      "decision_basis": "The floor can use CloudEvents metadata as a transport envelope while keeping semantic and authority law in its own payload.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-console",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines a common event format and transport bindings for interoperability.",
+          "kind": "official-project",
+          "locator": "https://cloudevents.io/"
+        }
+      ],
+      "id": "cloudevents",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "CloudEvents",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Map request_id to id, semantic_id to type, adapter to source, and preserve the floor payload unchanged.",
+      "risks": [
+        "CloudEvents attributes do not carry AXM authority by themselves."
+      ],
+      "substitution_test": "Round-trip every floor vector through a CloudEvents structured envelope and recover byte-identical floor payloads.",
+      "supplier_role": "portable event metadata standard",
+      "upstream": {
+        "project_url": "https://cloudevents.io/",
+        "repository": "cloudevents/spec"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "channels",
+        "messages",
+        "operations",
+        "bindings",
+        "code generation"
+      ],
+      "category": "interop-standard",
+      "community_signal": "Established protocol-agnostic specification and code-generation ecosystem.",
+      "decision": "consume",
+      "decision_basis": "A deterministic projection makes the floor consumable by event-driven tools without creating a second source of truth.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-console"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines machine-readable event-driven API contracts and protocol bindings.",
+          "kind": "official-project",
+          "locator": "https://www.asyncapi.com/docs/reference/specification/latest"
+        }
+      ],
+      "id": "asyncapi",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "AsyncAPI Specification",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Generate AsyncAPI from the floor spec and schemas; never author protocol meaning separately.",
+      "risks": [
+        "Generated documents can drift if manually edited."
+      ],
+      "substitution_test": "Delete all AsyncAPI tooling and regenerate the same projection from the floor spec using the stdlib renderer.",
+      "supplier_role": "event-driven API contract format",
+      "upstream": {
+        "project_url": "https://www.asyncapi.com/docs/reference/specification/latest",
+        "repository": "asyncapi/spec"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "traceparent",
+        "tracestate",
+        "cross-service correlation"
+      ],
+      "category": "observability-standard",
+      "community_signal": "W3C Recommendation implemented by major observability stacks.",
+      "decision": "consume",
+      "decision_basis": "Trace correlation is useful, but it must remain observation rather than authority.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-console",
+        "agent-runtime"
+      ],
+      "evidence": [
+        {
+          "claim": "Standardizes HTTP headers for distributed trace propagation.",
+          "kind": "official-project",
+          "locator": "https://www.w3.org/TR/trace-context/"
+        }
+      ],
+      "id": "w3c-trace-context",
+      "integration_mode": "protocol",
+      "license": "W3C Recommendation",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "W3C Trace Context",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Carry traceparent and tracestate in context and echo them through observability profile evidence.",
+      "risks": [
+        "Trace identifiers can leak topology or user correlation if retained carelessly."
+      ],
+      "substitution_test": "Run traced and untraced vectors and prove identical semantic state and authority decisions.",
+      "supplier_role": "distributed trace correlation standard",
+      "upstream": {
+        "project_url": "https://www.w3.org/TR/trace-context/",
+        "repository": "w3c/trace-context"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "traces",
+        "metrics",
+        "logs",
+        "semantic attributes"
+      ],
+      "category": "observability-standard",
+      "community_signal": "CNCF observability standard with broad vendor support.",
+      "decision": "adapt",
+      "decision_basis": "Use its names for telemetry projection without letting telemetry assertions become semantic truth.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-console",
+        "tier-bench"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines common semantic conventions for traces, metrics, logs, and resources.",
+          "kind": "official-project",
+          "locator": "https://opentelemetry.io/docs/specs/semconv/"
+        }
+      ],
+      "id": "opentelemetry-semconv",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "standard",
+      "name": "OpenTelemetry Semantic Conventions",
+      "priority": "P1",
+      "required_adapter": "adapter.floor.opentelemetry",
+      "reuse_surface": "Translate floor run, route, adapter, and fault receipts into a namespaced OpenTelemetry projection.",
+      "risks": [
+        "Cardinality and data retention can become uncontrolled."
+      ],
+      "substitution_test": "Remove the OpenTelemetry exporter and reconstruct the same normative floor receipts and IDs.",
+      "supplier_role": "telemetry naming and context vocabulary",
+      "upstream": {
+        "project_url": "https://opentelemetry.io/docs/specs/semconv/",
+        "repository": "open-telemetry/semantic-conventions"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "properties",
+        "actions",
+        "events",
+        "forms",
+        "security metadata"
+      ],
+      "category": "device-description",
+      "community_signal": "W3C Recommendation designed to counter IoT fragmentation.",
+      "decision": "adapt",
+      "decision_basis": "Thing Descriptions can expose devices and controls, but floor authority and semantics remain external.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-embodied",
+        "axm-world"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines JSON-LD metadata for properties, actions, events, and protocol forms.",
+          "kind": "official-project",
+          "locator": "https://www.w3.org/TR/wot-thing-description11/"
+        }
+      ],
+      "id": "w3c-wot-td",
+      "integration_mode": "protocol",
+      "license": "W3C Recommendation",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "W3C Web of Things Thing Description 1.1",
+      "priority": "P1",
+      "required_adapter": "adapter.floor.wot",
+      "reuse_surface": "Generate a Thing Description projection from an adapter descriptor and map actions/events back to floor envelopes.",
+      "risks": [
+        "WoT security metadata is descriptive, not proof of deployment safety."
+      ],
+      "substitution_test": "Replace the WoT binding with command-json while preserving the same descriptor, event, response, and receipt IDs.",
+      "supplier_role": "portable device metadata and affordance model",
+      "upstream": {
+        "project_url": "https://www.w3.org/TR/wot-thing-description11/",
+        "repository": "w3c/wot-thing-description"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "topic namespace",
+        "birth/death certificates",
+        "session state",
+        "metrics"
+      ],
+      "category": "industrial-messaging",
+      "community_signal": "Eclipse specification used in SCADA and IIoT deployments.",
+      "decision": "adapt",
+      "decision_basis": "Sparkplug lifecycle lessons improve reconnect and desired/reported state, but its metric namespace is not AXM semantics.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines an MQTT topic namespace, payload, and session state management for industrial systems.",
+          "kind": "official-project",
+          "locator": "https://sparkplug.eclipse.org/specification/"
+        }
+      ],
+      "id": "eclipse-sparkplug",
+      "integration_mode": "protocol",
+      "license": "EPL-2.0",
+      "license_posture": "weak-copyleft",
+      "maturity": "mature-community",
+      "name": "Eclipse Sparkplug",
+      "priority": "P1",
+      "required_adapter": "adapter.floor.sparkplug",
+      "reuse_surface": "Translate floor health, snapshot, and lifecycle into a bounded Sparkplug edge node adapter.",
+      "risks": [
+        "Metric-centric models can flatten authority and causal context."
+      ],
+      "substitution_test": "Swap Sparkplug for direct MQTT 5 and reproduce lifecycle and semantic receipts.",
+      "supplier_role": "MQTT session and industrial state model",
+      "upstream": {
+        "project_url": "https://sparkplug.eclipse.org/specification/",
+        "repository": "eclipse-sparkplug/sparkplug"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "WIT interfaces",
+        "component composition",
+        "sandboxed imports/exports",
+        "language bindings"
+      ],
+      "category": "portable-runtime",
+      "community_signal": "Bytecode Alliance standardization effort with WIT-based composition and multiple runtimes.",
+      "decision": "consume",
+      "decision_basis": "WIT supplies a narrow language-neutral adapter boundary that can be implemented without ambient authority.",
+      "estate_targets": [
+        "estate-lab",
+        "agent-runtime",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Documents components, worlds, imports, exports, and WIT composition.",
+          "kind": "official-project",
+          "locator": "https://component-model.bytecodealliance.org/"
+        }
+      ],
+      "id": "wasm-component-model",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0 ecosystem; verify exact tool",
+      "license_posture": "standard",
+      "maturity": "active-emerging",
+      "name": "WebAssembly Component Model and WIT",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Use the floor WIT world as a generated binding while keeping JSON vectors as conformance ground truth.",
+      "risks": [
+        "Component model tooling is still evolving and version-sensitive."
+      ],
+      "substitution_test": "Replace the Wasm runtime with command-json and reproduce the same conformance submission.",
+      "supplier_role": "language-neutral sandboxed component interface",
+      "upstream": {
+        "project_url": "https://component-model.bytecodealliance.org/",
+        "repository": "bytecodealliance/component-docs"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "manifests",
+        "descriptors",
+        "digests",
+        "referrers",
+        "registry distribution"
+      ],
+      "category": "artifact-distribution",
+      "community_signal": "Industry standard used by registries and artifact tooling.",
+      "decision": "consume",
+      "decision_basis": "OCI can distribute floor specs, vectors, SDKs, and submissions without owning their semantics.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-fleet",
+        "axm-genesis"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines interoperable image, artifact, and distribution formats.",
+          "kind": "official-project",
+          "locator": "https://opencontainers.org/"
+        }
+      ],
+      "id": "oci-artifact-specs",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "OCI Image and Distribution Specifications",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Package floor products as non-runnable OCI artifacts with exact media types and digests.",
+      "risks": [
+        "Registry retention and authentication policies vary."
+      ],
+      "substitution_test": "Pull the same artifact from two OCI-compatible registries and verify identical content digests offline.",
+      "supplier_role": "portable content-addressed artifact distribution",
+      "upstream": {
+        "project_url": "https://opencontainers.org/",
+        "repository": "opencontainers/image-spec"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "push/pull arbitrary artifacts",
+        "OCI layouts",
+        "referrers"
+      ],
+      "category": "artifact-distribution",
+      "community_signal": "CNCF project for arbitrary OCI artifact distribution.",
+      "decision": "adapt",
+      "decision_basis": "ORAS is a convenient carrier, not a normative dependency or trust root.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-fleet"
+      ],
+      "evidence": [
+        {
+          "claim": "Distributes arbitrary artifacts using OCI registries and layouts.",
+          "kind": "official-project",
+          "locator": "https://oras.land/"
+        }
+      ],
+      "id": "oras",
+      "integration_mode": "external-process",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "ORAS",
+      "priority": "P1",
+      "required_adapter": "adapter.floor.oras",
+      "reuse_surface": "Wrap ORAS behind a floor release publisher that verifies digests before and after transfer.",
+      "risks": [
+        "CLI and registry feature differences can affect workflows."
+      ],
+      "substitution_test": "Delete ORAS and verify the retained OCI layout and all content digests using independent tooling.",
+      "supplier_role": "OCI artifact client and library",
+      "upstream": {
+        "project_url": "https://oras.land/",
+        "repository": "oras-project/oras"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "signing",
+        "verification bundles",
+        "transparency logs",
+        "identity binding"
+      ],
+      "category": "supply-chain",
+      "community_signal": "OpenSSF ecosystem with standardized bundles and transparency services.",
+      "decision": "adapt",
+      "decision_basis": "Sigstore can supplement release evidence while Genesis remains the durable offline custody authority.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-genesis",
+        "axm-fleet"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides signing, verification material bundles, and transparency services.",
+          "kind": "official-project",
+          "locator": "https://www.sigstore.dev/"
+        }
+      ],
+      "id": "sigstore",
+      "integration_mode": "external-process",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Sigstore",
+      "priority": "P1",
+      "required_adapter": "adapter.floor.sigstore",
+      "reuse_surface": "Attach and verify Sigstore bundles as optional release evidence outside core floor identity.",
+      "risks": [
+        "Online identity and transparency infrastructure are not permanent offline trust anchors."
+      ],
+      "substitution_test": "Remove Sigstore services and verify floor artifacts and submissions from retained bytes and out-of-band anchors.",
+      "supplier_role": "keyless and key-based signing evidence",
+      "upstream": {
+        "project_url": "https://www.sigstore.dev/",
+        "repository": "sigstore/sigstore"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "provenance",
+        "build levels",
+        "source and build integrity"
+      ],
+      "category": "supply-chain",
+      "community_signal": "OpenSSF specification used by major build systems and provenance producers.",
+      "decision": "consume",
+      "decision_basis": "SLSA predicates can state how a floor release was built without replacing content identity or conformance.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-fleet",
+        "tier-bench"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines supply-chain security levels and provenance requirements.",
+          "kind": "official-project",
+          "locator": "https://slsa.dev/spec/"
+        }
+      ],
+      "id": "slsa",
+      "integration_mode": "protocol",
+      "license": "OpenSSF specification",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "SLSA",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Emit a SLSA provenance statement binding the exact archive, source commit, workflow, and builder.",
+      "risks": [
+        "A provenance statement is only as strong as its builder and trust policy."
+      ],
+      "substitution_test": "Rebuild from the bound source and compare subjects, then verify the provenance with an independent verifier.",
+      "supplier_role": "build provenance maturity standard",
+      "upstream": {
+        "project_url": "https://slsa.dev/spec/",
+        "repository": "slsa-framework/slsa"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "SBOM",
+        "license expressions",
+        "relationships",
+        "external references"
+      ],
+      "category": "supply-chain",
+      "community_signal": "International standard with broad tooling and license identifiers.",
+      "decision": "consume",
+      "decision_basis": "SPDX provides a portable license and component inventory for floor releases and acquired suppliers.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-fleet",
+        "supplier-foundry"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines standardized software bill of materials and license information.",
+          "kind": "official-project",
+          "locator": "https://spdx.dev/specifications/"
+        }
+      ],
+      "id": "spdx",
+      "integration_mode": "protocol",
+      "license": "ISO/IEC 5962; open specification",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "SPDX",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Generate an SPDX document from exact packaged files and dependency evidence.",
+      "risks": [
+        "SBOM completeness still depends on the build graph and generator."
+      ],
+      "substitution_test": "Delete generation tooling and verify every listed artifact digest and license reference from the retained document.",
+      "supplier_role": "software bill of materials and license standard",
+      "upstream": {
+        "project_url": "https://spdx.dev/specifications/",
+        "repository": "spdx/spdx-spec"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "SBOM",
+        "HBOM",
+        "service BOM",
+        "AI BOM",
+        "vulnerability exchange"
+      ],
+      "category": "supply-chain",
+      "community_signal": "OWASP standard spanning software, hardware, services, AI, and cryptographic assets.",
+      "decision": "consume",
+      "decision_basis": "CycloneDX is useful for mixed hardware/software adapter packs while floor semantics remain separate.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-fleet",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines BOM formats for software, hardware, services, AI, and other domains.",
+          "kind": "official-project",
+          "locator": "https://cyclonedx.org/specification/overview/"
+        }
+      ],
+      "id": "cyclonedx",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "CycloneDX",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Generate deterministic CycloneDX subjects for the floor archive, adapter artifacts, firmware, and schemas.",
+      "risks": [
+        "Different generators may vary in non-normative metadata."
+      ],
+      "substitution_test": "Verify subject digests and regenerate a semantically equivalent BOM with another implementation.",
+      "supplier_role": "multi-domain bill of materials standard",
+      "upstream": {
+        "project_url": "https://cyclonedx.org/specification/overview/",
+        "repository": "CycloneDX/specification"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "shared test suite",
+        "public submissions",
+        "certification marks",
+        "versioned conformance"
+      ],
+      "category": "conformance-reference",
+      "community_signal": "Large public conformance program using a common open-source test suite and public submissions.",
+      "decision": "reference",
+      "decision_basis": "Its governance pattern is a direct reference for public floor submissions, badges, and versioned certification.",
+      "estate_targets": [
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Documents identical conformance tests and public certification submissions.",
+          "kind": "official-project",
+          "locator": "https://www.cncf.io/training/certification/software-conformance/"
+        }
+      ],
+      "id": "kubernetes-conformance",
+      "integration_mode": "design-reference",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "standard",
+      "name": "Kubernetes Conformance Program",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Use as a governance comparator for independent submissions and marks.",
+      "risks": [
+        "Certification programs can become pay-to-play or lag implementation reality."
+      ],
+      "substitution_test": null,
+      "supplier_role": "public test and certification governance reference",
+      "upstream": {
+        "project_url": "https://www.cncf.io/training/certification/software-conformance/",
+        "repository": "cncf/k8s-conformance"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "quality tiers",
+        "integration checklist",
+        "machine-readable status",
+        "review rules"
+      ],
+      "category": "conformance-reference",
+      "community_signal": "Large integration ecosystem with explicit quality tiers and machine-readable quality metadata.",
+      "decision": "reference",
+      "decision_basis": "Its tiered integration discipline informs bronze through platinum without importing Home Assistant assumptions.",
+      "estate_targets": [
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines integration quality tiers and machine-readable quality-scale declarations.",
+          "kind": "official-project",
+          "locator": "https://developers.home-assistant.io/docs/core/integration-quality-scale/"
+        }
+      ],
+      "id": "home-assistant-quality-scale",
+      "integration_mode": "design-reference",
+      "license": "Apache-2.0 project",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Home Assistant Integration Quality Scale",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Use the scale as a comparator for documentation, lifecycle, testing, diagnostics, and ownership requirements.",
+      "risks": [
+        "Checklist compliance can reward paperwork unless coupled to executable vectors."
+      ],
+      "substitution_test": null,
+      "supplier_role": "integration quality tier and review reference",
+      "upstream": {
+        "project_url": "https://developers.home-assistant.io/docs/core/integration-quality-scale/",
+        "repository": "home-assistant/core"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "provider abstraction",
+        "evaluation context",
+        "hooks",
+        "events"
+      ],
+      "category": "provider-pattern",
+      "community_signal": "CNCF project with provider interfaces and evaluation context semantics.",
+      "decision": "reference",
+      "decision_basis": "The provider pattern informs replaceable route suppliers, but feature evaluation is not the floor domain.",
+      "estate_targets": [
+        "estate-lab",
+        "tier-bench"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines a vendor-neutral feature flag provider interface and evaluation context.",
+          "kind": "official-project",
+          "locator": "https://openfeature.dev/specification/"
+        }
+      ],
+      "id": "openfeature",
+      "integration_mode": "design-reference",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "standard",
+      "name": "OpenFeature",
+      "priority": "P2",
+      "required_adapter": null,
+      "reuse_surface": "Reference provider lifecycle and context separation when evolving adapter SDKs.",
+      "risks": [
+        "Feature-flag semantics do not map directly to authority-bearing interactions."
+      ],
+      "substitution_test": null,
+      "supplier_role": "vendor-neutral provider and evaluation abstraction reference",
+      "upstream": {
+        "project_url": "https://openfeature.dev/specification/",
+        "repository": "open-feature/spec"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "tools",
+        "resources",
+        "prompts",
+        "capability negotiation"
+      ],
+      "category": "agent-interop",
+      "community_signal": "Rapidly adopted protocol with official SDKs and ecosystem tooling.",
+      "decision": "adapt",
+      "decision_basis": "MCP can expose floor operations to agents, but a tool call may not imply authority or outcome acceptance.",
+      "estate_targets": [
+        "agent-runtime",
+        "axm-console",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines standardized agent access to tools, resources, and prompts.",
+          "kind": "official-project",
+          "locator": "https://modelcontextprotocol.io/specification/"
+        }
+      ],
+      "id": "model-context-protocol",
+      "integration_mode": "protocol",
+      "license": "MIT ecosystem; verify exact SDK",
+      "license_posture": "permissive",
+      "maturity": "active-emerging",
+      "name": "Model Context Protocol",
+      "priority": "P1",
+      "required_adapter": "adapter.floor.mcp",
+      "reuse_surface": "Map MCP tools to floor request envelopes and return conformance receipts as resources.",
+      "risks": [
+        "Tool descriptions and client policy can create confused-deputy risks."
+      ],
+      "substitution_test": "Replace MCP with direct command-json while preserving the same request, authority, response, and receipt IDs.",
+      "supplier_role": "agent tool, resource, and prompt interoperability protocol",
+      "upstream": {
+        "project_url": "https://modelcontextprotocol.io/specification/",
+        "repository": "modelcontextprotocol/specification"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "agent cards",
+        "task lifecycle",
+        "messages",
+        "artifacts",
+        "capability discovery"
+      ],
+      "category": "agent-interop",
+      "community_signal": "Linux Foundation project for agent-to-agent interoperability.",
+      "decision": "adapt",
+      "decision_basis": "A2A can transport delegated tasks, but the floor remains the authority-bearing interaction boundary.",
+      "estate_targets": [
+        "agent-runtime",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines agent discovery, task collaboration, messages, and artifacts.",
+          "kind": "official-project",
+          "locator": "https://a2a-protocol.org/latest/"
+        }
+      ],
+      "id": "agent2agent",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "active-emerging",
+      "name": "Agent2Agent Protocol",
+      "priority": "P1",
+      "required_adapter": "adapter.floor.a2a",
+      "reuse_surface": "Wrap A2A task messages in delegation-preserving floor envelopes at the execution edge.",
+      "risks": [
+        "Agent task abstractions can obscure the human principal and execution mandate."
+      ],
+      "substitution_test": "Remove A2A and replay retained floor requests to reproduce semantic outcomes.",
+      "supplier_role": "agent capability discovery and task collaboration protocol",
+      "upstream": {
+        "project_url": "https://a2a-protocol.org/latest/",
+        "repository": "a2aproject/A2A"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "entity descriptors",
+        "relations",
+        "ownership metadata",
+        "plugins"
+      ],
+      "category": "catalog-reference",
+      "community_signal": "CNCF project widely used for software entity catalogs.",
+      "decision": "reference",
+      "decision_basis": "Its entity descriptor and ownership patterns inform a hosted adapter registry without becoming the registry authority.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-console"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines software catalog entity descriptors and extension patterns.",
+          "kind": "official-project",
+          "locator": "https://backstage.io/docs/features/software-catalog/descriptor-format/"
+        }
+      ],
+      "id": "backstage-catalog",
+      "integration_mode": "design-reference",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Backstage Software Catalog",
+      "priority": "P2",
+      "required_adapter": null,
+      "reuse_surface": "Use as a reference for catalog extensibility, ownership, and discoverability.",
+      "risks": [
+        "Enterprise catalog complexity can overwhelm a small portable registry."
+      ],
+      "substitution_test": null,
+      "supplier_role": "extensible software component catalog reference",
+      "upstream": {
+        "project_url": "https://backstage.io/docs/features/software-catalog/descriptor-format/",
+        "repository": "backstage/backstage"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "input accessibility",
+        "visual accessibility",
+        "audio accessibility",
+        "test criteria"
+      ],
+      "category": "accessibility-reference",
+      "community_signal": "Public game accessibility guidelines with feature tags and test criteria.",
+      "decision": "reference",
+      "decision_basis": "The guidelines provide concrete user-facing tests for the floor accessibility profile and system receipts.",
+      "estate_targets": [
+        "axm-world",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides accessibility best practices, feature tags, and test criteria for games.",
+          "kind": "official-project",
+          "locator": "https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines"
+        }
+      ],
+      "id": "xbox-accessibility-guidelines",
+      "integration_mode": "design-reference",
+      "license": "Microsoft documentation",
+      "license_posture": "proprietary",
+      "maturity": "standard",
+      "name": "Xbox Accessibility Guidelines",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Translate applicable criteria into system-accessibility scenarios and retained evidence.",
+      "risks": [
+        "Guidelines are not a substitute for testing with disabled users."
+      ],
+      "substitution_test": null,
+      "supplier_role": "game accessibility design and test reference",
+      "upstream": {
+        "project_url": "https://learn.microsoft.com/en-us/gaming/accessibility/xbox-accessibility-guidelines",
+        "repository": "microsoft/xbox-accessibility-guidelines"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "schemas",
+        "validation vocabulary",
+        "references",
+        "annotations"
+      ],
+      "category": "schema-standard",
+      "community_signal": "Widely implemented JSON validation standard.",
+      "decision": "consume",
+      "decision_basis": "The floor schemas should be reusable by external validators even though semantic cross-reference rules remain executable code.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-console"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines the Draft 2020-12 JSON Schema core and validation vocabularies.",
+          "kind": "official-project",
+          "locator": "https://json-schema.org/draft/2020-12/json-schema-core"
+        }
+      ],
+      "id": "json-schema-2020-12",
+      "integration_mode": "protocol",
+      "license": "Open specification",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "JSON Schema 2020-12",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Publish every floor object as Draft 2020-12 and retain negative vectors for rules schema cannot express.",
+      "risks": [
+        "Schema support and interpretation vary across implementations."
+      ],
+      "substitution_test": "Validate the same artifacts with two independent JSON Schema implementations and then run the executable cross-reference verifier.",
+      "supplier_role": "portable JSON validation vocabulary",
+      "upstream": {
+        "project_url": "https://json-schema.org/draft/2020-12/json-schema-core",
+        "repository": "json-schema-org/json-schema-spec"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "canonical JSON",
+        "cross-language hashing",
+        "number serialization"
+      ],
+      "category": "identity-reference",
+      "community_signal": "IETF standard with multi-language implementations and vectors.",
+      "decision": "reference",
+      "decision_basis": "JCS is the primary comparator for a future floor canonicalization migration, but v1 retains its frozen simpler algorithm.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-genesis"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines a JSON canonicalization scheme intended for cryptographic hashing and signing.",
+          "kind": "official-project",
+          "locator": "https://www.rfc-editor.org/rfc/rfc8785"
+        }
+      ],
+      "id": "rfc8785-jcs",
+      "integration_mode": "design-reference",
+      "license": "IETF RFC",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "RFC 8785 JSON Canonicalization Scheme",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Run JCS vectors and document every deliberate v1 difference before any major-version change.",
+      "risks": [
+        "Silently adopting JCS would change existing floor identities."
+      ],
+      "substitution_test": null,
+      "supplier_role": "cross-language JSON canonicalization reference",
+      "upstream": {
+        "project_url": "https://www.rfc-editor.org/rfc/rfc8785",
+        "repository": "cyberphone/json-canonicalization"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "attestations",
+        "subjects",
+        "predicates",
+        "layout verification"
+      ],
+      "category": "supply-chain",
+      "community_signal": "CNCF security framework underlying several provenance ecosystems.",
+      "decision": "adapt",
+      "decision_basis": "in-toto statement shapes can carry floor build and qualification evidence while Genesis remains the custody kernel.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-genesis",
+        "axm-fleet"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines attestation statement and supply-chain link metadata formats.",
+          "kind": "official-project",
+          "locator": "https://in-toto.io/"
+        }
+      ],
+      "id": "in-toto",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "standard",
+      "name": "in-toto Attestation Framework",
+      "priority": "P1",
+      "required_adapter": "adapter.floor.intoto",
+      "reuse_surface": "Emit a floor conformance predicate over exact subjects and verify it independently.",
+      "risks": [
+        "Predicate semantics still require a trust policy."
+      ],
+      "substitution_test": "Delete in-toto tooling and verify retained statement subjects, predicates, and signatures with another implementation.",
+      "supplier_role": "attestation statement and link metadata framework",
+      "upstream": {
+        "project_url": "https://in-toto.io/",
+        "repository": "in-toto/attestation"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "root metadata",
+        "delegations",
+        "threshold signatures",
+        "rollback protection"
+      ],
+      "category": "supply-chain",
+      "community_signal": "CNCF graduated security framework for software update systems.",
+      "decision": "adapt",
+      "decision_basis": "TUF can distribute floor releases and adapter packs, but cannot become semantic or deployment authority.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-fleet"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines secure update metadata with threshold trust, rollback protection, and delegation.",
+          "kind": "official-project",
+          "locator": "https://theupdateframework.io/"
+        }
+      ],
+      "id": "the-update-framework",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0 / BSD ecosystem",
+      "license_posture": "permissive",
+      "maturity": "standard",
+      "name": "The Update Framework",
+      "priority": "P2",
+      "required_adapter": "adapter.floor.tuf",
+      "reuse_surface": "Publish floor archives through a bounded TUF repository with offline root keys and retained metadata.",
+      "risks": [
+        "Operational key management adds significant burden."
+      ],
+      "substitution_test": "Recover and verify a pinned release after repository compromise, rollback, and key rotation simulations.",
+      "supplier_role": "compromise-resilient update metadata framework",
+      "upstream": {
+        "project_url": "https://theupdateframework.io/",
+        "repository": "theupdateframework/specification"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "branch protection",
+        "dependency updates",
+        "signed releases",
+        "security policy"
+      ],
+      "category": "supplier-health-reference",
+      "community_signal": "OpenSSF tool used for repository security posture checks.",
+      "decision": "reference",
+      "decision_basis": "Scorecard can inform supplier review priority, but cannot decide acquisition or authority.",
+      "estate_targets": [
+        "supplier-foundry",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Automates checks of repository security practices and produces machine-readable results.",
+          "kind": "official-project",
+          "locator": "https://scorecard.dev/"
+        }
+      ],
+      "id": "openssf-scorecard",
+      "integration_mode": "design-reference",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "OpenSSF Scorecard",
+      "priority": "P2",
+      "required_adapter": null,
+      "reuse_surface": "Record score snapshots as non-authoritative supplier evidence alongside exact qualification.",
+      "risks": [
+        "Automated heuristics can be gamed or misread as product security proof."
+      ],
+      "substitution_test": null,
+      "supplier_role": "automated open-source project health signal",
+      "upstream": {
+        "project_url": "https://scorecard.dev/",
+        "repository": "ossf/scorecard"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, ownership, or disposition authority",
+        "must not become the canonical run record",
+        "must not convert conformance into deployment approval"
+      ],
+      "capabilities": [
+        "policy evaluation",
+        "Rego",
+        "decision logs",
+        "bundles"
+      ],
+      "category": "policy-reference",
+      "community_signal": "CNCF graduated policy engine with broad integrations.",
+      "decision": "reference",
+      "decision_basis": "OPA is a useful comparator for policy evaluation, but floor authority and domain law must remain explicit and local.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides a general-purpose policy language, evaluation engine, bundles, and decision logs.",
+          "kind": "official-project",
+          "locator": "https://www.openpolicyagent.org/docs/latest/"
+        }
+      ],
+      "id": "open-policy-agent",
+      "integration_mode": "design-reference",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Open Policy Agent",
+      "priority": "P2",
+      "required_adapter": null,
+      "reuse_surface": "Use as a reference for policy bundle versioning and decision evidence, not as a required runtime.",
+      "risks": [
+        "A general policy engine can hide authority in opaque rules and dynamic bundles."
+      ],
+      "substitution_test": null,
+      "supplier_role": "general policy evaluation engine reference",
+      "upstream": {
+        "project_url": "https://www.openpolicyagent.org/docs/latest/",
+        "repository": "open-policy-agent/opa"
+      }
     }
   ],
-  "catalog_id": "commoditycat1_2f62f8f71e1c06ef95b64a3c1490a4b0",
+  "catalog_id": "commoditycat1_d807fc3f328f6310902ee903fc02d82b",
   "format": "axm-commodity-catalog/1",
   "reviewed_as_of": "2026-07-28",
-  "scope": "Public OSS, open standards, and community projects adjacent to AXM Estate Lab: multi-seat simulation, cockpit hardware, embedded I/O, input abstraction, show control, event automation, telemetry and replay, hardware-in-the-loop, digital twins, and transport."
+  "scope": "OSS, standards, community systems, conformance models, supply-chain primitives, and adapter suppliers relevant to a public semantic interaction floor."
 }

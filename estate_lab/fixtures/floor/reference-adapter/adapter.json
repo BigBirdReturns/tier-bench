@@ -1,0 +1,125 @@
+{
+  "accessibility": {
+    "fallbacks": [
+      "text receipt",
+      "software twin"
+    ],
+    "input_modalities": [
+      "semantic-json",
+      "keyboard-compatible"
+    ],
+    "output_modalities": [
+      "structured-json",
+      "text"
+    ]
+  },
+  "adapter_id": "org.axm.reference-echo",
+  "adapter_version": "0.1.0",
+  "authority": {
+    "consumes": [
+      "actor",
+      "role",
+      "mandate",
+      "ownership_epoch"
+    ],
+    "may_grant": false,
+    "may_rewrite_semantics": false
+  },
+  "authority_exclusions": [
+    "does not define semantic action meaning",
+    "does not grant actor, role, mandate, or ownership authority",
+    "does not certify physical safety",
+    "does not accept a human decision or outcome",
+    "does not become the canonical run record"
+  ],
+  "bindings": [
+    "command-json@1"
+  ],
+  "capabilities": {
+    "directions": [
+      "source",
+      "target"
+    ],
+    "modalities": [
+      "semantic-json"
+    ],
+    "operations": [
+      "append",
+      "increment",
+      "remove",
+      "set",
+      "toggle"
+    ]
+  },
+  "command": [
+    "{python}",
+    "adapter.py",
+    "{request}",
+    "{response}",
+    "{descriptor}"
+  ],
+  "delegation": {
+    "accepts_agent": true,
+    "accepts_human": true,
+    "may_escalate_authority": false
+  },
+  "description": "Independent-of-estate stdlib reference implementation for all public Interaction Floor profiles.",
+  "descriptor_id": "flooradapter1_d9969714976508ed4796a14e092fdb5d",
+  "deterministic": true,
+  "floor": {
+    "extensions": [],
+    "profiles": [
+      "core@1",
+      "replay@1",
+      "lifecycle@1",
+      "observability@1",
+      "supply@1",
+      "privacy@1",
+      "accessibility@1",
+      "agent-delegation@1"
+    ],
+    "versions": [
+      "1.0.0"
+    ]
+  },
+  "format": "axm-interaction-adapter/1",
+  "idempotency_key": "event_id",
+  "lifecycle": {
+    "health_states": [
+      "ready",
+      "degraded",
+      "unavailable"
+    ],
+    "supports_reset": true,
+    "supports_snapshot": true
+  },
+  "local_only": true,
+  "name": "AXM Reference Echo Adapter",
+  "network_required": false,
+  "observability": {
+    "structured_logs": true,
+    "trace_context": "w3c-trace-context"
+  },
+  "privacy": {
+    "classes": [
+      "public",
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "retention": "adapter retains no request content by default"
+  },
+  "replayable": true,
+  "supply": {
+    "artifacts": [
+      {
+        "path": "adapter.py",
+        "sha256": "88fc6c6e7dd75796e3bf004385cc16fb248bc0f46e1ecc68c6939a86e2f2b103"
+      }
+    ],
+    "license_expression": "Apache-2.0",
+    "provenance_ref": null,
+    "sbom_ref": null
+  },
+  "timeout_seconds": 10
+}
