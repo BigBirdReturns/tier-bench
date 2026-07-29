@@ -104,6 +104,36 @@ jobs:
             || doctor_status=$?
           cat "$RUNNER_TEMP/doctor.json"
           test "$doctor_status" -eq 0
+          python -m estate_lab.production_cli build-release \
+            --root . \
+            --output "$RUNNER_TEMP/pretest-release.zip" \
+            > "$RUNNER_TEMP/pretest-release.json"
+          rm -rf "$RUNNER_TEMP/pretest-extract"
+          mkdir -p "$RUNNER_TEMP/pretest-extract"
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import zipfile
+          from pathlib import Path
+          from estate_lab.production import run_bounded_process
+
+          root = Path(os.environ['RUNNER_TEMP'])
+          extract = root / 'pretest-extract'
+          with zipfile.ZipFile(root / 'pretest-release.zip') as archive:
+              archive.extractall(extract)
+          receipt, stdout, stderr = run_bounded_process(
+              [sys.executable, '-m', 'estate_lab', '--version'],
+              cwd=extract,
+              timeout_seconds=10,
+              max_capture_bytes=4096,
+          )
+          print(json.dumps(receipt.__dict__, indent=2, sort_keys=True))
+          print('stdout=' + stdout.decode('utf-8', errors='replace'))
+          print('stderr=' + stderr.decode('utf-8', errors='replace'))
+          if receipt.exit_code != 0:
+              raise SystemExit(receipt.exit_code)
+          PY
           python -m estate_lab validate > "$RUNNER_TEMP/estate-validation.json"
           python -m estate_lab commodities --format json > "$RUNNER_TEMP/commodity-plan.json"
           python -m estate_lab.production_cli validate-spec > "$RUNNER_TEMP/floor-spec.json"
