@@ -125,3 +125,66 @@ jobs:
           path: ${{ runner.temp }}/action-player-floor
           if-no-files-found: error
           retention-days: 30
+
+  release:
+    name: cross-interpreter release
+    needs: contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: action-player-floor-python-*
+          path: ${{ runner.temp }}/matrix
+
+      - name: Prove byte-identical semantic contents
+        shell: bash
+        run: |
+          set -euo pipefail
+          left="$RUNNER_TEMP/matrix/action-player-floor-python-3.10"
+          right="$RUNNER_TEMP/matrix/action-player-floor-python-3.12"
+          test -d "$left"
+          test -d "$right"
+          diff -ruN "$left" "$right"
+          cmp "$left/SHA256SUMS" "$right/SHA256SUMS"
+
+          release="$RUNNER_TEMP/action-player-floor-release"
+          mkdir -p "$release"
+          cp -a "$left/." "$release/"
+          LEFT="$left" RELEASE="$release" python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          left = Path(os.environ['LEFT'])
+          release = Path(os.environ['RELEASE'])
+          manifest = left / 'SHA256SUMS'
+          record = {
+              'format': 'axm-action-player-floor-release/1',
+              'status': 'pass',
+              'repositoryHead': (left / 'repository-head.txt').read_text(encoding='utf-8').strip(),
+              'pythonLanes': ['3.10', '3.12'],
+              'contentManifestSha256': hashlib.sha256(manifest.read_bytes()).hexdigest(),
+              'crossInterpreterContentEqual': True,
+              'interpreterResiduePresent': False,
+              'authority': 'release custody only; no player product is accepted',
+          }
+          (release / 'cross-interpreter-release.json').write_text(
+              json.dumps(record, indent=2) + '\n',
+              encoding='utf-8',
+          )
+          PY
+          (
+            cd "$release"
+            find . -type f ! -name SHA256SUMS -printf '%P\0' |
+              sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+          )
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: action-player-floor-release
+          path: ${{ runner.temp }}/action-player-floor-release
+          if-no-files-found: error
+          retention-days: 30
