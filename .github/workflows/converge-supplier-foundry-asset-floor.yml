@@ -44,6 +44,7 @@ jobs:
           cat .asset-floor-payload/part-* | base64 --decode > "$RUNNER_TEMP/asset-floor.tar.gz"
           test "$(sha256sum "$RUNNER_TEMP/asset-floor.tar.gz" | cut -d' ' -f1)" = "2c49eabc4bc5df6610ed33c7196775122a1e263480156196f13e574151e83190"
           tar -xzf "$RUNNER_TEMP/asset-floor.tar.gz"
+          git restore --source=HEAD -- .github/workflows/supplier-foundry-asset-floor.yml
           test -f supplier_foundry/floor/asset_floor.py
           test -f supplier_foundry/floor/catalog.json
           test -f supplier_foundry/floor/examples/floor-report.json
@@ -71,15 +72,14 @@ jobs:
           cmp "$RUNNER_TEMP/floor-report.json" supplier_foundry/floor/examples/floor-report.json
           git diff --check
 
-      - name: Publish one carrier-free implementation commit
+      - name: Publish the implementation source
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf .asset-floor-payload supplier_foundry/floor/__pycache__ supplier_foundry/floor/tests/__pycache__
+          rm -rf supplier_foundry/floor/__pycache__ supplier_foundry/floor/tests/__pycache__
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/converge-supplier-foundry-asset-floor.yml
-          git add supplier_foundry/floor .github/workflows/supplier-foundry-asset-floor.yml
+          git add supplier_foundry/floor
           git diff --cached --check
           git commit -m 'Build the provider-neutral AXM Asset Floor v1'
           git push origin HEAD:agent/supplier-foundry-asset-floor-v1
