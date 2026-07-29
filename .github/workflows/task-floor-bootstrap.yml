@@ -3,8 +3,6 @@ name: task-floor-bootstrap
 on:
   push:
     branches: [agent/task-floor-v1]
-  pull_request:
-    branches: [agent/task-computer-v1]
   workflow_dispatch:
 
 permissions:
@@ -12,6 +10,7 @@ permissions:
 
 jobs:
   expand:
+    if: ${{ hashFiles('.task-floor-bootstrap.part-*') != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,7 +23,14 @@ jobs:
           cat .task-floor-bootstrap.part-* | base64 -d > /tmp/task-floor.tar.gz
           echo "ffac1d11f4d2d3a3977d0c64c4d097ff461176579ace459b1da204d3bed277d1  /tmp/task-floor.tar.gz" | sha256sum -c -
           tar -xzf /tmp/task-floor.tar.gz -C .
-          rm -f .task-floor-bootstrap.part-* .github/workflows/task-floor-bootstrap.yml
+
+          # GitHub's workflow token may update repository contents, but it may not
+          # create or modify workflow files without the separate workflows scope.
+          # Publish the workflow as ordinary text; the GitHub connector installs it
+          # after the source commit lands.
+          mv .github/workflows/task-floor.yml task-floor.workflow.yml.txt
+          rm -f .task-floor-bootstrap.part-*
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
