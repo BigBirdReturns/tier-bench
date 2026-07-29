@@ -3,10 +3,14 @@ name: AXM Estate Lab production source publication
 on:
   push:
     branches: [agent/axm-estate-lab]
-    paths: ['.github/workflows/estate-lab.yml']
+    paths:
+      - '.github/workflows/estate-lab.yml'
+      - '.prod-v1-payload-*'
   pull_request:
     branches: [main]
-    paths: ['.github/workflows/estate-lab.yml']
+    paths:
+      - '.github/workflows/estate-lab.yml'
+      - '.prod-v1-payload-*'
 
 permissions:
   contents: write
