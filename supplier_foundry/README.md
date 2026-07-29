@@ -1,8 +1,37 @@
-# Supplier Foundry: first commodity pilot
+# Supplier Foundry
 
-This directory is the first executable test of a Supplier Foundry organ. It does not create a universal package manager or control plane. It qualifies exact external suppliers behind one AXM-owned capability contract, preserves a supplier-independent source and verifier, and proves that the suppliers can be removed without losing the canonical product or its evidence.
+Supplier Foundry is the provider-neutral qualification organ for external tools,
+models, standards, services, DCCs, engines, and human production workflows. It does
+not create a universal package manager or control plane. It turns exact supplier
+products into measured, substitutable, removable capability providers while
+preserving a supplier-independent source, verifier, fallback, and authority boundary.
 
-The name is deliberately **Supplier Foundry**. It is unrelated to the Palantir Foundry exit work now owned by the GhostBox spoke.
+The name is deliberately **Supplier Foundry**. It is unrelated to the Palantir
+Foundry exit work owned by the GhostBox spoke.
+
+## Asset Floor v1
+
+The accepted pilot below proved one bounded capability. The new
+[`floor/`](floor/) contract generalizes the qualification law without generalizing
+its evidence. It introduces provider-neutral asset intents, independent acceptance
+gates, supplier and standards discovery, production profiles, worked UNDERDRAIN
+mechanism and creature intents, open-gap reporting, and permanent Python 3.10/3.12
+qualification.
+
+```text
+human-owned axm-asset-intent/1
+→ candidate supplier chain
+→ independent per-gate qualification
+→ engine and gameplay evidence
+→ human acceptance
+→ future axm-asset-product/1
+```
+
+The floor keeps discovery, fixture qualification, engine qualification, and product
+acceptance separate. It has no aggregate readiness percentage and does not accept
+"game ready" because a provider exported a GLB. Read `floor/README.md` for the
+contract, `floor/COMMUNITY_MAP.md` for the commodity map, and
+`floor/CONTINUITY.md` for succession and recovery.
 
 ## Organ boundary
 
@@ -28,7 +57,7 @@ Supplier Foundry may not:
 - infer that one fixture proves production performance;
 - turn a provider recommendation into a permanent vendor mandate.
 
-## First capability
+## First accepted capability
 
 ```text
 asset.optimize.gltf/v1
@@ -41,7 +70,10 @@ The pilot compares two exact MIT-licensed OSS suppliers:
 gltfpack            1.2.0
 ```
 
-The fixture is a glTF 2.0 scene containing two reachable named triangle instances, deliberately duplicated mesh storage, and one unreachable duplicate mesh. The two providers may reorganize, quantize, deduplicate, or prune the internal representation, but their standard GLB products must preserve:
+The fixture is a glTF 2.0 scene containing two reachable named triangle instances,
+deliberately duplicated mesh storage, and one unreachable duplicate mesh. The two
+providers may reorganize, quantize, deduplicate, or prune the internal representation,
+but their standard GLB products must preserve:
 
 - reachable world-space triangle geometry;
 - the scene count;
@@ -49,7 +81,9 @@ The fixture is a glTF 2.0 scene containing two reachable named triangle instance
 - world-space bounds;
 - named-node world transforms.
 
-The independent verifier uses only the Python standard library. It refuses compressed, sparse, skinned, morphed, or non-triangle products rather than silently approximating them.
+The independent verifier uses only the Python standard library. It refuses compressed,
+sparse, skinned, morphed, or non-triangle products rather than silently approximating
+them.
 
 ## Qualification transaction
 
@@ -77,7 +111,8 @@ axm-supplier-qualification/1
 supplierqual1_<sha256>
 ```
 
-The selected product is a measurement recommendation under the policy recorded in `supplier_manifest.json`. The original source remains the neutral fallback.
+The selected product is a measurement recommendation under the policy recorded in
+`supplier_manifest.json`. The original source remains the neutral fallback.
 
 ## Local reproduction
 
@@ -99,6 +134,13 @@ python ../.supplier-foundry-run/bundle/tools/verify_bundle.py \
 
 ## Evidence limit
 
-This pilot uses one synthetic static triangle fixture on one hosted Linux class. It establishes the acquisition, semantic-conformance, deterministic-product, substitution, fallback, and rip-out mechanics for this bounded surface. It does not establish visual quality, production asset compatibility, Unity import, Quest performance, texture quality, animation correctness, or GPU runtime cost.
+The accepted pilot uses one synthetic static triangle fixture on one hosted Linux
+class. It establishes the acquisition, semantic-conformance, deterministic-product,
+substitution, fallback, and rip-out mechanics for that bounded surface. It does not
+establish visual quality, production asset compatibility, Unity import, Quest
+performance, texture quality, animation correctness, or GPU runtime cost.
 
-The control question is whether either supplier can be upgraded, replaced, disabled, or removed while the same bounded asset semantics, source bytes, receipts, and verification path remain available without the supplier runtime.
+The control question is whether any supplier can be upgraded, replaced, disabled,
+or removed while the same capability meaning, asset intent, canonical products,
+receipts, fallback, and independent verification remain available without the
+supplier runtime.
