@@ -97,7 +97,13 @@ jobs:
           export PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache"
           python -m compileall -q estate_lab
           test "$(python -m estate_lab.production_cli --version)" = '1.0.0'
-          python -m estate_lab.production_cli doctor --root . > "$RUNNER_TEMP/doctor.json"
+          doctor_status=0
+          python -m estate_lab.production_cli doctor \
+            --root . \
+            --output "$RUNNER_TEMP/doctor.json" \
+            || doctor_status=$?
+          cat "$RUNNER_TEMP/doctor.json"
+          test "$doctor_status" -eq 0
           python -m estate_lab validate > "$RUNNER_TEMP/estate-validation.json"
           python -m estate_lab commodities --format json > "$RUNNER_TEMP/commodity-plan.json"
           python -m estate_lab.production_cli validate-spec > "$RUNNER_TEMP/floor-spec.json"
