@@ -1,0 +1,92 @@
+name: AXM action player floor
+
+on:
+  pull_request:
+    paths:
+      - 'action_player_floor/**'
+      - '.github/workflows/action-player-floor.yml'
+      - 'README.md'
+      - 'HANDOFF.md'
+  push:
+    branches:
+      - main
+    paths:
+      - 'action_player_floor/**'
+      - '.github/workflows/action-player-floor.yml'
+      - 'README.md'
+      - 'HANDOFF.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: action-player-floor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.12']
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Compile and test the consolidated floor
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile action_player_floor/floor.py
+          python -m unittest discover -s action_player_floor/tests -v
+          python action_player_floor/floor.py validate \
+            --catalog action_player_floor/catalog.json \
+            --intent action_player_floor/examples/underdrain.player-intent.json \
+            --witnesses action_player_floor/examples/negative-witnesses.json \
+            --changes action_player_floor/examples/change-proposals.json
+
+      - name: Reconstruct the exact floor report
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/action-player-floor"
+          mkdir -p "$root"
+          python action_player_floor/floor.py report \
+            --catalog action_player_floor/catalog.json \
+            --intent action_player_floor/examples/underdrain.player-intent.json \
+            --witnesses action_player_floor/examples/negative-witnesses.json \
+            --changes action_player_floor/examples/change-proposals.json \
+            --output "$root/floor-report.json"
+          cmp "$root/floor-report.json" action_player_floor/examples/floor-report.json
+
+          cp action_player_floor/catalog.json "$root/"
+          cp action_player_floor/examples/underdrain.player-intent.json "$root/"
+          cp action_player_floor/examples/negative-witnesses.json "$root/"
+          cp action_player_floor/examples/change-proposals.json "$root/"
+          cp action_player_floor/README.md "$root/"
+          cp action_player_floor/START_HERE.md "$root/"
+          cp action_player_floor/CONTINUITY.md "$root/"
+          cp action_player_floor/COMMUNITY_MAP.md "$root/"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$root/repository-head.txt"
+          (
+            cd "$root"
+            find . -type f ! -name SHA256SUMS -printf '%P\0' |
+              sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+          )
+          git diff --check
+          test -z "$(git status --porcelain)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: action-player-floor-python-${{ matrix.python }}
+          path: ${{ runner.temp }}/action-player-floor
+          if-no-files-found: error
+          retention-days: 30
