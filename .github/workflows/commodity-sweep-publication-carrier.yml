@@ -4,6 +4,9 @@ on:
   push:
     branches: [agent/axm-estate-lab]
     paths: ['.commodity-sweep-trigger']
+  pull_request:
+    branches: [main]
+    paths: ['.commodity-sweep-trigger']
 
 permissions:
   contents: write
@@ -22,11 +25,23 @@ jobs:
           ref: agent/axm-estate-lab
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - id: gate
+        name: Check whether source publication is still required
+        shell: bash
+        run: |
+          if grep -qx '0.2.0' estate_lab/VERSION; then
+            echo 'required=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'required=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.gate.outputs.required == 'true'
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Materialize reviewed commodity sweep
+      - if: steps.gate.outputs.required == 'true'
+        name: Materialize reviewed commodity sweep
         shell: bash
         run: |
           set -euo pipefail
@@ -34,7 +49,8 @@ jobs:
           echo "c8611963179728eb906f3878afe463f2897fa724387e4cf8557b283358abfd56  $RUNNER_TEMP/commodity-sweep.tar.xz" | sha256sum -c -
           tar -xJf "$RUNNER_TEMP/commodity-sweep.tar.xz"
 
-      - name: Qualify Estate Lab 0.2
+      - if: steps.gate.outputs.required == 'true'
+        name: Qualify Estate Lab 0.2
         shell: bash
         run: |
           set -euo pipefail
@@ -46,7 +62,8 @@ jobs:
           python -m estate_lab run-all --output "$RUNNER_TEMP/estate-lab-runs"
           git diff --check
 
-      - name: Publish source without workflow mutation
+      - if: steps.gate.outputs.required == 'true'
+        name: Publish source without workflow mutation
         shell: bash
         run: |
           set -euo pipefail
