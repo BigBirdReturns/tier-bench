@@ -107,9 +107,18 @@ def test_system_ram_gb_all_fail_returns_none():
 
 def test_nvidia_gpus_parses_csv_lines():
     with _patches(
-        (rig, "_run", lambda *_args, **_kwargs: "A100 SXM4, 24576\nfoo, bad\n"),
+        (
+            rig,
+            "_run",
+            lambda *_args, **_kwargs: (
+                "GPU-a100, A100 SXM4, 24576\n"
+                "GPU-bad, foo, bad\n"
+            ),
+        ),
     ):
-        assert nvidia_gpus() == [{"name": "A100 SXM4", "vram_gb": 24.0}]
+        assert nvidia_gpus() == [
+            {"uuid": "GPU-a100", "name": "A100 SXM4", "vram_gb": 24.0}
+        ]
 
 
 def test_nvidia_gpus_empty_when_blank():
@@ -157,9 +166,14 @@ def test_rig_properties_gpu_and_multi_gpu_class():
         cpu_cores=8,
         gpus=[{"name": "x", "vram_gb": 10.0}, {"name": "y", "vram_gb": 8.0}],
     )
-    assert rig_obj.vram_gb == 18.0
-    assert rig_obj.usable_gb == 17.1
-    assert rig_obj.compute_class == "multi-GPU server"
+    assert rig_obj.aggregate_vram_gb == 18.0
+    assert rig_obj.vram_gb == 10.0
+    assert rig_obj.usable_gb == 9.5
+    assert rig_obj.compute_class == "multi-GPU workstation (independent devices)"
+    assert rig_obj.capacity_pooling == {
+        "status": "not_pooled",
+        "qualified": False,
+    }
 
 
 def test_rig_compute_class_large_cpu_and_unified():

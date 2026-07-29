@@ -184,6 +184,9 @@ def build_report(rig: Rig, results_path: Path) -> dict:
     return {
         "rig": {
             "ram_gb": rig.ram_gb, "cpu_cores": rig.cpu_cores, "gpus": rig.gpus,
+            "resource_nodes": rig.resource_nodes,
+            "aggregate_vram_gb": rig.aggregate_vram_gb,
+            "capacity_pooling": rig.capacity_pooling,
             "unified_memory": rig.unified_memory, "usable_gb": rig.usable_gb,
             "class": rig.compute_class, "max_params_B_q4": max_params_b(rig.usable_gb),
         },
@@ -233,7 +236,13 @@ def render_text(report: dict) -> str:
     L.append(f"class      : {r['class']}")
     L.append(f"memory     : RAM {r['ram_gb']} GB | GPU {gpu_txt}"
              + (" | unified" if r["unified_memory"] else ""))
-    L.append(f"usable     : ~{r['usable_gb']} GB for weights+KV  "
+    if len(r["resource_nodes"]) > 1:
+        L.append(
+            f"scheduling : {len(r['resource_nodes'])} independent devices; "
+            f"{r['aggregate_vram_gb']} GB aggregate inventory is not pooled or qualified"
+        )
+    boundary = "largest independent device" if r["gpus"] else "available memory"
+    L.append(f"usable     : ~{r['usable_gb']} GB on the {boundary} for weights+KV  "
              f"(≈ {r['max_params_B_q4']}B params max at Q4)")
 
     L.append("\nRunnable locally right now ($0/token):")
@@ -285,7 +294,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--results", default="harness_results.jsonl")
     ap.add_argument("--ram-gb", type=float, help="Simulate system RAM instead of probing")
-    ap.add_argument("--vram-gb", type=float, help="Simulate total GPU VRAM instead of probing")
+    ap.add_argument("--vram-gb", type=float, help="Simulate aggregate GPU inventory VRAM instead of probing")
     ap.add_argument("--gpus", type=int, default=None, help="Simulated GPU count (with --vram-gb)")
     ap.add_argument("--unified", action="store_true", help="Simulate unified memory (Apple silicon class)")
     ap.add_argument("--json", action="store_true")
@@ -295,7 +304,18 @@ def main() -> int:
 
     if args.ram_gb or args.vram_gb:
         n = args.gpus or (1 if args.vram_gb else 0)
-        gpus = ([{"name": "simulated", "vram_gb": round(args.vram_gb / n, 1)}] * n) if args.vram_gb else []
+        gpus = (
+            [
+                {
+                    "uuid": f"simulated:{index}",
+                    "name": "simulated",
+                    "vram_gb": round(args.vram_gb / n, 1),
+                }
+                for index in range(n)
+            ]
+            if args.vram_gb
+            else []
+        )
         rig = Rig(ram_gb=args.ram_gb, cpu_cores=None, gpus=gpus, unified_memory=args.unified)
     else:
         rig = detect_rig()
