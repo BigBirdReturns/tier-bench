@@ -106,6 +106,10 @@ jobs:
             "$root/reconstructed-report.json" \
             "$root/action_player_floor/examples/floor-report.json"
 
+          find "$root" -type d -name __pycache__ -prune -exec rm -rf {} +
+          find "$root" -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+          ! find "$root" \( -type d -name __pycache__ -o -type f -name '*.pyc' -o -type f -name '*.pyo' \) -print -quit | grep -q .
+
           (
             cd "$root"
             find . -type f ! -name SHA256SUMS -printf '%P\0' |
