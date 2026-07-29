@@ -1,0 +1,68 @@
+{
+  "format": "axm-action-player-floor-report/1",
+  "authority": "measurement_and_conformance_only",
+  "aggregateReadinessScore": null,
+  "catalogId": "actionfloor1_55eb8869417b3b36a28a309263624fe04ad07028f2254337a2f1548cd03b47d8",
+  "intentIds": [
+    "playerintent1_91647652ca3f387b114d5fa7cfab416e2d99c5f307098b6426a17f624cdfbe6c"
+  ],
+  "witnessIds": [
+    "playerwitness1_243a7ee01c9d72cb571f0de59a6eb1d0c17f2e141b245a81c2291b608be6c215",
+    "playerwitness1_911dd3cb4df9c03a61c23b65e23dbafc9997a1aa09047dd5a7d51a928ac22f74",
+    "playerwitness1_e044dbf7b139f582917f79ce08fd4d55c52cdd2995ed62d76e04138da7bb31e2"
+  ],
+  "changeIds": [
+    "playerchange1_341645655473525ae284a61d51c8a4071b369170f7e7419274c087bf186ee141",
+    "playerchange1_5a94d4a5a22b86879bd050661ef71301fc63469a5a0021b348a60a940e49a979",
+    "playerchange1_87c5d76f2d90d314fe0f2090aaece1b9bd6514f79d5ef5576e1f787de9f454b3"
+  ],
+  "counts": {
+    "organs": 8,
+    "interfaces": 10,
+    "gates": 23,
+    "driftClasses": 15,
+    "commodityCells": 12,
+    "coordinationRecords": 7,
+    "negativeWitnesses": 3,
+    "qualifiedCommodityCells": 0
+  },
+  "coverage": {
+    "requiredNegativeWitnessesComplete": true,
+    "missingNegativeWitnesses": [],
+    "qualifiedCommodityCells": [],
+    "openGates": [
+      "gate.accessibility-profiles",
+      "gate.animation-readability",
+      "gate.camera-readability",
+      "gate.cue-coverage",
+      "gate.debug-surface-separation",
+      "gate.engine-performance",
+      "gate.exact-arc-spec",
+      "gate.exact-trace-replay",
+      "gate.human-comprehension",
+      "gate.input-buffering",
+      "gate.input-remapping",
+      "gate.mechanic-learning",
+      "gate.mechanism-readability",
+      "gate.no-parallel-gameplay-law",
+      "gate.one-presentation-adapter",
+      "gate.parallel-law-invalidator",
+      "gate.presentation-non-authority",
+      "gate.primitive-refusal",
+      "gate.product-acceptance",
+      "gate.provider-ripout",
+      "gate.provider-substitution",
+      "gate.semantic-cue-determinism",
+      "gate.trace-inspection"
+    ],
+    "productAccepted": false
+  },
+  "blockers": [
+    "Arc semantic phase and mechanic-learning contract is not yet accepted.",
+    "World natural player has not completed real Unity and Windows-player acceptance.",
+    "Provider substitution has not been qualified against one exact UNDERDRAIN trace.",
+    "Independent keyboard/mouse and controller player evidence is absent.",
+    "No named authority has accepted a player product."
+  ],
+  "reportId": "actionfloorreport1_190434fd82b36c0877c55a4cde8cd2e4c0c0f64876d59907fa104f522b36f46e"
+}
