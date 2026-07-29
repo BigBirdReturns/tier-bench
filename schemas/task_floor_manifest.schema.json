@@ -1,0 +1,189 @@
+{
+  "$id": "urn:task-floor:schema:capability-manifest:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acceptance": {
+      "type": "object"
+    },
+    "authority": {
+      "type": "object"
+    },
+    "conformance": {
+      "type": "object"
+    },
+    "description": {
+      "type": "string"
+    },
+    "diagnostics": {
+      "type": "object"
+    },
+    "documentation_url": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "effects": {
+      "type": "object"
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "execution": {
+      "type": "object"
+    },
+    "id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "identity": {
+      "type": "object"
+    },
+    "interfaces": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "endpoint": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "extensions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "transport": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "protocol",
+          "version",
+          "role",
+          "transport"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "interop": {
+      "type": "object"
+    },
+    "license": {
+      "type": "string"
+    },
+    "lifecycle": {
+      "type": "object"
+    },
+    "manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "name": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "observability": {
+      "type": "object"
+    },
+    "privacy": {
+      "type": "object"
+    },
+    "provider": {
+      "type": "object"
+    },
+    "resilience": {
+      "type": "object"
+    },
+    "schema": {
+      "const": "task-floor/capability-manifest@1"
+    },
+    "security": {
+      "type": "object"
+    },
+    "state": {
+      "type": "object"
+    },
+    "supply_chain": {
+      "type": "object"
+    },
+    "surfaces": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "act": {
+            "type": "boolean"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "observe": {
+            "type": "boolean"
+          },
+          "operations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "state_bound": {
+            "type": "boolean"
+          },
+          "supports_artifacts": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "observe",
+          "act",
+          "state_bound"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "versioning": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "name",
+    "version",
+    "interfaces",
+    "surfaces",
+    "authority",
+    "effects",
+    "evidence",
+    "acceptance",
+    "security",
+    "conformance"
+  ],
+  "title": "Task Floor Capability Manifest",
+  "type": "object"
+}

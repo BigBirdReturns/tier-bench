@@ -1,0 +1,71 @@
+{
+  "$id": "urn:task-floor:schema:approval:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "approval_id": {
+      "type": "string"
+    },
+    "approval_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "authority": {
+      "type": "object"
+    },
+    "constraints": {
+      "type": "array"
+    },
+    "decision": {
+      "enum": [
+        "approve",
+        "edit",
+        "reject"
+      ]
+    },
+    "effect": {
+      "type": "string"
+    },
+    "expires_at": {},
+    "issued_at": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "task-floor/approval@1"
+    },
+    "scope": {
+      "type": "object"
+    },
+    "state_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "approval_id",
+    "task_id",
+    "state_id",
+    "action_sha256",
+    "effect",
+    "decision",
+    "authority",
+    "issued_at",
+    "scope",
+    "constraints",
+    "reason",
+    "approval_sha256"
+  ],
+  "title": "Task Floor Approval",
+  "type": "object"
+}

@@ -1,0 +1,72 @@
+{
+  "$id": "urn:task-floor:schema:driver-response:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "acceptance": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lease": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "manifest": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "ok": {
+      "type": "boolean"
+    },
+    "receipt": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "request_id": {
+      "type": "string"
+    },
+    "request_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "response_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema": {
+      "const": "task-floor/driver-response@1"
+    },
+    "state": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "request_id",
+    "request_sha256",
+    "ok",
+    "response_sha256"
+  ],
+  "title": "Task Floor Driver Response",
+  "type": "object"
+}

@@ -1,0 +1,28 @@
+{
+  "action_sha256": "527b2d2ab17a8c7632d0a025bc2409b2086094c56b295acc13988da81cba08a6",
+  "approval_id": "approval-publish-report-001",
+  "approval_sha256": "5a49b723c43641ac75462aa33917042a6b46ebf61cf6c1a527a0da92426146c2",
+  "authority": {
+    "id": "operator",
+    "type": "human"
+  },
+  "constraints": [
+    {
+      "max_executions": 1
+    }
+  ],
+  "decision": "approve",
+  "effect": "external_write",
+  "expires_at": "2026-07-28T00:10:00Z",
+  "issued_at": "2026-07-28T00:00:00Z",
+  "reason": "The report and destination were reviewed.",
+  "schema": "task-floor/approval@1",
+  "scope": {
+    "resource": {
+      "id": "example-report",
+      "type": "report"
+    }
+  },
+  "state_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "task_id": "example-task"
+}

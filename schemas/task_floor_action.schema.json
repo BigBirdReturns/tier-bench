@@ -1,0 +1,74 @@
+{
+  "$id": "urn:task-floor:schema:action:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action_id": {
+      "type": "string"
+    },
+    "action_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "approval": {},
+    "arguments": {
+      "type": "object"
+    },
+    "compensation": {},
+    "data_classification": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "effect": {
+      "type": "string"
+    },
+    "expected_postconditions": {
+      "type": "array"
+    },
+    "expected_state_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "idempotency_key": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "string"
+    },
+    "on_behalf_of": {},
+    "operation": {
+      "type": "string"
+    },
+    "preconditions": {
+      "type": "array"
+    },
+    "principal": {},
+    "resource": {},
+    "schema": {
+      "const": "task-floor/action@1"
+    },
+    "surface": {
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "trace_context": {}
+  },
+  "required": [
+    "schema",
+    "action_id",
+    "task_id",
+    "expected_state_id",
+    "surface",
+    "operation",
+    "effect",
+    "arguments",
+    "intent",
+    "action_sha256"
+  ],
+  "title": "Task Floor Action",
+  "type": "object"
+}

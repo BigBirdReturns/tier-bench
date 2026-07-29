@@ -1,0 +1,96 @@
+{
+  "$id": "urn:task-floor:schema:cartridge:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acceptance": {
+      "minItems": 1,
+      "type": "array"
+    },
+    "acceptance_authority": {
+      "type": "object"
+    },
+    "cartridge_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "effect_policy": {
+      "type": "object"
+    },
+    "effects": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "environment": {
+      "type": "object"
+    },
+    "failure_default": {
+      "enum": [
+        "hold",
+        "deny",
+        "rollback"
+      ]
+    },
+    "goal": {
+      "type": "string"
+    },
+    "handoff": {
+      "type": "object"
+    },
+    "id": {
+      "type": "string"
+    },
+    "invariants": {
+      "type": "array"
+    },
+    "mutation_dimensions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "project": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "task-floor/cartridge@1"
+    },
+    "source_schema": {
+      "type": "string"
+    },
+    "surfaces": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "title": {
+      "type": "string"
+    },
+    "variants": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "version",
+    "project",
+    "title",
+    "goal",
+    "surfaces",
+    "acceptance",
+    "handoff"
+  ],
+  "title": "Task Floor Cartridge",
+  "type": "object"
+}

@@ -1,0 +1,74 @@
+{
+  "$id": "urn:task-floor:schema:driver-request:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "action": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "approval": {
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "lease_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "op": {
+      "enum": [
+        "describe",
+        "reset",
+        "observe",
+        "act",
+        "takeover",
+        "release",
+        "accept",
+        "close"
+      ]
+    },
+    "request_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "request_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema": {
+      "const": "task-floor/driver-request@1"
+    },
+    "state_id": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "task": {},
+    "trace_context": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "schema",
+    "request_id",
+    "op",
+    "request_sha256"
+  ],
+  "title": "Task Floor Driver Request",
+  "type": "object"
+}

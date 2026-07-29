@@ -1,0 +1,947 @@
+{
+  "axes": {
+    "accepted_work_economics": "Cost, tokens, GPU time, human time, actions, and energy are normalized per externally accepted task.",
+    "approval_portability": "Approval is a portable state-and-action-bound object rather than a UI-local boolean.",
+    "artifact_provenance": "Inputs, outputs, traces, handoffs, models, policies, and skills are content-addressed and attestable.",
+    "authority_quorum": "Planner, critic, policy, executor, acceptor, credential custodian, and human authority remain separable.",
+    "backend_portability": "The task and acceptance contract survive replacement of agent, browser, sandbox, and policy backends.",
+    "claim_verification": "Capability and production claims cannot exceed independently verified conformance evidence.",
+    "counterfactual_replay": "A trajectory can be replayed or forked from content-addressed checkpoints without silently repeating effects.",
+    "credential_custody": "Authenticated state and secrets remain under a declared custodian, delegation scope, and lease.",
+    "effect_enforcement": "Effects are declared at action and argument scope, enforced by a trusted host, and retained in receipts.",
+    "environment_reproducibility": "Browser, OS, model, policy, dependency, and fixture identities are sufficient to reproduce or explain a run.",
+    "external_acceptance": "Completion is decided by an authority independent of the planner and executor.",
+    "failure_taxonomy": "Failures are classified across planning, observation, policy, approval, execution, environment, acceptance, and verification.",
+    "human_takeover_receipt": "Human intervention is a state-bound lease with pause, release, and re-observation.",
+    "idempotency_transactions": "Retries are keyed, duplicate effects are prevented, and transactional boundaries are explicit.",
+    "local_distributed_custody": "Remote planners and critics can propose without acquiring executor, browser-profile, or secret authority.",
+    "mutation_security": "Conformance includes reordered, delayed, adversarial, prompt-injected, and deceptive variants.",
+    "project_handoff": "A successful run emits a typed derivative artifact for the owning project.",
+    "retention_privacy": "Data classification, redaction, retention, deletion, and secret exclusion are machine-readable.",
+    "rollback_compensation": "Irreversible or partially completed effects declare rollback or compensation behavior.",
+    "semantic_visual_route": "Semantic, accessibility, visual, API, workspace, terminal, and human routes remain explicit.",
+    "skill_supply_chain": "Learned skills and successful programs have source, review, signatures, compatibility, tests, and rollback.",
+    "state_binding": "Actions bind the exact observed state and stale proposals fail before execution.",
+    "success_compilation": "Accepted trajectories can compile into reusable deterministic skills or programs with retained provenance.",
+    "trajectory_interchange": "A canonical trajectory can feed diagnosis, telemetry, replay, evaluation, and benchmark tools.",
+    "version_negotiation": "Schemas and interfaces declare versions, compatibility, extensions, and deprecation behavior.",
+    "workload_identity": "Runtime actors can prove workload identity and on-behalf-of delegation independently of model text."
+  },
+  "coverage_states": {
+    "documented": "Primary source explicitly describes the axis as a core capability.",
+    "not_assessed": "Insufficient primary evidence was reviewed.",
+    "not_core": "The axis is outside the documented core scope.",
+    "partial": "A useful primitive exists, but the complete Task Floor contract is not documented."
+  },
+  "entries": [
+    {
+      "category": "agent-transport",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "partial",
+        "backend_portability": "documented",
+        "claim_verification": "partial",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "partial",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "partial",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "documented",
+        "version_negotiation": "documented",
+        "workload_identity": "partial"
+      },
+      "id": "a2a",
+      "license": "Apache-2.0",
+      "name": "Agent2Agent Protocol",
+      "notes": "Agent Cards, tasks, artifacts, extensions, and transport negotiation are strong discovery and handoff primitives; state-bound effects and acceptance remain extensions.",
+      "sources": [
+        {
+          "kind": "official-spec",
+          "url": "https://a2a-protocol.org/latest/whats-new-v1/"
+        },
+        {
+          "kind": "official-spec",
+          "url": "https://a2a-protocol.org/latest/topics/key-concepts/"
+        }
+      ]
+    },
+    {
+      "category": "ui-event-protocol",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "partial",
+        "artifact_provenance": "not_core",
+        "authority_quorum": "partial",
+        "backend_portability": "not_core",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "partial",
+        "human_takeover_receipt": "documented",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "partial",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "partial",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "documented",
+        "version_negotiation": "documented",
+        "workload_identity": "not_core"
+      },
+      "id": "ag-ui",
+      "license": "Apache-2.0",
+      "name": "Agent User Interaction Protocol",
+      "notes": "Typed events, shared state, tool calls, interrupts, and UI control are documented, but the protocol does not itself enforce external-world effects or independent acceptance.",
+      "sources": [
+        {
+          "kind": "official-docs",
+          "url": "https://docs.ag-ui.com/introduction"
+        },
+        {
+          "kind": "official-docs",
+          "url": "https://docs.ag-ui.com/concepts/architecture"
+        }
+      ]
+    },
+    {
+      "category": "agent-security-benchmark",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "not_core",
+        "authority_quorum": "not_core",
+        "backend_portability": "not_core",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "partial",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "documented",
+        "failure_taxonomy": "partial",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "documented",
+        "project_handoff": "not_core",
+        "retention_privacy": "partial",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "partial",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "agentdojo",
+      "license": "MIT",
+      "name": "AgentDojo",
+      "notes": "Executable prompt-injection evaluation supplies adversarial mutation sources.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/ethz-spylab/agentdojo"
+        }
+      ]
+    },
+    {
+      "category": "trajectory-diagnostics",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "not_core",
+        "backend_portability": "not_core",
+        "claim_verification": "documented",
+        "counterfactual_replay": "partial",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "partial",
+        "failure_taxonomy": "documented",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "partial",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "documented",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "agentrx",
+      "license": "MIT",
+      "name": "AgentRx",
+      "notes": "Canonical trajectory IR, invariants, checker, and grounded root-cause taxonomy complement Task Floor receipts.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/microsoft/AgentRx"
+        }
+      ]
+    },
+    {
+      "category": "self-improving-browser-harness",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "not_core",
+        "backend_portability": "documented",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "partial",
+        "credential_custody": "partial",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "partial",
+        "skill_supply_chain": "partial",
+        "state_binding": "not_core",
+        "success_compilation": "documented",
+        "trajectory_interchange": "not_core",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "browser-harness",
+      "license": "MIT",
+      "name": "Browser Harness",
+      "notes": "Agent-generated domain skills demonstrate demand for reusable learned automation, but public skills need provenance, review, tests, compatibility, and rollback.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/browser-use/browser-harness"
+        },
+        {
+          "kind": "official-skill",
+          "url": "https://github.com/browser-use/browser-harness/blob/main/SKILL.md"
+        }
+      ]
+    },
+    {
+      "category": "browser-agent",
+      "coverage": {
+        "accepted_work_economics": "partial",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "not_core",
+        "backend_portability": "documented",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "partial",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "partial",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "documented",
+        "skill_supply_chain": "not_core",
+        "state_binding": "partial",
+        "success_compilation": "partial",
+        "trajectory_interchange": "partial",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "browser-use",
+      "license": "MIT",
+      "name": "Browser Use",
+      "notes": "Popular persistent browser agent and indexed CLI; conformance to external effect and acceptance contracts is application-specific.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/browser-use/browser-use"
+        }
+      ]
+    },
+    {
+      "category": "benchmark-environment",
+      "coverage": {
+        "accepted_work_economics": "partial",
+        "approval_portability": "not_core",
+        "artifact_provenance": "not_core",
+        "authority_quorum": "not_core",
+        "backend_portability": "documented",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "partial",
+        "external_acceptance": "documented",
+        "failure_taxonomy": "partial",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "documented",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "partial",
+        "skill_supply_chain": "not_core",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "documented",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "browsergym",
+      "license": "Apache-2.0",
+      "name": "BrowserGym",
+      "notes": "Extensible benchmark tasks and realistic web environments; consumer production effect authority is outside benchmark scope.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/ServiceNow/BrowserGym"
+        }
+      ]
+    },
+    {
+      "category": "persistent-desktop-agent",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "not_core",
+        "backend_portability": "partial",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "documented",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "documented",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "partial",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "documented",
+        "skill_supply_chain": "not_core",
+        "state_binding": "partial",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "partial",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "bytebot",
+      "license": "Apache-2.0",
+      "name": "Bytebot",
+      "notes": "Persistent desktop, apps, files, authentication, and takeover are strong execution substrate primitives.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/bytebot-ai/bytebot"
+        }
+      ]
+    },
+    {
+      "category": "authorization",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "partial",
+        "artifact_provenance": "not_core",
+        "authority_quorum": "partial",
+        "backend_portability": "not_core",
+        "claim_verification": "partial",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "partial",
+        "effect_enforcement": "documented",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "not_core",
+        "version_negotiation": "documented",
+        "workload_identity": "documented"
+      },
+      "id": "cedar",
+      "license": "Apache-2.0",
+      "name": "Cedar policy language",
+      "notes": "Principal/action/resource/context and agent-on-behalf-of patterns map cleanly to Task Floor authorization adapters.",
+      "sources": [
+        {
+          "kind": "official-docs",
+          "url": "https://docs.cedarpolicy.com/"
+        },
+        {
+          "kind": "official-docs",
+          "url": "https://docs.cedarpolicy.com/bestpractices/bp-using-the-context.html"
+        }
+      ]
+    },
+    {
+      "category": "computer-use-infrastructure",
+      "coverage": {
+        "accepted_work_economics": "partial",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "not_core",
+        "backend_portability": "documented",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "documented",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "partial",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "partial",
+        "skill_supply_chain": "not_core",
+        "state_binding": "partial",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "documented",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "cua",
+      "license": "MIT",
+      "name": "Cua",
+      "notes": "Cross-platform sandboxes and benchmark trajectory export are strong commodity infrastructure.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/trycua/cua"
+        }
+      ]
+    },
+    {
+      "category": "computer-use-model-and-environments",
+      "coverage": {
+        "accepted_work_economics": "partial",
+        "approval_portability": "partial",
+        "artifact_provenance": "not_core",
+        "authority_quorum": "not_core",
+        "backend_portability": "not_core",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "partial",
+        "environment_reproducibility": "documented",
+        "external_acceptance": "documented",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "documented",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "documented",
+        "skill_supply_chain": "not_core",
+        "state_binding": "partial",
+        "success_compilation": "partial",
+        "trajectory_interchange": "partial",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "fara",
+      "license": "MIT",
+      "name": "Fara 1.5 and FaraGen",
+      "notes": "Synthetic functional replicas and before/after verifiers validate the need for hidden state and external outcome checks.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/microsoft/fara"
+        },
+        {
+          "kind": "official-research",
+          "url": "https://www.microsoft.com/en-us/research/articles/fara1-5-computer-use-agent/"
+        }
+      ]
+    },
+    {
+      "category": "provenance",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "documented",
+        "authority_quorum": "not_core",
+        "backend_portability": "not_core",
+        "claim_verification": "documented",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "documented",
+        "external_acceptance": "partial",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "partial",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "documented",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "not_core",
+        "version_negotiation": "documented",
+        "workload_identity": "partial"
+      },
+      "id": "in-toto-slsa",
+      "license": "Apache-2.0",
+      "name": "in-toto and SLSA v1.2",
+      "notes": "Excellent artifact provenance and verification model. Task Floor reuses the attestation envelope for agent-run artifacts and conformance claims.",
+      "sources": [
+        {
+          "kind": "official-site",
+          "url": "https://in-toto.io/"
+        },
+        {
+          "kind": "official-spec",
+          "url": "https://slsa.dev/spec/v1.2/verifying-artifacts"
+        },
+        {
+          "kind": "official-spec",
+          "url": "https://slsa.dev/spec/v1.2/verification_summary"
+        }
+      ]
+    },
+    {
+      "category": "durable-agent-runtime",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "partial",
+        "artifact_provenance": "not_core",
+        "authority_quorum": "partial",
+        "backend_portability": "partial",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "documented",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "documented",
+        "human_takeover_receipt": "documented",
+        "idempotency_transactions": "documented",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "partial",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "partial",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "partial",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "langgraph",
+      "license": "MIT",
+      "name": "LangGraph",
+      "notes": "Durable checkpoints, interrupts, replay, and idempotency guidance are strong runtime primitives; project acceptance and effect receipts remain application contracts.",
+      "sources": [
+        {
+          "kind": "official-docs",
+          "url": "https://docs.langchain.com/oss/python/langgraph/persistence"
+        },
+        {
+          "kind": "official-docs",
+          "url": "https://docs.langchain.com/oss/python/langgraph/interrupts"
+        }
+      ]
+    },
+    {
+      "category": "human-centered-multi-agent-ui",
+      "coverage": {
+        "accepted_work_economics": "partial",
+        "approval_portability": "partial",
+        "artifact_provenance": "partial",
+        "authority_quorum": "documented",
+        "backend_portability": "not_core",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "partial",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "documented",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "documented",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "partial",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "partial",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "magentic-ui",
+      "license": "MIT",
+      "name": "Magentic-UI",
+      "notes": "Plan visibility, approvals, intervention, browser and filesystem agents converge strongly with Task Floor authority separation.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/microsoft/magentic-ui"
+        }
+      ]
+    },
+    {
+      "category": "tool-and-context-protocol",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "partial",
+        "artifact_provenance": "not_core",
+        "authority_quorum": "not_core",
+        "backend_portability": "documented",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "partial",
+        "effect_enforcement": "partial",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "partial",
+        "human_takeover_receipt": "partial",
+        "idempotency_transactions": "partial",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "partial",
+        "version_negotiation": "documented",
+        "workload_identity": "partial"
+      },
+      "id": "mcp",
+      "license": "specification",
+      "name": "Model Context Protocol",
+      "notes": "Tool annotations are hints and must be treated as untrusted unless the server is trusted; task and elicitation primitives do not provide a complete effect receipt or external acceptance contract.",
+      "sources": [
+        {
+          "kind": "official-spec",
+          "url": "https://modelcontextprotocol.io/specification/2025-11-25/server/tools"
+        },
+        {
+          "kind": "official-spec",
+          "url": "https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/tasks"
+        },
+        {
+          "kind": "official-spec",
+          "url": "https://modelcontextprotocol.io/seps/1036--url-mode-elicitation-for-secure-out-of-band-interactions"
+        }
+      ]
+    },
+    {
+      "category": "policy-engine",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "partial",
+        "artifact_provenance": "not_core",
+        "authority_quorum": "partial",
+        "backend_portability": "documented",
+        "claim_verification": "partial",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "documented",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "partial",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "not_core",
+        "version_negotiation": "not_core",
+        "workload_identity": "partial"
+      },
+      "id": "opa",
+      "license": "Apache-2.0",
+      "name": "Open Policy Agent",
+      "notes": "OPA decouples decisions from enforcement. The trusted host still must bind decisions to exact states and record effects.",
+      "sources": [
+        {
+          "kind": "official-docs",
+          "url": "https://www.openpolicyagent.org/docs"
+        }
+      ]
+    },
+    {
+      "category": "telemetry",
+      "coverage": {
+        "accepted_work_economics": "documented",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "not_core",
+        "backend_portability": "not_core",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "partial",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "partial",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "partial",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "documented",
+        "version_negotiation": "documented",
+        "workload_identity": "not_core"
+      },
+      "id": "opentelemetry-genai",
+      "license": "Apache-2.0",
+      "name": "OpenTelemetry GenAI semantic conventions",
+      "notes": "Telemetry can carry agent and tool execution evidence, but instrumentation is not the execution or policy authority.",
+      "sources": [
+        {
+          "kind": "official-spec",
+          "url": "https://opentelemetry.io/docs/specs/semconv/gen-ai/"
+        }
+      ]
+    },
+    {
+      "category": "browser-control",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "not_core",
+        "backend_portability": "documented",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "partial",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "partial",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "documented",
+        "skill_supply_chain": "not_core",
+        "state_binding": "partial",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "partial",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "playwright-agents",
+      "license": "Apache-2.0",
+      "name": "Playwright CLI and MCP",
+      "notes": "Strong semantic browser action and session primitives. Task Floor supplies project effects, acceptance, and provenance above the browser.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/microsoft/playwright"
+        }
+      ]
+    },
+    {
+      "category": "workload-identity",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "not_core",
+        "backend_portability": "not_core",
+        "claim_verification": "partial",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "documented",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "documented",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "not_core",
+        "state_binding": "not_core",
+        "success_compilation": "not_core",
+        "trajectory_interchange": "not_core",
+        "version_negotiation": "partial",
+        "workload_identity": "documented"
+      },
+      "id": "spiffe-spire",
+      "license": "Apache-2.0",
+      "name": "SPIFFE and SPIRE",
+      "notes": "Strong runtime workload identity and attestation; not an agent effect or acceptance protocol.",
+      "sources": [
+        {
+          "kind": "official-docs",
+          "url": "https://spiffe.io/docs/latest/spire-about/spire-concepts/"
+        },
+        {
+          "kind": "official-docs",
+          "url": "https://spiffe.io/docs/latest/deploying/svids/"
+        }
+      ]
+    },
+    {
+      "category": "browser-automation",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "partial",
+        "authority_quorum": "not_core",
+        "backend_portability": "documented",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "partial",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "not_core",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "not_core",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "not_core",
+        "semantic_visual_route": "partial",
+        "skill_supply_chain": "partial",
+        "state_binding": "partial",
+        "success_compilation": "documented",
+        "trajectory_interchange": "not_core",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "stagehand",
+      "license": "MIT",
+      "name": "Stagehand",
+      "notes": "Code and natural-language automation with caching and self-healing; cached actions need state, effect, review, and rollback provenance.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/browserbase/stagehand"
+        }
+      ]
+    },
+    {
+      "category": "code-as-action-browser-agent",
+      "coverage": {
+        "accepted_work_economics": "not_core",
+        "approval_portability": "not_core",
+        "artifact_provenance": "documented",
+        "authority_quorum": "not_core",
+        "backend_portability": "not_core",
+        "claim_verification": "not_core",
+        "counterfactual_replay": "not_core",
+        "credential_custody": "not_core",
+        "effect_enforcement": "not_core",
+        "environment_reproducibility": "documented",
+        "external_acceptance": "not_core",
+        "failure_taxonomy": "not_core",
+        "human_takeover_receipt": "not_core",
+        "idempotency_transactions": "partial",
+        "local_distributed_custody": "not_core",
+        "mutation_security": "not_core",
+        "project_handoff": "not_core",
+        "retention_privacy": "not_core",
+        "rollback_compensation": "partial",
+        "semantic_visual_route": "not_core",
+        "skill_supply_chain": "partial",
+        "state_binding": "partial",
+        "success_compilation": "documented",
+        "trajectory_interchange": "partial",
+        "version_negotiation": "not_core",
+        "workload_identity": "not_core"
+      },
+      "id": "webwright",
+      "license": "MIT",
+      "name": "Webwright",
+      "notes": "Rerunnable Playwright programs make successful work durable; Task Floor adds effect admission and project acceptance around generated programs.",
+      "sources": [
+        {
+          "kind": "official-repository",
+          "url": "https://github.com/microsoft/Webwright"
+        }
+      ]
+    }
+  ],
+  "last_reviewed": "2026-07-28",
+  "method": "Manual review of public primary specifications, official documentation, and official repositories. Coverage means documented project capability, not independent production qualification.",
+  "registry_sha256": "8a3e7b19a4a1e6a49d5df54db63cb6df49ecde6fa588fb2cbb2637f85322a384",
+  "schema": "task-floor/oss-registry@1"
+}
