@@ -4,6 +4,9 @@ on:
   push:
     branches: [agent/axm-estate-lab]
     paths: ['.github/workflows/estate-lab.yml']
+  pull_request:
+    branches: [main]
+    paths: ['.github/workflows/estate-lab.yml']
 
 permissions:
   contents: write
@@ -52,7 +55,6 @@ jobs:
           python - <<'PY'
           from __future__ import annotations
 
-          import io
           import os
           import tarfile
           from pathlib import Path
