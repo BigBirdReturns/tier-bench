@@ -7,6 +7,13 @@ on:
     paths:
       - '.github/workflows/converge-supplier-foundry-asset-floor.yml'
       - '.asset-floor-payload/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/converge-supplier-foundry-asset-floor.yml'
+      - '.asset-floor-payload/**'
+      - 'supplier_foundry/floor/**'
 
 permissions:
   contents: write
