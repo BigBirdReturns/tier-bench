@@ -6,11 +6,13 @@ on:
     paths:
       - '.github/workflows/estate-lab.yml'
       - '.prod-v1-payload-*'
+      - '.prod-v1-bootstrap-patch.py'
   pull_request:
     branches: [main]
     paths:
       - '.github/workflows/estate-lab.yml'
       - '.prod-v1-payload-*'
+      - '.prod-v1-bootstrap-patch.py'
 
 permissions:
   contents: write
@@ -88,6 +90,7 @@ jobs:
                       handle.flush()
                       os.fsync(handle.fileno())
           PY
+          python .prod-v1-bootstrap-patch.py
 
       - if: steps.required.outputs.value == 'true'
         name: Qualify production source
@@ -123,7 +126,7 @@ jobs:
           with zipfile.ZipFile(root / 'pretest-release.zip') as archive:
               archive.extractall(extract)
           receipt, stdout, stderr = run_bounded_process(
-              [sys.executable, '-m', 'estate_lab', '--version'],
+              [sys.executable, str(extract / 'surface-interop.py'), '--version'],
               cwd=extract,
               timeout_seconds=10,
               max_capture_bytes=4096,
@@ -131,8 +134,8 @@ jobs:
           print(json.dumps(receipt.__dict__, indent=2, sort_keys=True))
           print('stdout=' + stdout.decode('utf-8', errors='replace'))
           print('stderr=' + stderr.decode('utf-8', errors='replace'))
-          if receipt.exit_code != 0:
-              raise SystemExit(receipt.exit_code)
+          if receipt.exit_code != 0 or stdout.decode('utf-8').strip() != '1.0.0':
+              raise SystemExit(receipt.exit_code or 1)
           PY
           python -m estate_lab validate > "$RUNNER_TEMP/estate-validation.json"
           python -m estate_lab commodities --format json > "$RUNNER_TEMP/commodity-plan.json"
