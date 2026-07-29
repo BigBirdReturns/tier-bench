@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           cat .prod-v1-payload-* | base64 -d > "$RUNNER_TEMP/production-v1.tar.xz"
-          echo "0725647ee542cdb9d900576c0bf2db06265cbce2ccd00c8cf6070af5e09c29bf  $RUNNER_TEMP/production-v1.tar.xz" | sha256sum -c -
+          echo "cffb81ee8e6aaccf380a071265deb0f92755a9c745862c378d20e39f5bbdab41  $RUNNER_TEMP/production-v1.tar.xz" | sha256sum -c -
           python - <<'PY'
           from __future__ import annotations
 
