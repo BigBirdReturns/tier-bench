@@ -27,7 +27,6 @@ jobs:
       PYTHONDONTWRITEBYTECODE: '1'
       PYTHONHASHSEED: '0'
       PYTHONNOUSERSITE: '1'
-      PYTHONSAFEPATH: '1'
     steps:
       - uses: actions/checkout@v4
         with:
