@@ -3,6 +3,9 @@ name: task-floor-bootstrap
 on:
   push:
     branches: [agent/task-floor-v1]
+  pull_request:
+    branches: [agent/task-computer-v1]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -27,5 +30,3 @@ jobs:
           git add -A
           git commit -m "Establish the Task Floor interoperability layer"
           git push origin HEAD:agent/task-floor-v1
-
-# The second branch commit activates this newly introduced workflow.
