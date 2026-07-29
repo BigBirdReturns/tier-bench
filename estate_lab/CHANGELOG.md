@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.0
+
+- Promoted the public Surface Interop protocol and verifier to a production software boundary while retaining physical commissioning as separately held evidence.
+- Added a hardened adapter process boundary with explicit `--allow-exec` admission, supply-pinned local entrypoints, secret-minimizing environments, closed stdin, separate process groups, timeout enforcement, bounded stdout and stderr, request and response size limits, strict JSON, and deterministic refusal reasons.
+- Added crash-safe atomic conformance-bundle publication, no-overwrite custody, deterministic release ZIP construction, exact archive-shape enforcement, duplicate and traversal refusal, complete SHA-256 verification, file-level SPDX 2.3 inventory, release manifests, validation receipts, detached archive digests, and clean-extract verification.
+- Added the `surface-interop` production CLI for doctor, specification and adapter validation, starter generation, hardened conformance, detached submission verification, registry construction, gap inspection, deterministic release construction, release verification, and redacted support bundles.
+- Added installable package metadata and complete package-data custody for schemas, vectors, reference adapters, WIT, documentation, production policy, and release tooling.
+- Added security, operations, support, and production-readiness authorities with explicit compatibility, rollback, disclosure, monitoring, and external-evidence boundaries.
+- Expanded permanent CI to Python 3.10 through 3.13, Linux, Windows, and macOS, with clean installation, hardened conformance, identity replay, receipt verification, deterministic dual release builds, clean-extract conformance, wheel-content inspection, and carrier-free source enforcement.
+- Added production schemas and an adversarial production test family covering secret stripping, timeout, output flood, supply pins, release reproducibility, archive traversal, tamper refusal, support redaction, doctor, and clean production conformance.
+
 ## 0.3.0
 
 - Added the public AXM Interaction Floor specification with portable adapter, request, event, response, conformance, registry, and gap-ledger objects.
