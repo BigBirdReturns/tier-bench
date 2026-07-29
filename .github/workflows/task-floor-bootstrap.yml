@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   expand:
-    if: ${{ hashFiles('.task-floor-bootstrap.part-*') != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,16 +19,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat .task-floor-bootstrap.part-* | base64 -d > /tmp/task-floor.tar.gz
+          shopt -s nullglob
+          parts=(.task-floor-bootstrap.part-*)
+          if [ "${#parts[@]}" -eq 0 ]; then
+            echo "Task Floor source is already expanded."
+            exit 0
+          fi
+
+          cat "${parts[@]}" | base64 -d > /tmp/task-floor.tar.gz
           echo "ffac1d11f4d2d3a3977d0c64c4d097ff461176579ace459b1da204d3bed277d1  /tmp/task-floor.tar.gz" | sha256sum -c -
           tar -xzf /tmp/task-floor.tar.gz -C .
 
-          # GitHub's workflow token may update repository contents, but it may not
-          # create or modify workflow files without the separate workflows scope.
-          # Publish the workflow as ordinary text; the GitHub connector installs it
-          # after the source commit lands.
+          # The workflow token may update normal repository contents but cannot
+          # install a new workflow without the separate workflows permission.
+          # Stage that workflow as ordinary text for connector installation.
           mv .github/workflows/task-floor.yml task-floor.workflow.yml.txt
-          rm -f .task-floor-bootstrap.part-*
+          rm -f .task-floor-bootstrap.part-* .task-floor-bootstrap.trigger
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
