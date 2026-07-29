@@ -22,6 +22,39 @@ The retained manifest currently classifies 14 organs, 15 adapters, and 18 routes
 | `underdrain-pump-room-001` | A legible pump, bypass, purge, fungus-seal, contamination, flow, and recovery procedure | AXM-WORLD, ScreenGhost, AXM Embodied |
 | `estate-circuit-001` | Cross-organ compute planning, live-audio control, organ evolution, and attention candidacy | Zombie Adapter, EarCrate, AXM Tools, GhostBox, AXM Console |
 
+## OSS and commodity acquisition ledger
+
+The reviewed catalog at `fixtures/commodities.example.json` covers 55 public projects and standards across bridge simulators, cockpit hardware, embedded I/O, declarative firmware, input abstraction, show control, event automation, telemetry and replay, hardware-in-the-loop, digital twins, and transport. It records one of four dispositions for each candidate: consume unchanged, adapt behind an AXM-owned boundary, retain as a design reference, or reject while preserving the reason.
+
+Every consumed or adapted supplier names a substitution test. Every adapted supplier names its adapter contract. Every candidate names the authority it may not acquire. The catalog identity is content-derived, so a changed decision, source, license posture, risk, or acquisition boundary changes the catalog ID. See [`COMMODITY_SWEEP.md`](COMMODITY_SWEEP.md) for the cross-community analysis and the first ten supplier fixture families.
+
+Inspect the complete acquisition plan:
+
+```bash
+python -m estate_lab commodities
+```
+
+Filter to immediate physical and embodied suppliers and emit machine-readable JSON:
+
+```bash
+python -m estate_lab commodities \
+  --decision consume \
+  --decision adapt \
+  --priority P0 \
+  --target axm-embodied \
+  --format json
+```
+
+Write a durable Markdown projection:
+
+```bash
+python -m estate_lab commodities \
+  --format markdown \
+  --output .estate-lab-runs/commodity-plan.md
+```
+
+The catalog does not assert that a supplier works for AXM merely because its upstream project is mature. It defines the candidate, boundary, evidence, risk, and required rip-out test that a Supplier Foundry qualification must execute.
+
 ## Run the retained proof
 
 From the Tier Bench repository root:

@@ -9,6 +9,13 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Sequence
 
+from .commodities import (
+    build_acquisition_plan,
+    load_commodity_catalog,
+    render_acquisition_plan_markdown,
+    select_candidates,
+    write_acquisition_plan,
+)
 from .errors import EstateLabError
 from .manifest import load_manifest, load_scenario
 from .routing import choose_route
@@ -17,6 +24,7 @@ from .runtime import EstateLab
 HERE = Path(__file__).resolve().parent
 DEFAULT_MANIFEST = HERE / "fixtures" / "estate.example.json"
 DEFAULT_SCENARIO_DIR = HERE / "fixtures" / "scenarios"
+DEFAULT_COMMODITY_CATALOG = HERE / "fixtures" / "commodities.example.json"
 
 
 def _add_runtime_args(parser: argparse.ArgumentParser) -> None:
@@ -69,6 +77,18 @@ def build_parser() -> argparse.ArgumentParser:
     route.add_argument("--max-latency-ms", type=int)
     route.add_argument("--max-cost-microunits", type=int)
     route.add_argument("--require-local", action="store_true")
+
+    commodities = subparsers.add_parser(
+        "commodities",
+        help="Inspect the reviewed OSS, community, and commodity acquisition ledger.",
+    )
+    commodities.add_argument("--catalog", type=Path, default=DEFAULT_COMMODITY_CATALOG)
+    commodities.add_argument("--decision", action="append", default=[])
+    commodities.add_argument("--category", action="append", default=[])
+    commodities.add_argument("--priority", action="append", default=[])
+    commodities.add_argument("--target", action="append", default=[])
+    commodities.add_argument("--format", choices=("markdown", "json"), default="markdown")
+    commodities.add_argument("--output", type=Path)
 
     return parser
 
@@ -169,6 +189,25 @@ def main(argv: Sequence[str] | None = None) -> int:
                     for failure in outcome.failures:
                         print(f"  FAIL: {failure}")
             return 0 if passed else 1
+
+        if args.command == "commodities":
+            catalog = load_commodity_catalog(args.catalog)
+            candidates = select_candidates(
+                catalog,
+                decisions=args.decision,
+                categories=args.category,
+                priorities=args.priority,
+                targets=args.target,
+            )
+            plan = build_acquisition_plan(catalog, candidates)
+            if args.output is not None:
+                write_acquisition_plan(args.output, plan, markdown=args.format == "markdown")
+            else:
+                if args.format == "json":
+                    print(json.dumps(plan, indent=2, sort_keys=True))
+                else:
+                    print(render_acquisition_plan_markdown(plan), end="")
+            return 0
 
         if args.command == "route":
             lab = _lab_from_args(args)

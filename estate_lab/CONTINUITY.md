@@ -4,7 +4,7 @@
 
 Estate Lab must preserve an executable answer to one question: can an admitted semantic action cross multiple project and device surfaces, remain inside the correct actor and authority envelope, survive route and ownership faults, and reproduce the same governed state and inspectable receipts?
 
-The implementation may move, split, or be replaced. The manifest, scenario, adapter, event, output, debrief, and run semantics are the durable product.
+The implementation may move, split, or be replaced. The manifest, scenario, commodity catalog, adapter, event, output, debrief, and run semantics are the durable product.
 
 ## Invariants
 
@@ -18,6 +18,10 @@ The implementation may move, split, or be replaced. The manifest, scenario, adap
 8. Wall-clock time and absolute machine paths do not control run identity.
 9. Every retained run can be understood from its own snapshots and receipts.
 10. No migration grants Tier Bench domain authority it did not already possess.
+11. A supplier never becomes authoritative merely because it is popular, mature, or selected by a score.
+12. Every consumed or adapted supplier retains an exact substitution and rip-out test.
+13. Strong-copyleft or mixed-license suppliers remain external unless a reviewed license decision explicitly changes the boundary.
+14. An unavailable upstream cannot make the canonical declaration, prior product, receipt, or fallback unreadable.
 
 ## Expected change
 
@@ -32,6 +36,10 @@ After that proof, Tier Bench may retain the old implementation in history and po
 ## Split into `axm-surface`
 
 A future dedicated surface repository is admissible when at least two independent projects need the runtime as a production dependency rather than as a laboratory fixture. The split must keep Tier Bench in control of measurement and acceptance, AXM-ARC in control of game law, AXM Embodied in control of physical actuation safety, and Console in control of operator presentation only. Tier Bench must retain a source-independent conformance runner and the complete scenario corpus so the runtime can be removed and replaced.
+
+## Supplier replacement
+
+A supplier update is a new qualification, never a silent package bump. The replacement must execute the prior supplier's canonical fixture, satisfy the same semantic verifier and budgets, preserve the source fallback, and pass the removal test after the old runtime is deleted. A changed capability or verifier requires a new capability identifier or an explicit migration record.
 
 ## Recovery
 

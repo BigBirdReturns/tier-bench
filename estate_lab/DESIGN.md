@@ -18,9 +18,15 @@ The reducer is intentionally generic. It supports bounded `set`, `increment`, `a
 
 Route admission and route scoring are separate. Admission checks semantics, authority, availability, evidence floors, deterministic and replayable requirements, locality, latency, cost, and tags. Scoring ranks only admitted peer routes. Fallback depth outranks score, so a fallback cannot displace an admissible primary. The complete evaluation table remains in the receipt.
 
+## Commodity acquisition
+
+The commodity catalog is a reviewed supplier-decision ledger rather than an online popularity index. It separates consume, adapt, reference, and reject decisions. A consumed supplier must expose an open standard or permissive code contract and a substitution test. An adapted supplier must name the adapter and rip-out test that prevent its vocabulary, policy, or state from becoming AXM authority. Reference candidates contribute fixtures and lessons only. Rejected candidates retain the failure reason.
+
+Supplier maturity, community size, and feature breadth do not waive authority or evidence gates. The catalog may recommend an acquisition experiment, but only a Supplier Foundry qualification can establish the measured context, exact version, license, budgets, semantic conformance, fallback, and removal evidence.
+
 ## Identity
 
-Manifest, scenario, run, event, output, debrief, and adapter response identifiers are content-derived. Wall-clock generation time and absolute workspace paths are excluded from the run identity. The same manifest, scenario, execution mode, and adapter status produce the same run identifier. Receipt directories include the scenario id and run id so repeat runs converge on one identity-bearing location.
+Manifest, scenario, commodity catalog, run, event, output, debrief, and adapter response identifiers are content-derived. Wall-clock generation time and absolute workspace paths are excluded from the run identity. The same manifest, scenario, execution mode, and adapter status produce the same run identifier. Receipt directories include the scenario id and run id so repeat runs converge on one identity-bearing location.
 
 ## Failure behavior
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0
+
+- Added a content-addressed 55-candidate OSS, community, standards, and commodity catalog across 11 capability families.
+- Added consume, adapt, reference, and reject dispositions with license posture, authority exclusions, substitution tests, and exact evidence locators.
+- Added deterministic acquisition-plan JSON and Markdown projections plus CLI filtering by decision, category, priority, and estate target.
+- Added the cross-community sweep and ten executable supplier-fixture families.
+- Expanded the machine-readable schema set and qualification suite.
+
 ## 0.1.0
 
 - Added the AXM estate manifest with 14 organs, 15 adapters, and 18 routes.

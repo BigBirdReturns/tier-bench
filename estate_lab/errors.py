@@ -39,3 +39,6 @@ class AuthorityRefused(EstateLabError):
 
 class ProjectionMismatch(EstateLabError):
     """A projection did not reproduce the expected desired-output digest."""
+
+class CommodityCatalogError(EstateLabError):
+    """The reviewed OSS/community commodity catalog is malformed or unsafe."""

@@ -1,0 +1,2698 @@
+{
+  "candidates": [
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "must not become an AXM engine dependency"
+      ],
+      "capabilities": [
+        "station roles",
+        "game master",
+        "mission scripting",
+        "HTTP API",
+        "DMX",
+        "Android clients"
+      ],
+      "category": "bridge-simulator",
+      "community_signal": "Long-running cross-platform project with hosted games, community channels, scripting, hardware, DMX, and HTTP support.",
+      "decision": "reference",
+      "decision_basis": "Useful as a large corpus of station and scenario decisions, but its game rules are not a reusable authority substrate.",
+      "estate_targets": [
+        "axm-world",
+        "axm-arc"
+      ],
+      "evidence": [
+        {
+          "claim": "Documents cross-platform stations, community play, scripting, HTTP API, hardware, and DMX.",
+          "kind": "official-project",
+          "locator": "https://github.com/daid/EmptyEpsilon/blob/master/README.md"
+        }
+      ],
+      "id": "empty-epsilon",
+      "integration_mode": "design-reference",
+      "license": "GPL-3.0",
+      "license_posture": "strong-copyleft",
+      "maturity": "mature-community",
+      "name": "EmptyEpsilon",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Mine station information design, join and reconnect behavior, GM tools, and scripted mission patterns.",
+      "risks": [
+        "Strong copyleft and a monolithic C++ game architecture."
+      ],
+      "substitution_test": null,
+      "supplier_role": "multi-station bridge-game reference",
+      "upstream": {
+        "project_url": "https://github.com/daid/EmptyEpsilon",
+        "repository": "daid/EmptyEpsilon"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "join and rejoin",
+        "multi-bridge",
+        "engineering",
+        "damage control",
+        "Lua missions",
+        "voice chat"
+      ],
+      "category": "bridge-simulator",
+      "community_signal": "Substantial open LAN bridge simulator demonstrated in hacker-space installations.",
+      "decision": "reference",
+      "decision_basis": "Provides battle-tested multi-seat and low-cost station lessons while remaining tightly coupled to its own universe and renderer.",
+      "estate_targets": [
+        "axm-world",
+        "axm-arc"
+      ],
+      "evidence": [
+        {
+          "claim": "Documents seven stations, multi-bridge play, rejoining clients, Lua missions, voice chat, and Raspberry Pi use.",
+          "kind": "official-project",
+          "locator": "https://github.com/smcameron/space-nerds-in-space/blob/master/README.md"
+        }
+      ],
+      "id": "space-nerds-in-space",
+      "integration_mode": "design-reference",
+      "license": "GPL-family; verify upstream",
+      "license_posture": "strong-copyleft",
+      "maturity": "mature-community",
+      "name": "Space Nerds In Space",
+      "priority": "P2",
+      "required_adapter": null,
+      "reuse_surface": "Use as a comparative workload for reconnect, role folding, low-power clients, and same-room LAN operation.",
+      "risks": [
+        "Linux-centric installation and bespoke network/game stack."
+      ],
+      "substitution_test": null,
+      "supplier_role": "LAN multi-crew systems-game reference",
+      "upstream": {
+        "project_url": "https://github.com/smcameron/space-nerds-in-space",
+        "repository": "smcameron/space-nerds-in-space"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "distributed clients",
+        "hardware panels",
+        "lighting",
+        "sound",
+        "video",
+        "flight director"
+      ],
+      "category": "bridge-simulator",
+      "community_signal": "Years of use in educational spaceship-simulator installations and an active support community.",
+      "decision": "reference",
+      "decision_basis": "Its explicit principles independently converge on distributed data, external clients, hardware panels, and operator-centered control.",
+      "estate_targets": [
+        "axm-world",
+        "estate-lab",
+        "axm-console"
+      ],
+      "evidence": [
+        {
+          "claim": "Describes a distributed, fault-tolerant show-control system with external hardware clients.",
+          "kind": "official-project",
+          "locator": "https://github.com/Thorium-Sim/thorium/blob/develop/README.md"
+        }
+      ],
+      "id": "thorium-classic",
+      "integration_mode": "design-reference",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "mature-community",
+      "name": "Thorium Classic",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Use its failure and operator-load lessons as acceptance cases for station authoring and director surfaces.",
+      "risks": [
+        "Legacy dependency stack and application-specific data model."
+      ],
+      "substitution_test": null,
+      "supplier_role": "distributed show-control architecture reference",
+      "upstream": {
+        "project_url": "https://github.com/Thorium-Sim/thorium",
+        "repository": "Thorium-Sim/thorium"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "must not define Common Ship or Underdrain law"
+      ],
+      "capabilities": [
+        "distributed stations",
+        "flight director control",
+        "timeline automation",
+        "peripheral API",
+        "DMX and media integration"
+      ],
+      "category": "bridge-simulator",
+      "community_signal": "Next-generation continuation of a long-running simulator-controls community.",
+      "decision": "reference",
+      "decision_basis": "This is the closest public product-shaped analogue, but importing its domain model would give a bridge simulator authority over AXM cartridges.",
+      "estate_targets": [
+        "axm-world",
+        "estate-lab",
+        "axm-console"
+      ],
+      "evidence": [
+        {
+          "claim": "Exposes third-party peripheral request and mutation endpoints.",
+          "kind": "official-project",
+          "locator": "https://github.com/Thorium-Sim/thorium-nova/blob/develop/SERVER_API.md"
+        }
+      ],
+      "id": "thorium-nova",
+      "integration_mode": "design-reference",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "active-emerging",
+      "name": "Thorium Nova",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Harvest station topology, flight-director ergonomics, peripheral API patterns, and show-control seams as comparative fixtures.",
+      "risks": [
+        "Large application architecture is coupled to its own simulator object model."
+      ],
+      "substitution_test": null,
+      "supplier_role": "distributed simulator and show-control reference",
+      "upstream": {
+        "project_url": "https://github.com/Thorium-Sim/thorium-nova",
+        "repository": "Thorium-Sim/thorium-nova"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "firmware may render outputs but may not adjudicate game state"
+      ],
+      "capabilities": [
+        "ESP32 S2/S3",
+        "USB HID",
+        "WiFi",
+        "BLE",
+        "serial",
+        "RS485",
+        "LEDs",
+        "displays",
+        "steppers",
+        "generated mappings"
+      ],
+      "category": "cockpit-hardware",
+      "community_signal": "Active cockpit-builder project with generated label sets, multiple transports, debug record/replay, and documented scale tests.",
+      "decision": "adapt",
+      "decision_basis": "It independently implements most of the Enigma edge layer and is a high-value firmware supplier, but DCS label sets and DCS-BIOS transport must be replaced by AXM contracts.",
+      "estate_targets": [
+        "supplier-foundry",
+        "axm-embodied",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides static-memory ESP32 panel firmware, multiple transports, generated label sets, and record/replay tools.",
+          "kind": "official-project",
+          "locator": "https://github.com/BojoteX/CockpitOS/blob/main/README.md"
+        }
+      ],
+      "id": "cockpitos",
+      "integration_mode": "firmware-supplier",
+      "license": "MIT",
+      "license_posture": "permissive",
+      "maturity": "active-emerging",
+      "name": "CockpitOS",
+      "priority": "P0",
+      "required_adapter": "cockpitos-axm-mailbox-adapter/v1",
+      "reuse_surface": "Fork only the bounded firmware and generated mapping substrate behind an AXM protocol adapter; retain upstream as replaceable supplier.",
+      "risks": [
+        "Young project, DCS coupling, and Windows-native authoring tools."
+      ],
+      "substitution_test": "Flash the same board with CockpitOS-derived and AXM-native supplier builds and require identical normalized input and desired-output traces.",
+      "supplier_role": "ESP32 panel firmware and configuration toolchain",
+      "upstream": {
+        "project_url": "https://github.com/BojoteX/CockpitOS",
+        "repository": "BojoteX/CockpitOS"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "DCS addresses may not become AXM semantic identifiers"
+      ],
+      "capabilities": [
+        "control metadata",
+        "binary state stream",
+        "commands",
+        "logging",
+        "replay"
+      ],
+      "category": "cockpit-hardware",
+      "community_signal": "Large module and panel-builder community with explicit logging and replay tools.",
+      "decision": "adapt",
+      "decision_basis": "Its module metadata, address mappings, stream parser, and record/replay tools are valuable commodities for comparison, but the protocol is DCS-specific and GPL.",
+      "estate_targets": [
+        "estate-lab",
+        "supplier-foundry",
+        "axm-world"
+      ],
+      "evidence": [
+        {
+          "claim": "Bridges the DCS clickable cockpit to external hardware and software and includes log/replay tools.",
+          "kind": "official-project",
+          "locator": "https://github.com/DCS-Skunkworks/dcs-bios/blob/main/README.md"
+        }
+      ],
+      "id": "dcs-bios",
+      "integration_mode": "external-process",
+      "license": "GPL-3.0",
+      "license_posture": "strong-copyleft",
+      "maturity": "mature-community",
+      "name": "DCS-BIOS",
+      "priority": "P0",
+      "required_adapter": "dcs-bios-stream-adapter/v1",
+      "reuse_surface": "Run as an external supplier fixture and translate its controls into AXM semantic declarations.",
+      "risks": [
+        "Strong copyleft and domain-specific address semantics."
+      ],
+      "substitution_test": "Replay one captured DCS-BIOS stream through both the upstream parser and the AXM adapter and require identical declared control state.",
+      "supplier_role": "simulator state and command bridge",
+      "upstream": {
+        "project_url": "https://github.com/DCS-Skunkworks/dcs-bios",
+        "repository": "DCS-Skunkworks/dcs-bios"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "MobiFlight configuration cannot become canonical cartridge law"
+      ],
+      "capabilities": [
+        "buttons",
+        "encoders",
+        "displays",
+        "LEDs",
+        "Arduino",
+        "MIDI",
+        "HID",
+        "multi-simulator mappings"
+      ],
+      "category": "cockpit-hardware",
+      "community_signal": "Thousands of users share configurations, presets, and hardware builds across several flight simulators.",
+      "decision": "adapt",
+      "decision_basis": "MobiFlight already commoditizes much of panel commissioning and mapping, but its configuration model should remain a supplier input rather than the canonical AXM surface declaration.",
+      "estate_targets": [
+        "supplier-foundry",
+        "estate-lab",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Bridges multiple simulators to buttons, encoders, displays, LEDs, Arduino, MIDI, and HID without code.",
+          "kind": "official-project",
+          "locator": "https://github.com/MobiFlight/MobiFlight-Connector/blob/main/README.md"
+        }
+      ],
+      "id": "mobiflight",
+      "integration_mode": "external-process",
+      "license": "MIT",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "MobiFlight Connector",
+      "priority": "P0",
+      "required_adapter": "mobiflight-configuration-adapter/v1",
+      "reuse_surface": "Qualify imported mappings, off-the-shelf device support, and panel-builder workflows through a translation adapter.",
+      "risks": [
+        "Windows-centered workflow and simulator-specific configuration vocabulary."
+      ],
+      "substitution_test": "Import one panel configuration, emit an AXM surface declaration, and replay the same input/output vector through MobiFlight and the AXM twin.",
+      "supplier_role": "no-code panel configuration and simulator bridge",
+      "upstream": {
+        "project_url": "https://github.com/MobiFlight/MobiFlight-Connector",
+        "repository": "MobiFlight/MobiFlight-Connector"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "must not impose aircraft geometry on generic stations"
+      ],
+      "capabilities": [
+        "BOM",
+        "mechanical drawings",
+        "wiring",
+        "panel fabrication",
+        "assembly documentation"
+      ],
+      "category": "cockpit-hardware",
+      "community_signal": "Large community project publishing mechanical, electrical, software, assembly, and documentation artifacts for a 1:1 cockpit.",
+      "decision": "reference",
+      "decision_basis": "The value is its whole-estate fabrication discipline and community maintainability, while its aircraft-specific geometry and mixed licensing are not generic dependencies.",
+      "estate_targets": [
+        "supplier-foundry",
+        "axm-fleet",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Publishes a community-designed 1:1 cockpit across mechanical, electrical, and software work.",
+          "kind": "official-project",
+          "locator": "https://openhornet.com/"
+        }
+      ],
+      "id": "openhornet",
+      "integration_mode": "design-reference",
+      "license": "Mixed software and hardware terms",
+      "license_posture": "mixed",
+      "maturity": "mature-community",
+      "name": "OpenHornet",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Harvest panel-kit packaging, BOM alternates, assembly sequencing, service access, and build documentation patterns.",
+      "risks": [
+        "Hardware artifacts have different licensing constraints from software."
+      ],
+      "substitution_test": null,
+      "supplier_role": "full physical cockpit estate reference",
+      "upstream": {
+        "project_url": "https://openhornet.com/",
+        "repository": null
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "home-automation entities must not define game or procedure authority"
+      ],
+      "capabilities": [
+        "YAML declarations",
+        "ESP32",
+        "sensors",
+        "binary inputs",
+        "displays",
+        "OTA",
+        "native API",
+        "MQTT"
+      ],
+      "category": "declarative-firmware",
+      "community_signal": "Large component ecosystem and active home-automation community.",
+      "decision": "adapt",
+      "decision_basis": "Its component graph, code generation, OTA, and device lifecycle are reusable, while its home-automation entity model is not an AXM action model.",
+      "estate_targets": [
+        "supplier-foundry",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Generates ESP firmware from declarations and provides native API, MQTT, OTA, displays, and broad component support.",
+          "kind": "official-project",
+          "locator": "https://esphome.io/"
+        }
+      ],
+      "id": "esphome",
+      "integration_mode": "firmware-supplier",
+      "license": "MIT",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "ESPHome",
+      "priority": "P1",
+      "required_adapter": "esphome-surface-codegen-adapter/v1",
+      "reuse_surface": "Generate bounded device builds or mine component drivers through a supplier adapter.",
+      "risks": [
+        "Entity semantics and Home Assistant assumptions can leak into the adapter."
+      ],
+      "substitution_test": "Generate two firmware builds from one AXM device declaration, then require equal normalized I/O vectors in a software device harness.",
+      "supplier_role": "declarative MCU firmware generator",
+      "upstream": {
+        "project_url": "https://github.com/esphome/esphome",
+        "repository": "esphome/esphome"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "MIDI",
+        "OSC",
+        "buttons",
+        "encoders",
+        "analog inputs",
+        "LED feedback",
+        "configuration UI"
+      ],
+      "category": "declarative-firmware",
+      "community_signal": "Community project focused on no-code custom controllers and off-the-shelf hardware.",
+      "decision": "adapt",
+      "decision_basis": "It is a useful controller supplier for music and operator surfaces, but its MIDI/OSC mapping must translate into AXM semantics.",
+      "estate_targets": [
+        "earcrate",
+        "axm-embodied",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides configurable MIDI and OSC firmware for custom controllers.",
+          "kind": "official-project",
+          "locator": "https://github.com/shanteacontrols/OpenDeck"
+        }
+      ],
+      "id": "opendeck",
+      "integration_mode": "firmware-supplier",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "active-emerging",
+      "name": "OpenDeck",
+      "priority": "P2",
+      "required_adapter": "opendeck-midi-osc-adapter/v1",
+      "reuse_surface": "Use as an external firmware option for Decision Marker and EarCrate control decks.",
+      "risks": [
+        "Hardware support and project maturity vary by board generation."
+      ],
+      "substitution_test": "Map the same control declaration to OpenDeck and a virtual MIDI/OSC twin and compare semantic events and feedback.",
+      "supplier_role": "configurable MIDI and OSC controller firmware",
+      "upstream": {
+        "project_url": "https://github.com/shanteacontrols/OpenDeck",
+        "repository": "shanteacontrols/OpenDeck"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "HID",
+        "encoders",
+        "joystick",
+        "MIDI",
+        "haptics",
+        "OLED",
+        "RGB",
+        "raw HID"
+      ],
+      "category": "declarative-firmware",
+      "community_signal": "Very large keyboard and custom-controller community with broad MCU and peripheral support.",
+      "decision": "adapt",
+      "decision_basis": "The driver and behavior corpus is useful, especially for encoders and HID, but the keyboard-centric model and GPL firmware make it an external supplier rather than shared law.",
+      "estate_targets": [
+        "supplier-foundry",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Documents HID, encoders, joystick, MIDI, haptics, displays, RGB, and raw HID capabilities.",
+          "kind": "official-project",
+          "locator": "https://docs.qmk.fm/"
+        }
+      ],
+      "id": "qmk",
+      "integration_mode": "firmware-supplier",
+      "license": "GPL-2.0",
+      "license_posture": "strong-copyleft",
+      "maturity": "mature-community",
+      "name": "QMK Firmware",
+      "priority": "P2",
+      "required_adapter": "qmk-panel-build-adapter/v1",
+      "reuse_surface": "Qualify individual drivers or panel builds through a firmware supplier boundary.",
+      "risks": [
+        "Keyboard-centric configuration and strong copyleft."
+      ],
+      "substitution_test": "Run a standard switch, encoder, LED, and raw-HID vector against QMK and AXM-native firmware builds.",
+      "supplier_role": "mature HID input and peripheral firmware",
+      "upstream": {
+        "project_url": "https://github.com/qmk/qmk_firmware",
+        "repository": "qmk/qmk_firmware"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "WLED presets may not encode game rules or alarm authority"
+      ],
+      "capabilities": [
+        "addressable LEDs",
+        "segments",
+        "effects",
+        "JSON API",
+        "WebSocket state",
+        "UDP realtime",
+        "OTA"
+      ],
+      "category": "declarative-firmware",
+      "community_signal": "Large user and integration ecosystem with stable HTTP, JSON, WebSocket, UDP, and lighting protocols.",
+      "decision": "adapt",
+      "decision_basis": "It already solves edge-local light rendering and device management, but effect selection must remain a projection of AXM desired output.",
+      "estate_targets": [
+        "axm-embodied",
+        "earcrate",
+        "axm-world"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides ESP LED effects, segments, OTA, and multiple control APIs.",
+          "kind": "official-project",
+          "locator": "https://github.com/wled/WLED"
+        }
+      ],
+      "id": "wled",
+      "integration_mode": "external-process",
+      "license": "MIT",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "WLED",
+      "priority": "P0",
+      "required_adapter": "wled-desired-output-adapter/v1",
+      "reuse_surface": "Treat WLED as a replaceable output appliance controlled by an AXM light adapter.",
+      "risks": [
+        "Realtime UDP modes can bypass stateful acknowledgments unless prohibited by policy."
+      ],
+      "substitution_test": "Send one desired-light program to WLED and a software light twin and compare segment, color, timing, and invalidation traces.",
+      "supplier_role": "edge-local LED effect engine",
+      "upstream": {
+        "project_url": "https://github.com/wled/WLED",
+        "repository": "wled/WLED"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "behaviors",
+        "input processors",
+        "sensor rotation",
+        "Bluetooth profiles",
+        "Zephyr"
+      ],
+      "category": "declarative-firmware",
+      "community_signal": "Active Zephyr-based wireless keyboard and controller community.",
+      "decision": "reference",
+      "decision_basis": "Its behavior graph and wireless power lessons are relevant, but it offers less immediate value than TinyUSB, CockpitOS, and ESPHome for the first panel train.",
+      "estate_targets": [
+        "supplier-foundry",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Documents composable behaviors, input processors, sensors, and wireless profiles.",
+          "kind": "official-project",
+          "locator": "https://zmk.dev/docs"
+        }
+      ],
+      "id": "zmk",
+      "integration_mode": "design-reference",
+      "license": "MIT",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "ZMK Firmware",
+      "priority": "P3",
+      "required_adapter": null,
+      "reuse_surface": "Harvest behavior composition, wireless profile, and low-power test cases.",
+      "risks": [
+        "Keyboard-first concepts and Zephyr-specific integration cost."
+      ],
+      "substitution_test": null,
+      "supplier_role": "wireless input behavior reference",
+      "upstream": {
+        "project_url": "https://github.com/zmkfirmware/zmk",
+        "repository": "zmkfirmware/zmk"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "asset administration shell",
+        "registry",
+        "data bridge",
+        "dashboards",
+        "asset control"
+      ],
+      "category": "digital-twin",
+      "community_signal": "Eclipse industrial digital-twin middleware with registries, data bridges, dashboards, and asset control.",
+      "decision": "reference",
+      "decision_basis": "It supplies industrial vocabulary and interoperability lessons, but the AAS model is too heavy to become the base AXM device record.",
+      "estate_targets": [
+        "axm-fleet",
+        "supplier-foundry"
+      ],
+      "evidence": [
+        {
+          "claim": "Implements Asset Administration Shell digital twins, registries, data bridges, dashboards, and control.",
+          "kind": "official-project",
+          "locator": "https://eclipse.dev/basyx/"
+        }
+      ],
+      "id": "eclipse-basyx",
+      "integration_mode": "design-reference",
+      "license": "EPL-2.0",
+      "license_posture": "weak-copyleft",
+      "maturity": "mature-community",
+      "name": "Eclipse BaSyx",
+      "priority": "P3",
+      "required_adapter": null,
+      "reuse_surface": "Reference fleet, supplier, and lifecycle interoperability patterns.",
+      "risks": [
+        "Industrial metadata and service complexity."
+      ],
+      "substitution_test": null,
+      "supplier_role": "Asset Administration Shell reference",
+      "upstream": {
+        "project_url": "https://eclipse.dev/basyx/",
+        "repository": "eclipse-basyx/basyx-java-server-sdk"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "Ditto policy does not grant AXM gameplay or disposition authority"
+      ],
+      "capabilities": [
+        "desired state",
+        "reported state",
+        "twin state",
+        "live channel",
+        "authorization",
+        "HTTP",
+        "WebSocket",
+        "SSE"
+      ],
+      "category": "digital-twin",
+      "community_signal": "Established Eclipse IoT digital-twin platform with fine-grained authorization and multiple APIs.",
+      "decision": "adapt",
+      "decision_basis": "Its twin semantics are useful for fleet and devices, but AXM run state and authority should not be delegated to a service.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-fleet",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides domain-agnostic desired/reported digital twins, authorization, and HTTP/WebSocket/SSE connectivity.",
+          "kind": "official-project",
+          "locator": "https://eclipse.dev/ditto/"
+        }
+      ],
+      "id": "eclipse-ditto",
+      "integration_mode": "external-process",
+      "license": "EPL-2.0",
+      "license_posture": "weak-copyleft",
+      "maturity": "mature-community",
+      "name": "Eclipse Ditto",
+      "priority": "P1",
+      "required_adapter": "ditto-twin-projection-adapter/v1",
+      "reuse_surface": "Use as an optional projection and synchronization supplier for deployed hardware.",
+      "risks": [
+        "Operational service footprint and a second authorization system."
+      ],
+      "substitution_test": "Project one commissioned device into Ditto and a local JSON twin, then compare desired, reported, conflict, and reconnect traces.",
+      "supplier_role": "desired, reported, and current state twin service",
+      "upstream": {
+        "project_url": "https://github.com/eclipse-ditto/ditto",
+        "repository": "eclipse-ditto/ditto"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "device identity requires AXM commissioning in addition to VID/PID"
+      ],
+      "capabilities": [
+        "USB HID discovery",
+        "Bluetooth HID",
+        "input reports",
+        "output reports",
+        "feature reports"
+      ],
+      "category": "embedded-io",
+      "community_signal": "Long-running cross-platform library with active Windows, Linux, BSD, and macOS backends.",
+      "decision": "consume",
+      "decision_basis": "Host-side device enumeration and report I/O are generic infrastructure.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-embodied",
+        "axm-console"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides cross-platform USB and Bluetooth HID input, output, and feature-report access.",
+          "kind": "official-project",
+          "locator": "https://github.com/libusb/hidapi/blob/master/README.md"
+        }
+      ],
+      "id": "hidapi",
+      "integration_mode": "library",
+      "license": "BSD-3-Clause OR GPL-3.0 OR HIDAPI custom license",
+      "license_posture": "permissive",
+      "maturity": "commodity",
+      "name": "HIDAPI",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Use behind the AXM device adapter while preserving raw reports in receipts.",
+      "risks": [
+        "Linux permissions and backend differences require explicit commissioning tests."
+      ],
+      "substitution_test": "Replay a captured report corpus through HIDAPI and an alternate OS backend and require identical byte payloads and device identity fields.",
+      "supplier_role": "cross-platform host HID library",
+      "upstream": {
+        "project_url": "https://github.com/libusb/hidapi",
+        "repository": "libusb/hidapi"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "LVGL widget state may not become canonical simulation state"
+      ],
+      "capabilities": [
+        "embedded displays",
+        "widgets",
+        "data binding",
+        "encoders",
+        "touch",
+        "multiple displays",
+        "desktop simulator"
+      ],
+      "category": "embedded-io",
+      "community_signal": "Widely integrated by chip vendors, RTOS projects, and board manufacturers.",
+      "decision": "consume",
+      "decision_basis": "Rendering widgets and display drivers are mature commodities; AXM should generate the data bindings and retain semantic authority.",
+      "estate_targets": [
+        "axm-embodied",
+        "supplier-foundry"
+      ],
+      "evidence": [
+        {
+          "claim": "Portable MIT UI library with widgets, data bindings, multiple displays, input devices, and desktop simulation.",
+          "kind": "official-project",
+          "locator": "https://github.com/lvgl/lvgl/blob/master/README.md"
+        }
+      ],
+      "id": "lvgl",
+      "integration_mode": "library",
+      "license": "MIT",
+      "license_posture": "permissive",
+      "maturity": "commodity",
+      "name": "LVGL",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Use for panel-local display rendering and software-twin simulation.",
+      "risks": [
+        "Visual output can vary by driver, font, GPU, and color format."
+      ],
+      "substitution_test": "Render a golden panel declaration in embedded and desktop-simulator builds and compare normalized widget state and screenshot hashes within declared tolerances.",
+      "supplier_role": "embedded display and input UI library",
+      "upstream": {
+        "project_url": "https://github.com/lvgl/lvgl",
+        "repository": "lvgl/lvgl"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "USB reports may carry semantic envelopes but do not define them"
+      ],
+      "capabilities": [
+        "USB HID",
+        "MIDI",
+        "CDC",
+        "vendor endpoints",
+        "host mode",
+        "device mode"
+      ],
+      "category": "embedded-io",
+      "community_signal": "Widely ported embedded USB stack with community support, tests, fuzzing, and hardware tests.",
+      "decision": "consume",
+      "decision_basis": "USB descriptor handling, endpoint transport, and MCU portability are mature infrastructure and should not be reimplemented.",
+      "estate_targets": [
+        "axm-embodied",
+        "supplier-foundry"
+      ],
+      "evidence": [
+        {
+          "claim": "Cross-platform no-allocation USB host/device stack supporting 50+ MCU families and HID/MIDI/vendor classes.",
+          "kind": "official-project",
+          "locator": "https://github.com/hathach/tinyusb/blob/master/README.rst"
+        }
+      ],
+      "id": "tinyusb",
+      "integration_mode": "library",
+      "license": "MIT",
+      "license_posture": "permissive",
+      "maturity": "commodity",
+      "name": "TinyUSB",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Use as the device-side USB substrate for AXM panel firmware.",
+      "risks": [
+        "MCU ports differ in maturity and high-speed capabilities."
+      ],
+      "substitution_test": "Run the same HID conformance vectors on TinyUSB and a minimal alternate stack or software emulator; require identical report bytes and reconnect behavior.",
+      "supplier_role": "embedded USB host and device stack",
+      "upstream": {
+        "project_url": "https://github.com/hathach/tinyusb",
+        "repository": "hathach/tinyusb"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "room reset",
+        "audit log",
+        "MQTT",
+        "Modbus",
+        "DMX",
+        "OSC",
+        "microcontrollers"
+      ],
+      "category": "event-automation",
+      "community_signal": "Open local-first escape-room controller integrating resets, audit logs, MQTT, Modbus, DMX, OSC, Arduino, ESP32, Raspberry Pi, and Node-RED.",
+      "decision": "reference",
+      "decision_basis": "Its operations and recovery shape strongly resembles our physical procedure needs, but the upstream room model remains a reference.",
+      "estate_targets": [
+        "underdrain",
+        "axm-world",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Documents local-first room resets, audit logs, and heterogeneous control protocols.",
+          "kind": "official-project",
+          "locator": "https://github.com/alexbyrnes/arc"
+        }
+      ],
+      "id": "arc-escape-control",
+      "integration_mode": "design-reference",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "active-emerging",
+      "name": "ARC Escape Room Control",
+      "priority": "P2",
+      "required_adapter": null,
+      "reuse_surface": "Use its room reset, audit, and heterogeneous-prop patterns as lab scenarios.",
+      "risks": [
+        "Project scope and maintenance posture require further verification."
+      ],
+      "substitution_test": null,
+      "supplier_role": "local-first room orchestration reference",
+      "upstream": {
+        "project_url": "https://github.com/alexbyrnes/arc",
+        "repository": "alexbyrnes/arc"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "distributed control",
+        "function blocks",
+        "industrial protocols",
+        "runtime deployment"
+      ],
+      "category": "event-automation",
+      "community_signal": "Established Eclipse industrial automation community implementing IEC 61499 distributed function blocks.",
+      "decision": "reference",
+      "decision_basis": "It is a deep precedent for distributed control and portability, but adopting IEC 61499 as AXM law would add an unnecessary parallel semantic system.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides an open IEC 61499 environment for distributed industrial control.",
+          "kind": "official-project",
+          "locator": "https://eclipse.dev/4diac/"
+        }
+      ],
+      "id": "eclipse-4diac",
+      "integration_mode": "design-reference",
+      "license": "EPL-2.0",
+      "license_posture": "weak-copyleft",
+      "maturity": "mature-community",
+      "name": "Eclipse 4diac",
+      "priority": "P3",
+      "required_adapter": null,
+      "reuse_surface": "Reference execution distribution, lifecycle, and industrial failure semantics.",
+      "risks": [
+        "Industrial abstraction and toolchain complexity exceed current needs."
+      ],
+      "substitution_test": null,
+      "supplier_role": "distributed IEC 61499 control runtime",
+      "upstream": {
+        "project_url": "https://eclipse.dev/4diac/",
+        "repository": "eclipse-4diac/4diac-forte"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "Node-RED flows may not admit authority or mutate canonical state directly"
+      ],
+      "capabilities": [
+        "event flows",
+        "protocol nodes",
+        "dashboards",
+        "edge automation",
+        "JSON import and export"
+      ],
+      "category": "event-automation",
+      "community_signal": "Large global community and thousands of contributed nodes and reusable flows.",
+      "decision": "adapt",
+      "decision_basis": "It is a powerful integration commodity, but arbitrary flows must never become unreviewed AXM law or authority.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-tools",
+        "axm-console"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides low-code event-driven integration with a large community node and flow ecosystem.",
+          "kind": "official-project",
+          "locator": "https://nodered.org/"
+        }
+      ],
+      "id": "node-red",
+      "integration_mode": "external-process",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Node-RED",
+      "priority": "P0",
+      "required_adapter": "node-red-bounded-flow-adapter/v1",
+      "reuse_surface": "Use as an optional adapter host for hostile or long-tail protocols, with exact flow custody and output conformance.",
+      "risks": [
+        "Arbitrary JavaScript, third-party nodes, and implicit state can expand the attack and authority surface."
+      ],
+      "substitution_test": "Run a frozen flow and a direct AXM adapter on the same event corpus and compare outputs, errors, and side-effect ledger.",
+      "supplier_role": "low-code event and protocol integration runtime",
+      "upstream": {
+        "project_url": "https://github.com/node-red/node-red",
+        "repository": "node-red/node-red"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "multitouch",
+        "Kinect",
+        "Leap Motion",
+        "TUIO",
+        "gesture engine",
+        "exhibit deployment"
+      ],
+      "category": "event-automation",
+      "community_signal": "Long-running museum and exhibit community around open multitouch and gesture software.",
+      "decision": "reference",
+      "decision_basis": "It confirms sustained demand for durable public interactive installations, though its technology generation is primarily a historical reference.",
+      "estate_targets": [
+        "axm-world",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides open multitouch and gesture software for museums and exhibits.",
+          "kind": "official-project",
+          "locator": "https://openexhibits.org/"
+        }
+      ],
+      "id": "open-exhibits",
+      "integration_mode": "design-reference",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "reference-only",
+      "name": "Open Exhibits",
+      "priority": "P3",
+      "required_adapter": null,
+      "reuse_surface": "Harvest exhibit onboarding, accessibility, unattended recovery, and gesture interaction lessons.",
+      "risks": [
+        "Aging runtime assumptions and uncertain current maintenance."
+      ],
+      "substitution_test": null,
+      "supplier_role": "museum multitouch and gesture reference",
+      "upstream": {
+        "project_url": "https://openexhibits.org/",
+        "repository": null
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "sensors",
+        "locks",
+        "lights",
+        "room logic",
+        "MQTT",
+        "Node-RED"
+      ],
+      "category": "event-automation",
+      "community_signal": "Purpose-built open project for centralized sensors, locks, lights, visual logic, MQTT, and Node-RED.",
+      "decision": "reference",
+      "decision_basis": "The escape-room community independently solved authored physical procedures and resets, but its room logic is not portable game law.",
+      "estate_targets": [
+        "underdrain",
+        "axm-world",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Controls escape-room sensors, locks, lights, and visual logic using MQTT and Node-RED.",
+          "kind": "official-project",
+          "locator": "https://github.com/RealixHome/escape-room-controller"
+        }
+      ],
+      "id": "realix-escape-controller",
+      "integration_mode": "design-reference",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "active-emerging",
+      "name": "Realix Escape Room Controller",
+      "priority": "P2",
+      "required_adapter": null,
+      "reuse_surface": "Harvest reset, operator override, prop fault, and room-state acceptance cases.",
+      "risks": [
+        "Small project and potential coupling between prop logic and operator UI."
+      ],
+      "substitution_test": null,
+      "supplier_role": "escape-room state and device-control reference",
+      "upstream": {
+        "project_url": "https://github.com/RealixHome/escape-room-controller",
+        "repository": "RealixHome/escape-room-controller"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "labgrid resource acquisition may not authorize a semantic action"
+      ],
+      "capabilities": [
+        "board farm",
+        "remote resources",
+        "drivers",
+        "strategies",
+        "pytest",
+        "power and serial control"
+      ],
+      "category": "hardware-in-loop",
+      "community_signal": "Active embedded Linux board-control community with pytest integration and explicit Target, Resource, Driver, and Strategy abstractions.",
+      "decision": "adapt",
+      "decision_basis": "Its remote resource and driver model directly fits panel and device commissioning, but Estate Lab must retain scenario and receipt authority.",
+      "estate_targets": [
+        "estate-lab",
+        "supplier-foundry",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines remote Target, Resource, Driver, and Strategy abstractions with pytest integration.",
+          "kind": "official-project",
+          "locator": "https://labgrid.readthedocs.io/"
+        }
+      ],
+      "id": "labgrid",
+      "integration_mode": "test-harness",
+      "license": "LGPL-2.1+",
+      "license_posture": "weak-copyleft",
+      "maturity": "mature-community",
+      "name": "labgrid",
+      "priority": "P0",
+      "required_adapter": "labgrid-resource-adapter/v1",
+      "reuse_surface": "Use as the physical-resource scheduler beneath Estate Lab.",
+      "risks": [
+        "Requires disciplined resource definitions and remote coordinator operations."
+      ],
+      "substitution_test": "Run the same power, flash, serial, reconnect, and input/output plan against a local fixture and a labgrid-managed board; compare receipts.",
+      "supplier_role": "remote board-farm and device-driver test orchestration",
+      "upstream": {
+        "project_url": "https://github.com/labgrid-project/labgrid",
+        "repository": "labgrid-project/labgrid"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "DUT orchestration",
+        "real and virtual nodes",
+        "capabilities",
+        "constraints",
+        "SIL",
+        "HIL"
+      ],
+      "category": "hardware-in-loop",
+      "community_signal": "Active Eclipse automotive test-environment project spanning real and virtual devices, local, cloud, and hybrid labs.",
+      "decision": "reference",
+      "decision_basis": "Its distributed-DUT model validates our direction, but adopting its complete automotive environment would exceed the current panel lab need.",
+      "estate_targets": [
+        "estate-lab",
+        "supplier-foundry"
+      ],
+      "evidence": [
+        {
+          "claim": "Coordinates real and virtual devices under test across local, cloud, and hybrid environments.",
+          "kind": "official-project",
+          "locator": "https://eclipse.dev/opendut/"
+        }
+      ],
+      "id": "opendut",
+      "integration_mode": "design-reference",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "active-emerging",
+      "name": "Eclipse openDuT",
+      "priority": "P2",
+      "required_adapter": null,
+      "reuse_surface": "Harvest capability matching, virtual/physical substitution, and lab topology patterns.",
+      "risks": [
+        "Automotive scope and infrastructure complexity."
+      ],
+      "substitution_test": null,
+      "supplier_role": "distributed real and virtual DUT environment reference",
+      "upstream": {
+        "project_url": "https://eclipse.dev/opendut/",
+        "repository": "eclipse-opendut/opendut"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "open HIL patterns",
+        "community fixtures",
+        "shared test infrastructure"
+      ],
+      "category": "hardware-in-loop",
+      "community_signal": "Community explicitly organized around avoiding repeated proprietary test-jig reinvention.",
+      "decision": "reference",
+      "decision_basis": "The community is direct evidence that repeated one-off hardware labs are a recognized problem; specific components still require individual qualification.",
+      "estate_targets": [
+        "estate-lab",
+        "supplier-foundry"
+      ],
+      "evidence": [
+        {
+          "claim": "Community formed to share open hardware-in-the-loop methods and reduce repeated reinvention.",
+          "kind": "official-project",
+          "locator": "https://www.openhil.org/"
+        }
+      ],
+      "id": "openhil",
+      "integration_mode": "design-reference",
+      "license": "Community project terms",
+      "license_posture": "unknown",
+      "maturity": "active-emerging",
+      "name": "OpenHiL",
+      "priority": "P2",
+      "required_adapter": null,
+      "reuse_surface": "Use as a discovery and community contribution venue, not a runtime dependency.",
+      "risks": [
+        "Community umbrella rather than one stable software contract."
+      ],
+      "substitution_test": null,
+      "supplier_role": "open HIL community and anti-reinvention reference",
+      "upstream": {
+        "project_url": "https://www.openhil.org/",
+        "repository": null
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "OpenHTF PASS may not mint AXM acceptance without the declared verifier and burden"
+      ],
+      "capabilities": [
+        "test phases",
+        "measurements",
+        "attachments",
+        "plugs",
+        "stations",
+        "result records"
+      ],
+      "category": "hardware-in-loop",
+      "community_signal": "Google-origin hardware testing framework used from laboratories to manufacturing stations.",
+      "decision": "adapt",
+      "decision_basis": "The phase, measurement, plug, and station substrate is mature commodity work, while AXM must own acceptance burdens and evidence identity.",
+      "estate_targets": [
+        "estate-lab",
+        "supplier-foundry",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides hardware test phases, measurements, attachments, plugs, stations, and result records.",
+          "kind": "official-project",
+          "locator": "https://github.com/google/openhtf"
+        }
+      ],
+      "id": "openhtf",
+      "integration_mode": "test-harness",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "OpenHTF",
+      "priority": "P0",
+      "required_adapter": "openhtf-result-adapter/v1",
+      "reuse_surface": "Wrap Estate Lab physical commissioning cases as OpenHTF tests through a result adapter.",
+      "risks": [
+        "Framework result semantics can be confused with AXM acceptance if the adapter is not explicit."
+      ],
+      "substitution_test": "Run one panel commissioning plan through OpenHTF and the Estate Lab native runner and compare measurements, attachments, faults, and terminal classification.",
+      "supplier_role": "hardware test phase and measurement framework",
+      "upstream": {
+        "project_url": "https://github.com/google/openhtf",
+        "repository": "google/openhtf"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "SIL",
+        "HIL",
+        "digital twin",
+        "test automation",
+        "controls",
+        "visualization"
+      ],
+      "category": "hardware-in-loop",
+      "community_signal": "Eclipse project combining manual and automated tests, controls, visualizations, SIL, HIL, and digital twins.",
+      "decision": "reference",
+      "decision_basis": "It is a broad precedent for the complete lab shape, but the current AXM lab is intentionally smaller and authority-bounded.",
+      "estate_targets": [
+        "estate-lab",
+        "supplier-foundry"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides open SIL/HIL and digital-twin test environments with controls and visualizations.",
+          "kind": "official-project",
+          "locator": "https://eclipse.dev/openxilenv/"
+        }
+      ],
+      "id": "openxilenv",
+      "integration_mode": "design-reference",
+      "license": "EPL-2.0",
+      "license_posture": "weak-copyleft",
+      "maturity": "active-emerging",
+      "name": "Eclipse OpenXilEnv",
+      "priority": "P3",
+      "required_adapter": null,
+      "reuse_surface": "Reference its test-environment decomposition and interoperability model.",
+      "risks": [
+        "Broad automotive orientation and uncertain fit for small device fixtures."
+      ],
+      "substitution_test": null,
+      "supplier_role": "SIL, HIL, and digital-twin test environment reference",
+      "upstream": {
+        "project_url": "https://eclipse.dev/openxilenv/",
+        "repository": "eclipse-openxilenv/openxilenv"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "simulation evidence may not be labeled physical proof"
+      ],
+      "capabilities": [
+        "MCU simulation",
+        "peripherals",
+        "sensors",
+        "multi-node networks",
+        "unmodified firmware",
+        "automated tests"
+      ],
+      "category": "hardware-in-loop",
+      "community_signal": "Mature embedded simulation community supporting CPUs, peripherals, sensors, networks, and unmodified firmware.",
+      "decision": "adapt",
+      "decision_basis": "Renode can move many protocol and reconnect failures before hardware, but it cannot substitute for electrical or timing qualification.",
+      "estate_targets": [
+        "supplier-foundry",
+        "estate-lab",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Simulates embedded CPUs, peripherals, sensors, and networks while running unmodified firmware.",
+          "kind": "official-project",
+          "locator": "https://renode.io/"
+        }
+      ],
+      "id": "renode",
+      "integration_mode": "test-harness",
+      "license": "MIT",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Renode",
+      "priority": "P1",
+      "required_adapter": "renode-firmware-test-adapter/v1",
+      "reuse_surface": "Use as a pre-hardware firmware supplier test environment.",
+      "risks": [
+        "Peripheral models may omit electrical and timing behavior."
+      ],
+      "substitution_test": "Run one firmware binary against Renode and a physical board, compare protocol traces, and preserve all timing divergence.",
+      "supplier_role": "embedded system and network simulator",
+      "upstream": {
+        "project_url": "https://github.com/renode/renode",
+        "repository": "renode/renode"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "ROS controller activation may not grant AXM mandate or role"
+      ],
+      "capabilities": [
+        "controller lifecycle",
+        "hardware interfaces",
+        "exclusive command claims",
+        "mock components",
+        "realtime loop"
+      ],
+      "category": "hardware-in-loop",
+      "community_signal": "Large robotics community with lifecycle-managed controllers, exclusive command interfaces, and mock hardware components.",
+      "decision": "adapt",
+      "decision_basis": "Its resource-claim and mock-hardware patterns closely match our ownership broker, but ROS must remain a device-domain adapter rather than the estate semantic kernel.",
+      "estate_targets": [
+        "axm-embodied",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines controller lifecycle, hardware interfaces, exclusive command claims, and mock components.",
+          "kind": "official-project",
+          "locator": "https://control.ros.org/master/index.html"
+        }
+      ],
+      "id": "ros2-control",
+      "integration_mode": "test-harness",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "ROS 2 control",
+      "priority": "P1",
+      "required_adapter": "ros2-control-ownership-adapter/v1",
+      "reuse_surface": "Use for robotic or motorized stations and as a comparative ownership conformance suite.",
+      "risks": [
+        "ROS graph and realtime requirements add operational complexity."
+      ],
+      "substitution_test": "Run one control profile against mock components and a physical controller and compare claims, state, commands, and faults.",
+      "supplier_role": "controller, hardware-interface, and resource-claim model",
+      "upstream": {
+        "project_url": "https://github.com/ros-controls/ros2_control",
+        "repository": "ros-controls/ros2_control"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "hardware maps",
+        "flash and run",
+        "multi-DUT",
+        "pytest harness",
+        "native simulation"
+      ],
+      "category": "hardware-in-loop",
+      "community_signal": "Core Zephyr test infrastructure used across emulation, native simulation, and physical boards.",
+      "decision": "adapt",
+      "decision_basis": "It is a strong commodity for firmware matrix testing, but only if the selected firmware substrate uses or can be driven by Zephyr tooling.",
+      "estate_targets": [
+        "supplier-foundry",
+        "axm-embodied",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Runs tests across native simulation, emulation, and hardware maps with multi-DUT support.",
+          "kind": "official-project",
+          "locator": "https://docs.zephyrproject.org/latest/develop/test/twister.html"
+        }
+      ],
+      "id": "zephyr-twister",
+      "integration_mode": "test-harness",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Zephyr Twister",
+      "priority": "P1",
+      "required_adapter": "zephyr-twister-evidence-adapter/v1",
+      "reuse_surface": "Translate AXM firmware conformance vectors into Twister tests where practical.",
+      "risks": [
+        "Best fit requires Zephyr-based firmware or additional runner wrappers."
+      ],
+      "substitution_test": "Execute the same protocol vector in native_sim and on a mapped ESP32-class DUT and compare normalized reports.",
+      "supplier_role": "cross-platform firmware test and hardware-map runner",
+      "upstream": {
+        "project_url": "https://github.com/zephyrproject-rtos/zephyr",
+        "repository": "zephyrproject-rtos/zephyr"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "device scripts",
+        "virtual input",
+        "remote control",
+        "VR plugins"
+      ],
+      "category": "input-abstraction",
+      "community_signal": "Historically influential scriptable input emulation and device-bridging project.",
+      "decision": "reference",
+      "decision_basis": "The scripting model demonstrates user demand for cross-device composition, but the aging stack is not a preferred dependency.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-world"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides scriptable input emulation and device plugins for games and VR.",
+          "kind": "official-project",
+          "locator": "https://github.com/AndersMalmgren/FreePIE"
+        }
+      ],
+      "id": "freepie",
+      "integration_mode": "design-reference",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "reference-only",
+      "name": "FreePIE",
+      "priority": "P3",
+      "required_adapter": null,
+      "reuse_surface": "Harvest script ergonomics and failure modes as historical fixtures.",
+      "risks": [
+        "Aging Windows stack and unconstrained scripts."
+      ],
+      "substitution_test": null,
+      "supplier_role": "scriptable device-bridging reference",
+      "upstream": {
+        "project_url": "https://github.com/AndersMalmgren/FreePIE",
+        "repository": "AndersMalmgren/FreePIE"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "gamepad",
+        "assistive input",
+        "controller adapters",
+        "RP2040",
+        "ESP32-S3",
+        "nRF52840"
+      ],
+      "category": "input-abstraction",
+      "community_signal": "Open firmware explicitly targeting adapters, custom controls, and assistive devices on RP2040, ESP32-S3, and nRF52840.",
+      "decision": "adapt",
+      "decision_basis": "It aligns with accessibility and living-room control goals, but should emit normalized semantic events through an AXM adapter.",
+      "estate_targets": [
+        "axm-embodied",
+        "screen-ghost",
+        "axm-world"
+      ],
+      "evidence": [
+        {
+          "claim": "Targets custom, adapter, and assistive game controllers across common microcontrollers.",
+          "kind": "official-project",
+          "locator": "https://github.com/joypad-ai/joypad-os"
+        }
+      ],
+      "id": "joypad-os",
+      "integration_mode": "firmware-supplier",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "active-emerging",
+      "name": "Joypad OS",
+      "priority": "P2",
+      "required_adapter": "joypad-os-input-adapter/v1",
+      "reuse_surface": "Qualify as an alternative controller firmware supplier.",
+      "risks": [
+        "Young project and incomplete evidence across all target boards."
+      ],
+      "substitution_test": "Replay one accessibility control profile through Joypad OS and a software controller twin and require equal normalized actions.",
+      "supplier_role": "assistive and custom game-controller firmware",
+      "upstream": {
+        "project_url": "https://github.com/joypad-ai/joypad-os",
+        "repository": "joypad-ai/joypad-os"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "must not arm motors without an AXM Embodied clearance"
+      ],
+      "capabilities": [
+        "force feedback",
+        "motors",
+        "encoders",
+        "USB HID",
+        "runtime configuration"
+      ],
+      "category": "input-abstraction",
+      "community_signal": "Established DIY force-feedback community spanning wheels, joysticks, motors, encoders, and USB HID.",
+      "decision": "adapt",
+      "decision_basis": "The motor-control and FFB implementation is valuable, but physical authority and safety envelopes must remain in AXM Embodied.",
+      "estate_targets": [
+        "axm-embodied",
+        "axm-world"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides configurable open force-feedback hardware and firmware for motors, encoders, and HID devices.",
+          "kind": "official-project",
+          "locator": "https://github.com/Ultrawipf/OpenFFBoard"
+        }
+      ],
+      "id": "openffboard",
+      "integration_mode": "firmware-supplier",
+      "license": "GPL-family; verify upstream",
+      "license_posture": "strong-copyleft",
+      "maturity": "mature-community",
+      "name": "OpenFFBoard",
+      "priority": "P2",
+      "required_adapter": "openffboard-haptic-adapter/v1",
+      "reuse_surface": "Treat it as a replaceable haptic actuator supplier behind a signed-envelope gate.",
+      "risks": [
+        "High-energy actuation requires independent electrical and mechanical safety qualification."
+      ],
+      "substitution_test": "Run bounded FFB waveforms on OpenFFBoard and a load-simulated twin; compare command, measured response, cutoff, and fault receipts.",
+      "supplier_role": "open force-feedback controller stack",
+      "upstream": {
+        "project_url": "https://github.com/Ultrawipf/OpenFFBoard",
+        "repository": "Ultrawipf/OpenFFBoard"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "pose data may not imply action or operator intent without a binding"
+      ],
+      "capabilities": [
+        "head tracking",
+        "pose filters",
+        "protocol bridge",
+        "camera tracking",
+        "mapping curves"
+      ],
+      "category": "input-abstraction",
+      "community_signal": "Large simulation community with many tracking inputs, filters, mappings, and output protocols.",
+      "decision": "adapt",
+      "decision_basis": "It is a mature pose supplier for living-room and cockpit use, while AXM must own confidence loss, leases, and semantic actions.",
+      "estate_targets": [
+        "axm-embodied",
+        "axm-world"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides many head-tracking inputs, filters, mappings, and simulation output protocols.",
+          "kind": "official-project",
+          "locator": "https://github.com/opentrack/opentrack"
+        }
+      ],
+      "id": "opentrack",
+      "integration_mode": "external-process",
+      "license": "ISC",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "OpenTrack",
+      "priority": "P1",
+      "required_adapter": "opentrack-pose-adapter/v1",
+      "reuse_surface": "Consume its process output through a bounded pose adapter.",
+      "risks": [
+        "Filter configuration can hide latency and drift."
+      ],
+      "substitution_test": "Replay one recorded pose stream through OpenTrack and a direct tracker adapter and compare filtered pose plus confidence-loss behavior.",
+      "supplier_role": "head and pose tracking protocol bridge",
+      "upstream": {
+        "project_url": "https://github.com/opentrack/opentrack",
+        "repository": "opentrack/opentrack"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "OpenXR binding success does not grant gameplay or actuation authority"
+      ],
+      "capabilities": [
+        "action sets",
+        "interaction profiles",
+        "rebinding",
+        "poses",
+        "haptics",
+        "synthetic conformance input"
+      ],
+      "category": "input-abstraction",
+      "community_signal": "Industry-standard XR runtime interface implemented by major headset and engine ecosystems.",
+      "decision": "consume",
+      "decision_basis": "OpenXR already separates semantic actions from device-specific bindings and should be the XR input substrate.",
+      "estate_targets": [
+        "axm-embodied",
+        "axm-world",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines action sets, interaction profiles, poses, haptics, and runtime binding.",
+          "kind": "official-project",
+          "locator": "https://registry.khronos.org/OpenXR/specs/1.1/html/xrspec.html"
+        }
+      ],
+      "id": "openxr-actions",
+      "integration_mode": "protocol",
+      "license": "Khronos open standard",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "OpenXR Action System",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Bind AXM actions to OpenXR action sets while keeping authority and ownership in Estate Lab and Embodied.",
+      "risks": [
+        "Runtime-specific extensions and hand-tracking quality differ."
+      ],
+      "substitution_test": "Run the same action manifest against two conformant OpenXR runtimes or the conformance synthetic input path and compare normalized events.",
+      "supplier_role": "cross-device XR action and binding standard",
+      "upstream": {
+        "project_url": "https://registry.khronos.org/OpenXR/",
+        "repository": null
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "gamepad GUIDs",
+        "mapping database",
+        "hotplug",
+        "remapping",
+        "haptics"
+      ],
+      "category": "input-abstraction",
+      "community_signal": "Foundational cross-platform input library used broadly by games and tools.",
+      "decision": "consume",
+      "decision_basis": "Gamepad enumeration and physical-control normalization are commodity platform work.",
+      "estate_targets": [
+        "axm-world",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines gamepad mappings, GUIDs, remapping, and device events.",
+          "kind": "official-project",
+          "locator": "https://wiki.libsdl.org/SDL3/CategoryGamepad"
+        }
+      ],
+      "id": "sdl3-gamepad-mapping",
+      "integration_mode": "library",
+      "license": "zlib",
+      "license_posture": "permissive",
+      "maturity": "commodity",
+      "name": "SDL3 Gamepad Mapping",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Use SDL mappings beneath AXM semantic bindings for desktop and living-room play.",
+      "risks": [
+        "Vendor-specific capabilities outside the standard gamepad surface require explicit extensions."
+      ],
+      "substitution_test": "Feed the same controller event trace through SDL and a recorded virtual device and require equal normalized physical controls.",
+      "supplier_role": "cross-platform gamepad discovery and mapping",
+      "upstream": {
+        "project_url": "https://github.com/libsdl-org/SDL",
+        "repository": "libsdl-org/SDL"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "Unity Input Actions may not redefine cartridge action meaning"
+      ],
+      "capabilities": [
+        "actions",
+        "bindings",
+        "control schemes",
+        "rebinding",
+        "device discovery",
+        "event traces"
+      ],
+      "category": "input-abstraction",
+      "community_signal": "Official Unity package with production action maps, control schemes, rebinding, device descriptions, and event traces.",
+      "decision": "adapt",
+      "decision_basis": "We already target Unity, so this should carry physical device bindings, but it may not become a second semantic or authority layer.",
+      "estate_targets": [
+        "axm-embodied",
+        "axm-world",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Official Unity action and device package with rebinding and event-trace support.",
+          "kind": "official-project",
+          "locator": "https://github.com/Unity-Technologies/InputSystem"
+        }
+      ],
+      "id": "unity-input-system",
+      "integration_mode": "library",
+      "license": "Unity package terms",
+      "license_posture": "mixed",
+      "maturity": "mature-community",
+      "name": "Unity Input System",
+      "priority": "P0",
+      "required_adapter": "unity-input-system-semantic-adapter/v1",
+      "reuse_surface": "Generate Unity action assets and bridge event traces to the AXM action envelope.",
+      "risks": [
+        "Unity package version and engine lifecycle coupling."
+      ],
+      "substitution_test": "Replay one InputEventTrace through Unity and the headless AXM adapter and require equal semantic action envelopes.",
+      "supplier_role": "Unity action, binding, scheme, and trace substrate",
+      "upstream": {
+        "project_url": "https://github.com/Unity-Technologies/InputSystem",
+        "repository": "Unity-Technologies/InputSystem"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "virtual Xbox controller",
+        "virtual PlayStation controller",
+        "replay",
+        "network controller"
+      ],
+      "category": "input-abstraction",
+      "community_signal": "Historically important virtual-controller ecosystem, now archived and retired.",
+      "decision": "reject",
+      "decision_basis": "Its use cases validate demand, but the upstream driver is retired and cannot be a new foundational dependency.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-world"
+      ],
+      "evidence": [
+        {
+          "claim": "Repository is archived and the project has been retired.",
+          "kind": "official-project",
+          "locator": "https://github.com/nefarius/ViGEmBus"
+        }
+      ],
+      "id": "vigem",
+      "integration_mode": "retired-avoid",
+      "license": "BSD-3-Clause",
+      "license_posture": "permissive",
+      "maturity": "retired",
+      "name": "ViGEm",
+      "priority": "P3",
+      "required_adapter": null,
+      "reuse_surface": "Retain only as a compatibility and migration reference.",
+      "risks": [
+        "Archived kernel driver",
+        "No active maintenance",
+        "Platform security and signing exposure"
+      ],
+      "substitution_test": null,
+      "supplier_role": "virtual gamepad bus driver",
+      "upstream": {
+        "project_url": "https://github.com/nefarius/ViGEmBus",
+        "repository": "nefarius/ViGEmBus"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "Companion button state may not become canonical action authority"
+      ],
+      "capabilities": [
+        "buttons",
+        "feedback",
+        "variables",
+        "device modules",
+        "distributed operator surfaces",
+        "Stream Deck"
+      ],
+      "category": "show-control",
+      "community_signal": "Large AV and broadcast community with many device modules and distributed Satellite clients.",
+      "decision": "adapt",
+      "decision_basis": "Companion can commoditize physical operator surfaces and device modules, but button definitions and feedback must remain projections of AXM state.",
+      "estate_targets": [
+        "axm-console",
+        "estate-lab",
+        "earcrate"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides modular operator controls, feedbacks, variables, and distributed Satellite surfaces.",
+          "kind": "official-project",
+          "locator": "https://github.com/bitfocus/companion"
+        }
+      ],
+      "id": "bitfocus-companion",
+      "integration_mode": "external-process",
+      "license": "MIT",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Bitfocus Companion",
+      "priority": "P0",
+      "required_adapter": "bitfocus-companion-module/v1",
+      "reuse_surface": "Use as a replaceable operator-surface client through a Companion module adapter.",
+      "risks": [
+        "Large third-party module surface and Node/Electron lifecycle."
+      ],
+      "substitution_test": "Drive the same action and feedback declarations through Companion and the browser twin and compare semantic events and desired output state.",
+      "supplier_role": "operator button and feedback control surface",
+      "upstream": {
+        "project_url": "https://github.com/bitfocus/companion",
+        "repository": "bitfocus/companion"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "ESP32",
+        "DMX",
+        "Art-Net",
+        "sACN",
+        "large LED counts",
+        "stage lighting"
+      ],
+      "category": "show-control",
+      "community_signal": "Active open stage and art-lighting project reporting high LED throughput on ESP32.",
+      "decision": "adapt",
+      "decision_basis": "It is a useful high-channel-count output supplier, but its performance claims require our own fixture and electrical gate.",
+      "estate_targets": [
+        "axm-embodied",
+        "supplier-foundry"
+      ],
+      "evidence": [
+        {
+          "claim": "Targets high-throughput ESP32 LED and DMX control for art and stage use.",
+          "kind": "official-project",
+          "locator": "https://github.com/MoonModules/MoonLight"
+        }
+      ],
+      "id": "moonlight",
+      "integration_mode": "firmware-supplier",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "active-emerging",
+      "name": "MoonLight",
+      "priority": "P2",
+      "required_adapter": "moonlight-output-adapter/v1",
+      "reuse_surface": "Qualify as an alternative to WLED for installation-scale output.",
+      "risks": [
+        "Performance claims are hardware- and topology-dependent."
+      ],
+      "substitution_test": "Render the same multi-universe cue fixture through MoonLight, WLED or OLA, and a capture rig; compare timing and loss behavior.",
+      "supplier_role": "high-throughput ESP32 DMX and LED appliance",
+      "upstream": {
+        "project_url": "https://github.com/MoonModules/MoonLight",
+        "repository": "MoonModules/MoonLight"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "DMX",
+        "Art-Net",
+        "sACN",
+        "protocol translation",
+        "hardware plugins"
+      ],
+      "category": "show-control",
+      "community_signal": "Long-running community infrastructure for DMX, Art-Net, sACN, and hardware plugins.",
+      "decision": "adapt",
+      "decision_basis": "Protocol conversion and hardware drivers are commodity work; OLA should sit below the desired-output adapter.",
+      "estate_targets": [
+        "axm-embodied",
+        "supplier-foundry"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides an abstraction layer and translation across lighting protocols and hardware.",
+          "kind": "official-project",
+          "locator": "https://www.openlighting.org/ola/"
+        }
+      ],
+      "id": "ola",
+      "integration_mode": "external-process",
+      "license": "LGPL-2.1+",
+      "license_posture": "weak-copyleft",
+      "maturity": "mature-community",
+      "name": "Open Lighting Architecture",
+      "priority": "P0",
+      "required_adapter": "ola-dmx-transport-adapter/v1",
+      "reuse_surface": "Run OLA as a replaceable protocol daemon.",
+      "risks": [
+        "Daemon configuration and plugin behavior must be retained with receipts."
+      ],
+      "substitution_test": "Emit one normalized DMX universe through OLA and a second transport implementation and compare captured wire frames.",
+      "supplier_role": "lighting protocol abstraction layer",
+      "upstream": {
+        "project_url": "https://github.com/OpenLightingProject/ola",
+        "repository": "OpenLightingProject/ola"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "OSC",
+        "MIDI",
+        "modular UI",
+        "touch controls",
+        "remote surfaces"
+      ],
+      "category": "show-control",
+      "community_signal": "Established music and show-control community using browser-rendered modular surfaces.",
+      "decision": "adapt",
+      "decision_basis": "It can render rich software control decks quickly, but OSC paths must translate to AXM semantic actions.",
+      "estate_targets": [
+        "earcrate",
+        "axm-console",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides a libre modular OSC and MIDI controller rendered as configurable operator surfaces.",
+          "kind": "official-project",
+          "locator": "https://github.com/jean-emmanuel/open-stage-control"
+        }
+      ],
+      "id": "open-stage-control",
+      "integration_mode": "external-process",
+      "license": "GPL-3.0",
+      "license_posture": "strong-copyleft",
+      "maturity": "mature-community",
+      "name": "Open Stage Control",
+      "priority": "P1",
+      "required_adapter": "open-stage-control-osc-adapter/v1",
+      "reuse_surface": "Use as an external UI supplier for prototypes and operator panels.",
+      "risks": [
+        "Strong copyleft and unconstrained user scripting."
+      ],
+      "substitution_test": "Render the same generated surface in Open Stage Control and the AXM browser twin and compare emitted semantic envelopes.",
+      "supplier_role": "modular OSC and MIDI control surface",
+      "upstream": {
+        "project_url": "https://github.com/jean-emmanuel/open-stage-control",
+        "repository": "jean-emmanuel/open-stage-control"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "AV drivers",
+        "visual programming",
+        "touch panels",
+        "automation"
+      ],
+      "category": "show-control",
+      "community_signal": "Open professional AV control project with visual programming, touch panels, and community drivers.",
+      "decision": "reference",
+      "decision_basis": "Its driver and operator model are relevant, but Companion, OLA, and Node-RED have more immediate commodity value.",
+      "estate_targets": [
+        "axm-console",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Targets open professional AV control with visual programming and touch interfaces.",
+          "kind": "official-project",
+          "locator": "https://github.com/OpenAVC/OpenAVC"
+        }
+      ],
+      "id": "openavc",
+      "integration_mode": "design-reference",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "active-emerging",
+      "name": "OpenAVC",
+      "priority": "P3",
+      "required_adapter": null,
+      "reuse_surface": "Use as a comparative architecture and driver-governance reference.",
+      "risks": [
+        "Project maturity and driver coverage require independent qualification."
+      ],
+      "substitution_test": null,
+      "supplier_role": "professional AV control reference",
+      "upstream": {
+        "project_url": "https://github.com/OpenAVC/OpenAVC",
+        "repository": "OpenAVC/OpenAVC"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "tracked position may not authenticate an actor or imply intent"
+      ],
+      "capabilities": [
+        "3D tracking",
+        "PSN",
+        "OTP",
+        "OSC",
+        "zone triggers"
+      ],
+      "category": "show-control",
+      "community_signal": "Open standards-oriented stage tracking project with multiple protocol outputs and zone triggers.",
+      "decision": "adapt",
+      "decision_basis": "It can supply stage-space observations, while AXM must retain identity, confidence, ownership, and action-binding decisions.",
+      "estate_targets": [
+        "axm-embodied",
+        "axm-world"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides 3D tracking, open protocol outputs, and zone triggers for stage and AV use.",
+          "kind": "official-project",
+          "locator": "https://github.com/bitfocus/OpenFollow"
+        }
+      ],
+      "id": "openfollow",
+      "integration_mode": "external-process",
+      "license": "GPL-family; verify upstream",
+      "license_posture": "strong-copyleft",
+      "maturity": "active-emerging",
+      "name": "OpenFollow",
+      "priority": "P2",
+      "required_adapter": "openfollow-observation-adapter/v1",
+      "reuse_surface": "Consume its tracking stream through an observation-only adapter.",
+      "risks": [
+        "Tracking quality and identity association remain external evidence questions."
+      ],
+      "substitution_test": "Replay one tracking recording through OpenFollow and a synthetic tracker and compare normalized positions and zone observations.",
+      "supplier_role": "open 3D tracking and zone-event bridge",
+      "upstream": {
+        "project_url": "https://github.com/bitfocus/OpenFollow",
+        "repository": "bitfocus/OpenFollow"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "interactive timeline",
+        "OSC",
+        "MIDI",
+        "DMX",
+        "audio",
+        "conditional cues"
+      ],
+      "category": "show-control",
+      "community_signal": "Used for interactive art, museums, installations, and shows across OSC, MIDI, DMX, and audio.",
+      "decision": "adapt",
+      "decision_basis": "Its timeline and protocol tooling are excellent cue suppliers, but game and procedure consequences must remain in AXM.",
+      "estate_targets": [
+        "earcrate",
+        "axm-world",
+        "estate-lab"
+      ],
+      "evidence": [
+        {
+          "claim": "Describes interactive timeline control for OSC, MIDI, DMX, audio, museums, and live shows.",
+          "kind": "official-project",
+          "locator": "https://ossia.io/score/about.html"
+        }
+      ],
+      "id": "ossia-score",
+      "integration_mode": "external-process",
+      "license": "GPL-3.0",
+      "license_posture": "strong-copyleft",
+      "maturity": "mature-community",
+      "name": "ossia score",
+      "priority": "P1",
+      "required_adapter": "ossia-cue-program-adapter/v1",
+      "reuse_surface": "Use as a timeline execution appliance through an exact cue-list adapter.",
+      "risks": [
+        "Interactive patching can create hidden behavior unless the exact document is content-addressed."
+      ],
+      "substitution_test": "Execute one bounded cue program in ossia score and a reference scheduler and compare timestamped output events.",
+      "supplier_role": "interactive timeline and cross-protocol cue engine",
+      "upstream": {
+        "project_url": "https://github.com/ossia/score",
+        "repository": "ossia/score"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "facility panel",
+        "sACN",
+        "OSC",
+        "HTTP",
+        "macros"
+      ],
+      "category": "show-control",
+      "community_signal": "Open Raspberry Pi facility-control project integrating sACN, OSC, HTTP, and macros.",
+      "decision": "reference",
+      "decision_basis": "Useful as a compact facility-panel precedent, but lower-level protocols and Companion provide stronger commodity surfaces.",
+      "estate_targets": [
+        "axm-console",
+        "axm-tools"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides a Raspberry Pi control panel for lighting, OSC, HTTP, and macros.",
+          "kind": "official-project",
+          "locator": "https://github.com/Paradise-Pi/ParadisePi"
+        }
+      ],
+      "id": "paradisepi",
+      "integration_mode": "design-reference",
+      "license": "See upstream",
+      "license_posture": "unknown",
+      "maturity": "active-emerging",
+      "name": "ParadisePi",
+      "priority": "P3",
+      "required_adapter": null,
+      "reuse_surface": "Harvest installability and macro-panel ergonomics.",
+      "risks": [
+        "Small community and application-specific assumptions."
+      ],
+      "substitution_test": null,
+      "supplier_role": "facility control and macro panel reference",
+      "upstream": {
+        "project_url": "https://github.com/Paradise-Pi/ParadisePi",
+        "repository": "Paradise-Pi/ParadisePi"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "DMX",
+        "Art-Net",
+        "sACN",
+        "OSC",
+        "MIDI",
+        "virtual console",
+        "feedback"
+      ],
+      "category": "show-control",
+      "community_signal": "Long-running free lighting-console community with broad hardware and protocol support.",
+      "decision": "adapt",
+      "decision_basis": "It is a capable lighting appliance, while AXM should emit semantic desired-light programs rather than embed show logic there.",
+      "estate_targets": [
+        "axm-embodied",
+        "axm-world",
+        "earcrate"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides a free cross-platform lighting console with hardware, DMX, network, MIDI, OSC, and virtual-console support.",
+          "kind": "official-project",
+          "locator": "https://www.qlcplus.org/"
+        }
+      ],
+      "id": "qlc-plus",
+      "integration_mode": "external-process",
+      "license": "Apache-2.0 or upstream project terms; verify component licenses",
+      "license_posture": "mixed",
+      "maturity": "mature-community",
+      "name": "QLC+",
+      "priority": "P1",
+      "required_adapter": "qlcplus-show-output-adapter/v1",
+      "reuse_surface": "Use as an external show-control supplier behind a DMX/OSC adapter.",
+      "risks": [
+        "Complex workspace files can become hidden secondary law."
+      ],
+      "substitution_test": "Play the same desired-light cue list through QLC+, OLA, and a software twin and compare channel timelines and invalidations.",
+      "supplier_role": "lighting and DMX control engine",
+      "upstream": {
+        "project_url": "https://github.com/mcallegari/qlcplus",
+        "repository": "mcallegari/qlcplus"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "visualization annotations may not rewrite accepted receipts"
+      ],
+      "capabilities": [
+        "MCAP playback",
+        "live telemetry",
+        "plots",
+        "3D",
+        "custom panels",
+        "annotations"
+      ],
+      "category": "telemetry-replay",
+      "community_signal": "Large robotics visualization ecosystem centered on live streams and MCAP replay.",
+      "decision": "adapt",
+      "decision_basis": "It can commoditize deep technical replay views, but AXM receipts and causal debriefs remain authoritative.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Visualizes live and recorded robotics data and replays MCAP without a running ROS system.",
+          "kind": "official-project",
+          "locator": "https://docs.foxglove.dev/docs/visualization"
+        }
+      ],
+      "id": "foxglove",
+      "integration_mode": "visualization-client",
+      "license": "Mixed open-source and hosted product terms",
+      "license_posture": "mixed",
+      "maturity": "mature-community",
+      "name": "Foxglove",
+      "priority": "P1",
+      "required_adapter": "foxglove-mcap-layout-adapter/v1",
+      "reuse_surface": "Provide an MCAP/extension adapter and retain the standalone AXM report as the fallback.",
+      "risks": [
+        "Current open-source and hosted product boundaries require license review."
+      ],
+      "substitution_test": "Open the same MCAP and layout in Foxglove and an independent reader, then compare channel inventories, timestamps, and selected derived panels.",
+      "supplier_role": "live and recorded telemetry visualization client",
+      "upstream": {
+        "project_url": "https://github.com/foxglove/studio",
+        "repository": "foxglove/studio"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "MCAP storage does not authenticate evidence or grant semantic truth"
+      ],
+      "capabilities": [
+        "append-only logs",
+        "embedded schemas",
+        "timestamps",
+        "chunking",
+        "indexes",
+        "multi-language readers"
+      ],
+      "category": "telemetry-replay",
+      "community_signal": "Production log format with many language implementations and adoption as the default ROS 2 recording format.",
+      "decision": "consume",
+      "decision_basis": "We should not invent another high-volume time-series container for raw device, pose, audio, or simulation streams.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-embodied",
+        "screen-ghost",
+        "earcrate"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines an open timestamped multimodal log format with embedded schemas and broad language support.",
+          "kind": "official-project",
+          "locator": "https://mcap.dev/"
+        }
+      ],
+      "id": "mcap",
+      "integration_mode": "protocol",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "commodity",
+      "name": "MCAP",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Use MCAP for rebuildable stream custody beside AXM canonical semantic receipts.",
+      "risks": [
+        "Chunking and compression settings are non-semantic and must remain outside identity projections."
+      ],
+      "substitution_test": "Write one canonical stream corpus with two independent MCAP libraries and require cross-read, timestamp, schema, and payload equality.",
+      "supplier_role": "timestamped multimodal evidence container",
+      "upstream": {
+        "project_url": "https://github.com/foxglove/mcap",
+        "repository": "foxglove/mcap"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "Open MCT views may not mutate canonical records"
+      ],
+      "capabilities": [
+        "telemetry",
+        "historical data",
+        "timelines",
+        "imagery",
+        "procedures",
+        "plugins"
+      ],
+      "category": "telemetry-replay",
+      "community_signal": "NASA-origin mission operations framework with streaming, historical telemetry, imagery, timelines, and procedures.",
+      "decision": "adapt",
+      "decision_basis": "Its operator visualization and plugin model are strong commodities for a mission-control view, but it must consume AXM evidence rather than own state.",
+      "estate_targets": [
+        "axm-console",
+        "estate-lab",
+        "axm-fleet"
+      ],
+      "evidence": [
+        {
+          "claim": "Provides mission operations visualization for streaming and historical telemetry, imagery, timelines, and procedures.",
+          "kind": "official-project",
+          "locator": "https://github.com/nasa/openmct"
+        }
+      ],
+      "id": "open-mct",
+      "integration_mode": "visualization-client",
+      "license": "Apache-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Open MCT",
+      "priority": "P1",
+      "required_adapter": "open-mct-readonly-telemetry-adapter/v1",
+      "reuse_surface": "Build a read-only AXM telemetry plugin and compare with the standalone receipt UI.",
+      "risks": [
+        "Web plugin maintenance and schema translation cost."
+      ],
+      "substitution_test": "Render the same run bundle in Open MCT and the AXM report and require equal event counts, time bounds, and selected state series.",
+      "supplier_role": "mission operations telemetry and procedure visualization",
+      "upstream": {
+        "project_url": "https://github.com/nasa/openmct",
+        "repository": "nasa/openmct"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "broker delivery is not semantic acceptance"
+      ],
+      "capabilities": [
+        "pub-sub",
+        "persistent sessions",
+        "retained state",
+        "message expiry",
+        "shared subscriptions",
+        "last will"
+      ],
+      "category": "transport-state",
+      "community_signal": "Industry-standard messaging protocol with many independent brokers and client implementations.",
+      "decision": "consume",
+      "decision_basis": "MQTT solves commodity delivery and reconnect concerns for non-realtime device lanes, while semantic identity and authority remain above it.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-embodied",
+        "axm-tools"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines persistent sessions, retained messages, expiry, shared subscriptions, and delivery semantics.",
+          "kind": "official-project",
+          "locator": "https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html"
+        }
+      ],
+      "id": "mqtt5",
+      "integration_mode": "protocol",
+      "license": "OASIS open standard",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "MQTT 5.0",
+      "priority": "P0",
+      "required_adapter": null,
+      "reuse_surface": "Use selectively for asynchronous devices, prop networks, and desired/reported state.",
+      "risks": [
+        "QoS does not provide application-level exactly-once state mutation; idempotence remains required."
+      ],
+      "substitution_test": "Run the same session, retained-state, reconnect, expiry, and duplicate vector against two independent MQTT brokers.",
+      "supplier_role": "durable pub-sub session and retained-state standard",
+      "upstream": {
+        "project_url": "https://docs.oasis-open.org/mqtt/mqtt/v5.0/mqtt-v5.0.html",
+        "repository": null
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "addressed messages",
+        "bundles",
+        "timetags",
+        "UDP",
+        "TCP",
+        "cross-tool interoperability"
+      ],
+      "category": "transport-state",
+      "community_signal": "Widely implemented in music, media, lighting, robotics, and interactive installations.",
+      "decision": "consume",
+      "decision_basis": "OSC is an excellent commodity transport for external tools, but address paths remain adapter vocabulary rather than canonical AXM action IDs.",
+      "estate_targets": [
+        "earcrate",
+        "estate-lab",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines an open message protocol broadly used in music and interactive media.",
+          "kind": "official-project",
+          "locator": "https://opensoundcontrol.stanford.edu/"
+        }
+      ],
+      "id": "open-sound-control",
+      "integration_mode": "protocol",
+      "license": "Open protocol specification",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "Open Sound Control",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Use at show-control and music boundaries with exact mapping custody.",
+      "risks": [
+        "Base OSC does not define discovery, authorization, delivery guarantees, or state."
+      ],
+      "substitution_test": "Send a canonical message and bundle corpus through two OSC libraries and compare encoded bytes and decoded values.",
+      "supplier_role": "low-latency semantic message protocol",
+      "upstream": {
+        "project_url": "https://opensoundcontrol.stanford.edu/",
+        "repository": null
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record",
+        "discovered OSC addresses may not self-declare AXM authority"
+      ],
+      "capabilities": [
+        "address discovery",
+        "types",
+        "metadata",
+        "JSON description",
+        "WebSocket updates",
+        "dynamic UI generation"
+      ],
+      "category": "transport-state",
+      "community_signal": "Implemented across AV, media, and show-control tools to expose browsable OSC address spaces.",
+      "decision": "consume",
+      "decision_basis": "It is a useful external capability-description protocol, particularly for adapting show and music tools, but AXM declarations remain canonical.",
+      "estate_targets": [
+        "estate-lab",
+        "earcrate",
+        "axm-console"
+      ],
+      "evidence": [
+        {
+          "claim": "Defines a browsable, typed OSC namespace with JSON metadata and WebSocket updates.",
+          "kind": "official-project",
+          "locator": "https://github.com/Vidvox/OSCQueryProposal"
+        }
+      ],
+      "id": "oscquery",
+      "integration_mode": "protocol",
+      "license": "Open protocol specification",
+      "license_posture": "standard",
+      "maturity": "standard",
+      "name": "OSCQuery",
+      "priority": "P1",
+      "required_adapter": null,
+      "reuse_surface": "Expose a read-only projection of selected AXM surface declarations and ingest discovered external controls through adapters.",
+      "risks": [
+        "Implementations vary in optional metadata and discovery behavior."
+      ],
+      "substitution_test": "Expose one address tree from two OSCQuery implementations and compare normalized path, type, range, access, and update metadata.",
+      "supplier_role": "discoverable and typed control address-space standard",
+      "upstream": {
+        "project_url": "https://github.com/Vidvox/OSCQueryProposal",
+        "repository": "Vidvox/OSCQueryProposal"
+      }
+    },
+    {
+      "authority_exclusions": [
+        "must not own AXM semantic action identifiers",
+        "must not grant actor, role, mandate, or disposition authority",
+        "must not become the canonical run record"
+      ],
+      "capabilities": [
+        "pub-sub",
+        "query",
+        "storage",
+        "discovery",
+        "reliability",
+        "geo-distributed routing"
+      ],
+      "category": "transport-state",
+      "community_signal": "Active edge-to-cloud networking community used in robotics and distributed systems.",
+      "decision": "adapt",
+      "decision_basis": "Zenoh may outperform MQTT for mixed realtime and queryable edge state, but it should enter only after a measured transport comparison.",
+      "estate_targets": [
+        "estate-lab",
+        "axm-embodied"
+      ],
+      "evidence": [
+        {
+          "claim": "Combines pub-sub, query, and storage semantics for edge, robotics, and geo-distributed systems.",
+          "kind": "official-project",
+          "locator": "https://zenoh.io/"
+        }
+      ],
+      "id": "zenoh",
+      "integration_mode": "external-process",
+      "license": "Apache-2.0 OR EPL-2.0",
+      "license_posture": "permissive",
+      "maturity": "mature-community",
+      "name": "Eclipse Zenoh",
+      "priority": "P2",
+      "required_adapter": "zenoh-transport-adapter/v1",
+      "reuse_surface": "Add as a Supplier Foundry transport candidate rather than a default dependency.",
+      "risks": [
+        "Additional runtime and protocol operational complexity."
+      ],
+      "substitution_test": "Run the same discovery, reconnect, loss, latency, and query fixture through Zenoh and MQTT 5 and compare the declared budgets.",
+      "supplier_role": "distributed pub-sub, query, and storage transport",
+      "upstream": {
+        "project_url": "https://github.com/eclipse-zenoh/zenoh",
+        "repository": "eclipse-zenoh/zenoh"
+      }
+    }
+  ],
+  "catalog_id": "commoditycat1_2f62f8f71e1c06ef95b64a3c1490a4b0",
+  "format": "axm-commodity-catalog/1",
+  "reviewed_as_of": "2026-07-28",
+  "scope": "Public OSS, open standards, and community projects adjacent to AXM Estate Lab: multi-seat simulation, cockpit hardware, embedded I/O, input abstraction, show control, event automation, telemetry and replay, hardware-in-the-loop, digital twins, and transport."
+}
