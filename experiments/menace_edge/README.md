@@ -41,6 +41,8 @@ witness.stack-recovery
 
 This is a requirements-mining result rather than field acceptance. The declared cost units rank candidate witness combinations inside the frozen set-cover problem. They are not dollars, engineering-hour estimates, or an aggregate readiness score.
 
+Distinct donor-pile support records structural recurrence across the current map. It does not claim independent empirical reproduction. Empirical independence requires separately executed implementations and receipts during the later qualification campaign.
+
 ## Privacy and evidence boundary
 
 The public donor ledger contains no private source bytes, personal names, customer records, operational coordinates, model weights, or hardware measurements. Private and mixed donors contribute only sanitized workload shapes and evidence classes. Exact private evidence remains outside the repository under separate custody.
