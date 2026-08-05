@@ -1,0 +1,32 @@
+{
+  "backend_id": "backend.riscv-llm-fixture",
+  "backend_manifest_sha256": "1607949000658704463a0a68043fa10c66de6fdbf16015329e4d649e50e25f65",
+  "cases": [
+    {
+      "id": "describe",
+      "passed": true
+    },
+    {
+      "id": "probe",
+      "passed": true
+    },
+    {
+      "id": "execute",
+      "passed": true
+    },
+    {
+      "id": "collect",
+      "passed": true
+    },
+    {
+      "id": "cancel",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "physical_qualification": false,
+  "production_claim": false,
+  "promotion_authorized": false,
+  "report_sha256": "eaa49e2fcc0943effb6a866877e73730d3c64ad1290aabc2ee2047b00870b0dc",
+  "schema": "tier-bench/anchor-backend-conformance@1"
+}

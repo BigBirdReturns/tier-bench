@@ -1,0 +1,248 @@
+{
+  "acceptance": {
+    "authority": "controller",
+    "final_node": "verify_decision_packet",
+    "product_schema": "schema.readiness-accepted-product-v1",
+    "required_validators": [
+      "validator.acceptance-product"
+    ]
+  },
+  "budgets": {
+    "max_attempts_per_node": 1,
+    "max_energy_mwh": 20000,
+    "max_nodes": 4,
+    "max_wall_ms": 120000
+  },
+  "id": "cartridge.physical-availability-v1",
+  "input_payload": {
+    "asset_id": "a-17",
+    "records": [
+      {
+        "asset_id": "a-17",
+        "record_id": "INV-001",
+        "record_type": "Inventory",
+        "status": "On Hand",
+        "value": {
+          "allocated": false,
+          "condition": "unserviceable",
+          "quantity": 1
+        }
+      },
+      {
+        "asset_id": "A-17",
+        "record_id": "WO-001",
+        "record_type": "Maintenance",
+        "status": "Open",
+        "value": {
+          "work_order": "MX-884",
+          "work_order_open": true
+        }
+      },
+      {
+        "asset_id": "A-17",
+        "record_id": "DUE-001",
+        "record_type": "Due_In",
+        "status": "Delayed",
+        "value": {
+          "expected_date": "2026-08-19",
+          "status": "delayed"
+        }
+      }
+    ]
+  },
+  "invariants": [
+    "Source records retain stable identity and content custody.",
+    "The deterministic availability state is backend independent.",
+    "Candidate wording may vary while claim, blockers, evidence, and human-review requirement remain validator equivalent.",
+    "Replacing the controller process must not lose accepted node state.",
+    "Replacing CUDA with a RISC-V executor creates a new execution treatment without changing portable task identity."
+  ],
+  "nodes": [
+    {
+      "backend_preferences": [
+        "backend.host-controller-fixture"
+      ],
+      "cacheable": true,
+      "depends_on": [],
+      "effects": "none",
+      "id": "normalize_records",
+      "input_refs": [
+        "input:readiness_records"
+      ],
+      "kind": "deterministic.transform",
+      "operation": "records.normalize",
+      "output_schema": "schema.readiness-normalized-v1",
+      "required_capabilities": [
+        "deterministic-transform",
+        "structured-json"
+      ],
+      "resources": {
+        "max_power_w": 75,
+        "memory_mib": 64,
+        "network": "none",
+        "storage_mib": 16
+      },
+      "semantic_class": "exact",
+      "stop_condition": "Return the canonical source records or fail.",
+      "validators": [
+        "validator.normalized-records"
+      ]
+    },
+    {
+      "backend_preferences": [
+        "backend.host-controller-fixture"
+      ],
+      "cacheable": true,
+      "depends_on": [
+        "normalize_records"
+      ],
+      "effects": "none",
+      "id": "derive_availability",
+      "input_refs": [
+        "node:normalize_records"
+      ],
+      "kind": "deterministic.transform",
+      "operation": "readiness.derive",
+      "output_schema": "schema.readiness-state-v1",
+      "required_capabilities": [
+        "deterministic-transform",
+        "structured-json"
+      ],
+      "resources": {
+        "max_power_w": 75,
+        "memory_mib": 64,
+        "network": "none",
+        "storage_mib": 16
+      },
+      "semantic_class": "exact",
+      "stop_condition": "Produce one exact physical-availability state or fail.",
+      "validators": [
+        "validator.availability-state"
+      ]
+    },
+    {
+      "backend_preferences": [
+        "backend.cuda3090-fixture",
+        "backend.riscv-llm-fixture"
+      ],
+      "cacheable": false,
+      "depends_on": [
+        "derive_availability"
+      ],
+      "effects": "none",
+      "id": "generate_decision_packet",
+      "input_refs": [
+        "node:derive_availability"
+      ],
+      "kind": "candidate.generate",
+      "operation": "decision.generate",
+      "output_schema": "schema.readiness-decision-v1",
+      "required_capabilities": [
+        "candidate-generation",
+        "llm-inference",
+        "structured-json"
+      ],
+      "resources": {
+        "max_power_w": 300,
+        "memory_mib": 2048,
+        "network": "none",
+        "storage_mib": 512
+      },
+      "semantic_class": "validator_equivalent",
+      "stop_condition": "Return one source-bound candidate decision packet requiring human review.",
+      "validators": [
+        "validator.decision-packet"
+      ]
+    },
+    {
+      "backend_preferences": [
+        "backend.host-controller-fixture"
+      ],
+      "cacheable": true,
+      "depends_on": [
+        "derive_availability",
+        "generate_decision_packet"
+      ],
+      "effects": "none",
+      "id": "verify_decision_packet",
+      "input_refs": [
+        "node:derive_availability",
+        "node:generate_decision_packet"
+      ],
+      "kind": "verify.accept",
+      "operation": "acceptance.project",
+      "output_schema": "schema.readiness-accepted-product-v1",
+      "required_capabilities": [
+        "acceptance-projection",
+        "structured-json"
+      ],
+      "resources": {
+        "max_power_w": 75,
+        "memory_mib": 64,
+        "network": "none",
+        "storage_mib": 16
+      },
+      "semantic_class": "exact",
+      "stop_condition": "Controller validators either accept the final product or retain a typed rejection.",
+      "validators": [
+        "validator.acceptance-product"
+      ]
+    }
+  ],
+  "non_goals": [
+    "Do not declare the asset ready from administrative quantity alone.",
+    "Do not execute maintenance or logistics effects.",
+    "Do not expose hidden validators or ask an executor to accept itself."
+  ],
+  "notes": "This is the first home-lab cartridge because its source truth and acceptance condition are legible without operationally sensitive data.",
+  "objective": "Determine whether asset A-17 is physically available, preserve the exact constraint chain, produce a concise candidate packet, and require a named human review before any operational disposition.",
+  "required_seams": [
+    "seam.capture",
+    "seam.custody",
+    "seam.degradation",
+    "seam.identity",
+    "seam.interpretation",
+    "seam.outcome",
+    "seam.resource-placement",
+    "seam.selection",
+    "seam.state-compilation",
+    "seam.substitution"
+  ],
+  "schema": "tier-bench/anchor-cartridge@1",
+  "task_family": "readiness.physical-availability",
+  "title": "Physical availability decision cartridge",
+  "validators": [
+    {
+      "controller_owned": true,
+      "description": "Require canonical identifiers, order, and exact source-record count.",
+      "hidden": false,
+      "id": "validator.normalized-records",
+      "kind": "deterministic",
+      "operation": "validate.normalized-records"
+    },
+    {
+      "controller_owned": true,
+      "description": "Reconstruct the expected physical-availability state from frozen records.",
+      "hidden": true,
+      "id": "validator.availability-state",
+      "kind": "deterministic",
+      "operation": "validate.availability-state"
+    },
+    {
+      "controller_owned": true,
+      "description": "Accept backend-specific wording only when claim, blockers, evidence, and human-review requirement remain exact.",
+      "hidden": true,
+      "id": "validator.decision-packet",
+      "kind": "metamorphic",
+      "operation": "validate.decision-packet"
+    },
+    {
+      "controller_owned": true,
+      "description": "Verify the complete final product independently of executor narration.",
+      "hidden": true,
+      "id": "validator.acceptance-product",
+      "kind": "deterministic",
+      "operation": "validate.acceptance-product"
+    }
+  ]
+}

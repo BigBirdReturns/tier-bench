@@ -1,0 +1,376 @@
+{
+  "acceptance": {
+    "authority": "controller",
+    "final_node": "verify_decision_packet",
+    "product_schema": "schema.readiness-accepted-product-v1",
+    "required_validators": [
+      "validator.acceptance-product"
+    ]
+  },
+  "backend_registry_id": "community-home-lab.anchor-backends-v1",
+  "backend_registry_sha256": "552546889ae42b54e2a108af0f99ef08705af098fbfa3da395b6f197e7961145",
+  "bindings": {
+    "derive_availability": "backend.host-controller-fixture",
+    "generate_decision_packet": "backend.riscv-llm-fixture",
+    "normalize_records": "backend.host-controller-fixture",
+    "verify_decision_packet": "backend.host-controller-fixture"
+  },
+  "budgets": {
+    "max_attempts_per_node": 1,
+    "max_energy_mwh": 20000,
+    "max_nodes": 4,
+    "max_wall_ms": 120000
+  },
+  "cartridge_id": "cartridge.physical-availability-v1",
+  "cartridge_sha256": "df9ed1157c03da507eb562e81957ade3ca6ca4294ec385db162d551bcd6762d3",
+  "claims": {
+    "backend_neutral_task_identity": true,
+    "pooled_memory": false,
+    "production": false,
+    "promotion_authorized": false
+  },
+  "floor_contract_sha256": "6b44319b470979b523d9fde4bf71fd3f75cd288db749716bacde81e9379c05b1",
+  "floor_id": "community-home-lab.anchor-crate-v1",
+  "floor_sha256": "8c08022d01c809300835a2c9b2ee9d1736c12311cf853fcae75a23388c695b4b",
+  "nodes": [
+    {
+      "backend": {
+        "architecture": "x86_64",
+        "driver_command": [
+          "python",
+          "examples/anchor_crate/reference_executor.py",
+          "--backend",
+          "backend.host-controller-fixture"
+        ],
+        "execution_cartridge_id": "exec.host-readiness-stdlib-v1",
+        "execution_cartridge_sha256": "488e0dcbb930e950dda6b44ceca9c76ae74a6e95425c75f8f9ec74664208a617",
+        "id": "backend.host-controller-fixture",
+        "isa": "x86-64-v2",
+        "lowering_sha256": "a5c84f8fdc89e68fa66ce4418b2f298d4842b85c46fdeffc303716ff157d7a45",
+        "manifest_sha256": "4f8fed7ca1645deea3c240d4443d618d8bac73a3d267d3b96ce053275d36bd69",
+        "memory_mib": 1024,
+        "model_identity": "none",
+        "physical_qualification": false,
+        "power_limit_w": 30,
+        "runtime_id": "python-stdlib",
+        "runtime_version": "3.10+",
+        "toolchain_sha256": "17b5e04d56a310a69e364a5fe67cffe2e0ec4d1bdc6df53f4d4d25245c0d87d1"
+      },
+      "backend_assessments": [
+        {
+          "admitted": false,
+          "backend_id": "backend.cuda3090-fixture",
+          "physical_qualification": false,
+          "reasons": [
+            "missing capabilities ['deterministic-transform']",
+            "no lowering for records.normalize",
+            "backend power envelope exceeds node limit"
+          ]
+        },
+        {
+          "admitted": true,
+          "backend_id": "backend.host-controller-fixture",
+          "physical_qualification": false,
+          "reasons": []
+        },
+        {
+          "admitted": false,
+          "backend_id": "backend.riscv-llm-fixture",
+          "physical_qualification": false,
+          "reasons": [
+            "missing capabilities ['deterministic-transform']",
+            "no lowering for records.normalize"
+          ]
+        }
+      ],
+      "cacheable": true,
+      "depends_on": [],
+      "effects": "none",
+      "execution_id": "anchorexec1_f5d1b050b02d09a300ccc73a548b69ce434c99d1fd57b365fb4c2f885cefea26",
+      "input_refs": [
+        "input:readiness_records"
+      ],
+      "kind": "deterministic.transform",
+      "node_id": "normalize_records",
+      "node_semantic_id": "anchornode1_d3d4396624a458cbb0dba1376c12f8608dac94e3f5ddeb4c6e05426987a1cb26",
+      "operation": "records.normalize",
+      "output_schema": "schema.readiness-normalized-v1",
+      "position": 0,
+      "required_capabilities": [
+        "deterministic-transform",
+        "structured-json"
+      ],
+      "resources": {
+        "max_power_w": 75,
+        "memory_mib": 64,
+        "network": "none",
+        "storage_mib": 16
+      },
+      "semantic_class": "exact",
+      "stop_condition": "Return the canonical source records or fail.",
+      "validators": [
+        "validator.normalized-records"
+      ]
+    },
+    {
+      "backend": {
+        "architecture": "x86_64",
+        "driver_command": [
+          "python",
+          "examples/anchor_crate/reference_executor.py",
+          "--backend",
+          "backend.host-controller-fixture"
+        ],
+        "execution_cartridge_id": "exec.host-readiness-stdlib-v1",
+        "execution_cartridge_sha256": "488e0dcbb930e950dda6b44ceca9c76ae74a6e95425c75f8f9ec74664208a617",
+        "id": "backend.host-controller-fixture",
+        "isa": "x86-64-v2",
+        "lowering_sha256": "618ac4e73d8a50aa021e66c6c4a3e9a460fe5c6b853f47ea1eb8fd94fd84567d",
+        "manifest_sha256": "4f8fed7ca1645deea3c240d4443d618d8bac73a3d267d3b96ce053275d36bd69",
+        "memory_mib": 1024,
+        "model_identity": "none",
+        "physical_qualification": false,
+        "power_limit_w": 30,
+        "runtime_id": "python-stdlib",
+        "runtime_version": "3.10+",
+        "toolchain_sha256": "17b5e04d56a310a69e364a5fe67cffe2e0ec4d1bdc6df53f4d4d25245c0d87d1"
+      },
+      "backend_assessments": [
+        {
+          "admitted": false,
+          "backend_id": "backend.cuda3090-fixture",
+          "physical_qualification": false,
+          "reasons": [
+            "missing capabilities ['deterministic-transform']",
+            "no lowering for readiness.derive",
+            "backend power envelope exceeds node limit"
+          ]
+        },
+        {
+          "admitted": true,
+          "backend_id": "backend.host-controller-fixture",
+          "physical_qualification": false,
+          "reasons": []
+        },
+        {
+          "admitted": false,
+          "backend_id": "backend.riscv-llm-fixture",
+          "physical_qualification": false,
+          "reasons": [
+            "missing capabilities ['deterministic-transform']",
+            "no lowering for readiness.derive"
+          ]
+        }
+      ],
+      "cacheable": true,
+      "depends_on": [
+        "normalize_records"
+      ],
+      "effects": "none",
+      "execution_id": "anchorexec1_0b5faf05d7fb7c520b466e0c9ff99ab77df3dd726839c9cf2e8a05cc00450765",
+      "input_refs": [
+        "node:normalize_records"
+      ],
+      "kind": "deterministic.transform",
+      "node_id": "derive_availability",
+      "node_semantic_id": "anchornode1_94b32a0ecd6f04cd1f7f0761879b4349cbf014c028943af7025d91d4d692abdd",
+      "operation": "readiness.derive",
+      "output_schema": "schema.readiness-state-v1",
+      "position": 1,
+      "required_capabilities": [
+        "deterministic-transform",
+        "structured-json"
+      ],
+      "resources": {
+        "max_power_w": 75,
+        "memory_mib": 64,
+        "network": "none",
+        "storage_mib": 16
+      },
+      "semantic_class": "exact",
+      "stop_condition": "Produce one exact physical-availability state or fail.",
+      "validators": [
+        "validator.availability-state"
+      ]
+    },
+    {
+      "backend": {
+        "architecture": "riscv64",
+        "driver_command": [
+          "python",
+          "examples/anchor_crate/reference_executor.py",
+          "--backend",
+          "backend.riscv-llm-fixture"
+        ],
+        "execution_cartridge_id": "exec.riscv64-readiness-fixture-v1",
+        "execution_cartridge_sha256": "8a5dc2e622535fec456090948b1ffe036106f2810e18fc4b1a617ac41fe02cb7",
+        "id": "backend.riscv-llm-fixture",
+        "isa": "RV64GCV plus vendor tensor extension",
+        "lowering_sha256": "402120dd53cc408a9277b5c6ca71073efb9c98a8cd0139abf640a61e52769622",
+        "manifest_sha256": "1607949000658704463a0a68043fa10c66de6fdbf16015329e4d649e50e25f65",
+        "memory_mib": 4096,
+        "model_identity": "fixture-model.readiness-decision-v1",
+        "physical_qualification": false,
+        "power_limit_w": 30,
+        "runtime_id": "anchor-fixture-riscv",
+        "runtime_version": "1",
+        "toolchain_sha256": "9a7164b7751dd7178e5b11c6a8b654b855cb15c1ceb85f3bb5ad5db20a411d21"
+      },
+      "backend_assessments": [
+        {
+          "admitted": true,
+          "backend_id": "backend.cuda3090-fixture",
+          "physical_qualification": false,
+          "reasons": []
+        },
+        {
+          "admitted": false,
+          "backend_id": "backend.host-controller-fixture",
+          "physical_qualification": false,
+          "reasons": [
+            "missing capabilities ['candidate-generation', 'llm-inference']",
+            "no lowering for decision.generate",
+            "single-backend memory floor not met"
+          ]
+        },
+        {
+          "admitted": true,
+          "backend_id": "backend.riscv-llm-fixture",
+          "physical_qualification": false,
+          "reasons": []
+        }
+      ],
+      "cacheable": false,
+      "depends_on": [
+        "derive_availability"
+      ],
+      "effects": "none",
+      "execution_id": "anchorexec1_e101edefaaa305dd10c19e897b0df237c9fd98cfcff05acc8ec96de3066b4a96",
+      "input_refs": [
+        "node:derive_availability"
+      ],
+      "kind": "candidate.generate",
+      "node_id": "generate_decision_packet",
+      "node_semantic_id": "anchornode1_2aaa21ecbef8a70c162afd60c65f56dbda37736919a283dd5178a236bdb35270",
+      "operation": "decision.generate",
+      "output_schema": "schema.readiness-decision-v1",
+      "position": 2,
+      "required_capabilities": [
+        "candidate-generation",
+        "llm-inference",
+        "structured-json"
+      ],
+      "resources": {
+        "max_power_w": 300,
+        "memory_mib": 2048,
+        "network": "none",
+        "storage_mib": 512
+      },
+      "semantic_class": "validator_equivalent",
+      "stop_condition": "Return one source-bound candidate decision packet requiring human review.",
+      "validators": [
+        "validator.decision-packet"
+      ]
+    },
+    {
+      "backend": {
+        "architecture": "x86_64",
+        "driver_command": [
+          "python",
+          "examples/anchor_crate/reference_executor.py",
+          "--backend",
+          "backend.host-controller-fixture"
+        ],
+        "execution_cartridge_id": "exec.host-readiness-stdlib-v1",
+        "execution_cartridge_sha256": "488e0dcbb930e950dda6b44ceca9c76ae74a6e95425c75f8f9ec74664208a617",
+        "id": "backend.host-controller-fixture",
+        "isa": "x86-64-v2",
+        "lowering_sha256": "e1a3acfc7618ac83d6ce308f395fef889d48f6919c41494e9a6dd5a42fce7a2a",
+        "manifest_sha256": "4f8fed7ca1645deea3c240d4443d618d8bac73a3d267d3b96ce053275d36bd69",
+        "memory_mib": 1024,
+        "model_identity": "none",
+        "physical_qualification": false,
+        "power_limit_w": 30,
+        "runtime_id": "python-stdlib",
+        "runtime_version": "3.10+",
+        "toolchain_sha256": "17b5e04d56a310a69e364a5fe67cffe2e0ec4d1bdc6df53f4d4d25245c0d87d1"
+      },
+      "backend_assessments": [
+        {
+          "admitted": false,
+          "backend_id": "backend.cuda3090-fixture",
+          "physical_qualification": false,
+          "reasons": [
+            "missing capabilities ['acceptance-projection']",
+            "no lowering for acceptance.project",
+            "backend power envelope exceeds node limit"
+          ]
+        },
+        {
+          "admitted": true,
+          "backend_id": "backend.host-controller-fixture",
+          "physical_qualification": false,
+          "reasons": []
+        },
+        {
+          "admitted": false,
+          "backend_id": "backend.riscv-llm-fixture",
+          "physical_qualification": false,
+          "reasons": [
+            "missing capabilities ['acceptance-projection']",
+            "no lowering for acceptance.project"
+          ]
+        }
+      ],
+      "cacheable": true,
+      "depends_on": [
+        "derive_availability",
+        "generate_decision_packet"
+      ],
+      "effects": "none",
+      "execution_id": "anchorexec1_ce048f986faa1653fbc02365db77942a765371dedb4fbe760111e887ea6c9aa6",
+      "input_refs": [
+        "node:derive_availability",
+        "node:generate_decision_packet"
+      ],
+      "kind": "verify.accept",
+      "node_id": "verify_decision_packet",
+      "node_semantic_id": "anchornode1_eefb84c453ff74f5047fcc4255ac220a2d8b5c6f864feb3b7d5bf2fdaf51a37d",
+      "operation": "acceptance.project",
+      "output_schema": "schema.readiness-accepted-product-v1",
+      "position": 3,
+      "required_capabilities": [
+        "acceptance-projection",
+        "structured-json"
+      ],
+      "resources": {
+        "max_power_w": 75,
+        "memory_mib": 64,
+        "network": "none",
+        "storage_mib": 16
+      },
+      "semantic_class": "exact",
+      "stop_condition": "Controller validators either accept the final product or retain a typed rejection.",
+      "validators": [
+        "validator.acceptance-product"
+      ]
+    }
+  ],
+  "plan_id": "anchorplan1_a533336e40b3ed32cc78d2cc83ae458ded9a554c5edebe22b4e2d6a50c2806a6",
+  "portable_task_id": "anchortask1_1b31b15a68d5ef8c0b21588755d3a7c157070fcfa33bff2aa98478a74656cc8e",
+  "required_seams": [
+    "seam.capture",
+    "seam.custody",
+    "seam.degradation",
+    "seam.disposition",
+    "seam.identity",
+    "seam.interpretation",
+    "seam.outcome",
+    "seam.resource-placement",
+    "seam.selection",
+    "seam.state-compilation",
+    "seam.substitution"
+  ],
+  "schema": "tier-bench/anchor-crate-plan@1",
+  "semantic_cartridge_sha256": "01a338915b5f61e478d04c90788d6b1971720df7eb412d4dc6725c81b0aa4d49"
+}
