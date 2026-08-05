@@ -45,6 +45,7 @@ jobs:
       - name: Exercise Anchor Crate laws
         run: python tests/test_anchor_crate.py
 
+
       - name: Parse and run Windows operator launcher
         if: runner.os == 'Windows'
         shell: pwsh
@@ -106,9 +107,10 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          import os
 
           root = Path("labs/community-home-lab/anchor-crate")
+          generated = Path.home()  # replaced below from environment-independent search
+          import os
           generated = Path(os.environ["RUNNER_TEMP"]) / "anchor-generated"
           names = [
               "plan.cuda-fixture.json",
