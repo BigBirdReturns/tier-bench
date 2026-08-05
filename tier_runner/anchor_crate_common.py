@@ -69,7 +69,7 @@ def write_json(path: Path | None, value: Any) -> None:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(rendered, encoding="utf-8")
+    temporary.write_bytes(rendered.encode("utf-8"))
     temporary.replace(path)
 
 
