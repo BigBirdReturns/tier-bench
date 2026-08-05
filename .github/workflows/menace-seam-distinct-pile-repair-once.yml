@@ -1,0 +1,84 @@
+name: menace-seam-distinct-pile-repair-once
+
+on:
+  push:
+    branches: [agent/menace-edge-qualification-v1]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/menace-edge-qualification-v1
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Correct pile-diversity terminology
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          paths = [
+              Path("tier_runner/menace_seam_schema.py"),
+              Path("tier_runner/menace_seam_plan.py"),
+              Path("tests/test_menace_seams.py"),
+              Path("experiments/menace_edge/seam_catalog.json"),
+              Path("MENACE_EDGE.md"),
+          ]
+          old = "minimum_independent_piles"
+          new = "minimum_distinct_piles"
+          total = 0
+          for path in paths:
+              text = path.read_text(encoding="utf-8")
+              count = text.count(old)
+              if count == 0:
+                  raise SystemExit(f"expected {old} in {path}")
+              path.write_text(text.replace(old, new), encoding="utf-8")
+              total += count
+          if total < 10:
+              raise SystemExit(f"unexpectedly low replacement count: {total}")
+          PY
+
+      - name: Regenerate and verify canonical products
+        run: |
+          python tests/test_menace_seams.py
+          python -m tier_runner.menace_seams plan \
+            --donors experiments/menace_edge/donor_piles.json \
+            --seams experiments/menace_edge/seam_catalog.json \
+            --coverage experiments/menace_edge/coverage_matrix.json \
+            --out experiments/menace_edge/minimal_witness_plan.json
+          python -m tier_runner.menace_seams verify \
+            --donors experiments/menace_edge/donor_piles.json \
+            --seams experiments/menace_edge/seam_catalog.json \
+            --coverage experiments/menace_edge/coverage_matrix.json \
+            --plan experiments/menace_edge/minimal_witness_plan.json
+          python -m tier_runner.menace_seams report \
+            --donors experiments/menace_edge/donor_piles.json \
+            --seams experiments/menace_edge/seam_catalog.json \
+            --coverage experiments/menace_edge/coverage_matrix.json \
+            --out-json experiments/menace_edge/seam_census_report.json \
+            --out-markdown experiments/menace_edge/SEAM_CENSUS.md
+          python -m tier_runner.menace_seams verify-report \
+            --donors experiments/menace_edge/donor_piles.json \
+            --seams experiments/menace_edge/seam_catalog.json \
+            --coverage experiments/menace_edge/coverage_matrix.json \
+            --report experiments/menace_edge/seam_census_report.json
+          python tests/test_menace_edge.py
+          git diff --check
+
+      - name: Commit repair and remove one-use carrier
+        run: |
+          rm .github/workflows/menace-seam-distinct-pile-repair-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Clarify MENACE pile diversity without claiming empirical independence"
+          git push origin HEAD:agent/menace-edge-qualification-v1
