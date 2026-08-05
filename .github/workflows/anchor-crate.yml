@@ -36,35 +36,45 @@ jobs:
           tier_runner/anchor_crate_runtime.py
           tier_runner/anchor_crate.py
           examples/anchor_crate/reference_executor.py
+          examples/anchor_crate/ollama_4060_executor.py
+          scripts/build_anchor_4060_manifest.py
           scripts/verify_anchor_crate_bundle.py
           tests/test_anchor_crate.py
+          tests/test_anchor_crate_physical.py
 
       - name: Verify self-contained Anchor Crate bundle
         run: python scripts/verify_anchor_crate_bundle.py --repo .
 
       - name: Exercise Anchor Crate laws
-        run: python tests/test_anchor_crate.py
+        run: |
+          python tests/test_anchor_crate.py
+          python tests/test_anchor_crate_physical.py
 
-
-      - name: Parse and run Windows operator launcher
+      - name: Parse Windows operator launchers
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $Tokens = $null
-          $Errors = $null
-          [void][System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path scripts/run-anchor-crate-lab.ps1),
-            [ref]$Tokens,
-            [ref]$Errors
-          )
-          if ($Errors.Count -gt 0) {
-            $Errors | Format-List | Out-String | Write-Error
-            exit 1
+          foreach ($Path in @(
+            "scripts/run-anchor-crate-lab.ps1",
+            "scripts/run-anchor-crate-4060-smoke.ps1"
+          )) {
+            $Tokens = $null
+            $Errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $Path),
+              [ref]$Tokens,
+              [ref]$Errors
+            )
+            if ($Errors.Count -gt 0) {
+              $Errors | Format-List | Out-String | Write-Error
+              exit 1
+            }
           }
           .\scripts\run-anchor-crate-lab.ps1 `
             -Command quick `
             -OutRoot "$env:RUNNER_TEMP\AnchorCrateLauncher"
           Write-Host "ANCHOR_CRATE_POWERSHELL_OK"
+          Write-Host "ANCHOR_4060_SMOKE_LAUNCHER_PARSE_OK"
 
       - name: Regenerate canonical plans and conformance reports
         shell: bash
@@ -107,10 +117,9 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import os
 
           root = Path("labs/community-home-lab/anchor-crate")
-          generated = Path.home()  # replaced below from environment-independent search
-          import os
           generated = Path(os.environ["RUNNER_TEMP"]) / "anchor-generated"
           names = [
               "plan.cuda-fixture.json",
@@ -172,6 +181,7 @@ jobs:
           cp labs/community-home-lab/anchor-crate/physical_availability_cartridge.json "$EVIDENCE/cartridge.json"
           cp labs/community-home-lab/anchor-crate/backend_registry.json "$EVIDENCE/backend-registry.json"
           cp labs/community-home-lab/anchor-crate/bundle_manifest.json "$EVIDENCE/bundle-manifest.json"
+          cp labs/community-home-lab/anchor-crate/PHYSICAL_4060_SMOKE.md "$EVIDENCE/physical-4060-smoke-contract.md"
           git rev-parse HEAD > "$EVIDENCE/repository-head.txt"
           python - <<'PY'
           import hashlib, os
@@ -180,7 +190,7 @@ jobs:
           rows = []
           for path in sorted(item for item in root.rglob("*") if item.is_file() and item.name != "SHA256SUMS"):
               rows.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(root).as_posix()}")
-          (root / "SHA256SUMS").write_text("\n".join(rows) + "\n", encoding="utf-8")
+          (root / "SHA256SUMS").write_bytes(("\n".join(rows) + "\n").encode("utf-8"))
           PY
           git diff --check
 
