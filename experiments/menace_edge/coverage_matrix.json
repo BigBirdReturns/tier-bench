@@ -227,8 +227,7 @@
         "neg.model-as-authority",
         "neg.narrative-success",
         "neg.opaque-selection",
-        "neg.role-leak",
-        "neg.unattributed-input"
+        "neg.role-leak"
       ],
       "prerequisites": [],
       "hardware_required": false,
