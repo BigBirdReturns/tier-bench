@@ -1,0 +1,97 @@
+name: anchor-crate-lf-repair-once
+
+on:
+  push:
+    branches: [feature/community-home-lab-anchor-crate-v0.2.0]
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/community-home-lab-anchor-crate-v0.2.0
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Make canonical JSON emission platform-independent
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          source = Path("tier_runner/anchor_crate_common.py")
+          text = source.read_text(encoding="utf-8")
+          old = '    temporary.write_text(rendered, encoding="utf-8")\n'
+          new = '    temporary.write_bytes(rendered.encode("utf-8"))\n'
+          if text.count(old) != 1:
+              raise SystemExit("expected exactly one platform-dependent write_json call")
+          source.write_bytes(text.replace(old, new).encode("utf-8"))
+
+          manifest_path = Path("labs/community-home-lab/anchor-crate/bundle_manifest.json")
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          payload = source.read_bytes()
+          matches = [row for row in manifest["files"] if row["path"] == source.as_posix()]
+          if len(matches) != 1:
+              raise SystemExit("bundle manifest does not contain exactly one common-module row")
+          matches[0]["bytes"] = len(payload)
+          matches[0]["sha256"] = hashlib.sha256(payload).hexdigest()
+          manifest_path.write_bytes(
+              (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8")
+          )
+          PY
+
+      - name: Requalify exact source and generated products
+        run: |
+          python scripts/verify_anchor_crate_bundle.py --repo .
+          python tests/test_anchor_crate.py
+          OUT="$RUNNER_TEMP/anchor-generated"
+          mkdir -p "$OUT"
+          FLOOR="labs/community-home-lab/anchor-crate/floor.json"
+          CART="labs/community-home-lab/anchor-crate/physical_availability_cartridge.json"
+          BACKENDS="labs/community-home-lab/anchor-crate/backend_registry.json"
+          python -m tier_runner.anchor_crate plan \
+            --floor "$FLOOR" --cartridge "$CART" --backends "$BACKENDS" \
+            --out "$OUT/plan.cuda-fixture.json"
+          python -m tier_runner.anchor_crate plan \
+            --floor "$FLOOR" --cartridge "$CART" --backends "$BACKENDS" \
+            --bind generate_decision_packet=backend.riscv-llm-fixture \
+            --out "$OUT/plan.riscv-fixture.json"
+          python -m tier_runner.anchor_crate compare \
+            --floor "$FLOOR" --cartridge "$CART" --backends "$BACKENDS" \
+            --node generate_decision_packet \
+            --backend-a backend.cuda3090-fixture \
+            --backend-b backend.riscv-llm-fixture \
+            --out "$OUT/backend_equivalence.json"
+          for backend in \
+            backend.host-controller-fixture \
+            backend.cuda3090-fixture \
+            backend.riscv-llm-fixture
+          do
+            python -m tier_runner.anchor_crate conformance \
+              --backends "$BACKENDS" --backend "$backend" --controller-cwd . \
+              --out "$OUT/conformance.${backend#backend.}.json"
+          done
+          cmp "$OUT/plan.cuda-fixture.json" labs/community-home-lab/anchor-crate/plan.cuda-fixture.json
+          cmp "$OUT/plan.riscv-fixture.json" labs/community-home-lab/anchor-crate/plan.riscv-fixture.json
+          cmp "$OUT/backend_equivalence.json" labs/community-home-lab/anchor-crate/backend_equivalence.json
+          cmp "$OUT/conformance.host-controller-fixture.json" labs/community-home-lab/anchor-crate/conformance.host-controller-fixture.json
+          cmp "$OUT/conformance.cuda3090-fixture.json" labs/community-home-lab/anchor-crate/conformance.cuda3090-fixture.json
+          cmp "$OUT/conformance.riscv-llm-fixture.json" labs/community-home-lab/anchor-crate/conformance.riscv-llm-fixture.json
+          git diff --check
+
+      - name: Commit exact-byte repair
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tier_runner/anchor_crate_common.py labs/community-home-lab/anchor-crate/bundle_manifest.json
+          git commit -m "Make Anchor Crate canonical JSON platform-independent"
+          git push origin HEAD:feature/community-home-lab-anchor-crate-v0.2.0
