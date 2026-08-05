@@ -1,0 +1,284 @@
+{
+  "schema": "tier-bench/menace-edge-coverage-matrix@1",
+  "campaign_id": "menace-edge-01",
+  "selection_constraints": {
+    "required_evidence_classes": [
+      "implemented_fixture",
+      "private_reported_trace",
+      "synthetic_control"
+    ],
+    "admissible_states": [
+      "implemented",
+      "shape_available",
+      "synthetic_control"
+    ],
+    "maximum_witnesses": 8,
+    "require_all_mandatory_seams": true,
+    "require_all_mandatory_negative_witnesses": true
+  },
+  "witnesses": [
+    {
+      "id": "witness.partitioned-controller",
+      "title": "Partitioned controller supervision and reconciliation",
+      "state": "shape_available",
+      "evidence_class": "private_reported_trace",
+      "cost_units": 8,
+      "donor_piles": [
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "independence_groups": [
+        "group.private-control-trace",
+        "group.partition-authority"
+      ],
+      "covers_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.execution",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reconciliation",
+        "seam.state-compilation",
+        "seam.synchronization"
+      ],
+      "covers_negative_witnesses": [
+        "neg.duplicate-effect",
+        "neg.hidden-conflict",
+        "neg.model-as-authority",
+        "neg.narrative-success",
+        "neg.prestige-overwrite",
+        "neg.stale-mandate",
+        "neg.wan-dependency"
+      ],
+      "prerequisites": [],
+      "hardware_required": false,
+      "connectivity_profiles": ["C0", "C1", "C2", "C3"]
+    },
+    {
+      "id": "witness.physical-availability",
+      "title": "Inventory, maintenance, due-in, and physical availability",
+      "state": "implemented",
+      "evidence_class": "implemented_fixture",
+      "cost_units": 5,
+      "donor_piles": [
+        "pile.evidence-qualification",
+        "pile.readiness-sustainment"
+      ],
+      "independence_groups": [
+        "group.readiness-demo",
+        "group.dirty-export"
+      ],
+      "covers_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.selection",
+        "seam.state-compilation"
+      ],
+      "covers_negative_witnesses": [
+        "neg.alias-collapse",
+        "neg.narrative-success",
+        "neg.nondeterministic-state",
+        "neg.opaque-selection",
+        "neg.unattributed-input",
+        "neg.unverifiable-archive"
+      ],
+      "prerequisites": [],
+      "hardware_required": false,
+      "connectivity_profiles": ["C0", "C3"]
+    },
+    {
+      "id": "witness.cooperative-handoff",
+      "title": "Cooperative sensor and controller track handoff",
+      "state": "synthetic_control",
+      "evidence_class": "synthetic_control",
+      "cost_units": 6,
+      "donor_piles": [
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "independence_groups": [
+        "group.cooperative-sensing",
+        "group.mesh-handoff"
+      ],
+      "covers_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.identity",
+        "seam.outcome",
+        "seam.synchronization",
+        "seam.track-handoff"
+      ],
+      "covers_negative_witnesses": [
+        "neg.alias-collapse",
+        "neg.prestige-overwrite",
+        "neg.track-discontinuity",
+        "neg.wan-dependency"
+      ],
+      "prerequisites": [],
+      "hardware_required": false,
+      "connectivity_profiles": ["C0", "C1", "C2"]
+    },
+    {
+      "id": "witness.stack-recovery",
+      "title": "GPU, model, adapter, head, and vendor substitution",
+      "state": "implemented",
+      "evidence_class": "implemented_fixture",
+      "cost_units": 7,
+      "donor_piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.platform-sovereignty"
+      ],
+      "independence_groups": [
+        "group.system-fabric",
+        "group.stack-sovereignty",
+        "group.workflow-recovery"
+      ],
+      "covers_seams": [
+        "seam.custody",
+        "seam.degradation",
+        "seam.reattachment",
+        "seam.resource-placement",
+        "seam.state-compilation",
+        "seam.substitution"
+      ],
+      "covers_negative_witnesses": [
+        "neg.hidden-topology",
+        "neg.lost-human-context",
+        "neg.nondeterministic-state",
+        "neg.unverifiable-archive",
+        "neg.vendor-removal-breaks",
+        "neg.wan-dependency"
+      ],
+      "prerequisites": [],
+      "hardware_required": true,
+      "connectivity_profiles": ["C0", "C1", "C3"]
+    },
+    {
+      "id": "witness.multi-role-handoff",
+      "title": "Multi-role decision queue, reattachment, and shift handoff",
+      "state": "implemented",
+      "evidence_class": "implemented_fixture",
+      "cost_units": 5,
+      "donor_piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.people-communications"
+      ],
+      "independence_groups": [
+        "group.role-apertures",
+        "group.chat-radar",
+        "group.attention-broker"
+      ],
+      "covers_seams": [
+        "seam.custody",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.reattachment",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.shift-handoff"
+      ],
+      "covers_negative_witnesses": [
+        "neg.decision-context-loss",
+        "neg.lost-human-context",
+        "neg.model-as-authority",
+        "neg.opaque-selection",
+        "neg.role-leak",
+        "neg.stale-mandate",
+        "neg.unverifiable-archive"
+      ],
+      "prerequisites": [],
+      "hardware_required": false,
+      "connectivity_profiles": ["C0", "C1", "C3"]
+    },
+    {
+      "id": "witness.saleops-cephalopod",
+      "title": "Replaceable research, synthesis, critic, and human-correction arms",
+      "state": "implemented",
+      "evidence_class": "implemented_fixture",
+      "cost_units": 3,
+      "donor_piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "independence_groups": [
+        "group.multi-arm-assistant",
+        "group.human-correction"
+      ],
+      "covers_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.role-aperture",
+        "seam.selection"
+      ],
+      "covers_negative_witnesses": [
+        "neg.model-as-authority",
+        "neg.narrative-success",
+        "neg.opaque-selection",
+        "neg.role-leak",
+        "neg.unattributed-input"
+      ],
+      "prerequisites": [],
+      "hardware_required": false,
+      "connectivity_profiles": ["C0", "C3", "C4"]
+    },
+    {
+      "id": "witness.offline-verified-query",
+      "title": "Offline deterministic query after provider and model removal",
+      "state": "implemented",
+      "evidence_class": "implemented_fixture",
+      "cost_units": 2,
+      "donor_piles": [
+        "pile.evidence-qualification"
+      ],
+      "independence_groups": [
+        "group.genesis-verifier"
+      ],
+      "covers_seams": [
+        "seam.custody",
+        "seam.state-compilation"
+      ],
+      "covers_negative_witnesses": [
+        "neg.nondeterministic-state",
+        "neg.unverifiable-archive"
+      ],
+      "prerequisites": [],
+      "hardware_required": false,
+      "connectivity_profiles": ["C0"]
+    },
+    {
+      "id": "witness.raw-model-endpoint",
+      "title": "Raw local model endpoint negative control",
+      "state": "synthetic_control",
+      "evidence_class": "synthetic_control",
+      "cost_units": 1,
+      "donor_piles": [
+        "pile.evidence-qualification"
+      ],
+      "independence_groups": [
+        "group.raw-model-control"
+      ],
+      "covers_seams": [
+        "seam.interpretation"
+      ],
+      "covers_negative_witnesses": [
+        "neg.model-as-authority"
+      ],
+      "prerequisites": [],
+      "hardware_required": true,
+      "connectivity_profiles": ["C0", "C4"]
+    }
+  ]
+}
