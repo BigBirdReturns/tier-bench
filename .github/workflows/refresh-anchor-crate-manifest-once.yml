@@ -1,0 +1,58 @@
+name: refresh-anchor-crate-manifest-once
+
+on:
+  push:
+    branches: [feature/community-home-lab-anchor-crate-v0.2.0]
+  pull_request:
+    branches: [agent/menace-edge-qualification-v1]
+    types: [synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/community-home-lab-anchor-crate-v0.2.0
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Rebind permanent workflow bytes
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          workflow = Path(".github/workflows/anchor-crate.yml")
+          manifest_path = Path("labs/community-home-lab/anchor-crate/bundle_manifest.json")
+          payload = workflow.read_bytes()
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          rows = [row for row in manifest["files"] if row["path"] == workflow.as_posix()]
+          if len(rows) != 1:
+              raise SystemExit("bundle manifest must contain exactly one permanent workflow row")
+          rows[0]["bytes"] = len(payload)
+          rows[0]["sha256"] = hashlib.sha256(payload).hexdigest()
+          manifest_path.write_bytes(
+              (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8")
+          )
+          print("ANCHOR_WORKFLOW_BYTES", len(payload), hashlib.sha256(payload).hexdigest())
+          PY
+      - name: Qualify complete source after rebinding
+        run: |
+          python scripts/verify_anchor_crate_bundle.py --repo .
+          python tests/test_anchor_crate.py
+          python tests/test_anchor_crate_physical.py
+          git diff --check
+      - name: Commit refreshed manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add labs/community-home-lab/anchor-crate/bundle_manifest.json
+          git commit -m "Bind the physical backend qualification workflow bytes"
+          git push origin HEAD:feature/community-home-lab-anchor-crate-v0.2.0
