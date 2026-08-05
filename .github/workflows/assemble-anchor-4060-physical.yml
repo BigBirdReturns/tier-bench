@@ -1,0 +1,131 @@
+name: assemble-anchor-4060-physical
+
+on:
+  push:
+    branches: [feature/community-home-lab-anchor-crate-v0.2.0]
+  pull_request:
+    branches: [agent/menace-edge-qualification-v1]
+    types: [synchronize, reopened]
+
+permissions:
+  contents: write
+
+jobs:
+  assemble:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/community-home-lab-anchor-crate-v0.2.0
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Reconstruct exact physical-backend source payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat transport/anchor-4060-payload.part-*.b64 > "$RUNNER_TEMP/anchor-4060-payload.b64"
+          base64 --decode "$RUNNER_TEMP/anchor-4060-payload.b64" > "$RUNNER_TEMP/anchor-4060-payload.tar.gz"
+          echo "b70e7b2b8d53cd7fd96b1b18b1d48b3f199fee35391d49fe8b0cc6e12c736853  $RUNNER_TEMP/anchor-4060-payload.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/anchor-4060-payload.tar.gz" -C .
+
+      - name: Admit the Ada architecture and preserve exact bytes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          schema = Path("tier_runner/anchor_crate_schema.py")
+          text = schema.read_text(encoding="utf-8")
+          old = '    "cuda-sm86",\n    "custom-accelerator",\n'
+          new = '    "cuda-sm86",\n    "cuda-sm89",\n    "custom-accelerator",\n'
+          if text.count(old) != 1:
+              raise SystemExit("expected exactly one Anchor Crate architecture insertion point")
+          schema.write_bytes(text.replace(old, new).encode("utf-8"))
+
+          attributes = Path(".gitattributes")
+          text = attributes.read_text(encoding="utf-8")
+          marker = "# Physical RTX 4060 Anchor Crate source and launcher bytes.\n"
+          block = (
+              "\n" + marker
+              + "ANCHOR4060.cmd -text -whitespace\n"
+              + "scripts/build_anchor_4060_manifest.py -text -whitespace\n"
+              + "scripts/run-anchor-crate-4060-smoke.ps1 -text -whitespace\n"
+              + "tests/test_anchor_crate_physical.py -text -whitespace\n"
+          )
+          if marker not in text:
+              attributes.write_bytes((text.rstrip("\n") + block).encode("utf-8"))
+          PY
+
+      - name: Exercise provider-free physical-backend laws
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            examples/anchor_crate/ollama_4060_executor.py \
+            scripts/build_anchor_4060_manifest.py \
+            tests/test_anchor_crate_physical.py \
+            tier_runner/anchor_crate_schema.py
+          python tests/test_anchor_crate.py
+          python tests/test_anchor_crate_physical.py
+          git diff --check
+
+      - name: Refresh the self-verifying bundle manifest
+        shell: bash
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          manifest_path = Path("labs/community-home-lab/anchor-crate/bundle_manifest.json")
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          rows = {row["path"]: dict(row) for row in manifest["files"]}
+          ordered = [row["path"] for row in manifest["files"]]
+          additions = [
+              "ANCHOR4060.cmd",
+              "examples/anchor_crate/ollama_4060_executor.py",
+              "labs/community-home-lab/anchor-crate/PHYSICAL_4060_SMOKE.md",
+              "scripts/build_anchor_4060_manifest.py",
+              "scripts/run-anchor-crate-4060-smoke.ps1",
+              "tests/test_anchor_crate_physical.py",
+          ]
+          for name in additions:
+              if name not in rows:
+                  rows[name] = {"path": name}
+                  ordered.append(name)
+          normalized = []
+          for name in ordered:
+              path = Path(name)
+              if not path.is_file():
+                  raise SystemExit(f"bundle file is missing: {name}")
+              payload = path.read_bytes()
+              normalized.append(
+                  {
+                      "bytes": len(payload),
+                      "path": name,
+                      "sha256": hashlib.sha256(payload).hexdigest(),
+                  }
+              )
+          manifest["files"] = normalized
+          manifest_path.write_bytes(
+              (json.dumps(manifest, indent=2, sort_keys=True) + "\n").encode("utf-8")
+          )
+          PY
+          python scripts/verify_anchor_crate_bundle.py --repo .
+          git diff --check
+
+      - name: Commit reviewable physical-backend source and remove transport
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f transport/anchor-4060-payload.part-*.b64
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Build the first physical RTX 4060 Anchor Crate path"
+          git push origin HEAD:feature/community-home-lab-anchor-crate-v0.2.0
