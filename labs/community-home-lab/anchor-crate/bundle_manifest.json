@@ -2,9 +2,9 @@
   "claim_boundary": "This manifest binds source, contracts, fixtures, canonical plans, conformance reports, tests, launchers, and documentation. It does not prove physical accelerator behavior.",
   "files": [
     {
-      "bytes": 8094,
+      "bytes": 8545,
       "path": ".github/workflows/anchor-crate.yml",
-      "sha256": "52c905fdc9748112e5599da1c3b2d72e0942e1f852a075e4099aa494fb7a3870"
+      "sha256": "ad9faf1c2493786ca1c75886d380f75aceba5d07a9118a8d01998bc9438ffbd5"
     },
     {
       "bytes": 139,
