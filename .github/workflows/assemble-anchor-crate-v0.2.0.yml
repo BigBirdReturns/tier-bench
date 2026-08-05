@@ -1,3 +1,4 @@
+# One-use exact-payload assembler. This second revision intentionally retriggers after the workflow exists on the branch.
 name: assemble-anchor-crate-v0.2.0
 
 on:
