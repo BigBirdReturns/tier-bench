@@ -1,9 +1,12 @@
-# One-use exact-payload assembler. This second revision intentionally retriggers after the workflow exists on the branch.
+# One-use exact-payload assembler. The pull-request trigger makes the run observable and retriable.
 name: assemble-anchor-crate-v0.2.0
 
 on:
   push:
     branches: [feature/community-home-lab-anchor-crate-v0.2.0]
+  pull_request:
+    branches: [agent/menace-edge-qualification-v1]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
