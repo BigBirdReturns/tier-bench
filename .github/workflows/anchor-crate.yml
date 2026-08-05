@@ -1,0 +1,189 @@
+name: anchor-crate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Compile Anchor Crate surfaces
+        run: >-
+          python -m py_compile
+          tier_runner/anchor_crate_common.py
+          tier_runner/anchor_crate_schema.py
+          tier_runner/anchor_crate_plan.py
+          tier_runner/anchor_crate_runtime.py
+          tier_runner/anchor_crate.py
+          examples/anchor_crate/reference_executor.py
+          scripts/verify_anchor_crate_bundle.py
+          tests/test_anchor_crate.py
+
+      - name: Verify self-contained Anchor Crate bundle
+        run: python scripts/verify_anchor_crate_bundle.py --repo .
+
+      - name: Exercise Anchor Crate laws
+        run: python tests/test_anchor_crate.py
+
+      - name: Parse and run Windows operator launcher
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $Tokens = $null
+          $Errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/run-anchor-crate-lab.ps1),
+            [ref]$Tokens,
+            [ref]$Errors
+          )
+          if ($Errors.Count -gt 0) {
+            $Errors | Format-List | Out-String | Write-Error
+            exit 1
+          }
+          .\scripts\run-anchor-crate-lab.ps1 `
+            -Command quick `
+            -OutRoot "$env:RUNNER_TEMP\AnchorCrateLauncher"
+          Write-Host "ANCHOR_CRATE_POWERSHELL_OK"
+
+      - name: Regenerate canonical plans and conformance reports
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/anchor-generated"
+          mkdir -p "$OUT"
+          FLOOR="labs/community-home-lab/anchor-crate/floor.json"
+          CART="labs/community-home-lab/anchor-crate/physical_availability_cartridge.json"
+          BACKENDS="labs/community-home-lab/anchor-crate/backend_registry.json"
+
+          python -m tier_runner.anchor_crate validate \
+            --floor "$FLOOR" --cartridge "$CART" --backends "$BACKENDS" \
+            > "$OUT/validation.json"
+          python -m tier_runner.anchor_crate plan \
+            --floor "$FLOOR" --cartridge "$CART" --backends "$BACKENDS" \
+            --out "$OUT/plan.cuda-fixture.json"
+          python -m tier_runner.anchor_crate plan \
+            --floor "$FLOOR" --cartridge "$CART" --backends "$BACKENDS" \
+            --bind generate_decision_packet=backend.riscv-llm-fixture \
+            --out "$OUT/plan.riscv-fixture.json"
+          python -m tier_runner.anchor_crate compare \
+            --floor "$FLOOR" --cartridge "$CART" --backends "$BACKENDS" \
+            --node generate_decision_packet \
+            --backend-a backend.cuda3090-fixture \
+            --backend-b backend.riscv-llm-fixture \
+            --out "$OUT/backend_equivalence.json"
+          for backend in \
+            backend.host-controller-fixture \
+            backend.cuda3090-fixture \
+            backend.riscv-llm-fixture
+          do
+            python -m tier_runner.anchor_crate conformance \
+              --backends "$BACKENDS" --backend "$backend" --controller-cwd . \
+              --out "$OUT/conformance.${backend#backend.}.json"
+          done
+
+      - name: Require byte-identical canonical products
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os
+
+          root = Path("labs/community-home-lab/anchor-crate")
+          generated = Path(os.environ["RUNNER_TEMP"]) / "anchor-generated"
+          names = [
+              "plan.cuda-fixture.json",
+              "plan.riscv-fixture.json",
+              "backend_equivalence.json",
+              "conformance.host-controller-fixture.json",
+              "conformance.cuda3090-fixture.json",
+              "conformance.riscv-llm-fixture.json",
+          ]
+          for name in names:
+              assert (generated / name).read_bytes() == (root / name).read_bytes(), name
+          print("ANCHOR_CANONICAL_PRODUCTS_OK", len(names))
+          PY
+
+      - name: Run CUDA and RISC-V fixture treatments
+        shell: bash
+        run: |
+          set -euo pipefail
+          FLOOR="labs/community-home-lab/anchor-crate/floor.json"
+          CART="labs/community-home-lab/anchor-crate/physical_availability_cartridge.json"
+          BACKENDS="labs/community-home-lab/anchor-crate/backend_registry.json"
+          EVIDENCE="$RUNNER_TEMP/anchor-evidence"
+          mkdir -p "$EVIDENCE"
+
+          python -m tier_runner.anchor_crate run \
+            --floor "$FLOOR" --cartridge "$CART" --backends "$BACKENDS" \
+            --run-root "$EVIDENCE/cuda" --controller-cwd . \
+            --out "$EVIDENCE/cuda-result.json"
+          python -m tier_runner.anchor_crate run \
+            --floor "$FLOOR" --cartridge "$CART" --backends "$BACKENDS" \
+            --bind generate_decision_packet=backend.riscv-llm-fixture \
+            --run-root "$EVIDENCE/riscv" --controller-cwd . \
+            --out "$EVIDENCE/riscv-result.json"
+
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "anchor-evidence"
+          cuda = json.loads((root / "cuda-result.json").read_text())
+          riscv = json.loads((root / "riscv-result.json").read_text())
+          assert cuda["status"] == riscv["status"] == "accepted"
+          assert cuda["portable_task_id"] == riscv["portable_task_id"]
+          assert cuda["plan_id"] != riscv["plan_id"]
+          assert cuda["final_product"]["availability_state"] == riscv["final_product"]["availability_state"]
+          assert cuda["final_product"]["decision_packet"]["claim"] == "not_physically_available"
+          assert riscv["final_product"]["decision_packet"]["claim"] == "not_physically_available"
+          assert cuda["final_product"]["decision_packet"]["summary"] != riscv["final_product"]["decision_packet"]["summary"]
+          assert not cuda["production_claim"] and not riscv["promotion_authorized"]
+          print("ANCHOR_BACKEND_SUBSTITUTION_OK", cuda["portable_task_id"])
+          PY
+
+      - name: Preserve exact-head evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVIDENCE="$RUNNER_TEMP/anchor-evidence"
+          cp -R "$RUNNER_TEMP/anchor-generated" "$EVIDENCE/canonical-products"
+          cp labs/community-home-lab/anchor-crate/floor.json "$EVIDENCE/floor.json"
+          cp labs/community-home-lab/anchor-crate/physical_availability_cartridge.json "$EVIDENCE/cartridge.json"
+          cp labs/community-home-lab/anchor-crate/backend_registry.json "$EVIDENCE/backend-registry.json"
+          cp labs/community-home-lab/anchor-crate/bundle_manifest.json "$EVIDENCE/bundle-manifest.json"
+          git rev-parse HEAD > "$EVIDENCE/repository-head.txt"
+          python - <<'PY'
+          import hashlib, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "anchor-evidence"
+          rows = []
+          for path in sorted(item for item in root.rglob("*") if item.is_file() and item.name != "SHA256SUMS"):
+              rows.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(root).as_posix()}")
+          (root / "SHA256SUMS").write_text("\n".join(rows) + "\n", encoding="utf-8")
+          PY
+          git diff --check
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: anchor-crate-${{ matrix.os }}-python-${{ matrix.python-version }}
+          path: ${{ runner.temp }}/anchor-evidence
+          if-no-files-found: error
