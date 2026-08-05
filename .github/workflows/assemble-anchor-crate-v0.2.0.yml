@@ -1,4 +1,4 @@
-# One-use exact-payload assembler. The pull-request trigger makes the run observable and retriable.
+# One-use exact-payload assembler. Workflow-file cleanup is performed by the connected maintainer after source assembly.
 name: assemble-anchor-crate-v0.2.0
 
 on:
@@ -63,7 +63,7 @@ jobs:
       - name: Commit reviewable source and remove transport
         run: |
           rm -f transport/anchor-crate-payload.part-*.b64
-          rm -f .github/workflows/assemble-anchor-crate-v0.2.0.yml
+          rm -f .github/workflows/anchor-crate.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
