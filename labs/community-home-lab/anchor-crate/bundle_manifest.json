@@ -42,9 +42,9 @@
       "sha256": "7535abb6e82d1b77a1fff740e7c5ef1022dadd829b7b61ac7833d98a034725d9"
     },
     {
-      "bytes": 3634,
+      "bytes": 4759,
       "path": "labs/community-home-lab/anchor-crate/SCIENCE_PROGRAM.md",
-      "sha256": "e3f52e52659b079e8fec978bf1d0aa872a4a8857de025660dfdac5821d50063f"
+      "sha256": "03771204442850575abd238c214430f0d059d74db4fac9d40a8181f57364f349"
     },
     {
       "bytes": 2724,
@@ -117,9 +117,9 @@
       "sha256": "e1cc19a39b02dbbdb72fe6a8654104eaa95e585a0cb38e79c914334ff6c186b8"
     },
     {
-      "bytes": 28498,
+      "bytes": 28515,
       "path": "tier_runner/anchor_crate_schema.py",
-      "sha256": "bcf48de656748d20231a05182c914cf8eb37222d3bcffe2a9e53082776f20cc1"
+      "sha256": "c6bc797d57ebd6e2451a7815316a12b57e9be83260f8cf68361e8b69412a2f81"
     },
     {
       "bytes": 16768,
@@ -135,6 +135,36 @@
       "bytes": 6804,
       "path": "tier_runner/anchor_crate.py",
       "sha256": "b7981915684520acd33e18237ab6b47e5a1a4f2f97ce1794787a307d7f577c9a"
+    },
+    {
+      "bytes": 150,
+      "path": "ANCHOR4060.cmd",
+      "sha256": "a5fe752eac6741724ecb32dc8498aee46dc262c2f3d44b31b73b53dd199531b4"
+    },
+    {
+      "bytes": 23969,
+      "path": "examples/anchor_crate/ollama_4060_executor.py",
+      "sha256": "0ba90c8ee787665a6bd278949c6ad0d6923472a9587bb9ec67fa058480d6e28c"
+    },
+    {
+      "bytes": 3857,
+      "path": "labs/community-home-lab/anchor-crate/PHYSICAL_4060_SMOKE.md",
+      "sha256": "bdf79a292dd6bbf57d5c563f32eb8bf60208a96031ff2ae00a832c5311262232"
+    },
+    {
+      "bytes": 24792,
+      "path": "scripts/build_anchor_4060_manifest.py",
+      "sha256": "dfdabaf89b973b392eddf687f225aeffd5693eeb2ba866ac30a043648a54d6b2"
+    },
+    {
+      "bytes": 18769,
+      "path": "scripts/run-anchor-crate-4060-smoke.ps1",
+      "sha256": "6a45e65989453058c0630b4e10d37e53dcb4e8d69b0832ae78b8f27074d5ed58"
+    },
+    {
+      "bytes": 20764,
+      "path": "tests/test_anchor_crate_physical.py",
+      "sha256": "858cee85ac2dcc71f87e196a5fb01f8afddfb324bdfaaf1a42945a67cd047df7"
     }
   ],
   "id": "community-home-lab.anchor-crate-bundle-v1",

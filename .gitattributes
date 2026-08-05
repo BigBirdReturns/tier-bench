@@ -49,3 +49,8 @@ tier_runner/pilot_manifest.py text eol=lf
 tier_runner/core.py text eol=lf
 tier_runner/manifest.py text eol=lf
 tier_runner/events.py text eol=lf
+# Physical RTX 4060 Anchor Crate source and launcher bytes.
+ANCHOR4060.cmd -text -whitespace
+scripts/build_anchor_4060_manifest.py -text -whitespace
+scripts/run-anchor-crate-4060-smoke.ps1 -text -whitespace
+tests/test_anchor_crate_physical.py -text -whitespace

@@ -44,6 +44,7 @@ ARCHITECTURES = {
     "arm64",
     "riscv64",
     "cuda-sm86",
+    "cuda-sm89",
     "custom-accelerator",
     "fixture",
 }
