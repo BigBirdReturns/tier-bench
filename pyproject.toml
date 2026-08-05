@@ -26,6 +26,7 @@ tieratlas = "tier_runner.experience_atlas:main"
 tierkimi = "tier_runner.kimi3_observatory:main"
 tierfloor = "tier_runner.model_floor_cli:main"
 tiermenace = "tier_runner.menace_edge:main"
+tierseams = "tier_runner.menace_seams:main"
 
 [build-system]
 requires = ["setuptools>=61"]
