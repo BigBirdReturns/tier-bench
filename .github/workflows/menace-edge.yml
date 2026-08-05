@@ -90,6 +90,15 @@ jobs:
             --coverage experiments/menace_edge/coverage_matrix.json \
             --report /tmp/menace-edge-evidence/seam-census-report.json \
             | tee /tmp/menace-edge-evidence/seam-report-verification.json
+          cmp \
+            experiments/menace_edge/minimal_witness_plan.json \
+            /tmp/menace-edge-evidence/minimal-witness-plan.json
+          cmp \
+            experiments/menace_edge/seam_census_report.json \
+            /tmp/menace-edge-evidence/seam-census-report.json
+          cmp \
+            experiments/menace_edge/SEAM_CENSUS.md \
+            /tmp/menace-edge-evidence/SEAM_CENSUS.md
           cp experiments/menace_edge/donor_piles.json \
             /tmp/menace-edge-evidence/donor-piles.json
           cp experiments/menace_edge/seam_catalog.json \
