@@ -1,0 +1,770 @@
+{
+  "alternative_optima": [],
+  "campaign_id": "menace-edge-01",
+  "coverage": {
+    "covered_negative_witnesses": [
+      "neg.alias-collapse",
+      "neg.decision-context-loss",
+      "neg.duplicate-effect",
+      "neg.hidden-conflict",
+      "neg.hidden-topology",
+      "neg.lost-human-context",
+      "neg.model-as-authority",
+      "neg.narrative-success",
+      "neg.nondeterministic-state",
+      "neg.opaque-selection",
+      "neg.prestige-overwrite",
+      "neg.role-leak",
+      "neg.stale-mandate",
+      "neg.track-discontinuity",
+      "neg.unattributed-input",
+      "neg.unverifiable-archive",
+      "neg.vendor-removal-breaks",
+      "neg.wan-dependency"
+    ],
+    "covered_seams": [
+      "seam.capture",
+      "seam.custody",
+      "seam.degradation",
+      "seam.disposition",
+      "seam.execution",
+      "seam.identity",
+      "seam.interpretation",
+      "seam.outcome",
+      "seam.reattachment",
+      "seam.reconciliation",
+      "seam.resource-placement",
+      "seam.role-aperture",
+      "seam.selection",
+      "seam.shift-handoff",
+      "seam.state-compilation",
+      "seam.substitution",
+      "seam.synchronization",
+      "seam.track-handoff"
+    ],
+    "mandatory_negative_witnesses": [
+      "neg.alias-collapse",
+      "neg.decision-context-loss",
+      "neg.duplicate-effect",
+      "neg.hidden-conflict",
+      "neg.hidden-topology",
+      "neg.lost-human-context",
+      "neg.model-as-authority",
+      "neg.narrative-success",
+      "neg.nondeterministic-state",
+      "neg.opaque-selection",
+      "neg.prestige-overwrite",
+      "neg.role-leak",
+      "neg.stale-mandate",
+      "neg.track-discontinuity",
+      "neg.unattributed-input",
+      "neg.unverifiable-archive",
+      "neg.vendor-removal-breaks",
+      "neg.wan-dependency"
+    ],
+    "mandatory_seams": [
+      "seam.capture",
+      "seam.custody",
+      "seam.degradation",
+      "seam.disposition",
+      "seam.execution",
+      "seam.identity",
+      "seam.interpretation",
+      "seam.outcome",
+      "seam.reattachment",
+      "seam.reconciliation",
+      "seam.resource-placement",
+      "seam.role-aperture",
+      "seam.selection",
+      "seam.shift-handoff",
+      "seam.state-compilation",
+      "seam.substitution",
+      "seam.synchronization",
+      "seam.track-handoff"
+    ],
+    "required_evidence_classes": [
+      "implemented_fixture",
+      "private_reported_trace",
+      "synthetic_control"
+    ],
+    "seam_support": [
+      {
+        "evidence_classes": [
+          "implemented_fixture",
+          "private_reported_trace",
+          "synthetic_control"
+        ],
+        "independence_groups": [
+          "group.cooperative-sensing",
+          "group.dirty-export",
+          "group.mesh-handoff",
+          "group.partition-authority",
+          "group.private-control-trace",
+          "group.readiness-demo"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications",
+          "pile.readiness-sustainment"
+        ],
+        "seam_id": "seam.capture",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.cooperative-handoff",
+          "witness.partitioned-controller",
+          "witness.physical-availability"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture"
+        ],
+        "independence_groups": [
+          "group.attention-broker",
+          "group.chat-radar",
+          "group.dirty-export",
+          "group.readiness-demo",
+          "group.role-apertures",
+          "group.stack-sovereignty",
+          "group.system-fabric",
+          "group.workflow-recovery"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.people-communications",
+          "pile.platform-sovereignty",
+          "pile.readiness-sustainment"
+        ],
+        "seam_id": "seam.custody",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.multi-role-handoff",
+          "witness.physical-availability",
+          "witness.stack-recovery"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture",
+          "private_reported_trace",
+          "synthetic_control"
+        ],
+        "independence_groups": [
+          "group.cooperative-sensing",
+          "group.mesh-handoff",
+          "group.partition-authority",
+          "group.private-control-trace",
+          "group.stack-sovereignty",
+          "group.system-fabric",
+          "group.workflow-recovery"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications",
+          "pile.platform-sovereignty"
+        ],
+        "seam_id": "seam.degradation",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.cooperative-handoff",
+          "witness.partitioned-controller",
+          "witness.stack-recovery"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture",
+          "private_reported_trace"
+        ],
+        "independence_groups": [
+          "group.attention-broker",
+          "group.chat-radar",
+          "group.dirty-export",
+          "group.partition-authority",
+          "group.private-control-trace",
+          "group.readiness-demo",
+          "group.role-apertures"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications",
+          "pile.readiness-sustainment"
+        ],
+        "seam_id": "seam.disposition",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.multi-role-handoff",
+          "witness.partitioned-controller",
+          "witness.physical-availability"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "private_reported_trace"
+        ],
+        "independence_groups": [
+          "group.partition-authority",
+          "group.private-control-trace"
+        ],
+        "minimum_independent_piles": 1,
+        "piles": [
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications"
+        ],
+        "seam_id": "seam.execution",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.partitioned-controller"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture",
+          "synthetic_control"
+        ],
+        "independence_groups": [
+          "group.cooperative-sensing",
+          "group.dirty-export",
+          "group.mesh-handoff",
+          "group.readiness-demo"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications",
+          "pile.readiness-sustainment"
+        ],
+        "seam_id": "seam.identity",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.cooperative-handoff",
+          "witness.physical-availability"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture",
+          "private_reported_trace"
+        ],
+        "independence_groups": [
+          "group.attention-broker",
+          "group.chat-radar",
+          "group.dirty-export",
+          "group.partition-authority",
+          "group.private-control-trace",
+          "group.readiness-demo",
+          "group.role-apertures"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications",
+          "pile.readiness-sustainment"
+        ],
+        "seam_id": "seam.interpretation",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.multi-role-handoff",
+          "witness.partitioned-controller",
+          "witness.physical-availability"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture",
+          "private_reported_trace",
+          "synthetic_control"
+        ],
+        "independence_groups": [
+          "group.cooperative-sensing",
+          "group.dirty-export",
+          "group.mesh-handoff",
+          "group.partition-authority",
+          "group.private-control-trace",
+          "group.readiness-demo"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications",
+          "pile.readiness-sustainment"
+        ],
+        "seam_id": "seam.outcome",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.cooperative-handoff",
+          "witness.partitioned-controller",
+          "witness.physical-availability"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture"
+        ],
+        "independence_groups": [
+          "group.attention-broker",
+          "group.chat-radar",
+          "group.role-apertures",
+          "group.stack-sovereignty",
+          "group.system-fabric",
+          "group.workflow-recovery"
+        ],
+        "minimum_independent_piles": 1,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.people-communications",
+          "pile.platform-sovereignty"
+        ],
+        "seam_id": "seam.reattachment",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.multi-role-handoff",
+          "witness.stack-recovery"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "private_reported_trace"
+        ],
+        "independence_groups": [
+          "group.partition-authority",
+          "group.private-control-trace"
+        ],
+        "minimum_independent_piles": 1,
+        "piles": [
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications"
+        ],
+        "seam_id": "seam.reconciliation",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.partitioned-controller"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture"
+        ],
+        "independence_groups": [
+          "group.stack-sovereignty",
+          "group.system-fabric",
+          "group.workflow-recovery"
+        ],
+        "minimum_independent_piles": 1,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.platform-sovereignty"
+        ],
+        "seam_id": "seam.resource-placement",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.stack-recovery"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture"
+        ],
+        "independence_groups": [
+          "group.attention-broker",
+          "group.chat-radar",
+          "group.role-apertures"
+        ],
+        "minimum_independent_piles": 1,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.people-communications"
+        ],
+        "seam_id": "seam.role-aperture",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.multi-role-handoff"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture"
+        ],
+        "independence_groups": [
+          "group.attention-broker",
+          "group.chat-radar",
+          "group.dirty-export",
+          "group.readiness-demo",
+          "group.role-apertures"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.people-communications",
+          "pile.readiness-sustainment"
+        ],
+        "seam_id": "seam.selection",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.multi-role-handoff",
+          "witness.physical-availability"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture"
+        ],
+        "independence_groups": [
+          "group.attention-broker",
+          "group.chat-radar",
+          "group.role-apertures"
+        ],
+        "minimum_independent_piles": 1,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.people-communications"
+        ],
+        "seam_id": "seam.shift-handoff",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.multi-role-handoff"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture",
+          "private_reported_trace"
+        ],
+        "independence_groups": [
+          "group.dirty-export",
+          "group.partition-authority",
+          "group.private-control-trace",
+          "group.readiness-demo",
+          "group.stack-sovereignty",
+          "group.system-fabric",
+          "group.workflow-recovery"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications",
+          "pile.platform-sovereignty",
+          "pile.readiness-sustainment"
+        ],
+        "seam_id": "seam.state-compilation",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.partitioned-controller",
+          "witness.physical-availability",
+          "witness.stack-recovery"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "implemented_fixture"
+        ],
+        "independence_groups": [
+          "group.stack-sovereignty",
+          "group.system-fabric",
+          "group.workflow-recovery"
+        ],
+        "minimum_independent_piles": 1,
+        "piles": [
+          "pile.circulation-orchestration",
+          "pile.evidence-qualification",
+          "pile.platform-sovereignty"
+        ],
+        "seam_id": "seam.substitution",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.stack-recovery"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "private_reported_trace",
+          "synthetic_control"
+        ],
+        "independence_groups": [
+          "group.cooperative-sensing",
+          "group.mesh-handoff",
+          "group.partition-authority",
+          "group.private-control-trace"
+        ],
+        "minimum_independent_piles": 2,
+        "piles": [
+          "pile.evidence-qualification",
+          "pile.local-control",
+          "pile.people-communications"
+        ],
+        "seam_id": "seam.synchronization",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.cooperative-handoff",
+          "witness.partitioned-controller"
+        ]
+      },
+      {
+        "evidence_classes": [
+          "synthetic_control"
+        ],
+        "independence_groups": [
+          "group.cooperative-sensing",
+          "group.mesh-handoff"
+        ],
+        "minimum_independent_piles": 1,
+        "piles": [
+          "pile.local-control",
+          "pile.people-communications"
+        ],
+        "seam_id": "seam.track-handoff",
+        "support_satisfied": true,
+        "witnesses": [
+          "witness.cooperative-handoff"
+        ]
+      }
+    ],
+    "selected_evidence_classes": [
+      "implemented_fixture",
+      "private_reported_trace",
+      "synthetic_control"
+    ],
+    "uncovered_negative_witnesses": [],
+    "uncovered_seams": []
+  },
+  "coverage_matrix_sha256": "1642d826f8ca2bef4befc0048108716c525411446bfa9c94ae29363362929a1f",
+  "donor_piles_sha256": "565965f84d966cf9f4ca0da6c8488c0ef4c41ed6a6f8463d397728bae4cbd1c7",
+  "objective": {
+    "method": "exact_cost_weighted_set_cover",
+    "subsets_evaluated": 255,
+    "tie_break": "cost_then_count_then_lexicographic_ids",
+    "total_cost_units": 31,
+    "witness_count": 5
+  },
+  "plan_id": "menaceseamplan1_c87ac8f53e8938b4c52f45b2fe9d58e06b473f27aa24319cb4e0beb09b4e9d79",
+  "production_claim": false,
+  "promotion_authorized": false,
+  "schema": "tier-bench/menace-edge-minimal-witness-plan@1",
+  "seam_catalog_sha256": "e51f4c693793467398e407ba6126560a24dce7466291c937da19a6ff5e14fd9c",
+  "selected_witnesses": [
+    {
+      "connectivity_profiles": [
+        "C0",
+        "C1",
+        "C2"
+      ],
+      "cost_units": 6,
+      "covers_negative_witnesses": [
+        "neg.alias-collapse",
+        "neg.prestige-overwrite",
+        "neg.track-discontinuity",
+        "neg.wan-dependency"
+      ],
+      "covers_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.identity",
+        "seam.outcome",
+        "seam.synchronization",
+        "seam.track-handoff"
+      ],
+      "donor_piles": [
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "evidence_class": "synthetic_control",
+      "hardware_required": false,
+      "id": "witness.cooperative-handoff",
+      "independence_groups": [
+        "group.cooperative-sensing",
+        "group.mesh-handoff"
+      ],
+      "state": "synthetic_control",
+      "title": "Cooperative sensor and controller track handoff"
+    },
+    {
+      "connectivity_profiles": [
+        "C0",
+        "C1",
+        "C3"
+      ],
+      "cost_units": 5,
+      "covers_negative_witnesses": [
+        "neg.decision-context-loss",
+        "neg.lost-human-context",
+        "neg.model-as-authority",
+        "neg.opaque-selection",
+        "neg.role-leak",
+        "neg.stale-mandate",
+        "neg.unverifiable-archive"
+      ],
+      "covers_seams": [
+        "seam.custody",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.reattachment",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.shift-handoff"
+      ],
+      "donor_piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.people-communications"
+      ],
+      "evidence_class": "implemented_fixture",
+      "hardware_required": false,
+      "id": "witness.multi-role-handoff",
+      "independence_groups": [
+        "group.attention-broker",
+        "group.chat-radar",
+        "group.role-apertures"
+      ],
+      "state": "implemented",
+      "title": "Multi-role decision queue, reattachment, and shift handoff"
+    },
+    {
+      "connectivity_profiles": [
+        "C0",
+        "C1",
+        "C2",
+        "C3"
+      ],
+      "cost_units": 8,
+      "covers_negative_witnesses": [
+        "neg.duplicate-effect",
+        "neg.hidden-conflict",
+        "neg.model-as-authority",
+        "neg.narrative-success",
+        "neg.prestige-overwrite",
+        "neg.stale-mandate",
+        "neg.wan-dependency"
+      ],
+      "covers_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.execution",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reconciliation",
+        "seam.state-compilation",
+        "seam.synchronization"
+      ],
+      "donor_piles": [
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "evidence_class": "private_reported_trace",
+      "hardware_required": false,
+      "id": "witness.partitioned-controller",
+      "independence_groups": [
+        "group.partition-authority",
+        "group.private-control-trace"
+      ],
+      "state": "shape_available",
+      "title": "Partitioned controller supervision and reconciliation"
+    },
+    {
+      "connectivity_profiles": [
+        "C0",
+        "C3"
+      ],
+      "cost_units": 5,
+      "covers_negative_witnesses": [
+        "neg.alias-collapse",
+        "neg.narrative-success",
+        "neg.nondeterministic-state",
+        "neg.opaque-selection",
+        "neg.unattributed-input",
+        "neg.unverifiable-archive"
+      ],
+      "covers_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.selection",
+        "seam.state-compilation"
+      ],
+      "donor_piles": [
+        "pile.evidence-qualification",
+        "pile.readiness-sustainment"
+      ],
+      "evidence_class": "implemented_fixture",
+      "hardware_required": false,
+      "id": "witness.physical-availability",
+      "independence_groups": [
+        "group.dirty-export",
+        "group.readiness-demo"
+      ],
+      "state": "implemented",
+      "title": "Inventory, maintenance, due-in, and physical availability"
+    },
+    {
+      "connectivity_profiles": [
+        "C0",
+        "C1",
+        "C3"
+      ],
+      "cost_units": 7,
+      "covers_negative_witnesses": [
+        "neg.hidden-topology",
+        "neg.lost-human-context",
+        "neg.nondeterministic-state",
+        "neg.unverifiable-archive",
+        "neg.vendor-removal-breaks",
+        "neg.wan-dependency"
+      ],
+      "covers_seams": [
+        "seam.custody",
+        "seam.degradation",
+        "seam.reattachment",
+        "seam.resource-placement",
+        "seam.state-compilation",
+        "seam.substitution"
+      ],
+      "donor_piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.platform-sovereignty"
+      ],
+      "evidence_class": "implemented_fixture",
+      "hardware_required": true,
+      "id": "witness.stack-recovery",
+      "independence_groups": [
+        "group.stack-sovereignty",
+        "group.system-fabric",
+        "group.workflow-recovery"
+      ],
+      "state": "implemented",
+      "title": "GPU, model, adapter, head, and vendor substitution"
+    }
+  ],
+  "unselected_witnesses": [
+    "witness.offline-verified-query",
+    "witness.raw-model-endpoint",
+    "witness.saleops-cephalopod"
+  ]
+}
