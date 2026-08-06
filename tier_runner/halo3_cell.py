@@ -117,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 args.out_markdown.parent.mkdir(parents=True, exist_ok=True)
                 temporary = args.out_markdown.with_suffix(args.out_markdown.suffix + ".tmp")
-                temporary.write_text(markdown, encoding="utf-8")
+                temporary.write_bytes(markdown.encode("utf-8"))
                 temporary.replace(args.out_markdown)
             return 0
 
