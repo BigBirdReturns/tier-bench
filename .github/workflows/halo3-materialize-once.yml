@@ -67,6 +67,9 @@ jobs:
           set -euo pipefail
           WORK="$RUNNER_TEMP/halo3-materialize/extract"
           while IFS= read -r path; do
+            if [[ "$path" == ".github/workflows/halo3-cell-zero.yml" ]]; then
+              continue
+            fi
             mkdir -p "$(dirname "$path")"
             cp "$WORK/$path" "$path"
           done < <(awk '{print $2}' .github/halo3-carrier/TARGET_SHA256SUMS)
@@ -125,9 +128,8 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf .github/halo3-carrier
-          rm -f .github/workflows/halo3-materialize-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Build the HALO3 Cell Zero proof floor"
+          git commit -m "Build the HALO3 Cell Zero source floor"
           git push origin HEAD:feature/halo3-cell-zero-v0.1.0
