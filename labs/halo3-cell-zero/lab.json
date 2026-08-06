@@ -1,0 +1,926 @@
+{
+  "authority": {
+    "controller_owns": [
+      "acceptance",
+      "artifact-hashing",
+      "fault-admission",
+      "hidden-grading",
+      "model-identity-admission",
+      "physical-outcome-reconciliation",
+      "plan-compilation"
+    ],
+    "forbidden": [
+      "fixture-as-physical-evidence",
+      "implicit-memory-pooling",
+      "model-self-acceptance",
+      "silent-state-rewrite",
+      "undeclared-wan-dependency"
+    ],
+    "human_owns": [
+      "bind-event",
+      "custody-transfer",
+      "mission-authorization",
+      "reconciliation-disposition",
+      "role-handoff"
+    ],
+    "model_may": [
+      "bounded-candidate-output",
+      "candidate-strategy",
+      "orchestration-proposal",
+      "source-bound-summary"
+    ]
+  },
+  "claim": "A two-lane 3090 foundry, a constrained 4060 HALO3 node, heterogeneous personal nodes, an unfamiliar peripheral, a passive physical continuity floor, and an independent evidence node can establish the marginal value, degradation law, substitution behavior, and complete replayability of civilization-to-cell capability while Fable and Kimi3 are fingerprinted under one hidden-graded contract.",
+  "claims": [
+    {
+      "acceptance": "The same task constitution deterministically yields one bounded cartridge set with explicit omissions, fallbacks, authority, and resource budgets.",
+      "category": "preparation",
+      "id": "claim-civilization-cartridge-compile",
+      "minimal_witnesses": [
+        "node:foundry-3090-a",
+        "node:foundry-3090-b",
+        "model:deterministic-control",
+        "artifact:task-constitution"
+      ],
+      "negative_control": "Remove dependency identities or permit a foundry model to redefine acceptance after task disclosure.",
+      "proof_stage": "stage-000-foundry-compile",
+      "required_receipts": [
+        "receipt-cartridge-manifest",
+        "receipt-dependency-graph",
+        "receipt-resource-budget",
+        "receipt-validator-lock"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:foundry-3090-b",
+      "title": "Civilization compiles a bounded mission loadout before field execution"
+    },
+    {
+      "acceptance": "Every arm runs the same frozen family and condition cells, retains its proper identity mode, and records outcome, cost, attention, degradation, and escaped-defect evidence without aggregate ranking.",
+      "category": "model",
+      "id": "claim-comparable-model-fingerprints",
+      "minimal_witnesses": [
+        "model:fable",
+        "model:kimi3",
+        "model:deterministic-control",
+        "node:evidence-node"
+      ],
+      "negative_control": "Erase the model identity envelope, expose the hidden grader, or average incompatible task families into one score.",
+      "proof_stage": "stage-010-model-fingerprint",
+      "required_receipts": [
+        "receipt-model-identity",
+        "receipt-hidden-grade",
+        "receipt-cost-runtime",
+        "receipt-degradation-treatment"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:evidence-node",
+      "title": "Fable, Kimi3, and the deterministic control produce comparable operational fingerprints"
+    },
+    {
+      "acceptance": "The personal node completes one bounded local action, the independent witness observes the expected result, and loss of HALO3 changes nothing.",
+      "category": "cell",
+      "id": "claim-local-head-autonomy",
+      "minimal_witnesses": [
+        "node:head-a",
+        "node:foreign-a",
+        "node:evidence-node",
+        "human:operator"
+      ],
+      "negative_control": "Replace the observed physical outcome with a model statement or successful process exit.",
+      "proof_stage": "stage-020-single-node",
+      "required_receipts": [
+        "receipt-action-intent",
+        "receipt-human-authority",
+        "receipt-physical-outcome",
+        "receipt-reconciliation"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:head-a",
+      "title": "One personal node can sense, decide within authority, and verify a harmless local effect without HALO3"
+    },
+    {
+      "acceptance": "The nodes share one attributed state frontier, preserve role-specific apertures, and continue with an explicit capability reduction when one head is removed.",
+      "category": "cell",
+      "id": "claim-cell-union",
+      "minimal_witnesses": [
+        "node:head-a",
+        "node:head-b",
+        "node:head-c",
+        "node:evidence-node",
+        "artifact:shared-state-contract"
+      ],
+      "negative_control": "Let one role projection rewrite shared truth or describe separate accelerators as pooled memory.",
+      "proof_stage": "stage-030-cell-union",
+      "required_receipts": [
+        "receipt-shared-frontier",
+        "receipt-role-projection",
+        "receipt-acknowledgment",
+        "receipt-resource-placement"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:head-c",
+      "title": "Three heterogeneous personal nodes form one coherent cell without sharing all data or memory"
+    },
+    {
+      "acceptance": "Adding HALO3 improves at least one accepted-work, attention, translation, recovery, or external-byte dimension with no consequential-miss increase, and removing it leaves the survival floor intact.",
+      "category": "cell",
+      "id": "claim-halo3-marginal-advantage",
+      "minimal_witnesses": [
+        "node:halo3-4060",
+        "node:head-a",
+        "node:head-b",
+        "node:head-c",
+        "node:evidence-node",
+        "model:kimi3"
+      ],
+      "negative_control": "Count fluent output, GPU utilization, or lower latency as advantage without a verified change in human decision or physical outcome.",
+      "proof_stage": "stage-040-halo3-enhancement",
+      "required_receipts": [
+        "receipt-matched-baseline",
+        "receipt-attention-delta",
+        "receipt-energy-delta",
+        "receipt-accepted-outcome-delta"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:halo3-4060",
+      "title": "The constrained 4060 HALO3 node adds measurable cell advantage without owning survival"
+    },
+    {
+      "acceptance": "The operator authorizes one mission-scoped adapter, a reversible challenge proves the mapping, and disconnect or lease expiry removes the capability without corrupting shared state.",
+      "category": "integration",
+      "id": "claim-human-scoped-foreign-bind",
+      "minimal_witnesses": [
+        "node:head-b",
+        "node:foreign-a",
+        "node:evidence-node",
+        "human:operator",
+        "artifact:adapter-contract"
+      ],
+      "negative_control": "Infer permanent trust from proximity, accept an unobserved action, or let the model grant its own device authority.",
+      "proof_stage": "stage-050-human-bind",
+      "required_receipts": [
+        "receipt-bind-event",
+        "receipt-discovered-interface",
+        "receipt-reversible-challenge",
+        "receipt-scoped-lease"
+      ],
+      "state": "declared",
+      "subtraction_target": "human:operator",
+      "title": "A named human can bind an unfamiliar system into the cell with bounded reversible authority"
+    },
+    {
+      "acceptance": "Each island retains identity, accepted state, local authority, evidence, and basic human access while remote facts become visibly stale or unavailable.",
+      "category": "survival",
+      "id": "claim-partition-survival",
+      "minimal_witnesses": [
+        "node:halo3-4060",
+        "node:head-a",
+        "node:head-b",
+        "node:head-c",
+        "node:evidence-node",
+        "artifact:append-only-journal"
+      ],
+      "negative_control": "Allow the best-connected branch to overwrite the other branch or hide synchronization age.",
+      "proof_stage": "stage-060-partition",
+      "required_receipts": [
+        "receipt-partition-frontier",
+        "receipt-subcell-capability",
+        "receipt-staleness",
+        "receipt-branch-custody"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:head-b",
+      "title": "A partitioned cell continues as smaller valid subcells without silent authority or history loss"
+    },
+    {
+      "acceptance": "Forced HALO3 loss removes only declared synthesis and attention breadth, while the cell retains accepted state, authority, evidence, local communication, and resumable tasks.",
+      "category": "survival",
+      "id": "claim-halo3-removability",
+      "minimal_witnesses": [
+        "node:halo3-4060",
+        "node:head-a",
+        "node:head-b",
+        "node:head-c",
+        "node:evidence-node",
+        "artifact:sealed-cell-anchor"
+      ],
+      "negative_control": "Store the only current state, authority, or reattachment packet inside the HALO3 model process.",
+      "proof_stage": "stage-070-halo3-removal",
+      "required_receipts": [
+        "receipt-anchor-before",
+        "receipt-power-loss",
+        "receipt-retained-floor",
+        "receipt-capability-loss"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:halo3-4060",
+      "title": "HALO3 is an accelerator that can be powered off without destroying mission state or authority"
+    },
+    {
+      "acceptance": "The successor rehydrates the exact pending decision, evidence, mandate, and next actions while the missing node remains absent.",
+      "category": "survival",
+      "id": "claim-head-succession",
+      "minimal_witnesses": [
+        "node:head-a",
+        "node:head-b",
+        "node:evidence-node",
+        "human:operator",
+        "artifact:role-handoff"
+      ],
+      "negative_control": "Reconstruct the task from transcript memory or transfer role authority without a named handoff.",
+      "proof_stage": "stage-080-head-loss",
+      "required_receipts": [
+        "receipt-head-loss",
+        "receipt-role-handoff",
+        "receipt-successor-identity",
+        "receipt-custody-transfer"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:head-a",
+      "title": "A lost personal node can be succeeded without inventing a new mission identity or losing custody"
+    },
+    {
+      "acceptance": "With active mesh and HALO3 absent, the operator can recover the mission identity, rendezvous or next action, and the path to richer evidence from the passive floor.",
+      "category": "continuity",
+      "id": "claim-passive-continuity",
+      "minimal_witnesses": [
+        "node:head-c",
+        "node:passive-floor",
+        "node:evidence-node",
+        "human:operator",
+        "passive:floor"
+      ],
+      "negative_control": "Treat a printed or optical mark as current state without identity, epoch, or human interpretation rules.",
+      "proof_stage": "stage-090-passive-sync",
+      "required_receipts": [
+        "receipt-passive-encoding",
+        "receipt-physical-placement",
+        "receipt-human-decode",
+        "receipt-reattachment"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:passive-floor",
+      "title": "A passive physical floor preserves minimum viable legibility when active digital bearers disappear"
+    },
+    {
+      "acceptance": "Both branches remain inspectable, conflicts and staleness are explicit, and only a named authority records the reconciliation disposition.",
+      "category": "continuity",
+      "id": "claim-branch-preserving-reconciliation",
+      "minimal_witnesses": [
+        "node:head-a",
+        "node:head-b",
+        "node:evidence-node",
+        "human:authority",
+        "artifact:branch-pair"
+      ],
+      "negative_control": "Choose the newest, most prestigious, or most connected branch automatically.",
+      "proof_stage": "stage-100-reconciliation",
+      "required_receipts": [
+        "receipt-branch-a",
+        "receipt-branch-b",
+        "receipt-conflict",
+        "receipt-human-disposition"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:evidence-node",
+      "title": "Reconnection preserves divergent histories and requires explicit disposition of conflict"
+    },
+    {
+      "acceptance": "A clean verifier reconstructs the plan, every accepted and rejected claim, every cue and action, every fault and recovery, and the final proof matrix from content-addressed artifacts.",
+      "category": "evidence",
+      "id": "claim-complete-replay",
+      "minimal_witnesses": [
+        "node:evidence-node",
+        "model:deterministic-control",
+        "artifact:complete-receipt-set",
+        "artifact:hidden-graders"
+      ],
+      "negative_control": "Retain dashboards and logs while losing exact bytes, validators, identity, or outcome receipts.",
+      "proof_stage": "stage-110-replay",
+      "required_receipts": [
+        "receipt-source-manifest",
+        "receipt-model-identities",
+        "receipt-action-player",
+        "receipt-fault-timeline",
+        "receipt-proof-matrix"
+      ],
+      "state": "declared",
+      "subtraction_target": "node:evidence-node",
+      "title": "The entire campaign can be reconstructed without trusting the original model session or operator narration"
+    }
+  ],
+  "faults": [
+    {
+      "class": "network",
+      "expected_loss": [
+        "remote-model-access",
+        "remote-report-freshness",
+        "broad-dissemination"
+      ],
+      "id": "fault-wan-loss",
+      "recovery": "Queue attributed deltas locally and reconcile after the route returns.",
+      "retained_floor": [
+        "identity",
+        "accepted-state",
+        "local-authority",
+        "evidence",
+        "human-interface"
+      ],
+      "target": "node:halo3-4060",
+      "title": "Remove WAN and all reachback routes"
+    },
+    {
+      "class": "power",
+      "expected_loss": [
+        "attention-compilation",
+        "shared-heavy-synthesis",
+        "cell-gateway-convenience"
+      ],
+      "id": "fault-halo3-power-loss",
+      "recovery": "Resume from the last sealed cell anchor under a fresh HALO3 treatment.",
+      "retained_floor": [
+        "identity",
+        "accepted-state",
+        "local-authority",
+        "evidence",
+        "head-to-head-continuity"
+      ],
+      "target": "node:halo3-4060",
+      "title": "Power off the HALO3 4060 process and device path"
+    },
+    {
+      "class": "power",
+      "expected_loss": [
+        "leader-display",
+        "head-a-local-sensors",
+        "head-a-local-actions"
+      ],
+      "id": "fault-head-a-power-loss",
+      "recovery": "Transfer the named role and custody to a qualified successor through an explicit handoff.",
+      "retained_floor": [
+        "mission-identity",
+        "shared-state",
+        "evidence",
+        "pending-decision"
+      ],
+      "target": "node:head-a",
+      "title": "Remove the current leader head"
+    },
+    {
+      "class": "process",
+      "expected_loss": [
+        "kimi3-candidate-generation",
+        "kimi3-critique"
+      ],
+      "id": "fault-model-process-loss",
+      "recovery": "Continue from accepted artifacts or reroute a fresh bounded crate to another admitted supplier.",
+      "retained_floor": [
+        "task-constitution",
+        "accepted-artifacts",
+        "hidden-grader",
+        "deterministic-control"
+      ],
+      "target": "model:kimi3",
+      "title": "Kill the Kimi3 runtime after planning"
+    },
+    {
+      "class": "state",
+      "expected_loss": [
+        "single-current-branch"
+      ],
+      "id": "fault-stale-shared-state",
+      "recovery": "Preserve both branches and require explicit reconciliation.",
+      "retained_floor": [
+        "source-identity",
+        "branch-history",
+        "freshness",
+        "human-disposition-path"
+      ],
+      "target": "artifact:shared-state-contract",
+      "title": "Inject a delayed and contradictory shared-state observation"
+    },
+    {
+      "class": "device",
+      "expected_loss": [
+        "foreign-observation",
+        "foreign-actuation"
+      ],
+      "id": "fault-foreign-cable-loss",
+      "recovery": "Expire the live capability and require a new bind and reversible challenge after reconnect.",
+      "retained_floor": [
+        "adapter-identity",
+        "last-observed-state",
+        "lease-state",
+        "safe-local-fallback"
+      ],
+      "target": "node:foreign-a",
+      "title": "Disconnect the unfamiliar peripheral during use"
+    },
+    {
+      "class": "cartridge",
+      "expected_loss": [
+        "cartridge-admission"
+      ],
+      "id": "fault-cartridge-corruption",
+      "recovery": "Reject the candidate cartridge and restore the last verified content identity.",
+      "retained_floor": [
+        "prior-accepted-cartridge",
+        "source-manifest",
+        "validator-lock",
+        "rollback"
+      ],
+      "target": "artifact:mission-cartridge",
+      "title": "Mutate or truncate the mission cartridge"
+    },
+    {
+      "class": "human",
+      "expected_loss": [
+        "authorized-bind",
+        "authority-disposition",
+        "custody-transfer"
+      ],
+      "id": "fault-human-ack-loss",
+      "recovery": "Remain held until a current named human supplies the required event.",
+      "retained_floor": [
+        "hold",
+        "safe-state",
+        "pending-decision",
+        "evidence"
+      ],
+      "target": "human:operator",
+      "title": "Remove the required human acknowledgment"
+    }
+  ],
+  "id": "halo3-cell-zero",
+  "models": [
+    {
+      "authority_ceiling": "candidate_only",
+      "id": "fable",
+      "identity_mode": "provider_observational",
+      "required_identity_fields": [
+        "billing-surface",
+        "endpoint",
+        "latency-ms",
+        "observed-cost-usd",
+        "provider-model",
+        "provider-request-id",
+        "response-sha256",
+        "system-prompt-sha256",
+        "tool-schema-sha256"
+      ],
+      "roles": [
+        "planner",
+        "solver",
+        "critic"
+      ],
+      "surface": "subscription or provider surface with exact request and response envelope capture",
+      "title": "Fable provider-observed frontier model"
+    },
+    {
+      "authority_ceiling": "candidate_only",
+      "id": "kimi3",
+      "identity_mode": "exact_open_weight",
+      "required_identity_fields": [
+        "config-sha256",
+        "hardware-binding",
+        "model-revision",
+        "prompt-template-sha256",
+        "quantization",
+        "runtime-commit",
+        "shard-sha256s",
+        "tokenizer-sha256"
+      ],
+      "roles": [
+        "planner",
+        "solver",
+        "critic"
+      ],
+      "surface": "K3 Observatory exact model, runtime, quantization, hardware, and probe treatment",
+      "title": "Kimi3 exact open-weight model treatment"
+    },
+    {
+      "authority_ceiling": "candidate_only",
+      "id": "deterministic-control",
+      "identity_mode": "deterministic_control",
+      "required_identity_fields": [
+        "controller-sha256",
+        "source-commit",
+        "task-sha256",
+        "validator-sha256"
+      ],
+      "roles": [
+        "control"
+      ],
+      "surface": "exact source, task, validator, and controller bytes with no stochastic model call",
+      "title": "Deterministic controller and no-model control"
+    }
+  ],
+  "nodes": [
+    {
+      "class": "foundry",
+      "failure_domain": "declared-heavy-a",
+      "host_id": "heavy-host-a",
+      "id": "foundry-3090-a",
+      "physical_qualification": false,
+      "receipt_refs": [],
+      "roles": [
+        "exact-model-custody",
+        "deep-probe",
+        "candidate-generation"
+      ],
+      "state": "declared",
+      "survival_required": false,
+      "title": "Foundry lane A, Kimi3 observatory and exact-model work"
+    },
+    {
+      "class": "foundry",
+      "failure_domain": "declared-heavy-b",
+      "host_id": "heavy-host-b",
+      "id": "foundry-3090-b",
+      "physical_qualification": false,
+      "receipt_refs": [],
+      "roles": [
+        "cartridge-compilation",
+        "simulation",
+        "independent-verification"
+      ],
+      "state": "declared",
+      "survival_required": false,
+      "title": "Foundry lane B, cartridge compilation and alternate treatments"
+    },
+    {
+      "class": "halo3",
+      "failure_domain": "declared-control-host",
+      "host_id": "control-host",
+      "id": "halo3-4060",
+      "physical_qualification": false,
+      "receipt_refs": [],
+      "roles": [
+        "shared-state-reducer",
+        "attention-compiler",
+        "cell-gateway",
+        "local-candidate-runtime"
+      ],
+      "state": "declared",
+      "survival_required": false,
+      "title": "Constrained HALO3 squad-node candidate"
+    },
+    {
+      "class": "evidence",
+      "failure_domain": "declared-evidence-head",
+      "host_id": "network-head",
+      "id": "evidence-node",
+      "physical_qualification": false,
+      "receipt_refs": [],
+      "roles": [
+        "hidden-grader",
+        "fault-injector",
+        "power-observer",
+        "receipt-custody",
+        "replay"
+      ],
+      "state": "declared",
+      "survival_required": true,
+      "title": "Out-of-band range control and evidence witness"
+    },
+    {
+      "class": "head",
+      "failure_domain": "declared-head-a",
+      "host_id": "operator-head-a",
+      "id": "head-a",
+      "physical_qualification": false,
+      "receipt_refs": [],
+      "roles": [
+        "leader-aperture",
+        "local-sensor",
+        "local-action"
+      ],
+      "state": "declared",
+      "survival_required": true,
+      "title": "Personal node A, Windows operator head"
+    },
+    {
+      "class": "head",
+      "failure_domain": "declared-head-b",
+      "host_id": "operator-head-b",
+      "id": "head-b",
+      "physical_qualification": false,
+      "receipt_refs": [],
+      "roles": [
+        "specialist-aperture",
+        "foreign-system-bind",
+        "local-action"
+      ],
+      "state": "declared",
+      "survival_required": true,
+      "title": "Personal node B, Android or Linux specialist head"
+    },
+    {
+      "class": "head",
+      "failure_domain": "declared-head-c",
+      "host_id": "operator-head-c",
+      "id": "head-c",
+      "physical_qualification": false,
+      "receipt_refs": [],
+      "roles": [
+        "scout-aperture",
+        "passive-sync",
+        "local-observation"
+      ],
+      "state": "declared",
+      "survival_required": true,
+      "title": "Personal node C, low-bandwidth continuity head"
+    },
+    {
+      "class": "foreign",
+      "failure_domain": "declared-foreign-a",
+      "host_id": "foreign-device-a",
+      "id": "foreign-a",
+      "physical_qualification": false,
+      "receipt_refs": [],
+      "roles": [
+        "unknown-schema",
+        "sensor-or-actuator",
+        "reversible-challenge"
+      ],
+      "state": "declared",
+      "survival_required": false,
+      "title": "Deliberately unfamiliar peripheral and adapter target"
+    },
+    {
+      "class": "passive",
+      "failure_domain": "passive-physical",
+      "host_id": "physical-environment",
+      "id": "passive-floor",
+      "physical_qualification": false,
+      "receipt_refs": [],
+      "roles": [
+        "radio-silent-sync",
+        "manual-reattachment",
+        "minimum-legibility"
+      ],
+      "state": "declared",
+      "survival_required": true,
+      "title": "Paper, glyph, landmark, optical, NFC, and human codebook floor"
+    }
+  ],
+  "notes": "The two 3090 lanes are separate logical treatments. Physical failure-domain independence remains unclaimed until the estate census proves distinct hosts, power paths, and storage custody.",
+  "physical_boundary": "The topology, stages, faults, and proof predicates are declared and provider-free qualified only after the accompanying deterministic tests pass. No host, GPU, model runtime, sensor, peripheral, energy measurement, radio-loss condition, human-use outcome, or physical action is qualified until exact target-machine observations and independent outcome receipts populate the generated templates.",
+  "production_claim": false,
+  "promotion_authorized": false,
+  "required_metrics": [
+    "accepted-products",
+    "consequential-misses",
+    "elapsed-ms",
+    "external-bytes-in",
+    "gpu-energy-mwh",
+    "human-active-ms",
+    "manual-translations",
+    "operator-interruptions",
+    "recovery-ms",
+    "role-seconds-served",
+    "time-to-first-useful-ms",
+    "wall-energy-mwh"
+  ],
+  "schema": "tier-bench/halo3-cell-zero-lab@1",
+  "stages": [
+    {
+      "acceptance": "A clean deterministic replay produces the same bounded cartridge identities and refuses the corrupted treatment.",
+      "claim_ids": [
+        "claim-civilization-cartridge-compile"
+      ],
+      "fault_ids": [
+        "fault-cartridge-corruption"
+      ],
+      "id": "stage-000-foundry-compile",
+      "intervention": "Compile the task constitution into mission, role, environment, equipment, integration, contingency, and attention cartridges.",
+      "kind": "foundry",
+      "required_nodes": [
+        "foundry-3090-a",
+        "foundry-3090-b",
+        "evidence-node"
+      ],
+      "sequence": 0,
+      "title": "Foundry compile"
+    },
+    {
+      "acceptance": "Every cell remains identity-bound, hidden-graded, costed, and free of model-owned acceptance.",
+      "claim_ids": [
+        "claim-comparable-model-fingerprints"
+      ],
+      "fault_ids": [
+        "fault-model-process-loss"
+      ],
+      "id": "stage-010-model-fingerprint",
+      "intervention": "Run Fable, Kimi3, and the deterministic control across every frozen family under baseline and degraded conditions.",
+      "kind": "fingerprint",
+      "required_nodes": [
+        "foundry-3090-a",
+        "foundry-3090-b",
+        "evidence-node"
+      ],
+      "sequence": 1,
+      "title": "Model fingerprint"
+    },
+    {
+      "acceptance": "The independent witness observes the expected result and reconciles it to the exact authorized intent.",
+      "claim_ids": [
+        "claim-local-head-autonomy"
+      ],
+      "fault_ids": [],
+      "id": "stage-020-single-node",
+      "intervention": "Run one harmless sensing and action loop on a personal node without HALO3.",
+      "kind": "physical",
+      "required_nodes": [
+        "head-a",
+        "foreign-a",
+        "evidence-node"
+      ],
+      "sequence": 2,
+      "title": "Single personal node"
+    },
+    {
+      "acceptance": "The cell shares state without implicit memory pooling, role leakage, or one head becoming truth authority.",
+      "claim_ids": [
+        "claim-cell-union"
+      ],
+      "fault_ids": [],
+      "id": "stage-030-cell-union",
+      "intervention": "Join three heterogeneous personal nodes into one attributed shared frontier with role-specific projections.",
+      "kind": "physical",
+      "required_nodes": [
+        "head-a",
+        "head-b",
+        "head-c",
+        "evidence-node"
+      ],
+      "sequence": 3,
+      "title": "Cell union"
+    },
+    {
+      "acceptance": "The matched vector improves on accepted work, attention, translation, recovery, or external bytes with no consequential-miss increase.",
+      "claim_ids": [
+        "claim-halo3-marginal-advantage"
+      ],
+      "fault_ids": [],
+      "id": "stage-040-halo3-enhancement",
+      "intervention": "Add the constrained 4060 HALO3 node and compare the same task against the cell-only baseline.",
+      "kind": "physical",
+      "required_nodes": [
+        "halo3-4060",
+        "head-a",
+        "head-b",
+        "head-c",
+        "evidence-node"
+      ],
+      "sequence": 4,
+      "title": "HALO3 enhancement"
+    },
+    {
+      "acceptance": "The adapter works only inside the declared scope, disconnect expires capability, and no model mints authority.",
+      "claim_ids": [
+        "claim-human-scoped-foreign-bind"
+      ],
+      "fault_ids": [
+        "fault-foreign-cable-loss",
+        "fault-human-ack-loss"
+      ],
+      "id": "stage-050-human-bind",
+      "intervention": "Bind an unfamiliar peripheral through a named human, discovered interface, reversible challenge, and scoped lease.",
+      "kind": "physical",
+      "required_nodes": [
+        "head-b",
+        "foreign-a",
+        "evidence-node"
+      ],
+      "sequence": 5,
+      "title": "Human-scoped foreign bind"
+    },
+    {
+      "acceptance": "Each island retains the survival floor and records visible staleness, conflict, and branch identity.",
+      "claim_ids": [
+        "claim-partition-survival"
+      ],
+      "fault_ids": [
+        "fault-wan-loss",
+        "fault-stale-shared-state"
+      ],
+      "id": "stage-060-partition",
+      "intervention": "Split the active cell into islands while injecting one delayed contradictory observation.",
+      "kind": "fault",
+      "required_nodes": [
+        "halo3-4060",
+        "head-a",
+        "head-b",
+        "head-c",
+        "evidence-node"
+      ],
+      "sequence": 6,
+      "title": "Cell partition"
+    },
+    {
+      "acceptance": "Only the declared HALO3 advantage disappears; mission state, authority, evidence, and basic human access remain.",
+      "claim_ids": [
+        "claim-halo3-removability"
+      ],
+      "fault_ids": [
+        "fault-halo3-power-loss"
+      ],
+      "id": "stage-070-halo3-removal",
+      "intervention": "Power off HALO3 during the admitted mission and continue from sealed cell state.",
+      "kind": "fault",
+      "required_nodes": [
+        "halo3-4060",
+        "head-a",
+        "head-b",
+        "head-c",
+        "evidence-node"
+      ],
+      "sequence": 7,
+      "title": "HALO3 removal"
+    },
+    {
+      "acceptance": "The successor reattaches to the exact decision and custody chain without transcript reconstruction.",
+      "claim_ids": [
+        "claim-head-succession"
+      ],
+      "fault_ids": [
+        "fault-head-a-power-loss"
+      ],
+      "id": "stage-080-head-loss",
+      "intervention": "Remove the current leader head and transfer the pending decision to a successor.",
+      "kind": "fault",
+      "required_nodes": [
+        "head-a",
+        "head-b",
+        "evidence-node"
+      ],
+      "sequence": 8,
+      "title": "Head succession"
+    },
+    {
+      "acceptance": "A human decodes the bounded passive state and reaches the correct reattachment surface without treating the mark as live truth.",
+      "claim_ids": [
+        "claim-passive-continuity"
+      ],
+      "fault_ids": [
+        "fault-wan-loss"
+      ],
+      "id": "stage-090-passive-sync",
+      "intervention": "Disable active digital bearers and use the passive physical floor to recover mission identity and next action.",
+      "kind": "fault",
+      "required_nodes": [
+        "head-c",
+        "passive-floor",
+        "evidence-node"
+      ],
+      "sequence": 9,
+      "title": "Passive continuity"
+    },
+    {
+      "acceptance": "Both branches remain inspectable and only a named authority resolves consequential conflict.",
+      "claim_ids": [
+        "claim-branch-preserving-reconciliation"
+      ],
+      "fault_ids": [
+        "fault-stale-shared-state"
+      ],
+      "id": "stage-100-reconciliation",
+      "intervention": "Reconnect the partitioned cell and present both histories to a named authority.",
+      "kind": "reconciliation",
+      "required_nodes": [
+        "head-a",
+        "head-b",
+        "evidence-node"
+      ],
+      "sequence": 10,
+      "title": "Branch reconciliation"
+    },
+    {
+      "acceptance": "The clean replay reproduces the plan, identities, observations, acceptances, refusals, faults, recoveries, and proof matrix.",
+      "claim_ids": [
+        "claim-complete-replay"
+      ],
+      "fault_ids": [
+        "fault-cartridge-corruption"
+      ],
+      "id": "stage-110-replay",
+      "intervention": "Reconstruct the entire campaign from a clean verifier using exact artifacts, hidden graders, and outcome receipts.",
+      "kind": "replay",
+      "required_nodes": [
+        "foundry-3090-a",
+        "foundry-3090-b",
+        "halo3-4060",
+        "evidence-node",
+        "head-a",
+        "head-b",
+        "head-c",
+        "foreign-a",
+        "passive-floor"
+      ],
+      "sequence": 11,
+      "title": "Complete replay"
+    }
+  ],
+  "title": "HALO3 Cell Zero home-lab qualification floor"
+}

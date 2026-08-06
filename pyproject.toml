@@ -28,6 +28,7 @@ tierfloor = "tier_runner.model_floor_cli:main"
 tiermenace = "tier_runner.menace_edge:main"
 tierseams = "tier_runner.menace_seams:main"
 tieranchor = "tier_runner.anchor_crate:main"
+tierhalo3 = "tier_runner.halo3_cell:main"
 
 [build-system]
 requires = ["setuptools>=61"]
