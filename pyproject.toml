@@ -29,6 +29,7 @@ tiermenace = "tier_runner.menace_edge:main"
 tierseams = "tier_runner.menace_seams:main"
 tieranchor = "tier_runner.anchor_crate:main"
 tierhalo3 = "tier_runner.halo3_cell:main"
+tierhalo3obs = "tier_runner.halo3_cell_observation:main"
 
 [build-system]
 requires = ["setuptools>=61"]
