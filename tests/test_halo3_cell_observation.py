@@ -4,7 +4,11 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
+import sys
 import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 from tier_runner.halo3_cell_common import Halo3Error, canonical_bytes, load_json
 from tier_runner.halo3_cell_observation import (
@@ -21,7 +25,6 @@ from tier_runner.halo3_cell_observation import (
 from tier_runner.halo3_cell_plan import compile_plan
 
 
-ROOT = Path(__file__).resolve().parents[1]
 LAB = ROOT / "labs" / "halo3-cell-zero" / "lab.json"
 FINGERPRINT = ROOT / "labs" / "halo3-cell-zero" / "model_fingerprint_contract.json"
 
