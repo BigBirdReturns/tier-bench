@@ -1,0 +1,224 @@
+{
+  "authority": "candidate_only",
+  "machine_sessions": [
+    {
+      "carrier": "stdio",
+      "cartridge_id": "case-status-reader",
+      "machine": {
+        "authority": "read_only",
+        "capabilities": [
+          "query:aperture_clause"
+        ],
+        "interface": "local-jsonl-executable",
+        "machine_id": "fixture-case-reader",
+        "safe_state": {
+          "state": "released"
+        },
+        "version": "0.1.0"
+      },
+      "query_count": 2
+    },
+    {
+      "carrier": "stdio",
+      "cartridge_id": "mary-status-reader",
+      "machine": {
+        "authority": "read_only",
+        "capabilities": [
+          "query:aperture_clause"
+        ],
+        "interface": "local-jsonl-executable",
+        "machine_id": "fixture-mary-reader",
+        "safe_state": {
+          "state": "released"
+        },
+        "version": "0.1.0"
+      },
+      "query_count": 1
+    },
+    {
+      "carrier": "stdio",
+      "cartridge_id": "lab-readonly-status-reader",
+      "machine": {
+        "authority": "read_only",
+        "capabilities": [
+          "query:aperture_clause"
+        ],
+        "interface": "local-jsonl-executable",
+        "machine_id": "fixture-lab-reader",
+        "safe_state": {
+          "state": "released"
+        },
+        "version": "0.1.0"
+      },
+      "query_count": 1
+    },
+    {
+      "carrier": "stdio",
+      "cartridge_id": "archive-operator-memory-reader",
+      "machine": {
+        "authority": "read_only",
+        "capabilities": [
+          "query:aperture_clause"
+        ],
+        "interface": "local-jsonl-executable",
+        "machine_id": "fixture-archive-reader",
+        "safe_state": {
+          "state": "released"
+        },
+        "version": "0.1.0"
+      },
+      "query_count": 1
+    }
+  ],
+  "occurred_at": "2026-08-07T00:00:00Z",
+  "owned_results": [
+    {
+      "answer": {
+        "facts": [
+          "The case reader is fixture-only.",
+          "The treatment has no mutation authority."
+        ],
+        "summary": "The active work is the sanitized operator-aperture qualification."
+      },
+      "authority": "candidate_only",
+      "cartridge_id": "case-status-reader",
+      "clause_id": "current-work:bind-current-work",
+      "evidence": [
+        {
+          "evidence_sha256": "f60814a59ac62e9453cd5bc306d2d92c7f0c9470beb21ef17331facbb096f56e",
+          "evidence_tier": "fixture",
+          "freshness": "fixed sanitized fixture",
+          "source_id": "fixture:case-current"
+        }
+      ],
+      "machine_id": "fixture-case-reader",
+      "response_sha256": "7426f6249bcba3f0a6fcb1f75f0cf132d4a89bcc69ea658cf7cb9434656488b0",
+      "route": "tier_desk"
+    },
+    {
+      "answer": {
+        "facts": [
+          "The portable kernel is unchanged.",
+          "The aperture is read-only in this treatment."
+        ],
+        "summary": "MARY is represented by an admitted local artifact and a candidate-only read aperture."
+      },
+      "authority": "candidate_only",
+      "cartridge_id": "mary-status-reader",
+      "clause_id": "mary-status:bind-mary-status",
+      "evidence": [
+        {
+          "evidence_sha256": "7dfda1e2be23d1939198b664623e661f28a581a0c26a9c14569defc3f84c5911",
+          "evidence_tier": "fixture",
+          "freshness": "fixed sanitized fixture",
+          "source_id": "fixture:mary-status"
+        }
+      ],
+      "machine_id": "fixture-mary-reader",
+      "response_sha256": "c21cd9a71c9c65ec8bbc2a5a35e4212717c4d74bb3cf5527426793f232cb01e0",
+      "route": "local"
+    },
+    {
+      "answer": {
+        "facts": [
+          "The reader does not write work state.",
+          "The desk remains the transition authority."
+        ],
+        "summary": "MARY may read a declared case projection while the desk retains case authority."
+      },
+      "authority": "candidate_only",
+      "cartridge_id": "case-status-reader",
+      "clause_id": "desk-capability:bind-desk-capability",
+      "evidence": [
+        {
+          "evidence_sha256": "5fc5c137856d59cf39960b145ad707f0f585d1a62068c6d50fb667dc9c6a95c8",
+          "evidence_tier": "fixture",
+          "freshness": "fixed sanitized fixture",
+          "source_id": "fixture:desk-boundary"
+        }
+      ],
+      "machine_id": "fixture-case-reader",
+      "response_sha256": "0d8109345d23f464c09e77029b62c9ed34eed687de0b940b31f32a9a1ae9029e",
+      "route": "tier_desk"
+    },
+    {
+      "answer": {
+        "facts": [
+          "The adapter exposes status only.",
+          "Mutation remains outside this cartridge."
+        ],
+        "summary": "The fixture lab is stable and queryable through a read-only adapter."
+      },
+      "authority": "candidate_only",
+      "cartridge_id": "lab-readonly-status-reader",
+      "clause_id": "lab-administration:bind-lab-status",
+      "evidence": [
+        {
+          "evidence_sha256": "3aa7ecb41a0fae141c68f81116aa619b8fae2eb174f51a31f3b92d17a3ce9f72",
+          "evidence_tier": "fixture",
+          "freshness": "fixed sanitized fixture",
+          "source_id": "fixture:lab-status"
+        }
+      ],
+      "machine_id": "fixture-lab-reader",
+      "response_sha256": "c0e4cfb91b20de2e744111fb3bed344ed2948ca2c9906b8b2c6c01403e5b9c4e",
+      "route": "local_machine"
+    },
+    {
+      "answer": {
+        "facts": [
+          "Retrieved claims retain source identities.",
+          "Durable admission remains user authority."
+        ],
+        "summary": "The archive route returns evidence-bound candidate memory."
+      },
+      "authority": "candidate_only",
+      "cartridge_id": "archive-operator-memory-reader",
+      "clause_id": "operator-needs:bind-operator-needs",
+      "evidence": [
+        {
+          "evidence_sha256": "ef63135f409d873c37d6097e3654b6e82672c80ab3dd554cc2ef8fa838730534",
+          "evidence_tier": "fixture",
+          "freshness": "fixed sanitized fixture",
+          "source_id": "fixture:operator-memory"
+        }
+      ],
+      "machine_id": "fixture-archive-reader",
+      "response_sha256": "916c15760337899b83789527daf6ec116fc311f69d6027d9c71962c92f589f07",
+      "route": "archive"
+    }
+  ],
+  "plan_sha256": "68fe930e4a0de5b4782f16cd61af1fc489ea9c7cc21840623043f863270de558",
+  "production_claim": false,
+  "response_sha256": "b7b394d07f8811b281595687547f6434ac6e5594ed9d0ee088d3d409180e9627",
+  "schema": "mary/operator-aperture-response@1",
+  "session_id": "maryaperture1_sanitized_fixture",
+  "summary": {
+    "frontier_model_used": false,
+    "internet_used": false,
+    "machine_query_count": 5,
+    "machine_session_count": 4,
+    "mutation_attempted": false,
+    "owned_clause_count": 5,
+    "unowned_clause_count": 2
+  },
+  "unowned_routes": [
+    {
+      "claimable": false,
+      "clause_id": "lab-administration:bind-lab-mutation-authority",
+      "missing_property": "human_action_authority",
+      "reason": "no available cartridge covers lab.transition/execute; route human_action_authority to user",
+      "response_action": "ask_user",
+      "route": "user"
+    },
+    {
+      "claimable": false,
+      "clause_id": "operator-needs:bind-memory-admission-authority",
+      "missing_property": "human_memory_admission",
+      "reason": "no available cartridge covers operator.memory_admission/admit; route human_memory_admission to user",
+      "response_action": "ask_user",
+      "route": "user"
+    }
+  ],
+  "utterance": "What are we doing, where is MARY, can she run the desk, inspect the lab, and learn what information I need from my records?"
+}
