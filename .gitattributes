@@ -16,6 +16,7 @@ experiments/cart0_bound_1/** -text -whitespace
 scripts/cart0_anchor.py -text -whitespace
 scripts/cart0_bound1.py -text -whitespace
 docs/cart0-anchor-prototype.md -text -whitespace
+labs/mary-aperture-treatment/** -text -whitespace
 
 # Sealed AXM lens shard: sidecar + Merkle hashes bind the exact sealed bytes.
 # autocrlf must never rewrite them at checkout (CLAUDE-LENS-SHARD-WIN).
