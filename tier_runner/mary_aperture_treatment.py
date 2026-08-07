@@ -492,7 +492,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         temporary = args.output.with_suffix(args.output.suffix + ".tmp")
-        temporary.write_text(encoded, encoding="utf-8")
+        temporary.write_bytes(encoded.encode("utf-8"))
         temporary.replace(args.output)
     else:
         sys.stdout.write(encoded)
