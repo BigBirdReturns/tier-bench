@@ -1,0 +1,54 @@
+name: mary-aperture-treatment
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Compile treatment
+        run: python -m py_compile tier_runner/mary_aperture_treatment.py tests/test_mary_aperture_treatment.py
+
+      - name: Run treatment tests
+        run: python -m unittest discover -s tests -p "test_mary_aperture_treatment.py" -v
+
+      - name: Reproduce sanitized treatment receipt
+        run: >-
+          python -m tier_runner.mary_aperture_treatment
+          --plan labs/mary-aperture-treatment/fixtures/plan.json
+          --verdict labs/mary-aperture-treatment/fixtures/verdict.json
+          --response labs/mary-aperture-treatment/fixtures/response.json
+          --output "${{ runner.temp }}/mary-treatment.json"
+
+      - name: Require exact receipt bytes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import os
+          expected = Path("labs/mary-aperture-treatment/SANITIZED-TREATMENT-RECEIPT.json").read_bytes()
+          actual = (Path(os.environ["RUNNER_TEMP"]) / "mary-treatment.json").read_bytes()
+          if actual != expected:
+              raise SystemExit("sanitized treatment receipt drift")
+          PY
+
+      - name: Diff check
+        run: git diff --check
