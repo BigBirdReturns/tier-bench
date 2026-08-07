@@ -85,14 +85,14 @@
       "clause_id": "current-work:bind-current-work",
       "evidence": [
         {
-          "evidence_sha256": "f60814a59ac62e9453cd5bc306d2d92c7f0c9470beb21ef17331facbb096f56e",
+          "evidence_sha256": "c09e20403083528f989e8d9719a41578c75696f9244557dd885fd4bc7c9490a3",
           "evidence_tier": "fixture",
           "freshness": "fixed sanitized fixture",
           "source_id": "fixture:case-current"
         }
       ],
       "machine_id": "fixture-case-reader",
-      "response_sha256": "7426f6249bcba3f0a6fcb1f75f0cf132d4a89bcc69ea658cf7cb9434656488b0",
+      "response_sha256": "e735abc945c90f5789f79348f225f609be39454f604f09d8e1b9c9e77effc302",
       "route": "tier_desk"
     },
     {
@@ -108,14 +108,14 @@
       "clause_id": "mary-status:bind-mary-status",
       "evidence": [
         {
-          "evidence_sha256": "7dfda1e2be23d1939198b664623e661f28a581a0c26a9c14569defc3f84c5911",
+          "evidence_sha256": "659ac2d88dc8106c500b51956a96e902e80bdb0ea7ce328d98fdb19cada5e1a1",
           "evidence_tier": "fixture",
           "freshness": "fixed sanitized fixture",
           "source_id": "fixture:mary-status"
         }
       ],
       "machine_id": "fixture-mary-reader",
-      "response_sha256": "c21cd9a71c9c65ec8bbc2a5a35e4212717c4d74bb3cf5527426793f232cb01e0",
+      "response_sha256": "879fcec47ae2b6e1fb5f7d9d8b9d3b687ca17957e2e609e4fb3fde4c646ec957",
       "route": "local"
     },
     {
@@ -131,14 +131,14 @@
       "clause_id": "desk-capability:bind-desk-capability",
       "evidence": [
         {
-          "evidence_sha256": "5fc5c137856d59cf39960b145ad707f0f585d1a62068c6d50fb667dc9c6a95c8",
+          "evidence_sha256": "64b9ef31ef619f52c2e2abface0a85671b5c1e3522b62b6ceb45ecf2d67976a0",
           "evidence_tier": "fixture",
           "freshness": "fixed sanitized fixture",
           "source_id": "fixture:desk-boundary"
         }
       ],
       "machine_id": "fixture-case-reader",
-      "response_sha256": "0d8109345d23f464c09e77029b62c9ed34eed687de0b940b31f32a9a1ae9029e",
+      "response_sha256": "a79a495ddf1c65f22c1da5fbfeb67ef9213f145fd4bc35811a7817d0905d74cb",
       "route": "tier_desk"
     },
     {
@@ -154,14 +154,14 @@
       "clause_id": "lab-administration:bind-lab-status",
       "evidence": [
         {
-          "evidence_sha256": "3aa7ecb41a0fae141c68f81116aa619b8fae2eb174f51a31f3b92d17a3ce9f72",
+          "evidence_sha256": "ae279ccd3afb912d66401130a9f92c385c77e3cf4cd8b0ef993b9ece50258594",
           "evidence_tier": "fixture",
           "freshness": "fixed sanitized fixture",
           "source_id": "fixture:lab-status"
         }
       ],
       "machine_id": "fixture-lab-reader",
-      "response_sha256": "c0e4cfb91b20de2e744111fb3bed344ed2948ca2c9906b8b2c6c01403e5b9c4e",
+      "response_sha256": "9fa88c9cf32976ae4b7d49a06b300274e6e90eee63c01d55ee330cd2ec07aa33",
       "route": "local_machine"
     },
     {
@@ -177,14 +177,14 @@
       "clause_id": "operator-needs:bind-operator-needs",
       "evidence": [
         {
-          "evidence_sha256": "ef63135f409d873c37d6097e3654b6e82672c80ab3dd554cc2ef8fa838730534",
+          "evidence_sha256": "ea4615011641e0de09c55a158ef89c64bbcceb845ec75576c93daea0911cb913",
           "evidence_tier": "fixture",
           "freshness": "fixed sanitized fixture",
           "source_id": "fixture:operator-memory"
         }
       ],
       "machine_id": "fixture-archive-reader",
-      "response_sha256": "916c15760337899b83789527daf6ec116fc311f69d6027d9c71962c92f589f07",
+      "response_sha256": "16387030b2eadad9d730597bf5dff357d50eb2ca563b549eeeb643f6b40a38b0",
       "route": "archive"
     }
   ],
