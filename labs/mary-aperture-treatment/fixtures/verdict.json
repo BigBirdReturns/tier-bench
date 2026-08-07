@@ -1,0 +1,226 @@
+{
+  "canary_id": "tierbench-sanitized-mary-aperture-v1",
+  "checks": [
+    {
+      "detail": true,
+      "id": "fixed-clause-set",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "id": "owned-routes",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "id": "unowned-routes",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "id": "covering-cartridge-for-every-owned-clause",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "id": "no-unowned-clause-is-claimable",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "id": "internet-route",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "id": "frontier-model-route",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "id": "deterministic-ownership",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "id": "model-does-not-decide-ownership",
+      "pass": true
+    },
+    {
+      "detail": true,
+      "id": "candidate-only-authority",
+      "pass": true
+    }
+  ],
+  "claim_boundary": "Sanitized structural canary only. No live source, model, device, or mutation is qualified.",
+  "plan": {
+    "authority": "candidate_only",
+    "clauses": [
+      {
+        "claimable": true,
+        "clause_id": "current-work:bind-current-work",
+        "covering_cartridge_ids": [
+          "case-status-reader"
+        ],
+        "intent": "read",
+        "missing_property": null,
+        "ownership_decider": "deterministic_registry",
+        "reason": "case-status-reader covers case.status/read",
+        "response_action": "query_and_answer",
+        "route": "tier_desk",
+        "segment_id": "current-work",
+        "source_text": "What are we doing",
+        "state": "owned",
+        "topic": "case.status"
+      },
+      {
+        "claimable": true,
+        "clause_id": "mary-status:bind-mary-status",
+        "covering_cartridge_ids": [
+          "mary-status-reader"
+        ],
+        "intent": "read",
+        "missing_property": null,
+        "ownership_decider": "deterministic_registry",
+        "reason": "mary-status-reader covers mary.status/read",
+        "response_action": "answer",
+        "route": "local",
+        "segment_id": "mary-status",
+        "source_text": "where is MARY",
+        "state": "owned",
+        "topic": "mary.status"
+      },
+      {
+        "claimable": true,
+        "clause_id": "desk-capability:bind-desk-capability",
+        "covering_cartridge_ids": [
+          "case-status-reader"
+        ],
+        "intent": "read",
+        "missing_property": null,
+        "ownership_decider": "deterministic_registry",
+        "reason": "case-status-reader covers desk.capability/read",
+        "response_action": "query_and_answer",
+        "route": "tier_desk",
+        "segment_id": "desk-capability",
+        "source_text": "can she run the desk",
+        "state": "owned",
+        "topic": "desk.capability"
+      },
+      {
+        "claimable": true,
+        "clause_id": "lab-administration:bind-lab-status",
+        "covering_cartridge_ids": [
+          "lab-readonly-status-reader"
+        ],
+        "intent": "read",
+        "missing_property": null,
+        "ownership_decider": "deterministic_registry",
+        "reason": "lab-readonly-status-reader covers lab.status/read",
+        "response_action": "query_and_answer",
+        "route": "local_machine",
+        "segment_id": "lab-administration",
+        "source_text": "inspect the lab",
+        "state": "owned",
+        "topic": "lab.status"
+      },
+      {
+        "claimable": false,
+        "clause_id": "lab-administration:bind-lab-mutation-authority",
+        "covering_cartridge_ids": [],
+        "intent": "execute",
+        "missing_property": "human_action_authority",
+        "ownership_decider": "deterministic_registry",
+        "reason": "no available cartridge covers lab.transition/execute; route human_action_authority to user",
+        "response_action": "ask_user",
+        "route": "user",
+        "segment_id": "lab-administration",
+        "source_text": "inspect the lab",
+        "state": "escalate",
+        "topic": "lab.transition"
+      },
+      {
+        "claimable": true,
+        "clause_id": "operator-needs:bind-operator-needs",
+        "covering_cartridge_ids": [
+          "archive-operator-memory-reader"
+        ],
+        "intent": "query",
+        "missing_property": null,
+        "ownership_decider": "deterministic_registry",
+        "reason": "archive-operator-memory-reader covers operator.memory/query",
+        "response_action": "query_and_answer",
+        "route": "archive",
+        "segment_id": "operator-needs",
+        "source_text": "learn what information I need from my records",
+        "state": "owned",
+        "topic": "operator.memory"
+      },
+      {
+        "claimable": false,
+        "clause_id": "operator-needs:bind-memory-admission-authority",
+        "covering_cartridge_ids": [],
+        "intent": "admit",
+        "missing_property": "human_memory_admission",
+        "ownership_decider": "deterministic_registry",
+        "reason": "no available cartridge covers operator.memory_admission/admit; route human_memory_admission to user",
+        "response_action": "ask_user",
+        "route": "user",
+        "segment_id": "operator-needs",
+        "source_text": "learn what information I need from my records",
+        "state": "escalate",
+        "topic": "operator.memory_admission"
+      }
+    ],
+    "model_used_for_ownership": false,
+    "model_used_for_segmentation": false,
+    "ownership_decider": "deterministic_registry",
+    "plan_sha256": "68fe930e4a0de5b4782f16cd61af1fc489ea9c7cc21840623043f863270de558",
+    "production_claim": false,
+    "registry_id": "tierbench-sanitized-mary-aperture-v1",
+    "schema": "mary/operator-aperture-plan@1",
+    "segmentation_source": "deterministic_fixture",
+    "summary": {
+      "by_route": {
+        "archive": [
+          "operator-needs:bind-operator-needs"
+        ],
+        "frontier_model": [],
+        "hold": [],
+        "internet": [],
+        "local": [
+          "mary-status:bind-mary-status"
+        ],
+        "local_machine": [
+          "lab-administration:bind-lab-status"
+        ],
+        "tier_desk": [
+          "current-work:bind-current-work",
+          "desk-capability:bind-desk-capability"
+        ],
+        "user": [
+          "lab-administration:bind-lab-mutation-authority",
+          "operator-needs:bind-memory-admission-authority"
+        ],
+        "validator": []
+      },
+      "frontier_model_required": false,
+      "internet_required": false,
+      "owned_clause_ids": [
+        "current-work:bind-current-work",
+        "mary-status:bind-mary-status",
+        "desk-capability:bind-desk-capability",
+        "lab-administration:bind-lab-status",
+        "operator-needs:bind-operator-needs"
+      ],
+      "unowned_clause_ids": [
+        "lab-administration:bind-lab-mutation-authority",
+        "operator-needs:bind-memory-admission-authority"
+      ]
+    },
+    "utterance": "What are we doing, where is MARY, can she run the desk, inspect the lab, and learn what information I need from my records?"
+  },
+  "schema": "mary/operator-aperture-canary-verdict@1",
+  "status": "pass",
+  "verdict_sha256": "c068038d96d0f2deb55938a3e0c2fb295286ed055275b396367226a3a222e9d7"
+}
