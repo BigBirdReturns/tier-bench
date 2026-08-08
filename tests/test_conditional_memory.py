@@ -37,7 +37,7 @@ def lab() -> dict:
         "id": "fixture-memory-lab",
         "title": "Fixture memory lab",
         "purpose": "Exercise matched conditional-memory contracts.",
-        "state_root": "D:/TierRuns/ConditionalMemory",
+        "state_root": "<tier-runs-root>/ConditionalMemory",
         "default_profile": "default",
         "dataset": {
             "kind": "synthetic_associations",

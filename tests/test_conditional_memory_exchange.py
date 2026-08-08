@@ -25,13 +25,13 @@ def cluster() -> dict:
         "schema": "tier-bench/conditional-memory-cluster@1",
         "id": "fixture-cluster",
         "coordinator": {
-            "id": "desktop-4060",
+            "id": "<rtx-4060-node>",
             "require_hostname": False,
             "service_gpu_uuid_env": "TIER_GPU_4060_UUID",
             "service_gpu_expected_name_contains": "4060",
         },
         "worker": {
-            "id": "lg-gram-dual3090",
+            "id": "<dual-3090-node>",
             "require_hostname": False,
             "seats": [
                 {"id": "seat-a", "kind": "cpu", "require_identity": False},
@@ -59,7 +59,7 @@ def lab() -> dict:
         "title": "Distributed fixture",
         "purpose": "Prove artifact exchange and opposite-seat replay.",
         "default_profile": "default",
-        "state_root": "D:/TierRuns/ConditionalMemory",
+        "state_root": "<tier-runs-root>/ConditionalMemory",
         "dataset": {
             "kind": "synthetic_associations",
             "vocab_size": 64,
@@ -147,7 +147,7 @@ def lab() -> dict:
 
 def test_cluster_contract_is_strict() -> None:
     normalized = validate_cluster(cluster())
-    assert normalized["coordinator"]["id"] == "desktop-4060"
+    assert normalized["coordinator"]["id"] == "<rtx-4060-node>"
     assert [seat["id"] for seat in normalized["worker"]["seats"]] == ["seat-a", "seat-b"]
     broken = cluster()
     broken["exchange"]["heartbeat_seconds"] = 100
@@ -179,7 +179,7 @@ def test_distributed_roundtrip() -> None:
         assert len(published["manifest"]["packets"]) == 8
         worker = run_worker_node(
             root=flight_root,
-            node_id="lg-gram-dual3090",
+            node_id="<dual-3090-node>",
             work_root=parent / "worker",
             force_cpu=True,
             reclaim_stale=False,
