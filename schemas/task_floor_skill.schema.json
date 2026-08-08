@@ -1,0 +1,96 @@
+{
+  "$id": "urn:task-floor:schema:skill-package:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifacts": {
+      "minItems": 1,
+      "type": "array"
+    },
+    "compatibility": {
+      "type": "object"
+    },
+    "description": {
+      "type": "string"
+    },
+    "effects": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "entrypoint": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "name": {
+      "type": "string"
+    },
+    "outputs": {
+      "type": "object"
+    },
+    "production_authorized": {
+      "type": "boolean"
+    },
+    "review": {
+      "type": "object"
+    },
+    "rollback": {
+      "type": "object"
+    },
+    "runtime": {
+      "type": "object"
+    },
+    "schema": {
+      "const": "task-floor/skill-package@1"
+    },
+    "signatures": {
+      "type": "array"
+    },
+    "skill_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "source": {
+      "type": "object"
+    },
+    "supported_cartridges": {
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "tests": {
+      "type": "array"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "id",
+    "version",
+    "name",
+    "source",
+    "entrypoint",
+    "runtime",
+    "effects",
+    "supported_cartridges",
+    "tests",
+    "review",
+    "rollback",
+    "artifacts",
+    "signatures",
+    "production_authorized",
+    "skill_sha256"
+  ],
+  "title": "Task Floor Skill Package",
+  "type": "object"
+}

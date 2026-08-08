@@ -1,0 +1,52 @@
+{
+  "$id": "urn:task-floor:schema:state:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifacts": {
+      "type": "array"
+    },
+    "data": {
+      "type": "object"
+    },
+    "observed_at": {
+      "type": "string"
+    },
+    "previous_state_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "revision": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "schema": {
+      "const": "task-floor/state@1"
+    },
+    "state_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "surfaces": {
+      "type": "object"
+    },
+    "task_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "task_id",
+    "revision",
+    "observed_at",
+    "surfaces",
+    "artifacts",
+    "data",
+    "state_id"
+  ],
+  "title": "Task Floor State",
+  "type": "object"
+}

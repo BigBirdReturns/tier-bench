@@ -1,0 +1,67 @@
+{
+  "$id": "urn:task-floor:schema:interop-bundle:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "acceptance": {
+      "type": "array"
+    },
+    "artifacts": {
+      "type": "array"
+    },
+    "bundle_id": {
+      "type": "string"
+    },
+    "bundle_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "cartridge": {
+      "type": "object"
+    },
+    "claims": {
+      "type": "object"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "exports": {
+      "type": "object"
+    },
+    "manifest": {
+      "type": "object"
+    },
+    "metrics": {
+      "type": "object"
+    },
+    "project_handoff": {
+      "type": "object"
+    },
+    "run": {
+      "type": "object"
+    },
+    "schema": {
+      "const": "task-floor/interop-bundle@1"
+    },
+    "trajectory": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema",
+    "bundle_id",
+    "created_at",
+    "manifest",
+    "cartridge",
+    "run",
+    "metrics",
+    "trajectory",
+    "acceptance",
+    "project_handoff",
+    "artifacts",
+    "exports",
+    "bundle_sha256"
+  ],
+  "title": "Task Floor Interoperability Bundle",
+  "type": "object"
+}

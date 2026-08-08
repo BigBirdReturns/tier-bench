@@ -1,0 +1,74 @@
+{
+  "$id": "urn:task-floor:schema:oss-registry:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "axes": {
+      "type": "object"
+    },
+    "coverage_states": {
+      "type": "object"
+    },
+    "entries": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "coverage": {
+            "type": "object"
+          },
+          "id": {
+            "type": "string"
+          },
+          "license": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "sources": {
+            "minItems": 1,
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "category",
+          "sources",
+          "coverage"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "last_reviewed": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string"
+    },
+    "registry_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema": {
+      "const": "task-floor/oss-registry@1"
+    }
+  },
+  "required": [
+    "schema",
+    "last_reviewed",
+    "method",
+    "axes",
+    "entries"
+  ],
+  "title": "Task Floor OSS Registry",
+  "type": "object"
+}

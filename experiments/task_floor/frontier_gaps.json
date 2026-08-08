@@ -1,0 +1,72 @@
+{
+  "schema": "task-floor/frontier-gaps@1",
+  "status": "candidate-requirements",
+  "review_policy": "A candidate enters a normative profile only after public review, executable tests, and at least two implementation mappings.",
+  "candidates": [
+    {
+      "id": "continuous_access_revocation",
+      "problem": "An approval or credential can become unsafe after issuance, but most agent runs only check access at start time.",
+      "candidate_contract": "The credential custodian consumes signed revocation or risk signals, interrupts affected work, and records the last accepted signal and resulting state transition.",
+      "primary_sources": [
+        "https://openid.net/specs/openid-sharedsignals-framework-1_0-final.html",
+        "https://openid.net/specs/openid-caep-1_0-final.html"
+      ]
+    },
+    {
+      "id": "delegated_token_attenuation",
+      "problem": "Agent identity, impersonation, and on-behalf-of delegation are frequently collapsed into one bearer credential.",
+      "candidate_contract": "The run distinguishes actor and subject, limits audience, scope, resource, and lifetime, and retains token-exchange or delegation evidence without retaining the secret token.",
+      "primary_sources": [
+        "https://datatracker.ietf.org/doc/rfc8693/"
+      ]
+    },
+    {
+      "id": "resource_budget_enforcement",
+      "problem": "Agent frameworks measure tokens or cost inconsistently and rarely bind budgets to admission or post-run acceptance.",
+      "candidate_contract": "A task declares hard and soft budgets for time, actions, money, tokens, GPU, energy, storage, and network; enforcement and overruns are receipted.",
+      "primary_sources": []
+    },
+    {
+      "id": "emergency_stop_broadcast",
+      "problem": "Canceling one UI or planner process may not stop already delegated or queued effects.",
+      "candidate_contract": "A signed stop signal propagates to planners, critics, executors, queues, and UI sessions and closes with an acknowledgement set and unresolved-effect ledger.",
+      "primary_sources": []
+    },
+    {
+      "id": "multi_tenant_isolation",
+      "problem": "Persistent browsers, sandboxes, caches, skills, and trajectory stores can leak data between tasks or users.",
+      "candidate_contract": "Tenant, task, credential, artifact, cache, and retention boundaries are explicit and tested through cross-tenant negative cases.",
+      "primary_sources": []
+    },
+    {
+      "id": "protocol_downgrade_resistance",
+      "problem": "An adapter can silently fall back to an older schema or omit a required extension and thereby weaken admission rules.",
+      "candidate_contract": "Negotiation binds minimum versions and required extensions; security-relevant downgrade attempts fail and are receipted.",
+      "primary_sources": []
+    },
+    {
+      "id": "data_residency",
+      "problem": "A portable agent run may move screenshots, prompts, credentials, and artifacts across jurisdictions without machine-readable constraints.",
+      "candidate_contract": "Artifacts and processors declare residency, transfer, retention, and deletion constraints that policy can enforce before data movement.",
+      "primary_sources": []
+    },
+    {
+      "id": "trusted_time",
+      "problem": "Approval expiry, leases, event ordering, and non-repudiation depend on clocks that may drift or be controlled by the runtime.",
+      "candidate_contract": "Time source, uncertainty, monotonic ordering, and expiry evaluation are declared and attested for security-relevant decisions.",
+      "primary_sources": []
+    },
+    {
+      "id": "accessibility_equivalence",
+      "problem": "Semantic, accessibility, and visual routes can expose different controls or effects, creating hidden capability and safety gaps.",
+      "candidate_contract": "Fixtures compare available actions, labels, state transitions, and approvals across semantic, accessibility, and visual routes.",
+      "primary_sources": []
+    },
+    {
+      "id": "evaluation_isolation",
+      "problem": "Agents, skills, or generated programs may memorize fixtures, hidden state, or acceptance logic and produce misleading benchmark success.",
+      "candidate_contract": "Training and evaluation lineage, hidden-state access, fixture generation, contamination checks, and variant secrecy are retained in the evidence bundle.",
+      "primary_sources": []
+    }
+  ]
+}

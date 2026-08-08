@@ -1,0 +1,367 @@
+{
+  "acceptance": {
+    "external_verifier": true,
+    "hidden_state": true,
+    "mutation_suite": true,
+    "postconditions": true,
+    "project_handoff": true
+  },
+  "authority": {
+    "acceptor": [
+      "cartridge-acceptance-authority"
+    ],
+    "artifact_custodian": [
+      "desktop-artifact-custodian"
+    ],
+    "credential_custodian": [
+      "desktop-credential-custodian"
+    ],
+    "critic": [
+      "deterministic-policy-critic",
+      "independent-critic-seat"
+    ],
+    "executor": [
+      "desktop-task-computer"
+    ],
+    "human": [
+      "operator"
+    ],
+    "observer": [
+      "desktop-browser-computer"
+    ],
+    "planner": [
+      "planner-seat"
+    ],
+    "policy": [
+      "desktop-policy-host"
+    ]
+  },
+  "conformance": {
+    "claim_scope": "synthetic project cartridges, Task Floor reference host, and protocol export kit",
+    "evidence": [
+      {
+        "kind": "github-actions",
+        "scope": "reference conformance kit",
+        "workflow": "task-floor"
+      }
+    ],
+    "production_qualified": false,
+    "profiles_claimed": [
+      "TF0",
+      "TF1",
+      "TF2",
+      "TF3",
+      "TF4",
+      "TF5"
+    ]
+  },
+  "description": "Reference trusted host and evidence bundle for state-bound, effect-governed, externally accepted agent work.",
+  "diagnostics": {
+    "claim_verification": true,
+    "counterfactual_replay": true,
+    "failure_taxonomy": true,
+    "invariant_checks": true
+  },
+  "documentation_url": "https://github.com/BigBirdReturns/tier-bench",
+  "effects": {
+    "approval": true,
+    "argument_scoped": true,
+    "declared": true,
+    "default": "privileged",
+    "enforced": true,
+    "postconditions": true,
+    "taxonomy": [
+      "read",
+      "interactive",
+      "local_write",
+      "external_write",
+      "destructive",
+      "financial",
+      "identity",
+      "sensitive",
+      "privileged"
+    ]
+  },
+  "evidence": {
+    "action_receipts": true,
+    "artifact_hashes": true,
+    "content_addressed": true,
+    "event_chain": true,
+    "signatures": false,
+    "trajectory_export": true
+  },
+  "execution": {
+    "compensation": false,
+    "idempotency_keys": true,
+    "optimistic_concurrency": true,
+    "rollback": false,
+    "transactions": false
+  },
+  "id": "tier-bench-task-computer-floor",
+  "identity": {
+    "agent_delegation": true,
+    "runtime_attestation": true,
+    "signed_messages": false,
+    "workload_identity": false
+  },
+  "interfaces": [
+    {
+      "endpoint": "/a2a",
+      "extensions": [
+        "urn:task-floor:extension:v1"
+      ],
+      "protocol": "a2a",
+      "role": "adapter",
+      "transport": "http-json",
+      "version": "1.0"
+    },
+    {
+      "endpoint": "/events",
+      "extensions": [
+        "urn:task-floor:extension:v1"
+      ],
+      "protocol": "ag-ui",
+      "role": "event-export",
+      "transport": "sse",
+      "version": "current"
+    },
+    {
+      "endpoint": null,
+      "extensions": [],
+      "protocol": "agentrx",
+      "role": "diagnostic-export",
+      "transport": "shared-filesystem",
+      "version": "current"
+    },
+    {
+      "endpoint": null,
+      "extensions": [],
+      "protocol": "browsergym",
+      "role": "benchmark-adapter",
+      "transport": "in-process",
+      "version": "current"
+    },
+    {
+      "endpoint": null,
+      "extensions": [],
+      "protocol": "cedar",
+      "role": "authorization-adapter",
+      "transport": "http-json",
+      "version": "current"
+    },
+    {
+      "endpoint": null,
+      "extensions": [],
+      "protocol": "cloudevents",
+      "role": "event-export",
+      "transport": "http-json",
+      "version": "1.0"
+    },
+    {
+      "endpoint": null,
+      "extensions": [],
+      "protocol": "cua",
+      "role": "trajectory-export",
+      "transport": "shared-filesystem",
+      "version": "current"
+    },
+    {
+      "endpoint": null,
+      "extensions": [
+        "urn:task-floor:run-attestation:v1"
+      ],
+      "protocol": "in-toto",
+      "role": "provenance-export",
+      "transport": "shared-filesystem",
+      "version": "Statement/v1"
+    },
+    {
+      "endpoint": null,
+      "extensions": [],
+      "protocol": "langgraph",
+      "role": "durable-execution-adapter",
+      "transport": "in-process",
+      "version": "1"
+    },
+    {
+      "endpoint": "/mcp",
+      "extensions": [
+        "urn:task-floor:extension:v1"
+      ],
+      "protocol": "mcp",
+      "role": "adapter",
+      "transport": "streamable-http",
+      "version": "2025-11-25"
+    },
+    {
+      "endpoint": null,
+      "extensions": [
+        "urn:task-floor:v1"
+      ],
+      "protocol": "native-json",
+      "role": "trusted-host",
+      "transport": "in-process",
+      "version": "1"
+    },
+    {
+      "endpoint": null,
+      "extensions": [],
+      "protocol": "opa",
+      "role": "policy-adapter",
+      "transport": "http-json",
+      "version": "1"
+    },
+    {
+      "endpoint": null,
+      "extensions": [],
+      "protocol": "opentelemetry",
+      "role": "telemetry-export",
+      "transport": "http-json",
+      "version": "gen-ai/1.42.0"
+    }
+  ],
+  "interop": {
+    "a2a": true,
+    "ag-ui": true,
+    "agentrx": true,
+    "browsergym": true,
+    "cedar": true,
+    "cloudevents": true,
+    "cua": true,
+    "in-toto": true,
+    "langgraph": true,
+    "mcp": true,
+    "opa": true,
+    "opentelemetry": true,
+    "spiffe": false
+  },
+  "license": "MIT",
+  "lifecycle": {
+    "async_tasks": true,
+    "cancel": true,
+    "human_takeover": true,
+    "persistent_state": true,
+    "resume": true,
+    "streaming": true
+  },
+  "manifest_sha256": "76012cf10c6b24029fa2e0373472c7f1ec4e73e1cdd648cdd5b8d41e0194f699",
+  "name": "Tier Bench Task Floor reference host",
+  "observability": {
+    "cost": true,
+    "evaluation_events": true,
+    "human_time": true,
+    "opentelemetry": true,
+    "token_usage": true,
+    "trace_context": true
+  },
+  "privacy": {
+    "data_classification": true,
+    "deletion_receipts": false,
+    "redaction": true,
+    "retention": true,
+    "secret_exclusion": true
+  },
+  "provider": {
+    "name": "Tier Bench Contributors",
+    "url": "https://github.com/BigBirdReturns/tier-bench"
+  },
+  "resilience": {
+    "mutation_suite": true,
+    "prompt_injection_tests": true,
+    "recovery": true,
+    "role_reversal": true
+  },
+  "schema": "task-floor/capability-manifest@1",
+  "security": {
+    "authentication": true,
+    "authorization": true,
+    "credential_lease": true,
+    "network_policy": true,
+    "prompt_injection_boundary": true,
+    "sandbox": true,
+    "secrets_isolated": true
+  },
+  "state": {
+    "conflict_detection": true,
+    "content_addressed": true,
+    "exact_action_binding": true,
+    "replay": true,
+    "snapshots": true
+  },
+  "supply_chain": {
+    "build_provenance": false,
+    "dependency_inventory": true,
+    "model_runtime_identity": true,
+    "reproducible_environment": true,
+    "signed_skills": false
+  },
+  "surfaces": [
+    {
+      "act": true,
+      "id": "desktop-browser-semantic",
+      "kind": "browser.semantic",
+      "observe": true,
+      "operations": [
+        "click",
+        "download",
+        "extract",
+        "fill",
+        "navigate",
+        "observe",
+        "press",
+        "select"
+      ],
+      "state_bound": true,
+      "supports_artifacts": true
+    },
+    {
+      "act": true,
+      "id": "human-takeover",
+      "kind": "human",
+      "observe": true,
+      "operations": [
+        "approve",
+        "edit",
+        "reject",
+        "release",
+        "takeover"
+      ],
+      "state_bound": true,
+      "supports_artifacts": false
+    },
+    {
+      "act": true,
+      "id": "screen-ghost-visual",
+      "kind": "browser.visual",
+      "observe": true,
+      "operations": [
+        "observe",
+        "swipe",
+        "tap",
+        "type"
+      ],
+      "state_bound": true,
+      "supports_artifacts": true
+    },
+    {
+      "act": true,
+      "id": "task-workspace",
+      "kind": "workspace",
+      "observe": true,
+      "operations": [
+        "assert_file",
+        "copy_file",
+        "hash_file",
+        "write_manifest"
+      ],
+      "state_bound": true,
+      "supports_artifacts": true
+    }
+  ],
+  "version": "1.0.0",
+  "versioning": {
+    "backward_compatibility": true,
+    "deprecation_policy": true,
+    "schema_negotiation": true
+  }
+}

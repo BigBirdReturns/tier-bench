@@ -1,0 +1,62 @@
+{
+  "$id": "urn:task-floor:schema:trajectory:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "event_head_sha256": {
+      "anyOf": [
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "events": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "event_sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "seq": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "seq",
+          "kind",
+          "event_sha256"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "schema": {
+      "const": "task-floor/trajectory@1"
+    },
+    "trajectory_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "run_id",
+    "events",
+    "event_head_sha256",
+    "trajectory_sha256"
+  ],
+  "title": "Task Floor Canonical Trajectory",
+  "type": "object"
+}

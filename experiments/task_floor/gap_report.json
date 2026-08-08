@@ -1,0 +1,717 @@
+{
+  "axes": 26,
+  "conclusion": "No surveyed transport, runtime, policy, telemetry, provenance, or benchmark project documents the complete Task Floor contract.",
+  "critical_gaps": [
+    "approval_portability",
+    "project_handoff",
+    "retention_privacy",
+    "rollback_compensation",
+    "state_binding"
+  ],
+  "entries": 21,
+  "gaps": [
+    {
+      "counts": {
+        "not_core": 14,
+        "partial": 7
+      },
+      "description": "Approval is a portable state-and-action-bound object rather than a UI-local boolean.",
+      "documented_by": [],
+      "id": "approval_portability",
+      "partial_by": [
+        "ag-ui",
+        "cedar",
+        "fara",
+        "langgraph",
+        "magentic-ui",
+        "mcp",
+        "opa"
+      ],
+      "priority": "critical",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "not_core": 21
+      },
+      "description": "A successful run emits a typed derivative artifact for the owning project.",
+      "documented_by": [],
+      "id": "project_handoff",
+      "partial_by": [],
+      "priority": "critical",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "not_core": 17,
+        "partial": 4
+      },
+      "description": "Data classification, redaction, retention, deletion, and secret exclusion are machine-readable.",
+      "documented_by": [],
+      "id": "retention_privacy",
+      "partial_by": [
+        "ag-ui",
+        "agentdojo",
+        "in-toto-slsa",
+        "opentelemetry-genai"
+      ],
+      "priority": "critical",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "not_core": 19,
+        "partial": 2
+      },
+      "description": "Irreversible or partially completed effects declare rollback or compensation behavior.",
+      "documented_by": [],
+      "id": "rollback_compensation",
+      "partial_by": [
+        "langgraph",
+        "webwright"
+      ],
+      "priority": "critical",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "not_core": 11,
+        "partial": 10
+      },
+      "description": "Actions bind the exact observed state and stale proposals fail before execution.",
+      "documented_by": [],
+      "id": "state_binding",
+      "partial_by": [
+        "ag-ui",
+        "browser-use",
+        "bytebot",
+        "cua",
+        "fara",
+        "langgraph",
+        "magentic-ui",
+        "playwright-agents",
+        "stagehand",
+        "webwright"
+      ],
+      "priority": "critical",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 1,
+        "not_core": 15,
+        "partial": 5
+      },
+      "description": "Cost, tokens, GPU time, human time, actions, and energy are normalized per externally accepted task.",
+      "documented_by": [
+        "opentelemetry-genai"
+      ],
+      "id": "accepted_work_economics",
+      "partial_by": [
+        "browser-use",
+        "browsergym",
+        "cua",
+        "fara",
+        "magentic-ui"
+      ],
+      "priority": "high",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 1,
+        "not_core": 15,
+        "partial": 5
+      },
+      "description": "Planner, critic, policy, executor, acceptor, credential custodian, and human authority remain separable.",
+      "documented_by": [
+        "magentic-ui"
+      ],
+      "id": "authority_quorum",
+      "partial_by": [
+        "a2a",
+        "ag-ui",
+        "cedar",
+        "langgraph",
+        "opa"
+      ],
+      "priority": "high",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 1,
+        "not_core": 17,
+        "partial": 3
+      },
+      "description": "A trajectory can be replayed or forked from content-addressed checkpoints without silently repeating effects.",
+      "documented_by": [
+        "langgraph"
+      ],
+      "id": "counterfactual_replay",
+      "partial_by": [
+        "agentrx",
+        "browser-harness",
+        "stagehand"
+      ],
+      "priority": "high",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 1,
+        "not_core": 18,
+        "partial": 2
+      },
+      "description": "Retries are keyed, duplicate effects are prevented, and transactional boundaries are explicit.",
+      "documented_by": [
+        "langgraph"
+      ],
+      "id": "idempotency_transactions",
+      "partial_by": [
+        "mcp",
+        "webwright"
+      ],
+      "priority": "high",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 1,
+        "not_core": 17,
+        "partial": 3
+      },
+      "description": "Learned skills and successful programs have source, review, signatures, compatibility, tests, and rollback.",
+      "documented_by": [
+        "in-toto-slsa"
+      ],
+      "id": "skill_supply_chain",
+      "partial_by": [
+        "browser-harness",
+        "stagehand",
+        "webwright"
+      ],
+      "priority": "high",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 2,
+        "not_core": 8,
+        "partial": 11
+      },
+      "description": "Inputs, outputs, traces, handoffs, models, policies, and skills are content-addressed and attestable.",
+      "documented_by": [
+        "in-toto-slsa",
+        "webwright"
+      ],
+      "id": "artifact_provenance",
+      "partial_by": [
+        "a2a",
+        "agentrx",
+        "browser-harness",
+        "browser-use",
+        "bytebot",
+        "cua",
+        "magentic-ui",
+        "opentelemetry-genai",
+        "playwright-agents",
+        "spiffe-spire",
+        "stagehand"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 9,
+        "not_core": 10,
+        "partial": 2
+      },
+      "description": "The task and acceptance contract survive replacement of agent, browser, sandbox, and policy backends.",
+      "documented_by": [
+        "a2a",
+        "browser-harness",
+        "browser-use",
+        "browsergym",
+        "cua",
+        "mcp",
+        "opa",
+        "playwright-agents",
+        "stagehand"
+      ],
+      "id": "backend_portability",
+      "partial_by": [
+        "bytebot",
+        "langgraph"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 2,
+        "not_core": 15,
+        "partial": 4
+      },
+      "description": "Capability and production claims cannot exceed independently verified conformance evidence.",
+      "documented_by": [
+        "agentrx",
+        "in-toto-slsa"
+      ],
+      "id": "claim_verification",
+      "partial_by": [
+        "a2a",
+        "cedar",
+        "opa",
+        "spiffe-spire"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 2,
+        "not_core": 14,
+        "partial": 5
+      },
+      "description": "Authenticated state and secrets remain under a declared custodian, delegation scope, and lease.",
+      "documented_by": [
+        "bytebot",
+        "spiffe-spire"
+      ],
+      "id": "credential_custody",
+      "partial_by": [
+        "browser-harness",
+        "browser-use",
+        "cedar",
+        "mcp",
+        "playwright-agents"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 2,
+        "not_core": 15,
+        "partial": 4
+      },
+      "description": "Effects are declared at action and argument scope, enforced by a trusted host, and retained in receipts.",
+      "documented_by": [
+        "cedar",
+        "opa"
+      ],
+      "id": "effect_enforcement",
+      "partial_by": [
+        "agentdojo",
+        "fara",
+        "magentic-ui",
+        "mcp"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 4,
+        "not_core": 15,
+        "partial": 2
+      },
+      "description": "Browser, OS, model, policy, dependency, and fixture identities are sufficient to reproduce or explain a run.",
+      "documented_by": [
+        "cua",
+        "fara",
+        "in-toto-slsa",
+        "webwright"
+      ],
+      "id": "environment_reproducibility",
+      "partial_by": [
+        "browsergym",
+        "opentelemetry-genai"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 3,
+        "not_core": 16,
+        "partial": 2
+      },
+      "description": "Completion is decided by an authority independent of the planner and executor.",
+      "documented_by": [
+        "agentdojo",
+        "browsergym",
+        "fara"
+      ],
+      "id": "external_acceptance",
+      "partial_by": [
+        "agentrx",
+        "in-toto-slsa"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 2,
+        "not_core": 12,
+        "partial": 7
+      },
+      "description": "Failures are classified across planning, observation, policy, approval, execution, environment, acceptance, and verification.",
+      "documented_by": [
+        "agentrx",
+        "langgraph"
+      ],
+      "id": "failure_taxonomy",
+      "partial_by": [
+        "a2a",
+        "ag-ui",
+        "agentdojo",
+        "browsergym",
+        "mcp",
+        "opa",
+        "opentelemetry-genai"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 4,
+        "not_core": 14,
+        "partial": 3
+      },
+      "description": "Human intervention is a state-bound lease with pause, release, and re-observation.",
+      "documented_by": [
+        "ag-ui",
+        "bytebot",
+        "langgraph",
+        "magentic-ui"
+      ],
+      "id": "human_takeover_receipt",
+      "partial_by": [
+        "browser-use",
+        "mcp",
+        "playwright-agents"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 2,
+        "not_core": 16,
+        "partial": 3
+      },
+      "description": "Remote planners and critics can propose without acquiring executor, browser-profile, or secret authority.",
+      "documented_by": [
+        "magentic-ui",
+        "spiffe-spire"
+      ],
+      "id": "local_distributed_custody",
+      "partial_by": [
+        "a2a",
+        "bytebot",
+        "cua"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 3,
+        "not_core": 17,
+        "partial": 1
+      },
+      "description": "Conformance includes reordered, delayed, adversarial, prompt-injected, and deceptive variants.",
+      "documented_by": [
+        "agentdojo",
+        "browsergym",
+        "fara"
+      ],
+      "id": "mutation_security",
+      "partial_by": [
+        "agentrx"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 4,
+        "not_core": 13,
+        "partial": 4
+      },
+      "description": "Semantic, accessibility, visual, API, workspace, terminal, and human routes remain explicit.",
+      "documented_by": [
+        "browser-use",
+        "bytebot",
+        "fara",
+        "playwright-agents"
+      ],
+      "id": "semantic_visual_route",
+      "partial_by": [
+        "browser-harness",
+        "browsergym",
+        "cua",
+        "stagehand"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 3,
+        "not_core": 16,
+        "partial": 2
+      },
+      "description": "Accepted trajectories can compile into reusable deterministic skills or programs with retained provenance.",
+      "documented_by": [
+        "browser-harness",
+        "stagehand",
+        "webwright"
+      ],
+      "id": "success_compilation",
+      "partial_by": [
+        "browser-use",
+        "fara"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 6,
+        "not_core": 6,
+        "partial": 9
+      },
+      "description": "A canonical trajectory can feed diagnosis, telemetry, replay, evaluation, and benchmark tools.",
+      "documented_by": [
+        "a2a",
+        "ag-ui",
+        "agentrx",
+        "browsergym",
+        "cua",
+        "opentelemetry-genai"
+      ],
+      "id": "trajectory_interchange",
+      "partial_by": [
+        "agentdojo",
+        "browser-use",
+        "bytebot",
+        "fara",
+        "langgraph",
+        "magentic-ui",
+        "mcp",
+        "playwright-agents",
+        "webwright"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 6,
+        "not_core": 14,
+        "partial": 1
+      },
+      "description": "Schemas and interfaces declare versions, compatibility, extensions, and deprecation behavior.",
+      "documented_by": [
+        "a2a",
+        "ag-ui",
+        "cedar",
+        "in-toto-slsa",
+        "mcp",
+        "opentelemetry-genai"
+      ],
+      "id": "version_negotiation",
+      "partial_by": [
+        "spiffe-spire"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    },
+    {
+      "counts": {
+        "documented": 2,
+        "not_core": 15,
+        "partial": 4
+      },
+      "description": "Runtime actors can prove workload identity and on-behalf-of delegation independently of model text.",
+      "documented_by": [
+        "cedar",
+        "spiffe-spire"
+      ],
+      "id": "workload_identity",
+      "partial_by": [
+        "a2a",
+        "in-toto-slsa",
+        "mcp",
+        "opa"
+      ],
+      "priority": "normal",
+      "task_floor_contract": true
+    }
+  ],
+  "high_gaps": [
+    "accepted_work_economics",
+    "authority_quorum",
+    "counterfactual_replay",
+    "idempotency_transactions",
+    "skill_supply_chain"
+  ],
+  "registry_sha256": "8a3e7b19a4a1e6a49d5df54db63cb6df49ecde6fa588fb2cbb2637f85322a384",
+  "report_sha256": "6e24fc496be385ab5a602002425c1afac91b14a64bf9b907e1429a297393b259",
+  "schema": "task-floor/gap-report@1",
+  "system_scores": [
+    {
+      "documented": 4,
+      "id": "fara",
+      "max_score": 26,
+      "partial": 6,
+      "score": 7.0
+    },
+    {
+      "documented": 4,
+      "id": "langgraph",
+      "max_score": 26,
+      "partial": 6,
+      "score": 7.0
+    },
+    {
+      "documented": 5,
+      "id": "in-toto-slsa",
+      "max_score": 26,
+      "partial": 3,
+      "score": 6.5
+    },
+    {
+      "documented": 3,
+      "id": "a2a",
+      "max_score": 26,
+      "partial": 6,
+      "score": 6.0
+    },
+    {
+      "documented": 4,
+      "id": "browsergym",
+      "max_score": 26,
+      "partial": 4,
+      "score": 6.0
+    },
+    {
+      "documented": 3,
+      "id": "magentic-ui",
+      "max_score": 26,
+      "partial": 6,
+      "score": 6.0
+    },
+    {
+      "documented": 2,
+      "id": "mcp",
+      "max_score": 26,
+      "partial": 8,
+      "score": 6.0
+    },
+    {
+      "documented": 3,
+      "id": "ag-ui",
+      "max_score": 26,
+      "partial": 5,
+      "score": 5.5
+    },
+    {
+      "documented": 2,
+      "id": "browser-use",
+      "max_score": 26,
+      "partial": 7,
+      "score": 5.5
+    },
+    {
+      "documented": 3,
+      "id": "bytebot",
+      "max_score": 26,
+      "partial": 5,
+      "score": 5.5
+    },
+    {
+      "documented": 3,
+      "id": "cua",
+      "max_score": 26,
+      "partial": 5,
+      "score": 5.5
+    },
+    {
+      "documented": 3,
+      "id": "webwright",
+      "max_score": 26,
+      "partial": 5,
+      "score": 5.5
+    },
+    {
+      "documented": 3,
+      "id": "agentrx",
+      "max_score": 26,
+      "partial": 4,
+      "score": 5.0
+    },
+    {
+      "documented": 3,
+      "id": "cedar",
+      "max_score": 26,
+      "partial": 4,
+      "score": 5.0
+    },
+    {
+      "documented": 3,
+      "id": "opentelemetry-genai",
+      "max_score": 26,
+      "partial": 4,
+      "score": 5.0
+    },
+    {
+      "documented": 2,
+      "id": "browser-harness",
+      "max_score": 26,
+      "partial": 5,
+      "score": 4.5
+    },
+    {
+      "documented": 2,
+      "id": "opa",
+      "max_score": 26,
+      "partial": 5,
+      "score": 4.5
+    },
+    {
+      "documented": 2,
+      "id": "playwright-agents",
+      "max_score": 26,
+      "partial": 5,
+      "score": 4.5
+    },
+    {
+      "documented": 3,
+      "id": "spiffe-spire",
+      "max_score": 26,
+      "partial": 3,
+      "score": 4.5
+    },
+    {
+      "documented": 2,
+      "id": "stagehand",
+      "max_score": 26,
+      "partial": 5,
+      "score": 4.5
+    },
+    {
+      "documented": 2,
+      "id": "agentdojo",
+      "max_score": 26,
+      "partial": 4,
+      "score": 4.0
+    }
+  ]
+}

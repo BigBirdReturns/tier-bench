@@ -1,0 +1,41 @@
+{
+  "$id": "urn:task-floor:schema:acceptance-result:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "acceptance_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "authority": {},
+    "checks": {
+      "type": "array"
+    },
+    "pass": {
+      "type": "boolean"
+    },
+    "project_handoff": {
+      "type": "object"
+    },
+    "schema": {
+      "const": "task-floor/acceptance-result@1"
+    },
+    "state_id": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "task_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "task_id",
+    "state_id",
+    "pass",
+    "authority",
+    "acceptance_sha256"
+  ],
+  "title": "Task Floor Acceptance Result",
+  "type": "object"
+}

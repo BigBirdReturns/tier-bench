@@ -1,0 +1,59 @@
+{
+  "$id": "urn:task-floor:schema:replay-plan:1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "allow_effects": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "blocked_actions": {
+      "type": "array"
+    },
+    "cartridge": {
+      "type": "object"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "execution_authorized": {
+      "type": "boolean"
+    },
+    "mode": {
+      "enum": [
+        "simulate",
+        "counterfactual",
+        "execute"
+      ]
+    },
+    "notice": {
+      "type": "string"
+    },
+    "replay_plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema": {
+      "const": "task-floor/replay-plan@1"
+    },
+    "source": {
+      "type": "object"
+    },
+    "steps": {
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema",
+    "mode",
+    "source",
+    "steps",
+    "blocked_actions",
+    "execution_authorized",
+    "replay_plan_sha256"
+  ],
+  "title": "Task Floor Replay Plan",
+  "type": "object"
+}

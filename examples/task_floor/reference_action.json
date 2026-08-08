@@ -1,0 +1,49 @@
+{
+  "action_id": "publish-report-001",
+  "action_sha256": "527b2d2ab17a8c7632d0a025bc2409b2086094c56b295acc13988da81cba08a6",
+  "approval": null,
+  "arguments": {
+    "report_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "compensation": {
+    "operation": "unpublish_report"
+  },
+  "data_classification": [
+    "internal"
+  ],
+  "effect": "external_write",
+  "expected_postconditions": [
+    {
+      "equals": true,
+      "path": "/published"
+    }
+  ],
+  "expected_state_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "idempotency_key": "example-task:publish-report:v1",
+  "intent": "Publish the externally accepted report exactly once.",
+  "on_behalf_of": {
+    "id": "operator",
+    "type": "human"
+  },
+  "operation": "publish_report",
+  "preconditions": [
+    {
+      "equals": "accepted",
+      "path": "/status"
+    }
+  ],
+  "principal": {
+    "id": "executor-service",
+    "type": "workload"
+  },
+  "resource": {
+    "id": "example-report",
+    "type": "report"
+  },
+  "schema": "task-floor/action@1",
+  "surface": "api",
+  "task_id": "example-task",
+  "trace_context": {
+    "traceparent": "00-11111111111111111111111111111111-2222222222222222-01"
+  }
+}

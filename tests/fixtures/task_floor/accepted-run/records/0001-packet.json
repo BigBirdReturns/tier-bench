@@ -1,0 +1,1 @@
+{"goal":"Perform one state-bound local write and prove external acceptance.","packet_sha256":"b96b3abe9d87b84f68452ac3dbc6747b6c9d8645c031e7df9050c22d0604dc40","run_id":"synthetic-run","scenario_id":"synthetic-floor-task","schema":"tier-bench/task-computer-planner-packet@1","state":{"state_id":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"step_number":1}
