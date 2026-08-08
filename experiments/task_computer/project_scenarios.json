@@ -1,0 +1,140 @@
+{
+  "schema": "tier-bench/task-computer-catalog@1",
+  "id": "axm-project-task-computer-v1",
+  "title": "Project-native Task Computer qualification catalog",
+  "scenarios": [
+    {
+      "schema": "tier-bench/task-computer-scenario@1",
+      "id": "tier-desk-approve-underdrain",
+      "project": "tier-desk",
+      "title": "Review and arm the Underdrain authored pilot",
+      "goal": "Find the Underdrain authored-pilot task, read the acceptance contract, and arm it only after the review boundary is satisfied.",
+      "surface_order": ["playwright", "screen_ghost", "human"],
+      "variants": ["base", "reordered", "dynamic"],
+      "policy": {
+        "preauthorized_effects": ["read", "interactive"],
+        "approval_effects": ["local_write", "external_write", "sensitive", "privileged"],
+        "max_actions_per_proposal": 2
+      },
+      "acceptance": [
+        {"id": "acceptance-reviewed", "description": "The operator or agent opened the task acceptance contract before execution authority was granted."},
+        {"id": "task-queued", "description": "The task moved from DRAFT to QUEUED through a governed transition."}
+      ],
+      "cold_operator": {
+        "identity": "I am the Tier Desk operator governing a queued production task.",
+        "problem": "Underdrain cannot run until its authored-experience acceptance contract is reviewed.",
+        "choice": "I reviewed the acceptance contract and armed the task.",
+        "changed": "The task changed from DRAFT to QUEUED.",
+        "record": "The run retains the browser state, approval verdict, action receipt, and Tier Desk handoff.",
+        "next": "A Tier Desk worker may now claim the Underdrain task."
+      },
+      "handoff": {"target": "tier_desk_event_stream", "expected_downloads": []},
+      "reference_plan": [
+        {"id": "open-underdrain", "surface": "playwright", "op": "click", "effect": "read", "intent": "Open the Underdrain authored-pilot task from the queue.", "target": {"id": "task-underdrain"}, "args": {}},
+        {"id": "review-acceptance", "surface": "playwright", "op": "click", "effect": "read", "intent": "Read and acknowledge the player-facing acceptance contract.", "target": {"id": "acceptance-tab"}, "args": {}, "retry_seconds": 3},
+        {"id": "arm-underdrain", "surface": "playwright", "op": "click", "effect": "local_write", "intent": "Arm the reviewed Underdrain task for the governed Tier Desk queue.", "target": {"id": "arm-task"}, "args": {}}
+      ]
+    },
+    {
+      "schema": "tier-bench/task-computer-scenario@1",
+      "id": "axm-chat-pull-latest",
+      "project": "axm-chat",
+      "title": "Pull and seal new conversation turns",
+      "goal": "Open the shared conversation, determine what exists after the local shard boundary, import only the new turns, seal the updated local shard, and preserve a sync receipt.",
+      "surface_order": ["playwright", "workspace", "screen_ghost", "human"],
+      "variants": ["base", "reordered"],
+      "policy": {
+        "preauthorized_effects": ["read", "interactive", "local_write"],
+        "approval_effects": ["external_write", "sensitive", "privileged"],
+        "max_actions_per_proposal": 2
+      },
+      "acceptance": [
+        {"id": "three-turn-delta", "description": "Exactly three turns after the local boundary were imported."},
+        {"id": "shard-sealed", "description": "The updated local shard reached the remote turn boundary."},
+        {"id": "sync-receipt", "description": "A portable browser-sync receipt was downloaded into task custody."}
+      ],
+      "cold_operator": {
+        "identity": "I am the local AXM Chat intake operator.",
+        "problem": "The shared conversation contains turns that are not yet in the local signed shard.",
+        "choice": "I pulled the remote boundary, imported only turns 43 through 45, and sealed the shard.",
+        "changed": "The local conversation boundary advanced from turn 42 to turn 45 without duplicating prior turns.",
+        "record": "The computer retained source state, diff, import actions, shard handoff, and downloaded sync receipt.",
+        "next": "The refreshed shard can enter AXM Chat distillation and estate reconciliation."
+      },
+      "handoff": {"target": "axm_chat_browser_sync", "expected_downloads": ["sync-receipt.json"]},
+      "reference_plan": [
+        {"id": "open-shared-chat", "surface": "playwright", "op": "click", "effect": "read", "intent": "Open the shared Manus Playwright conversation.", "target": {"id": "open-shared-chat"}, "args": {}},
+        {"id": "pull-latest", "surface": "playwright", "op": "click", "effect": "read", "intent": "Retrieve the latest remote turn boundary and compute the delta.", "target": {"id": "pull-latest"}, "args": {}},
+        {"id": "import-new-turns", "surface": "playwright", "op": "click", "effect": "local_write", "intent": "Import only the three new turns into the local conversation estate.", "target": {"id": "import-turns"}, "args": {}},
+        {"id": "seal-local-shard", "surface": "playwright", "op": "click", "effect": "local_write", "intent": "Seal the refreshed local conversation shard at turn 45.", "target": {"id": "seal-shard"}, "args": {}},
+        {"id": "download-sync-receipt", "surface": "playwright", "op": "click", "effect": "read", "intent": "Download the browser-sync receipt into the task computer.", "target": {"id": "download-sync-receipt"}, "args": {}}
+      ]
+    },
+    {
+      "schema": "tier-bench/task-computer-scenario@1",
+      "id": "screen-ghost-visual-fallback",
+      "project": "screen-ghost",
+      "title": "Fall back from Playwright semantics to a photonic action",
+      "goal": "Detect that the rendered SYNC NOW control is absent from the semantic interaction map, issue a state-bound ScreenGhost request, tap the visual target, and verify the changed state.",
+      "surface_order": ["playwright", "screen_ghost", "human"],
+      "variants": ["base"],
+      "policy": {
+        "preauthorized_effects": ["read", "interactive", "local_write"],
+        "approval_effects": ["external_write", "sensitive", "privileged"],
+        "max_actions_per_proposal": 1
+      },
+      "acceptance": [
+        {"id": "visual-sync", "description": "The visual-only control changed the fixture state."},
+        {"id": "visual-route", "description": "The route is explicitly recorded as ScreenGhost rather than misrepresented as semantic DOM control."}
+      ],
+      "cold_operator": {
+        "identity": "I am the operator of a UI surface whose visible control is not exposed semantically.",
+        "problem": "Playwright can observe the page but cannot name the SYNC NOW control as an interactive element.",
+        "choice": "I admitted a screenshot-bound ScreenGhost tap against the current state.",
+        "changed": "The handset changed from waiting to synchronized.",
+        "record": "The run retains the source screenshot hash, ScreenGhost request, synthetic candidate, coordinates, and changed-state receipt.",
+        "next": "The same fallback contract can be connected to the real ScreenGhost model and device adapters."
+      },
+      "handoff": {"target": "screen_ghost_candidate_contract", "expected_downloads": []},
+      "reference_plan": [
+        {"id": "tap-visual-sync", "surface": "screen_ghost", "op": "tap", "effect": "local_write", "intent": "Tap the visual SYNC NOW control that is absent from the semantic DOM action map.", "target": {"visual_id": "sync-now"}, "args": {}}
+      ]
+    },
+    {
+      "schema": "tier-bench/task-computer-scenario@1",
+      "id": "axm-world-underdrain-playtest",
+      "project": "axm-world",
+      "title": "Cold-play the authored Underdrain pilot",
+      "goal": "Enter the Underdrain pilot as a new player, perform a real plumbing action, observe the fungal consequence, record the evidence, and reach a legible continuation.",
+      "surface_order": ["playwright", "screen_ghost", "human"],
+      "variants": ["base", "reordered", "dynamic"],
+      "policy": {
+        "preauthorized_effects": ["read", "interactive", "local_write"],
+        "approval_effects": ["external_write", "sensitive", "privileged"],
+        "max_actions_per_proposal": 2
+      },
+      "acceptance": [
+        {"id": "real-plumbing-choice", "description": "The player chose a concrete plumbing action rather than an abstract combat verb."},
+        {"id": "world-changed", "description": "The action exposed a visible authored consequence in the world."},
+        {"id": "evidence-recorded", "description": "The fungal sample was recorded as an in-world artifact."},
+        {"id": "continuation-unlocked", "description": "The final frame explains the next playable destination."},
+        {"id": "pilot-won", "description": "The player can complete the pilot without unexplained death or hidden win conditions."}
+      ],
+      "cold_operator": {
+        "identity": "I am the town plumber drafted into the hidden drain war.",
+        "problem": "Main Street is backing up because fungal mycelium is growing inside the drain system.",
+        "choice": "I snaked the main drain and followed the obstruction rather than performing an unrelated combat action.",
+        "changed": "The blockage tore open and revealed the fungal cause retreating into a service lateral.",
+        "record": "I sealed sample UD-01 with its location and consequence.",
+        "next": "I follow the mycelium into the municipal underworks."
+      },
+      "handoff": {"target": "axm_world_blind_playtest", "expected_downloads": []},
+      "reference_plan": [
+        {"id": "start-underdrain", "surface": "playwright", "op": "click", "effect": "interactive", "intent": "Enter the Main Street drain call as the town plumber.", "target": {"id": "start-pilot"}, "args": {}},
+        {"id": "snake-main-drain", "surface": "playwright", "op": "click", "effect": "local_write", "intent": "Use the drain snake on the measured obstruction eighteen feet into the line.", "target": {"id": "snake-drain"}, "args": {}},
+        {"id": "record-fungal-sample", "surface": "playwright", "op": "click", "effect": "local_write", "intent": "Bag the exposed fungal sample and record its location and consequence.", "target": {"id": "inspect-fungus"}, "args": {}, "retry_seconds": 3},
+        {"id": "report-and-continue", "surface": "playwright", "op": "click", "effect": "local_write", "intent": "Report the finding and unlock the municipal-underworks continuation.", "target": {"id": "report-back"}, "args": {}}
+      ]
+    }
+  ]
+}

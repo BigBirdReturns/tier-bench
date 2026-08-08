@@ -1,0 +1,120 @@
+name: playwright-computer
+
+on:
+  pull_request:
+    branches:
+      - main
+      - agent/conditional-memory-lab-v1
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  control-plane:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependency-free package
+        run: python -m pip install -e .
+      - name: Compile Playwright and Task Computer surfaces
+        run: >-
+          python -m py_compile
+          tier_runner/playwright_computer_common.py
+          tier_runner/playwright_computer_protocol.py
+          tier_runner/playwright_computer_runtime.py
+          tier_runner/playwright_computer.py
+          tier_runner/playwright_computer_server.py
+          tier_runner/playwright_computer_cli.py
+          tier_runner/task_computer_protocol.py
+          tier_runner/task_computer_fixture_oracles.py
+          tier_runner/task_computer_planner.py
+          tier_runner/task_computer_team.py
+          tier_runner/task_computer_worker.py
+          tier_runner/task_computer_worker_cli.py
+          tier_runner/task_computer_fixtures.py
+          tier_runner/task_computer_lab.py
+          tier_runner/task_computer_cli.py
+          examples/task_computer/fixture_team_agent.py
+          tests/test_playwright_computer.py
+          tests/test_playwright_computer_hardening.py
+          tests/test_playwright_effect_boundaries.py
+          tests/test_task_computer_team.py
+          tests/test_task_computer_lab.py
+      - name: Run zero-browser controls
+        run: |
+          python tests/test_playwright_computer.py
+          python tests/test_playwright_computer_hardening.py
+          python tests/test_playwright_effect_boundaries.py
+          python tests/test_task_computer_team.py
+          python tests/test_task_computer_lab.py
+      - name: Validate operator and project cartridge contracts
+        shell: bash
+        run: |
+          python -m tier_runner.playwright_computer_cli validate \
+            --config experiments/task_computer/playwright.example.json \
+            --root playwright-computer-ci-root
+          python -m tier_runner.task_computer_cli list \
+            --catalog experiments/task_computer/project_scenarios.json
+      - name: Parse Windows launchers
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          foreach ($Path in @(
+            "scripts/run-playwright-computer.ps1",
+            "scripts/run-task-computer-lab.ps1",
+            "scripts/run-task-computer-team-worker.ps1"
+          )) {
+            $Tokens = $null
+            $Errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $Path),
+              [ref]$Tokens,
+              [ref]$Errors
+            )
+            if ($Errors.Count -gt 0) {
+              $Errors | Format-List | Out-String | Write-Error
+              exit 1
+            }
+          }
+          Write-Host "TASK_COMPUTER_POWERSHELL_OK"
+
+  chromium-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install browser computer
+        run: python -m pip install -e ".[browser]"
+      - name: Install pinned Chromium runtime
+        run: python -m playwright install --with-deps chromium
+      - name: Run complete Playwright and project cartridge tests
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            python tests/test_playwright_computer.py
+            python tests/test_playwright_computer_hardening.py
+            python tests/test_playwright_effect_boundaries.py
+            python tests/test_task_computer_team.py
+            python tests/test_task_computer_lab.py
+          } 2>&1 | tee task-computer-test-output.txt
+      - name: Preserve Task Computer test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: task-computer-test-output
+          path: task-computer-test-output.txt
+          if-no-files-found: error

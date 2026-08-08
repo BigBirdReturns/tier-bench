@@ -1,0 +1,129 @@
+{
+  "schema": "tier-bench/manus-playwright-harvest@1",
+  "id": "manus-pre-acquisition-playwright-computer-v1",
+  "classification": "public reconstruction of an early Manus sandbox browser computer",
+  "evidence": {
+    "tier": "source-level reconstruction",
+    "venue": "archived public GitHub repository reconstructed from an early Manus sandbox",
+    "upstream_repository": "whit3rabbit/manus-open",
+    "upstream_commit": "9b619acaf2605a9de416944ccba838c277b1dfb9",
+    "official_source_release": false,
+    "license_file_observed": false,
+    "implementation_policy": "mechanism was studied; Tier Bench implementation is independently authored and does not vendor the recovered files"
+  },
+  "components": [
+    {
+      "path": "browser_use/browser/browser.py",
+      "blob_sha": "915ed84512f8156ad041af9da88739cbd7fc8e47",
+      "role": "Chromium factory supporting ordinary launch, persistent browser contexts, and CDP attachment",
+      "transfer": "one task-scoped browser factory with isolated, persistent, and operator-browser attachment modes"
+    },
+    {
+      "path": "browser_use/browser/context.py",
+      "blob_sha": "dca5730cfe04a1d069e8057d8a6f523bd84394d1",
+      "role": "long-lived Playwright context, page health, tabs, cookies, screenshots, downloads, allowlists, tracing, and state capture",
+      "transfer": "one durable browser context per task computer with state hashes, file artifacts, and recovery receipts"
+    },
+    {
+      "path": "browser_use/dom/buildDomTree.js",
+      "blob_sha": "b1b0b7f7054ffb6cda41939c231a080f1df3d62f",
+      "role": "in-page compiler that identifies visible interactive elements, assigns numeric indexes, traverses frames and open shadow roots, and paints overlays",
+      "transfer": "independently authored DOM probe producing indexed semantic elements and a marked screenshot"
+    },
+    {
+      "path": "browser_use/dom/service.py",
+      "blob_sha": "aa03f66e79b4998e9222f0a42abac9374b575343",
+      "role": "executes the DOM compiler through Playwright and reconstructs the model-facing element tree and selector map",
+      "transfer": "browser state is a compiled artifact rather than raw HTML or coordinates"
+    },
+    {
+      "path": "browser_use/dom/views.py",
+      "blob_sha": "a720ede97b390f644a42cfbefb6ba1b9e4843342",
+      "role": "serializes interactive elements into compact indexed text such as [index]<tag>name",
+      "transfer": "the planner receives a bounded semantic action surface aligned with the screenshot"
+    },
+    {
+      "path": "browser_use/dom/history_tree_processor/service.py",
+      "blob_sha": "5f424e161b001c2df06484dd9773f5a38166a327",
+      "role": "hashes element ancestry, attributes, and XPath to compare interaction targets across page states",
+      "transfer": "Tier Bench stores stable element signatures and binds every action to an exact state hash"
+    },
+    {
+      "path": "browser_use/controller/service.py",
+      "blob_sha": "03aebab916e3cf5916cbf9f4a326ef5f1b740b05",
+      "role": "typed browser actions for navigation, indexed clicks and input, tabs, scrolling, extraction, keys, dropdowns, and completion",
+      "transfer": "strict action schema, stale-state rejection, approval classification, and append-only action receipts"
+    },
+    {
+      "path": "browser_use/agent/prompts.py",
+      "blob_sha": "91985bc72ae9899ab863174836fc0811fbab960d",
+      "role": "planner protocol with page summary, previous-goal evaluation, memory, next goal, and up to ten actions",
+      "transfer": "planner and browser executor communicate through typed state and action documents"
+    },
+    {
+      "path": "browser_use/agent/service.py",
+      "blob_sha": "f38c881ec238e276fe49050380bb0af0afce5880",
+      "role": "observe, plan, act, record, retry, pause, and stop loop with optional separate planner and extraction models",
+      "transfer": "desktop control plane may route observation to one model and actions to another without moving the browser session"
+    },
+    {
+      "path": "app/server.py",
+      "blob_sha": "f5d9d763a1981ead429427eb8303c8cc14348e41",
+      "role": "FastAPI browser, terminal, text-editor, upload, and download surface inside one sandbox computer",
+      "transfer": "authenticated local browser service, event stream, artifacts, health, action, takeover, and shutdown endpoints"
+    },
+    {
+      "path": "app/tools/browser/browser_manager.py",
+      "blob_sha": "1f40075bc35b1550c82bde1ce71cfcbd1ce111bb",
+      "role": "per-action browser health, controller execution, state refresh, clean and marked screenshots, scroll metrics, and restart",
+      "transfer": "every action returns a new state and evidence packet rather than a bare success string"
+    },
+    {
+      "path": "app/types/browser_types.py",
+      "blob_sha": "974d7427f3d45a30669b6b43cee0f640b1077307",
+      "role": "browser action and result types spanning semantic indexes, coordinates, screenshots, console actions, and page state",
+      "transfer": "semantic actions are primary; coordinates and arbitrary JavaScript are privileged fallbacks"
+    }
+  ],
+  "mechanism": [
+    "Playwright controls one Chromium context that belongs to a task computer.",
+    "An injected DOM compiler converts the rendered page into visible text, numbered interactive elements, and a marked screenshot.",
+    "A planner evaluates the previous step and emits typed actions against the numbered state.",
+    "The controller executes actions through Playwright and refreshes state after each change.",
+    "A multi-action batch is interrupted when navigation, tabs, or interactive topology changes.",
+    "Downloads, screenshots, extracted text, cookies, and traces become files in the same computer workspace.",
+    "Browser health and page death are explicit runtime states rather than conversational errors."
+  ],
+  "retained": [
+    "long-lived task browser context",
+    "numeric semantic action surface aligned to screenshots",
+    "typed Playwright actions",
+    "page-state refresh after actions",
+    "batch interruption on page change",
+    "tabs, frames, open shadow DOM, downloads, traces, and session persistence",
+    "separate planner and executor seats",
+    "human takeover of the live browser"
+  ],
+  "hardened": [
+    "accessibility-first and test-id-first Playwright locators before CSS structure",
+    "exact state-hash binding for every indexed action",
+    "public-domain and private-network navigation policy",
+    "external side-effect and sensitive-input approval tokens",
+    "secrets and storage state outside exported artifacts",
+    "hash-chained event ledger and append-only action receipts",
+    "authenticated HTTP control surface and loopback default",
+    "clean and marked screenshots stored locally instead of mandatory third-party upload",
+    "no default arbitrary JavaScript or security-disable switch",
+    "human takeover lease that pauses agent actions"
+  ],
+  "rejected": [
+    "copying recovered source without an established license",
+    "XPath-first element execution",
+    "default disabled browser security",
+    "default no-sandbox launch policy",
+    "blind coordinate clicking as the primary control path",
+    "unapproved form submission, purchasing, publishing, deletion, or credential entry",
+    "putting authenticated browser state in Git",
+    "streaming the whole browser or model activations between the desktop and <dual-3090-node>"
+  ]
+}

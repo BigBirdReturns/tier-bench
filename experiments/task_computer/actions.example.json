@@ -1,0 +1,12 @@
+{
+  "actions": [
+    {
+      "schema": "tier-bench/playwright-action@1",
+      "action_id": "observe-initial",
+      "expected_state_id": null,
+      "op": "observe",
+      "args": {},
+      "intent": "Capture the current URL, tabs, visible text, marked screenshot, and indexed interaction surface."
+    }
+  ]
+}

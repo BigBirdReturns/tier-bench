@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/playwright_action.schema.json",
+  "title": "Tier Bench Playwright Action",
+  "type": "object",
+  "required": ["schema", "action_id", "op", "args", "intent"],
+  "properties": {
+    "schema": {"const": "tier-bench/playwright-action@1"},
+    "action_id": {"type": "string", "minLength": 1},
+    "expected_state_id": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "op": {
+      "enum": [
+        "observe", "navigate", "back", "open_tab", "switch_tab", "close_tab",
+        "click", "fill", "type", "press", "select", "scroll", "wait",
+        "extract", "screenshot", "upload", "javascript", "done"
+      ]
+    },
+    "args": {"type": "object"},
+    "intent": {"type": "string", "minLength": 1},
+    "approval_token": {"type": "string"}
+  },
+  "additionalProperties": false
+}
