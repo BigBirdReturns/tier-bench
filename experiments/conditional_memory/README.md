@@ -1,6 +1,6 @@
 # Conditional Memory Lab operator packet
 
-The estate has two hosts. The desktop carries the RTX 4060 and owns coordination, collection, verification policy, and artifact custody. The LG Gram carries both RTX 3090 eGPUs and owns the two independent execution seats.
+The estate has two hosts. The desktop carries the RTX 4060 and owns coordination, collection, verification policy, and artifact custody. The <dual-3090-node> carries both RTX 3090 eGPUs and owns the two independent execution seats.
 
 ## 1. Install the branch on both hosts
 
@@ -20,16 +20,16 @@ Use a reliable local SMB share. Tailscale may carry the SMB path when the comput
 Desktop:
 
 ```powershell
-$env:TIER_EXCHANGE_ROOT = "D:\TierExchange"
+$env:TIER_EXCHANGE_ROOT = "<tier-exchange-root>"
 ```
 
-LG Gram:
+<dual-3090-node>:
 
 ```powershell
-$env:TIER_EXCHANGE_ROOT = "Z:\TierExchange"
+$env:TIER_EXCHANGE_ROOT = "<tier-exchange-root>"
 ```
 
-The shared path is transport and handoff. Model execution uses local scratch on the LG Gram.
+The shared path is transport and handoff. Model execution uses local scratch on the <dual-3090-node>.
 
 ## 3. Bind exact GPU identities
 
@@ -40,7 +40,7 @@ nvidia-smi --query-gpu=index,uuid,name,memory.total --format=csv,noheader
 $env:TIER_GPU_4060_UUID = "GPU-..."
 ```
 
-LG Gram:
+<dual-3090-node>:
 
 ```powershell
 nvidia-smi --query-gpu=index,uuid,name,memory.total --format=csv,noheader
@@ -50,22 +50,22 @@ $env:TIER_GPU_3090_B_UUID = "GPU-..."
 
 Do not substitute ordinal values. Each worker child is masked by UUID before PyTorch import.
 
-## 4. Start the LG Gram worker
+## 4. Start the <dual-3090-node> worker
 
 One execution launches two child workers, one per eGPU:
 
 ```powershell
 .\scripts\run-conditional-memory-worker.ps1 `
-  -ExchangeRoot Z:\TierExchange `
-  -WorkRoot C:\TierWorker\ConditionalMemory
+  -ExchangeRoot <tier-exchange-root> `
+  -WorkRoot <tier-worker-root>\ConditionalMemory
 ```
 
 For persistent operation:
 
 ```powershell
 .\scripts\run-conditional-memory-worker.ps1 `
-  -ExchangeRoot Z:\TierExchange `
-  -WorkRoot C:\TierWorker\ConditionalMemory `
+  -ExchangeRoot <tier-exchange-root> `
+  -WorkRoot <tier-worker-root>\ConditionalMemory `
   -InstallScheduledTask
 ```
 
@@ -76,8 +76,8 @@ The worker watches for flights, claims work atomically, records heartbeats, runs
 ```powershell
 .\scripts\run-conditional-memory-lab.ps1 `
   -Profile smoke `
-  -ExchangeRoot D:\TierExchange `
-  -CoordinatorState D:\TierRuns\ConditionalMemory\Coordinator
+  -ExchangeRoot <tier-exchange-root> `
+  -CoordinatorState <tier-runs-root>\ConditionalMemory\Coordinator
 ```
 
 The smoke contains fourteen trial packets and fourteen dependent checkpoint-verification packets. The producer and verifier are always different RTX 3090 seats.
@@ -87,7 +87,7 @@ To release work without keeping the desktop terminal open:
 ```powershell
 .\scripts\run-conditional-memory-lab.ps1 `
   -Profile smoke `
-  -ExchangeRoot D:\TierExchange `
+  -ExchangeRoot <tier-exchange-root> `
   -PublishOnly
 ```
 
@@ -96,7 +96,7 @@ Later resume collection with the printed flight ID:
 ```powershell
 .\scripts\run-conditional-memory-lab.ps1 `
   -Profile smoke `
-  -ExchangeRoot D:\TierExchange `
+  -ExchangeRoot <tier-exchange-root> `
   -FlightId <flight-id> `
   -CollectOnly
 ```
@@ -105,7 +105,7 @@ Later resume collection with the printed flight ID:
 
 ```powershell
 python -m tier_runner.conditional_memory_exchange_cli status `
-  --flight-root D:\TierExchange\flights\<flight-id>
+  --flight-root <tier-exchange-root>\flights\<flight-id>
 ```
 
 The flight does not close while any packet is pending, claimed, failed, or missing. Stale claims require explicit `-ReclaimStale` on the worker.
@@ -117,8 +117,8 @@ After the physical smoke closes:
 ```powershell
 .\scripts\run-conditional-memory-lab.ps1 `
   -Profile canary `
-  -ExchangeRoot D:\TierExchange `
-  -CoordinatorState D:\TierRuns\ConditionalMemory\Coordinator
+  -ExchangeRoot <tier-exchange-root> `
+  -CoordinatorState <tier-runs-root>\ConditionalMemory\Coordinator
 ```
 
 The report remains experimental. It can name a promotable arm, but it records `promotion_authorized: false`.
@@ -130,7 +130,7 @@ Collection produces the immutable producer `receipt.json`, the copied `checkpoin
 ```powershell
 python -m tier_runner.conditional_memory_cli pack-export `
   --receipt <collected-trial>\run_trial\receipt.local.json `
-  --out-dir D:\TierRuns\ConditionalMemory\Packs\candidate-int4 `
+  --out-dir <tier-runs-root>\ConditionalMemory\Packs\candidate-int4 `
   --dtype int4 `
   --group-size 128
 ```

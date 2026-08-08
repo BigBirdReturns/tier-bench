@@ -1,7 +1,7 @@
-"""Content-addressed desktop-to-LG-Gram work exchange for Conditional Memory Lab.
+"""Content-addressed desktop-to-<dual-3090-node> work exchange for Conditional Memory Lab.
 
 The desktop owns orchestration, mutable state, collection, and final acceptance. The
-LG Gram owns two independent RTX 3090 execution seats. Hosts may mount the same SMB
+<dual-3090-node> owns two independent RTX 3090 execution seats. Hosts may mount the same SMB
 or Tailscale share at different local paths, so packets bind only relative paths and
 content hashes. No tensor, KV-cache, or model-parallel traffic crosses the network.
 """

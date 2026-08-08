@@ -2,7 +2,7 @@
 
 ## Physical roles
 
-The browser computer remains on the desktop. Its Chromium profile, files, tabs, downloads, approvals, action receipts, and human takeover boundary never move to the LG Gram.
+The browser computer remains on the desktop. Its Chromium profile, files, tabs, downloads, approvals, action receipts, and human takeover boundary never move to the <dual-3090-node>.
 
 ```text
 desktop RTX 4060 lane
@@ -11,12 +11,12 @@ desktop RTX 4060 lane
   deterministic policy critic
   action execution and changed-state observation
 
-LG Gram RTX 3090 A
+<dual-3090-node> RTX 3090 A
   planner worker
   receives bounded state packets
   returns typed action proposals
 
-LG Gram RTX 3090 B
+<dual-3090-node> RTX 3090 B
   independent critic worker
   receives the state and proposed action batch
   returns pass or hold with errors, warnings, and rationale
@@ -48,12 +48,12 @@ Each request is content-addressed by the current state and packet hash. A worker
 
 Use the deterministic fixture adapter to prove both GPU seats, shared storage, and desktop orchestration before loading a model.
 
-On the LG Gram, open two PowerShell windows. Bind the exact UUIDs reported by `nvidia-smi`:
+On the <dual-3090-node>, open two PowerShell windows. Bind the exact UUIDs reported by `nvidia-smi`:
 
 ```powershell
 $env:TIER_GPU_3090_A_UUID = "GPU-..."
 $env:TIER_GPU_3090_B_UUID = "GPU-..."
-$env:TIER_EXCHANGE_ROOT = "Z:\TierExchange\TaskComputer"
+$env:TIER_EXCHANGE_ROOT = "<tier-exchange-root>\TaskComputer"
 ```
 
 Start the planner seat:
@@ -63,7 +63,7 @@ Start the planner seat:
   -Role planner `
   -SeatId gpu.3090-a `
   -GpuUuidEnv TIER_GPU_3090_A_UUID `
-  -ExchangeRoot Z:\TierExchange\TaskComputer `
+  -ExchangeRoot <tier-exchange-root>\TaskComputer `
   -ModelCommand "python examples\task_computer\fixture_team_agent.py"
 ```
 
@@ -74,21 +74,21 @@ Start the critic seat:
   -Role critic `
   -SeatId gpu.3090-b `
   -GpuUuidEnv TIER_GPU_3090_B_UUID `
-  -ExchangeRoot Z:\TierExchange\TaskComputer `
+  -ExchangeRoot <tier-exchange-root>\TaskComputer `
   -ModelCommand "python examples\task_computer\fixture_team_agent.py"
 ```
 
 On the desktop, mount the same bytes and run a headed cartridge:
 
 ```powershell
-$env:TIER_EXCHANGE_ROOT = "D:\TierExchange\TaskComputer"
+$env:TIER_EXCHANGE_ROOT = "<tier-exchange-root>\TaskComputer"
 
 .\scripts\run-task-computer-lab.ps1 `
   -Command run `
   -Scenario axm-world-underdrain-playtest `
   -Variant reordered `
-  -PlannerExchange D:\TierExchange\TaskComputer `
-  -CriticExchange D:\TierExchange\TaskComputer `
+  -PlannerExchange <tier-exchange-root>\TaskComputer `
+  -CriticExchange <tier-exchange-root>\TaskComputer `
   -Headed
 ```
 

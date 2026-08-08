@@ -2,14 +2,14 @@
 param(
     [string]$RepoRoot,
     [string]$ExchangeRoot,
-    [string]$WorkRoot = "C:\TierWorker\ConditionalMemory",
-    [string]$NodeId = "lg-gram-dual3090",
+    [string]$WorkRoot = "<tier-worker-root>\ConditionalMemory",
+    [string]$NodeId = "<dual-3090-node>",
     [string]$Python = "python",
     [switch]$Once,
     [switch]$ReclaimStale,
     [switch]$ForceCpu,
     [switch]$InstallScheduledTask,
-    [string]$TaskName = "TierMemory-LG-Gram-Worker"
+    [string]$TaskName = "TierMemory-<dual-3090-node>-Worker"
 )
 
 $ErrorActionPreference = "Stop"

@@ -2,7 +2,7 @@
 param(
     [string]$RepoRoot,
     [string]$Config,
-    [string]$ComputerRoot = "D:\TierRuns\BrowserComputers\desktop-playwright-computer-01",
+    [string]$ComputerRoot = "<tier-runs-root>\BrowserComputers\desktop-playwright-computer-01",
     [string]$HostAddress = "127.0.0.1",
     [int]$Port = 8788,
     [string]$Python = "python",

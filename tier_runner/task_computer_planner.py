@@ -151,7 +151,7 @@ class CommandPlanner:
 
 
 class FileExchangePlanner:
-    """Content-addressed planner handoff for an LG Gram or another worker host."""
+    """Content-addressed planner handoff for an <dual-3090-node> or another worker host."""
 
     def __init__(
         self,

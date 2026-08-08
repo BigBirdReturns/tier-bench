@@ -52,14 +52,14 @@ tiertaskcomputer run `
   --scenario axm-chat-pull-latest `
   --variant base `
   --headed `
-  --out-root D:\TierRuns\TaskComputer
+  --out-root <tier-runs-root>\TaskComputer
 ```
 
 Run the full mutation suite headlessly:
 
 ```powershell
 tiertaskcomputer suite `
-  --out-root D:\TierRuns\TaskComputer
+  --out-root <tier-runs-root>\TaskComputer
 ```
 
 The suite executes every declared scenario variant. A run directory contains:
@@ -85,7 +85,7 @@ receipt.json
 Verify a completed run without reopening the browser:
 
 ```powershell
-tiertaskcomputer verify --run-dir D:\TierRuns\TaskComputer\<run-id>
+tiertaskcomputer verify --run-dir <tier-runs-root>\TaskComputer\<run-id>
 ```
 
 ## Planner iteration
@@ -97,20 +97,20 @@ To test a local model, provide an executable that reads one planner packet as JS
 ```powershell
 tiertaskcomputer run `
   --scenario tier-desk-approve-underdrain `
-  --planner-command "python D:\TierModels\planner_wrapper.py" `
-  --out-root D:\TierRuns\TaskComputer
+  --planner-command "python <tier-models-root>\planner_wrapper.py" `
+  --out-root <tier-runs-root>\TaskComputer
 ```
 
 The proposal must bind both the packet hash and current state hash. The response contract is embedded in every packet.
 
-For the LG Gram topology, use a shared exchange:
+For the <dual-3090-node> topology, use a shared exchange:
 
 ```powershell
 tiertaskcomputer run `
   --scenario axm-world-underdrain-playtest `
-  --planner-exchange Z:\TierExchange\TaskComputer `
+  --planner-exchange <tier-exchange-root>\TaskComputer `
   --planner-timeout 1800 `
-  --out-root D:\TierRuns\TaskComputer
+  --out-root <tier-runs-root>\TaskComputer
 ```
 
 The desktop writes a content-addressed request under:

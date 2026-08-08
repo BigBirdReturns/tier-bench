@@ -79,8 +79,8 @@ jobs:
               counts == {"gpu.3090-a": 1, "gpu.3090-b": 1}
               for counts in plan["pairing"]["seat_counts"].values()
           )
-          assert flight["manifest"]["authority"]["scheduler"] == "desktop-4060"
-          assert flight["manifest"]["authority"]["execution"] == "lg-gram-dual3090"
+          assert flight["manifest"]["authority"]["scheduler"] == "<rtx-4060-node>"
+          assert flight["manifest"]["authority"]["execution"] == "<dual-3090-node>"
           print("CONDITIONAL_MEMORY_DISTRIBUTED_PLAN_OK", plan["plan_sha256"])
           PY
       - name: Parse Windows launchers

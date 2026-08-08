@@ -6,7 +6,7 @@ param(
     [string]$Catalog,
     [string]$Scenario = "axm-chat-pull-latest",
     [string]$Variant = "base",
-    [string]$OutRoot = "D:\TierRuns\TaskComputer",
+    [string]$OutRoot = "<tier-runs-root>\TaskComputer",
     [string]$RunDir,
     [string]$PlannerCommand,
     [string]$PlannerExchange,
