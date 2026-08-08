@@ -9,7 +9,7 @@ param(
     [string]$DriverStateRoot,
     [string]$Bundle,
     [string]$ArtifactRoot,
-    [string]$OutRoot = "D:\TierRuns\TaskFloor",
+    [string]$OutRoot = "<tier-runs-root>\TaskFloor",
     [string]$Python = "python"
 )
 

@@ -6,7 +6,7 @@ param(
     [ValidateSet("smoke", "canary", "full")]
     [string]$Profile = "smoke",
     [string]$ExchangeRoot,
-    [string]$CoordinatorState = "D:\TierRuns\ConditionalMemory\Coordinator",
+    [string]$CoordinatorState = "<tier-runs-root>\ConditionalMemory\Coordinator",
     [string]$Python = "python",
     [string]$FlightId,
     [switch]$PublishOnly,
@@ -50,7 +50,7 @@ try {
         if ($ForceCpu) { $Arguments += "--force-cpu" }
         Invoke-Tier -Arguments $Arguments
         Write-Host "Published $FlightId to $FlightRoot"
-        Write-Host "The LG Gram worker can claim the flight now."
+        Write-Host "The <dual-3090-node> worker can claim the flight now."
     }
 
     if ($PublishOnly) {
@@ -63,7 +63,7 @@ try {
         exit 0
     }
 
-    Write-Host "Waiting for the LG Gram submissions. Press Ctrl+C to stop polling."
+    Write-Host "Waiting for the <dual-3090-node> submissions. Press Ctrl+C to stop polling."
     while ($true) {
         $StatusJson = & $Python -m $Module status --flight-root $FlightRoot
         if ($LASTEXITCODE -ne 0) { throw "Exchange status failed." }

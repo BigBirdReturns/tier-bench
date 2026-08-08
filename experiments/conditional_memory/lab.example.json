@@ -3,7 +3,7 @@
   "id": "conditional-memory-association-canary-v1",
   "title": "Matched conditional-memory architecture and placement canary",
   "purpose": "Measure whether sparse learned memory improves held validation loss per active parameter and hot-memory byte under the same data, seeds, optimizer, decoder, and target hardware.",
-  "state_root": "D:/TierRuns/ConditionalMemory",
+  "state_root": "<tier-runs-root>/ConditionalMemory",
   "default_profile": "smoke",
   "dataset": {
     "kind": "synthetic_associations",

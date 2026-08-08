@@ -504,7 +504,7 @@ def validate_lab(raw: Any) -> dict[str, Any]:
         "default_profile": default_profile,
         "promotion": promotion,
         "state_root": need_text(
-            lab.get("state_root", "D:/TierRuns/ConditionalMemory"),
+            lab.get("state_root", "<tier-runs-root>/ConditionalMemory"),
             "lab.state_root",
             limit=1000,
         ),

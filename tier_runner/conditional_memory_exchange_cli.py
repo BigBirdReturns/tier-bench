@@ -1,4 +1,4 @@
-"""CLI for desktop coordination and LG Gram dual-3090 workers."""
+"""CLI for desktop coordination and <dual-3090-node> dual-3090 workers."""
 from __future__ import annotations
 
 import argparse
@@ -23,7 +23,7 @@ def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(
         prog="tiermemorycluster",
         description=(
-            "Coordinate a desktop 4060 control node with an LG Gram dual-eGPU 3090 "
+            "Coordinate a desktop 4060 control node with an <dual-3090-node> dual-eGPU 3090 "
             "worker through immutable work packets and returned receipts."
         ),
     )

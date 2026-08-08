@@ -110,11 +110,11 @@ The default policy requires `TIER_BROWSER_APPROVAL_TOKEN` for external writes, a
 
 A takeover request creates an exclusive time-limited lease and pauses all agent actions. The persistent browser remains visible on the desktop, allowing the operator to complete login, CAPTCHA, consent, payment review, or any other step that should not be delegated. Releasing the lease triggers a new observation before agent work resumes.
 
-## Desktop and LG Gram topology
+## Desktop and <dual-3090-node> topology
 
 The browser computer normally lives on the desktop because it is the inspectable, operator-adjacent stateful environment. Chromium itself is primarily a CPU and RAM service. The RTX 4060 may handle local vision, OCR alternatives, embeddings, ranking, and a small control model.
 
-The two RTX 3090 eGPUs on the LG Gram are independent planning and verification seats. They receive a bounded browser state packet:
+The two RTX 3090 eGPUs on the <dual-3090-node> are independent planning and verification seats. They receive a bounded browser state packet:
 
 ```text
 state JSON
@@ -174,7 +174,7 @@ Start the visible persistent computer on the desktop:
 ```powershell
 .\scripts\run-playwright-computer.ps1 `
   -Config experiments\task_computer\playwright.example.json `
-  -ComputerRoot D:\TierRuns\BrowserComputers\desktop-playwright-computer-01 `
+  -ComputerRoot <tier-runs-root>\BrowserComputers\desktop-playwright-computer-01 `
   -HostAddress 127.0.0.1 `
   -Port 8788
 ```

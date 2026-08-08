@@ -2,14 +2,14 @@
   "schema": "tier-bench/conditional-memory-cluster@1",
   "id": "home-frontier-dual-egpu-v1",
   "coordinator": {
-    "id": "desktop-4060",
+    "id": "<rtx-4060-node>",
     "hostname_env": "TIER_DESKTOP_HOSTNAME",
     "require_hostname": false,
     "service_gpu_uuid_env": "TIER_GPU_4060_UUID",
     "service_gpu_expected_name_contains": "4060"
   },
   "worker": {
-    "id": "lg-gram-dual3090",
+    "id": "<dual-3090-node>",
     "hostname_env": "TIER_GRAM_HOSTNAME",
     "require_hostname": false,
     "seats": [
