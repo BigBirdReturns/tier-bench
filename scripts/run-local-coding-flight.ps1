@@ -11,7 +11,7 @@ param(
     [double]$MinWorkerDeltaMiB = 4096,
     [double]$MaxUtilityDeltaMiB = 1536,
     [int]$CallTimeoutSeconds = 900,
-    [string]$OutputRoot = "D:\TierRuns\LocalCoding",
+    [string]$OutputRoot = "<tier-runs-root>\LocalCoding",
     [string]$Python = "python",
     [string]$Ollama = "ollama",
     [string]$Claude = "claude",

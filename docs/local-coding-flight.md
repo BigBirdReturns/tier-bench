@@ -27,7 +27,7 @@ The host needs Windows PowerShell or PowerShell 7, Python 3.10 or newer, Git, `n
 Install the checked-out Tier Bench branch in editable mode:
 
 ```powershell
-cd D:\TierDesk\Projects\tier-bench
+cd <tier-desk-root>\Projects\tier-bench
 python -m pip install -e .
 ```
 
@@ -89,7 +89,7 @@ The pass condition qualifies the local execution path only. It does not establis
 The default root is:
 
 ```text
-D:\TierRuns\LocalCoding\
+<tier-runs-root>\LocalCoding\
 ```
 
 The launcher creates a `bootstrap-<timestamp>` directory containing the dedicated-server logs, server attestation, captured command output, and launcher closeout. The Python flight creates a separate `local-coding-<profile>-<timestamp>-<id>` directory containing:
@@ -130,8 +130,8 @@ The printed JSON includes `report_path` and `report_sha256`. The report itself i
 
 ```powershell
 tiercode freeze `
-  --repo D:\Projects\Cloud\BigBirdReturns\some-repo `
-  --server-attestation D:\TierRuns\LocalCoding\bootstrap-<timestamp>\ollama-server-attestation.json
+  --repo <projects-root>\Cloud\BigBirdReturns\some-repo `
+  --server-attestation <tier-runs-root>\LocalCoding\bootstrap-<timestamp>\ollama-server-attestation.json
 ```
 
 The generated manifest binds the current server-attestation hash and is therefore session-bound. It is suitable for a controlled target-repository canary while the same dedicated server remains alive. A server restart requires a new freeze. Persistent Monster Wrangler service custody should use a later runtime-attestation indirection rather than committing a new process identity on every restart.
