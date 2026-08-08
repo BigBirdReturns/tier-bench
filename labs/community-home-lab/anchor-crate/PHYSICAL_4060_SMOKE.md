@@ -12,12 +12,12 @@ The control host must provide enabled paths for Python, Ollama, and `nvidia-smi`
 
 ```powershell
 .\scripts\run-anchor-crate-4060-smoke.ps1 `
-  -TierBenchRoot D:\Projects\tier-bench `
-  -GradientRoot D:\Projects\axm-tools\home-lab-gradient `
-  -EstateReceipt C:\Users\BAM-Desktop\AppData\Local\AXM\home-lab-gradient\runs\<census>\experiment.receipt.json `
-  -EstateObservation C:\Users\BAM-Desktop\AppData\Local\AXM\home-lab-gradient\runs\<census>\estate-observation.json `
-  -ControlHostObservation C:\Users\BAM-Desktop\AppData\Local\AXM\home-lab-gradient\runs\<census>\inputs\control-host.json `
-  -OutRoot D:\Evidence\anchor-crate-4060-smoke
+  -TierBenchRoot <projects-root>\tier-bench `
+  -GradientRoot <projects-root>\axm-tools\home-lab-gradient `
+  -EstateReceipt <operator-home>\AppData\Local\AXM\home-lab-gradient\runs\<census>\experiment.receipt.json `
+  -EstateObservation <operator-home>\AppData\Local\AXM\home-lab-gradient\runs\<census>\estate-observation.json `
+  -ControlHostObservation <operator-home>\AppData\Local\AXM\home-lab-gradient\runs\<census>\inputs\control-host.json `
+  -OutRoot <evidence-root>\anchor-crate-4060-smoke
 ```
 
 `ANCHOR4060.cmd` forwards the same arguments.
