@@ -221,7 +221,7 @@ def control_observation(nvidia_path: str) -> dict[str, Any]:
         "schema": "axm-community-lab/windows-host-observation@1",
         "observed_at": "2026-08-05T00:00:00Z",
         "host_id": "control-host",
-        "system": {"computer_name": "BAM-DESKTOP"},
+        "system": {"computer_name": "<operator-workstation>"},
         "cpu": [{"name": "Intel fixture"}],
         "memory": {"total_bytes": 32 * 1024**3},
         "storage": {"physical_disks": [{"model": "NVMe fixture"}]},
