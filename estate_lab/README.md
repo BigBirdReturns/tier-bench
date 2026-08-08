@@ -121,8 +121,8 @@ The Windows launcher defaults to the current project topology and keeps output o
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File estate_lab/scripts/run_estate_lab.ps1 \
-  -Workspace D:\Projects \
-  -Output D:\Projects\AXM\estate-lab-runs \
+  -Workspace <projects-root> \
+  -Output <projects-root>\AXM\estate-lab-runs \
   -ProbeProfile smoke
 ```
 

@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$Workspace = "D:\Projects",
-    [string]$Output = "D:\Projects\AXM\estate-lab-runs",
+    [string]$Workspace = "<projects-root>",
+    [string]$Output = "<projects-root>\AXM\estate-lab-runs",
     [ValidateSet("none", "smoke", "full", "all")]
     [string]$ProbeProfile = "smoke",
     [ValidateSet("synthetic", "live")]
