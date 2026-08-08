@@ -30,7 +30,7 @@ Accepted work cache, TierBench, Venkman, project writeback
 | Internal RTX 4060 | Resident utility cartridge for extraction, embeddings, vision, and small models |
 | Core X plus RTX 3090 | Detachable 24 GiB burst cartridge for heavy candidate nodes |
 | NUC6i7KYK | Native-Ubuntu head, network head, overnight worker, and host-substitution control |
-| LG Gram and Galaxy Book | Detachable operator heads and Thunderbolt-host qualification arms |
+| <dual-3090-node> and Galaxy Book | Detachable operator heads and Thunderbolt-host qualification arms |
 | NVMe | Hot cartridges, runtime images, current artifacts, indexes, and conversion scratch |
 | HDD estate | Model lake, inactive cartridges, historical evidence, checkpoints, and receipts |
 
