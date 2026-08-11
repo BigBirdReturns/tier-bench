@@ -1,0 +1,52 @@
+{
+  "authority": "migration-custody-only",
+  "cleanup_authorized": false,
+  "execution_authorized": false,
+  "heads": [
+    {
+      "commit": "202fd8cfb03ec038ae0da2bfedb0bc5727b12e7d",
+      "destination": "BigBirdReturns/tier-bench",
+      "name": "execution-product",
+      "parent": "0fd578b39a04bde517c53769609cb83a6677aa20",
+      "pr": 294,
+      "standing": "terminal-linux-product-donor",
+      "tree": "538b750ba3a90fabac0311987012d1b61f4027a4"
+    },
+    {
+      "commit": "0e90b9adf63a863f986003ec169fa81dc25514db",
+      "destination": "BigBirdReturns/tier-bench",
+      "name": "loopback-credential-service",
+      "parent": "537ef6142f43233971feefe58be97d7d414fd913",
+      "pr": 282,
+      "receipt_artifact": 9098010414,
+      "standing": "terminal-v2-published-orthogonal-service-donor",
+      "terminal_receipt": "ASOIAF_LOOPBACK_TLS_TERMINAL_RECEIPT_V2",
+      "tree": "4b1a7e6b16a0091816b753203cf87075073a0eb7"
+    },
+    {
+      "commit": "2f02e948e1db34d80243831081cc50ccf4653fd4",
+      "destination": "historical-custody-until-clean-windows-product",
+      "name": "windows-isolation-diagnostic",
+      "parent": "5d55f2397a935c9a428e03809fd80cf27826a0d7",
+      "pr": 298,
+      "standing": "diagnostic-only",
+      "tree": "629f94149beea6c1444a3798baeca9da7b985d23"
+    }
+  ],
+  "ownership_cut": {
+    "asoiaf_lore": "axm-arc PRs #224-248 -> axm-canon/asoiaf",
+    "execution_infrastructure": "axm-arc PR #249 onward -> Tier Bench",
+    "portable_canon": "axm-arc PR #221 -> axm-canon"
+  },
+  "receipt_sha256": "cef5bfb530fa8c87f6960688e30e114f93742251565def18b1f095bbd1dc0ed3",
+  "schema": "tier-bench/axm-arc-execution-source-heads@1",
+  "source_export": {
+    "artifact_id": 9111377925,
+    "artifact_name": "tier-bench-execution-donor-export-v1",
+    "artifact_zip_sha256": "7ba0655985cd8d15eae45d275c23638a937eb00698b77aa4a6651e00d22ed592",
+    "expires_at": "2026-09-10T17:17:39Z",
+    "independent_verification": "outer digest, internal SHA256SUMS, and Git bundle refs passed",
+    "workflow_run": 31516794814
+  },
+  "source_repository": "BigBirdReturns/axm-arc"
+}

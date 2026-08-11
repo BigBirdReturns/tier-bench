@@ -1,0 +1,37 @@
+{
+  "deletion_authority": "none beyond the disposable exporter refs",
+  "receipt_sha256": "520a085c55b75c7ee22f5aab08ae1263f0aa3581f15e4721cd81b53f63138341",
+  "rows": [
+    {
+      "classification": "QUALIFIED_DONOR",
+      "disposition": "KEEP_UNTIL_DESTINATION_PRODUCT_QUALIFIES",
+      "object": "axm-arc PRs #249-294 execution product line",
+      "removal_authorized": false
+    },
+    {
+      "classification": "TERMINAL_V2_PUBLISHED_ORTHOGONAL_DONOR",
+      "disposition": "KEEP_UNTIL_DESTINATION_SERVICE_QUALIFIES",
+      "object": "axm-arc PR #282 loopback credential service",
+      "removal_authorized": false
+    },
+    {
+      "classification": "HISTORICAL_KEEP_UNTIL_PRODUCT",
+      "disposition": "KEEP_DIAGNOSTIC_OUT_OF_PRODUCT_ANCESTRY",
+      "object": "axm-arc PR #298 Windows diagnostic",
+      "removal_authorized": false
+    },
+    {
+      "classification": "SOURCE_NAMESPACE_RESIDUE",
+      "disposition": "RENAME_IN_DESTINATION_AND_LEAVE_EXACT_TOMBSTONES",
+      "object": "historical asoiaf-answer-* names",
+      "removal_authorized": false
+    },
+    {
+      "classification": "DISPOSABLE_EXPORT_TRIGGER",
+      "disposition": "CLOSE_UNMERGED_AND_COLLAPSE_REFS_AFTER_STAGING",
+      "object": "axm-arc exporter PR #301",
+      "removal_authorized": true
+    }
+  ],
+  "schema": "tier-bench/axm-arc-execution-residue-ledger@1"
+}

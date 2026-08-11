@@ -1,0 +1,85 @@
+{
+  "destination_package": "packages/execution-train",
+  "destination_repository": "BigBirdReturns/tier-bench",
+  "domain_adapter_boundary": {
+    "generic_core_must_accept": [
+      "typed work definition",
+      "typed artifact reference",
+      "typed result envelope",
+      "authority envelope",
+      "external acceptance receipt"
+    ],
+    "stays_with_axm_canon_asoiaf": [
+      "ASOIAF question dossier",
+      "ASOIAF exact-source reconciliation",
+      "ASOIAF reviewed answer packet",
+      "ASOIAF lore or canon authority"
+    ]
+  },
+  "execution_authorized": false,
+  "forbidden_imports": [
+    "private book payload",
+    "ASOIAF recall packets",
+    "canon standing",
+    "Arc game-law authority"
+  ],
+  "migration_accepted": false,
+  "planes": [
+    {
+      "authority": "typed work custody and scheduling only",
+      "destination": "packages/execution-train/src/control",
+      "id": "work-control",
+      "source_modules": [
+        "work-order",
+        "work-lease",
+        "desk-estate",
+        "worker",
+        "exchange",
+        "supervisor"
+      ]
+    },
+    {
+      "authority": "authenticated movement and replay only",
+      "destination": "packages/execution-train/src/transport",
+      "id": "authenticated-delivery",
+      "source_modules": [
+        "transport",
+        "transport-operations",
+        "supervised-delivery"
+      ]
+    },
+    {
+      "authority": "credential governance, binding, and use evidence only",
+      "destination": "packages/execution-train/src/credentials",
+      "id": "credential-lifecycle",
+      "source_modules": [
+        "transport-enrollment",
+        "credential-deployment",
+        "credential-broker",
+        "credential-provider-host",
+        "broker-service",
+        "loopback-tls"
+      ]
+    },
+    {
+      "authority": "assignment-local runtime, process, and OS evidence only",
+      "destination": "packages/execution-train/src/actor",
+      "id": "actor-execution",
+      "source_modules": [
+        "actor-runtime",
+        "actor-adapter-host",
+        "actor-capability-broker"
+      ]
+    },
+    {
+      "authority": "diagnostic custody only; never product ancestry",
+      "destination": "migration/axm-arc-execution-train-v1/historical/windows-diagnostic",
+      "id": "windows-diagnostic",
+      "source_modules": [
+        "actor-capability-windows-probe-v1"
+      ]
+    }
+  ],
+  "receipt_sha256": "8c7c890800f7809de8ac04c2cf777e3ca48b4cb6a35c6f4e1390ed78accd1f47",
+  "schema": "tier-bench/axm-arc-execution-ownership-map@1"
+}

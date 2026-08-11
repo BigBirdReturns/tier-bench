@@ -1,0 +1,42 @@
+name: axm-arc-execution-train-migration
+
+on:
+  pull_request:
+    paths:
+      - "migration/axm-arc-execution-train-v1/**"
+      - "tests/test_axm_arc_execution_train_migration.py"
+      - ".github/workflows/axm-arc-execution-train-migration.yml"
+  push:
+    branches:
+      - migration/axm-arc-execution-train-v1
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Compile migration verifier and tests
+        run: >-
+          python -B -m py_compile
+          migration/axm-arc-execution-train-v1/verify_migration.py
+          tests/test_axm_arc_execution_train_migration.py
+      - name: Verify exact staged custody
+        run: python -B migration/axm-arc-execution-train-v1/verify_migration.py
+      - name: Run migration witnesses
+        run: python -B -m unittest -v tests.test_axm_arc_execution_train_migration
+      - name: Require pristine source
+        shell: bash
+        run: git diff --exit-code
