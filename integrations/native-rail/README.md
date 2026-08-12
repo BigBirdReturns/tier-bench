@@ -5,13 +5,13 @@ on a per-job GitHub-hosted runner. GitHub stays the canonical surface for source
 review and status. The rail owns queue, claims, execution, recovery and
 settlement.
 
-**The operative contract is v5.** v1 and v2 live under `historical/` and are not
-invocable; v3 and v4 are retained as valid predecessor evidence, not as
-contracts. Nothing outside the paths below should be reasoned from. See
+**The operative contract is v5, plus the final checkpoint-integrity delta.** v1
+and v2 live under `historical/` and are not invocable; v3 and v4 are retained as
+valid predecessor evidence, not as contracts. Nothing outside the paths below should be reasoned from. See
 [Superseded contracts](#superseded-contracts).
 
 ```text
-controller   integrations/native-rail/tbrail.py           (v5)
+controller   integrations/native-rail/tbrail.py           (v5 + delta)
 envelopes    integrations/native-rail/envelopes-v3/       (envelope schema @3)
 operations   integrations/native-rail/ops/ (rail scripts, digest-pinned)
              integrations/native-rail/repo-ops/ (accepted repository manifests)
@@ -162,7 +162,7 @@ Source custody and checkpoint bytes are **enforced budgets, not declarations**:
 | Budget | Limit | Enforced at |
 |---|---|---|
 | retained source custody | 5 GiB | `materialize_source`, before the clone |
-| checkpoint custody | 2 GiB, latest checkpoint only | `write_checkpoint`, before install |
+| checkpoint custody | 2 GiB, latest checkpoint only | `write_checkpoint`, refused **before** each write that would cross it |
 
 ## Leases
 
@@ -232,6 +232,17 @@ written, `fsync`ed, atomically renamed, and its parent directory `fsync`ed; the
 ledger runs SQLite WAL with `synchronous=FULL`, so a committed `SETTLED`
 transition is on disk before the commit returns.
 
+- **It fails closed.** `fsync_dir()` returns a Boolean and the publication paths
+  used to throw it away, so the controller could report a record as durably
+  published when the directory entry naming it was never committed. Every
+  *required* durability operation is now checked: the parent directory must be
+  syncable before the record is written and again after the publishing rename,
+  and the file's own `fsync` must succeed. Any failure REFUSES the transition —
+  for journal, receipt, sidecar, source-custody manifest and checkpoint
+  publication alike. Cleanup-only syncs (workspace deletion, checkpoint
+  retirement, journal clear, hot-source deletion) are retried and *reported*,
+  never described as durable when they failed, because their commit point is
+  already behind them.
 - **Witnessed:** controller-process crash. SIGKILL at six admitted settlement
   boundaries and two checkpoint boundaries, each recovered from a cold root.
 - **Implemented but NOT witnessed:** sudden power loss and storage-layer
@@ -268,12 +279,21 @@ controls:
   nothing is ever written *through* a link, and bind sources are separately
   resolved under the repository with symlinked sources refused. Hard links are
   refused at creation, because extraction cannot reproduce them safely.
-- **Bounded custody, enforced while writing.** One checkpoint may not exceed the
-  checkpoint quota, and the bound is enforced *as the archive streams* — v4
-  wrote the whole archive and checked its size afterwards, so an oversized
-  workspace was already in custody by the time it was refused. Only the latest
-  checkpoint is retained, because it is the only one recovery can use. v3 kept
-  one full workspace tar per PASSed phase, outside the workspace budget.
+- **Bounded custody: the PEAK partial is what the quota binds.** The `.partial`
+  is written through a bounded writer that refuses a write *before* it is passed
+  to the file, so the file on disk never reaches the quota, let alone crosses
+  it. v4 wrote the whole archive and checked its size afterwards. v5 checked
+  `fh.tell()` after each completed `addfile()`, which is still too late: the
+  member's header, body and padding were already written, so the partial's peak
+  size exceeded the quota even though its final size never did — measured at
+  67 072 bytes against a 65 536-byte ceiling, and stopped by the kernel with
+  `EFBIG` when the same case was run under a file-size rlimit equal to the
+  quota. The bounded writer refuses at 65 024 bytes with the next 1 536-byte
+  write unwritten, reports the size the *filesystem* holds at that instant, and
+  records `peak_partial_bytes` on every install. The payload preflight is
+  retained as an earlier, cheaper refusal. Only the latest checkpoint is
+  retained, because it is the only one recovery can use; v3 kept one full
+  workspace tar per PASSed phase, outside the workspace budget.
 - **The prior restore point outlives the new one's commit.** The superseded
   checkpoint is retired only after the new checkpoint *and its phase row* are
   durably committed. v4 installed the new checkpoint and deleted the old one
@@ -281,6 +301,19 @@ controls:
   committed PASS phase pointing at a checkpoint that no longer existed. Custody
   therefore holds two restore points inside that window and the declared ceiling
   says so.
+- **Recovery normalizes custody before it runs or settles.** Retaining the prior
+  restore point across the commit opens the mirror-image window: the controller
+  dies *after* a later phase row commits and before retirement runs, leaving two
+  restore points. Recovery skips every already-PASS phase, so nothing on the
+  resume path ever revisited them — and when the crashed phase was the last one,
+  settlement published a receipt whose checkpoint custody held two restore
+  points, which that receipt's own verifier rejects
+  (`checkpoint_custody_bounded`). Recovery now verifies the checkpoint named by
+  the last consecutive committed PASS row by digest and under the extraction
+  law, retires every other restore point, durably commits the checkpoint
+  directory, rechecks the bound, and retains the retired identities in the
+  recovery record — before a phase runs and before settlement counts custody.
+  No committed phase is re-executed and no output digest changes.
 
 ## Receipts
 
@@ -487,6 +520,22 @@ a route, a starting point or a contract; see `historical/README.md`.
   the interpreter executing the controller was unpinned; the process-ceiling
   proof was inferential; durability and crash-hook scope were unbounded; and the
   public tree carried the deployment's own coordinates.
+
+The **checkpoint-integrity delta** on top of v5 is not a new contract
+generation; it is three bounded repairs to v5 at head
+`67b913c3d3b553e20338e3ff0df79cd32ff2f30d`, whose 88/88 cold qualification
+(`receipts/COLD-QUALIFICATION-v5-SUMMARY.json`) is retained as the datum it
+always was. The three defects it closes: the checkpoint quota was audited by
+`fh.tell()` *after* a member was already written, so the partial's peak size
+crossed the ceiling while its final size never did; the checkpoint crash hook
+fired on the FIRST checkpoint, so no witness ever entered the state where an
+older accepted restore point coexists with a committed later phase row, and
+recovery — which skips every already-PASS phase — retired nothing, letting
+settlement publish a receipt its own verifier rejects; and `fsync_dir()`'s
+Boolean result was discarded by every publication path, so a directory entry
+that was never committed could still be reported as durably published. The
+qualification document schema is `@6` because the property set grew from 88 to
+91; the product contract is still v5.
 
 All are kept as evidence — bodies in private holder custody, exact digests in
 the `EVIDENCE-INDEX.json` beside each retired location. `python.repo_script` is

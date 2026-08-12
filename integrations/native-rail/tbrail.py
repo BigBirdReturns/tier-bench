@@ -281,22 +281,57 @@ def fsync_dir(d: Path) -> bool:
         os.close(fd)
 
 
+def require_dir_durable(d: Path, what: str) -> None:
+    """Refuse the transition when a required directory entry cannot be fsynced.
+
+    `fsync_dir` returns a Boolean and every required publication path used to
+    throw it away, so the controller could report a record as durably published
+    while the directory entry that names it was never committed. A durability
+    protocol that cannot fail is not a durability protocol: this fails CLOSED.
+
+    One retry, because a transient EIO that clears is not a reason to hold a
+    transaction; a second failure is.
+    """
+    if fsync_dir(d) or fsync_dir(d):
+        return
+    raise Reject(f"directory_durability_unavailable:{what}:{d}")
+
+
+def require_file_durable(fh, what: str) -> None:
+    """Same law for the file itself: an unsyncable body is not published."""
+    try:
+        os.fsync(fh.fileno())
+    except OSError as exc:
+        raise Reject(f"file_durability_unavailable:{what}:{exc.__class__.__name__}")
+
+
 def durable_write(path: Path, data: bytes) -> str:
     """Publish a controller record so it survives sudden power loss.
 
-    write -> flush -> fsync(file) -> atomic rename -> fsync(parent directory).
-    Every settlement record the ledger depends on is published this way, so the
-    durability claim in the receipt is a description of the code rather than an
-    aspiration.
+    probe(parent) -> write -> flush -> fsync(file) -> atomic rename ->
+    fsync(parent directory). Every settlement record the ledger depends on is
+    published this way, so the durability claim in the receipt is a description
+    of the code rather than an aspiration.
+
+    The parent directory is proved syncable BEFORE the temporary file is
+    written, so a directory that cannot be committed refuses the publication
+    while refusing is still free -- no partial, no rename, no half-durable
+    record whose name may never reach the disk. The post-rename sync is checked
+    too, so the caller's transition is refused rather than reported as durable.
     """
+    require_dir_durable(path.parent, "pre_publication:" + path.name)
     tmp = path.with_name(path.name + ".partial")
-    with open(tmp, "wb") as fh:
-        fh.write(data)
-        fh.flush()
-        os.fsync(fh.fileno())
-    harden(tmp)
-    os.replace(tmp, path)
-    fsync_dir(path.parent)
+    try:
+        with open(tmp, "wb") as fh:
+            fh.write(data)
+            fh.flush()
+            require_file_durable(fh, "publication:" + path.name)
+        harden(tmp)
+        os.replace(tmp, path)
+    finally:
+        if tmp.exists():
+            tmp.unlink(missing_ok=True)
+    require_dir_durable(path.parent, "publication:" + path.name)
     harden(path)
     return sha256_bytes(data)
 
@@ -1554,6 +1589,28 @@ def checkpoint_custody(txn_id: str) -> dict:
                "actually is. Checkpoints are purged only after the ledger "
                "transition to SETTLED is verified, so no crash window can strand "
                "a PASSed phase without its restore point.",
+        "normalization_law": "a crash after a later phase row commits but before "
+                             "its superseded restore point is retired leaves two "
+                             "checkpoints that the resume path -- which skips "
+                             "every already-PASS phase -- would never revisit. "
+                             "Recovery therefore NORMALIZES custody before it "
+                             "runs or settles: it verifies the checkpoint named "
+                             "by the last consecutive committed PASS row by "
+                             "digest and under the extraction law, retires every "
+                             "other restore point, durably commits the directory "
+                             "entry, rechecks the bound, and retains the retired "
+                             "identities in the recovery record.",
+        "quota_enforcement": "a bounded writer refuses any write that would "
+                             "carry the partial past the quota, so PEAK partial "
+                             "bytes -- not merely final bytes -- are what the "
+                             "ceiling binds; the payload preflight is retained "
+                             "as an earlier, cheaper refusal.",
+        "durability_law": "checkpoint publication fails CLOSED: the checkpoint "
+                          "directory entry must be fsyncable before a byte is "
+                          "taken into custody and after the install rename, or "
+                          "the transition is refused. Retirement is cleanup and "
+                          "its directory sync is retried and reported, never "
+                          "described as durable when it failed.",
         "creation_law": "a checkpoint may contain exactly what the extraction "
                         "law will restore: directories, regular files with one "
                         "link, and symbolic links. A workspace holding a hard "
@@ -1636,6 +1693,86 @@ def assert_restorable(path: Path, ws: Path) -> dict:
             "law": "validated under the extraction law at install time"}
 
 
+class QuotaRefused(Reject):
+    """A write was refused AT the ceiling, carrying what was measured there."""
+
+    def __init__(self, message: str, evidence: dict):
+        super().__init__(message)
+        self.evidence = evidence
+
+
+class BoundedWriter:
+    """A file object that refuses a write BEFORE the file would cross a ceiling.
+
+    The revision this replaces handed `tarfile` an ordinary file object and
+    checked `fh.tell()` after each completed `addfile()`. By then the member's
+    header, body and padding were already written: the partial's PEAK size
+    exceeded the quota even though its FINAL size never did, and the controller
+    was reporting a bound it had already broken. Peak bytes are what custody
+    accounting actually holds, so the bound has to be enforced at the write, not
+    audited after it.
+
+    The stream is unbuffered on purpose. `self.written` is then the exact size
+    of the file on disk rather than a logical position that a buffer may not
+    have flushed yet, so the refusal can name what the filesystem is holding at
+    the instant it fires, and `os.fstat` is used to say so rather than trusting
+    this class's own counter.
+    """
+
+    def __init__(self, fh, quota: int):
+        self._fh = fh
+        self.quota = int(quota)
+        self.written = 0
+        self.peak = 0
+        self.refusal: dict | None = None
+
+    def write(self, data) -> int:
+        view = memoryview(data)
+        n = view.nbytes
+        if self.written + n > self.quota:
+            self.refusal = {
+                "quota_bytes": self.quota,
+                "bytes_on_disk_before_refusal": self.written,
+                "measured_file_size_at_refusal": self._measure(),
+                "refused_write_bytes": n,
+                "would_have_reached": self.written + n,
+                "enforced": "refused before the underlying write",
+            }
+            raise QuotaRefused(
+                f"checkpoint_quota_refused_before_write:{self.written}+{n}>"
+                f"{self.quota}", self.refusal)
+        while view:
+            wrote = self._fh.write(view)
+            if not wrote:
+                raise Reject("checkpoint_partial_write_stalled")
+            self.written += wrote
+            view = view[wrote:]
+        self.peak = max(self.peak, self.written)
+        return n
+
+    def _measure(self) -> int:
+        # -1, never an exception: this runs inside a refusal path and on a file
+        # object the caller may already have closed.
+        try:
+            return os.fstat(self._fh.fileno()).st_size
+        except (OSError, ValueError):
+            return -1
+
+    def tell(self) -> int:
+        return self.written
+
+    def flush(self) -> None:
+        with contextlib.suppress(OSError, ValueError):
+            self._fh.flush()
+
+    def fileno(self) -> int:
+        return self._fh.fileno()
+
+    def measured_peak(self) -> int:
+        """Peak bytes as the FILESYSTEM saw them, not as this object counted."""
+        return max(self.peak, self._measure())
+
+
 def write_checkpoint(txn_id: str, idx: int, ws: Path) -> tuple[str, str, dict]:
     """Capture the workspace a PASSed phase produced, under a bound.
 
@@ -1660,12 +1797,17 @@ def write_checkpoint(txn_id: str, idx: int, ws: Path) -> tuple[str, str, dict]:
     members, payload = _checkpoint_source_plan(ws)
     if payload > CHECKPOINT_QUOTA_BYTES:
         raise Reject(f"checkpoint_quota_exceeded:{payload}>{CHECKPOINT_QUOTA_BYTES}")
+    # The checkpoint directory entry is the publication, so its durability is
+    # proved before a byte is taken into custody rather than discarded after.
+    require_dir_durable(path.parent, "checkpoint_pre_publication:" + path.name)
     tmp = path.with_suffix(".tar.partial")
-    written = 0
+    quota = CHECKPOINT_QUOTA_BYTES
+    bw: BoundedWriter | None = None
     try:
-        with open(tmp, "wb") as fh:
+        with open(tmp, "wb", buffering=0) as fh:
             harden(tmp)
-            with tarfile.open(fileobj=fh, mode="w", format=tarfile.PAX_FORMAT) as tf:
+            bw = BoundedWriter(fh, quota)
+            with tarfile.open(fileobj=bw, mode="w", format=tarfile.PAX_FORMAT) as tf:
                 for src, arcname in members:
                     info = tf.gettarinfo(str(src), arcname=arcname)
                     if info.islnk():
@@ -1675,40 +1817,111 @@ def write_checkpoint(txn_id: str, idx: int, ws: Path) -> tuple[str, str, dict]:
                             tf.addfile(info, body)
                     else:
                         tf.addfile(info)
-                    written = fh.tell()
-                    if written > CHECKPOINT_QUOTA_BYTES:
-                        raise Reject(
-                            f"checkpoint_quota_exceeded_while_streaming:"
-                            f"{written}>{CHECKPOINT_QUOTA_BYTES}")
-            fh.flush()
-            os.fsync(fh.fileno())
+            require_file_durable(fh, "checkpoint:" + path.name)
+            # measured while the descriptor is still open, so the peak is the
+            # filesystem's number rather than this writer's own bookkeeping
+            peak = bw.measured_peak()
         size = tmp.stat().st_size
-        if size > CHECKPOINT_QUOTA_BYTES:
-            raise Reject(f"checkpoint_quota_exceeded:{size}>{CHECKPOINT_QUOTA_BYTES}")
-        restorable = assert_restorable(tmp, ws)
+        if size > quota:
+            # Unreachable while the bounded writer is the only path to the file;
+            # retained as the belt to its braces.
+            raise Reject(f"checkpoint_quota_exceeded:{size}>{quota}")
+        install = assert_restorable(tmp, ws)
+        install["peak_partial_bytes"] = peak
+        install["final_bytes"] = size
+        install["quota_bytes"] = quota
+        install["bound"] = ("refused before any write that would carry the "
+                            "partial past the quota; peak partial bytes, not "
+                            "final bytes, are what the ceiling binds")
         os.replace(tmp, path)
-        fsync_dir(path.parent)
+        require_dir_durable(path.parent, "checkpoint_publication:" + path.name)
     finally:
         if tmp.exists():
             tmp.unlink(missing_ok=True)
     harden(path)
-    return str(path), sha256_file(path), restorable
+    return str(path), sha256_file(path), install
 
 
-def retire_superseded_checkpoints(txn_id: str, keep: Path) -> list[str]:
+def retire_superseded_checkpoints(txn_id: str, keep: Path) -> dict:
     """Drop restore points the durably committed journal can no longer reach.
 
     Called only AFTER the phase row naming `keep` is committed, so the window in
-    which both exist is the window in which either one would do.
+    which both exist is the window in which either one would do. A crash before
+    this runs is what `normalize_checkpoint_custody()` cleans up on recovery.
     """
     retired = []
     for old in sorted(keep.parent.glob("*.tar")):
         if old != keep:
             old.unlink(missing_ok=True)
             retired.append(old.name)
+    # Retirement is cleanup, not publication: a failed directory sync here is
+    # retried and REPORTED rather than described as durable, and it does not
+    # refuse a transition whose commit point is already behind it.
+    durable = True
     if retired:
-        fsync_dir(keep.parent)
-    return retired
+        durable = fsync_dir(keep.parent) or fsync_dir(keep.parent)
+    return {"retired": retired, "keep": keep.name, "directory_durable": durable,
+            "law": "cleanup-only fsync: retried and reported, never claimed"}
+
+
+def normalize_checkpoint_custody(txn_id: str, keep_path: str, keep_sha: str,
+                                 keep_index: int, ws: Path) -> dict:
+    """Force checkpoint custody back to the ONE checkpoint the journal names.
+
+    The window this closes: a later phase row commits to a new checkpoint and
+    the controller dies before `retire_superseded_checkpoints()` runs. Recovery
+    then skips every already-PASS phase, so nothing on the resume path ever
+    retired the superseded restore point -- and if the crashed phase was the
+    last one, settlement published a receipt whose checkpoint custody held two
+    restore points, which that receipt's own verifier rejects.
+
+    Normalization runs BEFORE anything is run or settled: the surviving
+    checkpoint named by the last consecutive committed PASS row is verified by
+    digest and under the extraction law, every other restore point is retired,
+    the directory entry is durably committed, and the custody bound is
+    rechecked. The retired identities are retained in the recovery record.
+    """
+    keep = Path(keep_path)
+    d = keep.parent
+    observed = sorted(p.name for p in d.glob("*.tar")) if d.is_dir() else []
+    if not keep.is_file():
+        raise Reject(f"checkpoint_absent_for_committed_phase:{keep_index}:{keep.name}")
+    actual = sha256_file(keep)
+    if actual != keep_sha:
+        raise Reject(f"checkpoint_digest_drift:{keep.name}:{actual}!={keep_sha}")
+    with tarfile.open(keep, "r") as tf:
+        _validated_members(tf, ws)
+    retired = []
+    for old in sorted(d.glob("*.tar")):
+        if old != keep:
+            old.unlink(missing_ok=True)
+            retired.append(old.name)
+    for stale in sorted(d.glob("*.partial")):
+        stale.unlink(missing_ok=True)
+        retired.append(stale.name)
+    if retired:
+        require_dir_durable(d, "checkpoint_normalization:" + txn_id)
+    custody = checkpoint_custody(txn_id)
+    if custody["retained_count"] > 1 or custody["retained_bytes"] > CHECKPOINT_QUOTA_BYTES:
+        raise Reject(
+            f"checkpoint_custody_unbounded_after_normalization:"
+            f"{custody['retained_count']}:{custody['retained_bytes']}")
+    return {
+        "normalized": True,
+        "observed_at_recovery": observed,
+        "committed_phase_index": keep_index,
+        "checkpoint_named_by_last_committed_pass": keep.name,
+        "checkpoint_sha256": keep_sha,
+        "verified": "digest and extraction law",
+        "retired_superseded": retired,
+        "retained_after": custody["retained"],
+        "retained_bytes_after": custody["retained_bytes"],
+        "quota_bytes": CHECKPOINT_QUOTA_BYTES,
+        "law": "recovery normalizes checkpoint custody to the single checkpoint "
+               "named by the last consecutive committed PASS row before running "
+               "or settling; a later-phase post-commit crash cannot leave a "
+               "superseded restore point outside the committed phase identity",
+    }
 
 
 def _validated_members(tf: tarfile.TarFile,
@@ -2410,8 +2623,9 @@ def run_phases(conn, env, ws, log_dir: Path, lease: Lease,
              now(), ckpt_path, ckpt_sha, txn, idx))
         _crash_if("after_phase_commit", ckpt_crash)
         if ckpt_path:
-            res["checkpoint"]["retired_superseded"] = retire_superseded_checkpoints(
-                txn, Path(ckpt_path))
+            retirement = retire_superseded_checkpoints(txn, Path(ckpt_path))
+            res["checkpoint"]["retired_superseded"] = retirement["retired"]
+            res["checkpoint"]["retirement"] = retirement
         lease.beat()
         results.append(res)
         if res["state"] != "PASS":
@@ -2455,10 +2669,12 @@ def sanitize(ws: Path, attempts: int = 2) -> dict:
         except OSError as exc:
             errors.append(f"rmtree:{ws_r}:{exc.__class__.__name__}")
     absent = not ws_r.exists()
-    with contextlib.suppress(OSError):
-        fsync_dir(ws_r.parent)
+    # Cleanup-only: retried and REPORTED. A failed sync here does not refuse the
+    # transition, and it is never described as durable when it failed.
+    parent_durable = fsync_dir(ws_r.parent) or fsync_dir(ws_r.parent)
     return {"workspace": str(ws_r), "existed": existed, "absent_after": absent,
             "attempts": tries, "errors": errors[:20] if not absent else [],
+            "parent_directory_durable": parent_durable,
             "law": "settlement may not commit while the workspace survives"}
 
 
@@ -2669,6 +2885,7 @@ def purge_source(conn, dry_run: bool = True, manifest: str | None = None) -> dic
             purgeable.append(item)
 
     applied = False
+    deletion_durable = None
     if not dry_run and purgeable:
         # Record the accepted successor entries BEFORE removing anything, so the
         # verification route a receipt will take exists before the bytes it
@@ -2684,7 +2901,10 @@ def purge_source(conn, dry_run: bool = True, manifest: str | None = None) -> dic
                           json.dumps(current, indent=2, sort_keys=True).encode("utf-8"))
         for item in purgeable:
             (SOURCE_ROOT / item["name"]).unlink(missing_ok=True)
-        fsync_dir(SOURCE_ROOT)
+        # Deletion is cleanup: retried and reported, never claimed as durable
+        # when it failed. The custody manifest above is the publication, and it
+        # already refused to proceed if its directory could not be committed.
+        deletion_durable = fsync_dir(SOURCE_ROOT) or fsync_dir(SOURCE_ROOT)
         applied = True
 
     # After the transition, prove the claim that matters: NO receipt that
@@ -2699,6 +2919,7 @@ def purge_source(conn, dry_run: bool = True, manifest: str | None = None) -> dic
 
     return {
         "operation": "purge-source", "dry_run": dry_run, "applied": applied,
+        "deletion_directory_durable": deletion_durable,
         "purge_law": "no transaction in an unresolved state -- QUEUED, RUNNING, "
                      "SETTLING, HELD, FENCED_OUT or any other non-SETTLED state "
                      "-- references the digest, AND no retained receipt needs the "
@@ -2796,6 +3017,15 @@ def execute(conn, txn_id: str, profile: dict, pause: int = 0) -> dict:
                     "detail": "cannot reconstruct settlement without its journal",
                     "settled": False}
         try:
+            # Settlement counts checkpoint custody before the purge, so custody
+            # is normalized here too: a receipt may not report two restore
+            # points its own verifier would reject.
+            _rf, _ck = _resume_plan(conn, txn_id)
+            if _ck is not None:
+                journal.setdefault("recovery", {})
+                journal["recovery"]["checkpoint_normalization"] = \
+                    normalize_checkpoint_custody(txn_id, _ck["path"],
+                                                 _ck["sha256"], _ck["index"], ws)
             return _finish_settlement(
                 conn, env, txn_id, ws, receipt_dir, journal,
                 sha256_file(settlement_journal_path(receipt_dir)),
@@ -2811,13 +3041,21 @@ def execute(conn, txn_id: str, profile: dict, pause: int = 0) -> dict:
         resume_from, ckpt = _resume_plan(conn, txn_id)
         if ws.exists():
             sanitize(ws)
+        if ckpt is not None:
+            # Before anything is run or settled: custody is forced back to the
+            # single checkpoint the last consecutive committed PASS row names.
+            # A crash after a later phase row committed but before its
+            # superseded restore point was retired is otherwise invisible to
+            # the resume path, which skips every already-PASS phase.
+            recovery["checkpoint_normalization"] = normalize_checkpoint_custody(
+                txn_id, ckpt["path"], ckpt["sha256"], ckpt["index"], ws)
         (ws / "home").mkdir(parents=True, exist_ok=True, mode=DIR_MODE)
         ok, detail = materialize_source(env, ws)
         if ok and ckpt is not None:
             # restore the state the completed phases produced, then continue
             restore_checkpoint(Path(ckpt["path"]), ckpt["sha256"], ws)
-            recovery = {"resumed": True, "resume_from_phase": resume_from,
-                        "restored_checkpoint": ckpt}
+            recovery.update({"resumed": True, "resume_from_phase": resume_from,
+                             "restored_checkpoint": ckpt})
         if not ok:
             terminal, phases = TERMINAL_HOLD, []
             bind = {"bound": False, "detail": detail}
@@ -2936,7 +3174,9 @@ def _reconcile_settled(conn, txn_id: str, receipt_dir: Path, ws: Path) -> dict:
     jp = settlement_journal_path(receipt_dir)
     had_journal = jp.is_file()
     jp.unlink(missing_ok=True)
-    fsync_dir(receipt_dir)
+    # Cleanup-only: the commit point is already behind this path, so a failed
+    # sync is retried and reported rather than refusing a terminal transaction.
+    journal_clear_durable = fsync_dir(receipt_dir) or fsync_dir(receipt_dir)
 
     # A crash between the ledger transition and `lease.release()` strands the
     # dead holder's lease row, and nothing else would ever clear it: the replay
@@ -2953,6 +3193,7 @@ def _reconcile_settled(conn, txn_id: str, receipt_dir: Path, ws: Path) -> dict:
                          (lease_row[0], txn_id))
             lease_cleared = True
     return {"checkpoints_purged": purged, "settlement_journal_cleared": had_journal,
+            "journal_clear_directory_durable": journal_clear_durable,
             "stale_lease_cleared": lease_cleared, "lease_holder_verdict": why,
             "sanitation": sanitation,
             "workspace_absent": sanitation["absent_after"],
@@ -3179,6 +3420,16 @@ def _finish_settlement(conn, env, txn_id, ws, receipt_dir, journal, jsha,
                                "SQLite WAL with synchronous=FULL, so a "
                                "committed SETTLED transition is on disk before "
                                "the commit returns",
+                "fails_closed": "every REQUIRED durability operation is checked. "
+                                "The parent directory of a journal, receipt, "
+                                "sidecar, source-custody manifest or checkpoint "
+                                "must be fsyncable before the record is written "
+                                "and again after the publishing rename, and the "
+                                "file's own fsync must succeed; any failure "
+                                "REFUSES the transition rather than reporting a "
+                                "record as durably published. Cleanup-only "
+                                "deletion syncs are retried and reported, never "
+                                "described as durable when they failed.",
                 "witnessed": "CONTROLLER_PROCESS_CRASH (SIGKILL at six admitted "
                              "settlement boundaries and two checkpoint "
                              "boundaries, recovered from a cold root)",

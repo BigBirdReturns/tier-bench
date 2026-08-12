@@ -1690,7 +1690,12 @@ except tbrail.Reject as exc:
                      "files_left": files,
                      "quota": tbrail.CHECKPOINT_QUOTA_BYTES,
                      "payload_bytes": 400,
-                     "streaming_guard": "quota_exceeded_while_streaming" in str(exc)}
+                     # v6 moved the streaming bound from a post-member `tell()`
+                     # audit to a writer that refuses BEFORE the underlying
+                     # write. Same law, strictly earlier; the refusal identity
+                     # is what changed, so this names the current one.
+                     "streaming_guard": "quota_refused_before_write" in str(exc),
+                     "refusal_evidence": getattr(exc, "evidence", None)}
 
 # ---- 3. a symlink-bearing workspace is refused at CREATION
 tbrail.CHECKPOINT_QUOTA_BYTES = 2 << 30
@@ -2334,6 +2339,391 @@ def prop_durability_scope_exact():
            {"durability": dur, "pragma_synchronous": sync})
 
 
+# --------------------------------------------------------------------------
+# final checkpoint-integrity delta (exact-head second desk, comment 5272104498)
+# --------------------------------------------------------------------------
+
+PEAK_PROBE = r'''
+import json, os, resource, shutil, signal, sys
+from pathlib import Path
+sys.path.insert(0, os.environ["TBRAIL_DIR"])
+import tbrail
+
+home = Path(os.environ["TBRAIL_HOME"])
+lab = home / "ckpt-peak"
+QUOTA = 64 * 1024
+out = {}
+
+
+def fresh(name):
+    d = lab / name
+    if d.exists():
+        shutil.rmtree(d, ignore_errors=True)
+    d.mkdir(parents=True)
+    return d
+
+
+def ckpt_dir(txn):
+    return tbrail.CHECKPOINT_ROOT / txn
+
+
+def parse_streaming_peak(reason):
+    """The pre-repair controller reports its post-member `tell()` in the reason.
+
+    That number IS the peak the partial reached before anything refused it, so
+    a controller without a bounded writer still yields a comparable peak here
+    instead of an unmeasured one.
+    """
+    marker = "checkpoint_quota_exceeded_while_streaming:"
+    if marker in reason:
+        try:
+            return int(reason.split(marker, 1)[1].split(">", 1)[0])
+        except ValueError:
+            return None
+    return None
+
+
+def case(name, build, fsize_limit=None):
+    ws = fresh(name)
+    build(ws)
+    txn = "probe-peak-" + name
+    shutil.rmtree(ckpt_dir(txn), ignore_errors=True)
+    tbrail.CHECKPOINT_QUOTA_BYTES = QUOTA
+    rec = {"quota_bytes": QUOTA, "rlimit_fsize": fsize_limit}
+    prior = resource.getrlimit(resource.RLIMIT_FSIZE)
+    if fsize_limit is not None:
+        # Soft limit only: lowering the HARD limit is irreversible for a
+        # non-root process, and this probe has to hand the interpreter back.
+        signal.signal(signal.SIGXFSZ, signal.SIG_IGN)
+        resource.setrlimit(resource.RLIMIT_FSIZE, (fsize_limit, prior[1]))
+    try:
+        path, digest, install = tbrail.write_checkpoint(txn, 0, ws)
+        rec["outcome"] = "INSTALLED"
+        rec["install"] = install
+        rec["installed_bytes"] = Path(path).stat().st_size
+    except tbrail.Reject as exc:
+        rec["outcome"] = "REFUSED"
+        rec["reason"] = str(exc)[:300]
+        rec["refusal_evidence"] = getattr(exc, "evidence", None)
+        rec["streaming_peak_from_reason"] = parse_streaming_peak(str(exc))
+    except BaseException as exc:                        # noqa: BLE001
+        rec["outcome"] = "ERROR"
+        rec["error_class"] = exc.__class__.__name__
+        rec["errno"] = getattr(exc, "errno", None)
+        rec["reason"] = str(exc)[:300]
+    finally:
+        if fsize_limit is not None:
+            resource.setrlimit(resource.RLIMIT_FSIZE, prior)
+    d = ckpt_dir(txn)
+    files = sorted(p.name for p in d.iterdir()) if d.is_dir() else []
+    rec["files_left"] = files
+    rec["bytes_left"] = sum((d / f).stat().st_size for f in files)
+    rec["partials_left"] = [f for f in files if f.endswith(".partial")]
+    shutil.rmtree(d, ignore_errors=True)
+    return rec
+
+
+def metadata_heavy(ws):
+    # 400 one-byte files: the payload preflight (400 bytes) passes easily and
+    # only per-member headers and padding carry the partial over the ceiling.
+    for i in range(400):
+        (ws / ("t%03d.txt" % i)).write_bytes(b"x")
+
+
+def large_next_member(ws):
+    # 50 tiny members consume most of the allowance, then one member whose first
+    # 16 KiB body block alone would cross what is left. Payload total is 20050
+    # bytes, so the preflight passes and only the writer can stop it.
+    for i in range(50):
+        (ws / ("s%02d.txt" % i)).write_bytes(b"x")
+    (ws / "big.bin").write_bytes(b"z" * 20000)
+
+
+def small(ws):
+    (ws / "repo").mkdir()
+    (ws / "repo" / "file.txt").write_text("payload\n")
+
+
+out["metadata_heavy"] = case("metadata-heavy", metadata_heavy)
+out["large_next_member"] = case("large-next-member", large_next_member)
+# The same metadata-heavy case under a KERNEL ceiling equal to the quota. A
+# controller that refuses before the write never reaches it; a controller that
+# writes first and audits afterwards is stopped by the kernel with EFBIG, which
+# is an artifact that the bytes really did cross the ceiling on disk.
+out["kernel_ceiling"] = case("kernel-ceiling", metadata_heavy, fsize_limit=QUOTA)
+out["happy_path"] = case("happy-path", small)
+
+shutil.rmtree(lab, ignore_errors=True)
+out["residue"] = {
+    "checkpoint_dirs": sorted(p.name for p in tbrail.CHECKPOINT_ROOT.iterdir())
+                       if tbrail.CHECKPOINT_ROOT.is_dir() else [],
+    "lab_removed": not lab.exists(),
+}
+print(json.dumps(out))
+'''
+
+
+def _peak_case_ok(rec, quota):
+    """A refusal that happened AT the boundary, with the boundary measured."""
+    if not rec or rec.get("outcome") != "REFUSED":
+        return False, "not_refused"
+    ev = rec.get("refusal_evidence")
+    if not isinstance(ev, dict):
+        return False, "no_boundary_artifact"
+    on_disk = ev.get("bytes_on_disk_before_refusal")
+    measured = ev.get("measured_file_size_at_refusal")
+    refused = ev.get("refused_write_bytes")
+    if not all(isinstance(v, int) for v in (on_disk, measured, refused)):
+        return False, "artifact_incomplete"
+    if measured != on_disk:
+        return False, f"counter_disagrees_with_filesystem:{on_disk}!={measured}"
+    if measured > quota:
+        return False, f"peak_exceeded_quota:{measured}>{quota}"
+    if on_disk + refused <= quota:
+        return False, "refusal_was_not_at_the_boundary"
+    if rec.get("files_left"):
+        return False, f"residue:{rec['files_left']}"
+    return True, f"refused at {measured}/{quota}, next write {refused} bytes"
+
+
+def prop_checkpoint_partial_peak_bytes():
+    """The PEAK size of the partial, not its final size, is what the quota binds."""
+    r = subprocess.run([PY, "-c", PEAK_PROBE], capture_output=True, text=True,
+                       timeout=600, env=rail_env({"TBRAIL_DIR": str(HERE)}))
+    out = jloads(r.stdout) or {}
+    quota = 64 * 1024
+    verdicts = {}
+    for key in ("metadata_heavy", "large_next_member", "kernel_ceiling"):
+        ok, why = _peak_case_ok(out.get(key), quota)
+        verdicts[key] = {"ok": ok, "why": why}
+    happy = out.get("happy_path") or {}
+    install = happy.get("install") or {}
+    happy_ok = (happy.get("outcome") == "INSTALLED"
+                and isinstance(install.get("peak_partial_bytes"), int)
+                and install["peak_partial_bytes"] <= quota
+                and install["peak_partial_bytes"] == happy.get("installed_bytes")
+                and install.get("verified") is True)
+    record("CHECKPOINT_PARTIAL_PEAK_BYTES_NEVER_EXCEED_QUOTA",
+           "the checkpoint partial is written through a bounded writer that "
+           "refuses BEFORE any write that would carry the file past the quota; "
+           "peak partial bytes are measured at the refusal from the filesystem, "
+           "never exceed the quota, and no partial or checkpoint survives -- "
+           "proved for metadata-heavy tiny members, for a large next member "
+           "that would cross the remaining allowance in one tar write, and "
+           "under a kernel file-size ceiling equal to the quota",
+           all(v["ok"] for v in verdicts.values()) and happy_ok
+           and not (out.get("residue") or {}).get("checkpoint_dirs"),
+           {"quota_bytes": quota, "verdicts": verdicts,
+            "cases": {k: out.get(k) for k in
+                      ("metadata_heavy", "large_next_member", "kernel_ceiling",
+                       "happy_path")},
+            "happy_path_ok": happy_ok,
+            "residue": out.get("residue"), "stderr": r.stderr[-400:]})
+
+
+def prop_later_phase_commit_crash_retires_superseded():
+    """A crash after a LATER phase row commits, with an older restore point live.
+
+    The v5 checkpoint crash hook fires on the first checkpoint, so no prior
+    accepted restore point exists when it kills the controller. This enters the
+    state that matters by crashing TWICE at the same admitted boundary: the
+    first crash commits phase 0 and leaves its restore point unretired, and the
+    second crash -- taken on the recovery run, which skips phase 0 entirely --
+    commits phase 1 to a NEW checkpoint and dies before the superseded one is
+    retired. Both crashes are real SIGKILLs at an admitted point; no new crash
+    site is introduced.
+    """
+    txn = "ckpt-later-phase-commit-001"
+    envp = _derive_envelope(ENVDIR / "crash-pure.json", txn,
+                            "fixture:ckpt-later-phase", repeat_first=2)
+    rail("submit", envp)
+    ck = ROOT / "checkpoints" / txn
+
+    def tars():
+        return sorted(p.name for p in ck.glob("*.tar")) if ck.is_dir() else []
+
+    r1 = rail("execute", txn, timeout=600,
+              env_extra={"TBRAIL_CHECKPOINT_CRASH_AT": "after_phase_commit"})
+    after_first = tars()
+    r2 = rail("execute", txn, timeout=600,
+              env_extra={"TBRAIL_CHECKPOINT_CRASH_AT": "after_phase_commit"})
+    at_crash = tars()
+    rows_at_crash = db().execute(
+        "SELECT idx,state,attempt,digest,ckpt_path FROM phase WHERE txn_id=? "
+        "ORDER BY idx", (txn,)).fetchall()
+    by_idx = {r[0]: r for r in rows_at_crash}
+    both_crashed = r1.returncode in (-9, 137) and r2.returncode in (-9, 137)
+    two_restore_points = at_crash == ["00.tar", "01.tar"]
+    db_names_newer = (
+        by_idx.get(1) is not None and by_idx[1][1] == "PASS"
+        and str(by_idx[1][4] or "").endswith("01.tar")
+        and by_idx.get(0) is not None and by_idx[0][1] == "PASS"
+        and str(by_idx[0][4] or "").endswith("00.tar"))
+
+    out = jloads(rail("execute", txn, timeout=900).stdout) or {}
+    rows_after = {r[0]: r for r in db().execute(
+        "SELECT idx,state,attempt,digest,ckpt_path FROM phase WHERE txn_id=? "
+        "ORDER BY idx", (txn,)).fetchall()}
+    not_re_executed = (
+        bool(by_idx) and all(
+            rows_after.get(i) is not None
+            and rows_after[i][2] == by_idx[i][2]      # attempt unchanged
+            and rows_after[i][3] == by_idx[i][3]      # output digest unchanged
+            for i in by_idx))
+
+    receipt = _receipt_of(txn) or {}
+    norm = ((receipt.get("recovery") or {}).get("checkpoint_normalization") or {})
+    cust = receipt.get("checkpoint_custody") or {}
+    final = _txn_row(txn)
+    settled = bool(final) and final[0] == "SETTLED" and final[1] == "PASS"
+    verified, vfail = _verify_anchored(final[2]) if final and final[2] else (False, "no_receipt")
+    normalized = (norm.get("normalized") is True
+                  and norm.get("observed_at_recovery") == ["00.tar", "01.tar"]
+                  and norm.get("checkpoint_named_by_last_committed_pass") == "01.tar"
+                  and norm.get("retired_superseded") == ["00.tar"]
+                  and norm.get("retained_after") == ["01.tar"])
+    one_retained = int(cust.get("retained_count", 99)) == 1
+    purged = not ck.exists()
+
+    record("LATER_PHASE_COMMIT_CRASH_RETIRES_SUPERSEDED_CHECKPOINT",
+           "an older accepted restore point plus a committed later phase row "
+           "naming a newer one: recovery normalizes checkpoint custody to the "
+           "checkpoint the last committed PASS row names, retires the "
+           "superseded one, re-executes nothing, and settles to an "
+           "independently verified receipt holding exactly one restore point",
+           both_crashed and after_first == ["00.tar"] and two_restore_points
+           and db_names_newer and not_re_executed and normalized
+           and one_retained and settled and verified and purged,
+           {"crash_exits": [r1.returncode, r2.returncode],
+            "checkpoints_after_first_crash": after_first,
+            "checkpoints_at_crash": at_crash,
+            "phase_rows_at_crash": [list(r) for r in rows_at_crash],
+            "phase_rows_after_recovery": [list(rows_after[i]) for i in sorted(rows_after)],
+            "no_phase_re_executed": not_re_executed,
+            "normalization": norm,
+            "receipt_checkpoint_custody": {
+                "retained": cust.get("retained"),
+                "retained_count": cust.get("retained_count")},
+            "terminal": out.get("terminal"),
+            "final_state": final and final[0],
+            "receipt_verified": verified, "verify_failures": vfail,
+            "checkpoint_dir_removed_after_settlement": purged})
+
+
+DURABILITY_PROBE = r'''
+import errno, json, os, shutil, stat, sys
+from pathlib import Path
+sys.path.insert(0, os.environ["TBRAIL_DIR"])
+import tbrail
+
+home = Path(os.environ["TBRAIL_HOME"])
+lab = home / "durability-probe"
+shutil.rmtree(lab, ignore_errors=True)
+lab.mkdir(parents=True)
+out = {}
+
+real_fsync_dir = tbrail.fsync_dir
+real_fsync = os.fsync
+
+
+def attempt(fn):
+    try:
+        return {"outcome": "COMPLETED", "value": str(fn())[:120]}
+    except tbrail.Reject as exc:
+        return {"outcome": "REFUSED", "reason": str(exc)[:200]}
+    except BaseException as exc:                        # noqa: BLE001
+        return {"outcome": "ERROR", "error_class": exc.__class__.__name__,
+                "reason": str(exc)[:200]}
+
+
+# ---- 1. a healthy directory publishes normally (the control's control)
+good = lab / "good.json"
+out["healthy_publication"] = attempt(lambda: tbrail.durable_write(good, b'{"ok":1}'))
+out["healthy_publication"]["published"] = good.is_file()
+
+# ---- 2. the required directory entry cannot be fsynced
+tbrail.fsync_dir = lambda d: False
+target = lab / "record.json"
+out["record"] = attempt(lambda: tbrail.durable_write(target, b'{"record":1}'))
+out["record"]["published"] = target.is_file()
+out["record"]["residue"] = sorted(p.name for p in lab.iterdir())
+
+ws = lab / "ws"
+ws.mkdir()
+(ws / "file.txt").write_text("payload\n")
+txn = "probe-durability"
+shutil.rmtree(tbrail.CHECKPOINT_ROOT / txn, ignore_errors=True)
+out["checkpoint"] = attempt(lambda: tbrail.write_checkpoint(txn, 0, ws))
+d = tbrail.CHECKPOINT_ROOT / txn
+out["checkpoint"]["files_left"] = sorted(p.name for p in d.iterdir()) if d.is_dir() else []
+tbrail.fsync_dir = real_fsync_dir
+
+# ---- 3. the file's own fsync fails (directories still sync, so the refusal
+#         must name the FILE and not be masked by the directory check)
+def picky(fd):
+    if stat.S_ISDIR(os.fstat(fd).st_mode):
+        return real_fsync(fd)
+    raise OSError(errno.EIO, "injected file fsync failure")
+
+os.fsync = picky
+ftarget = lab / "file-sync.json"
+out["file_sync"] = attempt(lambda: tbrail.durable_write(ftarget, b'{"f":1}'))
+os.fsync = real_fsync
+out["file_sync"]["published"] = ftarget.is_file()
+
+shutil.rmtree(d, ignore_errors=True)
+shutil.rmtree(lab, ignore_errors=True)
+out["residue"] = {
+    "checkpoint_dirs": sorted(p.name for p in tbrail.CHECKPOINT_ROOT.iterdir())
+                       if tbrail.CHECKPOINT_ROOT.is_dir() else [],
+    "lab_removed": not lab.exists(),
+}
+print(json.dumps(out))
+'''
+
+REQUIRED_DURABLE_SITES = {
+    "settlement_journal": "return durable_write(settlement_journal_path(receipt_dir)",
+    "receipt": "digest = durable_write(",
+    "receipt_sidecar": "durable_write(spath, (digest",
+    "source_custody_manifest": "durable_write(SOURCE_CUSTODY_PATH,",
+    "checkpoint_publication": 'require_dir_durable(path.parent, "checkpoint_publication:"',
+}
+
+
+def prop_directory_fsync_failure_refuses():
+    """A durable transition is REFUSED when its directory entry cannot be synced."""
+    r = subprocess.run([PY, "-c", DURABILITY_PROBE], capture_output=True, text=True,
+                       timeout=600, env=rail_env({"TBRAIL_DIR": str(HERE)}))
+    out = jloads(r.stdout) or {}
+    healthy = out.get("healthy_publication") or {}
+    rec = out.get("record") or {}
+    ckpt = out.get("checkpoint") or {}
+    fsy = out.get("file_sync") or {}
+    healthy_ok = healthy.get("outcome") == "COMPLETED" and healthy.get("published") is True
+    record_ok = (rec.get("outcome") == "REFUSED"
+                 and "directory_durability_unavailable" in str(rec.get("reason"))
+                 and rec.get("published") is False
+                 and not [n for n in (rec.get("residue") or []) if n.endswith(".partial")])
+    ckpt_ok = (ckpt.get("outcome") == "REFUSED"
+               and "directory_durability_unavailable" in str(ckpt.get("reason"))
+               and not ckpt.get("files_left"))
+    file_ok = (fsy.get("outcome") == "REFUSED"
+               and "file_durability_unavailable" in str(fsy.get("reason"))
+               and fsy.get("published") is False)
+    src = TBRAIL.read_text(encoding="utf-8", errors="replace")
+    sites = {k: (v in src) for k, v in REQUIRED_DURABLE_SITES.items()}
+    record("DIRECTORY_FSYNC_FAILURE_REFUSES_DURABLE_TRANSITION",
+           "every required durability operation fails CLOSED: a record whose "
+           "parent directory entry cannot be fsynced, and a record whose own "
+           "body cannot be fsynced, are both REFUSED rather than reported as "
+           "durably published -- for controller records and for checkpoint "
+           "publication alike -- while a healthy directory still publishes",
+           healthy_ok and record_ok and ckpt_ok and file_ok and all(sites.values()),
+           {"healthy_publication": healthy, "record": rec, "checkpoint": ckpt,
+            "file_sync": fsy, "required_publication_sites": sites,
+            "residue": out.get("residue"), "stderr": r.stderr[-400:]})
+
+
 PRIVATE_MARKERS_NOTE = (
     "the public product tree may not carry the deployment's host name, account "
     "home or absolute controller paths"
@@ -2372,7 +2762,54 @@ def prop_public_artifacts_have_no_private_coordinates():
             "markers_checked": sorted(markers)})
 
 
+DELTA_CONTROLS = (
+    prop_checkpoint_partial_peak_bytes,
+    prop_later_phase_commit_crash_retires_superseded,
+    prop_directory_fsync_failure_refuses,
+)
+
+
+def main_delta():
+    """The focused cold delta: only the three final checkpoint-integrity controls.
+
+    Same cold-root precondition, same externally anchored profiles, same
+    fixture. It exists so the three controls can be run against the PRE-repair
+    controller as well, which is the only way a control proves anything: one
+    that passes before the repair is not evidence.
+    """
+    assert_cold()
+    build_fixture()
+    for control in DELTA_CONTROLS:
+        try:
+            control()
+        except BaseException as exc:                    # noqa: BLE001
+            record(control.__name__.upper(), "control raised", False,
+                   {"error_class": exc.__class__.__name__, "error": str(exc)[:400]})
+    failed = [r for r in results if not r["pass"]]
+    summary = {
+        "schema": "tier-bench/native-rail-cold-delta@1",
+        "controller_root": str(ROOT),
+        "controller": {"path": str(TBRAIL), "sha256": sha256_of(TBRAIL)},
+        "host": os.uname().nodename,
+        "accepted_runner_profile_sha256": ACCEPTED_PROFILE_SHA,
+        "qualification_runner_profile_sha256": QPROFILE_SHA,
+        "controls": [c.__name__ for c in DELTA_CONTROLS],
+        "verdict": "PASS_CHECKPOINT_INTEGRITY_DELTA" if not failed
+                   else "FAIL_CHECKPOINT_INTEGRITY_DELTA",
+        "total": len(results), "failed": len(failed),
+        "failed_properties": [r["property"] for r in failed],
+        "results": results,
+    }
+    (ROOT / "COLD-DELTA.json").write_text(
+        json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
+    print("\n" + summary["verdict"])
+    print(f"{len(results) - len(failed)}/{len(results)} properties passed")
+    raise SystemExit(0 if not failed else 1)
+
+
 def main():
+    if os.environ.get("TBRAIL_QUALIFY_MODE") == "delta":
+        return main_delta()
     assert_cold()
     build_fixture()
     prop_runner_profile()
@@ -2416,6 +2853,9 @@ def main():
     prop_pids_kernel_witness()
     prop_crash_hook_gated()
     prop_durability_scope_exact()
+    # ---- final checkpoint-integrity delta ---------------------------------
+    for control in DELTA_CONTROLS:
+        control()
     prop_public_artifacts_have_no_private_coordinates()
     prop_purge_source_custody()
     # residency runs last: it asserts the root is clean after everything above
@@ -2423,7 +2863,7 @@ def main():
 
     failed = [r for r in results if not r["pass"]]
     summary = {
-        "schema": "tier-bench/native-rail-cold-qualification@5",
+        "schema": "tier-bench/native-rail-cold-qualification@6",
         "controller_root": str(ROOT),
         "host": os.uname().nodename,
         "accepted_runner_profile_sha256": ACCEPTED_PROFILE_SHA,

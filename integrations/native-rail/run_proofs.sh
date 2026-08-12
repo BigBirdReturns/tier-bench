@@ -3,7 +3,12 @@
 #
 #   ./run_proofs.sh emit
 #   ./run_proofs.sh qualify <fresh-root> <accepted-profile-sha256>
+#   ./run_proofs.sh delta   <fresh-root> <accepted-profile-sha256>
 #   ./run_proofs.sh collect <fresh-root>
+#
+# `delta` runs ONLY the three final checkpoint-integrity controls from a fresh
+# root. It exists so the same controls can be pointed at a PRE-repair controller:
+# a control that passes before the repair is not evidence of the repair.
 #
 # `emit` produces the runner profile that must then be committed and reviewed as
 # an accepted artifact. `qualify` runs the full cold qualification from a fresh
@@ -49,6 +54,13 @@ case "${1:-}" in
     "$PY" cold_qualify.py "$ROOT" "$BUNDLE" "$SHA"
     echo "COLD_QUALIFY_EXIT=$?"
     ;;
+  delta)
+    ROOT="${2:?fresh controller root required}"
+    SHA="${3:?accepted runner-profile sha256 required}"
+    cd "$RAIL" || exit 1
+    TBRAIL_QUALIFY_MODE=delta "$PY" cold_qualify.py "$ROOT" "$BUNDLE" "$SHA"
+    echo "COLD_DELTA_EXIT=$?"
+    ;;
   collect)
     ROOT="${2:?controller root required}"
     "$PY" - "$ROOT" <<'PYEOF'
@@ -62,7 +74,7 @@ for r in data["results"]:
 PYEOF
     ;;
   *)
-    echo "usage: run_proofs.sh emit | qualify <root> <sha256> | collect <root>"
+    echo "usage: run_proofs.sh emit | qualify <root> <sha256> | delta <root> <sha256> | collect <root>"
     exit 2
     ;;
 esac
