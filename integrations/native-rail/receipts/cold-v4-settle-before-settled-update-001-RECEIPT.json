@@ -1,0 +1,705 @@
+{
+  "binding": {
+    "bound": true,
+    "detail": "bound head=fb47a4cc50e74ac230efe1b063631933a5106a0a tree=72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f"
+  },
+  "checkpoint_custody": {
+    "law": "one checkpoint is retained at a time and it may not exceed the quota; recovery needs only the last consecutive checkpoint, so per-phase accumulation is refused rather than bounded after the fact. Checkpoints are purged only after the ledger transition to SETTLED is verified, so no crash window can strand a PASSed phase without its restore point.",
+    "mode": "LATEST_ADMITTED_CHECKPOINT_ONLY",
+    "quota_bytes": 2147483648,
+    "retained": [
+      "02.tar"
+    ],
+    "retained_bytes": 98375680,
+    "retained_count": 1,
+    "stale_partials": []
+  },
+  "controller": {
+    "boot_id": "34e55630-f8c4-45d3-bd32-2d828c107460",
+    "host": "octo-n01",
+    "pid": 390227,
+    "rail_home": "/home/octo/coldroot-v4-002"
+  },
+  "coordinate": "BigBirdReturns/estate#78",
+  "cross_phase_state_law": {
+    "extraction": "archive members are validated before extraction; links, devices, absolute paths and traversal are refused, and nothing is written until every member has passed",
+    "mode": "CHECKPOINT_AND_RESTORE",
+    "statement": "each PASSed phase checkpoints the workspace; recovery restores the last checkpoint instead of recloning pristine source, so artifact-producing phases survive"
+  },
+  "envelope_sha256": "24456f0bf26c920846bbebb0d50c7ffed7f1c989bc18786c378ef2b0b4feb081",
+  "hosted_runner_minutes": 0,
+  "lease_law": {
+    "fence": 1,
+    "heartbeats": 8,
+    "held_through": "workspace sanitation, receipt and sidecar publication, and the verified atomic transition to SETTLED",
+    "liveness": "verified same-host process identity dominates the TTL"
+  },
+  "ledger": {
+    "envelope_sha256": "24456f0bf26c920846bbebb0d50c7ffed7f1c989bc18786c378ef2b0b4feb081",
+    "expected_state_after_settlement": "SETTLED",
+    "lease_fence_granted": 1,
+    "phase_rows": [
+      [
+        0,
+        "compile-candidate",
+        "python.py_compile",
+        "PASS",
+        1,
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ],
+      [
+        1,
+        "hold-resource",
+        "rail.hold_resource",
+        "PASS",
+        1,
+        0,
+        "1158801329579f1b81bd9bc83846854ae9581f22e777e416c3d381696cf38a31"
+      ],
+      [
+        2,
+        "verify-no-source-mutation",
+        "git.diff_exit_code",
+        "PASS",
+        1,
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ]
+    ],
+    "resource_key": "fixture:settle-before-settled-update",
+    "terminal": "PASS",
+    "txn_id": "settle-before-settled-update-001"
+  },
+  "ops_manifest": {
+    "launch_chain": {
+      "bwrap": {
+        "path": "/usr/bin/bwrap",
+        "sha256": "0abea81db798ebf6b4742ac0664802d97521547a353c2a0dbdc21d76cbbfd2c0"
+      },
+      "prlimit": {
+        "path": "/usr/bin/prlimit",
+        "sha256": "00be18793391b9222a041277a088022cc58088690cb0e851383bd8ec73f0fefb"
+      },
+      "sh": {
+        "path": "/usr/bin/dash",
+        "sha256": "c626229526bb58ec2d0f585f3c3ae1412e6f973b4353385042d11c38d8426917"
+      },
+      "systemd-run": {
+        "path": "/usr/bin/systemd-run",
+        "sha256": "03a68bafb0ebc0f5eff41cbdf3cbbdf126a3bb87e21140f9147bf78edce36d88"
+      }
+    },
+    "repository_manifests": {
+      "BigBirdReturns/estate": {
+        "operations": [
+          "estate.authority-verify",
+          "estate.render-organ-map"
+        ],
+        "path": "/home/octo/tbrail-v3/repo-ops/BigBirdReturns__estate.json",
+        "sha256": "492d6b9d85009fb431d96843df0a906ba8125a7f2fbb0fc05b17e09ab91e353e"
+      },
+      "tier-bench/native-rail-fixture": {
+        "operations": [
+          "fixture.digest-drift",
+          "fixture.run-tool"
+        ],
+        "path": "/home/octo/tbrail-v3/repo-ops/tier-bench__native-rail-fixture.json",
+        "sha256": "8d13086070f90b2b8edc2463e73fc5013b446d9e4de80a832220d20515e6f819"
+      }
+    },
+    "runtimes": {
+      "git": {
+        "path": "/usr/bin/git",
+        "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+        "version": "git version 2.53.0"
+      },
+      "python3.11": {
+        "path": "/opt/tbrail/py311/bin/python3.11",
+        "sha256": "92d7e40ec50be176cb1b790c7568b7e08cd862137b5aa69f1413ba1967886b79",
+        "version": "Python 3.11.15"
+      },
+      "python3.14": {
+        "path": "/usr/bin/python3.14",
+        "sha256": "b8d8288faefdd300201f43fcf00f6f539a27218eeed3a3dff5ab10b9c4c99700",
+        "version": "Python 3.14.4"
+      }
+    },
+    "scripts": {
+      "append_byte.py": "3b9d4990ad805fc3a08577309e19e7661c7f788ec08cb6457ceab47f13fb08c4",
+      "burn.py": "9d175044c2029ca65e0dbc607c90b34f6a5b8b5ce16d51569f874c9fe8897fa6",
+      "credential_probe.py": "f049be3fb7373d4998f558c1e9905795d49910b2f0ada4dc180a332bef4e4486",
+      "hold_resource.py": "e7c7f1301829af971aa22d0e9f73c0f31de98fab526693b1a16fff864b9fc1c6",
+      "produce_artifact.py": "7189fc59d8bc4083ae7af404721310747990077a763096094531d75d3c3f0eba",
+      "require_artifact.py": "245ba319a3a6db4a90ffe29123e9efa6544984794009bf163cc515a583d9e8de",
+      "spawn_descendant.py": "0bd7fd9324592d2e5ae0a03d4c9b84bb10eaa005029682c4a68a05555fe1a63f"
+    }
+  },
+  "phase_log_bindings": [
+    {
+      "index": 0,
+      "path": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/logs/00-compile-candidate.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "index": 1,
+      "path": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/logs/01-hold-resource.log",
+      "sha256": "1158801329579f1b81bd9bc83846854ae9581f22e777e416c3d381696cf38a31"
+    },
+    {
+      "index": 2,
+      "path": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/logs/02-verify-no-source-mutation.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "phases": [
+    {
+      "argv_shape": [
+        "python3.11",
+        "-B",
+        "-m",
+        "py_compile"
+      ],
+      "attempt": 1,
+      "checkpoint": {
+        "path": "/home/octo/coldroot-v4-002/checkpoints/settle-before-settled-update-001/00.tar",
+        "sha256": "b30159e4aaadd6d596bba175653db01f7f3e61721ed4b9c9977cc383e9a33973"
+      },
+      "enforcement": {
+        "account_tasks_at_start": 489,
+        "account_tasks_note": "observation only; RLIMIT_NPROC is not used, because it is charged per account and can never express a per-phase ceiling",
+        "aggregate": {
+          "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/tbrail-settle-before-settled-update-001-00-390227-33ef0666.scope",
+          "cpu_ceiling_hit": false,
+          "cpu_seconds_used": 0.021409,
+          "entered": true,
+          "marker": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/scopes/00.cgroup",
+          "mechanism": "cgroup-v2 scope via systemd-run --user --scope",
+          "memory_events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0,
+            "sock_throttled": 0
+          },
+          "memory_max_bytes": 4294967296,
+          "metered": true,
+          "peak_cgroup_pids": 3,
+          "peak_memory_bytes": 4804608,
+          "pids_events": {
+            "max": 0
+          },
+          "tasks_max": 512,
+          "unit": "tbrail-settle-before-settled-update-001-00-390227-33ef0666.scope"
+        },
+        "limits": {
+          "address_space_bytes": 4294967296,
+          "cpu_seconds": 900,
+          "file_size_bytes": 1073741824,
+          "max_output_bytes": 4194304,
+          "max_processes": 512,
+          "open_files": 1024,
+          "workspace_bytes": 8589934592
+        },
+        "output_bytes_recorded": 0,
+        "output_bytes_total": 0,
+        "output_ceiling_hit": false,
+        "peak_pids": 0,
+        "peak_workspace_bytes": 0,
+        "per_process": {
+          "mechanism": "prlimit(1)",
+          "rlimit_as_bytes": 4294967296,
+          "rlimit_cpu_seconds": 900,
+          "rlimit_fsize_bytes": 1073741824,
+          "rlimit_nofile": 1024
+        },
+        "pid_ceiling_hit": false,
+        "preexec_fn_used": false,
+        "semantics": {
+          "aggregate": {
+            "cpu_enforced_by": "controller monitor sampling cgroup cpu.stat usage_usec, then cgroup.kill",
+            "cpu_seconds_budget": 900,
+            "mechanism": "cgroup-v2 scope (systemd-run --user --scope)",
+            "memory_max_bytes": 4294967296,
+            "memory_swap_max_bytes": 0,
+            "output_bytes": 4194304,
+            "output_enforced_by": "controller output pump, then cgroup.kill",
+            "tasks_max": 512,
+            "workspace_bytes": 8589934592,
+            "workspace_enforced_by": "controller monitor sampling workspace tree bytes, then cgroup.kill"
+          },
+          "disk": {
+            "checkpoint_quota_bytes": 2147483648,
+            "checkpoint_retention": "latest admitted checkpoint only",
+            "source_quota_bytes": 5368709120,
+            "statement": "source materialization and checkpoint bytes are enforced against these quotas, not merely declared"
+          },
+          "per_process": {
+            "mechanism": "prlimit(1), applied outside the sandbox before exec",
+            "rlimit_as_bytes": 4294967296,
+            "rlimit_cpu_seconds": 900,
+            "rlimit_fsize_bytes": 1073741824,
+            "rlimit_nofile": 1024
+          },
+          "statement": "max_processes is AGGREGATE (cgroup pids.max). address_space_bytes and cpu_seconds are enforced BOTH aggregate (cgroup memory.max / cpu.stat monitor) AND per-process (RLIMIT_AS / RLIMIT_CPU). file_size_bytes and open_files are PER-PROCESS ONLY (RLIMIT_FSIZE / RLIMIT_NOFILE); no aggregate file-size or descriptor budget is claimed. workspace_bytes and max_output_bytes are controller-monitored aggregates. RLIMIT_NPROC is no longer used: it is charged per account, so it could never express a phase ceiling."
+        },
+        "signal": null,
+        "workspace_ceiling_hit": false
+      },
+      "exit_code": 0,
+      "index": 0,
+      "log_path": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/logs/00-compile-candidate.log",
+      "name": "compile-candidate",
+      "op": "python.py_compile",
+      "output_bytes": 0,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "replayed": false,
+      "seconds": 0.252,
+      "state": "PASS",
+      "teardown": {
+        "cgroup_kill_attempted": false,
+        "pgid": 390242,
+        "signal": "SIGTERM",
+        "survivors": []
+      },
+      "timed_out": false
+    },
+    {
+      "argv_shape": [
+        "python3.11",
+        "-B",
+        "/w/ops/hold_resource.py",
+        "30"
+      ],
+      "attempt": 1,
+      "checkpoint": {
+        "path": "/home/octo/coldroot-v4-002/checkpoints/settle-before-settled-update-001/01.tar",
+        "sha256": "b30159e4aaadd6d596bba175653db01f7f3e61721ed4b9c9977cc383e9a33973"
+      },
+      "enforcement": {
+        "account_tasks_at_start": 489,
+        "account_tasks_note": "observation only; RLIMIT_NPROC is not used, because it is charged per account and can never express a per-phase ceiling",
+        "aggregate": {
+          "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/tbrail-settle-before-settled-update-001-01-390227-57f2aef5.scope",
+          "cpu_ceiling_hit": false,
+          "cpu_seconds_used": 0.02018,
+          "entered": true,
+          "marker": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/scopes/01.cgroup",
+          "mechanism": "cgroup-v2 scope via systemd-run --user --scope",
+          "memory_events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0,
+            "sock_throttled": 0
+          },
+          "memory_max_bytes": 4294967296,
+          "metered": true,
+          "peak_cgroup_pids": 3,
+          "peak_memory_bytes": 4177920,
+          "pids_events": {
+            "max": 0
+          },
+          "tasks_max": 512,
+          "unit": "tbrail-settle-before-settled-update-001-01-390227-57f2aef5.scope"
+        },
+        "limits": {
+          "address_space_bytes": 4294967296,
+          "cpu_seconds": 900,
+          "file_size_bytes": 1073741824,
+          "max_output_bytes": 4194304,
+          "max_processes": 512,
+          "open_files": 1024,
+          "workspace_bytes": 8589934592
+        },
+        "output_bytes_recorded": 9,
+        "output_bytes_total": 9,
+        "output_ceiling_hit": false,
+        "peak_pids": 3,
+        "peak_workspace_bytes": 94693361,
+        "per_process": {
+          "mechanism": "prlimit(1)",
+          "rlimit_as_bytes": 4294967296,
+          "rlimit_cpu_seconds": 900,
+          "rlimit_fsize_bytes": 1073741824,
+          "rlimit_nofile": 1024
+        },
+        "pid_ceiling_hit": false,
+        "preexec_fn_used": false,
+        "semantics": {
+          "aggregate": {
+            "cpu_enforced_by": "controller monitor sampling cgroup cpu.stat usage_usec, then cgroup.kill",
+            "cpu_seconds_budget": 900,
+            "mechanism": "cgroup-v2 scope (systemd-run --user --scope)",
+            "memory_max_bytes": 4294967296,
+            "memory_swap_max_bytes": 0,
+            "output_bytes": 4194304,
+            "output_enforced_by": "controller output pump, then cgroup.kill",
+            "tasks_max": 512,
+            "workspace_bytes": 8589934592,
+            "workspace_enforced_by": "controller monitor sampling workspace tree bytes, then cgroup.kill"
+          },
+          "disk": {
+            "checkpoint_quota_bytes": 2147483648,
+            "checkpoint_retention": "latest admitted checkpoint only",
+            "source_quota_bytes": 5368709120,
+            "statement": "source materialization and checkpoint bytes are enforced against these quotas, not merely declared"
+          },
+          "per_process": {
+            "mechanism": "prlimit(1), applied outside the sandbox before exec",
+            "rlimit_as_bytes": 4294967296,
+            "rlimit_cpu_seconds": 900,
+            "rlimit_fsize_bytes": 1073741824,
+            "rlimit_nofile": 1024
+          },
+          "statement": "max_processes is AGGREGATE (cgroup pids.max). address_space_bytes and cpu_seconds are enforced BOTH aggregate (cgroup memory.max / cpu.stat monitor) AND per-process (RLIMIT_AS / RLIMIT_CPU). file_size_bytes and open_files are PER-PROCESS ONLY (RLIMIT_FSIZE / RLIMIT_NOFILE); no aggregate file-size or descriptor budget is claimed. workspace_bytes and max_output_bytes are controller-monitored aggregates. RLIMIT_NPROC is no longer used: it is charged per account, so it could never express a phase ceiling."
+        },
+        "signal": null,
+        "workspace_ceiling_hit": false
+      },
+      "exit_code": 0,
+      "index": 1,
+      "log_path": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/logs/01-hold-resource.log",
+      "name": "hold-resource",
+      "op": "rail.hold_resource",
+      "output_bytes": 9,
+      "output_sha256": "1158801329579f1b81bd9bc83846854ae9581f22e777e416c3d381696cf38a31",
+      "replayed": false,
+      "seconds": 30.093,
+      "state": "PASS",
+      "teardown": {
+        "cgroup_kill_attempted": false,
+        "pgid": 390247,
+        "signal": "SIGTERM",
+        "survivors": []
+      },
+      "timed_out": false
+    },
+    {
+      "argv_shape": [
+        "git",
+        "diff",
+        "--exit-code"
+      ],
+      "attempt": 1,
+      "checkpoint": {
+        "path": "/home/octo/coldroot-v4-002/checkpoints/settle-before-settled-update-001/02.tar",
+        "sha256": "b30159e4aaadd6d596bba175653db01f7f3e61721ed4b9c9977cc383e9a33973"
+      },
+      "enforcement": {
+        "account_tasks_at_start": 488,
+        "account_tasks_note": "observation only; RLIMIT_NPROC is not used, because it is charged per account and can never express a per-phase ceiling",
+        "aggregate": {
+          "cgroup": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/tbrail-settle-before-settled-update-001-02-390227-9ef3768e.scope",
+          "cpu_ceiling_hit": false,
+          "cpu_seconds_used": 0.003323,
+          "entered": true,
+          "marker": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/scopes/02.cgroup",
+          "mechanism": "cgroup-v2 scope via systemd-run --user --scope",
+          "memory_events": {
+            "high": 0,
+            "low": 0,
+            "max": 0,
+            "oom": 0,
+            "oom_group_kill": 0,
+            "oom_kill": 0,
+            "sock_throttled": 0
+          },
+          "memory_max_bytes": 4294967296,
+          "metered": true,
+          "peak_cgroup_pids": 1,
+          "peak_memory_bytes": 815104,
+          "pids_events": {
+            "max": 0
+          },
+          "tasks_max": 512,
+          "unit": "tbrail-settle-before-settled-update-001-02-390227-9ef3768e.scope"
+        },
+        "limits": {
+          "address_space_bytes": 4294967296,
+          "cpu_seconds": 900,
+          "file_size_bytes": 1073741824,
+          "max_output_bytes": 4194304,
+          "max_processes": 512,
+          "open_files": 1024,
+          "workspace_bytes": 8589934592
+        },
+        "output_bytes_recorded": 0,
+        "output_bytes_total": 0,
+        "output_ceiling_hit": false,
+        "peak_pids": 0,
+        "peak_workspace_bytes": 0,
+        "per_process": {
+          "mechanism": "prlimit(1)",
+          "rlimit_as_bytes": 4294967296,
+          "rlimit_cpu_seconds": 900,
+          "rlimit_fsize_bytes": 1073741824,
+          "rlimit_nofile": 1024
+        },
+        "pid_ceiling_hit": false,
+        "preexec_fn_used": false,
+        "semantics": {
+          "aggregate": {
+            "cpu_enforced_by": "controller monitor sampling cgroup cpu.stat usage_usec, then cgroup.kill",
+            "cpu_seconds_budget": 900,
+            "mechanism": "cgroup-v2 scope (systemd-run --user --scope)",
+            "memory_max_bytes": 4294967296,
+            "memory_swap_max_bytes": 0,
+            "output_bytes": 4194304,
+            "output_enforced_by": "controller output pump, then cgroup.kill",
+            "tasks_max": 512,
+            "workspace_bytes": 8589934592,
+            "workspace_enforced_by": "controller monitor sampling workspace tree bytes, then cgroup.kill"
+          },
+          "disk": {
+            "checkpoint_quota_bytes": 2147483648,
+            "checkpoint_retention": "latest admitted checkpoint only",
+            "source_quota_bytes": 5368709120,
+            "statement": "source materialization and checkpoint bytes are enforced against these quotas, not merely declared"
+          },
+          "per_process": {
+            "mechanism": "prlimit(1), applied outside the sandbox before exec",
+            "rlimit_as_bytes": 4294967296,
+            "rlimit_cpu_seconds": 900,
+            "rlimit_fsize_bytes": 1073741824,
+            "rlimit_nofile": 1024
+          },
+          "statement": "max_processes is AGGREGATE (cgroup pids.max). address_space_bytes and cpu_seconds are enforced BOTH aggregate (cgroup memory.max / cpu.stat monitor) AND per-process (RLIMIT_AS / RLIMIT_CPU). file_size_bytes and open_files are PER-PROCESS ONLY (RLIMIT_FSIZE / RLIMIT_NOFILE); no aggregate file-size or descriptor budget is claimed. workspace_bytes and max_output_bytes are controller-monitored aggregates. RLIMIT_NPROC is no longer used: it is charged per account, so it could never express a phase ceiling."
+        },
+        "signal": null,
+        "workspace_ceiling_hit": false
+      },
+      "exit_code": 0,
+      "index": 2,
+      "log_path": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/logs/02-verify-no-source-mutation.log",
+      "name": "verify-no-source-mutation",
+      "op": "git.diff_exit_code",
+      "output_bytes": 0,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "replayed": false,
+      "seconds": 0.249,
+      "state": "PASS",
+      "teardown": {
+        "cgroup_kill_attempted": false,
+        "pgid": 390356,
+        "signal": "SIGTERM",
+        "survivors": []
+      },
+      "timed_out": false
+    }
+  ],
+  "private_custody": {
+    "owner_only": true,
+    "paths": {
+      "checkpoint_root": {
+        "group_world_accessible": false,
+        "mode": "0o700",
+        "owner_uid": 1000,
+        "present": true
+      },
+      "database": {
+        "group_world_accessible": false,
+        "mode": "0o600",
+        "owner_uid": 1000,
+        "present": true
+      },
+      "rail.db-shm": {
+        "group_world_accessible": false,
+        "mode": "0o600",
+        "present": true
+      },
+      "rail.db-wal": {
+        "group_world_accessible": false,
+        "mode": "0o600",
+        "present": true
+      },
+      "rail_home": {
+        "group_world_accessible": false,
+        "mode": "0o700",
+        "owner_uid": 1000,
+        "present": true
+      },
+      "receipt_root": {
+        "group_world_accessible": false,
+        "mode": "0o700",
+        "owner_uid": 1000,
+        "present": true
+      },
+      "source_root": {
+        "group_world_accessible": false,
+        "mode": "0o700",
+        "owner_uid": 1000,
+        "present": true
+      },
+      "work_root": {
+        "group_world_accessible": false,
+        "mode": "0o700",
+        "owner_uid": 1000,
+        "present": true
+      }
+    },
+    "property": "OWNER_ONLY_PRIVATE_CUSTODY",
+    "umask": "0o77"
+  },
+  "provider_calls": 0,
+  "recovery": {
+    "resumed": false
+  },
+  "repository": "BigBirdReturns/estate",
+  "residency": {
+    "checkpoint_purge_law": "checkpoints are purged only after the verified ledger transition to SETTLED, so no crash window can strand a PASSed phase without its restore point; the receipt is only valid once they are gone",
+    "checkpoints_retained_at_settlement": 1,
+    "descendants_remaining": 0,
+    "expected_lease_rows_after_release": 0,
+    "note": "scope is transaction execution state only; retained controller source custody is reported separately and is NOT zero",
+    "property": "ZERO_TRANSACTION_EXECUTION_RESIDUE",
+    "worker_credential_present": false,
+    "worker_home_mounted": false,
+    "workspace_absent": true
+  },
+  "resource_semantics": {
+    "aggregate": {
+      "cpu_enforced_by": "controller monitor sampling cgroup cpu.stat usage_usec, then cgroup.kill",
+      "cpu_seconds_budget": 900,
+      "mechanism": "cgroup-v2 scope (systemd-run --user --scope)",
+      "memory_max_bytes": 4294967296,
+      "memory_swap_max_bytes": 0,
+      "output_bytes": 4194304,
+      "output_enforced_by": "controller output pump, then cgroup.kill",
+      "tasks_max": 512,
+      "workspace_bytes": 8589934592,
+      "workspace_enforced_by": "controller monitor sampling workspace tree bytes, then cgroup.kill"
+    },
+    "disk": {
+      "checkpoint_quota_bytes": 2147483648,
+      "checkpoint_retention": "latest admitted checkpoint only",
+      "source_quota_bytes": 5368709120,
+      "statement": "source materialization and checkpoint bytes are enforced against these quotas, not merely declared"
+    },
+    "per_process": {
+      "mechanism": "prlimit(1), applied outside the sandbox before exec",
+      "rlimit_as_bytes": 4294967296,
+      "rlimit_cpu_seconds": 900,
+      "rlimit_fsize_bytes": 1073741824,
+      "rlimit_nofile": 1024
+    },
+    "statement": "max_processes is AGGREGATE (cgroup pids.max). address_space_bytes and cpu_seconds are enforced BOTH aggregate (cgroup memory.max / cpu.stat monitor) AND per-process (RLIMIT_AS / RLIMIT_CPU). file_size_bytes and open_files are PER-PROCESS ONLY (RLIMIT_FSIZE / RLIMIT_NOFILE); no aggregate file-size or descriptor budget is claimed. workspace_bytes and max_output_bytes are controller-monitored aggregates. RLIMIT_NPROC is no longer used: it is charged per account, so it could never express a phase ceiling."
+  },
+  "retained_source_custody": {
+    "confidentiality": "owner-only filesystem permissions on a single-tenant controller account; not encrypted at rest",
+    "encrypted_at_rest": false,
+    "items": [
+      {
+        "bytes": 13310701,
+        "mode": "0o600",
+        "name": "estate-fb47a4cc.bundle",
+        "owner_uid": 1000,
+        "sha256": "f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db"
+      },
+      {
+        "bytes": 849,
+        "mode": "0o600",
+        "name": "native-rail-fixture.bundle",
+        "owner_uid": 1000,
+        "sha256": "9aa65668e6a93fe57bfec74785856ef38977aa713a1b96b3ef8a34a827c8d9ba"
+      }
+    ],
+    "owner": "tier-bench native rail controller (octo-n01 local account)",
+    "owner_only": true,
+    "purge_law": "an item may be purged when no QUEUED, RUNNING or SETTLING transaction references its digest",
+    "quota_breached": false,
+    "quota_bytes": 5368709120,
+    "quota_enforced_at": "materialize_source; a transaction is refused when retained custody already exceeds the quota",
+    "retention": "until the bound transaction is settled and its receipt is externally anchored; purge with `tbrail purge-source`",
+    "root": "/home/octo/coldroot-v4-002/source",
+    "total_bytes": 13311550
+  },
+  "revision": {
+    "base_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+    "expected_tree": "72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f",
+    "head_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a"
+  },
+  "runner_profile": {
+    "aggregate_enforcement": {
+      "controllers_required": [
+        "cpu",
+        "memory",
+        "pids"
+      ],
+      "delegated_root": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service",
+      "mechanism": "cgroup-v2 scope via systemd-run --user --scope",
+      "subtree_control": [
+        "cpu",
+        "memory",
+        "pids"
+      ],
+      "usable": true
+    },
+    "anchor_source": "external",
+    "externally_pinned": true,
+    "host": "octo-n01",
+    "path": "/home/octo/tbrail-v3/RUNNER-PROFILE.octo-n01.json",
+    "sha256": "6a3774af125fcf59afa3fc673d63001006c6d4ff54f7f284a5b316248e703445",
+    "verdict": "ADMITTED"
+  },
+  "runtime": {
+    "id": "python3.11",
+    "path": "/opt/tbrail/py311/bin/python3.11",
+    "sha256": "92d7e40ec50be176cb1b790c7568b7e08cd862137b5aa69f1413ba1967886b79",
+    "version": "Python 3.11.15"
+  },
+  "sandbox": {
+    "bind_sources": "resolved under the repository; symlink, reparse and out-of-tree sources refused",
+    "controller_home_mounted": false,
+    "engine": "bubblewrap",
+    "network": "unshared",
+    "path": "/usr/bin/bwrap",
+    "writable_set": [
+      "repo"
+    ]
+  },
+  "sanitation": {
+    "absent_after": true,
+    "existed": true,
+    "workspace": "/home/octo/coldroot-v4-002/work/settle-before-settled-update-001"
+  },
+  "schema": "tier-bench/native-transaction-receipt@4",
+  "settlement": {
+    "admitted_crash_points": [
+      "after_settling_journal",
+      "after_sanitation",
+      "after_receipt_write",
+      "after_sidecar_write",
+      "before_settled_update",
+      "after_settled_update"
+    ],
+    "journal": "/home/octo/coldroot-v4-002/receipts/settle-before-settled-update-001/SETTLEMENT.json",
+    "journal_sha256": "d6099f6dc85f8b9901e52edda14bb35a952543f58b7288f9152d0484098c052f",
+    "law": "SETTLING is published with a durable settlement journal BEFORE the workspace is sanitized; the transition to SETTLED is the commit point; checkpoints are purged only after it is verified. Every pre-SETTLED crash boundary is therefore reconstructible from the journal without replaying work.",
+    "resumed_from_journal": false
+  },
+  "source": {
+    "bundle": "estate-fb47a4cc.bundle",
+    "bundle_sha256": "f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db",
+    "credential_used": false,
+    "mode": "verified_exact_sha_bundle_under_custody_root",
+    "network_used": false
+  },
+  "terminal": "PASS",
+  "test_hooks": {
+    "settlement_crash_at": "before_settled_update",
+    "settlement_pause_seconds": 0
+  },
+  "timing": {
+    "ended": 1786552198.2347827,
+    "seconds": 32.981,
+    "started": 1786552165.2533755
+  },
+  "transaction_id": "settle-before-settled-update-001",
+  "trust_class": "TRUSTED_PRIVATE",
+  "visibility": "private"
+}

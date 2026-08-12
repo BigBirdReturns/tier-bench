@@ -38,7 +38,7 @@ BASE = {
     "runtime": "python3.11",
     "resource_key": "estate:main:organ-realignment-qualification",
     "allowed_paths": ["repo"],
-    "result_schema": "tier-bench/native-transaction-receipt@3",
+    "result_schema": "tier-bench/native-transaction-receipt@4",
     "publication_ceiling": "STATUS_ONLY",
     "source_bundle": BUNDLE,
     "source_bundle_sha256": BUNDLE_SHA,

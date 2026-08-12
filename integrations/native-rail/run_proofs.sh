@@ -1,5 +1,5 @@
 #!/bin/bash
-# Native rail v3 reproduction path. Run on the admitted controller host.
+# Native rail v4 reproduction path. Run on the admitted controller host.
 #
 #   ./run_proofs.sh emit
 #   ./run_proofs.sh qualify <fresh-root> <accepted-profile-sha256>

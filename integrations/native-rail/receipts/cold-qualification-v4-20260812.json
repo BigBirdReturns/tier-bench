@@ -1,0 +1,791 @@
+{
+  "accepted_runner_profile_sha256": "6a3774af125fcf59afa3fc673d63001006c6d4ff54f7f284a5b316248e703445",
+  "controller_root": "/home/octo/coldroot-v4-002",
+  "failed": 0,
+  "failed_properties": [],
+  "host": "octo-n01",
+  "results": [
+    {
+      "detail": {
+        "root": "/home/octo/coldroot-v4-002"
+      },
+      "name": "fresh controller root with no prior db/leases/work/receipts",
+      "pass": true,
+      "property": "COLD_ROOT"
+    },
+    {
+      "detail": {
+        "built_sha": "f1281ee1991c860510bf2c46a8607efca5df6c34efd312299fe3d9322555f3ac",
+        "head": "1427ad23770901caaab3eeaecefff56ac90a7c4d",
+        "manifest_pinned_sha": "f1281ee1991c860510bf2c46a8607efca5df6c34efd312299fe3d9322555f3ac"
+      },
+      "name": "qualification fixture repository built and bound to the accepted manifest",
+      "pass": true,
+      "property": "FIXTURE_BUILT"
+    },
+    {
+      "detail": {
+        "profile": "/home/octo/tbrail-v3/RUNNER-PROFILE.octo-n01.json",
+        "sha256": "6a3774af125fcf59afa3fc673d63001006c6d4ff54f7f284a5b316248e703445",
+        "verdict": "ADMITTED"
+      },
+      "name": "the run is admitted against an externally supplied profile digest",
+      "pass": true,
+      "property": "EXTERNALLY_PINNED_RUNNER_PROFILE"
+    },
+    {
+      "detail": {
+        "detail": "RUNNER_PROFILE_MISMATCH: sandbox.sha256",
+        "rc": 3
+      },
+      "name": "a controller, sandbox or runtime identity outside the accepted profile refuses execution",
+      "pass": true,
+      "property": "RUNNER_PROFILE_DRIFT_REFUSED"
+    },
+    {
+      "detail": {
+        "out": "{\n  \"verdict\": \"REFUSED\",\n  \"detail\": \"RUNNER_PROFILE_DIGEST_MISMATCH: accepted=1111111111111111111111111111111111111111111111111111111111111111 actual=6a3774af125fcf59afa3fc673d63001006c6d4ff54f7f284",
+        "rc": 3
+      },
+      "name": "a profile whose own digest differs from the accepted anchor is refused",
+      "pass": true,
+      "property": "RUNNER_PROFILE_ANCHOR_ENFORCED"
+    },
+    {
+      "detail": {
+        "accepted_but_should_not_be": []
+      },
+      "name": "all 17 malformed envelopes refused at submit",
+      "pass": true,
+      "property": "G_ENVELOPE_NEGATIVES"
+    },
+    {
+      "detail": {
+        "runtime": "Python 3.11.15",
+        "terminal": "PASS"
+      },
+      "name": "exact Python 3.11 canary settles PASS",
+      "pass": true,
+      "property": "C1_CANARY_PY311"
+    },
+    {
+      "detail": {
+        "phase_rows_after": 5,
+        "phase_rows_before": 5
+      },
+      "name": "settled transaction is not executed twice",
+      "pass": true,
+      "property": "C2_SETTLED_REPLAY"
+    },
+    {
+      "detail": {
+        "terminal": "FAIL"
+      },
+      "name": "deliberate defect produces a FAIL terminal",
+      "pass": true,
+      "property": "A_DEFECT_RENDERS_RED"
+    },
+    {
+      "detail": {
+        "log": "banned_env_present= []\ncredential_paths_visible= []\ncontroller_home_mounted= False\nnetwork= BLOCKED\nprivate_clone_rc= 128\nCREDENTIAL_ISOLATION_HOLDS\n",
+        "terminal": "PASS"
+      },
+      "name": "worker sees no credential, no home, no network",
+      "pass": true,
+      "property": "B_CREDENTIAL_ISOLATION"
+    },
+    {
+      "detail": {
+        "log_tail": "banned_env_present= []\ncredential_paths_visible= []\ncontroller_home_mounted= False\nnetwork= BLOCKED\nprivate_clone_rc= 128\nCREDENTIAL_ISOLATION_HOLDS\n"
+      },
+      "name": "controller home is not mounted into the worker",
+      "pass": true,
+      "property": "B_STRUCTURAL"
+    },
+    {
+      "detail": {
+        "unrefused": []
+      },
+      "name": "manifest, value-grammar, traversal and allowed-path violations refused",
+      "pass": true,
+      "property": "H_OPERATION_NEGATIVES"
+    },
+    {
+      "detail": {
+        "log_tail": "FIXTURE_TOOL_OK --label nested-subtree-witness\n",
+        "terminal": "PASS",
+        "writable_set": [
+          "pkg/sub"
+        ]
+      },
+      "name": "a nested admitted subtree is bound and its contents are executable",
+      "pass": true,
+      "property": "NESTED_ALLOWED_PATH_PASS"
+    },
+    {
+      "detail": {
+        "digest_gate": {
+          "case": "fixture-drift-001",
+          "expected": "script_digest_mismatch",
+          "note": "OPERATION_REJECTED:script_digest_mismatch:pkg/sub/tool.py:f1281ee1991c860510bf2c46a8607efca5df6c34efd312299fe3d9322555f3ac",
+          "terminal": "HOLD"
+        },
+        "nested_boundary": {
+          "case": "fixture-outside-001",
+          "expected": "path_not_in_allowed_paths",
+          "note": "OPERATION_REJECTED:path_not_in_allowed_paths:other/thing.py",
+          "terminal": "HOLD"
+        },
+        "positive": "PASS"
+      },
+      "name": "operations come from the accepted manifest: fixed script identity and digest, closed value grammar, no envelope-defined switches",
+      "pass": true,
+      "property": "REPOSITORY_OPERATION_MANIFEST_ENFORCED"
+    },
+    {
+      "detail": {
+        "case": "fixture-symlink-001",
+        "expected": "symlink_bind_source_refused",
+        "note": "OPERATION_REJECTED:symlink_bind_source_refused:escape",
+        "terminal": "HOLD"
+      },
+      "name": "a source-controlled symlink named as an allowed path cannot redirect a bind mount",
+      "pass": true,
+      "property": "SYMLINK_ESCAPE_REFUSED"
+    },
+    {
+      "detail": {
+        "cpu": {
+          "exit": 137,
+          "pass": true,
+          "seconds": 3.073
+        },
+        "disk": {
+          "exit": 4,
+          "log": "DISK_BLOCKED_AT 4MiB OSError\n",
+          "pass": true
+        },
+        "memory": {
+          "exit": 4,
+          "log": "MEMORY_BLOCKED_AT 492MiB\n",
+          "pass": true
+        },
+        "output": {
+          "cap": 262144,
+          "pass": true,
+          "recorded": 262144,
+          "total_seen": 393216
+        },
+        "pids": {
+          "account_tasks_at_start": 491,
+          "blocked_at": 21,
+          "ceiling": 24,
+          "exit": 4,
+          "log": "PIDS_RLIMIT_NPROC (123591, 123591) (informational; ceiling is cgroup pids.max)\nPIDS_BLOCKED_AT 21 BlockingIOError\n",
+          "pass": true,
+          "pids_events": {
+            "max": 0
+          },
+          "tasks_max_applied": 24
+        }
+      },
+      "name": "output, address space, file size, CPU time and process count ceilings are enforced, not described",
+      "pass": true,
+      "property": "OUTPUT_MEMORY_DISK_PID_CPU_LIMITS_BITE"
+    },
+    {
+      "detail": {
+        "killed": true
+      },
+      "name": "controller killed mid-phase (SIGKILL to its group)",
+      "pass": true,
+      "property": "C3_CRASH_INJECTED"
+    },
+    {
+      "detail": {
+        "attempt": true,
+        "digest_stable": true,
+        "phase0_replayed": true
+      },
+      "name": "completed phase recovered from journal, not re-executed",
+      "pass": true,
+      "property": "C4_CRASH_RECOVERY_NO_DUPLICATE"
+    },
+    {
+      "detail": {
+        "terminal": "PASS"
+      },
+      "name": "interrupted PURE phase is re-executed and the transaction completes",
+      "pass": true,
+      "property": "C5_CRASH_RECOVERY_RESUMES"
+    },
+    {
+      "detail": {
+        "note": "recovery could only proceed by reclaiming the dead holder's lease"
+      },
+      "name": "lease of the killed controller was reclaimed (pid absent)",
+      "pass": true,
+      "property": "C6_STALE_LEASE_RECLAIMED"
+    },
+    {
+      "detail": {
+        "checkpoints_before_resume": [
+          "00.tar"
+        ],
+        "log_tail": "24 sha256=af520fc67d79ef399934d25ce3c7337cfd23706b23a7f3cbddc9fbd08d0b21a6\nheld 30s\nARTIFACT_SURVIVED tbrail-crash-artifact.txt sha256=af520fc67d79ef399934d25ce3c7337cfd23706b23a7f3cbddc9fbd08d0b21a6\n",
+        "restored": true,
+        "resumed": true,
+        "terminal": "PASS"
+      },
+      "name": "state produced by a completed phase survives the crash and satisfies a later phase",
+      "pass": true,
+      "property": "ARTIFACT_PRODUCING_CRASH_RECOVERY"
+    },
+    {
+      "detail": {
+        "terminal": "HOLD"
+      },
+      "name": "interrupted EFFECTFUL phase yields HOLD, never a silent re-run",
+      "pass": true,
+      "property": "C7_EFFECTFUL_CRASH_REFUSED"
+    },
+    {
+      "detail": {
+        "leases": [
+          [
+            "estate:main:collision-probe",
+            "estate-collision-holder-001",
+            1
+          ]
+        ],
+        "reason": "COLLISION_HELD"
+      },
+      "name": "contender refused while holder leases the resource",
+      "pass": true,
+      "property": "D1_COLLISION_HELD"
+    },
+    {
+      "detail": {
+        "contender": "COLLISION_HELD",
+        "detail": "resource_key=estate:main:ttl-probe held by txn=estate-ttl-holder-001 pid=388428 (holder_alive_verified_process_identity)",
+        "phase_state": "RUNNING",
+        "ttl_seconds": 90.0
+      },
+      "name": "a live holder inside a phase longer than the lease TTL is not reclaimed",
+      "pass": true,
+      "property": "LIVE_PHASE_OVER_TTL_NOT_RECLAIMED"
+    },
+    {
+      "detail": {
+        "acquired_at": 1786551821.5571325,
+        "beat_now": 1786551936.6357222,
+        "first_beat": 1786551821.5571327
+      },
+      "name": "the heartbeat advances for the whole duration of a running phase",
+      "pass": true,
+      "property": "LIVE_PHASE_HEARTBEAT_CONTINUES"
+    },
+    {
+      "detail": {
+        "contender": "COLLISION_HELD"
+      },
+      "name": "a live holder with an expired heartbeat is still not reclaimed",
+      "pass": true,
+      "property": "VERIFIED_IDENTITY_DOMINATES_TTL"
+    },
+    {
+      "detail": {
+        "contender": "COLLISION_HELD",
+        "lease_held_at_settlement": true,
+        "lease_rows_after_release": 0,
+        "settled_seen": true
+      },
+      "name": "the lease survives receipt publication and the verified SETTLED transition, and a contender is refused inside that window",
+      "pass": true,
+      "property": "LEASE_HELD_THROUGH_VERIFIED_SETTLEMENT"
+    },
+    {
+      "detail": {
+        "terminal": "PASS"
+      },
+      "name": "the successor acquires the resource once settlement has completed",
+      "pass": true,
+      "property": "SUCCESSOR_PROCEEDS_AFTER_RELEASE"
+    },
+    {
+      "detail": {
+        "detail": "reclaimed with fence=1"
+      },
+      "name": "stale lease held by a reused PID is reclaimed via process-start identity",
+      "pass": true,
+      "property": "D2_PID_REUSE_RECLAIM"
+    },
+    {
+      "detail": {
+        "detail": "resource_key=estate:main:live-probe held by txn=live-txn pid=387179 (holder_alive_verified_process_identity)"
+      },
+      "name": "a live, heartbeating holder is never reclaimed",
+      "pass": true,
+      "property": "D3_LIVE_HOLDER_PROTECTED"
+    },
+    {
+      "detail": {
+        "detail": "fencing_lost resource_key=estate:main:fence-probe mine=(51a19919-ee41-4bed-a72c-aca732aedad6,1) current=('someone-else', 2)"
+      },
+      "name": "holder that lost its fence refuses to settle",
+      "pass": true,
+      "property": "D4_FENCING_BLOCKS_LATE_SETTLE"
+    },
+    {
+      "detail": {
+        "survivors": [],
+        "timed_out": true
+      },
+      "name": "phase timeout kills the whole process group",
+      "pass": true,
+      "property": "E1_TIMEOUT_TEARDOWN"
+    },
+    {
+      "detail": {
+        "pgrep": ""
+      },
+      "name": "no descendant of the torn-down phase survives",
+      "pass": true,
+      "property": "E2_NO_LIVE_DESCENDANTS"
+    },
+    {
+      "detail": {
+        "failures": []
+      },
+      "name": "fresh-process verification recomputes every digest",
+      "pass": true,
+      "property": "F1_RECEIPT_VERIFIES"
+    },
+    {
+      "detail": null,
+      "name": "receipt identity matches an external anchor",
+      "pass": true,
+      "property": "F2_EXTERNAL_ANCHOR"
+    },
+    {
+      "detail": {
+        "failures": [
+          "phase_logs_rehash"
+        ]
+      },
+      "name": "modified phase log is refused",
+      "pass": true,
+      "property": "F3_LOG_TAMPER_REFUSED"
+    },
+    {
+      "detail": {
+        "failures": [
+          "envelope_recomputes"
+        ]
+      },
+      "name": "modified envelope is refused",
+      "pass": true,
+      "property": "F4_ENVELOPE_TAMPER_REFUSED"
+    },
+    {
+      "detail": {
+        "failures": [
+          "external_anchor_matches"
+        ]
+      },
+      "name": "self-consistent forged receipt+sidecar is refused by the anchor",
+      "pass": true,
+      "property": "F5_FORGED_PAIR_REFUSED_BY_ANCHOR"
+    },
+    {
+      "detail": {
+        "failures": [
+          "ledger_binds",
+          "terminal_consistent_with_phases"
+        ]
+      },
+      "name": "a terminal that contradicts the phase states and the ledger is refused",
+      "pass": true,
+      "property": "F7_TERMINAL_FORGERY_REFUSED"
+    },
+    {
+      "detail": {
+        "failures": [
+          "source_bundle_rehashes"
+        ]
+      },
+      "name": "modified source bundle is refused",
+      "pass": true,
+      "property": "F6_SOURCE_TAMPER_REFUSED"
+    },
+    {
+      "detail": {
+        "failures": [],
+        "terminal": "PASS"
+      },
+      "name": "a valid PASS receipt is accepted as evidence on its own terms",
+      "pass": true,
+      "property": "PASS_RECEIPT_VERIFIED"
+    },
+    {
+      "detail": {
+        "failures": [],
+        "terminal": "FAIL"
+      },
+      "name": "a valid FAIL receipt is accepted as evidence on its own terms",
+      "pass": true,
+      "property": "FAIL_RECEIPT_VERIFIED"
+    },
+    {
+      "detail": {
+        "failures": [],
+        "terminal": "HOLD"
+      },
+      "name": "a valid HOLD receipt is accepted as evidence on its own terms",
+      "pass": true,
+      "property": "HOLD_RECEIPT_VERIFIED"
+    },
+    {
+      "detail": {
+        "py311": "Python 3.11.15",
+        "py311_terminal": "PASS",
+        "py314": "Python 3.14.4",
+        "py314_terminal": "PASS"
+      },
+      "name": "the pinned 3.11 datum and the 3.14 matrix point agree phase-for-phase",
+      "pass": true,
+      "property": "I_RUNTIME_EQUIVALENCE"
+    },
+    {
+      "detail": {
+        "exposed": [],
+        "modes": {
+          "rail.db": "0o600",
+          "receipts": "0o700",
+          "root": "0o700",
+          "source_bundle": "0o600"
+        },
+        "reported": true
+      },
+      "name": "controller root, database, logs, receipts and retained source custody are owner-only",
+      "pass": true,
+      "property": "OWNER_ONLY_PRIVATE_CUSTODY"
+    },
+    {
+      "detail": {
+        "crash_exit": -9,
+        "final_state": "SETTLED",
+        "phase_rows_unchanged": true,
+        "receipt_adopted": false,
+        "receipt_verified": true,
+        "resumed_from_journal": true,
+        "state_after_crash": "SETTLING",
+        "verify_failures": []
+      },
+      "name": "controller SIGKILLed at settlement boundary 'after_settling_journal' recovers to a verified SETTLED receipt without replaying work",
+      "pass": true,
+      "property": "CRASH_AFTER_SETTLING_JOURNAL_RECOVERS"
+    },
+    {
+      "detail": {
+        "crash_exit": -9,
+        "final_state": "SETTLED",
+        "phase_rows_unchanged": true,
+        "receipt_adopted": false,
+        "receipt_verified": true,
+        "resumed_from_journal": true,
+        "state_after_crash": "SETTLING",
+        "verify_failures": []
+      },
+      "name": "controller SIGKILLed at settlement boundary 'after_sanitation' recovers to a verified SETTLED receipt without replaying work",
+      "pass": true,
+      "property": "CRASH_AFTER_SANITATION_RECOVERS"
+    },
+    {
+      "detail": {
+        "crash_exit": -9,
+        "final_state": "SETTLED",
+        "phase_rows_unchanged": true,
+        "receipt_adopted": false,
+        "receipt_verified": true,
+        "resumed_from_journal": true,
+        "state_after_crash": "SETTLING",
+        "verify_failures": []
+      },
+      "name": "controller SIGKILLed at settlement boundary 'after_receipt_write' recovers to a verified SETTLED receipt without replaying work",
+      "pass": true,
+      "property": "CRASH_AFTER_RECEIPT_WRITE_RECOVERS"
+    },
+    {
+      "detail": {
+        "crash_exit": -9,
+        "final_state": "SETTLED",
+        "phase_rows_unchanged": true,
+        "receipt_adopted": true,
+        "receipt_verified": true,
+        "resumed_from_journal": null,
+        "state_after_crash": "SETTLING",
+        "verify_failures": []
+      },
+      "name": "controller SIGKILLed at settlement boundary 'after_sidecar_write' recovers to a verified SETTLED receipt without replaying work",
+      "pass": true,
+      "property": "CRASH_AFTER_SIDECAR_WRITE_RECOVERS"
+    },
+    {
+      "detail": {
+        "crash_exit": -9,
+        "final_state": "SETTLED",
+        "phase_rows_unchanged": true,
+        "receipt_adopted": true,
+        "receipt_verified": true,
+        "resumed_from_journal": null,
+        "state_after_crash": "SETTLING",
+        "verify_failures": []
+      },
+      "name": "controller SIGKILLed at settlement boundary 'before_settled_update' recovers to a verified SETTLED receipt without replaying work",
+      "pass": true,
+      "property": "CRASH_BEFORE_SETTLED_UPDATE_RECOVERS"
+    },
+    {
+      "detail": {
+        "crash_exit": -9,
+        "final_state": "SETTLED",
+        "phase_rows_unchanged": true,
+        "receipt_adopted": null,
+        "receipt_verified": true,
+        "resumed_from_journal": null,
+        "state_after_crash": "SETTLED",
+        "verify_failures": []
+      },
+      "name": "controller SIGKILLed at settlement boundary 'after_settled_update' recovers to a verified SETTLED receipt without replaying work",
+      "pass": true,
+      "property": "CRASH_AFTER_SETTLED_UPDATE_REPLAYS_WITHOUT_WORK"
+    },
+    {
+      "detail": {
+        "absolute_escape_written": false,
+        "reasons": {
+          "absolute": "checkpoint_member_absolute:/tmp/tbrail-absolute-escape.txt",
+          "device": "checkpoint_member_device:evil-fifo",
+          "hardlink": "checkpoint_member_link:evil-hardlink",
+          "link": "checkpoint_member_link:evil-link",
+          "traversal": "checkpoint_member_traversal:../../escaped.txt"
+        },
+        "refused": {
+          "absolute": true,
+          "device": true,
+          "hardlink": true,
+          "link": true,
+          "traversal": true
+        },
+        "stderr": ""
+      },
+      "name": "symlink, hardlink, traversal, absolute-path and device members are refused before any byte of the archive is extracted",
+      "pass": true,
+      "property": "CHECKPOINT_LINK_AND_TRAVERSAL_ARCHIVE_REFUSED"
+    },
+    {
+      "detail": {
+        "partial_left_behind": [],
+        "reason": "checkpoint_quota_exceeded:532480>4096",
+        "refused": true
+      },
+      "name": "a checkpoint that would breach the transaction quota is refused and leaves no partial file",
+      "pass": true,
+      "property": "CHECKPOINT_QUOTA_REFUSES_OVERSIZED_CHECKPOINT"
+    },
+    {
+      "detail": {
+        "bytes_held_at_crash": 98375680,
+        "checkpoint_dir_removed_after_settlement": true,
+        "checkpoints_on_disk": [
+          "01.tar"
+        ],
+        "crash_partials": [],
+        "custody_mode": "LATEST_ADMITTED_CHECKPOINT_ONLY",
+        "killed_after_two_passes": true,
+        "quota_bytes": 2147483648,
+        "receipt_verified": true,
+        "recovered_terminal": "PASS",
+        "retained_count": 1,
+        "verify_failures": []
+      },
+      "name": "checkpoint custody is latest-only and stays inside the declared transaction quota across multiple PASSed phases",
+      "pass": true,
+      "property": "CHECKPOINT_STORAGE_BOUND_ENFORCED"
+    },
+    {
+      "detail": {
+        "execute": {
+          "detail": "RUNNER_PROFILE_ANCHOR_REQUIRED: an externally accepted profile digest is required (--runner-profile-sha256 / TBRAIL_RUNNER_PROFILE_SHA256); a locally self-consistent profile is not an authority",
+          "executed": false,
+          "reason": "RUNNER_PROFILE_REFUSED",
+          "terminal": "HOLD"
+        },
+        "execute_rc": 3,
+        "leases_after": 0,
+        "leases_before": 0,
+        "phase_rows": 0,
+        "profile_check": {
+          "detail": "RUNNER_PROFILE_ANCHOR_REQUIRED: an externally accepted profile digest is required (--runner-profile-sha256 / TBRAIL_RUNNER_PROFILE_SHA256); a locally self-consistent profile is not an authority",
+          "verdict": "REFUSED"
+        },
+        "profile_check_rc": 3,
+        "txn_state": "QUEUED"
+      },
+      "name": "execute and profile-check refuse without an externally supplied profile digest, before any lease is acquired",
+      "pass": true,
+      "property": "RUNNER_PROFILE_ANCHOR_ABSENT_REFUSED"
+    },
+    {
+      "detail": {
+        "anchored_failures": [
+          "external_anchor_matches"
+        ],
+        "anchored_verdict": "REFUSED",
+        "containment_refused": {
+          "refused": [
+            {
+              "label": "phase_log[0]",
+              "path": "/tmp/tbrail-verify-trap.fifo",
+              "why": "outside_admitted_controller_roots"
+            },
+            {
+              "label": "phase_log[1]",
+              "path": "/tmp/tbrail-verify-trap.fifo",
+              "why": "outside_admitted_controller_roots"
+            },
+            {
+              "label": "phase_log[2]",
+              "path": "/tmp/tbrail-verify-trap.fifo",
+              "why": "outside_admitted_controller_roots"
+            },
+            {
+              "label": "phase_log[3]",
+              "path": "/tmp/tbrail-verify-trap.fifo",
+              "why": "outside_admitted_controller_roots"
+            },
+            {
+              "label": "phase_log[4]",
+              "path": "/tmp/tbrail-verify-trap.fifo",
+              "why": "outside_admitted_controller_roots"
+            },
+            {
+              "label": "source.bundle",
+              "path": "../../../../etc/passwd",
+              "why": "path_escape:/home/octo/coldroot-v4-002/source/../../../../etc/passwd"
+            },
+            {
+              "label": "runner_profile.path",
+              "path": "/tmp/tbrail-verify-trap.fifo",
+              "why": "outside_admitted_controller_roots"
+            }
+          ]
+        },
+        "followed_paths": false,
+        "unanchored_verdict": "REFUSED"
+      },
+      "name": "a tampered receipt is refused on identity before any embedded path is followed, and refused on containment when self-consistent",
+      "pass": true,
+      "property": "TAMPERED_RECEIPT_PATH_NOT_FOLLOWED"
+    },
+    {
+      "detail": {
+        "all_entered_scope": true,
+        "all_preexec_false": true,
+        "launch_chain": [
+          "bwrap",
+          "prlimit",
+          "sh",
+          "systemd-run"
+        ],
+        "phases_checked": 5,
+        "source_free_of_preexec": true
+      },
+      "name": "no preexec_fn anywhere in the controller; every phase entered a digest-pinned launch chain instead",
+      "pass": true,
+      "property": "THREADED_CONTROLLER_LAUNCHER_NO_PREEXEC"
+    },
+    {
+      "detail": {
+        "aggregate_mechanism": "cgroup-v2 scope (systemd-run --user --scope)",
+        "cgroup_refused_forks": true,
+        "disk": {
+          "checkpoint_quota_bytes": 2147483648,
+          "checkpoint_retention": "latest admitted checkpoint only",
+          "source_quota_bytes": 5368709120,
+          "statement": "source materialization and checkpoint bytes are enforced against these quotas, not merely declared"
+        },
+        "fork_burst": {
+          "blocked_at": 21,
+          "cgroup_tasks_max": 24,
+          "inherited_rlimit_nproc": 123591,
+          "phase_state": "FAIL",
+          "rlimit_cannot_explain_it": true
+        },
+        "per_process_mechanism": "prlimit(1), applied outside the sandbox before exec",
+        "phases_in_delegated_scope": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "phases_metered": [
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "phases_total": 5,
+        "pids_events_on_burst": {
+          "max": 0
+        },
+        "statement_exact": true
+      },
+      "name": "aggregate ceilings are cgroup-enforced and metered; per-process rlimits are named as per-process and nothing claims more",
+      "pass": true,
+      "property": "RESOURCE_SEMANTICS_EXACTLY_NAMED_OR_CGROUP_ENFORCED"
+    },
+    {
+      "detail": {
+        "moved_to_historical": true,
+        "purge_source_exists": true,
+        "purge_source_rc": 0,
+        "stale_dirs_at_root": [],
+        "tombstone_present": true,
+        "v1_references_left": []
+      },
+      "name": "the v1/v2 execution surface is retired to an explicitly historical location and every documented command exists",
+      "pass": true,
+      "property": "CURRENT_V3_SURFACE_ONLY"
+    },
+    {
+      "detail": {
+        "checkpoints": [],
+        "leases": 0,
+        "workspaces": []
+      },
+      "name": "no leases, no workspaces and no checkpoints after all transactions",
+      "pass": true,
+      "property": "J1_ZERO_TRANSACTION_EXECUTION_RESIDUE"
+    },
+    {
+      "detail": {
+        "items": [
+          "estate-fb47a4cc.bundle",
+          "native-rail-fixture.bundle"
+        ],
+        "owner_only": true,
+        "total_bytes": 13311550
+      },
+      "name": "retained source custody reported separately with digest, bytes, mode and purge law",
+      "pass": true,
+      "property": "J2_RETAINED_CUSTODY_DECLARED"
+    }
+  ],
+  "schema": "tier-bench/native-rail-cold-qualification@3",
+  "total": 61,
+  "verdict": "PASS_NATIVE_PRIVATE_EXECUTION_RAIL_PRODUCT_CANDIDATE"
+}

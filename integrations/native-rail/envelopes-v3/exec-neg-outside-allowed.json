@@ -13,7 +13,7 @@
   "allowed_paths": [
     "docs"
   ],
-  "result_schema": "tier-bench/native-transaction-receipt@3",
+  "result_schema": "tier-bench/native-transaction-receipt@4",
   "publication_ceiling": "STATUS_ONLY",
   "source_bundle": "estate-fb47a4cc.bundle",
   "source_bundle_sha256": "f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db",

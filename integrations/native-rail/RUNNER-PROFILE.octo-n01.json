@@ -1,5 +1,20 @@
 {
+  "aggregate_enforcement": {
+    "controllers_required": [
+      "cpu",
+      "memory",
+      "pids"
+    ],
+    "delegated_root": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service",
+    "mechanism": "cgroup-v2 scope via systemd-run --user --scope",
+    "subtree_control": [
+      "cpu",
+      "memory",
+      "pids"
+    ]
+  },
   "ceilings": {
+    "checkpoint_quota_bytes": 2147483648,
     "heartbeat_seconds": 10.0,
     "lease_ttl_seconds": 90.0,
     "limits": {
@@ -12,14 +27,33 @@
       "workspace_bytes": 8589934592
     },
     "max_phases": 32,
-    "max_timeout": 1800
+    "max_timeout": 1800,
+    "source_quota_bytes": 5368709120
   },
   "controller": {
     "path": "/home/octo/tbrail-v3/tbrail.py",
-    "sha256": "17b38866a30ff0204388cfbe33f50efe955081bcc32638d91f229d9f5aae6d21"
+    "sha256": "d414e507181acce1d9d990a52601b141d3feee4cb0170dc13e27b1213cbc7f4c"
   },
   "guest_root": "/w",
   "host": "octo-n01",
+  "launch_chain": {
+    "bwrap": {
+      "path": "/usr/bin/bwrap",
+      "sha256": "0abea81db798ebf6b4742ac0664802d97521547a353c2a0dbdc21d76cbbfd2c0"
+    },
+    "prlimit": {
+      "path": "/usr/bin/prlimit",
+      "sha256": "00be18793391b9222a041277a088022cc58088690cb0e851383bd8ec73f0fefb"
+    },
+    "sh": {
+      "path": "/usr/bin/dash",
+      "sha256": "c626229526bb58ec2d0f585f3c3ae1412e6f973b4353385042d11c38d8426917"
+    },
+    "systemd-run": {
+      "path": "/usr/bin/systemd-run",
+      "sha256": "03a68bafb0ebc0f5eff41cbdf3cbbdf126a3bb87e21140f9147bf78edce36d88"
+    }
+  },
   "operations": [
     "git.diff_exit_code",
     "python.py_compile",
@@ -55,6 +89,34 @@
       "sha256": "8d13086070f90b2b8edc2463e73fc5013b446d9e4de80a832220d20515e6f819"
     }
   },
+  "resource_semantics": {
+    "aggregate": {
+      "cpu_enforced_by": "controller monitor sampling cgroup cpu.stat usage_usec, then cgroup.kill",
+      "cpu_seconds_budget": 900,
+      "mechanism": "cgroup-v2 scope (systemd-run --user --scope)",
+      "memory_max_bytes": 4294967296,
+      "memory_swap_max_bytes": 0,
+      "output_bytes": 4194304,
+      "output_enforced_by": "controller output pump, then cgroup.kill",
+      "tasks_max": 512,
+      "workspace_bytes": 8589934592,
+      "workspace_enforced_by": "controller monitor sampling workspace tree bytes, then cgroup.kill"
+    },
+    "disk": {
+      "checkpoint_quota_bytes": 2147483648,
+      "checkpoint_retention": "latest admitted checkpoint only",
+      "source_quota_bytes": 5368709120,
+      "statement": "source materialization and checkpoint bytes are enforced against these quotas, not merely declared"
+    },
+    "per_process": {
+      "mechanism": "prlimit(1), applied outside the sandbox before exec",
+      "rlimit_as_bytes": 4294967296,
+      "rlimit_cpu_seconds": 900,
+      "rlimit_fsize_bytes": 1073741824,
+      "rlimit_nofile": 1024
+    },
+    "statement": "max_processes is AGGREGATE (cgroup pids.max). address_space_bytes and cpu_seconds are enforced BOTH aggregate (cgroup memory.max / cpu.stat monitor) AND per-process (RLIMIT_AS / RLIMIT_CPU). file_size_bytes and open_files are PER-PROCESS ONLY (RLIMIT_FSIZE / RLIMIT_NOFILE); no aggregate file-size or descriptor budget is claimed. workspace_bytes and max_output_bytes are controller-monitored aggregates. RLIMIT_NPROC is no longer used: it is charged per account, so it could never express a phase ceiling."
+  },
   "runtimes": {
     "git": {
       "path": "/usr/bin/git",
@@ -77,10 +139,10 @@
     "path": "/usr/bin/bwrap",
     "sha256": "0abea81db798ebf6b4742ac0664802d97521547a353c2a0dbdc21d76cbbfd2c0"
   },
-  "schema": "tier-bench/native-rail-runner-profile@1",
+  "schema": "tier-bench/native-rail-runner-profile@2",
   "scripts": {
     "append_byte.py": "3b9d4990ad805fc3a08577309e19e7661c7f788ec08cb6457ceab47f13fb08c4",
-    "burn.py": "6c031cef5a69b1c6eeb74b855eff5a9933849b9c330675265e790a16ad0cd9c9",
+    "burn.py": "9d175044c2029ca65e0dbc607c90b34f6a5b8b5ce16d51569f874c9fe8897fa6",
     "credential_probe.py": "f049be3fb7373d4998f558c1e9905795d49910b2f0ada4dc180a332bef4e4486",
     "hold_resource.py": "e7c7f1301829af971aa22d0e9f73c0f31de98fab526693b1a16fff864b9fc1c6",
     "produce_artifact.py": "7189fc59d8bc4083ae7af404721310747990077a763096094531d75d3c3f0eba",

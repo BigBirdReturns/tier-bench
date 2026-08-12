@@ -57,7 +57,12 @@ elif mode == "cpu":
 
 elif mode == "pids":
     import resource
-    print(f"PIDS_RLIMIT_NPROC {resource.getrlimit(resource.RLIMIT_NPROC)}", flush=True)
+    # Informational only. The phase task ceiling is the cgroup `pids.max` of the
+    # scope this phase runs in, NOT RLIMIT_NPROC -- that rlimit is charged per
+    # account and could never express a per-phase ceiling, so the rail no longer
+    # sets it. A blocked fork here is the cgroup refusing, not the rlimit.
+    print(f"PIDS_RLIMIT_NPROC {resource.getrlimit(resource.RLIMIT_NPROC)} "
+          f"(informational; ceiling is cgroup pids.max)", flush=True)
     children = []
     try:
         for _ in range(amount):

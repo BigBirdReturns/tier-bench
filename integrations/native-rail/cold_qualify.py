@@ -176,7 +176,7 @@ def build_fixture():
             "runtime": "python3.11",
             "resource_key": key,
             "allowed_paths": allowed,
-            "result_schema": "tier-bench/native-transaction-receipt@3",
+            "result_schema": "tier-bench/native-transaction-receipt@4",
             "publication_ceiling": "NONE",
             "source_bundle": FIXTURE_BUNDLE,
             "source_bundle_sha256": bsha,
@@ -843,7 +843,8 @@ def prop_limits_bite():
                      "exit": ph.get("exit_code"), "blocked_at": blocked_at,
                      "ceiling": ceiling,
                      "account_tasks_at_start": enf.get("account_tasks_at_start"),
-                     "rlimit_applied": enf.get("rlimit_nproc_applied"),
+                     "tasks_max_applied": (enf.get("aggregate") or {}).get("tasks_max"),
+                     "pids_events": (enf.get("aggregate") or {}).get("pids_events"),
                      "log": log[-140:]}
 
     failed = [k for k, v in cases.items() if not v["pass"]]
@@ -870,9 +871,14 @@ def prop_runner_profile():
     data = json.loads(PROFILE.read_text())
     data["sandbox"]["sha256"] = "0" * 64
     bad.write_text(json.dumps(data, indent=2, sort_keys=True), encoding="utf-8")
+    # Anchor the tampered profile to its OWN digest, so the anchor check passes
+    # and the refusal can only come from observed-vs-accepted content drift.
+    # Leaving the anchor empty would instead trip RUNNER_PROFILE_ANCHOR_REQUIRED
+    # and prove nothing about drift.
+    bad_sha = hashlib.sha256(bad.read_bytes()).hexdigest()
     r2 = rail("execute", "estate-canary-py311-001", "--runner-profile", str(bad),
               env_extra={"TBRAIL_RUNNER_PROFILE": str(bad),
-                         "TBRAIL_RUNNER_PROFILE_SHA256": ""})
+                         "TBRAIL_RUNNER_PROFILE_SHA256": bad_sha})
     o2 = jloads(r2.stdout)
     record("RUNNER_PROFILE_DRIFT_REFUSED",
            "a controller, sandbox or runtime identity outside the accepted profile "
@@ -883,7 +889,8 @@ def prop_runner_profile():
            {"rc": r2.returncode, "detail": o2 and str(o2.get("detail"))[:200]})
 
     r3 = rail("profile-check", "--runner-profile", str(PROFILE),
-              "--runner-profile-sha256", "1" * 64)
+              "--runner-profile-sha256", "1" * 64,
+              env_extra={"TBRAIL_RUNNER_PROFILE_SHA256": "1" * 64})
     record("RUNNER_PROFILE_ANCHOR_ENFORCED",
            "a profile whose own digest differs from the accepted anchor is refused",
            r3.returncode == 3 and "DIGEST_MISMATCH" in r3.stdout,
@@ -947,6 +954,491 @@ def prop_j_residency():
             "items": out and [i["name"] for i in out["retained_source_custody"]["items"]]})
 
 
+# --------------------------------------------------------------------------
+# v4: settlement crash windows, checkpoint custody, anchors, path safety,
+#     launcher, exact resource semantics, current surface
+# --------------------------------------------------------------------------
+def _derive_envelope(src: Path, txn: str, resource_key: str,
+                     repeat_first: int = 0) -> str:
+    """Clone an admitted envelope under a new transaction identity."""
+    env = json.loads(Path(src).read_text(encoding="utf-8"))
+    env["transaction_id"] = txn
+    env["resource_key"] = resource_key
+    if repeat_first:
+        first = env["phases"][0]
+        env["phases"] = []
+        for i in range(repeat_first):
+            ph = json.loads(json.dumps(first))
+            ph["name"] = f"{first['name']}-{i}"
+            env["phases"].append(ph)
+    FIXTURE_ENV.mkdir(parents=True, exist_ok=True)
+    out = FIXTURE_ENV / f"{txn}.json"
+    out.write_text(json.dumps(env, indent=2, sort_keys=True), encoding="utf-8")
+    return str(out)
+
+
+def _txn_row(txn):
+    return db().execute(
+        "SELECT state,terminal,receipt_path FROM txn WHERE txn_id=?", (txn,)).fetchone()
+
+
+def _phase_rows(txn):
+    return db().execute(
+        "SELECT idx,state,attempt,digest FROM phase WHERE txn_id=? ORDER BY idx",
+        (txn,)).fetchall()
+
+
+def _verify_anchored(receipt_path):
+    """Verify in a fresh process against the sidecar as the external anchor."""
+    p = Path(receipt_path)
+    if not p.is_file():
+        return False, "receipt_absent"
+    sidecar = p.parent / "RECEIPT.sha256"
+    if not sidecar.is_file():
+        return False, "sidecar_absent"
+    r = rail("verify", str(p), "--anchor", sidecar.read_text().strip(), timeout=300)
+    return r.returncode == 0, (jloads(r.stdout) or {}).get("failures")
+
+
+CRASH_MATRIX = (
+    ("after_settling_journal", "CRASH_AFTER_SETTLING_JOURNAL_RECOVERS"),
+    ("after_sanitation", "CRASH_AFTER_SANITATION_RECOVERS"),
+    ("after_receipt_write", "CRASH_AFTER_RECEIPT_WRITE_RECOVERS"),
+    ("after_sidecar_write", "CRASH_AFTER_SIDECAR_WRITE_RECOVERS"),
+    ("before_settled_update", "CRASH_BEFORE_SETTLED_UPDATE_RECOVERS"),
+    ("after_settled_update", "CRASH_AFTER_SETTLED_UPDATE_REPLAYS_WITHOUT_WORK"),
+)
+
+
+def prop_settlement_crash_matrix():
+    """Kill the controller at every admitted settlement boundary.
+
+    The v3 rail sanitized the workspace and purged every checkpoint before the
+    receipt existed and before the ledger moved, so a crash in that window left
+    a RUNNING transaction whose PASSed phases had lost their restore points and
+    recovery could only refuse. Each boundary is entered deliberately here, and
+    the transaction must still reach a verified SETTLED receipt without
+    re-executing a single phase.
+    """
+    src = ENVDIR / "crash-pure.json"
+    for point, witness in CRASH_MATRIX:
+        slug = point.replace("_", "-")
+        txn = f"settle-{slug}-001"
+        envp = _derive_envelope(src, txn, f"fixture:settle-{slug}")
+        rail("submit", envp)
+        r = rail("execute", txn, timeout=600,
+                 env_extra={"TBRAIL_SETTLEMENT_CRASH_AT": point})
+        crashed = r.returncode in (-9, 137)
+        state_after_crash = (_txn_row(txn) or [None])[0]
+        phases_before = _phase_rows(txn)
+
+        out = jloads(rail("execute", txn, timeout=600).stdout)
+        phases_after = _phase_rows(txn)
+        final = _txn_row(txn)
+        no_rework = phases_before == phases_after
+        settled = bool(final) and final[0] == "SETTLED" and final[1] == "PASS"
+        verified, vfail = _verify_anchored(final[2]) if final and final[2] else (False, "no_receipt")
+        # No work may have been replayed. `phase_rows_unchanged` is the
+        # authoritative proof of that -- it compares attempt counts and output
+        # digests across the recovery. The per-phase `replayed` flag describes
+        # the ORIGINAL execution and is carried forward verbatim in the
+        # settlement journal, so it says nothing about this pass.
+        comp = (out or {}).get("settlement_completed") or {}
+        rec_blk = (out or {}).get("recovery") or {}
+        if point == "after_settled_update":
+            shape_ok = bool(out) and out.get("replay") is True and \
+                (out.get("reconciled") or {}).get("work_replayed") is False
+        else:
+            shape_ok = bool(out) and (
+                rec_blk.get("settlement_resumed_from_journal") is True
+                or comp.get("receipt_adopted_from_prior_attempt") is True)
+
+        record(witness,
+               f"controller SIGKILLed at settlement boundary '{point}' recovers "
+               f"to a verified SETTLED receipt without replaying work",
+               crashed and settled and no_rework and verified and shape_ok,
+               {"crash_exit": r.returncode, "state_after_crash": state_after_crash,
+                "phase_rows_unchanged": no_rework, "final_state": final and final[0],
+                "receipt_verified": verified, "verify_failures": vfail,
+                "resumed_from_journal": rec_blk.get("settlement_resumed_from_journal"),
+                "receipt_adopted": comp.get("receipt_adopted_from_prior_attempt")})
+
+
+CKPT_PROBE = r'''
+import io, json, os, sys, tarfile
+from pathlib import Path
+sys.path.insert(0, os.environ["TBRAIL_DIR"])
+import tbrail
+
+tmp = Path(os.environ["TBRAIL_HOME"]) / "ckpt-probe"
+tmp.mkdir(parents=True, exist_ok=True)
+ESCAPE = Path("/tmp/tbrail-absolute-escape.txt")
+ESCAPE.unlink(missing_ok=True)
+out = {}
+
+def build(name, mutate):
+    p = tmp / name
+    with tarfile.open(p, "w", format=tarfile.PAX_FORMAT) as tf:
+        mutate(tf)
+    return p
+
+def sym(tf):
+    ti = tarfile.TarInfo("evil-link"); ti.type = tarfile.SYMTYPE
+    ti.linkname = "/etc/passwd"; tf.addfile(ti)
+
+def hard(tf):
+    data = b"x\n"
+    ok = tarfile.TarInfo("ok.txt"); ok.size = len(data)
+    tf.addfile(ok, io.BytesIO(data))
+    ti = tarfile.TarInfo("evil-hardlink"); ti.type = tarfile.LNKTYPE
+    ti.linkname = "ok.txt"; tf.addfile(ti)
+
+def trav(tf):
+    data = b"pwned\n"
+    ti = tarfile.TarInfo("../../escaped.txt"); ti.size = len(data)
+    tf.addfile(ti, io.BytesIO(data))
+
+def absolute(tf):
+    data = b"pwned\n"
+    ti = tarfile.TarInfo(str(ESCAPE)); ti.size = len(data)
+    tf.addfile(ti, io.BytesIO(data))
+
+def fifo(tf):
+    ti = tarfile.TarInfo("evil-fifo"); ti.type = tarfile.FIFOTYPE
+    tf.addfile(ti)
+
+for name, fn in (("link", sym), ("hardlink", hard), ("traversal", trav),
+                 ("absolute", absolute), ("device", fifo)):
+    p = build(name + ".tar", fn)
+    ws = tmp / ("ws-" + name)
+    rec = {}
+    try:
+        tbrail.restore_checkpoint(p, tbrail.sha256_file(p), ws)
+        rec["refused"] = False
+    except tbrail.Reject as exc:
+        rec["refused"] = True
+        rec["reason"] = str(exc)
+    except Exception as exc:
+        rec["refused"] = False
+        rec["unexpected"] = repr(exc)
+    rec["workspace_entries"] = sorted(q.name for q in ws.iterdir()) if ws.is_dir() else []
+    out[name] = rec
+
+out["absolute_escape_written"] = ESCAPE.exists()
+ESCAPE.unlink(missing_ok=True)
+
+# quota: exercise the bound itself, with the constant lowered in-process
+big = tmp / "big-ws"
+big.mkdir(parents=True, exist_ok=True)
+(big / "payload.bin").write_bytes(os.urandom(512 * 1024))
+tbrail.CHECKPOINT_QUOTA_BYTES = 4096
+quota = {}
+try:
+    tbrail.write_checkpoint("quota-probe-001", 0, big)
+    quota["refused"] = False
+except tbrail.Reject as exc:
+    quota["refused"] = True
+    quota["reason"] = str(exc)
+quota["partial_left_behind"] = sorted(
+    q.name for q in (Path(os.environ["TBRAIL_HOME"]) / "checkpoints" /
+                     "quota-probe-001").glob("*")) if (
+    Path(os.environ["TBRAIL_HOME"]) / "checkpoints" / "quota-probe-001").is_dir() else []
+out["quota"] = quota
+# leave no residue: the probe must not be visible to the residency property
+import shutil as _sh
+_sh.rmtree(Path(os.environ["TBRAIL_HOME"]) / "checkpoints" / "quota-probe-001",
+           ignore_errors=True)
+print(json.dumps(out))
+'''
+
+
+def prop_checkpoint_safety():
+    r = subprocess.run([PY, "-c", CKPT_PROBE], capture_output=True, text=True,
+                       timeout=300, env=rail_env({"TBRAIL_DIR": str(HERE)}))
+    out = jloads(r.stdout) or {}
+    kinds = ("link", "hardlink", "traversal", "absolute", "device")
+    refused = {k: bool((out.get(k) or {}).get("refused")) for k in kinds}
+    clean = all(not (out.get(k) or {}).get("workspace_entries") for k in kinds)
+    record("CHECKPOINT_LINK_AND_TRAVERSAL_ARCHIVE_REFUSED",
+           "symlink, hardlink, traversal, absolute-path and device members are "
+           "refused before any byte of the archive is extracted",
+           all(refused.values()) and clean
+           and out.get("absolute_escape_written") is False,
+           {"refused": refused, "absolute_escape_written":
+            out.get("absolute_escape_written"),
+            "stderr": r.stderr[-300:],
+            "reasons": {k: (out.get(k) or {}).get("reason") for k in kinds}})
+
+    quota = out.get("quota") or {}
+    record("CHECKPOINT_QUOTA_REFUSES_OVERSIZED_CHECKPOINT",
+           "a checkpoint that would breach the transaction quota is refused and "
+           "leaves no partial file",
+           bool(quota.get("refused")) and not quota.get("partial_left_behind"),
+           quota)
+
+
+def prop_checkpoint_storage_bound():
+    """Only the latest checkpoint may exist, even after several PASSed phases."""
+    txn = "ckpt-bound-001"
+    envp = _derive_envelope(ENVDIR / "crash-pure.json", txn,
+                            "fixture:ckpt-bound", repeat_first=3)
+    killed = _crash_mid_phase(txn, envp, wait_for=(1, 2))
+    ck = ROOT / "checkpoints" / txn
+    tars = sorted(p.name for p in ck.glob("*.tar")) if ck.is_dir() else []
+    partials = sorted(p.name for p in ck.glob("*.partial")) if ck.is_dir() else []
+    held = sum(p.stat().st_size for p in ck.iterdir() if p.is_file()) if ck.is_dir() else 0
+    # Two phases have PASSed here. v3 would be holding two complete workspace
+    # archives; latest-only means exactly one. A `.partial` from the interrupted
+    # third write may exist -- it is a crash artifact, not a retained restore
+    # point -- but everything on disk must still fit inside the quota, and the
+    # whole directory must be gone once the transaction settles.
+    bounded = killed and len(tars) == 1 and len(partials) <= 1
+
+    out = jloads(rail("execute", txn, timeout=600).stdout)
+    final = _txn_row(txn)
+    verified, vfail = _verify_anchored(final[2]) if final and final[2] else (False, None)
+    cust = ((out or {}).get("checkpoint_custody") or {})
+    purged_clean = not ck.exists()
+    record("CHECKPOINT_STORAGE_BOUND_ENFORCED",
+           "checkpoint custody is latest-only and stays inside the declared "
+           "transaction quota across multiple PASSed phases",
+           bounded and verified and purged_clean
+           and held <= int(cust.get("quota_bytes", 0) or 0)
+           and cust.get("mode") == "LATEST_ADMITTED_CHECKPOINT_ONLY"
+           and int(cust.get("retained_count", 9)) <= 1,
+           {"killed_after_two_passes": killed, "checkpoints_on_disk": tars,
+            "crash_partials": partials, "bytes_held_at_crash": held,
+            "quota_bytes": cust.get("quota_bytes"),
+            "checkpoint_dir_removed_after_settlement": purged_clean,
+            "custody_mode": cust.get("mode"),
+            "retained_count": cust.get("retained_count"),
+            "recovered_terminal": (out or {}).get("terminal"),
+            "receipt_verified": verified, "verify_failures": vfail})
+
+
+def prop_profile_anchor_required():
+    """No anchor, no execution -- and the refusal lands before the lease."""
+    txn = "anchor-absent-001"
+    envp = _derive_envelope(ENVDIR / "crash-pure.json", txn, "fixture:anchor-absent")
+    rail("submit", envp)
+    leases_before = db().execute("SELECT COUNT(*) FROM lease").fetchone()[0]
+    r = rail("execute", txn, env_extra={"TBRAIL_RUNNER_PROFILE_SHA256": ""})
+    out = jloads(r.stdout) or {}
+    leases_after = db().execute("SELECT COUNT(*) FROM lease").fetchone()[0]
+    state = (_txn_row(txn) or [None])[0]
+    phases = _phase_rows(txn)
+
+    pc = rail("profile-check", "--runner-profile", str(PROFILE),
+              env_extra={"TBRAIL_RUNNER_PROFILE_SHA256": ""})
+    pc_out = jloads(pc.stdout) or {}
+
+    record("RUNNER_PROFILE_ANCHOR_ABSENT_REFUSED",
+           "execute and profile-check refuse without an externally supplied "
+           "profile digest, before any lease is acquired",
+           r.returncode == 3
+           and "RUNNER_PROFILE_ANCHOR_REQUIRED" in json.dumps(out)
+           and out.get("executed") is False
+           and leases_after == leases_before
+           and state == "QUEUED" and not phases
+           and pc.returncode == 3
+           and "RUNNER_PROFILE_ANCHOR_REQUIRED" in json.dumps(pc_out),
+           {"execute_rc": r.returncode, "execute": out,
+            "profile_check_rc": pc.returncode, "profile_check": pc_out,
+            "txn_state": state, "phase_rows": len(phases),
+            "leases_before": leases_before, "leases_after": leases_after})
+
+
+def prop_tampered_receipt_paths():
+    """A tampered receipt must not steer the verifier onto host files.
+
+    The tampered paths point at a FIFO outside every admitted controller root.
+    If the verifier opened it, this property would block until the harness
+    timeout; returning a refusal promptly is itself the evidence that the path
+    was never followed.
+    """
+    src = ROOT / "receipts" / "estate-canary-py311-001" / "RECEIPT.json"
+    if not src.is_file():
+        record("TAMPERED_RECEIPT_PATH_NOT_FOLLOWED", "no settled receipt to tamper",
+               False, {"expected": str(src)})
+        return
+    genuine = json.loads(src.read_text(encoding="utf-8"))
+    anchor = (src.parent / "RECEIPT.sha256").read_text().strip()
+
+    trap = Path("/tmp/tbrail-verify-trap.fifo")
+    trap.unlink(missing_ok=True)
+    os.mkfifo(trap)
+
+    tampered = json.loads(json.dumps(genuine))
+    for b in tampered.get("phase_log_bindings", []):
+        b["path"] = str(trap)
+    (tampered.setdefault("runner_profile", {}))["path"] = str(trap)
+    tampered.setdefault("sanitation", {})["workspace"] = "/"
+    tampered.setdefault("source", {})["bundle"] = "../../../../etc/passwd"
+
+    d = ROOT / "tampered-receipt"
+    shutil.rmtree(d, ignore_errors=True)
+    d.mkdir(parents=True, exist_ok=True)
+    tp = d / "RECEIPT.json"
+    tp.write_text(json.dumps(tampered, indent=2, sort_keys=True), encoding="utf-8")
+
+    # 1. anchored: identity is refused before any embedded path is consulted
+    ra = rail("verify", str(tp), "--anchor", anchor, timeout=180)
+    oa = jloads(ra.stdout) or {}
+
+    # 2. self-consistent sidecar, no anchor: containment must still refuse
+    (d / "RECEIPT.sha256").write_text(
+        __import__("hashlib").sha256(tp.read_bytes()).hexdigest() + "\n",
+        encoding="utf-8")
+    rb = rail("verify", str(tp), timeout=180)
+    ob = jloads(rb.stdout) or {}
+    contained = ((ob.get("checks") or {}).get("receipt_paths_contained") or {})
+
+    trap.unlink(missing_ok=True)
+    record("TAMPERED_RECEIPT_PATH_NOT_FOLLOWED",
+           "a tampered receipt is refused on identity before any embedded path "
+           "is followed, and refused on containment when self-consistent",
+           ra.returncode == 1 and oa.get("verdict") == "REFUSED"
+           and oa.get("followed_receipt_paths") is False
+           and oa.get("failures") == ["external_anchor_matches"]
+           and rb.returncode == 1 and ob.get("verdict") == "REFUSED"
+           and contained.get("pass") is False,
+           {"anchored_verdict": oa.get("verdict"),
+            "anchored_failures": oa.get("failures"),
+            "followed_paths": oa.get("followed_receipt_paths"),
+            "unanchored_verdict": ob.get("verdict"),
+            "containment_refused": contained.get("detail")})
+
+
+def prop_no_preexec_launcher():
+    source = (HERE / "tbrail.py").read_text(encoding="utf-8")
+    static_clean = "preexec_fn=" not in source
+    rp = ROOT / "receipts" / "estate-canary-py311-001" / "RECEIPT.json"
+    data = json.loads(rp.read_text(encoding="utf-8")) if rp.is_file() else {}
+    phases = [p for p in data.get("phases", []) if p.get("enforcement")]
+    no_preexec = bool(phases) and all(
+        p["enforcement"].get("preexec_fn_used") is False for p in phases)
+    entered = bool(phases) and all(
+        (p["enforcement"].get("aggregate") or {}).get("entered") is True
+        for p in phases)
+    chain = (data.get("ops_manifest") or {}).get("launch_chain") or {}
+    chain_pinned = {"systemd-run", "prlimit", "sh", "bwrap"} <= set(chain)
+    record("THREADED_CONTROLLER_LAUNCHER_NO_PREEXEC",
+           "no preexec_fn anywhere in the controller; every phase entered a "
+           "digest-pinned launch chain instead",
+           static_clean and no_preexec and entered and chain_pinned,
+           {"source_free_of_preexec": static_clean, "phases_checked": len(phases),
+            "all_preexec_false": no_preexec, "all_entered_scope": entered,
+            "launch_chain": sorted(chain)})
+
+
+def prop_resource_semantics_exact():
+    rp = ROOT / "receipts" / "estate-canary-py311-001" / "RECEIPT.json"
+    data = json.loads(rp.read_text(encoding="utf-8")) if rp.is_file() else {}
+    sem = data.get("resource_semantics") or {}
+    stmt = sem.get("statement", "")
+    named = ("PER-PROCESS ONLY" in stmt and "AGGREGATE" in stmt
+             and "RLIMIT_NPROC is no" in stmt)
+    agg = (sem.get("aggregate") or {}).get("mechanism", "")
+    per = (sem.get("per_process") or {}).get("mechanism", "")
+
+    phases = [p for p in data.get("phases", []) if p.get("enforcement")]
+    # Every phase must have ENTERED its delegated scope -- that is the
+    # enforcement boundary. Live metering is a weaker, timing-dependent signal:
+    # a phase can finish faster than the sampling interval, and the rail reports
+    # that honestly as metered=false with null figures rather than as zeros. At
+    # least one phase must nonetheless have been metered, so the accounting path
+    # itself is witnessed and not merely assumed.
+    in_scope = []
+    metered = []
+    for p in phases:
+        a = p["enforcement"].get("aggregate") or {}
+        cg = str(a.get("cgroup") or "")
+        in_scope.append(a.get("entered") is True
+                        and f"user@{os.getuid()}.service" in cg
+                        and "/app.slice/" in cg)
+        if a.get("metered"):
+            metered.append(int(a.get("peak_memory_bytes") or 0) > 0
+                           and a.get("cpu_seconds_used") is not None)
+
+    # Proof that the ceiling which refused the fork burst was the AGGREGATE
+    # cgroup one and could not have been anything else.
+    #
+    # The rail no longer sets RLIMIT_NPROC, so the phase inherits the account's
+    # value. burn.py prints it. If forks were refused at a count far below that
+    # inherited rlimit, and at the cgroup's declared tasks_max, then pids.max is
+    # the only ceiling that can have blocked them. `pids.events` is sampled on a
+    # 250 ms poll and a fork burst can begin and be torn down between samples,
+    # so it is recorded when seen but is not the load-bearing evidence.
+    prp = ROOT / "receipts" / "estate-burn-pids-001" / "RECEIPT.json"
+    pdata = json.loads(prp.read_text(encoding="utf-8")) if prp.is_file() else {}
+    plog = logs_of("estate-burn-pids-001")
+    pev, tasks_max, pstate = {}, None, None
+    for p in pdata.get("phases", []):
+        a = (p.get("enforcement") or {}).get("aggregate") or {}
+        if a:
+            pev = a.get("pids_events") or {}
+            tasks_max = a.get("tasks_max")
+            pstate = p.get("state")
+            break
+    mb = re.search(r"PIDS_BLOCKED_AT (\d+)", plog)
+    mn = re.search(r"PIDS_RLIMIT_NPROC \((-?\d+), *(-?\d+)\)", plog)
+    blocked_at = int(mb.group(1)) if mb else None
+    nproc_soft = int(mn.group(1)) if mn else None
+    nproc_unlimited = nproc_soft is not None and (
+        nproc_soft < 0 or (blocked_at is not None and nproc_soft > blocked_at * 10))
+    cgroup_refused_forks = (
+        pstate == "FAIL" and blocked_at is not None and tasks_max is not None
+        and 0 < blocked_at <= int(tasks_max) and nproc_unlimited
+        and "PIDS_COMPLETED" not in plog)
+
+    record("RESOURCE_SEMANTICS_EXACTLY_NAMED_OR_CGROUP_ENFORCED",
+           "aggregate ceilings are cgroup-enforced and metered; per-process "
+           "rlimits are named as per-process and nothing claims more",
+           named and "cgroup" in agg and "prlimit" in per
+           and bool(in_scope) and all(in_scope)
+           and bool(metered) and all(metered) and cgroup_refused_forks,
+           {"statement_exact": named, "aggregate_mechanism": agg,
+            "per_process_mechanism": per,
+            "phases_in_delegated_scope": in_scope,
+            "phases_metered": metered, "phases_total": len(phases),
+            "pids_events_on_burst": pev,
+            "fork_burst": {"blocked_at": blocked_at, "cgroup_tasks_max": tasks_max,
+                           "inherited_rlimit_nproc": nproc_soft,
+                           "rlimit_cannot_explain_it": nproc_unlimited,
+                           "phase_state": pstate},
+            "cgroup_refused_forks": cgroup_refused_forks,
+            "disk": sem.get("disk")})
+
+
+def prop_current_surface_only():
+    stale_dirs = [d for d in ("envelopes", "envelopes-v2") if (HERE / d).exists()]
+    hist = HERE / "historical"
+    tombstone = hist / "README.md"
+    tomb_text = tombstone.read_text(encoding="utf-8") if tombstone.is_file() else ""
+    moved = all((hist / d).is_dir() for d in ("envelopes", "envelopes-v2"))
+
+    readme = (HERE / "README.md").read_text(encoding="utf-8")
+    proofs = (HERE / "run_proofs.sh").read_text(encoding="utf-8") \
+        if (HERE / "run_proofs.sh").is_file() else ""
+    v1_leak = [s for s in ("envelopes/envelope-", "tbrail.py execute canary-001")
+               if s in readme or s in proofs]
+
+    ps = rail("purge-source")
+    pout = jloads(ps.stdout) or {}
+    purge_exists = ps.returncode == 0 and pout.get("operation") == "purge-source" \
+        and pout.get("dry_run") is True
+
+    record("CURRENT_V3_SURFACE_ONLY",
+           "the v1/v2 execution surface is retired to an explicitly historical "
+           "location and every documented command exists",
+           not stale_dirs and moved and "NOT CURRENT" in tomb_text
+           and not v1_leak and purge_exists,
+           {"stale_dirs_at_root": stale_dirs, "moved_to_historical": moved,
+            "tombstone_present": bool(tomb_text), "v1_references_left": v1_leak,
+            "purge_source_exists": purge_exists,
+            "purge_source_rc": ps.returncode})
+
+
 def main():
     assert_cold()
     build_fixture()
@@ -970,11 +1462,21 @@ def main():
     prop_receipt_outcomes()
     prop_i_equivalence(first)
     prop_custody()
+    # ---- v4 witnesses -----------------------------------------------------
+    prop_settlement_crash_matrix()
+    prop_checkpoint_safety()
+    prop_checkpoint_storage_bound()
+    prop_profile_anchor_required()
+    prop_tampered_receipt_paths()
+    prop_no_preexec_launcher()
+    prop_resource_semantics_exact()
+    prop_current_surface_only()
+    # residency runs last: it asserts the root is clean after everything above
     prop_j_residency()
 
     failed = [r for r in results if not r["pass"]]
     summary = {
-        "schema": "tier-bench/native-rail-cold-qualification@2",
+        "schema": "tier-bench/native-rail-cold-qualification@3",
         "controller_root": str(ROOT),
         "host": os.uname().nodename,
         "accepted_runner_profile_sha256": ACCEPTED_PROFILE_SHA,
