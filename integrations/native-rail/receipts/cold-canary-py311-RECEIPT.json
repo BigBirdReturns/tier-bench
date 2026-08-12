@@ -1,0 +1,318 @@
+{
+  "binding": {
+    "bound": true,
+    "detail": "bound head=fb47a4cc50e74ac230efe1b063631933a5106a0a tree=72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f"
+  },
+  "controller": {
+    "boot_id": "34e55630-f8c4-45d3-bd32-2d828c107460",
+    "host": "octo-n01",
+    "pid": 254476,
+    "rail_home": "/home/octo/coldroot-final"
+  },
+  "coordinate": "BigBirdReturns/estate#78",
+  "envelope_sha256": "2b0e37ec2b099ffb095301d3d54d254d0e4b202e5dbf9096230812782159cce6",
+  "hosted_runner_minutes": 0,
+  "ledger": {
+    "expected_state_after_settlement": "SETTLED",
+    "lease_fence_granted": 1,
+    "phase_rows": [
+      [
+        0,
+        "compile-candidate",
+        "python.py_compile",
+        "PASS",
+        1,
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ],
+      [
+        1,
+        "authority-and-cold-reconstruction-witnesses",
+        "python.unittest",
+        "PASS",
+        1,
+        0,
+        "3098fac60b9016bd35ce7956b918f2a8cd399814f0ec14b7ccc233708751a0c7"
+      ],
+      [
+        2,
+        "verify-registry-and-alias-digests",
+        "python.repo_script",
+        "PASS",
+        1,
+        0,
+        "8cc434042b40bfb7ec46eaf6d8f243ce550e40837bfed7a9d1142a5f0f8dc6aa"
+      ],
+      [
+        3,
+        "render-inert-organ-map",
+        "python.repo_script",
+        "PASS",
+        1,
+        0,
+        "744ff87a016cbc9d48ec9c5cceb23690667f64038bd2be2660a0d0b4b8e8ef69"
+      ],
+      [
+        4,
+        "verify-no-source-mutation",
+        "git.diff_exit_code",
+        "PASS",
+        1,
+        0,
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ]
+    ],
+    "resource_key": "estate:main:organ-realignment-qualification",
+    "terminal": "PASS",
+    "txn_id": "estate-canary-py311-001"
+  },
+  "ops_manifest": {
+    "runtimes": {
+      "git": {
+        "path": "/usr/bin/git",
+        "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+        "version": "git version 2.53.0"
+      },
+      "python3.11": {
+        "path": "/opt/tbrail/py311/bin/python3.11",
+        "sha256": "92d7e40ec50be176cb1b790c7568b7e08cd862137b5aa69f1413ba1967886b79",
+        "version": "Python 3.11.15"
+      },
+      "python3.14": {
+        "path": "/usr/bin/python3.14",
+        "sha256": "b8d8288faefdd300201f43fcf00f6f539a27218eeed3a3dff5ab10b9c4c99700",
+        "version": "Python 3.14.4"
+      }
+    },
+    "scripts": {
+      "append_byte.py": "3b9d4990ad805fc3a08577309e19e7661c7f788ec08cb6457ceab47f13fb08c4",
+      "credential_probe.py": "f049be3fb7373d4998f558c1e9905795d49910b2f0ada4dc180a332bef4e4486",
+      "hold_resource.py": "5b1bb3207f4f48f95e7a18cee66c697102fdbd277cd28ba4e00608313e6b734c",
+      "spawn_descendant.py": "0bd7fd9324592d2e5ae0a03d4c9b84bb10eaa005029682c4a68a05555fe1a63f"
+    }
+  },
+  "phase_log_bindings": [
+    {
+      "index": 0,
+      "path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/00-compile-candidate.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "index": 1,
+      "path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/01-authority-and-cold-reconstruction-witnesses.log",
+      "sha256": "3098fac60b9016bd35ce7956b918f2a8cd399814f0ec14b7ccc233708751a0c7"
+    },
+    {
+      "index": 2,
+      "path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/02-verify-registry-and-alias-digests.log",
+      "sha256": "8cc434042b40bfb7ec46eaf6d8f243ce550e40837bfed7a9d1142a5f0f8dc6aa"
+    },
+    {
+      "index": 3,
+      "path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/03-render-inert-organ-map.log",
+      "sha256": "744ff87a016cbc9d48ec9c5cceb23690667f64038bd2be2660a0d0b4b8e8ef69"
+    },
+    {
+      "index": 4,
+      "path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/04-verify-no-source-mutation.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "phases": [
+    {
+      "argv_shape": [
+        "python3.11",
+        "-B",
+        "-m",
+        "py_compile"
+      ],
+      "attempt": 1,
+      "exit_code": 0,
+      "index": 0,
+      "log_path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/00-compile-candidate.log",
+      "name": "compile-candidate",
+      "op": "python.py_compile",
+      "output_bytes": 0,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "replayed": false,
+      "seconds": 0.153,
+      "state": "PASS",
+      "teardown": {
+        "pgid": 254490,
+        "signal": "SIGTERM",
+        "survivors": []
+      },
+      "timed_out": false
+    },
+    {
+      "argv_shape": [
+        "python3.11",
+        "-B",
+        "-m",
+        "unittest"
+      ],
+      "attempt": 1,
+      "exit_code": 0,
+      "index": 1,
+      "log_path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/01-authority-and-cold-reconstruction-witnesses.log",
+      "name": "authority-and-cold-reconstruction-witnesses",
+      "op": "python.unittest",
+      "output_bytes": 4124,
+      "output_sha256": "3098fac60b9016bd35ce7956b918f2a8cd399814f0ec14b7ccc233708751a0c7",
+      "replayed": false,
+      "seconds": 0.471,
+      "state": "PASS",
+      "teardown": {
+        "pgid": 254493,
+        "signal": "SIGTERM",
+        "survivors": []
+      },
+      "timed_out": false
+    },
+    {
+      "argv_shape": [
+        "python3.11",
+        "-B",
+        "estate_authority_resolver.py",
+        "verify"
+      ],
+      "attempt": 1,
+      "exit_code": 0,
+      "index": 2,
+      "log_path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/02-verify-registry-and-alias-digests.log",
+      "name": "verify-registry-and-alias-digests",
+      "op": "python.repo_script",
+      "output_bytes": 1196,
+      "output_sha256": "8cc434042b40bfb7ec46eaf6d8f243ce550e40837bfed7a9d1142a5f0f8dc6aa",
+      "replayed": false,
+      "seconds": 0.203,
+      "state": "PASS",
+      "teardown": {
+        "pgid": 254496,
+        "signal": "SIGTERM",
+        "survivors": []
+      },
+      "timed_out": false
+    },
+    {
+      "argv_shape": [
+        "python3.11",
+        "-B",
+        "estate_authority_resolver.py",
+        "render"
+      ],
+      "attempt": 1,
+      "exit_code": 0,
+      "index": 3,
+      "log_path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/03-render-inert-organ-map.log",
+      "name": "render-inert-organ-map",
+      "op": "python.repo_script",
+      "output_bytes": 553,
+      "output_sha256": "744ff87a016cbc9d48ec9c5cceb23690667f64038bd2be2660a0d0b4b8e8ef69",
+      "replayed": false,
+      "seconds": 0.189,
+      "state": "PASS",
+      "teardown": {
+        "pgid": 254499,
+        "signal": "SIGTERM",
+        "survivors": []
+      },
+      "timed_out": false
+    },
+    {
+      "argv_shape": [
+        "git",
+        "diff",
+        "--exit-code"
+      ],
+      "attempt": 1,
+      "exit_code": 0,
+      "index": 4,
+      "log_path": "/home/octo/coldroot-final/receipts/estate-canary-py311-001/logs/04-verify-no-source-mutation.log",
+      "name": "verify-no-source-mutation",
+      "op": "git.diff_exit_code",
+      "output_bytes": 0,
+      "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "replayed": false,
+      "seconds": 0.307,
+      "state": "PASS",
+      "teardown": {
+        "pgid": 254502,
+        "signal": "SIGTERM",
+        "survivors": []
+      },
+      "timed_out": false
+    }
+  ],
+  "provider_calls": 0,
+  "repository": "BigBirdReturns/estate",
+  "residency": {
+    "descendants_remaining": 0,
+    "lease_rows_remaining": 0,
+    "note": "scope is transaction execution state only; retained controller source custody is reported separately and is NOT zero",
+    "property": "ZERO_TRANSACTION_EXECUTION_RESIDUE",
+    "worker_credential_present": false,
+    "worker_home_mounted": false,
+    "workspace_absent": true
+  },
+  "retained_source_custody": {
+    "encrypted_at_rest": false,
+    "items": [
+      {
+        "bytes": 13310701,
+        "mode": "0o644",
+        "name": "estate-fb47a4cc.bundle",
+        "owner_uid": 1000,
+        "sha256": "f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db"
+      }
+    ],
+    "owner": "tier-bench native rail controller (octo-n01 local account)",
+    "purge_law": "an item may be purged when no QUEUED or RUNNING transaction references its digest",
+    "quota_bytes": 5368709120,
+    "retention": "until the bound transaction is settled and its receipt is externally anchored; purge with `tbrail purge-source`",
+    "root": "/home/octo/coldroot-final/source",
+    "total_bytes": 13310701
+  },
+  "revision": {
+    "base_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+    "expected_tree": "72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f",
+    "head_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a"
+  },
+  "runtime": {
+    "id": "python3.11",
+    "path": "/opt/tbrail/py311/bin/python3.11",
+    "sha256": "92d7e40ec50be176cb1b790c7568b7e08cd862137b5aa69f1413ba1967886b79",
+    "version": "Python 3.11.15"
+  },
+  "sandbox": {
+    "controller_home_mounted": false,
+    "engine": "bubblewrap",
+    "network": "unshared",
+    "path": "/usr/bin/bwrap",
+    "writable_set": [
+      "repo"
+    ]
+  },
+  "sanitation": {
+    "absent_after": true,
+    "existed": true,
+    "workspace": "/home/octo/coldroot-final/work/estate-canary-py311-001"
+  },
+  "schema": "tier-bench/native-transaction-receipt@2",
+  "source": {
+    "bundle": "estate-fb47a4cc.bundle",
+    "bundle_sha256": "f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db",
+    "credential_used": false,
+    "mode": "verified_exact_sha_bundle_under_custody_root",
+    "network_used": false
+  },
+  "terminal": "PASS",
+  "timing": {
+    "ended": 1786514747.3179648,
+    "seconds": 2.246,
+    "started": 1786514745.072217
+  },
+  "transaction_id": "estate-canary-py311-001",
+  "trust_class": "TRUSTED_PRIVATE",
+  "visibility": "private"
+}

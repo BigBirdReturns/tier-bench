@@ -1,0 +1,34 @@
+{
+  "schema": "tier-bench/native-transaction-envelope@2",
+  "transaction_id": "neg-arg-grammar",
+  "repository": "BigBirdReturns/estate",
+  "visibility": "private",
+  "base_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+  "head_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+  "expected_tree": "72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f",
+  "coordinate": "BigBirdReturns/estate#78",
+  "trust_class": "TRUSTED_PRIVATE",
+  "runtime": "python3.11",
+  "resource_key": "estate:main:negative-probe",
+  "allowed_paths": [
+    "repo"
+  ],
+  "result_schema": "tier-bench/native-transaction-receipt@2",
+  "publication_ceiling": "STATUS_ONLY",
+  "source_bundle": "estate-fb47a4cc.bundle",
+  "source_bundle_sha256": "f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db",
+  "phases": [
+    {
+      "name": "verify-registry-and-alias-digests",
+      "op": "python.repo_script",
+      "params": {
+        "script": "estate_authority_resolver.py",
+        "script_sha256": "94b5c196b30691e3b6a679606879a89a35bd55e2f630a30448eff746c6fdfe1e",
+        "args": [
+          "verify",
+          "--exec=/bin/sh"
+        ]
+      }
+    }
+  ]
+}

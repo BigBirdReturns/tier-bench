@@ -1,11 +1,56 @@
-# Native private execution rail — v1 candidate
+# Native private execution rail
 
 Mission `BigBirdReturns/tier-bench#164`. First-repository canary
 `BigBirdReturns/estate#78`. Controller and execution domain: `octo-n01`
 (Ubuntu 26.04, 8 CPU, 31 GB RAM, 172 GB free).
 
-Status: **canary PASSED**. Zero GitHub-hosted runner minutes. Zero provider
-calls. No S: path used for runner, image, cache, workspace, or receipt.
+Zero GitHub-hosted runner minutes. Zero provider calls. No S: path used for
+runner, image, cache, workspace, or receipt.
+
+## Two states in this directory — read this first
+
+| | v1 canary (preserved) | v2 product candidate |
+|---|---|---|
+| controller | frozen at `ae7e12e` in git history | `tbrail.py` |
+| envelopes | `envelopes/` | `envelopes-v2/` (generated) |
+| harness | `run_proofs.sh` | `cold_qualify.py` |
+| receipts | `receipts/canary-001-*`, `receipts/PROOFS.txt` | `receipts/cold-*` |
+| status | **PASS, retained as evidence** | **28/28 cold properties PASS** |
+
+The v1 canary is the historical proof that one private Estate qualification ran
+natively on `octo-n01` with zero hosted minutes. It is preserved unmodified and
+must not be regenerated. Its receipt digest
+`cddad892af38bcdcadf2d149da96a61021ac23ee5858f3607597330cc34336bb` is anchored
+by the Estate commit status on `fb47a4cc`.
+
+v2 is the repair of the blocking second-desk review (`5262851689`). It is a
+different controller with a different envelope schema; it does not invalidate
+the v1 canary and does not inherit its proof state.
+
+## What v2 changed, and why
+
+| review finding | v2 answer |
+|---|---|
+| envelope not closed; derived paths uncontained | exact closed schemas top-level and per phase; safe identifier grammar; `resolve_under` on every derived path; `sanitize` refuses to delete outside `work/` |
+| `SAFE_TOOLS` + literal argv is not a code boundary | **argv is no longer data.** A phase names an operation id and typed params; the controller builds the command. There is no path from envelope text to an interpreter argument. Repository scripts are bound by exact path *and* exact digest |
+| `allowed_paths` declared but unenforced | enforced structurally by the bubblewrap mount set — only declared subtrees are writable, and the controller's home is never mounted |
+| restart proof only covered settled replay | phase-level journal with an explicit idempotency law: completed phases are recovered, not re-executed; an interrupted `EFFECTFUL` phase yields `HOLD`, never a silent re-run |
+| PID-only unfenced lease reclaim | `BEGIN IMMEDIATE` compare-and-swap, owner UUID, monotonic fencing token, boot id, PID + process-start ticks, heartbeat and bounded expiry |
+| teardown covered the direct child only | every phase runs in a new session; teardown kills the process group and independently proves descendant absence by scanning `/proc` |
+| receipt verification too narrow | the receipt binds envelope, per-phase log digests, source bundle, ops/runtime digests and the ledger; `verify` recomputes all of them and accepts an external anchor |
+| 3.14 presented as equivalent to a 3.11 workflow | the subject workflow pins **3.11**, so 3.11 is the equivalence datum and 3.14 is an additional matrix point. Runtimes are pinned by absolute path, version and SHA-256 |
+| "zero residency" overclaimed | renamed `ZERO_TRANSACTION_EXECUTION_RESIDUE`; retained source custody is reported separately with owner, digest, bytes, mode, quota, retention and purge law |
+
+## Cold qualification
+
+```bash
+python3 make_envelopes.py                     # regenerate envelopes-v2/
+python3 cold_qualify.py <FRESH_ROOT> <BUNDLE> # refuses a root that is not cold
+```
+
+The harness is parameterized by `TBRAIL_HOME` and refuses to start against a
+root already holding a database, workspace or receipt, so it cannot reuse
+settled proof state. Receipt: `receipts/cold-qualification-20260812.json`.
 
 ## What this is
 
