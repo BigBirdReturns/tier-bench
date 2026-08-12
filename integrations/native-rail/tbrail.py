@@ -96,8 +96,8 @@ DEFAULT_LIMITS = {
     "address_space_bytes": 4 << 30,
     "file_size_bytes": 1 << 30,
     "open_files": 1024,
-    # above the controller account's ambient process count, so the ceiling
-    # constrains the phase rather than the host
+    # new tasks a phase may create, measured ABOVE the account's ambient task
+    # count at phase start, so the ceiling constrains the phase and not the host
     "max_processes": 512,
     "workspace_bytes": 8 << 30,
 }
@@ -306,6 +306,65 @@ def pids_in_group(pgid: int) -> list[int]:
         except (IndexError, ValueError):
             continue
     return sorted(found)
+
+
+def _proc_parents() -> dict[int, int]:
+    parents: dict[int, int] = {}
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            raw = (entry / "stat").read_text()
+        except OSError:
+            continue
+        tail = raw[raw.rfind(")") + 2:].split()
+        try:
+            parents[int(entry.name)] = int(tail[1])
+        except (IndexError, ValueError):
+            continue
+    return parents
+
+
+def descendants_of(pid: int) -> list[int]:
+    """Every live process whose parent chain reaches `pid`.
+
+    A phase runs in its own PID namespace, so `/proc/<pid>/stat` reports a
+    process-group id of 0 for anything inside it and a group-based count sees
+    only the bubblewrap process. The parent chain stays host-visible, so this is
+    what a process-count ceiling must be built on.
+    """
+    parents = _proc_parents()
+    out = []
+    for p in parents:
+        cur, hops = p, 0
+        while cur > 1 and hops < 128:
+            cur = parents.get(cur, 0)
+            hops += 1
+            if cur == pid:
+                out.append(p)
+                break
+    return sorted(out)
+
+
+def uid_task_count(uid: int | None = None) -> int:
+    """Tasks (threads included) currently charged to this account.
+
+    RLIMIT_NPROC is charged per account, not per process tree, so the ambient
+    count decides how much headroom a phase actually gets. Measuring it is what
+    turns a declared per-phase process ceiling into an effective one.
+    """
+    want = os.geteuid() if uid is None else uid
+    total = 0
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            if entry.stat().st_uid != want:
+                continue
+            total += len(os.listdir(entry / "task"))
+        except OSError:
+            continue
+    return total
 
 
 def tree_bytes(root: Path) -> int:
@@ -1236,13 +1295,24 @@ def worker_env() -> dict:
     }
 
 
-def rlimit_setter(limits: dict):
-    """Apply kernel-enforced ceilings to the child before it execs."""
+def rlimit_setter(limits: dict, ambient_tasks: int):
+    """Apply kernel-enforced ceilings to the child before it execs.
+
+    RLIMIT_NPROC is charged against the whole controller account, so a bare
+    per-phase value means something different on every host and at every moment:
+    set below the ambient count it makes bubblewrap's own namespace creation
+    fail -- a startup failure that masquerades as containment -- and set above
+    it the real headroom is whatever ambient happens to leave. It is therefore
+    set to `ambient + max_processes`, measured immediately before the phase
+    starts, so the phase can create exactly its declared number of new tasks and
+    no more. The ambient reading is recorded in the receipt, so the effective
+    ceiling is auditable rather than accidental.
+    """
     cpu = int(limits["cpu_seconds"])
     addr = int(limits["address_space_bytes"])
     fsize = int(limits["file_size_bytes"])
     nofile = int(limits["open_files"])
-    nproc = int(limits["max_processes"])
+    nproc = int(ambient_tasks) + int(limits["max_processes"])
 
     def apply():
         resource.setrlimit(resource.RLIMIT_CPU, (cpu, cpu + 5))
@@ -1254,17 +1324,29 @@ def rlimit_setter(limits: dict):
     return apply
 
 
-def teardown_group(pgid: int) -> dict:
-    """Kill the whole process group, then prove descendant absence."""
+def _survivors(pgid: int, root_pid: int | None) -> list[int]:
+    live = set(pids_in_group(pgid))
+    if root_pid:
+        live |= set(descendants_of(root_pid))
+    return sorted(live)
+
+
+def teardown_group(pgid: int, root_pid: int | None = None) -> dict:
+    """Kill the whole process group, then prove descendant absence.
+
+    Absence is proved two ways: no process remains in the group, and no process
+    remains whose parent chain reaches the phase root. The second check is the
+    one that sees inside the phase's PID namespace.
+    """
     for sig in (signal.SIGTERM, signal.SIGKILL):
         with contextlib.suppress(ProcessLookupError, PermissionError):
             os.killpg(pgid, sig)
         deadline = time.time() + 5
         while time.time() < deadline:
-            if not pids_in_group(pgid):
+            if not _survivors(pgid, root_pid):
                 return {"pgid": pgid, "signal": sig.name, "survivors": []}
             time.sleep(0.1)
-    return {"pgid": pgid, "signal": "SIGKILL", "survivors": pids_in_group(pgid)}
+    return {"pgid": pgid, "signal": "SIGKILL", "survivors": _survivors(pgid, root_pid)}
 
 
 def _pump_output(stream, log_path: Path, cap: int, state: dict, pgid: int):
@@ -1291,17 +1373,25 @@ def _pump_output(stream, log_path: Path, cap: int, state: dict, pgid: int):
                     os.killpg(pgid, signal.SIGKILL)
 
 
-def _monitor(pgid: int, ws: Path, limits: dict, state: dict, stop: threading.Event):
-    """Independent enforcement of process-count and workspace-byte ceilings."""
+def _monitor(pgid: int, root_pid: int, ws: Path, limits: dict, state: dict,
+             stop: threading.Event):
+    """Independent enforcement of process-count and workspace-byte ceilings.
+
+    The process count is the phase root plus every descendant of it, which stays
+    visible from the host even though the phase runs in its own PID namespace.
+    This is detect-and-teardown, not fork prevention: a burst can briefly exceed
+    the ceiling before the group is killed, and `peak_pids` records what was
+    actually observed.
+    """
     max_pids = int(limits["max_processes"])
     max_bytes = int(limits["workspace_bytes"])
     last_disk = 0.0
     while not stop.wait(0.25):
-        pids = pids_in_group(pgid)
-        state["peak_pids"] = max(state.get("peak_pids", 0), len(pids))
-        if len(pids) > max_pids:
+        live = 1 + len(descendants_of(root_pid))
+        state["peak_pids"] = max(state.get("peak_pids", 0), live)
+        if live > max_pids:
             state["pid_ceiling_hit"] = True
-            teardown_group(pgid)
+            teardown_group(pgid, root_pid)
             return
         if time.time() - last_disk > 2.0:
             last_disk = time.time()
@@ -1310,7 +1400,7 @@ def _monitor(pgid: int, ws: Path, limits: dict, state: dict, stop: threading.Eve
                 state.get("peak_workspace_bytes", 0), used)
             if used > max_bytes:
                 state["workspace_ceiling_hit"] = True
-                teardown_group(pgid)
+                teardown_group(pgid, root_pid)
                 return
 
 
@@ -1322,9 +1412,10 @@ def run_one_phase(env, ws, log_path: Path, ph: dict, ctx) -> dict:
     argv = sandbox_argv(env, ws, inner, op.network)
     timeout = int(ph.get("timeout_seconds", 900))
     started = now()
+    ambient = uid_task_count()
     proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                             start_new_session=True, cwd=str(ws),
-                            preexec_fn=rlimit_setter(limits))
+                            preexec_fn=rlimit_setter(limits, ambient))
     pgid = os.getpgid(proc.pid)
     pump_state = {"total": 0, "recorded": 0, "ceiling_hit": False}
     mon_state: dict = {}
@@ -1332,7 +1423,8 @@ def run_one_phase(env, ws, log_path: Path, ph: dict, ctx) -> dict:
     pump = threading.Thread(target=_pump_output,
                             args=(proc.stdout, log_path, int(limits["max_output_bytes"]),
                                   pump_state, pgid), daemon=True)
-    mon = threading.Thread(target=_monitor, args=(pgid, ws, limits, mon_state, stop),
+    mon = threading.Thread(target=_monitor,
+                           args=(pgid, proc.pid, ws, limits, mon_state, stop),
                            daemon=True)
     pump.start()
     mon.start()
@@ -1341,7 +1433,7 @@ def run_one_phase(env, ws, log_path: Path, ph: dict, ctx) -> dict:
         code = proc.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
         timed_out = True
-        teardown_group(pgid)
+        teardown_group(pgid, proc.pid)
         with contextlib.suppress(subprocess.TimeoutExpired):
             proc.wait(timeout=10)
         code = 124
@@ -1351,10 +1443,12 @@ def run_one_phase(env, ws, log_path: Path, ph: dict, ctx) -> dict:
     with contextlib.suppress(Exception):
         proc.stdout.close()
     # bounded teardown on the normal path too, then prove absence independently
-    td = teardown_group(pgid)
+    td = teardown_group(pgid, proc.pid)
 
     enforcement = {
         "limits": limits,
+        "account_tasks_at_start": ambient,
+        "rlimit_nproc_applied": ambient + int(limits["max_processes"]),
         "output_ceiling_hit": pump_state["ceiling_hit"],
         "output_bytes_total": pump_state["total"],
         "output_bytes_recorded": pump_state["recorded"],

@@ -16,7 +16,7 @@
   },
   "controller": {
     "path": "/home/octo/tbrail-v3/tbrail.py",
-    "sha256": "a7101ad8c8b6286e52b137a3b586a31f22ccc93ccda8e1a6761e75055d00aa6a"
+    "sha256": "17b38866a30ff0204388cfbe33f50efe955081bcc32638d91f229d9f5aae6d21"
   },
   "guest_root": "/w",
   "host": "octo-n01",
@@ -80,7 +80,7 @@
   "schema": "tier-bench/native-rail-runner-profile@1",
   "scripts": {
     "append_byte.py": "3b9d4990ad805fc3a08577309e19e7661c7f788ec08cb6457ceab47f13fb08c4",
-    "burn.py": "0f3bff54990899b139a326ffe9ea1eb17a4dfc3b2d812015d6ff2e77e5ffecba",
+    "burn.py": "6c031cef5a69b1c6eeb74b855eff5a9933849b9c330675265e790a16ad0cd9c9",
     "credential_probe.py": "f049be3fb7373d4998f558c1e9905795d49910b2f0ada4dc180a332bef4e4486",
     "hold_resource.py": "e7c7f1301829af971aa22d0e9f73c0f31de98fab526693b1a16fff864b9fc1c6",
     "produce_artifact.py": "7189fc59d8bc4083ae7af404721310747990077a763096094531d75d3c3f0eba",

@@ -6,7 +6,7 @@
   "controller": {
     "boot_id": "34e55630-f8c4-45d3-bd32-2d828c107460",
     "host": "octo-n01",
-    "pid": 276055,
+    "pid": 275731,
     "rail_home": "/home/octo/coldroot-v3-004"
   },
   "coordinate": "BigBirdReturns/estate#78",
@@ -14,50 +14,32 @@
     "mode": "CHECKPOINT_AND_RESTORE",
     "statement": "each PASSed phase checkpoints the workspace; recovery restores the last checkpoint instead of recloning pristine source, so artifact-producing phases survive"
   },
-  "envelope_sha256": "c50b86ef87a212d1ec41edd785f06338c66c735a4d08660ce9d73f0ccae895bb",
+  "envelope_sha256": "5a2ffe749802faf17db595280f752d82b9b8c7e26680122609fb6d77d8bd11f6",
   "hosted_runner_minutes": 0,
   "lease_law": {
-    "fence": 2,
-    "heartbeats": 6,
+    "fence": 5,
+    "heartbeats": 2,
     "held_through": "workspace sanitation, receipt and sidecar publication, and the verified atomic transition to SETTLED",
     "liveness": "verified same-host process identity dominates the TTL"
   },
   "ledger": {
-    "envelope_sha256": "c50b86ef87a212d1ec41edd785f06338c66c735a4d08660ce9d73f0ccae895bb",
+    "envelope_sha256": "5a2ffe749802faf17db595280f752d82b9b8c7e26680122609fb6d77d8bd11f6",
     "expected_state_after_settlement": "SETTLED",
-    "lease_fence_granted": 2,
+    "lease_fence_granted": 5,
     "phase_rows": [
       [
         0,
-        "produce-artifact",
-        "rail.produce_artifact",
-        "PASS",
+        "burn-pids",
+        "rail.burn_pids",
+        "FAIL",
         1,
-        0,
-        "cdeed7b7a1836141c0a27261ac848779f209d40b07ecc557ffe4259e8cf03cb8"
-      ],
-      [
-        1,
-        "hold-resource",
-        "rail.hold_resource",
-        "PASS",
-        2,
-        0,
-        "1158801329579f1b81bd9bc83846854ae9581f22e777e416c3d381696cf38a31"
-      ],
-      [
-        2,
-        "require-artifact",
-        "rail.require_artifact",
-        "PASS",
-        1,
-        0,
-        "b1e3b1df2682dbb197d5fbc4f4f1d651fbcb232ee55825faa327ccf4f1691671"
+        4,
+        "db74267d3e7920e50d8090327c28b28f89564367f1e1486adfddd6e60807d74c"
       ]
     ],
-    "resource_key": "estate:main:crash-artifact-probe",
-    "terminal": "PASS",
-    "txn_id": "estate-crash-artifact-001"
+    "resource_key": "estate:main:burn-probe",
+    "terminal": "FAIL",
+    "txn_id": "estate-burn-pids-001"
   },
   "ops_manifest": {
     "repository_manifests": {
@@ -108,95 +90,19 @@
   "phase_log_bindings": [
     {
       "index": 0,
-      "path": "/home/octo/coldroot-v3-004/receipts/estate-crash-artifact-001/logs/00-produce-artifact.log",
-      "sha256": "cdeed7b7a1836141c0a27261ac848779f209d40b07ecc557ffe4259e8cf03cb8"
-    },
-    {
-      "index": 1,
-      "path": "/home/octo/coldroot-v3-004/receipts/estate-crash-artifact-001/logs/01-hold-resource.log",
-      "sha256": "1158801329579f1b81bd9bc83846854ae9581f22e777e416c3d381696cf38a31"
-    },
-    {
-      "index": 2,
-      "path": "/home/octo/coldroot-v3-004/receipts/estate-crash-artifact-001/logs/02-require-artifact.log",
-      "sha256": "b1e3b1df2682dbb197d5fbc4f4f1d651fbcb232ee55825faa327ccf4f1691671"
+      "path": "/home/octo/coldroot-v3-004/receipts/estate-burn-pids-001/logs/00-burn-pids.log",
+      "sha256": "db74267d3e7920e50d8090327c28b28f89564367f1e1486adfddd6e60807d74c"
     }
   ],
   "phases": [
     {
-      "exit_code": 0,
-      "index": 0,
-      "log_path": "/home/octo/coldroot-v3-004/receipts/estate-crash-artifact-001/logs/00-produce-artifact.log",
-      "name": "produce-artifact",
-      "note": "recovered_from_journal_not_re_executed",
-      "op": "rail.produce_artifact",
-      "output_sha256": "cdeed7b7a1836141c0a27261ac848779f209d40b07ecc557ffe4259e8cf03cb8",
-      "replayed": true,
-      "state": "PASS",
-      "workspace_restored_from_checkpoint": true
-    },
-    {
       "argv_shape": [
         "python3.11",
         "-B",
-        "/w/ops/hold_resource.py",
-        "30"
-      ],
-      "attempt": 2,
-      "checkpoint": {
-        "path": "/home/octo/coldroot-v3-004/checkpoints/estate-crash-artifact-001/01.tar",
-        "sha256": "1fb0f12f2fd383c290d1207978375211c2566da647a25ac280e546f57a6737d6"
-      },
-      "enforcement": {
-        "account_tasks_at_start": 481,
-        "limits": {
-          "address_space_bytes": 4294967296,
-          "cpu_seconds": 900,
-          "file_size_bytes": 1073741824,
-          "max_output_bytes": 4194304,
-          "max_processes": 512,
-          "open_files": 1024,
-          "workspace_bytes": 8589934592
-        },
-        "output_bytes_recorded": 9,
-        "output_bytes_total": 9,
-        "output_ceiling_hit": false,
-        "peak_pids": 3,
-        "peak_workspace_bytes": 94661634,
-        "pid_ceiling_hit": false,
-        "rlimit_nproc_applied": 993,
-        "signal": null,
-        "workspace_ceiling_hit": false
-      },
-      "exit_code": 0,
-      "index": 1,
-      "log_path": "/home/octo/coldroot-v3-004/receipts/estate-crash-artifact-001/logs/01-hold-resource.log",
-      "name": "hold-resource",
-      "op": "rail.hold_resource",
-      "output_bytes": 9,
-      "output_sha256": "1158801329579f1b81bd9bc83846854ae9581f22e777e416c3d381696cf38a31",
-      "replayed": false,
-      "seconds": 30.073,
-      "state": "PASS",
-      "teardown": {
-        "pgid": 276070,
-        "signal": "SIGTERM",
-        "survivors": []
-      },
-      "timed_out": false
-    },
-    {
-      "argv_shape": [
-        "python3.11",
-        "-B",
-        "/w/ops/require_artifact.py",
-        "tbrail-crash-artifact.txt"
+        "/w/ops/burn.py",
+        "pids"
       ],
       "attempt": 1,
-      "checkpoint": {
-        "path": "/home/octo/coldroot-v3-004/checkpoints/estate-crash-artifact-001/02.tar",
-        "sha256": "1fb0f12f2fd383c290d1207978375211c2566da647a25ac280e546f57a6737d6"
-      },
       "enforcement": {
         "account_tasks_at_start": 480,
         "limits": {
@@ -204,32 +110,32 @@
           "cpu_seconds": 900,
           "file_size_bytes": 1073741824,
           "max_output_bytes": 4194304,
-          "max_processes": 512,
+          "max_processes": 24,
           "open_files": 1024,
           "workspace_bytes": 8589934592
         },
-        "output_bytes_recorded": 116,
-        "output_bytes_total": 116,
+        "output_bytes_recorded": 64,
+        "output_bytes_total": 64,
         "output_ceiling_hit": false,
         "peak_pids": 0,
         "peak_workspace_bytes": 0,
         "pid_ceiling_hit": false,
-        "rlimit_nproc_applied": 992,
+        "rlimit_nproc_applied": 504,
         "signal": null,
         "workspace_ceiling_hit": false
       },
-      "exit_code": 0,
-      "index": 2,
-      "log_path": "/home/octo/coldroot-v3-004/receipts/estate-crash-artifact-001/logs/02-require-artifact.log",
-      "name": "require-artifact",
-      "op": "rail.require_artifact",
-      "output_bytes": 116,
-      "output_sha256": "b1e3b1df2682dbb197d5fbc4f4f1d651fbcb232ee55825faa327ccf4f1691671",
+      "exit_code": 4,
+      "index": 0,
+      "log_path": "/home/octo/coldroot-v3-004/receipts/estate-burn-pids-001/logs/00-burn-pids.log",
+      "name": "burn-pids",
+      "op": "rail.burn_pids",
+      "output_bytes": 64,
+      "output_sha256": "db74267d3e7920e50d8090327c28b28f89564367f1e1486adfddd6e60807d74c",
       "replayed": false,
-      "seconds": 0.209,
-      "state": "PASS",
+      "seconds": 0.07,
+      "state": "FAIL",
       "teardown": {
-        "pgid": 276211,
+        "pgid": 275770,
         "signal": "SIGTERM",
         "survivors": []
       },
@@ -291,17 +197,11 @@
   },
   "provider_calls": 0,
   "recovery": {
-    "restored_checkpoint": {
-      "index": 0,
-      "path": "/home/octo/coldroot-v3-004/checkpoints/estate-crash-artifact-001/00.tar",
-      "sha256": "1fb0f12f2fd383c290d1207978375211c2566da647a25ac280e546f57a6737d6"
-    },
-    "resume_from_phase": 1,
-    "resumed": true
+    "resumed": false
   },
   "repository": "BigBirdReturns/estate",
   "residency": {
-    "checkpoints_purged": 3,
+    "checkpoints_purged": 0,
     "descendants_remaining": 0,
     "expected_lease_rows_after_release": 0,
     "note": "scope is transaction execution state only; retained controller source custody is reported separately and is NOT zero",
@@ -368,7 +268,7 @@
   "sanitation": {
     "absent_after": true,
     "existed": true,
-    "workspace": "/home/octo/coldroot-v3-004/work/estate-crash-artifact-001"
+    "workspace": "/home/octo/coldroot-v3-004/work/estate-burn-pids-001"
   },
   "schema": "tier-bench/native-transaction-receipt@3",
   "source": {
@@ -378,16 +278,16 @@
     "mode": "verified_exact_sha_bundle_under_custody_root",
     "network_used": false
   },
-  "terminal": "PASS",
+  "terminal": "FAIL",
   "test_hooks": {
     "settlement_pause_seconds": 0
   },
   "timing": {
-    "ended": 1786519628.585586,
-    "seconds": 32.775,
-    "started": 1786519595.810819
+    "ended": 1786519558.4098918,
+    "seconds": 0.983,
+    "started": 1786519557.4269168
   },
-  "transaction_id": "estate-crash-artifact-001",
+  "transaction_id": "estate-burn-pids-001",
   "trust_class": "TRUSTED_PRIVATE",
   "visibility": "private"
 }

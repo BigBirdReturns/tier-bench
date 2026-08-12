@@ -56,6 +56,8 @@ elif mode == "cpu":
     print(f"CPU_COMPLETED {amount}s x={x}")
 
 elif mode == "pids":
+    import resource
+    print(f"PIDS_RLIMIT_NPROC {resource.getrlimit(resource.RLIMIT_NPROC)}", flush=True)
     children = []
     try:
         for _ in range(amount):

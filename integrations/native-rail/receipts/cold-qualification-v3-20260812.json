@@ -1,13 +1,13 @@
 {
-  "accepted_runner_profile_sha256": "550422bbc6c4449ce7421ce7d9ed2aad25464f7161b0b0af8c6dc4487ef77a71",
-  "controller_root": "/home/octo/coldroot-v3-002",
+  "accepted_runner_profile_sha256": "8ce6dc6f6ce4921bae718e2359a589f777800ee843d77601f6c7db1facf76a1f",
+  "controller_root": "/home/octo/coldroot-v3-004",
   "failed": 0,
   "failed_properties": [],
   "host": "octo-n01",
   "results": [
     {
       "detail": {
-        "root": "/home/octo/coldroot-v3-002"
+        "root": "/home/octo/coldroot-v3-004"
       },
       "name": "fresh controller root with no prior db/leases/work/receipts",
       "pass": true,
@@ -16,7 +16,7 @@
     {
       "detail": {
         "built_sha": "f1281ee1991c860510bf2c46a8607efca5df6c34efd312299fe3d9322555f3ac",
-        "head": "ded7f4b9357a6ceac5dd73e46e418e844a603282",
+        "head": "ea487a584c3767ae9d2fd1d47b255f7a4de24d50",
         "manifest_pinned_sha": "f1281ee1991c860510bf2c46a8607efca5df6c34efd312299fe3d9322555f3ac"
       },
       "name": "qualification fixture repository built and bound to the accepted manifest",
@@ -26,7 +26,7 @@
     {
       "detail": {
         "profile": "/home/octo/tbrail-v3/RUNNER-PROFILE.octo-n01.json",
-        "sha256": "550422bbc6c4449ce7421ce7d9ed2aad25464f7161b0b0af8c6dc4487ef77a71",
+        "sha256": "8ce6dc6f6ce4921bae718e2359a589f777800ee843d77601f6c7db1facf76a1f",
         "verdict": "ADMITTED"
       },
       "name": "the run is admitted against an externally supplied profile digest",
@@ -44,7 +44,7 @@
     },
     {
       "detail": {
-        "out": "{\n  \"verdict\": \"REFUSED\",\n  \"detail\": \"RUNNER_PROFILE_DIGEST_MISMATCH: accepted=1111111111111111111111111111111111111111111111111111111111111111 actual=550422bbc6c4449ce7421ce7d9ed2aad25464f7161b0b0af",
+        "out": "{\n  \"verdict\": \"REFUSED\",\n  \"detail\": \"RUNNER_PROFILE_DIGEST_MISMATCH: accepted=1111111111111111111111111111111111111111111111111111111111111111 actual=8ce6dc6f6ce4921bae718e2359a589f777800ee843d77601",
         "rc": 3
       },
       "name": "a profile whose own digest differs from the accepted anchor is refused",
@@ -158,7 +158,7 @@
         "cpu": {
           "exit": 152,
           "pass": true,
-          "seconds": 3.192
+          "seconds": 3.208
         },
         "disk": {
           "exit": 4,
@@ -174,13 +174,16 @@
           "cap": 262144,
           "pass": true,
           "recorded": 262144,
-          "total_seen": 917504
+          "total_seen": 851968
         },
         "pids": {
-          "exit": 1,
-          "log": "bwrap: Creating new namespace failed: Resource temporarily unavailable\n",
+          "account_tasks_at_start": 480,
+          "blocked_at": 18,
+          "ceiling": 24,
+          "exit": 4,
+          "log": "PIDS_RLIMIT_NPROC (504, 504)\nPIDS_BLOCKED_AT 18 BlockingIOError\n",
           "pass": true,
-          "peak_pids": 0
+          "rlimit_applied": 504
         }
       },
       "name": "output, address space, file size, CPU time and process count ceilings are enforced, not described",
@@ -261,7 +264,7 @@
     {
       "detail": {
         "contender": "COLLISION_HELD",
-        "detail": "resource_key=estate:main:ttl-probe held by txn=estate-ttl-holder-001 pid=268953 (holder_alive_verified_process_identity)",
+        "detail": "resource_key=estate:main:ttl-probe held by txn=estate-ttl-holder-001 pid=276400 (holder_alive_verified_process_identity)",
         "phase_state": "RUNNING",
         "ttl_seconds": 90.0
       },
@@ -271,9 +274,9 @@
     },
     {
       "detail": {
-        "acquired_at": 1786518330.1221695,
-        "beat_now": 1786518445.1968296,
-        "first_beat": 1786518330.1221702
+        "acquired_at": 1786519657.08053,
+        "beat_now": 1786519772.160103,
+        "first_beat": 1786519657.0805302
       },
       "name": "the heartbeat advances for the whole duration of a running phase",
       "pass": true,
@@ -316,7 +319,7 @@
     },
     {
       "detail": {
-        "detail": "resource_key=estate:main:live-probe held by txn=live-txn pid=267719 (holder_alive_verified_process_identity)"
+        "detail": "resource_key=estate:main:live-probe held by txn=live-txn pid=275097 (holder_alive_verified_process_identity)"
       },
       "name": "a live, heartbeating holder is never reclaimed",
       "pass": true,
@@ -324,7 +327,7 @@
     },
     {
       "detail": {
-        "detail": "fencing_lost resource_key=estate:main:fence-probe mine=(f0846c50-a768-460d-b2f9-33697ed8995b,1) current=('someone-else', 2)"
+        "detail": "fencing_lost resource_key=estate:main:fence-probe mine=(697b1c2a-4013-48d9-932a-450cdc1e1514,1) current=('someone-else', 2)"
       },
       "name": "holder that lost its fence refuses to settle",
       "pass": true,

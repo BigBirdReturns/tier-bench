@@ -67,12 +67,34 @@ lower any of them; it may never raise one.
 | address space | `RLIMIT_AS` | 4 GiB |
 | file size | `RLIMIT_FSIZE` | 1 GiB |
 | open files | `RLIMIT_NOFILE` | 1024 |
-| processes | `RLIMIT_NPROC` + process-group monitor | 512 |
+| processes | descendant-count monitor (detect and tear down) | 512 |
 | workspace bytes | monitor thread | 8 GiB |
 | wall clock | `timeout_seconds`, then process-group teardown | 900 (max 1800) |
 
 Controller memory is bounded: child output is streamed to disk in 64 KiB chunks
 and never accumulated before truncation.
+
+The process ceiling deserves its own note, because it is the one that is easy to
+get wrong in a way that still looks green:
+
+- `RLIMIT_NPROC` is charged against the **whole account**, not a process tree.
+  Set below the account's ambient task count it makes bubblewrap's own namespace
+  creation fail, which is a startup failure that masquerades as containment; set
+  to a bare constant, the real headroom a phase gets is whatever ambient happens
+  to leave that second. The controller therefore measures the account's task
+  count immediately before each phase and applies `ambient + max_processes`, so
+  the phase can create exactly its declared number of new tasks. Both the
+  ambient reading and the applied limit are recorded in the receipt, so the
+  effective ceiling is auditable rather than accidental.
+- A phase runs in its own PID namespace, so a process-group count sees only the
+  bubblewrap process. The monitor therefore counts the phase root's **parent
+  chain**, which stays host-visible, and tears the group down if it exceeds the
+  ceiling. That is a second belt, and it is detection-based: a fast fork burst
+  is stopped by the rlimit long before a 250 ms poll would see it.
+
+Both of these were found by cold roots, not by reading the code: the first v3
+root failed sandbox startup at `max_processes: 200`, and the second blocked at
+an arbitrary 23–25 forks that had nothing to do with the declared ceiling.
 
 ## Leases
 

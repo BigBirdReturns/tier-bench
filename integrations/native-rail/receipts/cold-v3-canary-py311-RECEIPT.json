@@ -6,8 +6,8 @@
   "controller": {
     "boot_id": "34e55630-f8c4-45d3-bd32-2d828c107460",
     "host": "octo-n01",
-    "pid": 267820,
-    "rail_home": "/home/octo/coldroot-v3-002"
+    "pid": 275207,
+    "rail_home": "/home/octo/coldroot-v3-004"
   },
   "coordinate": "BigBirdReturns/estate#78",
   "cross_phase_state_law": {
@@ -43,7 +43,7 @@
         "PASS",
         1,
         0,
-        "a17769a8f31d33df826d1caa8b6534b19d35431a5c033b356190a0d95659726b"
+        "3098fac60b9016bd35ce7956b918f2a8cd399814f0ec14b7ccc233708751a0c7"
       ],
       [
         2,
@@ -115,7 +115,7 @@
     },
     "scripts": {
       "append_byte.py": "3b9d4990ad805fc3a08577309e19e7661c7f788ec08cb6457ceab47f13fb08c4",
-      "burn.py": "0f3bff54990899b139a326ffe9ea1eb17a4dfc3b2d812015d6ff2e77e5ffecba",
+      "burn.py": "6c031cef5a69b1c6eeb74b855eff5a9933849b9c330675265e790a16ad0cd9c9",
       "credential_probe.py": "f049be3fb7373d4998f558c1e9905795d49910b2f0ada4dc180a332bef4e4486",
       "hold_resource.py": "e7c7f1301829af971aa22d0e9f73c0f31de98fab526693b1a16fff864b9fc1c6",
       "produce_artifact.py": "7189fc59d8bc4083ae7af404721310747990077a763096094531d75d3c3f0eba",
@@ -126,27 +126,27 @@
   "phase_log_bindings": [
     {
       "index": 0,
-      "path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/00-compile-candidate.log",
+      "path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/00-compile-candidate.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     {
       "index": 1,
-      "path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/01-authority-and-cold-reconstruction-witnesses.log",
-      "sha256": "a17769a8f31d33df826d1caa8b6534b19d35431a5c033b356190a0d95659726b"
+      "path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/01-authority-and-cold-reconstruction-witnesses.log",
+      "sha256": "3098fac60b9016bd35ce7956b918f2a8cd399814f0ec14b7ccc233708751a0c7"
     },
     {
       "index": 2,
-      "path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/02-verify-registry-and-alias-digests.log",
+      "path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/02-verify-registry-and-alias-digests.log",
       "sha256": "8cc434042b40bfb7ec46eaf6d8f243ce550e40837bfed7a9d1142a5f0f8dc6aa"
     },
     {
       "index": 3,
-      "path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/03-render-inert-organ-map.log",
+      "path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/03-render-inert-organ-map.log",
       "sha256": "744ff87a016cbc9d48ec9c5cceb23690667f64038bd2be2660a0d0b4b8e8ef69"
     },
     {
       "index": 4,
-      "path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/04-verify-no-source-mutation.log",
+      "path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/04-verify-no-source-mutation.log",
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ],
@@ -160,10 +160,11 @@
       ],
       "attempt": 1,
       "checkpoint": {
-        "path": "/home/octo/coldroot-v3-002/checkpoints/estate-canary-py311-001/00.tar",
-        "sha256": "2059186902b9047f55f4f4b81b0582648ef3249cbcc39568d3d60b609af2de37"
+        "path": "/home/octo/coldroot-v3-004/checkpoints/estate-canary-py311-001/00.tar",
+        "sha256": "533fdbfba4e9bb873e00e317d35afa43cadcde46520ad4b6e813b77dba11419e"
       },
       "enforcement": {
+        "account_tasks_at_start": 480,
         "limits": {
           "address_space_bytes": 4294967296,
           "cpu_seconds": 900,
@@ -179,21 +180,22 @@
         "peak_pids": 0,
         "peak_workspace_bytes": 0,
         "pid_ceiling_hit": false,
+        "rlimit_nproc_applied": 992,
         "signal": null,
         "workspace_ceiling_hit": false
       },
       "exit_code": 0,
       "index": 0,
-      "log_path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/00-compile-candidate.log",
+      "log_path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/00-compile-candidate.log",
       "name": "compile-candidate",
       "op": "python.py_compile",
       "output_bytes": 0,
       "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "replayed": false,
-      "seconds": 0.192,
+      "seconds": 0.198,
       "state": "PASS",
       "teardown": {
-        "pgid": 267836,
+        "pgid": 275255,
         "signal": "SIGTERM",
         "survivors": []
       },
@@ -208,10 +210,11 @@
       ],
       "attempt": 1,
       "checkpoint": {
-        "path": "/home/octo/coldroot-v3-002/checkpoints/estate-canary-py311-001/01.tar",
-        "sha256": "2059186902b9047f55f4f4b81b0582648ef3249cbcc39568d3d60b609af2de37"
+        "path": "/home/octo/coldroot-v3-004/checkpoints/estate-canary-py311-001/01.tar",
+        "sha256": "533fdbfba4e9bb873e00e317d35afa43cadcde46520ad4b6e813b77dba11419e"
       },
       "enforcement": {
+        "account_tasks_at_start": 480,
         "limits": {
           "address_space_bytes": 4294967296,
           "cpu_seconds": 900,
@@ -224,24 +227,25 @@
         "output_bytes_recorded": 4124,
         "output_bytes_total": 4124,
         "output_ceiling_hit": false,
-        "peak_pids": 1,
+        "peak_pids": 3,
         "peak_workspace_bytes": 94718933,
         "pid_ceiling_hit": false,
+        "rlimit_nproc_applied": 992,
         "signal": null,
         "workspace_ceiling_hit": false
       },
       "exit_code": 0,
       "index": 1,
-      "log_path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/01-authority-and-cold-reconstruction-witnesses.log",
+      "log_path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/01-authority-and-cold-reconstruction-witnesses.log",
       "name": "authority-and-cold-reconstruction-witnesses",
       "op": "python.unittest",
       "output_bytes": 4124,
-      "output_sha256": "a17769a8f31d33df826d1caa8b6534b19d35431a5c033b356190a0d95659726b",
+      "output_sha256": "3098fac60b9016bd35ce7956b918f2a8cd399814f0ec14b7ccc233708751a0c7",
       "replayed": false,
-      "seconds": 0.531,
+      "seconds": 0.499,
       "state": "PASS",
       "teardown": {
-        "pgid": 267847,
+        "pgid": 275260,
         "signal": "SIGTERM",
         "survivors": []
       },
@@ -256,10 +260,11 @@
       ],
       "attempt": 1,
       "checkpoint": {
-        "path": "/home/octo/coldroot-v3-002/checkpoints/estate-canary-py311-001/02.tar",
-        "sha256": "2059186902b9047f55f4f4b81b0582648ef3249cbcc39568d3d60b609af2de37"
+        "path": "/home/octo/coldroot-v3-004/checkpoints/estate-canary-py311-001/02.tar",
+        "sha256": "533fdbfba4e9bb873e00e317d35afa43cadcde46520ad4b6e813b77dba11419e"
       },
       "enforcement": {
+        "account_tasks_at_start": 480,
         "limits": {
           "address_space_bytes": 4294967296,
           "cpu_seconds": 900,
@@ -275,21 +280,22 @@
         "peak_pids": 0,
         "peak_workspace_bytes": 0,
         "pid_ceiling_hit": false,
+        "rlimit_nproc_applied": 992,
         "signal": null,
         "workspace_ceiling_hit": false
       },
       "exit_code": 0,
       "index": 2,
-      "log_path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/02-verify-registry-and-alias-digests.log",
+      "log_path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/02-verify-registry-and-alias-digests.log",
       "name": "verify-registry-and-alias-digests",
       "op": "repo.operation",
       "output_bytes": 1196,
       "output_sha256": "8cc434042b40bfb7ec46eaf6d8f243ce550e40837bfed7a9d1142a5f0f8dc6aa",
       "replayed": false,
-      "seconds": 0.231,
+      "seconds": 0.249,
       "state": "PASS",
       "teardown": {
-        "pgid": 267858,
+        "pgid": 275266,
         "signal": "SIGTERM",
         "survivors": []
       },
@@ -304,10 +310,11 @@
       ],
       "attempt": 1,
       "checkpoint": {
-        "path": "/home/octo/coldroot-v3-002/checkpoints/estate-canary-py311-001/03.tar",
-        "sha256": "59dd492ea2870125c86d03ce4420b6bcb5f13b7f747fe7a7fca5c758092e623e"
+        "path": "/home/octo/coldroot-v3-004/checkpoints/estate-canary-py311-001/03.tar",
+        "sha256": "b537fcf04d1a71ef5ada9f70044ca2119b74fcf7b7fc455c20c9246e1ba31a94"
       },
       "enforcement": {
+        "account_tasks_at_start": 480,
         "limits": {
           "address_space_bytes": 4294967296,
           "cpu_seconds": 900,
@@ -323,21 +330,22 @@
         "peak_pids": 0,
         "peak_workspace_bytes": 0,
         "pid_ceiling_hit": false,
+        "rlimit_nproc_applied": 992,
         "signal": null,
         "workspace_ceiling_hit": false
       },
       "exit_code": 0,
       "index": 3,
-      "log_path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/03-render-inert-organ-map.log",
+      "log_path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/03-render-inert-organ-map.log",
       "name": "render-inert-organ-map",
       "op": "repo.operation",
       "output_bytes": 553,
       "output_sha256": "744ff87a016cbc9d48ec9c5cceb23690667f64038bd2be2660a0d0b4b8e8ef69",
       "replayed": false,
-      "seconds": 0.231,
+      "seconds": 0.258,
       "state": "PASS",
       "teardown": {
-        "pgid": 267863,
+        "pgid": 275277,
         "signal": "SIGTERM",
         "survivors": []
       },
@@ -351,10 +359,11 @@
       ],
       "attempt": 1,
       "checkpoint": {
-        "path": "/home/octo/coldroot-v3-002/checkpoints/estate-canary-py311-001/04.tar",
-        "sha256": "59dd492ea2870125c86d03ce4420b6bcb5f13b7f747fe7a7fca5c758092e623e"
+        "path": "/home/octo/coldroot-v3-004/checkpoints/estate-canary-py311-001/04.tar",
+        "sha256": "b537fcf04d1a71ef5ada9f70044ca2119b74fcf7b7fc455c20c9246e1ba31a94"
       },
       "enforcement": {
+        "account_tasks_at_start": 480,
         "limits": {
           "address_space_bytes": 4294967296,
           "cpu_seconds": 900,
@@ -370,21 +379,22 @@
         "peak_pids": 1,
         "peak_workspace_bytes": 94734441,
         "pid_ceiling_hit": false,
+        "rlimit_nproc_applied": 992,
         "signal": null,
         "workspace_ceiling_hit": false
       },
       "exit_code": 0,
       "index": 4,
-      "log_path": "/home/octo/coldroot-v3-002/receipts/estate-canary-py311-001/logs/04-verify-no-source-mutation.log",
+      "log_path": "/home/octo/coldroot-v3-004/receipts/estate-canary-py311-001/logs/04-verify-no-source-mutation.log",
       "name": "verify-no-source-mutation",
       "op": "git.diff_exit_code",
       "output_bytes": 0,
       "output_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "replayed": false,
-      "seconds": 0.331,
+      "seconds": 0.306,
       "state": "PASS",
       "teardown": {
-        "pgid": 267868,
+        "pgid": 275282,
         "signal": "SIGTERM",
         "survivors": []
       },
@@ -475,7 +485,7 @@
         "mode": "0o600",
         "name": "native-rail-fixture.bundle",
         "owner_uid": 1000,
-        "sha256": "99364996c7b94bf0b9973197d74ea43c8534b8c12049b069de4e971bb851c5e3"
+        "sha256": "03ec60ec088b84e3cffebbdcd2358997c08935d738be9b3c2c59283ec13ac96c"
       }
     ],
     "owner": "tier-bench native rail controller (octo-n01 local account)",
@@ -483,7 +493,7 @@
     "purge_law": "an item may be purged when no QUEUED or RUNNING transaction references its digest",
     "quota_bytes": 5368709120,
     "retention": "until the bound transaction is settled and its receipt is externally anchored; purge with `tbrail purge-source`",
-    "root": "/home/octo/coldroot-v3-002/source",
+    "root": "/home/octo/coldroot-v3-004/source",
     "total_bytes": 13311550
   },
   "revision": {
@@ -495,7 +505,7 @@
     "externally_pinned": true,
     "host": "octo-n01",
     "path": "/home/octo/tbrail-v3/RUNNER-PROFILE.octo-n01.json",
-    "sha256": "550422bbc6c4449ce7421ce7d9ed2aad25464f7161b0b0af8c6dc4487ef77a71",
+    "sha256": "8ce6dc6f6ce4921bae718e2359a589f777800ee843d77601f6c7db1facf76a1f",
     "verdict": "ADMITTED"
   },
   "runtime": {
@@ -517,7 +527,7 @@
   "sanitation": {
     "absent_after": true,
     "existed": true,
-    "workspace": "/home/octo/coldroot-v3-002/work/estate-canary-py311-001"
+    "workspace": "/home/octo/coldroot-v3-004/work/estate-canary-py311-001"
   },
   "schema": "tier-bench/native-transaction-receipt@3",
   "source": {
@@ -532,9 +542,9 @@
     "settlement_pause_seconds": 0
   },
   "timing": {
-    "ended": 1786518208.5065844,
-    "seconds": 4.901,
-    "started": 1786518203.605852
+    "ended": 1786519535.2501907,
+    "seconds": 4.92,
+    "started": 1786519530.330435
   },
   "transaction_id": "estate-canary-py311-001",
   "trust_class": "TRUSTED_PRIVATE",

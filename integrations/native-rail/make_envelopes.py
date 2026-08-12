@@ -166,7 +166,7 @@ write("burn-cpu", env("estate-burn-cpu-001", [
 ], resource_key="estate:main:burn-probe"))
 write("burn-pids", env("estate-burn-pids-001", [
     {"name": "burn-pids", "op": "rail.burn_pids", "params": {"count": 400},
-     "timeout_seconds": 120, "limits": {"max_processes": 200}},
+     "timeout_seconds": 120, "limits": {"max_processes": 24}},
 ], resource_key="estate:main:burn-probe"))
 
 # ---------------- negative: must be refused at submit ----------------

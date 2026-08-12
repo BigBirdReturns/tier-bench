@@ -21,6 +21,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shutil
 import signal
 import sqlite3
@@ -825,9 +826,25 @@ def prop_limits_bite():
 
     out, ph, log = run("burn-pids", "estate-burn-pids-001")
     enf = ph.get("enforcement", {})
-    cases["pids"] = {"pass": ph.get("state") == "FAIL" and "PIDS_COMPLETED" not in log,
-                     "exit": ph.get("exit_code"), "peak_pids": enf.get("peak_pids"),
-                     "log": log[-120:]}
+    # the ceiling must contain a fork burst INSIDE the sandbox: the phase must
+    # have started, the monitor must have seen the descendants cross the
+    # ceiling, and the burst must never have completed
+    # the ceiling must contain a fork burst INSIDE a sandbox that actually
+    # started, and must block within the phase's own declared allowance
+    ceiling = enf.get("limits", {}).get("max_processes")
+    m = re.search(r"PIDS_BLOCKED_AT (\d+)", log)
+    blocked_at = int(m.group(1)) if m else None
+    cases["pids"] = {"pass": ph.get("state") == "FAIL"
+                     and "PIDS_RLIMIT_NPROC" in log
+                     and blocked_at is not None
+                     and 0 < blocked_at <= ceiling
+                     and "PIDS_COMPLETED" not in log
+                     and "Creating new namespace failed" not in log,
+                     "exit": ph.get("exit_code"), "blocked_at": blocked_at,
+                     "ceiling": ceiling,
+                     "account_tasks_at_start": enf.get("account_tasks_at_start"),
+                     "rlimit_applied": enf.get("rlimit_nproc_applied"),
+                     "log": log[-140:]}
 
     failed = [k for k, v in cases.items() if not v["pass"]]
     record("OUTPUT_MEMORY_DISK_PID_CPU_LIMITS_BITE",
