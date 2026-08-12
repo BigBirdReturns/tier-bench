@@ -1,0 +1,63 @@
+{
+  "schema": "tier-bench/native-transaction-envelope@3",
+  "transaction_id": "neg-runtime-not-admitted",
+  "repository": "BigBirdReturns/estate",
+  "visibility": "private",
+  "base_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+  "head_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+  "expected_tree": "72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f",
+  "coordinate": "BigBirdReturns/estate#78",
+  "trust_class": "TRUSTED_PRIVATE",
+  "runtime": "/usr/bin/perl",
+  "resource_key": "estate:main:organ-realignment-qualification",
+  "allowed_paths": [
+    "repo"
+  ],
+  "result_schema": "tier-bench/native-transaction-receipt@4",
+  "publication_ceiling": "STATUS_ONLY",
+  "source_bundle": "estate-fb47a4cc.bundle",
+  "source_bundle_sha256": "f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db",
+  "phases": [
+    {
+      "name": "compile-candidate",
+      "op": "python.py_compile",
+      "params": {
+        "targets": [
+          "estate_authority_resolver.py",
+          "test_estate_authority_resolver.py"
+        ]
+      }
+    },
+    {
+      "name": "authority-and-cold-reconstruction-witnesses",
+      "op": "python.unittest",
+      "params": {
+        "module": "test_estate_authority_resolver",
+        "verbose": true
+      }
+    },
+    {
+      "name": "verify-registry-and-alias-digests",
+      "op": "repo.operation",
+      "params": {
+        "operation": "estate.authority-verify",
+        "values": {}
+      }
+    },
+    {
+      "name": "render-inert-organ-map",
+      "op": "repo.operation",
+      "params": {
+        "operation": "estate.render-organ-map",
+        "values": {
+          "out": "organ-map-qualification.html"
+        }
+      }
+    },
+    {
+      "name": "verify-no-source-mutation",
+      "op": "git.diff_exit_code",
+      "params": {}
+    }
+  ]
+}

@@ -1,0 +1,215 @@
+{
+  "schema": "tier-bench/estate-workflow-inventory@2",
+  "repository": "BigBirdReturns/estate",
+  "source": "checkout of the bound revision, not a live API read",
+  "workflow_count": 5,
+  "coverage": {
+    "denominator": 5,
+    "numerator": 5,
+    "complete": true
+  },
+  "claims": {
+    "hosted_runner": "true where a job's runs-on resolves to a GitHub-hosted image, including through a matrix axis",
+    "provider_calls": "textual hint search only; a false value is evidence of no provider reference in the YAML, not proof that no invoked script reaches a provider",
+    "not_claimed": [
+      "semantic equivalence of a workflow to a native transaction",
+      "behaviour of reusable or called workflows",
+      "anything about repository or organisation level settings"
+    ]
+  },
+  "workflows": [
+    {
+      "name": "adapter-qualification.yml",
+      "bytes": 1770,
+      "line_count": 54,
+      "triggers": [
+        "pull_request",
+        "push",
+        "workflow_dispatch"
+      ],
+      "jobs": [
+        {
+          "job": "qualify",
+          "runs_on_declared": "${{ matrix.os }}",
+          "runs_on_resolved": [
+            "windows-latest",
+            "ubuntu-latest"
+          ],
+          "permissions": [],
+          "timeout_minutes": null
+        }
+      ],
+      "runs_on_resolved": [
+        "ubuntu-latest",
+        "windows-latest"
+      ],
+      "hosted_runner": true,
+      "self_hosted_runner": false,
+      "unresolved_runner_expressions": [],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5"
+      ],
+      "permissions_top_level": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true
+    },
+    {
+      "name": "estate-authority-session-intake-qualification.yml",
+      "bytes": 2059,
+      "line_count": 53,
+      "triggers": [
+        "pull_request",
+        "workflow_dispatch"
+      ],
+      "jobs": [
+        {
+          "job": "qualify",
+          "runs_on_declared": "${{ matrix.os }}",
+          "runs_on_resolved": [
+            "ubuntu-24.04",
+            "windows-2025"
+          ],
+          "permissions": [],
+          "timeout_minutes": "20"
+        }
+      ],
+      "runs_on_resolved": [
+        "ubuntu-24.04",
+        "windows-2025"
+      ],
+      "hosted_runner": true,
+      "self_hosted_runner": false,
+      "unresolved_runner_expressions": [],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5"
+      ],
+      "permissions_top_level": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true
+    },
+    {
+      "name": "estate-closure-conductor-qualification.yml",
+      "bytes": 2758,
+      "line_count": 65,
+      "triggers": [
+        "pull_request",
+        "workflow_dispatch"
+      ],
+      "jobs": [
+        {
+          "job": "qualify",
+          "runs_on_declared": "${{ matrix.os }}",
+          "runs_on_resolved": [
+            "ubuntu-24.04",
+            "windows-2025"
+          ],
+          "permissions": [],
+          "timeout_minutes": "30"
+        }
+      ],
+      "runs_on_resolved": [
+        "ubuntu-24.04",
+        "windows-2025"
+      ],
+      "hosted_runner": true,
+      "self_hosted_runner": false,
+      "unresolved_runner_expressions": [],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5",
+        "actions/upload-artifact@v4"
+      ],
+      "permissions_top_level": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true
+    },
+    {
+      "name": "estate-cockpit-qualification.yml",
+      "bytes": 5248,
+      "line_count": 110,
+      "triggers": [
+        "pull_request",
+        "workflow_dispatch"
+      ],
+      "jobs": [
+        {
+          "job": "qualify",
+          "runs_on_declared": "${{ matrix.os }}",
+          "runs_on_resolved": [
+            "windows-latest",
+            "ubuntu-latest"
+          ],
+          "permissions": [],
+          "timeout_minutes": null
+        }
+      ],
+      "runs_on_resolved": [
+        "ubuntu-latest",
+        "windows-latest"
+      ],
+      "hosted_runner": true,
+      "self_hosted_runner": false,
+      "unresolved_runner_expressions": [],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5"
+      ],
+      "permissions_top_level": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true
+    },
+    {
+      "name": "estate-organ-realignment-qualification.yml",
+      "bytes": 1673,
+      "line_count": 52,
+      "triggers": [
+        "pull_request",
+        "push",
+        "workflow_dispatch"
+      ],
+      "jobs": [
+        {
+          "job": "qualify",
+          "runs_on_declared": "${{ matrix.os }}",
+          "runs_on_resolved": [
+            "ubuntu-latest",
+            "windows-latest"
+          ],
+          "permissions": [],
+          "timeout_minutes": null
+        }
+      ],
+      "runs_on_resolved": [
+        "ubuntu-latest",
+        "windows-latest"
+      ],
+      "hosted_runner": true,
+      "self_hosted_runner": false,
+      "unresolved_runner_expressions": [],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5"
+      ],
+      "permissions_top_level": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true
+    }
+  ]
+}
