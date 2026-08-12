@@ -1,0 +1,76 @@
+﻿########## A. DELIBERATE VALIDATION DEFECT MUST RENDER RED ##########
+QUEUED estate-organ-realignment-defect-001
+terminal= FAIL
+   inject-deliberate-defect PASS exit 0
+   verify-registry-and-alias-digests PASS exit 0
+   verify-no-source-mutation FAIL exit 1
+
+########## B. CREDENTIAL ISOLATION IN THE WORKER ##########
+QUEUED estate-credential-isolation-001
+terminal= PASS
+   assert-worker-has-no-credential PASS exit 0
+--- worker probe output ---
+banned_env_present= []
+private_clone_rc= 128
+CREDENTIAL_ISOLATION_HOLDS
+
+########## C. RESTART REPLAY MUST NOT DUPLICATE ##########
+re-executing an already-SETTLED transaction in a FRESH process:
+{
+  "replay": true,
+  "terminal": "PASS",
+  "receipt": "/home/octo/.tbrail/receipts/estate-organ-realignment-canary-001/RECEIPT.json",
+  "note": "already settled; no duplicate execution"
+}
+phase rows for canary (must remain exactly 5, not 10):
+phase_rows = 5
+
+########## D. SAME-RESOURCE COLLISION ##########
+QUEUED estate-collision-holder-001
+QUEUED estate-collision-contender-001
+starting holder in background (25s phase, same resource_key)...
+lease table while holder runs:
+  held: ('estate:main:organ-realignment-qualification', 'estate-collision-holder-001', 214471)
+contender attempting the SAME resource_key:
+{
+  "terminal": "HOLD",
+  "reason": "COLLISION_HELD",
+  "detail": "resource_key=estate:main:organ-realignment-qualification held by txn=estate-collision-holder-001 pid=214471",
+  "executed": false
+}
+waiting for holder to finish...
+holder terminal = PASS
+
+########## E. TERMINAL RECEIPT RECONSTRUCTS IN A FRESH PROCESS ##########
+{
+  "receipt": "/home/octo/.tbrail/receipts/estate-organ-realignment-canary-001/RECEIPT.json",
+  "digest_match": true,
+  "expected": "cddad892af38bcdcadf2d149da96a61021ac23ee5858f3607597330cc34336bb",
+  "actual": "cddad892af38bcdcadf2d149da96a61021ac23ee5858f3607597330cc34336bb",
+  "terminal": "PASS",
+  "phases_all_pass": true,
+  "workspace_absent": true,
+  "hosted_minutes_zero": true,
+  "provider_calls_zero": true,
+  "reconstructed_in_fresh_process": true
+}
+
+########## F. ZERO RESIDENCY ##########
+{
+  "leases_held": 0,
+  "workspaces_present": [],
+  "rail_home": "/home/octo/.tbrail"
+}
+workspace root contents:
+total 8
+drwxr-xr-x 2 octo octo 4096 Aug 11 19:51 .
+drwxr-xr-x 5 octo octo 4096 Aug 11 19:51 ..
+any tbrail worker processes still alive?
+  none
+transaction ledger:
+estate-organ-realignment-canary-001	SETTLED	PASS	estate:main:organ-realignment-qualification
+estate-organ-realignment-defect-001	SETTLED	FAIL	estate:main:organ-realignment-qualification
+estate-credential-isolation-001	SETTLED	PASS	estate:main:credential-isolation-probe
+estate-collision-holder-001	SETTLED	PASS	estate:main:organ-realignment-qualification
+estate-collision-contender-001	HELD	None	estate:main:organ-realignment-qualification
+PROOFS_DONE

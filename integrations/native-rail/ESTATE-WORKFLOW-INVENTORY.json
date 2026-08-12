@@ -1,0 +1,143 @@
+{
+  "schema": "tier-bench/estate-workflow-inventory@1",
+  "repository": "BigBirdReturns/estate",
+  "workflow_count": 5,
+  "coverage": {
+    "denominator": 5,
+    "numerator": 5,
+    "complete": true
+  },
+  "workflows": [
+    {
+      "name": "adapter-qualification.yml",
+      "bytes": 1716,
+      "runs_on": [
+        "${{"
+      ],
+      "hosted_runner": false,
+      "jobs_declared": [
+        "pull_request",
+        "push",
+        "qualify"
+      ],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5"
+      ],
+      "timeouts": [],
+      "permissions_blocks": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true,
+      "line_count": 55
+    },
+    {
+      "name": "estate-authority-session-intake-qualification.yml",
+      "bytes": 2006,
+      "runs_on": [
+        "${{"
+      ],
+      "hosted_runner": false,
+      "jobs_declared": [
+        "pull_request",
+        "qualify",
+        "workflow_dispatch"
+      ],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5"
+      ],
+      "timeouts": [
+        "20"
+      ],
+      "permissions_blocks": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true,
+      "line_count": 54
+    },
+    {
+      "name": "estate-closure-conductor-qualification.yml",
+      "bytes": 2693,
+      "runs_on": [
+        "${{"
+      ],
+      "hosted_runner": false,
+      "jobs_declared": [
+        "pull_request",
+        "qualify",
+        "workflow_dispatch"
+      ],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5",
+        "actions/upload-artifact@v4"
+      ],
+      "timeouts": [
+        "30"
+      ],
+      "permissions_blocks": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true,
+      "line_count": 66
+    },
+    {
+      "name": "estate-cockpit-qualification.yml",
+      "bytes": 5138,
+      "runs_on": [
+        "${{"
+      ],
+      "hosted_runner": false,
+      "jobs_declared": [
+        "pull_request",
+        "qualify",
+        "workflow_dispatch"
+      ],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5"
+      ],
+      "timeouts": [],
+      "permissions_blocks": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true,
+      "line_count": 111
+    },
+    {
+      "name": "estate-organ-realignment-qualification.yml",
+      "bytes": 1621,
+      "runs_on": [
+        "${{"
+      ],
+      "hosted_runner": false,
+      "jobs_declared": [
+        "pull_request",
+        "push",
+        "qualify",
+        "workflow_dispatch"
+      ],
+      "actions_used": [
+        "actions/checkout@v4",
+        "actions/setup-python@v5"
+      ],
+      "timeouts": [],
+      "permissions_blocks": [
+        "contents: read"
+      ],
+      "provider_calls": false,
+      "network_install_steps": true,
+      "windows_dependent": true,
+      "line_count": 53
+    }
+  ]
+}

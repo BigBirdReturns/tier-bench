@@ -1,0 +1,92 @@
+{
+  "schema": "tier-bench/native-transaction-receipt@1",
+  "transaction_id": "estate-organ-realignment-defect-001",
+  "envelope_sha256": "892fb020156bb4ebf97b119806481a53bb44cdf0eae8f6c19b8996ad95f8ef32",
+  "repository": "BigBirdReturns/estate",
+  "visibility": "private",
+  "coordinate": "BigBirdReturns/estate#78",
+  "trust_class": "TRUSTED_PRIVATE",
+  "revision": {
+    "base_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+    "head_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+    "expected_tree": "72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f"
+  },
+  "source": {
+    "mode": "verified_exact_sha_bundle",
+    "bundle_sha256": "f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db",
+    "network_used": false,
+    "credential_used": false
+  },
+  "binding": {
+    "bound": true,
+    "detail": "bound head=fb47a4cc50e74ac230efe1b063631933a5106a0a tree=72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f"
+  },
+  "phases": [
+    {
+      "index": 0,
+      "name": "inject-deliberate-defect",
+      "argv": [
+        "python3",
+        "-c",
+        "import pathlib;p=pathlib.Path('estate_organ_registry.json');p.write_text(p.read_text()+' ');print('DELIBERATE_DEFECT_INJECTED')"
+      ],
+      "exit_code": 0,
+      "state": "PASS",
+      "output_sha256": "4603a3ec50ada41eece06d13cb0659c51eef2d18ef36d07ad9b0163b49236f36",
+      "output_bytes": 27,
+      "seconds": 0.028
+    },
+    {
+      "index": 1,
+      "name": "verify-registry-and-alias-digests",
+      "argv": [
+        "python3",
+        "-B",
+        "estate_authority_resolver.py",
+        "verify"
+      ],
+      "exit_code": 0,
+      "state": "PASS",
+      "output_sha256": "8cc434042b40bfb7ec46eaf6d8f243ce550e40837bfed7a9d1142a5f0f8dc6aa",
+      "output_bytes": 1196,
+      "seconds": 0.088
+    },
+    {
+      "index": 2,
+      "name": "verify-no-source-mutation",
+      "argv": [
+        "git",
+        "diff",
+        "--exit-code"
+      ],
+      "exit_code": 1,
+      "state": "FAIL",
+      "output_sha256": "6919353394f193ebd9d41a56986205e5ae75bbff1e41f9dbb2cd50c4a6c95f90",
+      "output_bytes": 14364,
+      "seconds": 0.281
+    }
+  ],
+  "terminal": "FAIL",
+  "hosted_runner_minutes": 0,
+  "provider_calls": 0,
+  "sanitation": {
+    "workspace": "/home/octo/.tbrail/work/estate-organ-realignment-defect-001",
+    "existed": true,
+    "absent_after": true
+  },
+  "residency": {
+    "lease_rows_remaining": 0,
+    "workspace_absent": true,
+    "worker_credential_present": false
+  },
+  "timing": {
+    "started": 1786503055.7111678,
+    "ended": 1786503056.9470239,
+    "seconds": 1.236
+  },
+  "controller": {
+    "host": "octo-n01",
+    "pid": 214430,
+    "rail_home": "/home/octo/.tbrail"
+  }
+}
