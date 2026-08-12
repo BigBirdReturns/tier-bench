@@ -1,0 +1,496 @@
+{
+  "accepted_runner_profile_sha256": "550422bbc6c4449ce7421ce7d9ed2aad25464f7161b0b0af8c6dc4487ef77a71",
+  "controller_root": "/home/octo/coldroot-v3-002",
+  "failed": 0,
+  "failed_properties": [],
+  "host": "octo-n01",
+  "results": [
+    {
+      "detail": {
+        "root": "/home/octo/coldroot-v3-002"
+      },
+      "name": "fresh controller root with no prior db/leases/work/receipts",
+      "pass": true,
+      "property": "COLD_ROOT"
+    },
+    {
+      "detail": {
+        "built_sha": "f1281ee1991c860510bf2c46a8607efca5df6c34efd312299fe3d9322555f3ac",
+        "head": "ded7f4b9357a6ceac5dd73e46e418e844a603282",
+        "manifest_pinned_sha": "f1281ee1991c860510bf2c46a8607efca5df6c34efd312299fe3d9322555f3ac"
+      },
+      "name": "qualification fixture repository built and bound to the accepted manifest",
+      "pass": true,
+      "property": "FIXTURE_BUILT"
+    },
+    {
+      "detail": {
+        "profile": "/home/octo/tbrail-v3/RUNNER-PROFILE.octo-n01.json",
+        "sha256": "550422bbc6c4449ce7421ce7d9ed2aad25464f7161b0b0af8c6dc4487ef77a71",
+        "verdict": "ADMITTED"
+      },
+      "name": "the run is admitted against an externally supplied profile digest",
+      "pass": true,
+      "property": "EXTERNALLY_PINNED_RUNNER_PROFILE"
+    },
+    {
+      "detail": {
+        "detail": "RUNNER_PROFILE_MISMATCH: sandbox.sha256",
+        "rc": 3
+      },
+      "name": "a controller, sandbox or runtime identity outside the accepted profile refuses execution",
+      "pass": true,
+      "property": "RUNNER_PROFILE_DRIFT_REFUSED"
+    },
+    {
+      "detail": {
+        "out": "{\n  \"verdict\": \"REFUSED\",\n  \"detail\": \"RUNNER_PROFILE_DIGEST_MISMATCH: accepted=1111111111111111111111111111111111111111111111111111111111111111 actual=550422bbc6c4449ce7421ce7d9ed2aad25464f7161b0b0af",
+        "rc": 3
+      },
+      "name": "a profile whose own digest differs from the accepted anchor is refused",
+      "pass": true,
+      "property": "RUNNER_PROFILE_ANCHOR_ENFORCED"
+    },
+    {
+      "detail": {
+        "accepted_but_should_not_be": []
+      },
+      "name": "all 17 malformed envelopes refused at submit",
+      "pass": true,
+      "property": "G_ENVELOPE_NEGATIVES"
+    },
+    {
+      "detail": {
+        "runtime": "Python 3.11.15",
+        "terminal": "PASS"
+      },
+      "name": "exact Python 3.11 canary settles PASS",
+      "pass": true,
+      "property": "C1_CANARY_PY311"
+    },
+    {
+      "detail": {
+        "phase_rows_after": 5,
+        "phase_rows_before": 5
+      },
+      "name": "settled transaction is not executed twice",
+      "pass": true,
+      "property": "C2_SETTLED_REPLAY"
+    },
+    {
+      "detail": {
+        "terminal": "FAIL"
+      },
+      "name": "deliberate defect produces a FAIL terminal",
+      "pass": true,
+      "property": "A_DEFECT_RENDERS_RED"
+    },
+    {
+      "detail": {
+        "log": "banned_env_present= []\ncredential_paths_visible= []\ncontroller_home_mounted= False\nnetwork= BLOCKED\nprivate_clone_rc= 128\nCREDENTIAL_ISOLATION_HOLDS\n",
+        "terminal": "PASS"
+      },
+      "name": "worker sees no credential, no home, no network",
+      "pass": true,
+      "property": "B_CREDENTIAL_ISOLATION"
+    },
+    {
+      "detail": {
+        "log_tail": "banned_env_present= []\ncredential_paths_visible= []\ncontroller_home_mounted= False\nnetwork= BLOCKED\nprivate_clone_rc= 128\nCREDENTIAL_ISOLATION_HOLDS\n"
+      },
+      "name": "controller home is not mounted into the worker",
+      "pass": true,
+      "property": "B_STRUCTURAL"
+    },
+    {
+      "detail": {
+        "unrefused": []
+      },
+      "name": "manifest, value-grammar, traversal and allowed-path violations refused",
+      "pass": true,
+      "property": "H_OPERATION_NEGATIVES"
+    },
+    {
+      "detail": {
+        "log_tail": "FIXTURE_TOOL_OK --label nested-subtree-witness\n",
+        "terminal": "PASS",
+        "writable_set": [
+          "pkg/sub"
+        ]
+      },
+      "name": "a nested admitted subtree is bound and its contents are executable",
+      "pass": true,
+      "property": "NESTED_ALLOWED_PATH_PASS"
+    },
+    {
+      "detail": {
+        "digest_gate": {
+          "case": "fixture-drift-001",
+          "expected": "script_digest_mismatch",
+          "note": "OPERATION_REJECTED:script_digest_mismatch:pkg/sub/tool.py:f1281ee1991c860510bf2c46a8607efca5df6c34efd312299fe3d9322555f3ac",
+          "terminal": "HOLD"
+        },
+        "nested_boundary": {
+          "case": "fixture-outside-001",
+          "expected": "path_not_in_allowed_paths",
+          "note": "OPERATION_REJECTED:path_not_in_allowed_paths:other/thing.py",
+          "terminal": "HOLD"
+        },
+        "positive": "PASS"
+      },
+      "name": "operations come from the accepted manifest: fixed script identity and digest, closed value grammar, no envelope-defined switches",
+      "pass": true,
+      "property": "REPOSITORY_OPERATION_MANIFEST_ENFORCED"
+    },
+    {
+      "detail": {
+        "case": "fixture-symlink-001",
+        "expected": "symlink_bind_source_refused",
+        "note": "OPERATION_REJECTED:symlink_bind_source_refused:escape",
+        "terminal": "HOLD"
+      },
+      "name": "a source-controlled symlink named as an allowed path cannot redirect a bind mount",
+      "pass": true,
+      "property": "SYMLINK_ESCAPE_REFUSED"
+    },
+    {
+      "detail": {
+        "cpu": {
+          "exit": 152,
+          "pass": true,
+          "seconds": 3.192
+        },
+        "disk": {
+          "exit": 4,
+          "log": "DISK_BLOCKED_AT 4MiB OSError\n",
+          "pass": true
+        },
+        "memory": {
+          "exit": 4,
+          "log": "MEMORY_BLOCKED_AT 491MiB\n",
+          "pass": true
+        },
+        "output": {
+          "cap": 262144,
+          "pass": true,
+          "recorded": 262144,
+          "total_seen": 917504
+        },
+        "pids": {
+          "exit": 1,
+          "log": "bwrap: Creating new namespace failed: Resource temporarily unavailable\n",
+          "pass": true,
+          "peak_pids": 0
+        }
+      },
+      "name": "output, address space, file size, CPU time and process count ceilings are enforced, not described",
+      "pass": true,
+      "property": "OUTPUT_MEMORY_DISK_PID_CPU_LIMITS_BITE"
+    },
+    {
+      "detail": {
+        "killed": true
+      },
+      "name": "controller killed mid-phase (SIGKILL to its group)",
+      "pass": true,
+      "property": "C3_CRASH_INJECTED"
+    },
+    {
+      "detail": {
+        "attempt": true,
+        "digest_stable": true,
+        "phase0_replayed": true
+      },
+      "name": "completed phase recovered from journal, not re-executed",
+      "pass": true,
+      "property": "C4_CRASH_RECOVERY_NO_DUPLICATE"
+    },
+    {
+      "detail": {
+        "terminal": "PASS"
+      },
+      "name": "interrupted PURE phase is re-executed and the transaction completes",
+      "pass": true,
+      "property": "C5_CRASH_RECOVERY_RESUMES"
+    },
+    {
+      "detail": {
+        "note": "recovery could only proceed by reclaiming the dead holder's lease"
+      },
+      "name": "lease of the killed controller was reclaimed (pid absent)",
+      "pass": true,
+      "property": "C6_STALE_LEASE_RECLAIMED"
+    },
+    {
+      "detail": {
+        "checkpoints_before_resume": [
+          "00.tar"
+        ],
+        "log_tail": "24 sha256=af520fc67d79ef399934d25ce3c7337cfd23706b23a7f3cbddc9fbd08d0b21a6\nheld 30s\nARTIFACT_SURVIVED tbrail-crash-artifact.txt sha256=af520fc67d79ef399934d25ce3c7337cfd23706b23a7f3cbddc9fbd08d0b21a6\n",
+        "restored": true,
+        "resumed": true,
+        "terminal": "PASS"
+      },
+      "name": "state produced by a completed phase survives the crash and satisfies a later phase",
+      "pass": true,
+      "property": "ARTIFACT_PRODUCING_CRASH_RECOVERY"
+    },
+    {
+      "detail": {
+        "terminal": "HOLD"
+      },
+      "name": "interrupted EFFECTFUL phase yields HOLD, never a silent re-run",
+      "pass": true,
+      "property": "C7_EFFECTFUL_CRASH_REFUSED"
+    },
+    {
+      "detail": {
+        "leases": [
+          [
+            "estate:main:collision-probe",
+            "estate-collision-holder-001",
+            1
+          ]
+        ],
+        "reason": "COLLISION_HELD"
+      },
+      "name": "contender refused while holder leases the resource",
+      "pass": true,
+      "property": "D1_COLLISION_HELD"
+    },
+    {
+      "detail": {
+        "contender": "COLLISION_HELD",
+        "detail": "resource_key=estate:main:ttl-probe held by txn=estate-ttl-holder-001 pid=268953 (holder_alive_verified_process_identity)",
+        "phase_state": "RUNNING",
+        "ttl_seconds": 90.0
+      },
+      "name": "a live holder inside a phase longer than the lease TTL is not reclaimed",
+      "pass": true,
+      "property": "LIVE_PHASE_OVER_TTL_NOT_RECLAIMED"
+    },
+    {
+      "detail": {
+        "acquired_at": 1786518330.1221695,
+        "beat_now": 1786518445.1968296,
+        "first_beat": 1786518330.1221702
+      },
+      "name": "the heartbeat advances for the whole duration of a running phase",
+      "pass": true,
+      "property": "LIVE_PHASE_HEARTBEAT_CONTINUES"
+    },
+    {
+      "detail": {
+        "contender": "COLLISION_HELD"
+      },
+      "name": "a live holder with an expired heartbeat is still not reclaimed",
+      "pass": true,
+      "property": "VERIFIED_IDENTITY_DOMINATES_TTL"
+    },
+    {
+      "detail": {
+        "contender": "COLLISION_HELD",
+        "lease_held_at_settlement": true,
+        "lease_rows_after_release": 0,
+        "settled_seen": true
+      },
+      "name": "the lease survives receipt publication and the verified SETTLED transition, and a contender is refused inside that window",
+      "pass": true,
+      "property": "LEASE_HELD_THROUGH_VERIFIED_SETTLEMENT"
+    },
+    {
+      "detail": {
+        "terminal": "PASS"
+      },
+      "name": "the successor acquires the resource once settlement has completed",
+      "pass": true,
+      "property": "SUCCESSOR_PROCEEDS_AFTER_RELEASE"
+    },
+    {
+      "detail": {
+        "detail": "reclaimed with fence=1"
+      },
+      "name": "stale lease held by a reused PID is reclaimed via process-start identity",
+      "pass": true,
+      "property": "D2_PID_REUSE_RECLAIM"
+    },
+    {
+      "detail": {
+        "detail": "resource_key=estate:main:live-probe held by txn=live-txn pid=267719 (holder_alive_verified_process_identity)"
+      },
+      "name": "a live, heartbeating holder is never reclaimed",
+      "pass": true,
+      "property": "D3_LIVE_HOLDER_PROTECTED"
+    },
+    {
+      "detail": {
+        "detail": "fencing_lost resource_key=estate:main:fence-probe mine=(f0846c50-a768-460d-b2f9-33697ed8995b,1) current=('someone-else', 2)"
+      },
+      "name": "holder that lost its fence refuses to settle",
+      "pass": true,
+      "property": "D4_FENCING_BLOCKS_LATE_SETTLE"
+    },
+    {
+      "detail": {
+        "survivors": [],
+        "timed_out": true
+      },
+      "name": "phase timeout kills the whole process group",
+      "pass": true,
+      "property": "E1_TIMEOUT_TEARDOWN"
+    },
+    {
+      "detail": {
+        "pgrep": ""
+      },
+      "name": "no descendant of the torn-down phase survives",
+      "pass": true,
+      "property": "E2_NO_LIVE_DESCENDANTS"
+    },
+    {
+      "detail": {
+        "failures": []
+      },
+      "name": "fresh-process verification recomputes every digest",
+      "pass": true,
+      "property": "F1_RECEIPT_VERIFIES"
+    },
+    {
+      "detail": null,
+      "name": "receipt identity matches an external anchor",
+      "pass": true,
+      "property": "F2_EXTERNAL_ANCHOR"
+    },
+    {
+      "detail": {
+        "failures": [
+          "phase_logs_rehash"
+        ]
+      },
+      "name": "modified phase log is refused",
+      "pass": true,
+      "property": "F3_LOG_TAMPER_REFUSED"
+    },
+    {
+      "detail": {
+        "failures": [
+          "envelope_recomputes"
+        ]
+      },
+      "name": "modified envelope is refused",
+      "pass": true,
+      "property": "F4_ENVELOPE_TAMPER_REFUSED"
+    },
+    {
+      "detail": {
+        "failures": [
+          "provider_calls_zero",
+          "external_anchor_matches"
+        ]
+      },
+      "name": "self-consistent forged receipt+sidecar is refused by the anchor",
+      "pass": true,
+      "property": "F5_FORGED_PAIR_REFUSED_BY_ANCHOR"
+    },
+    {
+      "detail": {
+        "failures": [
+          "ledger_binds",
+          "terminal_consistent_with_phases"
+        ]
+      },
+      "name": "a terminal that contradicts the phase states and the ledger is refused",
+      "pass": true,
+      "property": "F7_TERMINAL_FORGERY_REFUSED"
+    },
+    {
+      "detail": {
+        "failures": [
+          "source_bundle_rehashes"
+        ]
+      },
+      "name": "modified source bundle is refused",
+      "pass": true,
+      "property": "F6_SOURCE_TAMPER_REFUSED"
+    },
+    {
+      "detail": {
+        "failures": [],
+        "terminal": "PASS"
+      },
+      "name": "a valid PASS receipt is accepted as evidence on its own terms",
+      "pass": true,
+      "property": "PASS_RECEIPT_VERIFIED"
+    },
+    {
+      "detail": {
+        "failures": [],
+        "terminal": "FAIL"
+      },
+      "name": "a valid FAIL receipt is accepted as evidence on its own terms",
+      "pass": true,
+      "property": "FAIL_RECEIPT_VERIFIED"
+    },
+    {
+      "detail": {
+        "failures": [],
+        "terminal": "HOLD"
+      },
+      "name": "a valid HOLD receipt is accepted as evidence on its own terms",
+      "pass": true,
+      "property": "HOLD_RECEIPT_VERIFIED"
+    },
+    {
+      "detail": {
+        "py311": "Python 3.11.15",
+        "py311_terminal": "PASS",
+        "py314": "Python 3.14.4",
+        "py314_terminal": "PASS"
+      },
+      "name": "the pinned 3.11 datum and the 3.14 matrix point agree phase-for-phase",
+      "pass": true,
+      "property": "I_RUNTIME_EQUIVALENCE"
+    },
+    {
+      "detail": {
+        "exposed": [],
+        "modes": {
+          "rail.db": "0o600",
+          "receipts": "0o700",
+          "root": "0o700",
+          "source_bundle": "0o600"
+        },
+        "reported": true
+      },
+      "name": "controller root, database, logs, receipts and retained source custody are owner-only",
+      "pass": true,
+      "property": "OWNER_ONLY_PRIVATE_CUSTODY"
+    },
+    {
+      "detail": {
+        "checkpoints": [],
+        "leases": 0,
+        "workspaces": []
+      },
+      "name": "no leases, no workspaces and no checkpoints after all transactions",
+      "pass": true,
+      "property": "J1_ZERO_TRANSACTION_EXECUTION_RESIDUE"
+    },
+    {
+      "detail": {
+        "items": [
+          "estate-fb47a4cc.bundle",
+          "native-rail-fixture.bundle"
+        ],
+        "owner_only": true,
+        "total_bytes": 13311550
+      },
+      "name": "retained source custody reported separately with digest, bytes, mode and purge law",
+      "pass": true,
+      "property": "J2_RETAINED_CUSTODY_DECLARED"
+    }
+  ],
+  "schema": "tier-bench/native-rail-cold-qualification@2",
+  "total": 47,
+  "verdict": "PASS_NATIVE_PRIVATE_EXECUTION_RAIL_PRODUCT_CANDIDATE"
+}

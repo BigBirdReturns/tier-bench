@@ -11,7 +11,7 @@ if len(sys.argv) != 2:
     print("usage: hold_resource.py <seconds>", file=sys.stderr)
     raise SystemExit(2)
 seconds = int(sys.argv[1])
-if not 1 <= seconds <= 120:
+if not 1 <= seconds <= 600:
     print("seconds out of admitted range", file=sys.stderr)
     raise SystemExit(2)
 time.sleep(seconds)

@@ -1,0 +1,19 @@
+{
+  "txn-traversal": "transaction_id containing path traversal",
+  "txn-absolute": "absolute transaction_id",
+  "phase-separator": "phase name containing a path separator",
+  "unknown-top-field": "unknown top-level envelope field",
+  "unknown-phase-field": "unknown phase field",
+  "bundle-absolute": "source_bundle given as an absolute native path",
+  "bundle-traversal": "source_bundle escaping the custody root",
+  "op-not-admitted": "phase naming an operation outside the registry",
+  "bad-sha-length": "short head_sha",
+  "timeout-ceiling": "timeout above the admitted ceiling",
+  "too-many-phases": "phase graph above the admitted ceiling",
+  "untrusted-fork": "fork trust class on the native rail",
+  "runtime-not-admitted": "runtime outside the pinned set",
+  "empty-phases": "empty phase graph",
+  "limit-above-ceiling": "phase limit above the controller ceiling",
+  "unknown-limit": "unknown resource limit name",
+  "legacy-repo-script": "the withdrawn envelope-defined repository script route"
+}

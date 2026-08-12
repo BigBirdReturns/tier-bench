@@ -1,0 +1,222 @@
+{
+  "schema": "tier-bench/native-transaction-envelope@3",
+  "transaction_id": "neg-too-many-phases",
+  "repository": "BigBirdReturns/estate",
+  "visibility": "private",
+  "base_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+  "head_sha": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+  "expected_tree": "72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f",
+  "coordinate": "BigBirdReturns/estate#78",
+  "trust_class": "TRUSTED_PRIVATE",
+  "runtime": "python3.11",
+  "resource_key": "estate:main:organ-realignment-qualification",
+  "allowed_paths": [
+    "repo"
+  ],
+  "result_schema": "tier-bench/native-transaction-receipt@3",
+  "publication_ceiling": "STATUS_ONLY",
+  "source_bundle": "estate-fb47a4cc.bundle",
+  "source_bundle_sha256": "f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db",
+  "phases": [
+    {
+      "name": "p0",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p1",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p2",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p3",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p4",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p5",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p6",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p7",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p8",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p9",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p10",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p11",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p12",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p13",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p14",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p15",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p16",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p17",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p18",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p19",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p20",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p21",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p22",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p23",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p24",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p25",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p26",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p27",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p28",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p29",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p30",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p31",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p32",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p33",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p34",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p35",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p36",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p37",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p38",
+      "op": "git.diff_exit_code",
+      "params": {}
+    },
+    {
+      "name": "p39",
+      "op": "git.diff_exit_code",
+      "params": {}
+    }
+  ]
+}

@@ -1,175 +1,207 @@
 # Native private execution rail
 
-Mission `BigBirdReturns/tier-bench#164`. First-repository canary
-`BigBirdReturns/estate#78`. Controller and execution domain: `octo-n01`
-(Ubuntu 26.04, 8 CPU, 31 GB RAM, 172 GB free).
+A controller that executes private repository work on hardware we own, instead of
+on a per-job GitHub-hosted runner. GitHub stays the canonical surface for source,
+review and status. The rail owns queue, claims, execution, recovery and
+settlement.
 
-Zero GitHub-hosted runner minutes. Zero provider calls. No S: path used for
-runner, image, cache, workspace, or receipt.
+**The operative contract is v3.** v1 and v2 are retained only as historical
+evidence of how the contract got here; neither is invocable and neither should be
+reasoned from. See [Superseded contracts](#superseded-contracts).
 
-## Two states in this directory — read this first
+```text
+controller   integrations/native-rail/tbrail.py
+envelopes    integrations/native-rail/envelopes-v3/
+operations   integrations/native-rail/ops/ (rail scripts, digest-pinned)
+             integrations/native-rail/repo-ops/ (accepted repository manifests)
+profile      integrations/native-rail/RUNNER-PROFILE.<host>.json
+qualifier    integrations/native-rail/cold_qualify.py
+```
 
-| | v1 canary (preserved) | v2 product candidate |
+## The layer law
+
+The envelope is **closed data**. Issue text, PR prose, review comments and model
+output never become argv. A phase names an operation id and typed parameters; the
+controller builds the command.
+
+This is enforced in three places, not asserted:
+
+1. **A closed envelope schema.** Unknown top-level or phase fields are refused at
+   submit. Identifiers, paths, resource keys, digests and timeouts all have
+   grammars. Every derived path is resolved and proved to stay under its root.
+2. **A typed operation registry.** `OPS` maps an operation id to a builder. The
+   builder reads typed params and returns argv. There is no operation that takes
+   a command, a script body, an interpreter switch or a shell string.
+3. **An accepted repository-operation manifest.** Repository scripts are reached
+   only through `repo.operation`, whose manifest fixes script path, script
+   digest, argv template and a closed per-parameter grammar. The envelope may
+   choose an operation id and typed values; it cannot name a script, a digest or
+   a switch, and a value that looks like a switch is refused.
+
+## What the sandbox enforces
+
+Each phase runs under `bwrap --unshare-all --die-with-parent --new-session`:
+
+- **Declared paths are the writable set.** Only the subtrees named in
+  `allowed_paths` are bound writable. A nested subtree (`pkg/sub`) binds exactly
+  that subtree; nothing above it is present.
+- **Bind sources are resolved under the repository.** Each path component is
+  checked; a symlink, reparse point or out-of-tree resolution is refused before
+  bubblewrap is invoked, so source-controlled links cannot redirect a mount.
+- **The workspace is mounted at a neutral guest path** (`/w`), never at its host
+  path, so the controller's home does not exist inside the worker even as an
+  empty parent stub.
+- **No network.** `--unshare-all` includes the network namespace.
+- **No credential.** The worker holds no GitHub token; source arrives as a
+  digest-verified exact-SHA git bundle from an admitted custody root.
+
+## Enforced ceilings
+
+Ceilings are applied by the kernel or by an independent monitor. A phase may
+lower any of them; it may never raise one.
+
+| Ceiling | Enforced by | Default |
 |---|---|---|
-| controller | frozen at `ae7e12e` in git history | `tbrail.py` |
-| envelopes | `envelopes/` | `envelopes-v2/` (generated) |
-| harness | `run_proofs.sh` | `cold_qualify.py` |
-| receipts | `receipts/canary-001-*`, `receipts/PROOFS.txt` | `receipts/cold-*` |
-| status | **PASS, retained as evidence** | **28/28 cold properties PASS** |
+| output bytes | streaming pump; the child is torn down, not merely truncated | 4 MiB |
+| CPU seconds | `RLIMIT_CPU` | 900 |
+| address space | `RLIMIT_AS` | 4 GiB |
+| file size | `RLIMIT_FSIZE` | 1 GiB |
+| open files | `RLIMIT_NOFILE` | 1024 |
+| processes | `RLIMIT_NPROC` + process-group monitor | 512 |
+| workspace bytes | monitor thread | 8 GiB |
+| wall clock | `timeout_seconds`, then process-group teardown | 900 (max 1800) |
 
-The v1 canary is the historical proof that one private Estate qualification ran
-natively on `octo-n01` with zero hosted minutes. It is preserved unmodified and
-must not be regenerated. Its receipt digest
-`cddad892af38bcdcadf2d149da96a61021ac23ee5858f3607597330cc34336bb` is anchored
-by the Estate commit status on `fb47a4cc`.
+Controller memory is bounded: child output is streamed to disk in 64 KiB chunks
+and never accumulated before truncation.
 
-v2 is the repair of the blocking second-desk review (`5262851689`). It is a
-different controller with a different envelope schema; it does not invalidate
-the v1 canary and does not inherit its proof state.
+## Leases
 
-## What v2 changed, and why
+A lease is fenced, atomic (`BEGIN IMMEDIATE`) and carries a monotonic fencing
+token. Two properties matter and both are witnessed:
 
-| review finding | v2 answer |
-|---|---|
-| envelope not closed; derived paths uncontained | exact closed schemas top-level and per phase; safe identifier grammar; `resolve_under` on every derived path; `sanitize` refuses to delete outside `work/` |
-| `SAFE_TOOLS` + literal argv is not a code boundary | **argv is no longer data.** A phase names an operation id and typed params; the controller builds the command. There is no path from envelope text to an interpreter argument. Repository scripts are bound by exact path *and* exact digest |
-| `allowed_paths` declared but unenforced | enforced structurally by the bubblewrap mount set — only declared subtrees are writable, and the controller's home is never mounted |
-| restart proof only covered settled replay | phase-level journal with an explicit idempotency law: completed phases are recovered, not re-executed; an interrupted `EFFECTFUL` phase yields `HOLD`, never a silent re-run |
-| PID-only unfenced lease reclaim | `BEGIN IMMEDIATE` compare-and-swap, owner UUID, monotonic fencing token, boot id, PID + process-start ticks, heartbeat and bounded expiry |
-| teardown covered the direct child only | every phase runs in a new session; teardown kills the process group and independently proves descendant absence by scanning `/proc` |
-| receipt verification too narrow | the receipt binds envelope, per-phase log digests, source bundle, ops/runtime digests and the ledger; `verify` recomputes all of them and accepts an external anchor |
-| 3.14 presented as equivalent to a 3.11 workflow | the subject workflow pins **3.11**, so 3.11 is the equivalence datum and 3.14 is an additional matrix point. Runtimes are pinned by absolute path, version and SHA-256 |
-| "zero residency" overclaimed | renamed `ZERO_TRANSACTION_EXECUTION_RESIDUE`; retained source custody is reported separately with owner, digest, bytes, mode, quota, retention and purge law |
+- **Liveness is decided by process identity, not by a timer.** On the granting
+  host the holder's boot id, pid and `/proc/<pid>/stat` start-ticks are checked
+  directly, so a phase that runs longer than the TTL cannot be reclaimed while
+  the holder is alive. A heartbeat thread beats for the whole duration of a
+  phase. The TTL decides only a holder whose identity this host cannot observe.
+- **The lease is held through settlement.** It covers workspace sanitation,
+  receipt and sidecar publication, the atomic transition to `SETTLED`, and the
+  read-back that verifies it. A contender attempting to acquire inside that
+  window is refused.
+
+## Cross-phase state law
+
+`CHECKPOINT_AND_RESTORE`. Each phase that PASSes checkpoints its workspace to a
+digest-bound tar. On recovery the controller restores the last checkpoint rather
+than recloning pristine source, so a phase that builds, transforms or
+materialises something a later phase inspects survives a crash. A completed phase
+is recovered from the journal and never re-executed; an interrupted `EFFECTFUL`
+phase is refused with `HOLD` rather than silently re-run. A `PASS` phase whose
+checkpoint is missing or has drifted refuses recovery.
+
+## Receipts
+
+A receipt binds the envelope, per-phase log digests, source bundle, rail scripts,
+runtimes, repository manifests, the runner profile and the ledger rows.
+`tbrail verify` recomputes every one of them in a fresh process and consults an
+external anchor when supplied, so a self-consistent forged receipt+sidecar pair
+does not pass.
+
+**Evidence validity is independent of outcome.** A valid `PASS`, `FAIL` or `HOLD`
+receipt all verify. What must hold is that the recorded terminal is the one the
+phase states imply, and that it agrees with the database terminal and the stored
+envelope digest.
+
+## Private custody
+
+The controller root, database (and its WAL/SHM siblings), work root, receipts,
+checkpoints and retained source are created under `umask 077` and forced to
+owner-only modes on every start. Retained source custody is reported separately
+from execution residue and is **not** zero: the exact-SHA bundle stays resident
+between transactions.
+
+It is owner-only on a single-tenant account; it is **not encrypted at rest**.
+That is the current honest boundary, stated rather than implied.
+
+## Runner profile
+
+`tbrail execute` refuses to run without an accepted runner profile. The profile
+pins the controller path and digest, the bubblewrap binary and digest, every
+pinned runtime, every rail script, every repository-operation manifest, the guest
+root and the ceilings. Supplying `--runner-profile-sha256` (or
+`TBRAIL_RUNNER_PROFILE_SHA256`) additionally pins the profile file itself to an
+externally quoted digest, so the run cannot accept a locally rewritten profile.
+
+The profile pins absolute paths. The accepted `octo-n01` profile is bound to the
+controller at `/home/octo/tbrail-v3`; re-emit the profile if the install location
+changes, and re-accept it as a reviewed artifact.
+
+```bash
+# emit (once, at admission), then commit and review the result
+TBRAIL_HOME=/tmp/emit python3 tbrail.py profile-emit RUNNER-PROFILE.$(hostname).json
+python3 tbrail.py profile-check --runner-profile RUNNER-PROFILE.$(hostname).json \
+    --runner-profile-sha256 <accepted digest>
+```
 
 ## Cold qualification
 
 ```bash
-python3 make_envelopes.py                     # regenerate envelopes-v2/
-python3 cold_qualify.py <FRESH_ROOT> <BUNDLE> # refuses a root that is not cold
+python3 cold_qualify.py <fresh-root> <source-bundle> <accepted-profile-sha256>
 ```
 
-The harness is parameterized by `TBRAIL_HOME` and refuses to start against a
-root already holding a database, workspace or receipt, so it cannot reuse
-settled proof state. Receipt: `receipts/cold-qualification-20260812.json`.
+It refuses a root that already holds a database, lease, workspace, receipt or
+checkpoint. The accepted profile digest is an **external input**: it is read from
+the committed profile, quoted in the review packet, and enforced during the run.
+Receipts and `COLD-QUALIFICATION.json` land under the fresh root.
 
-## What this is
+The qualification builds its own fixture repository (a nested package tree plus a
+symlink pointing out of the tree) so nested-subtree and symlink-escape behaviour
+are proved on real source through the real clone-and-bind path.
 
-`tbrail.py` is a single stdlib-only Python controller. One transaction is one
-envelope, one lease, one disposable workspace, one receipt. Every phase runs
-inside a single worker lifecycle — a phase never requires a fresh machine merely
-to observe the previous phase.
+## Runtime pinning, stated exactly
 
-```text
-submit    validate a closed envelope, queue it durably
-execute   lease -> materialize -> bind exact head+tree -> phases -> terminal
-          gate -> receipt -> teardown
-verify    reconstruct and re-verify a terminal receipt in a fresh process
-residency prove no leases, no workspaces, no worker processes remain
-list      the durable transaction ledger
-```
+The datum is **Python 3.11.15** at `/opt/tbrail/py311/bin/python3.11`, pinned by
+absolute path and digest, obtained by copying `/usr/local` out of a
+`python:3.11-slim` image; there is no container in the execution path. Ubuntu
+26.04 ships no 3.11.
 
-### The envelope is closed data
+`python3.14` is a **second matrix point, not stronger evidence**. Running the
+canary on both proves phase-for-phase agreement across two admitted runtimes.
+It does not supersede the 3.11 datum and it is not a newer-is-better claim;
+earlier prose in this lane that read that way was wrong.
 
-Issue text, PR prose, comments, and model output never become shell input. Each
-phase supplies `argv` as a list of literal strings, the first element must be in
-`allowed_tools`, and `allowed_tools` is itself intersected with a hard-coded
-`SAFE_TOOLS` set. `UNTRUSTED_FORK` is rejected outright — the trusted rail never
-executes public fork code.
+## Scope of the claim
 
-### The worker holds no credential
+What the rail is qualified for is stated in the cold qualification, and nothing
+beyond it. In particular this lane does **not** claim, and does not implement:
 
-Source arrives as a pre-verified exact-SHA git bundle. The controller checks the
-bundle digest before cloning, then asserts the checked-out `HEAD` and tree match
-the envelope. The worker environment is rebuilt from an allowlist with `HOME`
-redirected into the disposable workspace and `GIT_TERMINAL_PROMPT=0`.
+- a JIT Actions adapter, or migration of any further private workflow;
+- publication credentials on the worker (octo-n01 holds no GitHub credential;
+  the publication hop is still adapter-assisted from a credentialed seat);
+- check-runs (a PAT can only write commit statuses; check-runs need a GitHub App);
+- encryption at rest for retained source custody;
+- anything about repository or organisation level settings.
 
-This is why `octo-n01` needs no GitHub credential to run a private-repository
-qualification, and it is proved rather than asserted — see property B below.
+`ESTATE-WORKFLOW-INVENTORY.json` is generated by `inventory_workflows.py` from a
+checkout of the bound revision. It resolves `runs-on: ${{ matrix.os }}` against
+each job's own matrix; all five accepted workflows **do** run on GitHub-hosted
+images. Its `provider_calls: false` is a textual-hint result about the YAML, not
+proof that no invoked script reaches a provider, and it states what it does not
+claim.
 
-## Canary: `estate-organ-realignment-qualification`
+## Superseded contracts
 
-Selected from the five accepted Estate workflows because it is provider-free,
-Linux-compatible, `contents: read` only, and pure stdlib — no `pip install`, so
-no network beyond source materialization.
+- **v1** (`envelopes/`, receipts `canary-001`, `defect-001`): literal-argv
+  controller with a `SAFE_TOOLS` allow-list. Withdrawn: `python3 -c` and `sh -c`
+  are general interpreters, so an allow-list of executables was never a boundary.
+- **v2** (`envelopes-v2/`, receipts `cold-canary-py311`,
+  `cold-qualification-20260812.json`): typed operations and bubblewrap, but the
+  lease could be reclaimed during a phase longer than its TTL, was released
+  before settlement, recovery discarded phase-produced state,
+  `python.repo_script` still let an envelope choose a script and its own
+  `allowed_switches`, bind sources were not symlink-safe, the verifier refused
+  valid red and HOLD receipts, custody was mode `0644`, identities were
+  self-observed, and ceilings were descriptive.
 
-```text
-repository     BigBirdReturns/estate (private)
-head           fb47a4cc50e74ac230efe1b063631933a5106a0a
-tree           72ceba0bd0d695aa4d8eae953c3c0ebe5a438a4f
-bundle sha256  f379b74463c181a829e7893add829fdfc0926cf2516328ef4a89f0858190a5db
-receipt sha256 cddad892af38bcdcadf2d149da96a61021ac23ee5858f3607597330cc34336bb
-terminal       PASS   5/5 phases   1.361 s
-GitHub status  tier-bench/native-rail/organ-realignment-qualification = success
-```
-
-All five original steps were reproduced: compile candidate, authority and
-cold-reconstruction witnesses, registry and alias digest verification, inert
-organ-map render, and the no-source-mutation witness.
-
-**Evidence is equal or stronger.** The workflow pins Python 3.11 via
-`actions/setup-python`; the rail executed the same witnesses under the host's
-Python 3.14.4 and they still pass. Nothing was weakened to make it green.
-
-## Proved properties
-
-```text
-A  deliberate validation defect renders red      PASS  terminal=FAIL
-B  worker credential isolation                    PASS  no banned env;
-                                                        private clone rc=128
-C  restart replay does not duplicate              PASS  replay=true;
-                                                        phase rows stay 5, not 10
-D  same-resource collision serializes or holds    PASS  contender -> COLLISION_HELD
-E  receipt reconstructs in a fresh process        PASS  digest match
-F  zero residency                                 PASS  0 leases, 0 workspaces,
-                                                        0 worker processes
-```
-
-Full transcript in `receipts/PROOFS.txt`.
-
-### One honest finding from property A
-
-The injected defect appended a single space to `estate_organ_registry.json`.
-`estate_authority_resolver.py verify` returned **0** — it did not detect the
-tamper. The transaction still went red, but only because the
-`git diff --exit-code` witness caught it.
-
-That means the Estate's registry digest check is whitespace-insensitive. The rail
-behaved correctly; the finding belongs to the Estate qualification, not to the
-rail, and is worth a separate issue. It is the same class as the constant-length
-semantic tamper lesson: a verifier that passes on modified bytes is not a
-tamper-evidence witness.
-
-## What is deliberately not here
-
-The JIT GitHub Actions adapter is **not implemented**. The equivalence inventory
-(`ESTATE-WORKFLOW-INVENTORY.json`) found no accepted property in the canary that
-depends on Actions semantics. Availability is not justification. One adapter
-dependency does exist elsewhere and is recorded rather than built:
-`estate-closure-conductor-qualification.yml` uses `actions/upload-artifact@v4`,
-which is a durable-custody need the rail already satisfies with local receipts.
-
-Concurrency is deliberately one transaction at a time. Parallelism waits on
-measured collision, disk, cache, and recovery behavior.
-
-## Known limitation, stated plainly
-
-`octo-n01` holds no GitHub credential, so the exact-head commit status was posted
-by the credentialed `octo-w01` seat from the native result. The evidence is
-native; the publication hop is not yet. Closing this requires provisioning a
-narrow credential on the controller — `contents: read` plus `repo:status`, scoped
-to `estate` and `tier-bench` — which is a credential act outside this mission's
-authority. Until then the rail is fully native for execution and settlement, and
-adapter-assisted for publication only.
-
-Note also that GitHub check *runs* require a GitHub App; a PAT or OAuth token can
-only write commit *statuses*. Issue #164 permits either.
-
-## Running it
-
-```bash
-python3 tbrail.py submit envelopes/envelope-canary.json
-python3 tbrail.py execute estate-organ-realignment-canary-001
-python3 tbrail.py verify ~/.tbrail/receipts/<txn>/RECEIPT.json
-python3 tbrail.py residency
-bash run_proofs.sh          # the full adversarial suite
-```
+Both are kept as evidence. `python.repo_script` is gone from the registry, and an
+envelope naming it is refused at submit.

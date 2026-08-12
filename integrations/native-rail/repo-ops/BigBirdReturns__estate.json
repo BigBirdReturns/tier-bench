@@ -1,0 +1,28 @@
+{
+  "schema": "tier-bench/repository-operation-manifest@1",
+  "repository": "BigBirdReturns/estate",
+  "accepted_at_head": "fb47a4cc50e74ac230efe1b063631933a5106a0a",
+  "law": "An envelope may name an operation id and typed values only. Script identity, script digest and every switch are fixed here. A value can never become a switch: the value grammar refuses a leading '-'.",
+  "operations": {
+    "estate.authority-verify": {
+      "purpose": "verify the organ registry and alias digests",
+      "script": "estate_authority_resolver.py",
+      "script_sha256": "94b5c196b30691e3b6a679606879a89a35bd55e2f630a30448eff746c6fdfe1e",
+      "argv": ["verify"],
+      "params": {}
+    },
+    "estate.render-organ-map": {
+      "purpose": "render the inert organ map to a named artifact",
+      "script": "estate_authority_resolver.py",
+      "script_sha256": "94b5c196b30691e3b6a679606879a89a35bd55e2f630a30448eff746c6fdfe1e",
+      "argv": ["render", "--out", "{out}"],
+      "params": {
+        "out": {
+          "type": "repo_basename",
+          "suffix": ".html",
+          "max_length": 64
+        }
+      }
+    }
+  }
+}

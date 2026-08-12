@@ -1,66 +1,48 @@
-#!/usr/bin/env bash
+#!/bin/bash
+# Native rail v3 reproduction path. Run on the admitted controller host.
+#
+#   ./run_proofs.sh emit
+#   ./run_proofs.sh qualify <fresh-root> <accepted-profile-sha256>
+#   ./run_proofs.sh collect <fresh-root>
+#
+# `emit` produces the runner profile that must then be committed and reviewed as
+# an accepted artifact. `qualify` runs the full cold qualification from a fresh
+# controller root; it refuses a root that already holds a database, lease,
+# workspace, receipt or checkpoint. The accepted profile digest is an EXTERNAL
+# input: read it from the committed profile and quote it in the review packet.
 set -u
-cd ~/tbrail
-T="python3 bin/tbrail.py"
 
-echo "########## A. DELIBERATE VALIDATION DEFECT MUST RENDER RED ##########"
-$T submit envelope-defect.json
-$T execute estate-organ-realignment-defect-001 \
-  | python3 -c 'import json,sys; d=json.load(sys.stdin); print("terminal=",d["terminal"]); [print("  ",p["name"],p["state"],"exit",p["exit_code"]) for p in d["phases"]]'
+RAIL="$(cd "$(dirname "$0")" && pwd)"
+PROFILE="$RAIL/RUNNER-PROFILE.$(hostname).json"
+BUNDLE="${TBRAIL_SOURCE_BUNDLE:-$HOME/.tbrail/source/estate-fb47a4cc.bundle}"
 
-echo
-echo "########## B. CREDENTIAL ISOLATION IN THE WORKER ##########"
-$T submit envelope-isolation.json
-$T execute estate-credential-isolation-001 \
-  | python3 -c 'import json,sys; d=json.load(sys.stdin); print("terminal=",d["terminal"]); [print("  ",p["name"],p["state"],"exit",p["exit_code"]) for p in d["phases"]]'
-echo "--- worker probe output ---"
-cat ~/.tbrail/receipts/estate-credential-isolation-001/logs/00-*.log
-
-echo
-echo "########## C. RESTART REPLAY MUST NOT DUPLICATE ##########"
-echo "re-executing an already-SETTLED transaction in a FRESH process:"
-$T execute estate-organ-realignment-canary-001
-echo "phase rows for canary (must remain exactly 5, not 10):"
-python3 - <<'PY'
-import sqlite3, pathlib
-db = sqlite3.connect(pathlib.Path.home()/".tbrail"/"rail.db")
-n = db.execute("SELECT COUNT(*) FROM phase WHERE txn_id=?",
-               ("estate-organ-realignment-canary-001",)).fetchone()[0]
-print("phase_rows =", n)
-PY
-
-echo
-echo "########## D. SAME-RESOURCE COLLISION ##########"
-$T submit envelope-collision-holder.json
-$T submit envelope-collision-contender.json
-echo "starting holder in background (25s phase, same resource_key)..."
-nohup $T execute estate-collision-holder-001 > /tmp/holder.json 2>&1 &
-HOLDER=$!
-sleep 4
-echo "lease table while holder runs:"
-python3 - <<'PY'
-import sqlite3, pathlib
-db = sqlite3.connect(pathlib.Path.home()/".tbrail"/"rail.db")
-for r in db.execute("SELECT resource_key, txn_id, pid FROM lease"):
-    print("  held:", r)
-PY
-echo "contender attempting the SAME resource_key:"
-$T execute estate-collision-contender-001
-echo "waiting for holder to finish..."
-wait $HOLDER
-python3 -c 'import json;d=json.load(open("/tmp/holder.json"));print("holder terminal =",d["terminal"])' 2>/dev/null || tail -3 /tmp/holder.json
-
-echo
-echo "########## E. TERMINAL RECEIPT RECONSTRUCTS IN A FRESH PROCESS ##########"
-$T verify ~/.tbrail/receipts/estate-organ-realignment-canary-001/RECEIPT.json
-
-echo
-echo "########## F. ZERO RESIDENCY ##########"
-$T residency
-echo "workspace root contents:"
-ls -la ~/.tbrail/work/ 2>/dev/null
-echo "any tbrail worker processes still alive?"
-pgrep -af 'py_compile|unittest|estate_authority_resolver' || echo "  none"
-echo "transaction ledger:"
-$T list
-echo "PROOFS_DONE"
+case "${1:-}" in
+  emit)
+    cd "$RAIL" || exit 1
+    TBRAIL_HOME=$(mktemp -d) python3 tbrail.py profile-emit "$PROFILE" || exit 1
+    sha256sum "$PROFILE"
+    ;;
+  qualify)
+    ROOT="${2:?fresh controller root required}"
+    SHA="${3:?accepted runner-profile sha256 required}"
+    cd "$RAIL" || exit 1
+    python3 cold_qualify.py "$ROOT" "$BUNDLE" "$SHA"
+    echo "COLD_QUALIFY_EXIT=$?"
+    ;;
+  collect)
+    ROOT="${2:?controller root required}"
+    python3 - "$ROOT" <<'PYEOF'
+import json, sys, pathlib
+root = pathlib.Path(sys.argv[1])
+data = json.loads((root / "COLD-QUALIFICATION.json").read_text())
+print(data["verdict"])
+print(f"{data['total'] - data['failed']}/{data['total']} properties passed")
+for r in data["results"]:
+    print(("PASS " if r["pass"] else "FAIL ") + r["property"])
+PYEOF
+    ;;
+  *)
+    echo "usage: run_proofs.sh emit | qualify <root> <sha256> | collect <root>"
+    exit 2
+    ;;
+esac

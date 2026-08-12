@@ -1,0 +1,4 @@
+# Digest-pinned evidence. The runner profile, repository-operation manifests,
+# rail scripts and the controller are bound by sha256, so no platform may
+# rewrite their line endings on checkout or on commit.
+* -text
