@@ -73,6 +73,14 @@ elif mode == "pids":
             children.append(pid)
     except OSError as exc:
         print(f"PIDS_BLOCKED_AT {len(children)} {exc.__class__.__name__}", flush=True)
+        # Hold the scope open. This process is PID 1 of the sandbox's own PID
+        # namespace, so the moment it exits the kernel reaps the whole namespace,
+        # the scope loses its last task and the cgroup -- with the pids.events
+        # counter that just fired -- is removed before the controller can read
+        # it. The ceiling has to be witnessed from the live cgroup, so the phase
+        # stays alive for a bounded window after the refusal.
+        sys.stdout.flush()
+        time.sleep(8)
         raise SystemExit(4)
     print(f"PIDS_COMPLETED {len(children)}", flush=True)
     time.sleep(60)

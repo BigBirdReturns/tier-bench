@@ -5,21 +5,29 @@ on a per-job GitHub-hosted runner. GitHub stays the canonical surface for source
 review and status. The rail owns queue, claims, execution, recovery and
 settlement.
 
-**The operative contract is v4.** v1 and v2 live under `historical/` and are not
-invocable; v3 is retained as valid predecessor evidence, not as a contract.
-Nothing outside the paths below should be reasoned from. See
+**The operative contract is v5.** v1 and v2 live under `historical/` and are not
+invocable; v3 and v4 are retained as valid predecessor evidence, not as
+contracts. Nothing outside the paths below should be reasoned from. See
 [Superseded contracts](#superseded-contracts).
 
 ```text
-controller   integrations/native-rail/tbrail.py           (v4)
-envelopes    integrations/native-rail/envelopes-v3/
+controller   integrations/native-rail/tbrail.py           (v5)
+envelopes    integrations/native-rail/envelopes-v3/       (envelope schema @3)
 operations   integrations/native-rail/ops/ (rail scripts, digest-pinned)
              integrations/native-rail/repo-ops/ (accepted repository manifests)
-profile      integrations/native-rail/RUNNER-PROFILE.<host>.json
+profile      RUNNER-PROFILE.<host>.json   emitted per deployment, held PRIVATELY
+             RUNNER-PROFILE.example.json  synthetic shape, public
 qualifier    integrations/native-rail/cold_qualify.py
 reproduction integrations/native-rail/run_proofs.sh
 historical   integrations/native-rail/historical/          NOT CURRENT
 ```
+
+A deployment's own runner profile and its path-bearing receipts name a host, an
+account home and absolute controller paths. Those are private deployment
+identity, so the public product carries their **exact digests** in
+`EVIDENCE-INDEX.json` files and the bodies live in private holder custody. The
+example profile is synthetic: it shows the shape, and every path and digest in
+it is a placeholder.
 
 ## The layer law
 
@@ -95,6 +103,18 @@ systemd-run --user --scope   aggregate cgroup ceilings
         -> the operation
 ```
 
+**The environment is constructed at both ends of that chain, never inherited.**
+`systemd-run` executes in the *controller's* environment — it is the caller's own
+process that talks to the user manager — so the whole chain used to inherit
+whatever the controller held. It is now given an explicit minimum (`PATH`,
+`LANG`, `HOME`, `USER`, and the runtime/bus address the user manager needs), and
+`bwrap --clearenv` unsets everything again before the declared worker set is
+applied. The operation's environment is therefore exactly the declared set, and
+the qualification proves it by loading the controller with credential-shaped
+sentinel variables and showing they are absent from the worker's environment and
+from its raw `/proc/self/environ` bytes. v4 passed that witness only because the
+controller happened to hold no tokens that day.
+
 Nothing in this chain runs Python in the forked child of the controller.
 `preexec_fn` is **not used**: its fork-time callback is unsafe in a multithreaded
 process — and the controller is multithreaded, because the lease heartbeat runs
@@ -117,6 +137,15 @@ headroom is whatever ambient happens to leave that second. The cgroup's
 `pids.max` is the aggregate ceiling the rlimit was pretending to be. The
 descendant-count monitor is kept as an independent second witness, and
 `pids.events.max` in the receipt is the kernel's own record of refused forks.
+
+That record is now **read from the live cgroup**, not reconstructed afterwards.
+A phase is PID 1 of its own namespace, so the instant it exits the kernel reaps
+the namespace, the scope loses its last task and the cgroup — with the counter
+that just fired — is gone. The fork-burst operation therefore holds the scope
+open for a bounded window after the refusal, and the controller captures
+`pids.max`, `pids.current` and `pids.events[.local] max >= 1` from the exact
+cgroup that refused the fork. v4 retained `max = 0` and inferred the cause from
+a limit and an errno; a witness the kernel did not sign is not a witness.
 
 A phase runs in its own PID namespace, so a host-side `killpg` cannot enumerate
 its children. Teardown therefore goes through `cgroup.kill`, which terminates
@@ -168,12 +197,46 @@ window left a `RUNNING` transaction whose PASSed phases had lost the restore
 points recovery required, and the next invocation could only return
 `RECOVERY_REFUSED`. Now a crash anywhere before the commit point resumes from the
 journal without re-executing a phase, and a crash after it completes the tail on
-replay. A receipt an earlier attempt already published is **adopted**, not
-rewritten, because it may already have been externally anchored.
+replay.
 
-Each boundary is an admitted crash point (`TBRAIL_SETTLEMENT_CRASH_AT`) that
-SIGKILLs the controller — no unwinding, no flush, no lease release — so the
-qualification enters the windows for real rather than simulating them.
+Two things settlement refuses to commit around:
+
+- **A workspace that survived sanitation.** The receipt claims zero execution
+  residue, and v4 deleted with errors ignored and then described the result, so
+  a failed cleanup could produce a terminal row whose own verifier would reject
+  its residue claim. Sanitation now reports its failures, a surviving workspace
+  blocks the transition to `SETTLED`, the journal and restore points are kept,
+  and the next invocation retries. Replaying an already-settled transaction
+  retries sanitation too, since no other path revisits it.
+- **A receipt that is not this settlement's receipt.** A receipt an earlier
+  attempt published is **adopted** rather than rewritten, because it may already
+  have been externally anchored — but only after it is proved to match the
+  settlement journal: envelope, terminal, phases, source, runner profile and
+  ledger intent. v4 checked only that the receipt agreed with its own sidecar,
+  which says nothing about *which* settlement produced it. A self-consistent
+  foreign receipt is now neither adopted nor overwritten: the transaction stays
+  `SETTLING` and a human decides.
+
+Each boundary is an admitted crash point (`TBRAIL_SETTLEMENT_CRASH_AT`, and
+`TBRAIL_CHECKPOINT_CRASH_AT` for the checkpoint-install window) that SIGKILLs the
+controller — no unwinding, no flush, no lease release — so the qualification
+enters the windows for real rather than simulating them. **Reaching a crash
+window requires qualification mode in the externally anchored runner profile.**
+An unset, unknown or stale variable refuses the run before the transaction is
+touched; it can never abort a production transaction mid-settlement.
+
+### Durability, stated exactly
+
+Every settlement record — journal, receipt, sidecar, custody manifest — is
+written, `fsync`ed, atomically renamed, and its parent directory `fsync`ed; the
+ledger runs SQLite WAL with `synchronous=FULL`, so a committed `SETTLED`
+transition is on disk before the commit returns.
+
+- **Witnessed:** controller-process crash. SIGKILL at six admitted settlement
+  boundaries and two checkpoint boundaries, each recovered from a cold root.
+- **Implemented but NOT witnessed:** sudden power loss and storage-layer
+  failure. No test here cuts power. The protocol above is what the product
+  implements for it; the claim stops there deliberately.
 
 ## Cross-phase state law
 
@@ -188,15 +251,36 @@ checkpoint is missing or has drifted refuses recovery.
 Two bounds apply, because the archive is built from a workspace the phase
 controls:
 
-- **Closed extraction.** Every member is validated before a byte is written:
-  symlinks, hardlinks, devices, FIFOs, absolute paths and `..` traversal are
-  refused, and any member resolving outside the new workspace is refused. v3 used
+- **Closed extraction, agreeing with creation.** Every member is validated before
+  a byte is written: hardlinks, devices, FIFOs, absolute paths, `..` traversal,
+  any member resolving outside the new workspace, and any member that would land
+  under a symlinked ancestor are refused. v3 used
   `extractall(filter="fully_trusted")`, which trusted worker-authored metadata.
-- **Bounded custody.** Only the **latest** checkpoint is retained — it is the
-  only one recovery can use — and it may not exceed the checkpoint quota. v3 kept
-  one full workspace tar per PASSed phase, outside the workspace budget, so 32
-  phases could multiply the transaction's real footprint far past its declared
-  ceiling.
+  v4 refused links at extraction while `tarfile` happily *wrote* them at
+  creation, so a repository containing a symlink produced an installed
+  checkpoint that recovery could never restore. In v5 the two laws are the same
+  law: creation refuses exactly what extraction refuses, and every installed
+  checkpoint is validated under the extraction law at install time.
+- **Symbolic links are captured, not refused.** A real repository contains them,
+  including links that point outside the tree, and a restore point that cannot
+  round-trip its own source is not a restore point. They are safe by *ordering*:
+  restoration writes every directory and file first and creates links last, so
+  nothing is ever written *through* a link, and bind sources are separately
+  resolved under the repository with symlinked sources refused. Hard links are
+  refused at creation, because extraction cannot reproduce them safely.
+- **Bounded custody, enforced while writing.** One checkpoint may not exceed the
+  checkpoint quota, and the bound is enforced *as the archive streams* — v4
+  wrote the whole archive and checked its size afterwards, so an oversized
+  workspace was already in custody by the time it was refused. Only the latest
+  checkpoint is retained, because it is the only one recovery can use. v3 kept
+  one full workspace tar per PASSed phase, outside the workspace budget.
+- **The prior restore point outlives the new one's commit.** The superseded
+  checkpoint is retired only after the new checkpoint *and its phase row* are
+  durably committed. v4 installed the new checkpoint and deleted the old one
+  before committing the row, so a crash in that window could leave the last
+  committed PASS phase pointing at a checkpoint that no longer existed. Custody
+  therefore holds two restore points inside that window and the declared ceiling
+  says so.
 
 ## Receipts
 
@@ -229,24 +313,47 @@ between transactions.
 It is owner-only on a single-tenant account; it is **not encrypted at rest**.
 That is the current honest boundary, stated rather than implied.
 
-Retained source is purged with the operation the custody report names:
+Retained source is transferred — not garbage-collected — with the operation the
+custody report names:
 
 ```bash
-python3 tbrail.py purge-source            # dry run: what would be purged, and why
-python3 tbrail.py purge-source --apply    # delete
+python3 tbrail.py purge-source            # dry run: what would move, and why
+python3 tbrail.py purge-source --apply --successor-custody SOURCE-CUSTODY.json
 ```
 
-An item is purgeable exactly when no `QUEUED`, `RUNNING`, `SETTLING` or `HELD`
-transaction references its digest. v3's custody report advertised this command
-while the CLI had no such subcommand.
+The receipt verifier rehashes the source bundle, so deleting bytes a retained
+receipt still names does not free space: it silently converts verifiable receipts
+into unverifiable ones. `purge-source` is therefore a **custody transition** with
+three refusals:
+
+1. any transaction in an unresolved state protects its bundle — `QUEUED`,
+   `RUNNING`, `SETTLING`, `HELD`, `FENCED_OUT`, or any other non-`SETTLED` state.
+   v4 protected only the first four, so a fenced-out transaction's source could
+   be purged out from under it;
+2. any retained receipt protects the bytes it needs;
+3. that second protection lifts only for a successor-custody entry that is
+   *independently verified* — the named object must exist, live outside the hot
+   custody root, and rehash to the digest the receipts name.
+
+After the transition every retained receipt is re-verified and the report states
+that no receipt which verified before it fails after it. Verification then finds
+the bytes through the recorded successor route.
+
+v3's custody report advertised this command while the CLI had no such subcommand.
 
 ## Runner profile
 
 `tbrail execute` refuses to run without an accepted runner profile **and an
 externally supplied digest for it**. The profile pins the controller path and
-digest, the bubblewrap binary, the launch chain (`systemd-run`, `prlimit`, `sh`),
-every pinned runtime, every rail script, every repository-operation manifest, the
-guest root, the ceilings and the aggregate-enforcement mechanism.
+digest, **the interpreter that executes it** (absolute path, version and
+digest), the bubblewrap binary, the launch chain (`systemd-run`, `prlimit`,
+`sh`), every pinned runtime, every rail script, every repository-operation
+manifest, the guest root, the ceilings and the aggregate-enforcement mechanism.
+
+Pinning the interpreter closes a real gap: identical controller bytes under a
+different Python are a different runner, and until v5 that substitution produced
+no drift at all. A profile that names a different interpreter — or names none —
+refuses the run, and the qualification runs under the pinned interpreter itself.
 
 `--runner-profile-sha256` (or `TBRAIL_RUNNER_PROFILE_SHA256`) is **mandatory**,
 for `execute` and `profile-check` alike, and the refusal happens before any lease
@@ -282,12 +389,27 @@ python3 cold_qualify.py <fresh-root> <source-bundle> <accepted-profile-sha256>
 
 It refuses a root that already holds a database, lease, workspace, receipt or
 checkpoint. The accepted profile digest is an **external input**: it is read from
-the committed profile, quoted in the review packet, and enforced during the run.
-Receipts and `COLD-QUALIFICATION.json` land under the fresh root.
+the deployment's accepted profile, quoted in the review packet, and enforced
+during the run. Receipts and `COLD-QUALIFICATION.json` land under the fresh root.
 
 The qualification builds its own fixture repository (a nested package tree plus a
 symlink pointing out of the tree) so nested-subtree and symlink-escape behaviour
 are proved on real source through the real clone-and-bind path.
+
+Two profiles are in play, and the difference is the point:
+
+- the **accepted** profile is the production admission and does not admit the
+  crash hooks;
+- the **qualification** profile is derived from it by adding exactly one key,
+  `_qualification_mode`, has its own digest, and is what admits the deliberate
+  crash windows. The derivation is itself a property: the two files must differ
+  by that one key and nothing else.
+
+So no production anchor can carry the permission to kill a transaction, and the
+qualification still exercises the same controller bytes under the same profile
+in every other respect. The qualifier also runs under the pinned interpreter and
+proves it, and it loads every controller it starts with credential-shaped
+sentinel variables so environment closure is proved rather than assumed.
 
 ## Runtime pinning, stated exactly
 
@@ -312,7 +434,10 @@ beyond it. In particular this lane does **not** claim, and does not implement:
   seat);
 - check-runs (a PAT can only write commit statuses; check-runs need a GitHub App);
 - encryption at rest for retained source custody;
-- anything about repository or organisation level settings.
+- anything about repository or organisation level settings;
+- durability against sudden power loss or storage-layer failure. The write
+  protocol for it is implemented and stated; no test here cuts power, so the
+  witnessed claim is controller-process-crash recovery.
 
 `ESTATE-WORKFLOW-INVENTORY.json` is generated by `inventory_workflows.py` from a
 checkout of the bound revision. It resolves `runs-on: ${{ matrix.os }}` against
@@ -348,5 +473,21 @@ a route, a starting point or a contract; see `historical/README.md`.
   child of a threaded controller, and per-process rlimits were described as phase
   ceilings.
 
-All are kept as evidence. `python.repo_script` is gone from the registry, and an
-envelope naming it is refused at submit.
+- **v4** (`receipts/EVIDENCE-INDEX.json` → `cold-qualification-v4-20260812.json`,
+  `cold-v4-*`, head `6c47e076f7cae0c6dd3099e1fa1375d5bf654e59`): the accepted
+  61/61 cold qualification. It is **valid predecessor evidence and is retained
+  as such**, not a current contract. Its bounded admission defects are the ones
+  v5 closes: the launch chain inherited the controller's environment and the
+  sandbox set variables without clearing them; the checkpoint quota was checked
+  only after a larger archive existed; checkpoint creation wrote link members
+  that its own extraction law refused; the superseded restore point was deleted
+  before the phase row was committed; settlement could commit around a failed
+  sanitation or adopt a self-consistent foreign receipt; `purge-source` could
+  delete bytes retained receipts still needed and did not protect `FENCED_OUT`;
+  the interpreter executing the controller was unpinned; the process-ceiling
+  proof was inferential; durability and crash-hook scope were unbounded; and the
+  public tree carried the deployment's own coordinates.
+
+All are kept as evidence — bodies in private holder custody, exact digests in
+the `EVIDENCE-INDEX.json` beside each retired location. `python.repo_script` is
+gone from the registry, and an envelope naming it is refused at submit.

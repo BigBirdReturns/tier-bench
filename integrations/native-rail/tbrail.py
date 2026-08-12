@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""tbrail v4 -- Tier Bench native private execution rail. Controller for octo-n01.
+"""tbrail v5 -- Tier Bench native private execution rail.
 
 Stdlib only. No provider calls. Source arrives as a pre-verified exact-SHA git
 bundle resolved under an admitted custody root, so the worker holds no GitHub
@@ -69,6 +69,7 @@ import re
 import shutil
 import signal
 import sqlite3
+import stat
 import subprocess
 import sys
 import tarfile
@@ -84,6 +85,9 @@ DB_PATH = RAIL_HOME / "rail.db"
 WORK_ROOT = RAIL_HOME / "work"
 RECEIPT_ROOT = RAIL_HOME / "receipts"
 SOURCE_ROOT = RAIL_HOME / "source"
+CUSTODY_ROOT = RAIL_HOME / "custody"
+SOURCE_CUSTODY_PATH = CUSTODY_ROOT / "SOURCE-CUSTODY.json"
+SOURCE_CUSTODY_SCHEMA = "tier-bench/native-source-custody@1"
 CHECKPOINT_ROOT = RAIL_HOME / "checkpoints"
 OPS_ROOT = HERE / "ops"
 REPO_OPS_ROOT = HERE / "repo-ops"
@@ -131,17 +135,26 @@ LIMIT_FIELDS = set(DEFAULT_LIMITS)
 MAX_SETTLEMENT_PAUSE = 120
 
 # ---- enforced disk budgets ------------------------------------------------
-# Checkpoint custody is bounded independently of the workspace ceiling: only the
-# latest admitted checkpoint is retained, and it may not exceed this quota. A
-# checkpoint that would breach the quota is refused, not silently written.
+# Checkpoint custody is bounded independently of the workspace ceiling: one
+# checkpoint may not exceed this quota, and the bound is enforced WHILE the
+# archive streams, so an oversized workspace is refused before its bytes have
+# been taken into custody rather than after.
 CHECKPOINT_QUOTA_BYTES = 2 << 30
+# The prior restore point is retained until the new checkpoint AND its phase row
+# are durably committed, so a crash in the install window can never strand a
+# PASSed phase without a restore point. Two checkpoints therefore exist inside
+# that window, and the transaction's checkpoint custody ceiling is stated as
+# what it actually is rather than as the single-checkpoint quota.
+CHECKPOINT_CUSTODY_CEILING_BYTES = 2 * CHECKPOINT_QUOTA_BYTES
 # Retained controller source custody is enforced, not merely declared.
 SOURCE_QUOTA_BYTES = 5 << 30
 
-# ---- admitted settlement crash points -------------------------------------
-# Settlement recovery is only honest if the crash windows can be entered on
-# demand. Each point is a named, admitted abort site inside settlement; the
-# selected point is recorded in the receipt's test_hooks.
+# ---- admitted crash points ------------------------------------------------
+# Crash recovery is only honest if the windows can be entered on demand. Each
+# point is a named, admitted abort site; the selected point is recorded in the
+# receipt's test_hooks. Entering ANY of them requires an admitted qualification
+# mode carried by the accepted runner profile (see `qualification_mode`), so an
+# inherited or stale variable cannot kill a production transaction.
 CRASH_POINTS = (
     "after_settling_journal",
     "after_sanitation",
@@ -149,6 +162,10 @@ CRASH_POINTS = (
     "after_sidecar_write",
     "before_settled_update",
     "after_settled_update",
+)
+CHECKPOINT_CRASH_POINTS = (
+    "after_checkpoint_install",
+    "after_phase_commit",
 )
 
 SAFE_IDENT = re.compile(r"^[a-z0-9][a-z0-9._-]{0,%d}$" % (MAX_IDENT - 1))
@@ -244,6 +261,46 @@ def harden(path: Path) -> None:
         os.chmod(path, DIR_MODE if path.is_dir() else FILE_MODE)
 
 
+def fsync_dir(d: Path) -> bool:
+    """Durably commit a directory entry (rename, create, unlink).
+
+    Writing and fsyncing a file is not enough: the NAME that reaches it lives in
+    the parent directory, and after a power cut an unsynced directory can be
+    missing an entry whose data blocks are already on disk.
+    """
+    try:
+        fd = os.open(str(d), os.O_RDONLY | getattr(os, "O_DIRECTORY", 0))
+    except OSError:
+        return False
+    try:
+        os.fsync(fd)
+        return True
+    except OSError:
+        return False
+    finally:
+        os.close(fd)
+
+
+def durable_write(path: Path, data: bytes) -> str:
+    """Publish a controller record so it survives sudden power loss.
+
+    write -> flush -> fsync(file) -> atomic rename -> fsync(parent directory).
+    Every settlement record the ledger depends on is published this way, so the
+    durability claim in the receipt is a description of the code rather than an
+    aspiration.
+    """
+    tmp = path.with_name(path.name + ".partial")
+    with open(tmp, "wb") as fh:
+        fh.write(data)
+        fh.flush()
+        os.fsync(fh.fileno())
+    harden(tmp)
+    os.replace(tmp, path)
+    fsync_dir(path.parent)
+    harden(path)
+    return sha256_bytes(data)
+
+
 def harden_tree(root: Path) -> None:
     if not root.exists():
         return
@@ -283,7 +340,8 @@ def private_custody_report() -> dict:
 
 def ensure_roots() -> None:
     os.umask(0o077)
-    for d in (RAIL_HOME, WORK_ROOT, RECEIPT_ROOT, SOURCE_ROOT, CHECKPOINT_ROOT):
+    for d in (RAIL_HOME, WORK_ROOT, RECEIPT_ROOT, SOURCE_ROOT, CHECKPOINT_ROOT,
+              CUSTODY_ROOT):
         d.mkdir(parents=True, exist_ok=True, mode=DIR_MODE)
         harden(d)
     for p in (DB_PATH, DB_PATH.parent / (DB_PATH.name + "-wal"),
@@ -300,6 +358,11 @@ def connect() -> sqlite3.Connection:
     ensure_roots()
     conn = sqlite3.connect(DB_PATH, timeout=30, isolation_level=None)
     conn.execute("PRAGMA journal_mode=WAL")
+    # WAL defaults to synchronous=NORMAL, under which a committed transaction
+    # can be lost to a power cut even though the application was told it
+    # committed. The ledger's SETTLED transition is the commit point of this
+    # whole rail, so it is worth an fsync per commit.
+    conn.execute("PRAGMA synchronous=FULL")
     conn.executescript(SCHEMA)
     for p in (DB_PATH, DB_PATH.parent / (DB_PATH.name + "-wal"),
               DB_PATH.parent / (DB_PATH.name + "-shm")):
@@ -600,6 +663,13 @@ def read_cgroup_int(cg: Path, name: str) -> int | None:
     return None
 
 
+def read_cgroup_text(cg: Path, name: str) -> str | None:
+    """Raw value. `pids.max` is `max` when unlimited, which is not an integer."""
+    with contextlib.suppress(OSError):
+        return (cg / name).read_text().strip()
+    return None
+
+
 def read_cgroup_kv(cg: Path, name: str) -> dict:
     out: dict[str, int] = {}
     with contextlib.suppress(OSError):
@@ -834,6 +904,15 @@ def build_append(params, ctx):
     return _rail(ctx, "append_byte.py", rel)
 
 
+def build_workspace_shape(params, ctx):
+    shape = params.get("shape")
+    if shape not in ("symlink", "lock"):
+        raise Reject(f"workspace_shape_not_admitted:{shape!r}")
+    rel = check_relpath(params.get("target"), "target")
+    ctx["require_allowed"](rel)
+    return _rail(ctx, "workspace_shape.py", shape, rel)
+
+
 def build_cred_probe(params, ctx):
     if params:
         raise Reject("bad_param:credential_probe_takes_no_params")
@@ -897,6 +976,9 @@ OPS: dict[str, Op] = {
                              script="hold_resource.py"),
     "rail.append_byte": Op("rail.append_byte", "rail", "EFFECTFUL", build_append,
                            script="append_byte.py"),
+    "rail.workspace_shape": Op("rail.workspace_shape", "rail", "EFFECTFUL",
+                               build_workspace_shape,
+                               script="workspace_shape.py"),
     "rail.credential_probe": Op("rail.credential_probe", "rail", "PURE",
                                 build_cred_probe, script="credential_probe.py"),
     "rail.spawn_descendant": Op("rail.spawn_descendant", "rail", "PURE",
@@ -942,12 +1024,27 @@ def ops_manifest() -> dict:
 # externally accepted runner profile
 # --------------------------------------------------------------------------
 
+def interpreter_identity() -> dict:
+    """Exact identity of the Python actually executing this controller."""
+    exe = Path(os.path.realpath(sys.executable)) if sys.executable else None
+    return {
+        "path": str(exe) if exe else None,
+        "version": "%d.%d.%d" % sys.version_info[:3],
+        "sha256": sha256_file(exe) if exe and exe.is_file() else None,
+    }
+
+
 def observed_profile() -> dict:
     """What this host actually is, as the controller can see it."""
     return {
         "schema": PROFILE_SCHEMA,
         "host": os.uname().nodename,
         "controller": {"path": str(SELF), "sha256": sha256_file(SELF)},
+        # The controller's own bytes are pinned; the program that INTERPRETS
+        # them was not. Identical controller bytes under a different Python are
+        # a different runner, and until this was pinned that substitution
+        # produced no drift at all.
+        "interpreter": interpreter_identity(),
         "sandbox": {"engine": "bubblewrap", "path": BWRAP,
                     "sha256": sha256_file(Path(BWRAP)) if BWRAP else None},
         "guest_root": GUEST_ROOT,
@@ -1073,6 +1170,22 @@ def enforce_profile(explicit: str | None, expect_sha: str | None) -> dict:
             f"RUNNER_PROFILE_DIGEST_MISMATCH: accepted={want} actual={digest}")
     accepted = json.loads(p.read_text(encoding="utf-8"))
     obs = observed_profile()
+
+    # The interpreter is checked by name before the generic diff, so drift in it
+    # is refused as itself rather than as one more mismatched key.
+    pinned = accepted.get("interpreter")
+    if not isinstance(pinned, dict) or not pinned.get("path") or not pinned.get("sha256"):
+        raise ProfileMismatch(
+            "CONTROLLER_INTERPRETER_NOT_PINNED: the accepted profile does not "
+            "name the interpreter executing the controller")
+    live = obs["interpreter"]
+    if live != pinned:
+        raise ProfileMismatch(
+            "CONTROLLER_INTERPRETER_DRIFT: accepted="
+            f"{pinned.get('path')}@{pinned.get('version')}/"
+            f"{str(pinned.get('sha256'))[:12]} actual={live.get('path')}@"
+            f"{live.get('version')}/{str(live.get('sha256'))[:12]}")
+
     drift = _diff_profile(accepted, obs)
     if drift:
         raise ProfileMismatch("RUNNER_PROFILE_MISMATCH: " + ",".join(drift[:8]))
@@ -1082,6 +1195,8 @@ def enforce_profile(explicit: str | None, expect_sha: str | None) -> dict:
             "AGGREGATE_ENFORCEMENT_UNAVAILABLE: " + json.dumps(deleg))
     return {"path": str(p), "sha256": digest, "host": accepted.get("host"),
             "externally_pinned": True, "anchor_source": "external",
+            "interpreter": live,
+            "qualification_mode": bool(accepted.get("_qualification_mode")),
             "aggregate_enforcement": deleg, "verdict": "ADMITTED"}
 
 
@@ -1423,73 +1538,203 @@ def checkpoint_custody(txn_id: str) -> dict:
     return {
         "mode": "LATEST_ADMITTED_CHECKPOINT_ONLY",
         "quota_bytes": CHECKPOINT_QUOTA_BYTES,
+        "custody_ceiling_bytes": CHECKPOINT_CUSTODY_CEILING_BYTES,
         "retained": items,
         "retained_count": len(items),
         "stale_partials": partials,
         "retained_bytes": checkpoint_bytes(txn_id),
         "law": "one checkpoint is retained at a time and it may not exceed the "
-               "quota; recovery needs only the last consecutive checkpoint, so "
-               "per-phase accumulation is refused rather than bounded after the "
-               "fact. Checkpoints are purged only after the ledger transition to "
-               "SETTLED is verified, so no crash window can strand a PASSed "
-               "phase without its restore point.",
+               "quota, which is enforced WHILE the archive is written; recovery "
+               "needs only the last consecutive checkpoint, so per-phase "
+               "accumulation is refused rather than bounded after the fact. The "
+               "superseded checkpoint is retired only after the new checkpoint "
+               "and its phase row are durably committed, so custody holds two "
+               "restore points for that window and never fewer than one -- the "
+               "ceiling is stated as twice the quota because that is what it "
+               "actually is. Checkpoints are purged only after the ledger "
+               "transition to SETTLED is verified, so no crash window can strand "
+               "a PASSed phase without its restore point.",
+        "creation_law": "a checkpoint may contain exactly what the extraction "
+                        "law will restore: directories, regular files with one "
+                        "link, and symbolic links. A workspace holding a hard "
+                        "link, device or special file is REFUSED at creation "
+                        "and the transaction is held, rather than installing a "
+                        "checkpoint that recovery could not restore.",
+        "symlink_law": "symbolic links are captured and restored verbatim, "
+                       "including links that point outside the workspace: a "
+                       "repository legitimately contains them and a restore "
+                       "point that cannot round-trip its own source is not one. "
+                       "They are safe by ORDERING -- restoration writes every "
+                       "directory and file first and creates links last, and a "
+                       "member under a symlinked ancestor is refused -- so no "
+                       "byte is ever written through a link. Bind sources are "
+                       "separately resolved under the repository with symlinked "
+                       "sources refused, so a captured link cannot redirect a "
+                       "later mount either.",
     }
 
 
-def write_checkpoint(txn_id: str, idx: int, ws: Path) -> tuple[str, str]:
+def _checkpoint_source_plan(ws: Path) -> tuple[list[tuple[Path, str]], int]:
+    """Every member a checkpoint of `ws` would contain, or a refusal.
+
+    Creation is closed against exactly what restoration accepts. `tarfile.add`
+    stores a second reference to an inode as a hard link, which the restoration
+    law rejects -- so a workspace containing one used to produce an installed
+    checkpoint that could never be restored. The disagreement is resolved here,
+    at the only point where a refusal is still free, and the total payload is
+    measured before a byte is taken into custody.
+
+    Symbolic links are CAPTURED, not refused. A real repository contains them,
+    including links that point outside the tree, and a checkpoint that cannot
+    round-trip its own source is not a restore point. They are safe to carry
+    because a link is never used as a write path: restoration creates every
+    directory and file first and every symlink last, and the sandbox resolves
+    each bind source under the repository with symlinked sources refused.
+    """
+    members: list[tuple[Path, str]] = []
+    total = 0
+    root = Path(os.path.realpath(ws))
+    for dirpath, dirnames, filenames in os.walk(root, followlinks=False):
+        here = Path(dirpath)
+        rel_dir = here.relative_to(root)
+        members.append((here, "./" + rel_dir.as_posix() if rel_dir.parts else "."))
+        for name in sorted(dirnames + filenames):
+            p = here / name
+            st = p.lstat()
+            mode = st.st_mode
+            rel = (rel_dir / name).as_posix()
+            if stat.S_ISLNK(mode):
+                members.append((p, "./" + rel))
+                continue
+            if stat.S_ISFIFO(mode) or stat.S_ISSOCK(mode):
+                raise Reject(f"checkpoint_source_special:{rel}")
+            if stat.S_ISCHR(mode) or stat.S_ISBLK(mode):
+                raise Reject(f"checkpoint_source_device:{rel}")
+            if stat.S_ISDIR(mode):
+                continue          # walked on its own turn
+            if not stat.S_ISREG(mode):
+                raise Reject(f"checkpoint_source_type:{rel}:{stat.S_IFMT(mode):#o}")
+            if st.st_nlink > 1:
+                raise Reject(f"checkpoint_source_hardlink:{rel}")
+            members.append((p, "./" + rel))
+            total += st.st_size
+    return members, total
+
+
+def assert_restorable(path: Path, ws: Path) -> dict:
+    """Prove an installed checkpoint satisfies the restoration law right now.
+
+    An archive that only the writer has ever validated is a claim. This opens
+    the installed bytes and runs the SAME member validation extraction runs, so
+    "every installed checkpoint is immediately restorable" is a checked property
+    of each install rather than a property of the code that wrote it.
+    """
+    with tarfile.open(path, "r") as tf:
+        files, links = _validated_members(tf, ws)
+    return {"verified": True, "members": len(files) + len(links),
+            "symlink_members": len(links),
+            "law": "validated under the extraction law at install time"}
+
+
+def write_checkpoint(txn_id: str, idx: int, ws: Path) -> tuple[str, str, dict]:
     """Capture the workspace a PASSed phase produced, under a bound.
 
     Cross-phase state law: a later phase may depend on files an earlier phase
     created, so recovery restores the last checkpoint rather than recloning
-    pristine source. Only the LATEST checkpoint can ever be the restore point,
-    so writing one per phase and keeping them all multiplied the transaction's
-    real disk footprint far past the declared ceiling. The new checkpoint is
-    written to a temporary file, refused if it breaches the quota, atomically
-    installed, and every older checkpoint is then removed.
+    pristine source.
+
+    Three things are true of every checkpoint this function installs, and none
+    of them were true of the revision it replaces: the quota bounds the bytes
+    while they are being written rather than after a larger archive already
+    exists, every member is one the extraction law will accept, and the PRIOR
+    restore point is still on disk when this returns. Retiring it is the
+    caller's next step, after the phase row is durably committed -- a crash
+    between install and commit must never leave the last committed PASS phase
+    pointing at a checkpoint that has already been deleted.
     """
     path = checkpoint_path(txn_id, idx)
     # A controller killed mid-write leaves a partial behind; clear any before
     # starting so a crash loop cannot accumulate uncounted bytes.
     for stale in path.parent.glob("*.partial"):
         stale.unlink(missing_ok=True)
+    members, payload = _checkpoint_source_plan(ws)
+    if payload > CHECKPOINT_QUOTA_BYTES:
+        raise Reject(f"checkpoint_quota_exceeded:{payload}>{CHECKPOINT_QUOTA_BYTES}")
     tmp = path.with_suffix(".tar.partial")
+    written = 0
     try:
-        with tarfile.open(tmp, "w", format=tarfile.PAX_FORMAT) as tf:
-            tf.add(str(ws), arcname=".", recursive=True)
+        with open(tmp, "wb") as fh:
+            harden(tmp)
+            with tarfile.open(fileobj=fh, mode="w", format=tarfile.PAX_FORMAT) as tf:
+                for src, arcname in members:
+                    info = tf.gettarinfo(str(src), arcname=arcname)
+                    if info.islnk():
+                        raise Reject(f"checkpoint_source_hardlink:{arcname}")
+                    if info.isfile():
+                        with open(src, "rb") as body:
+                            tf.addfile(info, body)
+                    else:
+                        tf.addfile(info)
+                    written = fh.tell()
+                    if written > CHECKPOINT_QUOTA_BYTES:
+                        raise Reject(
+                            f"checkpoint_quota_exceeded_while_streaming:"
+                            f"{written}>{CHECKPOINT_QUOTA_BYTES}")
+            fh.flush()
+            os.fsync(fh.fileno())
         size = tmp.stat().st_size
         if size > CHECKPOINT_QUOTA_BYTES:
             raise Reject(f"checkpoint_quota_exceeded:{size}>{CHECKPOINT_QUOTA_BYTES}")
+        restorable = assert_restorable(tmp, ws)
         os.replace(tmp, path)
+        fsync_dir(path.parent)
     finally:
         if tmp.exists():
             tmp.unlink(missing_ok=True)
     harden(path)
-    # latest-only retention: the older restore points can no longer be reached
-    for old in sorted(path.parent.glob("*.tar")):
-        if old != path:
+    return str(path), sha256_file(path), restorable
+
+
+def retire_superseded_checkpoints(txn_id: str, keep: Path) -> list[str]:
+    """Drop restore points the durably committed journal can no longer reach.
+
+    Called only AFTER the phase row naming `keep` is committed, so the window in
+    which both exist is the window in which either one would do.
+    """
+    retired = []
+    for old in sorted(keep.parent.glob("*.tar")):
+        if old != keep:
             old.unlink(missing_ok=True)
-    return str(path), sha256_file(path)
+            retired.append(old.name)
+    if retired:
+        fsync_dir(keep.parent)
+    return retired
 
 
-def _validated_members(tf: tarfile.TarFile, root: Path) -> list[tarfile.TarInfo]:
-    """Close the checkpoint archive against every member that is not a plain
-    file or directory contained under the new workspace.
+def _validated_members(tf: tarfile.TarFile,
+                       root: Path) -> tuple[list[tarfile.TarInfo], list[tarfile.TarInfo]]:
+    """Close the checkpoint archive against every member restoration cannot
+    safely place under the new workspace.
 
     The archive is controller-created, but its members originate in the
     transaction workspace, which the phase controls. `fully_trusted` extraction
     therefore trusted worker-authored metadata. Nothing is written until every
     member has passed.
+
+    Hard links, devices and special files are refused, and so is any member
+    whose NAME leaves the workspace. Symbolic links are admitted -- a
+    repository contains them -- and returned separately, because the way they
+    are made safe is ordering: they are created after every directory and file,
+    so no member can ever be written THROUGH a link. A member that would be
+    placed under a symlinked ancestor is refused outright, which is the classic
+    archive escape and the only thing a link in this position could achieve.
     """
     root = Path(os.path.realpath(root))
-    out: list[tarfile.TarInfo] = []
-    for m in tf.getmembers():
-        name = m.name
-        if m.issym() or m.islnk():
-            raise Reject(f"checkpoint_member_link:{name}")
-        if m.ischr() or m.isblk() or m.isfifo() or m.isdev():
-            raise Reject(f"checkpoint_member_device:{name}")
-        if not (m.isfile() or m.isdir()):
-            raise Reject(f"checkpoint_member_type:{name}:{m.type!r}")
+    files: list[tarfile.TarInfo] = []
+    links: list[tarfile.TarInfo] = []
+    link_prefixes: set[str] = set()
+
+    def rel_parts(name: str) -> list[str]:
         if name.startswith("/") or name.startswith("\\") or ":" in name.split("/")[0]:
             raise Reject(f"checkpoint_member_absolute:{name}")
         parts = [p for p in name.replace("\\", "/").split("/") if p not in ("", ".")]
@@ -1498,12 +1743,32 @@ def _validated_members(tf: tarfile.TarFile, root: Path) -> list[tarfile.TarInfo]
         target = Path(os.path.normpath(str(root / "/".join(parts))))
         if target != root and root not in target.parents:
             raise Reject(f"checkpoint_member_escapes_workspace:{name}")
+        return parts
+
+    for m in tf.getmembers():
+        name = m.name
+        if m.islnk():
+            raise Reject(f"checkpoint_member_hardlink:{name}")
+        if m.ischr() or m.isblk() or m.isfifo() or m.isdev():
+            raise Reject(f"checkpoint_member_device:{name}")
+        if not (m.isfile() or m.isdir() or m.issym()):
+            raise Reject(f"checkpoint_member_type:{name}:{m.type!r}")
+        parts = rel_parts(name)
+        for depth in range(1, len(parts)):
+            if "/".join(parts[:depth]) in link_prefixes:
+                raise Reject(f"checkpoint_member_under_symlink:{name}")
         # never restore setuid/setgid/sticky or group/other-writable bits
         m.mode = (m.mode or 0) & 0o755
         m.uid, m.gid = os.getuid(), os.getgid()
         m.uname = m.gname = ""
-        out.append(m)
-    return out
+        if m.issym():
+            if not m.linkname:
+                raise Reject(f"checkpoint_member_empty_link_target:{name}")
+            link_prefixes.add("/".join(parts))
+            links.append(m)
+        else:
+            files.append(m)
+    return files, links
 
 
 def restore_checkpoint(path: Path, digest: str, ws: Path) -> None:
@@ -1517,11 +1782,29 @@ def restore_checkpoint(path: Path, digest: str, ws: Path) -> None:
     ws.mkdir(parents=True, exist_ok=True, mode=DIR_MODE)
     try:
         with tarfile.open(path, "r") as tf:
-            members = _validated_members(tf, ws)   # refuses before any write
+            files, links = _validated_members(tf, ws)   # refuses before any write
             try:
-                tf.extractall(str(ws), members=members, filter="tar")
+                tf.extractall(str(ws), members=files, filter="tar")
             except TypeError:  # python < 3.12 has no extraction filters
-                tf.extractall(str(ws), members=members)
+                tf.extractall(str(ws), members=files)
+            # Links last, and only onto a real directory: by the time any link
+            # exists, nothing further is written, so no member can be placed
+            # through one.
+            for m in links:
+                # never `lstrip("./")`: that would eat the leading dot of a
+                # dotfile. The validated components are the only safe source.
+                parts = [p for p in m.name.replace("\\", "/").split("/")
+                         if p not in ("", ".")]
+                dest = ws.joinpath(*parts)
+                parent = dest.parent
+                walk = ws
+                for part in parent.relative_to(ws).parts:
+                    walk = walk / part
+                    if walk.is_symlink():
+                        raise Reject(f"checkpoint_link_parent_is_symlink:{m.name}")
+                parent.mkdir(parents=True, exist_ok=True)
+                dest.unlink(missing_ok=True)
+                os.symlink(m.linkname, dest)
     except tarfile.TarError as exc:
         raise Reject(f"checkpoint_unreadable:{path.name}:{exc}")
 
@@ -1555,6 +1838,13 @@ def sandbox_argv(env: dict, ws: Path, inner: list[str], network: bool) -> list[s
     repo = ws / "repo"
     argv = [
         BWRAP,
+        # The worker environment is CONSTRUCTED, never inherited. Without this
+        # the sandbox would set the variables it declares on top of whatever the
+        # controller happened to be holding, so a controller that legitimately
+        # carries a narrow publication token would hand that token to the
+        # operation. `--clearenv` unsets everything first; only the variables
+        # `--setenv` names below survive into the operation.
+        "--clearenv",
         "--unshare-all", "--die-with-parent", "--new-session",
         "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp",
         "--ro-bind", "/usr", "/usr", "--ro-bind", "/etc", "/etc",
@@ -1584,6 +1874,7 @@ def sandbox_argv(env: dict, ws: Path, inner: list[str], network: bool) -> list[s
 
 
 def worker_env() -> dict:
+    """The COMPLETE environment of an operation. Nothing else reaches it."""
     return {
         "PATH": "/usr/bin:/bin",
         "LANG": "C.UTF-8",
@@ -1593,6 +1884,53 @@ def worker_env() -> dict:
         "GIT_TERMINAL_PROMPT": "0",
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CONFIG_GLOBAL": "/dev/null",
+    }
+
+
+# Variables the transient scope genuinely needs to be created at all. Anything
+# outside this set is not passed to the launch chain, so the controller's own
+# environment is not the sandbox's fallback.
+LAUNCH_ENV_PASSTHROUGH = ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS")
+
+
+def controller_launch_env() -> dict:
+    """The minimum admitted environment for `systemd-run --user`.
+
+    `systemd-run` executes in the CONTROLLER's environment: it is the caller's
+    own process that talks to the user manager, so anything the controller holds
+    is inherited by the whole launch chain unless the chain is given an explicit
+    environment. Bubblewrap clears the environment again further in; this is the
+    outer half of the same closure, and it also keeps controller-held material
+    out of the transient scope's own recorded properties.
+    """
+    env = {
+        "PATH": "/usr/bin:/bin",
+        "LANG": "C.UTF-8",
+        "HOME": str(Path.home()),
+        "USER": os.environ.get("USER", ""),
+        "LOGNAME": os.environ.get("LOGNAME", ""),
+    }
+    for key in LAUNCH_ENV_PASSTHROUGH:
+        val = os.environ.get(key)
+        if val:
+            env[key] = val
+    return {k: v for k, v in env.items() if v}
+
+
+def environment_closure() -> dict:
+    """What the receipt is entitled to claim about the worker environment."""
+    return {
+        "controller_environment_inherited_by_launch": False,
+        "launch_environment_keys": sorted(controller_launch_env()),
+        "launch_environment_law": "systemd-run is executed with an explicitly "
+                                  "constructed environment; the controller's own "
+                                  "environment is never the default",
+        "sandbox_clearenv": True,
+        "worker_environment_keys": sorted(worker_env()),
+        "worker_environment_law": "bubblewrap --clearenv unsets every inherited "
+                                  "variable before the declared worker set is "
+                                  "applied, so the operation's environment is "
+                                  "exactly the declared set",
     }
 
 
@@ -1757,6 +2095,31 @@ def sample_cgroup(cg: Path, state: dict) -> float | None:
     pev = read_cgroup_kv(cg, "pids.events")
     if pev:
         state["pids_events"] = pev
+    pev_local = read_cgroup_kv(cg, "pids.events.local")
+    if pev_local:
+        state["pids_events_local"] = pev_local
+    # Direct kernel witness for the task ceiling. `pids.max` refusing a fork is
+    # only INFERRED from "a fork failed while a limit existed"; the kernel says
+    # so itself by incrementing the `max` counter in pids.events. The counter
+    # lives in a cgroup that disappears with its last task, so it is captured
+    # here, from the exact scope, while the scope is still alive -- not
+    # reconstructed afterwards from a limit and an errno.
+    fired = 0
+    for src in (pev, pev_local):
+        with contextlib.suppress(TypeError, ValueError):
+            fired = max(fired, int((src or {}).get("max", 0)))
+    if fired >= 1 and not state.get("pids_kernel_witness"):
+        state["pids_kernel_witness"] = {
+            "cgroup": str(cg),
+            "observed_at": now(),
+            "observed_while_scope_alive": True,
+            "pids_max": read_cgroup_text(cg, "pids.max"),
+            "pids_current": read_cgroup_int(cg, "pids.current"),
+            "pids_events": dict(pev or {}),
+            "pids_events_local": dict(pev_local or {}),
+            "statement": "the kernel counted at least one fork refused by this "
+                         "scope's pids.max; the ceiling is witnessed, not inferred",
+        }
     cpu_used = cgroup_cpu_seconds(cg)
     if cpu_used is not None:
         state["cpu_seconds_used"] = cpu_used
@@ -1826,7 +2189,8 @@ def run_one_phase(env, ws, log_path: Path, ph: dict, ctx) -> dict:
     started = now()
     ambient = uid_task_count()
     proc = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                            start_new_session=True, cwd=str(ws))
+                            start_new_session=True, cwd=str(ws),
+                            env=controller_launch_env())
     pgid = os.getpgid(proc.pid)
     scope: dict = {"cg": None}
 
@@ -1897,6 +2261,8 @@ def run_one_phase(env, ws, log_path: Path, ph: dict, ctx) -> dict:
             "cpu_ceiling_hit": bool(mon_state.get("cpu_ceiling_hit")),
             "memory_events": mon_state.get("memory_events", {}),
             "pids_events": mon_state.get("pids_events", {}),
+            "pids_events_local": mon_state.get("pids_events_local", {}),
+            "pids_kernel_witness": mon_state.get("pids_kernel_witness"),
         },
         "per_process": {
             "mechanism": "prlimit(1)",
@@ -1906,6 +2272,7 @@ def run_one_phase(env, ws, log_path: Path, ph: dict, ctx) -> dict:
             "rlimit_nofile": int(limits["open_files"]),
         },
         "preexec_fn_used": False,
+        "environment": environment_closure(),
         "account_tasks_at_start": ambient,
         "account_tasks_note": "observation only; RLIMIT_NPROC is not used, "
                               "because it is charged per account and can never "
@@ -1942,7 +2309,7 @@ def run_one_phase(env, ws, log_path: Path, ph: dict, ctx) -> dict:
 
 
 def run_phases(conn, env, ws, log_dir: Path, lease: Lease,
-               resume_from: int) -> tuple[str, list[dict]]:
+               resume_from: int, ckpt_crash: str | None = None) -> tuple[str, list[dict]]:
     repo = ws / "repo"
     txn = env["transaction_id"]
     allowed = set(env["allowed_paths"])
@@ -2016,14 +2383,35 @@ def run_phases(conn, env, ws, log_dir: Path, lease: Lease,
         res["attempt"] = attempt
         ckpt_path = ckpt_sha = None
         if res["state"] == "PASS":
-            # cross-phase state law: capture what this phase produced
-            ckpt_path, ckpt_sha = write_checkpoint(txn, idx, ws)
-            res["checkpoint"] = {"path": ckpt_path, "sha256": ckpt_sha}
+            # cross-phase state law: capture what this phase produced. The prior
+            # restore point survives this call.
+            try:
+                ckpt_path, ckpt_sha, restorable = write_checkpoint(txn, idx, ws)
+            except Reject as exc:
+                # An unrestorable or oversized workspace is a custody refusal,
+                # not a phase score: hold rather than admit a PASS whose restore
+                # point does not exist.
+                conn.execute("UPDATE phase SET state=?, ended_at=? WHERE txn_id=? AND idx=?",
+                             ("HOLD", now(), txn, idx))
+                res["state"] = "HOLD"
+                res["note"] = f"CHECKPOINT_REFUSED:{exc}"
+                res["checkpoint"] = {"installed": False, "refusal": str(exc)}
+                results.append(res)
+                return TERMINAL_HOLD, results
+            res["checkpoint"] = {"path": ckpt_path, "sha256": ckpt_sha,
+                                 "restorable": restorable}
+            _crash_if("after_checkpoint_install", ckpt_crash)
+        # The phase row is the durable commit of "this phase PASSed, and THIS is
+        # its restore point". Nothing is retired before it lands.
         conn.execute(
             "UPDATE phase SET state=?, exit_code=?, digest=?, log_path=?, ended_at=?, "
             "ckpt_path=?, ckpt_sha=? WHERE txn_id=? AND idx=?",
             (res["state"], res["exit_code"], res["output_sha256"], res["log_path"],
              now(), ckpt_path, ckpt_sha, txn, idx))
+        _crash_if("after_phase_commit", ckpt_crash)
+        if ckpt_path:
+            res["checkpoint"]["retired_superseded"] = retire_superseded_checkpoints(
+                txn, Path(ckpt_path))
         lease.beat()
         results.append(res)
         if res["state"] != "PASS":
@@ -2032,17 +2420,46 @@ def run_phases(conn, env, ws, log_dir: Path, lease: Lease,
     return terminal, results
 
 
-def sanitize(ws: Path) -> dict:
-    """Delete the workspace. ws is always a resolved path under WORK_ROOT."""
+def sanitize(ws: Path, attempts: int = 2) -> dict:
+    """Delete the workspace, and REPORT whether that actually happened.
+
+    The previous revision deleted with errors ignored and then described the
+    result; settlement went on to publish a receipt claiming zero execution
+    residue whether or not the tree was gone. Failures are collected here and
+    the caller is expected to refuse the commit when the workspace survives:
+    a terminal ledger row whose own verifier would reject its residue claim is
+    worse than an unsettled transaction.
+    """
     ws_r = Path(os.path.realpath(ws))
     try:
         ws_r.relative_to(WORK_ROOT.resolve())
     except ValueError:
         raise Reject(f"refusing_to_delete_outside_work_root:{ws_r}")
     existed = ws_r.exists()
-    if existed:
-        shutil.rmtree(ws_r, ignore_errors=True)
-    return {"workspace": str(ws_r), "existed": existed, "absent_after": not ws_r.exists()}
+    errors: list[str] = []
+    tries = 0
+    for _ in range(max(1, attempts)):
+        if not ws_r.exists():
+            break
+        tries += 1
+        errors = []
+
+        def _failed(func, path, exc):
+            errors.append(f"{getattr(func, '__name__', func)}:{path}:"
+                          f"{exc.__class__.__name__ if isinstance(exc, BaseException) else exc}")
+
+        try:
+            shutil.rmtree(ws_r, onexc=_failed)
+        except TypeError:      # python < 3.12
+            shutil.rmtree(ws_r, onerror=lambda f, p, e: _failed(f, p, e[1]))
+        except OSError as exc:
+            errors.append(f"rmtree:{ws_r}:{exc.__class__.__name__}")
+    absent = not ws_r.exists()
+    with contextlib.suppress(OSError):
+        fsync_dir(ws_r.parent)
+    return {"workspace": str(ws_r), "existed": existed, "absent_after": absent,
+            "attempts": tries, "errors": errors[:20] if not absent else [],
+            "law": "settlement may not commit while the workspace survives"}
 
 
 # --------------------------------------------------------------------------
@@ -2083,7 +2500,10 @@ def retained_source_custody() -> dict:
                 })
     return {
         "root": str(SOURCE_ROOT),
-        "owner": "tier-bench native rail controller (octo-n01 local account)",
+        # derived, never hardcoded: the deployment's identity belongs in its own
+        # runner profile and receipts, not in the public product's source
+        "owner": f"tier-bench native rail controller ({os.uname().nodename} "
+                 f"local account, uid {os.getuid()})",
         "items": items,
         "total_bytes": sum(i["bytes"] for i in items),
         "owner_only": owner_only,
@@ -2094,48 +2514,207 @@ def retained_source_custody() -> dict:
         "quota_enforced_at": "materialize_source; a transaction is refused when "
                              "retained custody already exceeds the quota",
         "quota_breached": sum(i["bytes"] for i in items) > SOURCE_QUOTA_BYTES,
-        "retention": "until the bound transaction is settled and its receipt is "
-                     "externally anchored; purge with `tbrail purge-source`",
-        "purge_law": "an item may be purged when no QUEUED, RUNNING or SETTLING "
-                     "transaction references its digest",
+        "retention": "until every transaction referencing it is resolved AND no "
+                     "retained receipt still needs the bytes to verify; purge "
+                     "with `tbrail purge-source`",
+        "purge_law": "the hot copy may be removed only when no unresolved "
+                     "transaction in ANY state references its digest, and every "
+                     "retained receipt that needs the bytes is covered by an "
+                     "independently verified successor-custody entry",
+        "custody_manifest": str(SOURCE_CUSTODY_PATH),
     }
 
 
-def purge_source(conn, dry_run: bool = True) -> dict:
-    """The bounded purge the custody report promises.
+def load_source_custody() -> dict:
+    """The accepted successor-custody manifest, if one has been recorded."""
+    if SOURCE_CUSTODY_PATH.is_file():
+        with contextlib.suppress(ValueError, OSError):
+            data = json.loads(SOURCE_CUSTODY_PATH.read_text(encoding="utf-8"))
+            if isinstance(data, dict) and data.get("schema") == SOURCE_CUSTODY_SCHEMA:
+                return data
+    return {"schema": SOURCE_CUSTODY_SCHEMA, "entries": {}}
 
-    An item is purgeable exactly when no unsettled transaction still references
-    its digest. Nothing outside SOURCE_ROOT is considered, nothing referenced is
-    removed, and the default is a dry run so the operation can be inspected
-    before it deletes custody.
+
+def verify_successor_custody(digest: str, entry) -> dict:
+    """Prove the bytes still exist somewhere this controller can reach.
+
+    A successor-custody claim is only worth the rehash that backs it: the named
+    object must exist, must live outside the hot custody root that is about to
+    be emptied, and must hash to the SAME digest the receipts name. Anything
+    less would let a purge trade verifiable receipts for a promise.
     """
-    live = {"QUEUED", "RUNNING", "SETTLING", "HELD"}
-    referenced: set[str] = set()
-    for (state, env_json) in conn.execute("SELECT state, envelope_json FROM txn"):
-        if state not in live:
-            continue
+    out = {"digest": digest, "verified": False, "checks": {}}
+    if not isinstance(entry, dict):
+        out["checks"]["entry_present"] = False
+        return out
+    out["checks"]["entry_present"] = True
+    out["holder"] = entry.get("holder")
+    raw = str(entry.get("successor_path") or "")
+    out["successor_path"] = raw
+    p = Path(raw)
+    out["checks"]["absolute_path"] = p.is_absolute()
+    out["checks"]["exists"] = p.is_file()
+    outside = True
+    with contextlib.suppress(ValueError, OSError):
+        Path(os.path.realpath(p)).relative_to(SOURCE_ROOT.resolve())
+        outside = False
+    out["checks"]["outside_hot_custody_root"] = outside
+    if p.is_file():
+        actual = sha256_file(p)
+        out["successor_sha256"] = actual
+        out["checks"]["rehashes_to_digest"] = (actual == digest)
+        declared = str(entry.get("successor_sha256") or digest)
+        out["checks"]["matches_declared_digest"] = (actual == declared)
+    out["verified"] = all(out["checks"].values())
+    return out
+
+
+def receipts_requiring_source() -> dict[str, list[str]]:
+    """Which retained receipts would stop verifying without which bytes."""
+    need: dict[str, list[str]] = {}
+    if not RECEIPT_ROOT.is_dir():
+        return need
+    for rp in sorted(RECEIPT_ROOT.glob("*/RECEIPT.json")):
+        with contextlib.suppress(ValueError, OSError):
+            data = json.loads(rp.read_text(encoding="utf-8"))
+            digest = str(((data or {}).get("source") or {}).get("bundle_sha256") or "")
+            if digest:
+                need.setdefault(digest, []).append(str(rp))
+    return need
+
+
+def source_custody_route(digest: str) -> dict:
+    """Verification route for a bundle whose hot copy is gone."""
+    entry = (load_source_custody().get("entries") or {}).get(digest)
+    route = verify_successor_custody(digest, entry)
+    route["route"] = "successor_custody" if route["verified"] else "unavailable"
+    return route
+
+
+def purge_source(conn, dry_run: bool = True, manifest: str | None = None) -> dict:
+    """Transfer retained source custody, or refuse.
+
+    This is not a garbage collector. The receipt verifier rehashes the source
+    bundle, so deleting bytes a retained receipt still names does not free
+    space: it silently converts verifiable receipts into unverifiable ones. The
+    operation is therefore a CUSTODY TRANSITION with three refusals -- any
+    unresolved transaction in any state (including FENCED_OUT) protects its
+    bundle, any retained receipt protects the bytes it needs, and that
+    protection lifts only for an independently verified successor-custody entry.
+    Every retained receipt is re-verified after the transition and the result is
+    part of the report.
+    """
+    def verify_all() -> dict[str, dict]:
+        out = {}
+        if RECEIPT_ROOT.is_dir():
+            for rp in sorted(RECEIPT_ROOT.glob("*/RECEIPT.json")):
+                report = {}
+                with contextlib.suppress(Exception):
+                    report = verify_receipt(rp)
+                out[str(rp)] = {"ok": report.get("verdict") == "VERIFIED",
+                                "failures": report.get("failures", ["unreadable"])}
+        return out
+
+    verified_before = verify_all()
+    protected: dict[str, list[str]] = {}
+    for (txn_id, state, env_json) in conn.execute(
+            "SELECT txn_id, state, envelope_json FROM txn"):
+        if state == "SETTLED":
+            continue          # the ONLY resolved state
         with contextlib.suppress(Exception):
             env = json.loads(env_json)
-            referenced.add(str(env.get("source_bundle_sha256", "")))
-    kept, purged = [], []
+            digest = str(env.get("source_bundle_sha256", ""))
+            if digest:
+                protected.setdefault(digest, []).append(f"{txn_id}:{state}")
+
+    required = receipts_requiring_source()
+    supplied = None
+    if manifest:
+        mp = Path(manifest)
+        if not mp.is_file():
+            raise Reject(f"successor_custody_manifest_missing:{manifest}")
+        supplied = json.loads(mp.read_text(encoding="utf-8"))
+        if supplied.get("schema") != SOURCE_CUSTODY_SCHEMA:
+            raise Reject(f"successor_custody_manifest_schema:{supplied.get('schema')}")
+    entries = dict((load_source_custody().get("entries") or {}))
+    if supplied:
+        entries.update(supplied.get("entries") or {})
+
+    kept, purgeable, routes = [], [], {}
     if SOURCE_ROOT.is_dir():
         for p in sorted(SOURCE_ROOT.iterdir()):
             if not p.is_file():
                 continue
-            item = {"name": p.name, "bytes": p.stat().st_size, "sha256": sha256_file(p)}
-            if item["sha256"] in referenced:
-                item["why"] = "referenced_by_unsettled_transaction"
+            digest = sha256_file(p)
+            item = {"name": p.name, "bytes": p.stat().st_size, "sha256": digest}
+            if digest in protected:
+                item["why"] = "referenced_by_unresolved_transaction"
+                item["holders"] = protected[digest]
                 kept.append(item)
+                continue
+            if digest in required:
+                route = verify_successor_custody(digest, entries.get(digest))
+                routes[digest] = route
+                item["receipts_requiring_bytes"] = required[digest]
+                if not route["verified"]:
+                    item["why"] = "retained_receipts_require_these_bytes_and_no_" \
+                                  "verified_successor_custody_exists"
+                    item["successor_custody"] = route
+                    kept.append(item)
+                    continue
+                item["why"] = "custody_transferred_to_verified_successor"
+                item["successor_custody"] = route
             else:
-                purged.append(item)
-                if not dry_run:
-                    p.unlink(missing_ok=True)
+                item["why"] = "no_unresolved_reference_and_no_retained_receipt"
+            purgeable.append(item)
+
+    applied = False
+    if not dry_run and purgeable:
+        # Record the accepted successor entries BEFORE removing anything, so the
+        # verification route a receipt will take exists before the bytes it
+        # replaces are gone.
+        transferred = {d: entries[d] for d in routes if routes[d]["verified"]}
+        if transferred:
+            CUSTODY_ROOT.mkdir(parents=True, exist_ok=True, mode=DIR_MODE)
+            harden(CUSTODY_ROOT)
+            current = load_source_custody()
+            current["entries"] = {**(current.get("entries") or {}), **transferred}
+            current["schema"] = SOURCE_CUSTODY_SCHEMA
+            durable_write(SOURCE_CUSTODY_PATH,
+                          json.dumps(current, indent=2, sort_keys=True).encode("utf-8"))
+        for item in purgeable:
+            (SOURCE_ROOT / item["name"]).unlink(missing_ok=True)
+        fsync_dir(SOURCE_ROOT)
+        applied = True
+
+    # After the transition, prove the claim that matters: NO receipt that
+    # verified before the purge fails after it. A receipt that was already
+    # failing -- a deliberately tampered one, say -- is not evidence about this
+    # operation either way, so the claim is stated as the absence of a
+    # regression rather than as universal verifiability.
+    verified_after = verify_all()
+    regressions = sorted(k for k, v in verified_after.items()
+                         if not v["ok"] and (verified_before.get(k) or {}).get("ok"))
+    all_ok = all(v["ok"] for v in verified_after.values()) if verified_after else True
+
     return {
-        "operation": "purge-source", "dry_run": dry_run,
-        "purge_law": "no QUEUED, RUNNING, SETTLING or HELD transaction "
-                     "references the digest",
-        "retained": kept, "purged": purged,
-        "purged_bytes": sum(i["bytes"] for i in purged),
+        "operation": "purge-source", "dry_run": dry_run, "applied": applied,
+        "purge_law": "no transaction in an unresolved state -- QUEUED, RUNNING, "
+                     "SETTLING, HELD, FENCED_OUT or any other non-SETTLED state "
+                     "-- references the digest, AND no retained receipt needs the "
+                     "bytes unless a verified successor-custody entry holds them",
+        "protected_digests": protected,
+        "retained": kept,
+        "purged" if applied else "purgeable": purgeable,
+        "purged_bytes": sum(i["bytes"] for i in purgeable) if applied else 0,
+        "successor_custody_routes": routes,
+        "custody_manifest": str(SOURCE_CUSTODY_PATH),
+        "receipts_checked": len(verified_after),
+        "retained_receipts_verified_after": [
+            {"receipt": k, **v} for k, v in sorted(verified_after.items())],
+        "verification_regressions": regressions,
+        "no_verification_regressions": not regressions,
+        "all_retained_receipts_verify": all_ok,
         "custody_after": retained_source_custody(),
     }
 
@@ -2171,6 +2750,12 @@ def execute(conn, txn_id: str, profile: dict, pause: int = 0) -> dict:
     env_json, state, terminal, receipt_path = row
     env = json.loads(env_json)
 
+    # Crash hooks are resolved here, before the ledger, the lease or the
+    # workspace is touched: an unadmitted or stale value refuses the run instead
+    # of killing a transaction that was already in flight.
+    crash = admitted_crash_point(profile)
+    ckpt_crash = admitted_checkpoint_crash_point(profile)
+
     ws = resolve_under(WORK_ROOT, txn_id)
     receipt_dir = resolve_under(RECEIPT_ROOT, txn_id)
 
@@ -2180,7 +2765,7 @@ def execute(conn, txn_id: str, profile: dict, pause: int = 0) -> dict:
         # clear -- and re-execute nothing.
         return {"replay": True, "terminal": terminal, "receipt": receipt_path,
                 "note": "already settled; no duplicate execution",
-                "reconciled": _reconcile_settled(conn, txn_id, receipt_dir)}
+                "reconciled": _reconcile_settled(conn, txn_id, receipt_dir, ws)}
 
     log_dir = receipt_dir / "logs"
     log_dir.mkdir(parents=True, exist_ok=True, mode=DIR_MODE)
@@ -2214,7 +2799,7 @@ def execute(conn, txn_id: str, profile: dict, pause: int = 0) -> dict:
             return _finish_settlement(
                 conn, env, txn_id, ws, receipt_dir, journal,
                 sha256_file(settlement_journal_path(receipt_dir)),
-                lease, profile, pause, admitted_crash_point(), resumed=True)
+                lease, profile, pause, crash, resumed=True)
         except BaseException:
             lease.release()
             raise
@@ -2238,7 +2823,8 @@ def execute(conn, txn_id: str, profile: dict, pause: int = 0) -> dict:
             bind = {"bound": False, "detail": detail}
         else:
             bind = {"bound": True, "detail": detail}
-            terminal, phases = run_phases(conn, env, ws, log_dir, lease, resume_from)
+            terminal, phases = run_phases(conn, env, ws, log_dir, lease,
+                                          resume_from, ckpt_crash)
         lease.assert_still_held()
     except FencedOut as exc:
         conn.execute("UPDATE txn SET state=?, updated_at=? WHERE txn_id=?",
@@ -2261,7 +2847,7 @@ def execute(conn, txn_id: str, profile: dict, pause: int = 0) -> dict:
     # ---- settlement, all of it under the lease ---------------------------
     try:
         return _settle(conn, env, txn_id, ws, receipt_dir, phases, terminal, bind,
-                       recovery, lease, profile, pause, started)
+                       recovery, lease, profile, pause, started, crash)
     except BaseException:
         lease.release()
         raise
@@ -2271,13 +2857,36 @@ class SettlementCrash(BaseException):
     """Marker for an injected abort at an admitted settlement boundary."""
 
 
-def admitted_crash_point() -> str | None:
-    want = (os.environ.get("TBRAIL_SETTLEMENT_CRASH_AT") or "").strip()
+def _admitted_crash_point(profile: dict | None, var: str, points: tuple) -> str | None:
+    """Resolve an admitted crash point, or refuse the run.
+
+    The hook kills the controller mid-transaction, so it is not enough for it to
+    be off by default: an inherited or stale variable must not be able to reach
+    the abort site at all. Admission is carried by the ACCEPTED RUNNER PROFILE,
+    which is externally anchored by digest, so entering a crash window requires
+    an authority outside this process. Anything else -- an unknown point, a
+    stale value, a production profile -- refuses here, before the transaction is
+    touched, rather than during settlement.
+    """
+    want = (os.environ.get(var) or "").strip()
     if not want:
         return None
-    if want not in CRASH_POINTS:
-        raise SystemExit(f"UNKNOWN_SETTLEMENT_CRASH_POINT {want}")
+    if not (profile or {}).get("qualification_mode"):
+        raise SystemExit(
+            f"CRASH_HOOK_NOT_ADMITTED {var}={want}: the accepted runner profile "
+            "does not admit qualification mode; refusing before execution")
+    if want not in points:
+        raise SystemExit(f"UNKNOWN_CRASH_POINT {var}={want}")
     return want
+
+
+def admitted_crash_point(profile: dict | None = None) -> str | None:
+    return _admitted_crash_point(profile, "TBRAIL_SETTLEMENT_CRASH_AT", CRASH_POINTS)
+
+
+def admitted_checkpoint_crash_point(profile: dict | None = None) -> str | None:
+    return _admitted_crash_point(profile, "TBRAIL_CHECKPOINT_CRASH_AT",
+                                 CHECKPOINT_CRASH_POINTS)
 
 
 def _crash_if(point: str, want: str | None) -> None:
@@ -2298,15 +2907,8 @@ def settlement_journal_path(receipt_dir: Path) -> Path:
 
 def write_settlement_journal(receipt_dir: Path, payload: dict) -> str:
     """Publish the settlement intent durably, before anything is destroyed."""
-    p = settlement_journal_path(receipt_dir)
-    tmp = p.with_name(p.name + ".partial")
-    with open(tmp, "wb") as fh:
-        fh.write(canonical(payload).encode("utf-8"))
-        fh.flush()
-        os.fsync(fh.fileno())
-    os.replace(tmp, p)
-    harden(p)
-    return sha256_file(p)
+    return durable_write(settlement_journal_path(receipt_dir),
+                         canonical(payload).encode("utf-8"))
 
 
 def read_settlement_journal(receipt_dir: Path) -> dict | None:
@@ -2320,17 +2922,21 @@ def read_settlement_journal(receipt_dir: Path) -> dict | None:
     return None
 
 
-def _reconcile_settled(conn, txn_id: str, receipt_dir: Path) -> dict:
+def _reconcile_settled(conn, txn_id: str, receipt_dir: Path, ws: Path) -> dict:
     """Finish the tail of a settlement that crashed after the ledger moved.
 
     The transition to SETTLED is the commit point. Everything after it -- the
     checkpoint purge and the journal clear -- is idempotent cleanup, so a replay
     completes it without doing any work.
     """
+    # Sanitation is retried here, not assumed: a settlement that committed and
+    # then failed to remove the workspace leaves residue no other path revisits.
+    sanitation = sanitize(ws)
     purged = purge_checkpoints(txn_id)
     jp = settlement_journal_path(receipt_dir)
     had_journal = jp.is_file()
     jp.unlink(missing_ok=True)
+    fsync_dir(receipt_dir)
 
     # A crash between the ledger transition and `lease.release()` strands the
     # dead holder's lease row, and nothing else would ever clear it: the replay
@@ -2348,11 +2954,13 @@ def _reconcile_settled(conn, txn_id: str, receipt_dir: Path) -> dict:
             lease_cleared = True
     return {"checkpoints_purged": purged, "settlement_journal_cleared": had_journal,
             "stale_lease_cleared": lease_cleared, "lease_holder_verdict": why,
+            "sanitation": sanitation,
+            "workspace_absent": sanitation["absent_after"],
             "work_replayed": False, "phases_re_executed": 0}
 
 
 def _settle(conn, env, txn_id, ws, receipt_dir, phases, terminal, bind, recovery,
-            lease, profile, pause, started) -> dict:
+            lease, profile, pause, started, crash) -> dict:
     """Begin settlement: publish the journal, then move to SETTLING.
 
     Settlement used to sanitize the workspace and purge every checkpoint before
@@ -2361,7 +2969,6 @@ def _settle(conn, env, txn_id, ws, receipt_dir, phases, terminal, bind, recovery
     already gone, and the next invocation could only refuse. The order is now
     inverted: intent is published first and destruction happens last.
     """
-    crash = admitted_crash_point()
     envelope_clean = {k: v for k, v in env.items() if not k.startswith("_")}
     journal = {
         "schema": SETTLEMENT_SCHEMA,
@@ -2383,6 +2990,46 @@ def _settle(conn, env, txn_id, ws, receipt_dir, phases, terminal, bind, recovery
                               lease, profile, pause, crash, resumed=False)
 
 
+def _receipt_matches_settlement(candidate, journal: dict, env: dict,
+                                profile: dict, ledger: dict) -> tuple[bool, list[str]]:
+    """Is this published receipt the receipt THIS settlement is completing?
+
+    A receipt whose sidecar agrees with it is internally consistent; that says
+    nothing about which settlement produced it. Adoption is the right policy for
+    a receipt that may already be externally anchored, so the identity has to be
+    proved against the settlement journal -- envelope, terminal, phases, source,
+    runner profile and ledger intent -- before this settlement inherits it.
+    """
+    bad: list[str] = []
+    if not isinstance(candidate, dict):
+        return False, ["receipt_unreadable"]
+
+    def want(label, actual, expected):
+        if actual != expected:
+            bad.append(label)
+
+    want("schema", candidate.get("schema"), RECEIPT_SCHEMA)
+    want("transaction_id", candidate.get("transaction_id"), journal["transaction_id"])
+    want("envelope_sha256", candidate.get("envelope_sha256"),
+         journal["envelope_sha256"])
+    want("terminal", candidate.get("terminal"), journal["terminal"])
+    want("phases", canonical(candidate.get("phases")), canonical(journal["phases"]))
+    src = candidate.get("source") or {}
+    want("source.bundle", src.get("bundle"), env["source_bundle"])
+    want("source.bundle_sha256", src.get("bundle_sha256"), env["source_bundle_sha256"])
+    want("repository", candidate.get("repository"), env["repository"])
+    want("runner_profile.sha256", (candidate.get("runner_profile") or {}).get("sha256"),
+         (profile or {}).get("sha256"))
+    cl = candidate.get("ledger") or {}
+    want("ledger.txn_id", cl.get("txn_id"), ledger["txn_id"])
+    want("ledger.resource_key", cl.get("resource_key"), journal["resource_key"])
+    want("ledger.expected_state_after_settlement",
+         cl.get("expected_state_after_settlement"), "SETTLED")
+    want("ledger.lease_fence_granted", cl.get("lease_fence_granted"),
+         journal.get("fence"))
+    return not bad, bad
+
+
 def _finish_settlement(conn, env, txn_id, ws, receipt_dir, journal, jsha,
                        lease, profile, pause, crash, resumed: bool) -> dict:
     """Drive SETTLING to SETTLED idempotently, from the journal alone.
@@ -2401,6 +3048,17 @@ def _finish_settlement(conn, env, txn_id, ws, receipt_dir, journal, jsha,
         recovery["settlement_resumed_from_journal"] = True
         recovery["settlement_journal_sha256"] = jsha
     sanitation = sanitize(ws)
+    if not sanitation["absent_after"]:
+        # The residue claim is part of the receipt. Publishing a terminal row
+        # whose own verifier would reject it is worse than staying SETTLING:
+        # the journal and the restore points are retained, and the next
+        # invocation retries sanitation from the same recorded intent.
+        lease.release()
+        return {"terminal": TERMINAL_HOLD, "reason": "SANITATION_FAILED",
+                "settled": False, "sanitation": sanitation,
+                "detail": "workspace survived sanitation; settlement refused",
+                "transaction_state": "SETTLING",
+                "recovery": "re-run execute; settlement resumes from the journal"}
     _crash_if("after_sanitation", crash)
     envelope_clean = {k: v for k, v in env.items() if not k.startswith("_")}
     (receipt_dir / "ENVELOPE.json").write_text(canonical(envelope_clean), encoding="utf-8")
@@ -2489,9 +3147,12 @@ def _finish_settlement(conn, env, txn_id, ws, receipt_dir, journal, jsha,
                          "restores the last checkpoint instead of recloning "
                          "pristine source, so artifact-producing phases survive",
             "extraction": "archive members are validated before extraction; "
-                          "links, devices, absolute paths and traversal are "
-                          "refused, and nothing is written until every member "
-                          "has passed",
+                          "hard links, devices, absolute paths, traversal and "
+                          "any member under a symlinked ancestor are refused, "
+                          "and nothing is written until every member has "
+                          "passed. Symbolic links are restored last, after "
+                          "every directory and file, so nothing is ever "
+                          "written through one",
         },
         "checkpoint_custody": custody,
         "resource_semantics": resource_semantics(),
@@ -2505,6 +3166,29 @@ def _finish_settlement(conn, env, txn_id, ws, receipt_dir, journal, jsha,
             "journal_sha256": jsha,
             "resumed_from_journal": bool(resumed),
             "admitted_crash_points": list(CRASH_POINTS),
+            "admitted_checkpoint_crash_points": list(CHECKPOINT_CRASH_POINTS),
+            "crash_hook_admission": "entering any crash window requires "
+                                    "qualification mode in the externally "
+                                    "anchored runner profile; an unset, unknown "
+                                    "or stale variable refuses the run before "
+                                    "the transaction is touched",
+            "durability": {
+                "implemented": "settlement journal, receipt and sidecar are "
+                               "written, fsynced, atomically renamed and their "
+                               "parent directory fsynced; the ledger runs "
+                               "SQLite WAL with synchronous=FULL, so a "
+                               "committed SETTLED transition is on disk before "
+                               "the commit returns",
+                "witnessed": "CONTROLLER_PROCESS_CRASH (SIGKILL at six admitted "
+                             "settlement boundaries and two checkpoint "
+                             "boundaries, recovered from a cold root)",
+                "not_witnessed": "SUDDEN_POWER_LOSS and storage-layer failure. "
+                                 "The protocol above is implemented for it and "
+                                 "no test in this qualification cuts power, so "
+                                 "the product claims process-crash recovery as "
+                                 "proven and power-loss durability as "
+                                 "implemented-but-unwitnessed.",
+            },
         },
         "sanitation": sanitation,
         "residency": residue,
@@ -2524,20 +3208,38 @@ def _finish_settlement(conn, env, txn_id, ws, receipt_dir, journal, jsha,
     # it may have been externally anchored, so recovery adopts that exact
     # identity rather than minting a second one for the same terminal.
     adopted = None
+    adoption = {"considered": False}
     if resumed and rpath.is_file() and spath.is_file():
+        adoption["considered"] = True
         published = sha256_file(rpath)
-        if published == spath.read_text().strip():
+        adoption["sidecar_agrees"] = (published == spath.read_text().strip())
+        if adoption["sidecar_agrees"]:
+            candidate = None
             with contextlib.suppress(ValueError, OSError):
-                adopted = json.loads(rpath.read_text(encoding="utf-8"))
+                candidate = json.loads(rpath.read_text(encoding="utf-8"))
+            ok, mismatches = _receipt_matches_settlement(
+                candidate, journal, env, profile, ledger)
+            adoption["matches_settlement"] = ok
+            adoption["mismatches"] = mismatches
+            if ok:
+                adopted = candidate
+            else:
+                # Self-consistent, but not THIS settlement's receipt. It may be
+                # externally anchored, so it is not overwritten either: the
+                # transaction stays SETTLING and a human decides.
+                lease.release()
+                return {"terminal": TERMINAL_HOLD, "reason": "FOREIGN_RECEIPT_PRESENT",
+                        "settled": False, "receipt_path": str(rpath),
+                        "detail": "published receipt does not match the settlement "
+                                  "journal; refusing to adopt or overwrite it",
+                        "mismatches": mismatches, "transaction_state": "SETTLING"}
     if adopted is not None:
         receipt, digest = adopted, sha256_file(rpath)
     else:
-        rpath.write_text(json.dumps(receipt, indent=2, sort_keys=True), encoding="utf-8")
-        harden(rpath)
-        digest = sha256_file(rpath)
+        digest = durable_write(
+            rpath, json.dumps(receipt, indent=2, sort_keys=True).encode("utf-8"))
         _crash_if("after_receipt_write", crash)
-        spath.write_text(digest + "\n", encoding="utf-8")
-        harden(spath)
+        durable_write(spath, (digest + "\n").encode("utf-8"))
     _crash_if("after_sidecar_write", crash)
 
     # still ours immediately before the transition, and verified after it
@@ -2569,6 +3271,11 @@ def _finish_settlement(conn, env, txn_id, ws, receipt_dir, journal, jsha,
         "checkpoints_purged": purged,
         "settlement_journal_cleared": True,
         "receipt_adopted_from_prior_attempt": adopted is not None,
+        "receipt_adoption": adoption,
+        "adoption_law": "a published receipt is adopted only after it is proved "
+                        "to be this settlement's own receipt against the "
+                        "journal; a self-consistent foreign receipt is neither "
+                        "adopted nor overwritten",
         "work_replayed": False,
     }
     return receipt
@@ -2722,7 +3429,14 @@ def verify_receipt(path: Path, anchor: str | None = None) -> dict:
                         "path": str(src.get("bundle"))[:200], "why": str(exc)})
     if bundle is not None and bundle.is_file():
         rec("source_bundle_rehashes", sha256_file(bundle) == src.get("bundle_sha256"),
-            {"expected": src.get("bundle_sha256")})
+            {"expected": src.get("bundle_sha256"), "route": "hot_custody"})
+    elif str(src.get("bundle_sha256") or ""):
+        # The hot copy may have been handed to a successor holder. That is a
+        # legitimate custody transition rather than a missing input -- but only
+        # if the successor object exists now and rehashes to the digest this
+        # receipt names.
+        route = source_custody_route(str(src.get("bundle_sha256")))
+        rec("source_bundle_rehashes", route["verified"], route)
     else:
         rec("source_bundle_rehashes", False,
             f"bundle absent or refused: {str(src.get('bundle'))[:120]}")
@@ -2884,7 +3598,12 @@ def main() -> None:
     sub.add_parser("custody")
     ps = sub.add_parser("purge-source")
     ps.add_argument("--apply", action="store_true",
-                    help="actually delete; the default is a dry run")
+                    help="actually transfer custody; the default is a dry run")
+    ps.add_argument("--successor-custody", default=None,
+                    help="successor-custody manifest naming, per bundle digest, "
+                         "the holder and path that keeps the bytes verifiable")
+    pe2 = sub.add_parser("profile-emit-qualification")
+    pe2.add_argument("out")
 
     a = ap.parse_args()
     conn = connect()
@@ -2933,6 +3652,17 @@ def main() -> None:
         out.write_text(json.dumps(observed_profile(), indent=2, sort_keys=True) + "\n",
                        encoding="utf-8")
         print(json.dumps({"emitted": str(out), "sha256": sha256_file(out)}, indent=2))
+    elif a.cmd == "profile-emit-qualification":
+        # The same observed profile, marked as admitting the crash hooks. It is
+        # a DIFFERENT profile with a different digest, so a production anchor can
+        # never carry qualification mode by accident.
+        out = Path(a.out)
+        prof = observed_profile()
+        prof["_qualification_mode"] = True
+        out.write_text(json.dumps(prof, indent=2, sort_keys=True) + "\n",
+                       encoding="utf-8")
+        print(json.dumps({"emitted": str(out), "sha256": sha256_file(out),
+                          "qualification_mode": True}, indent=2))
     elif a.cmd == "profile-check":
         try:
             print(json.dumps(enforce_profile(a.runner_profile, a.runner_profile_sha256),
@@ -2943,8 +3673,13 @@ def main() -> None:
     elif a.cmd == "custody":
         print(json.dumps(private_custody_report(), indent=2, sort_keys=True))
     elif a.cmd == "purge-source":
-        print(json.dumps(purge_source(conn, dry_run=not a.apply),
-                         indent=2, sort_keys=True))
+        try:
+            print(json.dumps(purge_source(conn, dry_run=not a.apply,
+                                          manifest=a.successor_custody),
+                             indent=2, sort_keys=True))
+        except Reject as exc:
+            print(json.dumps({"verdict": "REFUSED", "detail": str(exc)}, indent=2))
+            sys.exit(3)
 
 
 if __name__ == "__main__":

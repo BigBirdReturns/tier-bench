@@ -1,4 +1,5 @@
 {
+  "_note": "SYNTHETIC EXAMPLE. Shape only: paths, host name and digests are placeholders. Emit the real profile for a deployment with `tbrail profile-emit`, keep it in private holder custody, and anchor execution to its digest.",
   "aggregate_enforcement": {
     "controllers_required": [
       "cpu",
@@ -31,27 +32,32 @@
     "source_quota_bytes": 5368709120
   },
   "controller": {
-    "path": "/home/octo/tbrail-v3/tbrail.py",
-    "sha256": "d414e507181acce1d9d990a52601b141d3feee4cb0170dc13e27b1213cbc7f4c"
+    "path": "/home/runner/tbrail-v5/tbrail.py",
+    "sha256": "<sha256-of-this-hosts-bytes>"
   },
   "guest_root": "/w",
-  "host": "octo-n01",
+  "host": "example-runner",
+  "interpreter": {
+    "path": "/usr/bin/python3.14",
+    "sha256": "<sha256-of-this-hosts-bytes>",
+    "version": "3.14.4"
+  },
   "launch_chain": {
     "bwrap": {
       "path": "/usr/bin/bwrap",
-      "sha256": "0abea81db798ebf6b4742ac0664802d97521547a353c2a0dbdc21d76cbbfd2c0"
+      "sha256": "<sha256-of-this-hosts-bytes>"
     },
     "prlimit": {
       "path": "/usr/bin/prlimit",
-      "sha256": "00be18793391b9222a041277a088022cc58088690cb0e851383bd8ec73f0fefb"
+      "sha256": "<sha256-of-this-hosts-bytes>"
     },
     "sh": {
       "path": "/usr/bin/dash",
-      "sha256": "c626229526bb58ec2d0f585f3c3ae1412e6f973b4353385042d11c38d8426917"
+      "sha256": "<sha256-of-this-hosts-bytes>"
     },
     "systemd-run": {
       "path": "/usr/bin/systemd-run",
-      "sha256": "03a68bafb0ebc0f5eff41cbdf3cbbdf126a3bb87e21140f9147bf78edce36d88"
+      "sha256": "<sha256-of-this-hosts-bytes>"
     }
   },
   "operations": [
@@ -69,6 +75,7 @@
     "rail.produce_artifact",
     "rail.require_artifact",
     "rail.spawn_descendant",
+    "rail.workspace_shape",
     "repo.operation"
   ],
   "repository_manifests": {
@@ -77,16 +84,16 @@
         "estate.authority-verify",
         "estate.render-organ-map"
       ],
-      "path": "/home/octo/tbrail-v3/repo-ops/BigBirdReturns__estate.json",
-      "sha256": "492d6b9d85009fb431d96843df0a906ba8125a7f2fbb0fc05b17e09ab91e353e"
+      "path": "/home/runner/tbrail-v5/repo-ops/BigBirdReturns__estate.json",
+      "sha256": "<sha256-of-this-hosts-bytes>"
     },
     "tier-bench/native-rail-fixture": {
       "operations": [
         "fixture.digest-drift",
         "fixture.run-tool"
       ],
-      "path": "/home/octo/tbrail-v3/repo-ops/tier-bench__native-rail-fixture.json",
-      "sha256": "8d13086070f90b2b8edc2463e73fc5013b446d9e4de80a832220d20515e6f819"
+      "path": "/home/runner/tbrail-v5/repo-ops/tier-bench__native-rail-fixture.json",
+      "sha256": "<sha256-of-this-hosts-bytes>"
     }
   },
   "resource_semantics": {
@@ -120,33 +127,34 @@
   "runtimes": {
     "git": {
       "path": "/usr/bin/git",
-      "sha256": "5516c9f362c29376ab9a499a33082f9f611941d8c75930c880e30ad109e39c9a",
+      "sha256": "<sha256-of-this-hosts-bytes>",
       "version": "git version 2.53.0"
     },
     "python3.11": {
       "path": "/opt/tbrail/py311/bin/python3.11",
-      "sha256": "92d7e40ec50be176cb1b790c7568b7e08cd862137b5aa69f1413ba1967886b79",
+      "sha256": "<sha256-of-this-hosts-bytes>",
       "version": "Python 3.11.15"
     },
     "python3.14": {
       "path": "/usr/bin/python3.14",
-      "sha256": "b8d8288faefdd300201f43fcf00f6f539a27218eeed3a3dff5ab10b9c4c99700",
+      "sha256": "<sha256-of-this-hosts-bytes>",
       "version": "Python 3.14.4"
     }
   },
   "sandbox": {
     "engine": "bubblewrap",
     "path": "/usr/bin/bwrap",
-    "sha256": "0abea81db798ebf6b4742ac0664802d97521547a353c2a0dbdc21d76cbbfd2c0"
+    "sha256": "<sha256-of-this-hosts-bytes>"
   },
   "schema": "tier-bench/native-rail-runner-profile@2",
   "scripts": {
-    "append_byte.py": "3b9d4990ad805fc3a08577309e19e7661c7f788ec08cb6457ceab47f13fb08c4",
-    "burn.py": "9d175044c2029ca65e0dbc607c90b34f6a5b8b5ce16d51569f874c9fe8897fa6",
-    "credential_probe.py": "f049be3fb7373d4998f558c1e9905795d49910b2f0ada4dc180a332bef4e4486",
-    "hold_resource.py": "e7c7f1301829af971aa22d0e9f73c0f31de98fab526693b1a16fff864b9fc1c6",
-    "produce_artifact.py": "7189fc59d8bc4083ae7af404721310747990077a763096094531d75d3c3f0eba",
-    "require_artifact.py": "245ba319a3a6db4a90ffe29123e9efa6544984794009bf163cc515a583d9e8de",
-    "spawn_descendant.py": "0bd7fd9324592d2e5ae0a03d4c9b84bb10eaa005029682c4a68a05555fe1a63f"
+    "append_byte.py": "<sha256-of-this-hosts-bytes>",
+    "burn.py": "<sha256-of-this-hosts-bytes>",
+    "credential_probe.py": "<sha256-of-this-hosts-bytes>",
+    "hold_resource.py": "<sha256-of-this-hosts-bytes>",
+    "produce_artifact.py": "<sha256-of-this-hosts-bytes>",
+    "require_artifact.py": "<sha256-of-this-hosts-bytes>",
+    "spawn_descendant.py": "<sha256-of-this-hosts-bytes>",
+    "workspace_shape.py": "<sha256-of-this-hosts-bytes>"
   }
 }

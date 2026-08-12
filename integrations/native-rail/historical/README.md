@@ -10,6 +10,12 @@ so the lane's earlier claims stay auditable against the receipts that made them.
 | `envelopes-v2/` | v2 envelopes. Closed schema, but no repository-operation manifest and no enforced resource ceilings. | `../envelopes-v3/` |
 | `receipts/` | v1 and v2 receipts, their sidecars, and the v2 cold qualification. | `../receipts/` |
 
+Receipt and envelope **bodies** in this tree named the deployment host, its
+account home and absolute controller paths, so they are held in private holder
+custody and each directory keeps an `EVIDENCE-INDEX.json` naming every retired
+artifact by exact sha256. The evidence is retained; only its private
+coordinates left the public tree.
+
 ## Why these are retired rather than deleted
 
 The v1 envelope shape is the exact defect the layer law now forbids: issue text,

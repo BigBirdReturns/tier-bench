@@ -1,0 +1,396 @@
+{
+  "anchors": {
+    "accepted_runner_profile_sha256": "2971bc26595b9580e2606fe8c5f1be8053bfd86b6572d4ef99cd76a1b88b7d81",
+    "cold_qualification_sha256": "4b55b3f917635645bfdcc28fbc93743bad3691ed4f14a3089946e01055e8073c",
+    "controller_interpreter_version": "3.14.4",
+    "qualification_runner_profile_sha256": "87d647221d3f8e0257b3b3273f6e03e78db1a8224692ee4843c1896d5dc4396d",
+    "witness_receipts": [
+      {
+        "name": "adopt-foreign-001",
+        "sha256": "199bdfbf64f8d803d792f24b162e3b1c1acadf966e8694eab62a600d369af978"
+      },
+      {
+        "name": "burn-pids-witness-001",
+        "sha256": "2efdc6b3d58c7b63b5bd44d43eefe773b3d78e87ff8712917832319baf9935c7"
+      },
+      {
+        "name": "ckpt-after-checkpoint-install-001",
+        "sha256": "ab28d8db53c8355de26e6ded10dbaebb202b1e487058ef09c93b9051ae0fb97a"
+      },
+      {
+        "name": "env-closure-001",
+        "sha256": "dfe847f6e519566f1572f4588a29efae780e58a5b963191a07292f9f8db65d47"
+      },
+      {
+        "name": "ws-lock-001",
+        "sha256": "b9ea9057ee626821f2dc07fd3d46dd2968cf516e0446f6ecffddf31324ce977f"
+      },
+      {
+        "name": "ws-symlink-001",
+        "sha256": "0cbac69ee57769f73eaf191094bf2b5e80a5dbea2519749cfc55a0fb00d40bdf"
+      }
+    ]
+  },
+  "custody": "private holder custody on the operator workstation: tier-bench-native-rail-v5-private-20260812/cold-qualification-v5-final2",
+  "failed": 0,
+  "properties": [
+    {
+      "pass": true,
+      "property": "COLD_ROOT"
+    },
+    {
+      "pass": true,
+      "property": "QUALIFICATION_PROFILE_DERIVED_FROM_ACCEPTED_PROFILE"
+    },
+    {
+      "pass": true,
+      "property": "CONTROLLER_INTERPRETER_PROFILE_PINNED"
+    },
+    {
+      "pass": true,
+      "property": "FIXTURE_BUILT"
+    },
+    {
+      "pass": true,
+      "property": "EXTERNALLY_PINNED_RUNNER_PROFILE"
+    },
+    {
+      "pass": true,
+      "property": "RUNNER_PROFILE_DRIFT_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "RUNNER_PROFILE_ANCHOR_ENFORCED"
+    },
+    {
+      "pass": true,
+      "property": "G_ENVELOPE_NEGATIVES"
+    },
+    {
+      "pass": true,
+      "property": "C1_CANARY_PY311"
+    },
+    {
+      "pass": true,
+      "property": "C2_SETTLED_REPLAY"
+    },
+    {
+      "pass": true,
+      "property": "A_DEFECT_RENDERS_RED"
+    },
+    {
+      "pass": true,
+      "property": "B_CREDENTIAL_ISOLATION"
+    },
+    {
+      "pass": true,
+      "property": "B_STRUCTURAL"
+    },
+    {
+      "pass": true,
+      "property": "H_OPERATION_NEGATIVES"
+    },
+    {
+      "pass": true,
+      "property": "NESTED_ALLOWED_PATH_PASS"
+    },
+    {
+      "pass": true,
+      "property": "REPOSITORY_OPERATION_MANIFEST_ENFORCED"
+    },
+    {
+      "pass": true,
+      "property": "SYMLINK_ESCAPE_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "OUTPUT_MEMORY_DISK_PID_CPU_LIMITS_BITE"
+    },
+    {
+      "pass": true,
+      "property": "C3_CRASH_INJECTED"
+    },
+    {
+      "pass": true,
+      "property": "C4_CRASH_RECOVERY_NO_DUPLICATE"
+    },
+    {
+      "pass": true,
+      "property": "C5_CRASH_RECOVERY_RESUMES"
+    },
+    {
+      "pass": true,
+      "property": "C6_STALE_LEASE_RECLAIMED"
+    },
+    {
+      "pass": true,
+      "property": "ARTIFACT_PRODUCING_CRASH_RECOVERY"
+    },
+    {
+      "pass": true,
+      "property": "C7_EFFECTFUL_CRASH_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "D1_COLLISION_HELD"
+    },
+    {
+      "pass": true,
+      "property": "LIVE_PHASE_OVER_TTL_NOT_RECLAIMED"
+    },
+    {
+      "pass": true,
+      "property": "LIVE_PHASE_HEARTBEAT_CONTINUES"
+    },
+    {
+      "pass": true,
+      "property": "VERIFIED_IDENTITY_DOMINATES_TTL"
+    },
+    {
+      "pass": true,
+      "property": "LEASE_HELD_THROUGH_VERIFIED_SETTLEMENT"
+    },
+    {
+      "pass": true,
+      "property": "SUCCESSOR_PROCEEDS_AFTER_RELEASE"
+    },
+    {
+      "pass": true,
+      "property": "D2_PID_REUSE_RECLAIM"
+    },
+    {
+      "pass": true,
+      "property": "D3_LIVE_HOLDER_PROTECTED"
+    },
+    {
+      "pass": true,
+      "property": "D4_FENCING_BLOCKS_LATE_SETTLE"
+    },
+    {
+      "pass": true,
+      "property": "E1_TIMEOUT_TEARDOWN"
+    },
+    {
+      "pass": true,
+      "property": "E2_NO_LIVE_DESCENDANTS"
+    },
+    {
+      "pass": true,
+      "property": "F1_RECEIPT_VERIFIES"
+    },
+    {
+      "pass": true,
+      "property": "F2_EXTERNAL_ANCHOR"
+    },
+    {
+      "pass": true,
+      "property": "F3_LOG_TAMPER_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "F4_ENVELOPE_TAMPER_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "F5_FORGED_PAIR_REFUSED_BY_ANCHOR"
+    },
+    {
+      "pass": true,
+      "property": "F7_TERMINAL_FORGERY_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "F6_SOURCE_TAMPER_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "PASS_RECEIPT_VERIFIED"
+    },
+    {
+      "pass": true,
+      "property": "FAIL_RECEIPT_VERIFIED"
+    },
+    {
+      "pass": true,
+      "property": "HOLD_RECEIPT_VERIFIED"
+    },
+    {
+      "pass": true,
+      "property": "I_RUNTIME_EQUIVALENCE"
+    },
+    {
+      "pass": true,
+      "property": "OWNER_ONLY_PRIVATE_CUSTODY"
+    },
+    {
+      "pass": true,
+      "property": "CRASH_AFTER_SETTLING_JOURNAL_RECOVERS"
+    },
+    {
+      "pass": true,
+      "property": "CRASH_AFTER_SANITATION_RECOVERS"
+    },
+    {
+      "pass": true,
+      "property": "CRASH_AFTER_RECEIPT_WRITE_RECOVERS"
+    },
+    {
+      "pass": true,
+      "property": "CRASH_AFTER_SIDECAR_WRITE_RECOVERS"
+    },
+    {
+      "pass": true,
+      "property": "CRASH_BEFORE_SETTLED_UPDATE_RECOVERS"
+    },
+    {
+      "pass": true,
+      "property": "CRASH_AFTER_SETTLED_UPDATE_REPLAYS_WITHOUT_WORK"
+    },
+    {
+      "pass": true,
+      "property": "CHECKPOINT_LINK_AND_TRAVERSAL_ARCHIVE_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "CHECKPOINT_SYMLINK_MEMBER_ROUND_TRIPS_SAFELY"
+    },
+    {
+      "pass": true,
+      "property": "CHECKPOINT_QUOTA_REFUSES_OVERSIZED_CHECKPOINT"
+    },
+    {
+      "pass": true,
+      "property": "CHECKPOINT_STORAGE_BOUND_ENFORCED"
+    },
+    {
+      "pass": true,
+      "property": "RUNNER_PROFILE_ANCHOR_ABSENT_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "TAMPERED_RECEIPT_PATH_NOT_FOLLOWED"
+    },
+    {
+      "pass": true,
+      "property": "THREADED_CONTROLLER_LAUNCHER_NO_PREEXEC"
+    },
+    {
+      "pass": true,
+      "property": "RESOURCE_SEMANTICS_EXACTLY_NAMED_OR_CGROUP_ENFORCED"
+    },
+    {
+      "pass": true,
+      "property": "CURRENT_SURFACE_ONLY"
+    },
+    {
+      "pass": true,
+      "property": "CONTROLLER_SECRET_ENVIRONMENT_NOT_VISIBLE_TO_WORKER"
+    },
+    {
+      "pass": true,
+      "property": "CHECKPOINT_PARTIAL_NEVER_EXCEEDS_QUOTA"
+    },
+    {
+      "pass": true,
+      "property": "SYMLINK_BEARING_REPOSITORY_CHECKPOINT_LAW_EXPLICIT"
+    },
+    {
+      "pass": true,
+      "property": "EVERY_INSTALLED_CHECKPOINT_IS_IMMEDIATELY_RESTORABLE"
+    },
+    {
+      "pass": true,
+      "property": "SANITATION_FAILURE_IS_REPORTED_NOT_ASSUMED"
+    },
+    {
+      "pass": true,
+      "property": "CHECKPOINT_INSTALL_AND_PHASE_COMMIT_CRASH_RECOVERS"
+    },
+    {
+      "pass": true,
+      "property": "CHECKPOINT_RETIREMENT_AFTER_COMMIT_CRASH_RECOVERS"
+    },
+    {
+      "pass": true,
+      "property": "SYMLINK_BEARING_REPOSITORY_TRANSACTION_SETTLES"
+    },
+    {
+      "pass": true,
+      "property": "SANITATION_FAILURE_CANNOT_COMMIT_SETTLED"
+    },
+    {
+      "pass": true,
+      "property": "SETTLED_REPLAY_RETRIES_AND_PROVES_SANITATION"
+    },
+    {
+      "pass": true,
+      "property": "ADOPTED_RECEIPT_MATCHES_SETTLEMENT_JOURNAL"
+    },
+    {
+      "pass": true,
+      "property": "SELF_CONSISTENT_FOREIGN_RECEIPT_IS_NOT_ADOPTED"
+    },
+    {
+      "pass": true,
+      "property": "SETTLEMENT_COMPLETES_AFTER_FOREIGN_RECEIPT_IS_REMOVED"
+    },
+    {
+      "pass": true,
+      "property": "CONTROLLER_INTERPRETER_DRIFT_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "CGROUP_PIDS_MAX_DIRECT_KERNEL_WITNESS"
+    },
+    {
+      "pass": true,
+      "property": "QUALIFICATION_CRASH_HOOK_REFUSED_OUTSIDE_QUALIFICATION_MODE"
+    },
+    {
+      "pass": true,
+      "property": "UNKNOWN_OR_STALE_CRASH_HOOK_CANNOT_KILL_PRODUCTION_TRANSACTION"
+    },
+    {
+      "pass": true,
+      "property": "SETTLEMENT_DURABILITY_SCOPE_EXACT"
+    },
+    {
+      "pass": true,
+      "property": "PUBLIC_PRODUCT_ARTIFACTS_CONTAIN_NO_PRIVATE_DEPLOYMENT_COORDINATES"
+    },
+    {
+      "pass": true,
+      "property": "FENCED_OUT_SOURCE_REMAINS_PROTECTED"
+    },
+    {
+      "pass": true,
+      "property": "PURGE_LAB_TRANSACTION_SETTLED"
+    },
+    {
+      "pass": true,
+      "property": "PURGE_SOURCE_REQUIRES_VERIFIED_SUCCESSOR_CUSTODY"
+    },
+    {
+      "pass": true,
+      "property": "UNVERIFIED_SUCCESSOR_CUSTODY_CLAIM_IS_REFUSED"
+    },
+    {
+      "pass": true,
+      "property": "PURGE_SOURCE_PRESERVES_VERIFIABILITY_OF_ALL_RETAINED_RECEIPTS"
+    },
+    {
+      "pass": true,
+      "property": "J1_ZERO_TRANSACTION_EXECUTION_RESIDUE"
+    },
+    {
+      "pass": true,
+      "property": "J2_RETAINED_CUSTODY_DECLARED"
+    }
+  ],
+  "qualification_schema": "tier-bench/native-rail-cold-qualification@5",
+  "reproduction": "./run_proofs.sh qualify <fresh-root> <accepted-profile-sha256>",
+  "schema": "tier-bench/native-rail-cold-qualification-summary@1",
+  "statement": "Body-free public packet for the v5 cold qualification. The full COLD-QUALIFICATION.json and the receipts it names carry the deployment's host, account home and absolute controller paths, so they are held in private holder custody and anchored here by exact digest.",
+  "total": 88,
+  "verdict": "PASS_NATIVE_PRIVATE_EXECUTION_RAIL_PRODUCT_CANDIDATE"
+}

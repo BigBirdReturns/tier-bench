@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cold qualification for the v3 native rail.
+"""Cold qualification for the current (v5) native rail.
 
 Runs from a FRESH controller root supplied on the command line. It never reads
 or writes the operational ~/.tbrail, and it refuses to start if the root it is
@@ -7,14 +7,22 @@ given already holds a database, lease, workspace or receipt.
 
 Usage:
     cold_qualify.py <fresh-root> <source-bundle> <accepted-runner-profile-sha256>
+                    [accepted-runner-profile-path]
 
-The runner-profile digest is an EXTERNAL input: it is read from the committed
+The runner-profile digest is an EXTERNAL input: it is read from the accepted
 profile by the caller, quoted in the review packet, and enforced here. The run
-cannot silently accept a controller, sandbox engine, runtime closure, rail
-script set or operation manifest that differs from the accepted profile.
+cannot silently accept a controller, interpreter, sandbox engine, runtime
+closure, rail script set or operation manifest that differs from the accepted
+profile.
 
-Covers the original A-J properties plus every witness the exact-head second desk
-required before product admission.
+Two profiles are used. The ACCEPTED profile is the production admission and does
+not admit the crash hooks. The QUALIFICATION profile is derived from it by
+adding exactly one key, `_qualification_mode`, and is what admits the deliberate
+crash windows -- so no production anchor can ever carry that permission and a
+stale environment variable cannot kill a real transaction.
+
+Covers the original A-J properties, the v4 witnesses, and the final
+product-admission controls required by the exact-head second desk.
 """
 from __future__ import annotations
 
@@ -38,8 +46,24 @@ ENVDIR = HERE / "envelopes-v3"
 ROOT = Path(sys.argv[1]).resolve()
 SOURCE_BUNDLE = Path(sys.argv[2]).resolve() if len(sys.argv) > 2 else None
 ACCEPTED_PROFILE_SHA = sys.argv[3].strip() if len(sys.argv) > 3 else None
-PROFILE = HERE / f"RUNNER-PROFILE.{os.uname().nodename}.json"
+PROFILE = Path(sys.argv[4]).resolve() if len(sys.argv) > 4 else (
+    HERE / f"RUNNER-PROFILE.{os.uname().nodename}.json")
+QPROFILE = ROOT / "RUNNER-PROFILE.qualification.json"
+QPROFILE_SHA: str | None = None
 PY = sys.executable
+
+# Controller-side material the launch chain must not pass on. The VALUES carry
+# the marker the admitted credential probe scans for, so the witness proves the
+# environment is closed rather than proving the controller happened to be empty.
+SENTINEL = "TBRAIL-SENTINEL-"
+SENTINEL_ENV = {
+    "GH_TOKEN": SENTINEL + "gh-token",
+    "GITHUB_TOKEN": SENTINEL + "github-token",
+    "ANTHROPIC_API_KEY": SENTINEL + "anthropic-key",
+    "AWS_SECRET_ACCESS_KEY": SENTINEL + "aws-secret",
+    "SSH_AUTH_SOCK": "/run/user/0/" + SENTINEL + "agent.sock",
+    "TBRAIL_UNRELATED_SECRET": SENTINEL + "generic",
+}
 
 FIXTURE_ENV = ROOT / "fixture-envelopes"
 FIXTURE_BUNDLE = "native-rail-fixture.bundle"
@@ -57,16 +81,38 @@ def record(prop, name, ok, detail=None):
         print(f"        detail: {json.dumps(detail, default=str)[:600]}", flush=True)
 
 
-def rail_env(extra=None):
+def rail_env(extra=None, production_profile=False, sentinels=True):
+    """Environment for a controller invocation.
+
+    Every controller this qualification starts is deliberately loaded with
+    credential-shaped variables. The rail's own closure is what must keep them
+    out of the worker; a qualification run on a conveniently empty controller
+    would prove nothing about a controller that holds a publication token.
+    """
     e = dict(os.environ)
+    if sentinels:
+        e.update(SENTINEL_ENV)
     e["TBRAIL_HOME"] = str(ROOT)
-    e["TBRAIL_RUNNER_PROFILE"] = str(PROFILE)
-    if ACCEPTED_PROFILE_SHA:
-        e["TBRAIL_RUNNER_PROFILE_SHA256"] = ACCEPTED_PROFILE_SHA
+    if production_profile or not QPROFILE_SHA:
+        e["TBRAIL_RUNNER_PROFILE"] = str(PROFILE)
+        if ACCEPTED_PROFILE_SHA:
+            e["TBRAIL_RUNNER_PROFILE_SHA256"] = ACCEPTED_PROFILE_SHA
+    else:
+        e["TBRAIL_RUNNER_PROFILE"] = str(QPROFILE)
+        e["TBRAIL_RUNNER_PROFILE_SHA256"] = QPROFILE_SHA
     e.pop("TBRAIL_SETTLEMENT_PAUSE_SECONDS", None)
+    e.pop("TBRAIL_SETTLEMENT_CRASH_AT", None)
+    e.pop("TBRAIL_CHECKPOINT_CRASH_AT", None)
     if extra:
         e.update(extra)
     return e
+
+
+def rail_prod(*args, timeout=900, env_extra=None):
+    """Run the controller under the ACCEPTED production profile."""
+    return subprocess.run([PY, str(TBRAIL), *args], capture_output=True,
+                          text=True, timeout=timeout,
+                          env=rail_env(env_extra, production_profile=True))
 
 
 def rail(*args, timeout=900, env_extra=None):
@@ -115,6 +161,58 @@ def assert_cold():
         raise SystemExit(2)
     record("COLD_ROOT", "fresh controller root with no prior db/leases/work/receipts",
            True, {"root": str(ROOT)})
+    derive_qualification_profile()
+
+
+def sha256_of(p: Path) -> str:
+    h = hashlib.sha256()
+    with open(p, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def derive_qualification_profile():
+    """Derive the crash-admitting profile from the accepted one, and prove it.
+
+    The derivation is a single documented key. Anything else -- a different
+    controller digest, a different interpreter, a different runtime closure --
+    would make this a different runner, and the diff below is what says it is
+    not.
+    """
+    global QPROFILE_SHA
+    accepted_sha = sha256_of(PROFILE)
+    accepted = json.loads(PROFILE.read_text(encoding="utf-8"))
+    if accepted_sha != ACCEPTED_PROFILE_SHA:
+        print(f"REFUSING: accepted profile digest mismatch {accepted_sha}")
+        raise SystemExit(2)
+    derived = dict(accepted)
+    derived["_qualification_mode"] = True
+    QPROFILE.parent.mkdir(parents=True, exist_ok=True)
+    QPROFILE.write_text(json.dumps(derived, indent=2, sort_keys=True) + "\n",
+                        encoding="utf-8")
+    QPROFILE_SHA = sha256_of(QPROFILE)
+    delta = sorted(set(derived) ^ set(accepted)) + \
+        sorted(k for k in set(derived) & set(accepted) if derived[k] != accepted[k])
+    record("QUALIFICATION_PROFILE_DERIVED_FROM_ACCEPTED_PROFILE",
+           "the crash-admitting profile differs from the externally accepted "
+           "profile by exactly one documented key",
+           delta == ["_qualification_mode"] and QPROFILE_SHA != accepted_sha,
+           {"accepted_sha256": accepted_sha, "qualification_sha256": QPROFILE_SHA,
+            "delta": delta})
+
+    # The interpreter running this qualifier must BE the pinned interpreter.
+    pinned = accepted.get("interpreter") or {}
+    live = str(Path(os.path.realpath(sys.executable)))
+    same = (pinned.get("path") == live
+            and pinned.get("sha256") == (sha256_of(Path(live)) if Path(live).is_file() else None)
+            and pinned.get("version") == "%d.%d.%d" % sys.version_info[:3])
+    record("CONTROLLER_INTERPRETER_PROFILE_PINNED",
+           "the accepted runner profile names the absolute path, version and "
+           "digest of the interpreter, and this qualification runs under it",
+           bool(pinned.get("path")) and bool(pinned.get("sha256")) and same,
+           {"pinned": pinned, "qualifier_interpreter": live,
+            "qualifier_version": "%d.%d.%d" % sys.version_info[:3]})
 
 
 TOOL = (
@@ -247,7 +345,8 @@ def prop_b():
            ok and "CREDENTIAL_ISOLATION_HOLDS" in log,
            {"terminal": out and out.get("terminal"), "log": log[-300:]})
     record("B_STRUCTURAL", "controller home is not mounted into the worker",
-           "controller_home_mounted= False" in log, {"log_tail": log[-200:]})
+           "host_homes_mounted= []" in log and "credential_paths_visible= []" in log,
+           {"log_tail": log[-200:]})
 
 
 # --------------------------------------------------------------------------
@@ -1107,8 +1206,17 @@ def fifo(tf):
     ti = tarfile.TarInfo("evil-fifo"); ti.type = tarfile.FIFOTYPE
     tf.addfile(ti)
 
-for name, fn in (("link", sym), ("hardlink", hard), ("traversal", trav),
-                 ("absolute", absolute), ("device", fifo)):
+def under_symlink(tf):
+    # the classic archive escape: a link, then a member written THROUGH it
+    ti = tarfile.TarInfo("outdir"); ti.type = tarfile.SYMTYPE
+    ti.linkname = "/tmp"; tf.addfile(ti)
+    data = b"pwned\n"
+    fi = tarfile.TarInfo("outdir/tbrail-absolute-escape.txt"); fi.size = len(data)
+    tf.addfile(fi, io.BytesIO(data))
+
+for name, fn in (("hardlink", hard), ("traversal", trav),
+                 ("absolute", absolute), ("device", fifo),
+                 ("under_symlink", under_symlink)):
     p = build(name + ".tar", fn)
     ws = tmp / ("ws-" + name)
     rec = {}
@@ -1126,6 +1234,21 @@ for name, fn in (("link", sym), ("hardlink", hard), ("traversal", trav),
 
 out["absolute_escape_written"] = ESCAPE.exists()
 ESCAPE.unlink(missing_ok=True)
+
+# a plain symlink member is ADMITTED and materialized as a link, because a
+# repository contains links and a restore point must round-trip its source
+p = build("link.tar", sym)
+ws = tmp / "ws-link"
+rec = {}
+try:
+    tbrail.restore_checkpoint(p, tbrail.sha256_file(p), ws)
+    rec["restored"] = True
+    rec["is_symlink"] = (ws / "evil-link").is_symlink()
+    rec["target"] = os.readlink(ws / "evil-link")
+    rec["nothing_written_through_it"] = not (ws / "evil-link").is_dir()
+except tbrail.Reject as exc:
+    rec = {"restored": False, "reason": str(exc)}
+out["symlink_admitted"] = rec
 
 # quota: exercise the bound itself, with the constant lowered in-process
 big = tmp / "big-ws"
@@ -1156,18 +1279,26 @@ def prop_checkpoint_safety():
     r = subprocess.run([PY, "-c", CKPT_PROBE], capture_output=True, text=True,
                        timeout=300, env=rail_env({"TBRAIL_DIR": str(HERE)}))
     out = jloads(r.stdout) or {}
-    kinds = ("link", "hardlink", "traversal", "absolute", "device")
+    kinds = ("hardlink", "traversal", "absolute", "device", "under_symlink")
     refused = {k: bool((out.get(k) or {}).get("refused")) for k in kinds}
     clean = all(not (out.get(k) or {}).get("workspace_entries") for k in kinds)
     record("CHECKPOINT_LINK_AND_TRAVERSAL_ARCHIVE_REFUSED",
-           "symlink, hardlink, traversal, absolute-path and device members are "
-           "refused before any byte of the archive is extracted",
+           "hardlink, traversal, absolute-path, device and write-through-a-link "
+           "members are refused before any byte of the archive is extracted",
            all(refused.values()) and clean
            and out.get("absolute_escape_written") is False,
            {"refused": refused, "absolute_escape_written":
             out.get("absolute_escape_written"),
             "stderr": r.stderr[-300:],
             "reasons": {k: (out.get(k) or {}).get("reason") for k in kinds}})
+
+    adm = out.get("symlink_admitted") or {}
+    record("CHECKPOINT_SYMLINK_MEMBER_ROUND_TRIPS_SAFELY",
+           "a symbolic link is restored as a link, verbatim, and nothing is "
+           "written through it",
+           adm.get("restored") is True and adm.get("is_symlink") is True
+           and adm.get("nothing_written_through_it") is True,
+           adm)
 
     quota = out.get("quota") or {}
     record("CHECKPOINT_QUOTA_REFUSES_OVERSIZED_CHECKPOINT",
@@ -1428,7 +1559,7 @@ def prop_current_surface_only():
     purge_exists = ps.returncode == 0 and pout.get("operation") == "purge-source" \
         and pout.get("dry_run") is True
 
-    record("CURRENT_V3_SURFACE_ONLY",
+    record("CURRENT_SURFACE_ONLY",
            "the v1/v2 execution surface is retired to an explicitly historical "
            "location and every documented command exists",
            not stale_dirs and moved and "NOT CURRENT" in tomb_text
@@ -1437,6 +1568,808 @@ def prop_current_surface_only():
             "tombstone_present": bool(tomb_text), "v1_references_left": v1_leak,
             "purge_source_exists": purge_exists,
             "purge_source_rc": ps.returncode})
+
+
+# --------------------------------------------------------------------------
+# final product-admission controls
+# --------------------------------------------------------------------------
+def _envelope_with_phases(src: Path, txn: str, resource_key: str,
+                          phases: list) -> str:
+    env = json.loads(Path(src).read_text(encoding="utf-8"))
+    env["transaction_id"] = txn
+    env["resource_key"] = resource_key
+    env["phases"] = phases
+    FIXTURE_ENV.mkdir(parents=True, exist_ok=True)
+    out = FIXTURE_ENV / f"{txn}.json"
+    out.write_text(json.dumps(env, indent=2, sort_keys=True), encoding="utf-8")
+    return str(out)
+
+
+def _receipt_of(txn):
+    row = _txn_row(txn)
+    if not row or not row[2] or not Path(row[2]).is_file():
+        return None
+    return jloads(Path(row[2]).read_text(encoding="utf-8"))
+
+
+def prop_worker_environment_closed():
+    """Sentinel secrets on the controller must not reach the operation."""
+    txn = "env-closure-001"
+    envp = _derive_envelope(ENVDIR / "isolation.json", txn, "fixture:env-closure")
+    rail("submit", envp)
+    out = jloads(rail("execute", txn, timeout=600).stdout)
+    body = logs_of(txn)
+
+    def field(name):
+        for line in body.splitlines():
+            if line.startswith(name + "="):
+                return line.split("=", 1)[1].strip()
+        return None
+
+    receipt = _receipt_of(txn) or {}
+    envblocks = [ (p.get("enforcement") or {}).get("environment") or {}
+                  for p in receipt.get("phases", []) if p.get("enforcement") ]
+    cleared = bool(envblocks) and all(b.get("sandbox_clearenv") is True
+                                      and b.get("controller_environment_inherited_by_launch") is False
+                                      for b in envblocks)
+    verified, vfail = _verify_anchored((_txn_row(txn) or [None, None, None])[2])
+    ok = (field("undeclared_env_keys") == "[]"
+          and field("secretish_env_keys") == "[]"
+          and field("sentinel_env_keys") == "[]"
+          and field("proc_environ_sentinel_present") == "False"
+          and field("host_homes_mounted") == "[]"
+          and field("credential_paths_visible") == "[]"
+          and "CREDENTIAL_ISOLATION_HOLDS" in body
+          and cleared and verified
+          and (out or {}).get("terminal") == "PASS")
+    record("CONTROLLER_SECRET_ENVIRONMENT_NOT_VISIBLE_TO_WORKER",
+           "GitHub, provider, SSH-agent and generic secret variables injected "
+           "into the controller are absent from the worker's environment and "
+           "from its /proc/self/environ bytes",
+           ok,
+           {"injected_controller_keys": sorted(SENTINEL_ENV),
+            "worker_env_keys": field("env_keys"),
+            "undeclared": field("undeclared_env_keys"),
+            "secretish": field("secretish_env_keys"),
+            "sentinel_env_keys": field("sentinel_env_keys"),
+            "proc_environ_sentinel_present": field("proc_environ_sentinel_present"),
+            "sandbox_clearenv_recorded": cleared,
+            "receipt_verified": verified, "verify_failures": vfail})
+
+
+CKPT_V5_PROBE = r'''
+import json, os, sys, tarfile
+from pathlib import Path
+sys.path.insert(0, os.environ["TBRAIL_DIR"])
+import tbrail
+
+home = Path(os.environ["TBRAIL_HOME"])
+lab = home / "ckpt-v5"
+out = {}
+
+def fresh(name):
+    d = lab / name
+    if d.exists():
+        import shutil; shutil.rmtree(d, ignore_errors=True)
+    d.mkdir(parents=True)
+    return d
+
+def ckpt_dir(txn):
+    return tbrail.CHECKPOINT_ROOT / txn
+
+# ---- 1. payload larger than the quota is refused before any byte is written
+ws = fresh("oversize")
+for i in range(64):
+    (ws / f"f{i}.bin").write_bytes(b"z" * 8192)
+tbrail.CHECKPOINT_QUOTA_BYTES = 64 * 1024
+try:
+    tbrail.write_checkpoint("probe-oversize", 0, ws)
+    out["oversize"] = {"refused": False}
+except tbrail.Reject as exc:
+    d = ckpt_dir("probe-oversize")
+    files = sorted(p.name for p in d.iterdir()) if d.is_dir() else []
+    out["oversize"] = {"refused": True, "reason": str(exc),
+                       "files_left": files,
+                       "bytes_held": sum((d / f).stat().st_size for f in files)}
+
+# ---- 2. the quota binds WHILE streaming, not after a larger archive exists
+# tiny payload, large tar overhead: the pre-flight passes and the streaming
+# guard is what must stop it.
+ws = fresh("stream")
+for i in range(400):
+    (ws / f"t{i}.txt").write_bytes(b"x")
+tbrail.CHECKPOINT_QUOTA_BYTES = 64 * 1024
+peak = {"bytes": 0}
+try:
+    tbrail.write_checkpoint("probe-stream", 0, ws)
+    out["stream"] = {"refused": False}
+except tbrail.Reject as exc:
+    d = ckpt_dir("probe-stream")
+    files = sorted(p.name for p in d.iterdir()) if d.is_dir() else []
+    out["stream"] = {"refused": True, "reason": str(exc),
+                     "files_left": files,
+                     "quota": tbrail.CHECKPOINT_QUOTA_BYTES,
+                     "payload_bytes": 400,
+                     "streaming_guard": "quota_exceeded_while_streaming" in str(exc)}
+
+# ---- 3. a symlink-bearing workspace is refused at CREATION
+tbrail.CHECKPOINT_QUOTA_BYTES = 2 << 30
+ws = fresh("symlinked")
+(ws / "real.txt").write_text("real\n")
+(ws / "link.txt").symlink_to("real.txt")
+(ws / "escape").symlink_to("/etc")          # a link that leaves the workspace
+d = ckpt_dir("probe-symlink")
+d.mkdir(parents=True, exist_ok=True)
+(d / "00.tar").write_bytes(b"PRIOR-RESTORE-POINT")
+path, digest, restorable = tbrail.write_checkpoint("probe-symlink", 1, ws)
+left = sorted(p.name for p in d.iterdir())
+target = fresh("symlink-restored")
+tbrail.restore_checkpoint(Path(path), digest, target)
+out["symlink"] = {
+    "installed": "01.tar" in left,
+    "prior_retained_until_caller_retires_it": "00.tar" in left,
+    "partials": [n for n in left if n.endswith(".partial")],
+    "restorable_at_install": restorable,
+    "internal_link_restored": (target / "link.txt").is_symlink(),
+    "internal_link_target": os.readlink(target / "link.txt"),
+    "escaping_link_restored": (target / "escape").is_symlink(),
+    "escaping_link_target": os.readlink(target / "escape"),
+    "payload_intact": (target / "real.txt").read_text().strip(),
+}
+tbrail.retire_superseded_checkpoints("probe-symlink", Path(path))
+out["symlink"]["retired_after_commit"] = sorted(p.name for p in d.iterdir())
+
+# ---- 4. hard link and device members are refused at creation too
+ws = fresh("hardlinked")
+(ws / "a.txt").write_text("a\n")
+os.link(ws / "a.txt", ws / "b.txt")
+try:
+    tbrail.write_checkpoint("probe-hardlink", 0, ws)
+    out["hardlink"] = {"refused": False}
+except tbrail.Reject as exc:
+    out["hardlink"] = {"refused": True, "reason": str(exc)}
+
+# ---- 5. every installed checkpoint round-trips through the restoration law
+ws = fresh("roundtrip")
+(ws / "home").mkdir()
+(ws / "repo").mkdir()
+(ws / "repo" / "file.txt").write_text("payload\n")
+path, digest, restorable = tbrail.write_checkpoint("probe-roundtrip", 0, ws)
+target = fresh("restored")
+tbrail.restore_checkpoint(Path(path), digest, target)
+out["roundtrip"] = {
+    "installed": Path(path).is_file(),
+    "restorable_at_install": restorable,
+    "restored_payload": (target / "repo" / "file.txt").read_text().strip(),
+    "digest": digest,
+}
+
+# ---- 6. sanitation reports failure instead of claiming an absent workspace
+ws = tbrail.WORK_ROOT / "probe-sanitation"
+if ws.exists():
+    os.chmod(ws / "locked", 0o700) if (ws / "locked").exists() else None
+    import shutil; shutil.rmtree(ws, ignore_errors=True)
+(ws / "locked").mkdir(parents=True)
+(ws / "locked" / "held.txt").write_text("held\n")
+os.chmod(ws / "locked", 0o500)
+first = tbrail.sanitize(ws)
+os.chmod(ws / "locked", 0o700)
+second = tbrail.sanitize(ws)
+out["sanitation"] = {"failed_report": first, "after_repair": second}
+
+# the probe must leave no residue: the residency property inspects this root
+import shutil as _sh
+for name in ("probe-oversize", "probe-stream", "probe-symlink", "probe-hardlink",
+             "probe-roundtrip"):
+    _sh.rmtree(tbrail.CHECKPOINT_ROOT / name, ignore_errors=True)
+_sh.rmtree(lab, ignore_errors=True)
+_sh.rmtree(tbrail.WORK_ROOT / "probe-sanitation", ignore_errors=True)
+out["residue"] = {
+    "checkpoint_dirs": sorted(p.name for p in tbrail.CHECKPOINT_ROOT.iterdir())
+                       if tbrail.CHECKPOINT_ROOT.is_dir() else [],
+    "lab_removed": not lab.exists(),
+}
+
+print(json.dumps(out))
+'''
+
+
+def prop_checkpoint_protocol_v5():
+    r = subprocess.run([PY, "-c", CKPT_V5_PROBE], capture_output=True, text=True,
+                       timeout=600, env=rail_env({"TBRAIL_DIR": str(HERE)}))
+    out = jloads(r.stdout) or {}
+    over = out.get("oversize") or {}
+    stream = out.get("stream") or {}
+    record("CHECKPOINT_PARTIAL_NEVER_EXCEEDS_QUOTA",
+           "an oversized workspace is refused before its bytes are taken into "
+           "custody, and the quota also binds while the archive streams",
+           bool(over.get("refused")) and not over.get("files_left")
+           and bool(stream.get("refused")) and not stream.get("files_left")
+           and bool(stream.get("streaming_guard")),
+           {"oversize": over, "streaming": stream, "stderr": r.stderr[-300:]})
+
+    sym = out.get("symlink") or {}
+    hard = out.get("hardlink") or {}
+    record("SYMLINK_BEARING_REPOSITORY_CHECKPOINT_LAW_EXPLICIT",
+           "a symlink-bearing repository -- including a link that points "
+           "outside the workspace -- is captured and restored verbatim, while a "
+           "hard link is refused at creation; the prior restore point survives "
+           "until the caller retires it",
+           sym.get("installed") is True
+           and sym.get("prior_retained_until_caller_retires_it") is True
+           and not sym.get("partials")
+           and sym.get("internal_link_restored") is True
+           and sym.get("escaping_link_restored") is True
+           and sym.get("escaping_link_target") == "/etc"
+           and sym.get("payload_intact") == "real"
+           and sym.get("retired_after_commit") == ["01.tar"]
+           and bool(hard.get("refused")),
+           {"symlink": sym, "hardlink": hard})
+
+    rt = out.get("roundtrip") or {}
+    record("EVERY_INSTALLED_CHECKPOINT_IS_IMMEDIATELY_RESTORABLE",
+           "an installed checkpoint is validated under the extraction law at "
+           "install time and restores its payload byte-for-byte",
+           bool(rt.get("installed"))
+           and ((rt.get("restorable_at_install") or {}).get("verified") is True)
+           and rt.get("restored_payload") == "payload",
+           rt)
+
+    san = out.get("sanitation") or {}
+    first, after = san.get("failed_report") or {}, san.get("after_repair") or {}
+    record("SANITATION_FAILURE_IS_REPORTED_NOT_ASSUMED",
+           "a workspace that cannot be removed is reported as surviving, with "
+           "the failures, rather than described as absent",
+           first.get("absent_after") is False and bool(first.get("errors"))
+           and after.get("absent_after") is True,
+           {"failed": first, "after_repair": after})
+
+
+def prop_checkpoint_install_crash():
+    """Crash between installing a checkpoint and committing its phase row."""
+    src = ENVDIR / "crash-pure.json"
+    for point, witness in (("after_checkpoint_install",
+                            "CHECKPOINT_INSTALL_AND_PHASE_COMMIT_CRASH_RECOVERS"),
+                           ("after_phase_commit",
+                            "CHECKPOINT_RETIREMENT_AFTER_COMMIT_CRASH_RECOVERS")):
+        slug = point.replace("_", "-")
+        txn = f"ckpt-{slug}-001"
+        envp = _derive_envelope(src, txn, f"fixture:ckpt-{slug}", repeat_first=3)
+        rail("submit", envp)
+        r = rail("execute", txn, timeout=600,
+                 env_extra={"TBRAIL_CHECKPOINT_CRASH_AT": point})
+        crashed = r.returncode in (-9, 137)
+        ck = ROOT / "checkpoints" / txn
+        tars = sorted(p.name for p in ck.glob("*.tar")) if ck.is_dir() else []
+        rows = db().execute(
+            "SELECT idx,state,ckpt_path FROM phase WHERE txn_id=? ORDER BY idx",
+            (txn,)).fetchall()
+        states = {idx: state for idx, state, _c in rows}
+        # The property under test is that no COMMITTED PASS row can point at a
+        # checkpoint that has already been deleted, and that a crash on either
+        # side of the commit still leaves a restore point on disk.
+        committed_pass = [(idx, c) for idx, state, c in rows if state == "PASS"]
+        every_committed_checkpoint_present = all(
+            c and Path(c).is_file() for _idx, c in committed_pass)
+        crashed_idx = max(states) if states else None
+        expected = "RUNNING" if point == "after_checkpoint_install" else "PASS"
+        row_ok = states.get(crashed_idx) == expected
+        retained_restore_point = len(tars) >= 1
+
+        out = jloads(rail("execute", txn, timeout=900).stdout)
+        final = _txn_row(txn)
+        settled = bool(final) and final[0] == "SETTLED" and final[1] == "PASS"
+        verified, vfail = _verify_anchored(final[2]) if final and final[2] else (False, "no_receipt")
+        purged = not ck.exists()
+        record(witness,
+               f"controller SIGKILLed at '{point}' recovers to a verified "
+               f"SETTLED receipt with a restore point intact",
+               crashed and row_ok and retained_restore_point
+               and every_committed_checkpoint_present
+               and settled and verified and purged,
+               {"crash_exit": r.returncode, "checkpoints_at_crash": tars,
+                "phase_states_at_crash": states,
+                "crashed_phase": crashed_idx,
+                "committed_pass_rows": committed_pass,
+                "every_committed_checkpoint_present":
+                    every_committed_checkpoint_present,
+                "final_state": final and final[0],
+                "receipt_verified": verified, "verify_failures": vfail,
+                "checkpoint_dir_removed_after_settlement": purged,
+                "terminal": (out or {}).get("terminal")})
+
+
+def prop_symlink_transaction_disposition():
+    """A repository that grows a symlink mid-transaction is held, not settled."""
+    txn = "ws-symlink-001"
+    envp = _envelope_with_phases(
+        ENVDIR / "crash-pure.json", txn, "fixture:ws-symlink",
+        [{"name": "make-symlink", "op": "rail.workspace_shape",
+          "params": {"shape": "symlink", "target": "tbrail-link.txt"}}])
+    rail("submit", envp)
+    out = jloads(rail("execute", txn, timeout=600).stdout) or {}
+    final = _txn_row(txn)
+    phases = out.get("phases") or []
+    ckpt = (phases[0].get("checkpoint") or {}) if phases else {}
+    restorable = ckpt.get("restorable") or {}
+    verified, vfail = _verify_anchored(final[2]) if final and final[2] else (False, "no_receipt")
+    body = logs_of(txn)
+    receipt = _receipt_of(txn) or {}
+    law = (receipt.get("checkpoint_custody") or {}).get("symlink_law")
+    record("SYMLINK_BEARING_REPOSITORY_TRANSACTION_SETTLES",
+           "a phase that leaves a symlink in the repository still produces an "
+           "installed, restorable checkpoint and a verified settled receipt, "
+           "and the receipt states the symlink law it followed",
+           out.get("terminal") == "PASS"
+           and "WORKSPACE_SYMLINK_CREATED" in body
+           and restorable.get("verified") is True
+           and int(restorable.get("symlink_members") or 0) >= 1
+           and verified and bool(law),
+           {"terminal": out.get("terminal"), "checkpoint": ckpt,
+            "receipt_verified": verified, "verify_failures": vfail,
+            "symlink_law_stated": bool(law), "txn_state": final and final[0]})
+
+
+def prop_sanitation_blocks_settlement():
+    """Settlement refuses to commit while the workspace survives."""
+    txn = "ws-lock-001"
+    envp = _envelope_with_phases(
+        ENVDIR / "crash-pure.json", txn, "fixture:ws-lock",
+        [{"name": "lock-directory", "op": "rail.workspace_shape",
+          "params": {"shape": "lock", "target": "tbrail-locked"}}])
+    rail("submit", envp)
+    out = jloads(rail("execute", txn, timeout=600).stdout) or {}
+    row = _txn_row(txn)
+    ws = ROOT / "work" / txn
+    refused = (out.get("reason") == "SANITATION_FAILED"
+               and out.get("terminal") == "HOLD"
+               and (row or [None])[0] == "SETTLING"
+               and not (row and row[2]))
+    journal_kept = (ROOT / "receipts" / txn / "SETTLEMENT.json").is_file()
+
+    # repair the condition the way an operator would, then let recovery finish
+    locked = ws / "repo" / "tbrail-locked"
+    if locked.is_dir():
+        os.chmod(locked, 0o700)
+    out2 = jloads(rail("execute", txn, timeout=600).stdout) or {}
+    final = _txn_row(txn)
+    settled = bool(final) and final[0] == "SETTLED"
+    verified, vfail = _verify_anchored(final[2]) if final and final[2] else (False, "no_receipt")
+    receipt = _receipt_of(txn) or {}
+    residue = (receipt.get("residency") or {}).get("workspace_absent")
+    record("SANITATION_FAILURE_CANNOT_COMMIT_SETTLED",
+           "a workspace that survives sanitation blocks the transition to "
+           "SETTLED, keeps the settlement journal, and settles only once the "
+           "workspace is actually gone",
+           refused and journal_kept and settled and verified and residue is True,
+           {"first_pass": {"terminal": out.get("terminal"), "reason": out.get("reason"),
+                           "sanitation": out.get("sanitation")},
+            "journal_retained": journal_kept,
+            "second_pass_terminal": out2.get("terminal"),
+            "final_state": final and final[0], "receipt_verified": verified,
+            "verify_failures": vfail, "receipt_workspace_absent": residue})
+
+
+def prop_settled_replay_retries_sanitation():
+    """A settled transaction whose workspace reappears is cleaned by replay."""
+    txn = "replay-sanitation-001"
+    envp = _derive_envelope(ENVDIR / "crash-pure.json", txn, "fixture:replay-sanitation")
+    rail("submit", envp)
+    rail("execute", txn, timeout=600)
+    row = _txn_row(txn)
+    ws = ROOT / "work" / txn
+    ws.mkdir(parents=True, exist_ok=True)
+    (ws / "residue.txt").write_text("left behind\n")
+    out = jloads(rail("execute", txn, timeout=300).stdout) or {}
+    rec_blk = out.get("reconciled") or {}
+    record("SETTLED_REPLAY_RETRIES_AND_PROVES_SANITATION",
+           "replaying a settled transaction retries sanitation and proves the "
+           "workspace is absent rather than assuming it",
+           (row or [None])[0] == "SETTLED" and out.get("replay") is True
+           and rec_blk.get("workspace_absent") is True and not ws.exists()
+           and rec_blk.get("phases_re_executed") == 0,
+           {"reconciled": rec_blk, "workspace_exists_after": ws.exists()})
+
+
+def prop_receipt_adoption_identity():
+    """Adoption requires the receipt to BE this settlement's receipt."""
+    # 1. a genuine interrupted settlement: the published receipt is adopted
+    txn = "adopt-own-001"
+    envp = _derive_envelope(ENVDIR / "crash-pure.json", txn, "fixture:adopt-own")
+    rail("submit", envp)
+    rail("execute", txn, timeout=600, env_extra={"TBRAIL_SETTLEMENT_CRASH_AT":
+                                                 "after_sidecar_write"})
+    rpath = ROOT / "receipts" / txn / "RECEIPT.json"
+    before = sha256_of(rpath) if rpath.is_file() else None
+    out = jloads(rail("execute", txn, timeout=600).stdout) or {}
+    comp = out.get("settlement_completed") or {}
+    adoption = comp.get("receipt_adoption") or {}
+    after = sha256_of(rpath) if rpath.is_file() else None
+    final = _txn_row(txn)
+    verified, vfail = _verify_anchored(final[2]) if final and final[2] else (False, "no_receipt")
+    record("ADOPTED_RECEIPT_MATCHES_SETTLEMENT_JOURNAL",
+           "an interrupted settlement adopts its own published receipt only "
+           "after proving it matches the journal, and preserves its identity",
+           comp.get("receipt_adopted_from_prior_attempt") is True
+           and adoption.get("matches_settlement") is True
+           and before == after and before is not None and verified,
+           {"receipt_sha_before": before, "receipt_sha_after": after,
+            "adoption": adoption, "receipt_verified": verified,
+            "verify_failures": vfail})
+
+    # 2. a foreign but self-consistent receipt is neither adopted nor destroyed
+    txn2 = "adopt-foreign-001"
+    envp2 = _derive_envelope(ENVDIR / "crash-pure.json", txn2, "fixture:adopt-foreign")
+    rail("submit", envp2)
+    rail("execute", txn2, timeout=600, env_extra={"TBRAIL_SETTLEMENT_CRASH_AT":
+                                                  "after_settling_journal"})
+    d = ROOT / "receipts" / txn2
+    foreign = json.loads(rpath.read_text(encoding="utf-8"))   # a REAL receipt,
+    foreign["transaction_id"] = "some-other-transaction"      # from elsewhere
+    body = json.dumps(foreign, indent=2, sort_keys=True)
+    (d / "RECEIPT.json").write_text(body, encoding="utf-8")
+    planted = sha256_of(d / "RECEIPT.json")
+    (d / "RECEIPT.sha256").write_text(planted + "\n", encoding="utf-8")
+    out2 = jloads(rail("execute", txn2, timeout=600).stdout) or {}
+    still = sha256_of(d / "RECEIPT.json")
+    row2 = _txn_row(txn2)
+    record("SELF_CONSISTENT_FOREIGN_RECEIPT_IS_NOT_ADOPTED",
+           "a receipt whose sidecar agrees with it but whose contents do not "
+           "match the settlement journal is refused, not adopted, and not "
+           "overwritten",
+           out2.get("reason") == "FOREIGN_RECEIPT_PRESENT"
+           and out2.get("terminal") == "HOLD"
+           and still == planted and (row2 or [None])[0] == "SETTLING"
+           and "transaction_id" in str(out2.get("mismatches")),
+           {"reason": out2.get("reason"), "mismatches": out2.get("mismatches"),
+            "planted_sha": planted, "receipt_sha_after": still,
+            "txn_state": row2 and row2[0]})
+
+    # and once the foreign pair is removed, the transaction settles normally
+    (d / "RECEIPT.json").unlink(missing_ok=True)
+    (d / "RECEIPT.sha256").unlink(missing_ok=True)
+    out3 = jloads(rail("execute", txn2, timeout=600).stdout) or {}
+    final2 = _txn_row(txn2)
+    v2, f2 = _verify_anchored(final2[2]) if final2 and final2[2] else (False, "no_receipt")
+    record("SETTLEMENT_COMPLETES_AFTER_FOREIGN_RECEIPT_IS_REMOVED",
+           "the held transaction settles from its journal once the foreign "
+           "receipt is out of the way",
+           (final2 or [None])[0] == "SETTLED" and v2,
+           {"terminal": out3.get("terminal"), "verified": v2, "failures": f2})
+
+
+def _purge(*args, apply=False, manifest=None):
+    argv = ["purge-source"]
+    if apply:
+        argv.append("--apply")
+    if manifest:
+        argv += ["--successor-custody", manifest]
+    return jloads(rail(*argv, *args, timeout=600).stdout) or {}
+
+
+def prop_purge_source_custody():
+    """purge-source is a custody transition with three refusals."""
+    bundle_name = SOURCE_BUNDLE.name
+    hot = ROOT / "source" / bundle_name
+    digest = sha256_of(hot)
+
+    # 1. an unresolved transaction protects its bundle -- including FENCED_OUT
+    con = sqlite3.connect(ROOT / "rail.db", timeout=30)
+    fenced = [r[0] for r in con.execute(
+        "SELECT txn_id FROM txn WHERE state='FENCED_OUT'")]
+    constructed = False
+    if not fenced:
+        row = con.execute("SELECT txn_id, envelope_json FROM txn WHERE state='SETTLED' "
+                          "LIMIT 1").fetchone()
+        con.execute("INSERT INTO txn(txn_id,envelope_json,envelope_sha,resource_key,"
+                    "state,created_at,updated_at) VALUES(?,?,?,?,?,?,?)",
+                    ("fenced-out-probe", row[1], "0" * 64, "fixture:fenced-probe",
+                     "FENCED_OUT", time.time(), time.time()))
+        con.commit()
+        fenced = ["fenced-out-probe"]
+        constructed = True
+    con.close()
+
+    dry = _purge()
+    protected_states = " ".join(sum(dry.get("protected_digests", {}).values(), []))
+    retained_names = [i["name"] for i in dry.get("retained", [])]
+    record("FENCED_OUT_SOURCE_REMAINS_PROTECTED",
+           "a FENCED_OUT transaction protects its source bundle from purge, as "
+           "does every other unresolved state",
+           "FENCED_OUT" in protected_states and bundle_name in retained_names,
+           {"protected": dry.get("protected_digests"),
+            "retained": retained_names,
+            "fenced_out_row_constructed": constructed})
+
+    # The remaining steps need a bundle that NO unresolved transaction
+    # references, and this root deliberately ends with several -- held,
+    # settling, queued, fenced. So they run in an isolated custody lab: a second
+    # real controller root, one real transaction, settled, and then the custody
+    # transition exercised end to end against its own retained receipt.
+    lab = ROOT / "purge-lab"
+    (lab / "source").mkdir(parents=True, exist_ok=True)
+    shutil.copy2(ROOT / "source" / FIXTURE_BUNDLE, lab / "source" / FIXTURE_BUNDLE)
+
+    # The profile a receipt names must live inside the controller root that
+    # receipt belongs to: the verifier refuses receipt-supplied paths outside
+    # the admitted roots, and it is right to. The lab therefore gets its own
+    # byte-identical copy of the qualification profile.
+    lab_profile = lab / "RUNNER-PROFILE.qualification.json"
+    shutil.copy2(QPROFILE, lab_profile)
+
+    def lab_rail(*args, timeout=600):
+        return subprocess.run([PY, str(TBRAIL), *args], capture_output=True,
+                              text=True, timeout=timeout,
+                              env=rail_env({
+                                  "TBRAIL_HOME": str(lab),
+                                  "TBRAIL_RUNNER_PROFILE": str(lab_profile),
+                                  "TBRAIL_RUNNER_PROFILE_SHA256": QPROFILE_SHA}))
+
+    def lab_purge(apply=False, manifest=None):
+        argv = ["purge-source"]
+        if apply:
+            argv.append("--apply")
+        if manifest:
+            argv += ["--successor-custody", manifest]
+        return jloads(lab_rail(*argv).stdout) or {}
+
+    lab_txn = "purge-lab-001"
+    lab_envp = _derive_envelope(Path(fx("nested")), lab_txn, "fixture:purge-lab")
+    lab_rail("submit", lab_envp)
+    lab_out = jloads(lab_rail("execute", lab_txn).stdout) or {}
+    lab_receipt = lab / "receipts" / lab_txn / "RECEIPT.json"
+    hot = lab / "source" / FIXTURE_BUNDLE
+    digest = sha256_of(hot)
+    record("PURGE_LAB_TRANSACTION_SETTLED",
+           "the custody lab holds one settled transaction whose retained receipt "
+           "needs its source bundle",
+           lab_out.get("terminal") == "PASS" and lab_receipt.is_file(),
+           {"terminal": lab_out.get("terminal"), "receipt": str(lab_receipt)})
+
+    # 2. a retained receipt protects the bytes even with nothing unresolved
+    no_custody = lab_purge(apply=True)
+    still_hot = hot.is_file()
+    record("PURGE_SOURCE_REQUIRES_VERIFIED_SUCCESSOR_CUSTODY",
+           "--apply refuses to remove bytes retained receipts still need until "
+           "an independently verified successor holds them",
+           still_hot and any(i["sha256"] == digest for i in no_custody.get("retained", []))
+           and no_custody.get("no_verification_regressions") is True,
+           {"hot_copy_present": still_hot,
+            "retained_reason": [i.get("why") for i in no_custody.get("retained", [])],
+            "regressions": no_custody.get("verification_regressions")})
+
+    # 3. an UNVERIFIABLE successor claim is refused just as firmly
+    bad_dir = lab / "successor-bad"
+    bad_dir.mkdir(parents=True, exist_ok=True)
+    bad_obj = bad_dir / "not-the-bundle.bin"
+    bad_obj.write_bytes(b"these are not the bytes\n")
+    bad_manifest = lab / "successor-bad.json"
+    bad_manifest.write_text(json.dumps({
+        "schema": "tier-bench/native-source-custody@1",
+        "entries": {digest: {"holder": "unverified-claim",
+                             "successor_path": str(bad_obj),
+                             "successor_sha256": digest}}}, indent=2), encoding="utf-8")
+    bad = lab_purge(apply=True, manifest=str(bad_manifest))
+    record("UNVERIFIED_SUCCESSOR_CUSTODY_CLAIM_IS_REFUSED",
+           "a successor-custody entry whose object does not rehash to the "
+           "digest the receipts name does not release the hot copy",
+           hot.is_file()
+           and any(i["sha256"] == digest for i in bad.get("retained", []))
+           and bad.get("successor_custody_routes", {}).get(digest, {}).get("verified") is False,
+           {"route": bad.get("successor_custody_routes", {}).get(digest),
+            "hot_copy_present": hot.is_file()})
+
+    # 4. a real custody transfer: the bytes move, every receipt still verifies
+    holder = lab / "successor-holder"
+    holder.mkdir(parents=True, exist_ok=True)
+    successor = holder / FIXTURE_BUNDLE
+    shutil.copy2(hot, successor)
+    good_manifest = lab / "successor-good.json"
+    good_manifest.write_text(json.dumps({
+        "schema": "tier-bench/native-source-custody@1",
+        "entries": {digest: {"holder": "qualification successor holder",
+                             "successor_path": str(successor),
+                             "successor_sha256": digest}}}, indent=2), encoding="utf-8")
+    good = lab_purge(apply=True, manifest=str(good_manifest))
+    gone = not hot.is_file()
+    verified_after = good.get("retained_receipts_verified_after") or []
+    # the receipts that actually needed these bytes must be among the ones that
+    # still verify, through the successor route rather than the hot copy
+    purged_items = good.get("purged") or good.get("purgeable") or []
+    needed = set(sum([i.get("receipts_requiring_bytes", [])
+                      for i in purged_items if i.get("sha256") == digest], []))
+    still_ok = {r["receipt"] for r in verified_after if r["ok"]}
+    covered = needed and needed.issubset(still_ok)
+    record("PURGE_SOURCE_PRESERVES_VERIFIABILITY_OF_ALL_RETAINED_RECEIPTS",
+           "after a verified custody transition the hot copy is gone, no receipt "
+           "that verified before it fails after it, and the receipts that needed "
+           "those bytes verify through the successor route",
+           gone and good.get("no_verification_regressions") is True
+           and bool(covered)
+           and good.get("successor_custody_routes", {}).get(digest, {}).get("verified") is True,
+           {"hot_copy_removed": gone,
+            "receipts_checked": good.get("receipts_checked"),
+            "receipts_needing_these_bytes": len(needed),
+            "all_of_them_verify_after": bool(covered),
+            "regressions": good.get("verification_regressions"),
+            "route": good.get("successor_custody_routes", {}).get(digest)})
+
+    # restore the hot copy so later properties are unaffected
+    shutil.copy2(successor, hot)
+
+
+def prop_interpreter_drift_refused():
+    """The controller may not run under an unpinned interpreter."""
+    accepted = json.loads(PROFILE.read_text(encoding="utf-8"))
+    txn = "interp-drift-001"
+    envp = _derive_envelope(ENVDIR / "crash-pure.json", txn, "fixture:interp-drift")
+    rail("submit", envp)
+
+    drifted = dict(accepted)
+    drifted["interpreter"] = dict(accepted.get("interpreter") or {})
+    drifted["interpreter"]["sha256"] = "0" * 64
+    dp = ROOT / "profile-drifted-interpreter.json"
+    dp.write_text(json.dumps(drifted, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    r1 = rail("execute", txn, timeout=300, env_extra={
+        "TBRAIL_RUNNER_PROFILE": str(dp),
+        "TBRAIL_RUNNER_PROFILE_SHA256": sha256_of(dp)})
+
+    stripped = {k: v for k, v in accepted.items() if k != "interpreter"}
+    sp = ROOT / "profile-no-interpreter.json"
+    sp.write_text(json.dumps(stripped, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    r2 = rail("execute", txn, timeout=300, env_extra={
+        "TBRAIL_RUNNER_PROFILE": str(sp),
+        "TBRAIL_RUNNER_PROFILE_SHA256": sha256_of(sp)})
+
+    row = _txn_row(txn)
+    record("CONTROLLER_INTERPRETER_DRIFT_REFUSED",
+           "a profile naming a different interpreter, or naming none at all, "
+           "refuses the run before any work happens",
+           "CONTROLLER_INTERPRETER_DRIFT" in (r1.stdout + r1.stderr)
+           and "CONTROLLER_INTERPRETER_NOT_PINNED" in (r2.stdout + r2.stderr)
+           and r1.returncode != 0 and r2.returncode != 0
+           and (row or [None])[0] == "QUEUED",
+           {"drift_rc": r1.returncode, "drift_out": (r1.stdout + r1.stderr)[-200:],
+            "unpinned_rc": r2.returncode,
+            "unpinned_out": (r2.stdout + r2.stderr)[-200:],
+            "txn_state": row and row[0]})
+
+
+def prop_pids_kernel_witness():
+    """The task ceiling is witnessed by the kernel, not inferred from an errno."""
+    txn = "burn-pids-witness-001"
+    envp = _derive_envelope(ENVDIR / "burn-pids.json", txn, "fixture:pids-witness")
+    rail("submit", envp)
+    rail("execute", txn, timeout=900)
+    receipt = _receipt_of(txn) or {}
+    phases = receipt.get("phases") or []
+    agg = {}
+    for p in phases:
+        agg = ((p.get("enforcement") or {}).get("aggregate") or {})
+        if agg.get("pids_kernel_witness"):
+            break
+    w = agg.get("pids_kernel_witness") or {}
+    events = {**(w.get("pids_events") or {}), **(w.get("pids_events_local") or {})}
+    fired = max([int(v) for k, v in events.items() if k == "max"] or [0])
+    tasks_max = agg.get("tasks_max")
+    body = logs_of(txn)
+    record("CGROUP_PIDS_MAX_DIRECT_KERNEL_WITNESS",
+           "pids.max, pids.current and a non-zero pids.events max are read from "
+           "the exact cgroup that refused the fork burst, while it is alive",
+           bool(w) and fired >= 1
+           and str(w.get("pids_max")) == str(tasks_max)
+           and isinstance(w.get("pids_current"), int)
+           and "PIDS_BLOCKED_AT" in body,
+           {"witness": w, "tasks_max": tasks_max, "events_max": fired,
+            "blocked_line": next((l for l in body.splitlines()
+                                  if "PIDS_BLOCKED_AT" in l), None)})
+
+
+def prop_crash_hook_gated():
+    """The crash hook may not be reachable outside qualification mode."""
+    txn = "hook-gate-001"
+    envp = _derive_envelope(ENVDIR / "crash-pure.json", txn, "fixture:hook-gate")
+    rail("submit", envp)
+
+    # production profile + a valid crash point: refused before execution
+    r1 = rail_prod("execute", txn, timeout=300,
+                   env_extra={"TBRAIL_SETTLEMENT_CRASH_AT": "after_sanitation"})
+    state1 = (_txn_row(txn) or [None])[0]
+    # production profile + a stale/garbage value: refused the same way
+    r2 = rail_prod("execute", txn, timeout=300,
+                   env_extra={"TBRAIL_SETTLEMENT_CRASH_AT": "left-over-from-2026"})
+    r3 = rail_prod("execute", txn, timeout=300,
+                   env_extra={"TBRAIL_CHECKPOINT_CRASH_AT": "after_phase_commit"})
+    state2 = (_txn_row(txn) or [None])[0]
+    receipts = list((ROOT / "receipts" / txn).glob("RECEIPT.json"))
+
+    refused = all("CRASH_HOOK_NOT_ADMITTED" in (r.stdout + r.stderr) and r.returncode != 0
+                  for r in (r1, r2, r3))
+    record("QUALIFICATION_CRASH_HOOK_REFUSED_OUTSIDE_QUALIFICATION_MODE",
+           "with a production runner profile the crash hooks refuse the run "
+           "before the transaction is touched",
+           refused and state1 == "QUEUED" and state2 == "QUEUED" and not receipts,
+           {"settlement_hook_rc": r1.returncode,
+            "stale_value_rc": r2.returncode, "checkpoint_hook_rc": r3.returncode,
+            "detail": (r1.stdout + r1.stderr)[-200:],
+            "state_after": state2, "receipts": [str(p) for p in receipts]})
+
+    # an unknown point under qualification mode is refused too, and the
+    # transaction still settles normally afterwards
+    r4 = rail("execute", txn, timeout=300,
+              env_extra={"TBRAIL_SETTLEMENT_CRASH_AT": "after_everything"})
+    state3 = (_txn_row(txn) or [None])[0]
+    out = jloads(rail("execute", txn, timeout=600).stdout) or {}
+    final = _txn_row(txn)
+    verified, vfail = _verify_anchored(final[2]) if final and final[2] else (False, "no_receipt")
+    record("UNKNOWN_OR_STALE_CRASH_HOOK_CANNOT_KILL_PRODUCTION_TRANSACTION",
+           "an unknown crash point refuses the run rather than aborting inside "
+           "settlement, and the same transaction then settles normally",
+           "UNKNOWN_CRASH_POINT" in (r4.stdout + r4.stderr) and r4.returncode != 0
+           and state3 == "QUEUED" and (final or [None])[0] == "SETTLED" and verified,
+           {"unknown_rc": r4.returncode, "detail": (r4.stdout + r4.stderr)[-200:],
+            "state_after_refusal": state3, "final_terminal": out.get("terminal"),
+            "receipt_verified": verified, "verify_failures": vfail})
+
+
+def prop_durability_scope_exact():
+    """The durability claim names what is proven and what is only implemented."""
+    txn = "durability-scope-001"
+    envp = _derive_envelope(ENVDIR / "crash-pure.json", txn, "fixture:durability")
+    rail("submit", envp)
+    rail("execute", txn, timeout=600)
+    receipt = _receipt_of(txn) or {}
+    dur = ((receipt.get("settlement") or {}).get("durability") or {})
+    con = sqlite3.connect(ROOT / "rail.db", timeout=30)
+    sync = con.execute("PRAGMA synchronous").fetchone()[0]
+    con.close()
+    record("SETTLEMENT_DURABILITY_SCOPE_EXACT",
+           "the receipt states process-crash recovery as witnessed and "
+           "power-loss durability as implemented-but-unwitnessed, and the "
+           "ledger is actually running synchronous=FULL",
+           "CONTROLLER_PROCESS_CRASH" in str(dur.get("witnessed"))
+           and "SUDDEN_POWER_LOSS" in str(dur.get("not_witnessed"))
+           and "fsync" in str(dur.get("implemented"))
+           and int(sync) == 2,
+           {"durability": dur, "pragma_synchronous": sync})
+
+
+PRIVATE_MARKERS_NOTE = (
+    "the public product tree may not carry the deployment's host name, account "
+    "home or absolute controller paths"
+)
+
+
+def prop_public_artifacts_have_no_private_coordinates():
+    """The committed product tree carries no deployment coordinates."""
+    host = os.uname().nodename
+    home = str(Path.home())
+    markers = {"host": host, "home": home, "rail_home": str(Path.home() / ".tbrail")}
+    hits = {}
+    # The deployment's own accepted profile is private BY DESIGN and is not part
+    # of the public product; everything else that ships must be clean.
+    private_by_design = {f"RUNNER-PROFILE.{host}.json"}
+    scanned = 0
+    for p in sorted(HERE.rglob("*")):
+        if not p.is_file():
+            continue
+        rel = str(p.relative_to(HERE)).replace("\\", "/")
+        if p.name in private_by_design or "__pycache__" in rel:
+            continue
+        try:
+            body = p.read_text(errors="replace")
+        except OSError:
+            continue
+        scanned += 1
+        for label, marker in markers.items():
+            if marker and marker in body:
+                hits.setdefault(label, []).append(rel)
+    record("PUBLIC_PRODUCT_ARTIFACTS_CONTAIN_NO_PRIVATE_DEPLOYMENT_COORDINATES",
+           PRIVATE_MARKERS_NOTE,
+           not hits and scanned > 0,
+           {"files_scanned": scanned, "hits": hits,
+            "private_by_design_excluded": sorted(private_by_design),
+            "markers_checked": sorted(markers)})
 
 
 def main():
@@ -1471,15 +2404,34 @@ def main():
     prop_no_preexec_launcher()
     prop_resource_semantics_exact()
     prop_current_surface_only()
+    # ---- final product-admission controls ---------------------------------
+    prop_worker_environment_closed()
+    prop_checkpoint_protocol_v5()
+    prop_checkpoint_install_crash()
+    prop_symlink_transaction_disposition()
+    prop_sanitation_blocks_settlement()
+    prop_settled_replay_retries_sanitation()
+    prop_receipt_adoption_identity()
+    prop_interpreter_drift_refused()
+    prop_pids_kernel_witness()
+    prop_crash_hook_gated()
+    prop_durability_scope_exact()
+    prop_public_artifacts_have_no_private_coordinates()
+    prop_purge_source_custody()
     # residency runs last: it asserts the root is clean after everything above
     prop_j_residency()
 
     failed = [r for r in results if not r["pass"]]
     summary = {
-        "schema": "tier-bench/native-rail-cold-qualification@3",
+        "schema": "tier-bench/native-rail-cold-qualification@5",
         "controller_root": str(ROOT),
         "host": os.uname().nodename,
         "accepted_runner_profile_sha256": ACCEPTED_PROFILE_SHA,
+        "qualification_runner_profile_sha256": QPROFILE_SHA,
+        "controller_interpreter": {
+            "path": str(Path(os.path.realpath(sys.executable))),
+            "version": "%d.%d.%d" % sys.version_info[:3],
+        },
         "verdict": "PASS_NATIVE_PRIVATE_EXECUTION_RAIL_PRODUCT_CANDIDATE"
                    if not failed else "HOLD_COLD_QUALIFICATION_FAILED",
         "total": len(results), "failed": len(failed),
