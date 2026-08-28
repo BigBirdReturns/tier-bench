@@ -139,6 +139,12 @@ class K3DSparkPort:
         w = load_safetensors_cpu(model_dir / "model.safetensors")
         self.w = {k: v.to(device) for k, v in w.items()}
         self.lm_head = lm_head.to(device) if lm_head is not None else None
+        self._embed_cache: dict[int, torch.Tensor] = {}
+
+    def _target_embed_row(self, token_id: int) -> torch.Tensor:
+        if token_id not in self._embed_cache:
+            self._embed_cache[token_id] = load_k3_embed_rows([token_id])[0].to(self.device)
+        return self._embed_cache[token_id]
 
     # ------------------------------------------------------------ interfaces
     def combine_hidden_states(self, stacked: torch.Tensor) -> torch.Tensor:
@@ -196,7 +202,13 @@ class K3DSparkPort:
         q_positions = torch.arange(last + 1, last + 1 + n_q, device=self.device)
         input_ids = torch.tensor([bonus_token] + [self.mask_token_id] * num_masks,
                                  device=self.device)
-        hidden = F.embedding(input_ids, self.w["embed_tokens.weight"])
+        # vLLM aliases the FROZEN TARGET embedding for the draft (the shipped
+        # embed_tokens is a trained variant: ~1.10x norms, direction drift on
+        # real tokens, mask-token direction preserved - measured 2026-08-28).
+        # Serving semantics therefore use K3 target rows, fetched bounded.
+        hidden = torch.stack(
+            [self._target_embed_row(int(t)) for t in input_ids.tolist()]
+        ).to(self.device)
         residual = None
         per_layer_ctx = [self._layer_context_kv(l, context_states, context_positions)
                          for l in range(self.num_layers)]
@@ -245,6 +257,24 @@ class K3DSparkPort:
             prev = pick
         return {"tokens": tokens, "scores": scores, "confidence": min(confidences),
                 "per_position_confidence": confidences}
+
+
+def load_k3_embed_rows(token_ids: list[int]) -> torch.Tensor:
+    """Bounded direct read of frozen K3 target embedding rows."""
+    root = Path(r"D:\kimilab\Kimi-K3")
+    index = json.loads((root / "model.safetensors.index.json").read_text(encoding="utf-8-sig"))
+    shard = index["weight_map"]["language_model.model.embed_tokens.weight"]
+    with open(root / shard, "rb") as f:
+        hlen = struct.unpack("<Q", f.read(8))[0]
+        header = json.loads(f.read(hlen))
+        meta = header["language_model.model.embed_tokens.weight"]
+        assert meta["dtype"] == "BF16"
+        width = meta["shape"][1]
+        rows = []
+        for t in token_ids:
+            f.seek(8 + hlen + meta["data_offsets"][0] + t * width * 2)
+            rows.append(torch.frombuffer(bytearray(f.read(width * 2)), dtype=torch.bfloat16))
+    return torch.stack(rows)
 
 
 def load_k3_lm_head(device: str = "cpu") -> torch.Tensor:
