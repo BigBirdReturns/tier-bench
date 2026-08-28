@@ -201,7 +201,21 @@ def strict_traversal(
         "experts_per_position": {},
         "embed": embed_receipt,
     }
-    for layer in range(0, max_layer + 1):
+    # crash/kill resume: the inter-layer hidden/bank tensors are tiny, so the
+    # traversal checkpoints them after every layer and restarts continue from
+    # the first incomplete layer (per-position layer states are already on
+    # disk for completed layers).
+    ckpt_path = state_dir / "traversal-checkpoint.pt"
+    start_layer = 0
+    if ckpt_path.is_file():
+        ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        if ck.get("token_ids") == list(token_ids) and ck["layer_done"] < max_layer:
+            start_layer = int(ck["layer_done"]) + 1
+            hidden = [t.to(embeddings.device) for t in ck["hidden"]]
+            bank = [t.to(embeddings.device) for t in ck["bank"]]
+            telemetry.update(ck["telemetry"])
+            print(json.dumps({"resumed_from_layer": start_layer}), flush=True)
+    for layer in range(start_layer, max_layer + 1):
         started = time.perf_counter()
         parent_cache = rcc.load_prefill_layer_cache(prefill_progress, layer)
         res = load_resident_layer(layer, config, classes, weight_map)
@@ -257,6 +271,18 @@ def strict_traversal(
         telemetry["per_layer_wall_s"].append(round(time.perf_counter() - started, 2))
         del res
         torch.cuda.empty_cache()
+        torch.save(
+            {
+                "token_ids": list(token_ids),
+                "layer_done": layer,
+                "hidden": [t.detach().to("cpu") for t in hidden],
+                "bank": [t.detach().to("cpu") for t in bank],
+                "telemetry": {k2: v for k2, v in telemetry.items()},
+            },
+            ckpt_path,
+        )
+        print(json.dumps({"layer_done": layer,
+                          "wall_s": telemetry["per_layer_wall_s"][-1]}), flush=True)
     # per-position residual banks + final hiddens
     for p in range(k):
         torch.save(
