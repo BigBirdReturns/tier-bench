@@ -82,12 +82,13 @@ is the 4060 nuc, not a 3090.
 ## Files to review
 
 Exact changed-file denominator of this branch after the 2026-08-28 repair commits
-(vs `main`): **4 files** —
+(vs `main`): **5 files** —
 
 - `docs/agents/QUEUE.md` — rows CLAUDE-5..11 + 13, OP-2/3
 - `docs/agents/reviews/claude_estate_ladder_review_20260827.md` — this brief
-- `data/estate/fabric-qual-20260827/CAPSULE.json` — committed CLAUDE-5 evidence capsule
-- `data/estate/fabric-qual-20260827/verify_capsule.py` — its deterministic verifier
+- `data/estate/fabric-qual-20260827/CAPSULE.json` — committed CLAUDE-5 evidence capsule (@2: adds per-phase execution record + verification levels)
+- `data/estate/fabric-qual-20260827/verify_capsule.py` — deterministic verifier with three levels (CAPSULE_ONLY / RAW_BYTES / RAW_SEMANTICS; CLAUDE-5 closure supported only at RAW_SEMANTICS_VERIFIED, where raw receipt contents must reconstruct every decision-critical claim)
+- `tests/test_fabric_capsule_verifier.py` — hostile witnesses: internally-valid, correctly-rehashed raw evidence that contradicts the capsule must refuse (11 tests)
 
 An earlier revision of this branch also changed `tier_runner/kimi3_common.py` and
 `tests/test_kimi3_observatory.py` (blanket `.lock` partial-suffix rule). That behavior

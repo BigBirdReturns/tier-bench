@@ -1,5 +1,5 @@
 {
-  "schema": "estate/fabric-qual-capsule@1",
+  "schema": "estate/fabric-qual-capsule@2",
   "claim_id": "CLAUDE-5",
   "claim": "The dual-3090 TB3 eGPU pool on OCTO-L01 is a qualified 48 GB fabric in both throughput (per-card pinned) and capacity (layer-split) modes, at the phase results recorded below, measured 2026-08-27.",
   "host": "OCTO-L01",
@@ -113,5 +113,42 @@
     "statement": "Raw phase receipts (per-run walls, nvidia-smi occupancy lines) and the bench driver remain in the operator's private estate tree on OCTO-L01, off-repository. This capsule commits their digests, the allowlisted numeric results, and the aggregate root; the committed capsule is the citable closure artifact. Any future dispute reopens the raw receipts against receipt_manifest_sha256.",
     "raw_files_bound": 6
   },
-  "verifier": "data/estate/fabric-qual-20260827/verify_capsule.py"
+  "verifier": "data/estate/fabric-qual-20260827/verify_capsule.py",
+  "phase_execution": {
+    "single-27b-msi": {
+      "active_devices": [
+        0
+      ],
+      "excluded_devices": [
+        1
+      ],
+      "note": "baseline isolation: the second card must be unallocated during the run"
+    },
+    "double-27b-both": {
+      "active_devices": [
+        0,
+        1
+      ],
+      "excluded_devices": []
+    },
+    "split-35b-a3b-q8": {
+      "active_devices": [
+        0,
+        1
+      ],
+      "excluded_devices": []
+    },
+    "split-70b-r1": {
+      "active_devices": [
+        0,
+        1
+      ],
+      "excluded_devices": []
+    }
+  },
+  "verification_levels": {
+    "CAPSULE_ONLY_VERIFIED": "committed capsule authenticated (fields, manifest, aggregate root, denominator)",
+    "RAW_BYTES_VERIFIED": "plus: every raw private evidence file rehashes to its manifest digest",
+    "RAW_SEMANTICS_VERIFIED": "plus: decision-critical claims reconstructed from raw receipt contents agree with the capsule; the only level that supports CLAUDE-5 repository closure"
+  }
 }
