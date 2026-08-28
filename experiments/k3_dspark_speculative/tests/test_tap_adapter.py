@@ -130,5 +130,43 @@ class TapAdapterInertness(unittest.TestCase):
         session.uninstall()
 
 
+class MixtureTaps(unittest.TestCase):
+    MIX = (TapSpec(layer=23, location="mixture", declared_as="tap 23 mixture"),)
+
+    def test_mixture_requires_fn(self):
+        with self.assertRaises(RuntimeError):
+            TapSession(specs=self.MIX).install(make_runner_module())
+
+    def test_mixture_computed_and_recorded_without_changing_outputs(self):
+        baseline = traverse(make_runner_module())
+        calls = []
+
+        def fake_mixture(layer, prefix, kwargs):
+            calls.append((layer, sorted(kwargs)))
+            return prefix.detach() * 2.0  # derived value; live tensors untouched
+
+        mod = make_runner_module()
+        with TapSession(specs=self.MIX, enabled=True, mixture_fn=fake_mixture).install(mod) as s:
+            result = traverse(mod)
+        self.assertEqual(result, baseline)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0][0], 23)
+        self.assertIn("block_residual", calls[0][1])
+        self.assertEqual([c["location"] for c in s.captures], ["mixture"])
+        # derived tensor hashes differently from the raw prefix
+        mod2 = make_runner_module()
+        with TapSession(specs=(TapSpec(layer=23, location="pre"),), enabled=True).install(mod2) as s2:
+            traverse(mod2)
+        self.assertNotEqual(s.captures[0]["sha256"], s2.captures[0]["sha256"])
+
+    def test_disabled_mixture_never_calls_fn(self):
+        calls = []
+        mod = make_runner_module()
+        with TapSession(specs=self.MIX, enabled=False,
+                        mixture_fn=lambda *a: calls.append(a)).install(mod):
+            traverse(mod)
+        self.assertEqual(calls, [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

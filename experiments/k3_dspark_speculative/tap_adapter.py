@@ -63,14 +63,26 @@ class TapSpec:
     (run_cached_continuation layer index: 0 = dense layer, 1..92 = MoE
     decoder layers). Mapping from the drafter's declared tap numbers to this
     coordinate system is external and must be recorded in the capture receipt
-    via ``declared_as``."""
+    via ``declared_as``.
+
+    Locations:
+      "pre"     - residual-stream wire entering the layer (the AttnRes running
+                  prefix; vLLM's default prefix_only aux convention).
+      "post"    - wire leaving the layer.
+      "mixture" - the pre-norm AttnRes mixture over bank + prefix computed with
+                  the consumer layer's res weights (vLLM's
+                  VLLM_KIMI_K3_AUX_ATTN_RES_STREAM=1 convention, which the K3
+                  capture docstring names as the DFlash training target).
+                  Requires a ``mixture_fn`` on the session; the adapter never
+                  computes it itself.
+    """
 
     layer: int
-    location: str  # "pre" | "post"
+    location: str  # "pre" | "post" | "mixture"
     declared_as: str = ""  # e.g. "dspark tap 23 (interpretation: ...)"
 
     def __post_init__(self) -> None:
-        if self.location not in ("pre", "post"):
+        if self.location not in ("pre", "post", "mixture"):
             raise ValueError(f"unknown tap location {self.location!r}")
         if not 0 <= self.layer <= 92:
             raise ValueError(f"tap layer {self.layer} outside runner range 0..92")
@@ -88,28 +100,41 @@ class TapSession:
 
     specs: tuple[TapSpec, ...]
     enabled: bool = True
+    mixture_fn: Any = None  # (layer:int, prefix:Tensor, call_kwargs:dict) -> Tensor
     captures: list[dict[str, Any]] = field(default_factory=list)
     _module: Any = None
     _originals: dict[str, Any] = field(default_factory=dict)
+
+    def _record(self, layer: int, location: str, spec: TapSpec, tensor: Any) -> None:
+        self.captures.append(
+            {
+                "layer": layer,
+                "location": location,
+                "declared_as": spec.declared_as,
+                "shape": list(tensor.shape),
+                "dtype": str(tensor.dtype),
+                "token_axis": 1,
+                "batch_axis": 0,
+                "token_count": int(tensor.shape[1]) if tensor.dim() >= 2 else None,
+                "sha256": tensor_sha256(tensor),
+            }
+        )
 
     def _observe(self, layer: int, location: str, tensor: Any) -> None:
         if not self.enabled:
             return
         for spec in self.specs:
             if spec.layer == layer and spec.location == location:
-                self.captures.append(
-                    {
-                        "layer": layer,
-                        "location": location,
-                        "declared_as": spec.declared_as,
-                        "shape": list(tensor.shape),
-                        "dtype": str(tensor.dtype),
-                        "token_axis": 1,
-                        "batch_axis": 0,
-                        "token_count": int(tensor.shape[1]) if tensor.dim() >= 2 else None,
-                        "sha256": tensor_sha256(tensor),
-                    }
-                )
+                self._record(layer, location, spec, tensor)
+
+    def _observe_mixture(self, layer: int, prefix: Any, call_kwargs: dict) -> None:
+        if not self.enabled:
+            return
+        for spec in self.specs:
+            if spec.layer == layer and spec.location == "mixture":
+                # computed on detached clones; the live tensors are never touched
+                value = self.mixture_fn(layer, prefix, call_kwargs)
+                self._record(layer, "mixture", spec, value)
 
     def install(self, module: Any) -> "TapSession":
         """Wrap ``run_dense_layer`` and ``run_moe_layer`` on ``module``.
@@ -119,6 +144,8 @@ class TapSession:
         """
         if self._module is not None:
             raise RuntimeError("tap session already installed")
+        if any(s.location == "mixture" for s in self.specs) and self.mixture_fn is None:
+            raise RuntimeError("mixture taps declared but no mixture_fn provided")
         self._module = module
         session = self
 
@@ -138,6 +165,7 @@ class TapSession:
             hidden = kwargs.get("hidden_states")
             if layer is not None and hidden is not None:
                 session._observe(int(layer), "pre", hidden)
+                session._observe_mixture(int(layer), hidden, kwargs)
             result = original_moe(*args, **kwargs)
             if layer is not None:
                 session._observe(int(layer), "post", result[0])

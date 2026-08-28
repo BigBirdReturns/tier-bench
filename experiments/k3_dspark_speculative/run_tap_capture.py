@@ -6,9 +6,13 @@ writes the hashed capture bundle next to the run. The target result is
 unchanged by construction (adapter inertness: tests, commit 24950cb) and the
 run remains a normal custody-chain generation.
 
-Until interface-resolution R1 (K3 stream identity vs vLLM recombined stream)
-is closed, every bundle is labeled stream_identity_unconfirmed and MUST NOT be
-fed to the drafter for any claim beyond ARM B interface exploration.
+Two K3 tap conventions exist (interface-resolution.md R1): "pre" captures the
+AttnRes running-prefix wire (vLLM's prefix_only serving default), "mixture"
+computes the pre-norm AttnRes mixture over bank+prefix with the consumer
+layer's res weights (VLLM_KIMI_K3_AUX_ATTN_RES_STREAM=1; the K3 capture
+docstring names this the DFlash training target). Which one THIS drafter
+checkpoint was trained on is the remaining binary - ARM B compares both.
+Every bundle records its convention.
 
 Example (generation 11, from the gen-10 run):
   python run_tap_capture.py \
@@ -38,23 +42,55 @@ def main() -> int:
     parser.add_argument("--token-id", type=int, required=True)
     parser.add_argument("--out-root", required=True)
     parser.add_argument("--layers", default="2,23,47,71,89")
-    parser.add_argument("--location", choices=("pre", "post"), default="pre",
-                        help="pre = residual stream entering the layer (vLLM boundary semantics, subject to R1)")
+    parser.add_argument("--location", choices=("pre", "post", "mixture"), default="pre",
+                        help="pre = AttnRes running prefix entering the layer (vLLM prefix_only default); "
+                             "mixture = pre-norm AttnRes mixture over bank+prefix with the consumer "
+                             "layer's res weights (VLLM_KIMI_K3_AUX_ATTN_RES_STREAM=1 convention)")
     args = parser.parse_args()
 
     import run_cached_continuation as rcc
+    import run_real_k3_slice as core
+
+    def k3_mixture_fn(layer: int, prefix, call_kwargs: dict):
+        """The attn_res_stream tap: apply_attn_residual with the CONSUMER
+        layer's res weights over (bank ++ prefix), pre-norm, no output norm -
+        the same math the runner itself applies at each layer entry."""
+        bank = call_kwargs["block_residual"]
+        if bank is None or bank.shape[1] == 0:
+            return prefix.detach()
+        names = [
+            f"language_model.model.layers.{layer}.self_attention_res_proj.weight",
+            f"language_model.model.layers.{layer}.self_attention_res_norm.weight",
+        ]
+        tensors, _ = core.load_named_tensors(
+            names, call_kwargs["weight_map"], device=prefix.device
+        )
+        tokens = prefix.shape[0] * prefix.shape[1]
+        width = prefix.shape[-1]
+        mixed = core.apply_attn_residual(
+            prefix.detach().reshape(tokens, width),
+            bank.detach(),
+            tensors[names[0]],
+            tensors[names[1]],
+            float(call_kwargs["config"].rms_norm_eps),
+        )
+        return mixed.reshape_as(prefix)
 
     layers = [int(x) for x in args.layers.split(",")]
+    convention = {"pre": "prefix_only (vLLM serving default)",
+                  "post": "post-layer wire",
+                  "mixture": "attn_res_stream (documented DFlash training target)"}[args.location]
     specs = tuple(
         TapSpec(layer=l, location=args.location,
-                declared_as=f"dspark target_layer_id {l} (zero-based boundary; stream_identity_unconfirmed)")
+                declared_as=f"dspark target_layer_id {l} (zero-based boundary; convention: {convention})")
         for l in layers
     )
     out_root = Path(args.out_root)
     out_root.mkdir(parents=True, exist_ok=True)
     active = out_root / "active.json"
 
-    session = TapSession(specs=specs, enabled=True).install(rcc)
+    session = TapSession(specs=specs, enabled=True,
+                         mixture_fn=k3_mixture_fn if args.location == "mixture" else None).install(rcc)
     try:
         sys.argv = [
             "run_cached_continuation.py",
@@ -68,7 +104,7 @@ def main() -> int:
         session.uninstall()
 
     bundle = session.receipt()
-    bundle["stream_identity"] = "stream_identity_unconfirmed (interface-resolution R1 open)"
+    bundle["stream_identity"] = convention
     bundle["captured_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
     bundle["run_active_path"] = str(active)
     bundle_path = out_root / "tap-bundle.json"
