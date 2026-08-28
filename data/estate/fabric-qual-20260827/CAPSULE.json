@@ -1,0 +1,117 @@
+{
+  "schema": "estate/fabric-qual-capsule@1",
+  "claim_id": "CLAUDE-5",
+  "claim": "The dual-3090 TB3 eGPU pool on OCTO-L01 is a qualified 48 GB fabric in both throughput (per-card pinned) and capacity (layer-split) modes, at the phase results recorded below, measured 2026-08-27.",
+  "host": "OCTO-L01",
+  "date": "2026-08-27",
+  "qualification_mode_denominator": {
+    "modes_total": 4,
+    "modes": [
+      "single-27b-msi",
+      "double-27b-both",
+      "split-35b-a3b-q8",
+      "split-70b-r1"
+    ],
+    "runs_per_mode": 9,
+    "tokens_per_run": 512
+  },
+  "phase_results": {
+    "single-27b-msi": {
+      "model": "qwen3.5:27b",
+      "decode_tok_s_median": 33.8,
+      "prefill_tok_s_median": 104.1,
+      "note": "baseline, one card (MSI, 1200 core-lock cap)"
+    },
+    "double-27b-both": {
+      "model": "qwen3.5:27b",
+      "aggregate_decode_tok_s": 69.4,
+      "per_card_medians": {
+        "msi": 33.3,
+        "dell_b": 36.1
+      },
+      "scaling_x": 2.05,
+      "retention_pct": 98.5,
+      "note": "two pinned instances, one per card; card gap ~8% = the 1410-vs-1200 lock gap"
+    },
+    "split-35b-a3b-q8": {
+      "model": "qwen3.5:35b-a3b-q8_0",
+      "decode_tok_s_median": 51.6,
+      "vram_split_gb": [
+        19.7,
+        17.2
+      ],
+      "note": "39 GB MoE q8 layer-split; capacity mode faster than single-card dense"
+    },
+    "split-70b-r1": {
+      "model": "deepseek-r1:70b",
+      "decode_tok_s_median": 18.1,
+      "prefill_tok_s_median": 156.9,
+      "vram_split_gb": [
+        21.9,
+        21.8
+      ],
+      "note": "43.7 GB of 48 GB in use; ~200 W/card, 61/56 C during run"
+    }
+  },
+  "gpu_identities": [
+    {
+      "role": "fabric-card-msi",
+      "uuid": "GPU-b84a8323-dbd6-e432-074b-3ce8fadd3326",
+      "board": "NVIDIA GeForce RTX 3090 (TB3 eGPU)",
+      "core_lock_mhz": 1200,
+      "lock_reason": "coreLockCapMHz pending OP-2 repaste"
+    },
+    {
+      "role": "fabric-card-dell-b",
+      "uuid": "GPU-493239dc-f76e-bbbb-8e68-ffd34a5e7bbc",
+      "board": "NVIDIA GeForce RTX 3090 (TB3 eGPU)",
+      "core_lock_mhz": 1410,
+      "lock_reason": "qualified tune"
+    }
+  ],
+  "model_identities": [
+    {
+      "name": "qwen3.5:27b",
+      "ollama_manifest_sha256": "7653528ba5cba4dd8e19da24aaddc7f4d0b5ecd93571c0825dfd4137958ec06e"
+    },
+    {
+      "name": "qwen3.5:35b-a3b-q8_0",
+      "ollama_manifest_sha256": "655d273ede3adc056594f511c120d616d92bf4c4d5bcfe580f3cfa29abe8109d"
+    },
+    {
+      "name": "deepseek-r1:70b",
+      "ollama_manifest_sha256": "d37b54d01a76512a5adbaa9da4ee1c00833bf2dfefb0d4cc54351ba529e0f4da"
+    }
+  ],
+  "summary_receipt_sha256": "93c97e6d2052238e60138bfb5850ed7fe6b9e754a9c54b35c04851b84910cebb",
+  "receipt_manifest_sha256": {
+    "receipts/double-27b-both.json": "a001deb75974bd84b1c9e2248b608fb9ccaa3bac87877303040561b318937c51",
+    "receipts/single-27b-msi.json": "7bc6a422150d3665f26345f1bc49a97e2e76a4beb6561496b4a081a18cbfc13e",
+    "receipts/split-35b-a3b-q8.json": "efc337c9ad0a46f26aeaf25c2b4dcbfe07c0177c29992e6d76b5c9a2c7a9256f",
+    "receipts/split-70b-r1.json": "6e662be38fcd4a7ce83d7223c51ec8ed294bb731181f2617d0b43fb7ae2041c1",
+    "QUAL-SUMMARY.json": "93c97e6d2052238e60138bfb5850ed7fe6b9e754a9c54b35c04851b84910cebb",
+    "fabric_qual.py": "d67399230d92004d8f7120a6b9f6f3897b6ac54033a4e35ae7ec7f9f0d39849b"
+  },
+  "aggregate_evidence_root_sha256": "e0b0f7851aa94ec8cf19c2402dd47f6e12411889b8bb9025fc1d3123193f87f6",
+  "aggregate_root_rule": "sha256 over the UTF-8 text formed by one line per manifest entry, '<relative-name><SPACE><sha256><LF>', entries sorted lexicographically by name",
+  "claim_boundary": {
+    "claims": [
+      "the four phase results above, on this host, these two GPU UUIDs, at the stated core locks, with the stated ollama model manifests",
+      "throughput mode: 2.05x aggregate scaling with 98.5% per-card retention",
+      "capacity mode: dense 70B (43.7 GB resident) decodes at 18.1 tok/s across the TB3 boundary"
+    ],
+    "non_claims": [
+      "no cross-host or four-card (w01) claim - that is CLAUDE-11, blocked on OP-3",
+      "no thermal-envelope qualification of the MSI card beyond the 1200 cap - OP-2 remains open",
+      "no model-quality or benchmark-accuracy claim for the served models",
+      "no batching/concurrency claim beyond the measured one-request-per-instance pattern",
+      "no K3/observatory claim - this capsule is fabric plumbing only"
+    ]
+  },
+  "raw_evidence_custody": {
+    "classification": "DONE_LOCAL_EVIDENCE_WITH_COMMITTED_CAPSULE",
+    "statement": "Raw phase receipts (per-run walls, nvidia-smi occupancy lines) and the bench driver remain in the operator's private estate tree on OCTO-L01, off-repository. This capsule commits their digests, the allowlisted numeric results, and the aggregate root; the committed capsule is the citable closure artifact. Any future dispute reopens the raw receipts against receipt_manifest_sha256.",
+    "raw_files_bound": 6
+  },
+  "verifier": "data/estate/fabric-qual-20260827/verify_capsule.py"
+}
