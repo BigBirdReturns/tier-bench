@@ -209,7 +209,7 @@ def strict_traversal(
     start_layer = 0
     if ckpt_path.is_file():
         ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-        if ck.get("token_ids") == list(token_ids) and ck["layer_done"] < max_layer:
+        if ck.get("token_ids") == list(token_ids) and ck["layer_done"] <= max_layer:
             start_layer = int(ck["layer_done"]) + 1
             hidden = [t.to(embeddings.device) for t in ck["hidden"]]
             bank = [t.to(embeddings.device) for t in ck["bank"]]
