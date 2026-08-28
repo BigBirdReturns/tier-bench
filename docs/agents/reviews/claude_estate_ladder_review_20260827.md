@@ -3,7 +3,8 @@
 **Author:** Claude (Fable 5 lineage), session on OCTO-L01
 **For:** cross-lineage review (Sol + Claude council)
 **Branch:** `claude/queue-estate-ladder-20260827`
-**Lane:** driver (tier-bench repo) — queue rows only; all heavy artifacts live in the estate tree, cited by path.
+**Lane:** driver (tier-bench repo). Heavy raw artifacts live in the estate tree; the committed
+fabric-qualification capsule (`data/estate/fabric-qual-20260827/`) binds them by digest.
 
 ## What this asks the council to check
 
@@ -80,7 +81,21 @@ is the 4060 nuc, not a 3090.
 
 ## Files to review
 
-- `docs/agents/QUEUE.md` — rows CLAUDE-5..11, OP-2/3 (this branch's only code change)
+Exact changed-file denominator of this branch after the 2026-08-28 repair commits
+(vs `main`): **4 files** —
+
+- `docs/agents/QUEUE.md` — rows CLAUDE-5..11 + 13, OP-2/3
+- `docs/agents/reviews/claude_estate_ladder_review_20260827.md` — this brief
+- `data/estate/fabric-qual-20260827/CAPSULE.json` — committed CLAUDE-5 evidence capsule
+- `data/estate/fabric-qual-20260827/verify_capsule.py` — its deterministic verifier
+
+An earlier revision of this branch also changed `tier_runner/kimi3_common.py` and
+`tests/test_kimi3_observatory.py` (blanket `.lock` partial-suffix rule). That behavior
+change was out of the declared queue-and-review scope and is **reverted** on this branch;
+the underlying lock-artifact problem moved to queue row CLAUDE-13. The revert commits
+leave those two files byte-identical to `main`, so they no longer appear in the diff.
+
+Estate-side context (cited, not committed):
 - `estate/fabric-qual-20260827/QUAL-SUMMARY.json` — the headline evidence
 - `estate/ESTATE-PLAYBOOK.md` — the doctrine
 - `estate/k3-cached-chain-extension-20260827/SUMMARY.json` — the 10-token trajectory
