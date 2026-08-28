@@ -1,79 +1,92 @@
-# Strict-state block verification — first full-depth result (2026-08-28)
+# Strict-state block verification — full-depth result (2026-08-28)
 
-Mission OCTO-L01-PR-STACK-AND-STRICT-STATE-CLOSURE-001, phase 8. Fixture: the
-existing CLAUDE-12 campaign fixture (parent generation-011, sequence length
-139, depth-7 DSpark proposal `12200,636,347,47603,36,8,316`). No CLAUDE-10
-registered item consumed. Raw run artifacts and per-position states remain in
-private estate custody (`pr-stack-strict-state-closure-20260828/
-phase8-strict-successor/`), digest-cited here.
+Every numerical and PASS claim below is produced by the committed verifier
+chain, not by prose. The authority is
+`strict_baseline_gate.gate()`, invoked by `run_strict_block_verify.py`; its
+output is bound in the committed capsule
+`data/estate/k3-strict-state-20260828/STRICT-STATE-CAPSULE.json`, whose
+aggregate private-evidence root is:
 
-## Headline
+    9dc58ce065e221be8c1fe773faa463ae5cfff24d9eca3668c4fda135cd5d4f78
 
-**STRICT_CANONICAL_COMMIT: PASS.**
+Sealed sequential-baseline manifest aggregate root (pinned by the gate with
+`--expect-baseline-root`; a substituted baseline is refused):
 
-`SEQUENTIAL_WITHIN_LAYER_STRICT` (one weight residency per layer; positions
-advanced inside the resident layer in the exact sequential recurrent order
-with the exact single-position kernels; CPU state round-trip between
-positions) reproduces the sequential cached chain's continuation state
-**bit-exactly**:
+    04bbce658b689d33898ee224033edd4c36fe2646f546d92016b8300abd047c73
 
-- token stream: accepted 2 (drafter-limited), correction 1891; committed
-  `12200, 636, 1891` — exactly the sequential chain.
-- per-position full-state checkpoints at positions 1 and 2 vs the sealed
-  ARM A sequential baselines (generation-012 @140, generation-013 @141):
-  **93/93 layer caches exact at both positions** (69 KDA: conv_q/k/v +
-  recurrent; 24 MLA: key/value), attn_res residual bank exact, final hidden
-  exact, position and prefix exact. Content-bound hashing (contracts.py @2),
-  zero divergent components.
-- checkpoint adoption law satisfied: checkpoint K=2 is adoptable as canonical
-  state **without sequential replay**.
-- per-position logits: argmax and margins equal (636 @13.8013; 1891 @11.7123);
-  not bit-equal to the sequential finalize (max abs diff 8.1e-6) because the
-  batched K-row lm_head matmul reduces in a different order than the 1-row
-  sequential finalize. Logits are stateless and recomputable; continuation
-  custody is unaffected.
+Reproduce, on a host holding the authorized private evidence root:
 
-KDA-only checkpointing would NOT have sufficed: adoption required kda + mla +
+```
+python data/estate/k3-strict-state-20260828/verify_strict_state_capsule.py                    # CAPSULE_VERIFIED
+python data/estate/k3-strict-state-20260828/verify_strict_state_capsule.py --private-root <R> # PRIVATE_EVIDENCE_VERIFIED
+python -m k3_dspark_speculative.strict_baseline_gate --run-dir <R> --parent-run-dir <P> \
+    --baseline-manifest <M> --expect-baseline-root 04bbce65... --expected-accepted 2
+```
+
+## Headline (capsule-cited)
+
+**STRICT_CANONICAL_COMMIT: PASS**, emitted by the gate, on all seven criteria:
+exact token stream; exact accepted boundary (K=2 against the declared
+denominator); all components present; every component root bit-exact; baseline
+manifest and run identities verified; no unbound state; adopted checkpoint at
+the exact accepted boundary.
+
+- **93/93 layer caches exact at each accepted position** (69 KDA:
+  conv_q/conv_k/conv_v/recurrent; 24 MLA: key/value), plus attn_res bank,
+  final hidden, position, and prefix — content-bound roots from
+  `contracts.py`. Zero divergent components; `first_divergence: null`.
+- Committed tokens `12200, 636, 1891` equal the sequential chain; the
+  correction equals the sealed baseline argmax.
+- Checkpoint K=2 is adoptable as canonical continuation state **without
+  sequential replay**.
+- Baseline custody is rehashed inside the gate: every named baseline layer
+  cache, checkpoint, and logits file must match the manifest digest before it
+  is used as ground truth.
+
+Logit equivalence is reported **separately** and never weakens the state gate:
+`LOGIT_ARGMAX_EQUIVALENCE` true and `LOGIT_MARGIN_EQUIVALENCE` true at both
+positions; `LOGIT_NUMERICAL_EQUIVALENCE` false (max abs diff ~8e-6), confined
+to the stateless batched finalize matmul, which reduces in a different order
+than the 1-row sequential finalize. Logits are recomputable and hold no
+continuation custody.
+
+KDA-only checkpointing would not have sufficed: adoption required kda + mla +
 attn_res bank + position + prefix, all captured per position.
 
-## Economics (this fixture, acceptance 2, cache-warm)
+## Economics (this fixture, accepted K=2, cache-warm)
 
-| custody mode | wall (s) | committed speedup vs 588 s/token sequential |
+| custody mode | wall (s) | economics |
 |---|---|---|
-| VERIFY_ONLY (chunk, predecessor) | 871.6 | 2.02x on the committed-3 basis (predecessor verification-throughput figure: 2.83x) |
-| EXPERIMENTAL_BLOCK_STATE_ADOPTION (chunk) | 871.6 | noncanonical — 93/93 layers kernel-drifted (phase 7 re-audit) |
-| STRICT_CANONICAL_COMMIT (this run) | 1280.1 | **1.38x with canonical state adopted free** |
+| VERIFY_ONLY (chunk lane) | 871.6 | 2.83x verification throughput — **noncanonical** |
+| EXPERIMENTAL_BLOCK_STATE_ADOPTION | 871.6 | measurement only; chunk state is kernel-drifted in 93/93 layers |
+| STRICT_CANONICAL_COMMIT (this run) | 1280.1 | **1.38x canonical, replay-free** |
 
-Reading: the strict lane now matches the old honest 1.39x number while
-*eliminating the sequential reconstruction entirely* — the 1.39x predecessor
-figure required replaying the committed tokens through the sequential runner;
-the strict lane's 1.38x is a single traversal that verifies AND commits
-canonical state. The remaining gap to the chunk lane's wall (1280 vs 872 s) is
-per-position MoE expert streaming: exact per-position routing touched
-union-mean 67.5 experts/layer (max 97) vs the chunk path's 44.6 — the
-chunk-drifted activations under-covered the expert set, which is itself
-evidence the strict path is doing different (correct) work. Weight bytes read:
-311.4 GB, one traversal.
+The strict lane matches the previous honest 1.39x while eliminating the
+sequential reconstruction that figure required. The 872-vs-1280 s gap is
+per-position MoE expert streaming (union mean 67.5 experts/layer, max 97, vs
+the chunk path's 44.6 — the drifted chunk activations under-covered the expert
+set). Target weight bytes read 311.4 GB in one traversal.
 
-Speedup scales with acceptance: at acceptance K the sequential lane costs
-(K+1) x 588 s while the strict traversal grows sublinearly (weight residency
-amortized). Acceptance 2 is the current drafter limit, not a lane limit.
+Speedup scales with acceptance: the sequential lane costs (K+1) x 588 s while
+the strict traversal grows sublinearly under weight residency. K=2 is the
+current drafter limit, not a lane limit.
 
-## Verdict language (binding)
+## Repository state vs local state
 
-- The **2.83x** figure remains chunk-lane verification throughput. It may not
-  be called canonical committed throughput.
-- The **honest canonical number is now 1.38x measured under
-  STRICT_CANONICAL_COMMIT** (previously 1.39x via sequential reconstruction).
-- The canonical K3 chain remains the sequential cached chain; strict-lane
-  checkpoints are admissible because they are bit-identical to it.
+- **Local physical observation:** PASS (this run, this host).
+- **Repository reproducibility:** a fresh checkout reaches `CAPSULE_VERIFIED`
+  and can re-derive the verdict only with the authorized private evidence
+  root, since the per-position state tensors are model-derived state of a
+  1.5 TB checkpoint and stay in private custody. The capsule binds all 192
+  private artifacts by digest and the verifier refuses digest-correct evidence
+  whose contents contradict the capsule.
+- **Admission:** for the council. Nothing here merges itself.
 
-## Next levers
+## Next levers (not started)
 
-1. Expert-union batching inside the resident layer (route all positions
-   first, load the union once, execute per position) — removes most of the
+1. Expert-union batching inside the resident layer — removes most of the
    1280-vs-872 s gap without touching numerics.
-2. Deeper acceptance (better drafter or multi-draft) — the speedup
-   denominator grows linearly while the traversal grows sublinearly.
-3. Thermal/energy: run held ~95 W / 44 C on the verify card — far inside the
-   admitted envelope; energy per committed token drops with acceptance.
+2. Deeper acceptance (better drafter / multi-draft).
+3. Energy per committed token, which falls with acceptance. Thermals during
+   this run stayed ~95 W / 44-45 C on the verify card, inside the admitted
+   envelope.

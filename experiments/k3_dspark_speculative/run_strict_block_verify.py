@@ -65,6 +65,8 @@ import run_real_k3_slice as core  # noqa: E402
 
 from k3_dspark_speculative import contracts as contracts_mod  # noqa: E402
 from k3_dspark_speculative import run_block_verify as chunk_mode  # noqa: E402
+from k3_dspark_speculative import strict_baseline_gate as gate_mod  # noqa: E402
+from k3_dspark_speculative import strict_checkpoint as SC  # noqa: E402
 
 MAX_LAYER = 92
 
@@ -180,6 +182,7 @@ def strict_traversal(
     weight_map,
     state_dir: Path,
     parent_prefix_length: int,
+    bindings: dict,
     max_layer: int = MAX_LAYER,
 ):
     """SEQUENTIAL_WITHIN_LAYER_STRICT: one weight residency per layer, exact
@@ -205,15 +208,27 @@ def strict_traversal(
     # traversal checkpoints them after every layer and restarts continue from
     # the first incomplete layer (per-position layer states are already on
     # disk for completed layers).
+    # Every binding must match exactly or the checkpoint is quarantined as
+    # INCOMPATIBLE_CHECKPOINT - never resumed, never deleted.
     ckpt_path = state_dir / "traversal-checkpoint.pt"
+    saved_position_roots: dict[str, str] = {}
     start_layer = 0
     if ckpt_path.is_file():
         ck = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-        if ck.get("token_ids") == list(token_ids) and ck["layer_done"] <= max_layer:
+        try:
+            SC.validate_resume(ck, bindings)
+        except SC.IncompatibleCheckpoint as exc:
+            quarantine = state_dir / "traversal-checkpoint.INCOMPATIBLE.pt"
+            ckpt_path.replace(quarantine)
+            raise SystemExit(
+                f"{exc}\nquarantined at {quarantine}; start from a fresh "
+                "output root (the checkpoint is preserved, not deleted)")
+        if ck["layer_done"] <= max_layer:
             start_layer = int(ck["layer_done"]) + 1
             hidden = [t.to(embeddings.device) for t in ck["hidden"]]
             bank = [t.to(embeddings.device) for t in ck["bank"]]
             telemetry.update(ck["telemetry"])
+            saved_position_roots.update(ck.get("position_state_roots", {}))
             print(json.dumps({"resumed_from_layer": start_layer}), flush=True)
     for layer in range(start_layer, max_layer + 1):
         started = time.perf_counter()
@@ -222,11 +237,15 @@ def strict_traversal(
         router_inputs = []
         prefix_sums = []
         cache = parent_cache  # state after position p-1 (CPU tensors)
+        layer_position_roots = {}
         for p in range(k):
             router_input, prefix_sum, bank[p], cache = strict_position_forward(
                 res, hidden[p], bank[p], cache, config)
             router_inputs.append(router_input)
             prefix_sums.append(prefix_sum)
+            layer_position_roots[f"position-{p + 1:02d}/layer-{layer:03d}.pt"] = (
+                SC.tensor_root(torch.cat(
+                    [v.reshape(-1).float() for _, v in sorted(cache.items())])))
             torch.save(
                 {
                     "schema": "octopodes/k3-strict-position-layer-state@1",
@@ -271,14 +290,16 @@ def strict_traversal(
         telemetry["per_layer_wall_s"].append(round(time.perf_counter() - started, 2))
         del res
         torch.cuda.empty_cache()
+        saved_position_roots.update(layer_position_roots)
         torch.save(
-            {
-                "token_ids": list(token_ids),
-                "layer_done": layer,
-                "hidden": [t.detach().to("cpu") for t in hidden],
-                "bank": [t.detach().to("cpu") for t in bank],
-                "telemetry": {k2: v for k2, v in telemetry.items()},
-            },
+            SC.make_checkpoint_payload(
+                bindings=bindings,
+                layer_done=layer,
+                hidden=[t.detach().to("cpu") for t in hidden],
+                bank=[t.detach().to("cpu") for t in bank],
+                telemetry={k2: v for k2, v in telemetry.items()},
+                position_state_roots=saved_position_roots,
+            ),
             ckpt_path,
         )
         print(json.dumps({"layer_done": layer,
@@ -310,10 +331,21 @@ def main() -> int:
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--max-layer", type=int, default=MAX_LAYER,
                         help="bounded smoke: stop after this layer (skips finalize/adjudication unless 92)")
+    parser.add_argument("--baseline-manifest", type=Path, default=None,
+                        help="sealed sequential-baseline manifest; required to emit a "
+                             "STRICT_CANONICAL_COMMIT verdict")
+    parser.add_argument("--expect-baseline-root", default=None,
+                        help="pin the baseline manifest aggregate root (refuses a substitution)")
+    parser.add_argument("--expected-accepted", type=int, default=None,
+                        help="expected accepted-position denominator")
     args = parser.parse_args()
     out = args.out_dir.resolve()
     out.mkdir(parents=True, exist_ok=True)
     proposed = [int(x) for x in args.proposed.split(",")]
+    baseline_manifest = None
+    if args.baseline_manifest is not None:
+        baseline_manifest = gate_mod.load_manifest(
+            args.baseline_manifest, args.expect_baseline_root)
 
     weight_map, model_index_sha, prefill_progress, config, classes = (
         chunk_mode.load_environment(args.parent_run_dir.resolve()))
@@ -341,6 +373,19 @@ def main() -> int:
             "CPU state round-trip between positions); layer-outer order is "
             "numerically exact vs position-outer."),
     }
+    prefix_tokens = list(parent_progress["source"].get("parent_token_ids", []))
+    bindings = SC.make_bindings(
+        runner_sha256=core.sha256_file(Path(__file__).resolve()),
+        mode=args.mode,
+        model_index_sha256=model_index_sha,
+        parent_checkpoint_sha256=parent_progress.get("checkpoint_sha256"),
+        baseline_root_sha256=(baseline_manifest or {}).get("aggregate_root_sha256"),
+        prefix_length=parent_len,
+        prefix_sha256=SC.tokens_sha256(prefix_tokens),
+        proposal_tokens=proposed,
+        output_root_id=str(out),
+    )
+    receipt["checkpoint_bindings"] = bindings
     t0 = time.perf_counter()
     if args.mode == "SEQUENTIAL_WITHIN_LAYER_STRICT":
         state_dir = out / "strict-state"
@@ -348,7 +393,7 @@ def main() -> int:
             token_ids=proposed, prefill_progress=prefill_progress,
             config=config, classes=classes, weight_map=weight_map,
             state_dir=state_dir, parent_prefix_length=parent_len,
-            max_layer=args.max_layer)
+            bindings=bindings, max_layer=args.max_layer)
         receipt["state_dir"] = str(state_dir)
         if args.max_layer != MAX_LAYER:
             receipt["bounded_smoke_max_layer"] = args.max_layer
@@ -395,11 +440,41 @@ def main() -> int:
         "parent_state_mutated": False,
         "finished_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
     })
+    # The runner itself computes the verdict: load the sealed sequential
+    # baselines and gate STRICT_CANONICAL_COMMIT on the full component
+    # comparison. Without a baseline manifest no PASS may be emitted.
+    if baseline_manifest is None or args.mode != "SEQUENTIAL_WITHIN_LAYER_STRICT":
+        receipt["STRICT_CANONICAL_COMMIT"] = "NOT_ADJUDICATED"
+        receipt["not_adjudicated_reason"] = (
+            "no --baseline-manifest supplied" if baseline_manifest is None
+            else f"mode {args.mode} is noncanonical by construction")
+    else:
+        verdicts = gate_mod.gate(
+            state_dir=state_dir,
+            per_position_logits=out / "per-position-logits.pt",
+            manifest=baseline_manifest,
+            model_index_sha256=model_index_sha,
+            parent_checkpoint_sha256=parent_progress.get("checkpoint_sha256"),
+            parent_sequence_length=parent_len,
+            proposed=proposed,
+            accepted=accepted,
+            committed=committed,
+            expected_accepted=args.expected_accepted,
+        )
+        verdicts["baseline_manifest_root"] = baseline_manifest["aggregate_root_sha256"]
+        (out / "STRICT-ADJUDICATION.json").write_text(
+            json.dumps(verdicts, indent=1), encoding="utf-8")
+        receipt["STRICT_CANONICAL_COMMIT"] = verdicts["STRICT_CANONICAL_COMMIT"]
+        receipt["selected_checkpoint"] = verdicts["selected_checkpoint"]
+        receipt["adjudication"] = "STRICT-ADJUDICATION.json"
+        receipt["logit_equivalence"] = verdicts["logit_equivalence"]
+        receipt["first_divergence"] = verdicts["first_divergence"]
     (out / "STRICT-VERIFY-RECEIPT.json").write_text(
         json.dumps(receipt, indent=1), encoding="utf-8")
     print(json.dumps({"mode": args.mode, "accepted": accepted,
-                      "committed": committed, "wall_s": verify_wall}))
-    return 0
+                      "committed": committed, "wall_s": verify_wall,
+                      "STRICT_CANONICAL_COMMIT": receipt["STRICT_CANONICAL_COMMIT"]}))
+    return 0 if receipt["STRICT_CANONICAL_COMMIT"] in ("PASS", "NOT_ADJUDICATED") else 1
 
 
 if __name__ == "__main__":
