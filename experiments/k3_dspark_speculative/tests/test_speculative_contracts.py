@@ -309,42 +309,85 @@ class ReceiptSemanticsWitnesses(unittest.TestCase):
         with self.assertRaises(C.SpecStepError):
             step(t, ScriptedDrafter([1]))
 
+    @staticmethod
+    def _decisions(flags):
+        return [{"position": i, "proposed": 1, "target_pick": 1 if f else 2,
+                 "accepted": f} for i, f in enumerate(flags)]
+
+    def _mint(self, **overrides):
+        kwargs = dict(
+            target_identity={}, drafter_identity={}, proposal={"tokens": [1, 2, 3]},
+            verification={"accepted_length": 3,
+                          "decisions": self._decisions([True, True, True])},
+            snapshot_hash="a" * 64, final_state_hash="b" * 64,
+            proposed_length=3, target_verified_prefix_length=3,
+            committed_length=3, rollback_performed=False,
+            state_transition="committed", bytes_read=None,
+            wall_seconds=0.0, thermal=None, terminal_status="ok",
+        )
+        kwargs.update(overrides)
+        return C.receipt_speculative_step(**kwargs)
+
     def test_the_v1_contradiction_is_impossible(self):
         """failed:commit + committed_length > 0 must be unconstructable."""
         with self.assertRaises(C.SpecStepError):
-            C.receipt_speculative_step(
-                target_identity={}, drafter_identity={}, proposal={"tokens": [1, 2, 3]},
-                verification={"accepted_length": 3, "decisions": []},
-                snapshot_hash="a" * 64, final_state_hash="a" * 64,
-                proposed_length=3, target_verified_prefix_length=3,
-                committed_length=3, rollback_performed=True,
-                state_transition="rolled_back", bytes_read=None,
-                wall_seconds=0.0, thermal=None, terminal_status="failed:commit",
-            )
+            self._mint(final_state_hash="a" * 64, rollback_performed=True,
+                       state_transition="rolled_back",
+                       terminal_status="failed:commit")
 
     def test_committed_cannot_exceed_verified(self):
         with self.assertRaises(C.SpecStepError):
-            C.receipt_speculative_step(
-                target_identity={}, drafter_identity={}, proposal={"tokens": [1, 2]},
-                verification={"accepted_length": 1, "decisions": []},
-                snapshot_hash="a" * 64, final_state_hash="b" * 64,
-                proposed_length=2, target_verified_prefix_length=1,
-                committed_length=2, rollback_performed=False,
-                state_transition="committed", bytes_read=None,
-                wall_seconds=0.0, thermal=None, terminal_status="ok",
-            )
+            self._mint(
+                proposal={"tokens": [1, 2]}, proposed_length=2,
+                verification={"accepted_length": 1,
+                              "decisions": self._decisions([True, False])},
+                target_verified_prefix_length=1, committed_length=2)
 
     def test_rolled_back_requires_hash_restoration(self):
         with self.assertRaises(C.SpecStepError):
-            C.receipt_speculative_step(
-                target_identity={}, drafter_identity={}, proposal={"tokens": [1]},
-                verification={"accepted_length": 0, "decisions": []},
-                snapshot_hash="a" * 64, final_state_hash="b" * 64,
-                proposed_length=1, target_verified_prefix_length=0,
-                committed_length=0, rollback_performed=True,
-                state_transition="rolled_back", bytes_read=None,
-                wall_seconds=0.0, thermal=None, terminal_status="ok",
-            )
+            self._mint(
+                proposal={"tokens": [1]}, proposed_length=1,
+                verification={"accepted_length": 0,
+                              "decisions": self._decisions([False])},
+                target_verified_prefix_length=0, committed_length=0,
+                rollback_performed=True, state_transition="rolled_back")
+
+    def test_external_receipt_verified_beyond_proposal_refused(self):
+        """The exact review example: proposed 1, verified 2, rolled back."""
+        with self.assertRaises(C.SpecStepError) as ctx:
+            self._mint(
+                proposal={"tokens": [1]}, proposed_length=1,
+                verification={"accepted_length": 2,
+                              "decisions": self._decisions([True])},
+                target_verified_prefix_length=2, committed_length=0,
+                rollback_performed=True, state_transition="rolled_back",
+                final_state_hash="a" * 64, terminal_status="failed:commit")
+        self.assertIn("target_verified_prefix_length", str(ctx.exception))
+
+    def test_decision_count_must_equal_proposed_length(self):
+        with self.assertRaises(C.SpecStepError):
+            self._mint(verification={"accepted_length": 3,
+                                     "decisions": self._decisions([True, True])})
+
+    def test_accepted_decisions_must_be_contiguous_prefix(self):
+        with self.assertRaises(C.SpecStepError):
+            self._mint(verification={
+                "accepted_length": 3,
+                "decisions": self._decisions([True, False, True])})
+
+    def test_prefix_length_must_equal_verified(self):
+        with self.assertRaises(C.SpecStepError):
+            self._mint(verification={
+                "accepted_length": 3,
+                "decisions": self._decisions([True, True, False])})
+
+    def test_verified_without_decisions_refused(self):
+        with self.assertRaises(C.SpecStepError):
+            self._mint(verification=None)
+
+    def test_rollback_performed_conflicts_with_committed_transition(self):
+        with self.assertRaises(C.SpecStepError):
+            self._mint(rollback_performed=True)
 
     def test_replay_detection_per_terminal_outcome(self):
         """Replaying an identical step reproduces the identity hash for each
@@ -398,6 +441,146 @@ class ReceiptSemanticsWitnesses(unittest.TestCase):
                     "receipt_sha256"):
             self.assertIn(key, r)
         self.assertEqual(r["schema"], C.RECEIPT_SCHEMA_V2)
+
+
+class StateDenominatorWitnesses(unittest.TestCase):
+    """2.1 witnesses: the exported-state key set is EXACTLY the five
+    components. Every mutation refuses before a receipt is minted."""
+
+    def base_state(self):
+        return SyntheticTarget(PREFIX).export_state()
+
+    def assert_state_refused(self, state):
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.state_root_sha256(state)
+        self.assertEqual(ctx.exception.stage, "state_manifest")
+
+    def test_unknown_sixth_state_key(self):
+        s = self.base_state()
+        s["aux"] = {"anything": 1}
+        self.assert_state_refused(s)
+
+    def test_extra_rng_state(self):
+        s = self.base_state()
+        s["rng"] = b"\x00" * 16
+        self.assert_state_refused(s)
+
+    def test_extra_cache_object(self):
+        s = self.base_state()
+        s["expert_cache"] = {"layer0": [1, 2, 3]}
+        self.assert_state_refused(s)
+
+    def test_missing_known_key(self):
+        s = self.base_state()
+        del s["mla"]
+        self.assert_state_refused(s)
+
+    def test_renamed_known_key(self):
+        s = self.base_state()
+        s["kda_v2"] = s.pop("kda")
+        self.assert_state_refused(s)
+
+    def test_additional_key_with_unsupported_object(self):
+        s = self.base_state()
+        s["extra"] = object()
+        self.assert_state_refused(s)
+
+    @unittest.skipUnless(torch is not None, "torch required")
+    def test_additional_key_with_valid_tensor(self):
+        s = self.base_state()
+        s["extra"] = torch.ones(4)
+        self.assert_state_refused(s)
+
+    def test_refusal_happens_before_receipt_minting(self):
+        """A target exporting a sixth key fails closed inside the step - no
+        receipt object is ever returned."""
+        class ExtraStateTarget(SyntheticTarget):
+            def export_state(self):
+                s = super().export_state()
+                s["adapter_scratch"] = [0.0]
+                return s
+        with self.assertRaises(C.SpecStepError):
+            step(ExtraStateTarget(PREFIX), ScriptedDrafter([1]))
+
+    @unittest.skipUnless(torch is not None, "torch required")
+    def test_extra_valid_tensor_no_longer_shares_the_root(self):
+        """Fresh review evidence rebutted: an added component can no longer
+        produce the same state_hash - it refuses outright."""
+        s = self.base_state()
+        baseline = C.state_root_sha256(dict(s))
+        s["extra"] = torch.ones(4)
+        with self.assertRaises(C.SpecStepError):
+            C.state_root_sha256(s)
+        self.assertEqual(baseline, C.state_root_sha256(self.base_state()))
+
+
+class FixedRowsTarget(SyntheticTarget):
+    def __init__(self, prefix, rows):
+        super().__init__(prefix)
+        self._rows = rows
+
+    def block_logits(self, proposed_tokens):
+        return self._rows
+
+
+class LogitValidityWitnesses(unittest.TestCase):
+    """2.2 witnesses: non-finite / malformed target logits must fail
+    verification, never silently pick a different finite token."""
+
+    NAN = float("nan")
+    INF = float("inf")
+
+    def assert_row_refused(self, rows, proposed, fragment=""):
+        t = FixedRowsTarget(PREFIX, rows)
+        before = C.state_hash(t.export_state())
+        r = step(t, ScriptedDrafter(proposed))
+        self.assertEqual(r["terminal_status"], "failed:verify")
+        self.assertEqual(r["committed_length"], 0)
+        self.assertEqual(r["target_verified_prefix_length"], 0)
+        self.assertEqual(C.state_hash(t.export_state()), before)
+        return r
+
+    def test_nan_row_review_example(self):
+        # [1.0, NaN, 0.0] previously selected token 0 and committed it
+        self.assert_row_refused([[1.0, self.NAN, 0.0]], [0])
+
+    def test_positive_infinity_refused(self):
+        self.assert_row_refused([[self.INF, 0.0, 0.0]], [0])
+
+    def test_negative_infinity_refused(self):
+        self.assert_row_refused([[0.0, -self.INF, 0.0]], [0])
+
+    def test_empty_row_refused(self):
+        self.assert_row_refused([[]], [0])
+
+    def test_ragged_rows_refused(self):
+        rows = [[1.0] * 16, [1.0] * 15]
+        self.assert_row_refused(rows, [0, 1])
+
+    def test_nonnumeric_entry_refused(self):
+        self.assert_row_refused([[1.0, "x", 0.0]], [0])
+
+    def test_bool_entry_refused(self):
+        self.assert_row_refused([[1.0, True, 0.0]], [0])
+
+    def test_vocab_dimension_enforced_when_declared(self):
+        t = FixedRowsTarget(PREFIX, [[1.0] * 15])
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.verify_proposed_block(t, [0], vocab_size=16)
+        self.assertIn("vocabulary dimension", str(ctx.exception))
+
+    def test_decisions_retain_row_evidence(self):
+        t = SyntheticTarget(PREFIX)
+        truth = t.greedy_continuation(2)
+        v = C.verify_proposed_block(t, truth[:2])
+        for d in v["decisions"]:
+            for key in ("target_pick", "proposed", "accepted", "top_logit",
+                        "runner_up_logit", "margin", "logit_row_sha256",
+                        "finite_valid"):
+                self.assertIn(key, d)
+            self.assertTrue(d["finite_valid"])
+            self.assertEqual(len(d["logit_row_sha256"]), 64)
+            self.assertGreaterEqual(d["margin"], 0.0)
 
 
 if __name__ == "__main__":

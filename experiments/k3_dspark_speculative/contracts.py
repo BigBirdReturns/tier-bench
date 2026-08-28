@@ -30,6 +30,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import math
 import struct
 import time
 from dataclasses import dataclass
@@ -215,13 +216,27 @@ def _encode_state(value: Any, path: str) -> tuple[bytes, Any]:
 def state_component_manifest(state: dict[str, Any]) -> dict[str, Any]:
     """Type-tagged manifest with an independent root per state component.
 
-    Components are exactly STATE_KEYS (kda, mla, attn_res, position, prefix).
-    Each component root is the SHA-256 of that component's recursive binary
-    encoding; the manifest mirror records every dense-tensor binding
+    Components are EXACTLY STATE_KEYS (kda, mla, attn_res, position, prefix):
+    both missing and additional top-level keys refuse. Silently omitting
+    adapter-specific state (extra caches, RNG state, renamed components) would
+    let mutations to it evade verification and rollback custody while minting
+    a valid-looking receipt. A later extension must introduce a new schema or
+    a closed extension registry that independently defines how every
+    additional component is encoded and hashed - it may not ride along
+    unbound. Each component root is the SHA-256 of that component's recursive
+    binary encoding; the manifest mirror records every dense-tensor binding
     (field coordinate, dtype, shape, layout, byte count, content digest)."""
     missing = [k for k in STATE_KEYS if k not in state]
     if missing:
         raise SpecStepError("state_manifest", f"target state missing keys: {missing}")
+    extra = sorted(k for k in state if k not in STATE_KEYS)
+    if extra:
+        raise SpecStepError(
+            "state_manifest",
+            f"target state carries unbound additional keys {extra}; the "
+            f"exported-state denominator is exactly {list(STATE_KEYS)} and "
+            "unbound components may not evade custody",
+        )
     components = {}
     for key in STATE_KEYS:
         enc, mirror = _encode_state(state[key], key)
@@ -324,22 +339,69 @@ def snapshot_target_state(target: TargetAdapter) -> dict[str, Any]:
     return {"state": state, "hash": state_hash(state)}
 
 
+def _validate_logit_row(row: Any, position: int, vocab_size: int | None) -> list[float]:
+    """A target logit row must be nonempty, numeric, finite everywhere, and of
+    the declared vocabulary dimension when one is available. NaN/Inf must fail
+    verification, never silently pick a different finite token."""
+    if not isinstance(row, (list, tuple)) or len(row) == 0:
+        raise SpecStepError(
+            "verify", f"position {position}: empty or non-sequence logit row")
+    if vocab_size is not None and len(row) != vocab_size:
+        raise SpecStepError(
+            "verify",
+            f"position {position}: logit row length {len(row)} != declared "
+            f"vocabulary dimension {vocab_size}")
+    values = []
+    for i, v in enumerate(row):
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            raise SpecStepError(
+                "verify",
+                f"position {position}: nonnumeric logit at index {i} "
+                f"({type(v).__name__})")
+        v = float(v)
+        if not math.isfinite(v):
+            raise SpecStepError(
+                "verify",
+                f"position {position}: non-finite logit {v!r} at index {i}")
+        values.append(v)
+    return values
+
+
 def verify_proposed_block(
-    target: TargetAdapter, proposed_tokens: list[int]
+    target: TargetAdapter,
+    proposed_tokens: list[int],
+    *,
+    vocab_size: int | None = None,
 ) -> dict[str, Any]:
     if not 1 <= len(proposed_tokens) <= MAX_BLOCK:
         raise SpecStepError("verify", f"block length {len(proposed_tokens)} outside 1..{MAX_BLOCK}")
     logits = target.block_logits(list(proposed_tokens))
     if len(logits) != len(proposed_tokens):
         raise SpecStepError("verify", "target returned wrong number of positions")
+    row_width: int | None = vocab_size
     accepted = 0
     decisions = []
-    for position, (token, row) in enumerate(zip(proposed_tokens, logits)):
+    for position, (token, raw_row) in enumerate(zip(proposed_tokens, logits)):
+        row = _validate_logit_row(raw_row, position, row_width)
+        if row_width is None:
+            row_width = len(row)  # every row must share one dimension
         target_pick = max(range(len(row)), key=lambda i: (row[i], -i))
         match = target_pick == token
-        decisions.append(
-            {"position": position, "proposed": token, "target_pick": target_pick, "accepted": match and accepted == position}
-        )
+        top = row[target_pick]
+        runner_up = max((v for i, v in enumerate(row) if i != target_pick),
+                        default=None)
+        row_digest = hashlib.sha256(_encode_state(row, f"logits[{position}]")[0]).hexdigest()
+        decisions.append({
+            "position": position,
+            "proposed": token,
+            "target_pick": target_pick,
+            "accepted": match and accepted == position,
+            "top_logit": top,
+            "runner_up_logit": runner_up,
+            "margin": None if runner_up is None else top - runner_up,
+            "logit_row_sha256": row_digest,
+            "finite_valid": True,
+        })
         if match and accepted == position:
             accepted += 1
     return {"logits": logits, "accepted_length": accepted, "decisions": decisions}
@@ -406,10 +468,44 @@ def validate_speculative_receipt(receipt: dict[str, Any]) -> None:
     transition = receipt["state_transition"]
     if transition not in TERMINAL_TRANSITIONS:
         raise SpecStepError("receipt", f"unknown state_transition {transition!r}")
-    if not 0 <= committed <= proposed:
-        raise SpecStepError("receipt", f"committed_length {committed} outside 0..proposed {proposed}")
+    if not isinstance(proposed, int) or proposed < 0:
+        raise SpecStepError("receipt", f"proposed_length {proposed!r} is not a non-negative int")
+    if not isinstance(verified, int) or not 0 <= verified <= proposed:
+        raise SpecStepError(
+            "receipt",
+            f"target_verified_prefix_length {verified!r} outside 0..proposed {proposed} - "
+            "externally supplied receipts must satisfy the documented bound")
+    if not isinstance(committed, int) or not 0 <= committed <= proposed:
+        raise SpecStepError("receipt", f"committed_length {committed!r} outside 0..proposed {proposed}")
     if committed > verified:
         raise SpecStepError("receipt", f"committed_length {committed} exceeds verified prefix {verified}")
+    decisions = receipt.get("per_position_decisions")
+    if decisions is None:
+        if verified != 0:
+            raise SpecStepError(
+                "receipt",
+                f"verified prefix {verified} claimed without per-position decisions")
+    else:
+        if len(decisions) != proposed:
+            raise SpecStepError(
+                "receipt",
+                f"decision count {len(decisions)} != proposed_length {proposed}")
+        flags = [bool(d.get("accepted")) for d in decisions]
+        prefix_len = 0
+        for flag in flags:
+            if flag:
+                prefix_len += 1
+            else:
+                break
+        if any(flags[prefix_len:]):
+            raise SpecStepError(
+                "receipt",
+                "accepted decisions do not form one contiguous prefix")
+        if prefix_len != verified:
+            raise SpecStepError(
+                "receipt",
+                f"contiguous accepted prefix {prefix_len} != "
+                f"target_verified_prefix_length {verified}")
     if committed > 0 and status != "ok":
         raise SpecStepError(
             "receipt",
@@ -427,6 +523,14 @@ def validate_speculative_receipt(receipt: dict[str, Any]) -> None:
             )
     if transition == "rollback_failed" and status == "ok":
         raise SpecStepError("receipt", "rollback_failed transition cannot be terminal ok")
+    if receipt["rollback_performed"] and transition == "committed":
+        raise SpecStepError(
+            "receipt", "rollback_performed cannot coexist with a committed transition")
+    if transition == "committed" and receipt["state_hash_after"] == receipt["state_hash_before"] and committed > 0:
+        raise SpecStepError(
+            "receipt",
+            "committed transition with positive committed_length cannot leave "
+            "the state root unchanged")
 
 
 def receipt_speculative_step(
