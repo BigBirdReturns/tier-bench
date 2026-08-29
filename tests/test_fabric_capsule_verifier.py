@@ -9,13 +9,30 @@ refuse. Zero-model, zero-network.
 Witness coverage:
   denominator/statistics  phase denominator, run count, decode median,
                           recomputed-decode-vs-declared, recomputed-prefill-
-                          vs-declared, per-card medians, aggregate/retention,
-                          VRAM, terminal verdict, date
+                          vs-declared, per-card median values, aggregate/
+                          retention, VRAM, terminal verdict, date
+  per-card role set       omitted, additional, renamed and swapped card roles;
+                          per-card medians claimed for a single-stream phase
   workload                per-sample token count, driver generation constant
   identity                GPU UUID (driver source and device attestation),
                           swapped card roles via serve pinning, altered core
-                          lock cap, altered core-lock policy rule, retagged
-                          ollama model manifest, driver serve dispatch
+                          lock cap, retagged ollama model manifest, driver
+                          serve dispatch
+  model denominator       a dispatched model with no identity, with no manifest
+                          artifact, an identity no phase dispatches, a bound
+                          manifest no identity claims, a phase naming a model
+                          the driver does not dispatch, a receipt naming a model
+                          the capsule has no identity for
+  executable lock rule    the committed min-rule present only as a comment,
+                          only inside a string, only inside an uncalled
+                          function; mode operand alone; cap operand alone; an
+                          unconditional cap; an inverted (max) comparison;
+                          unrelated operands; the computed lock discarded
+                          before application; the lock never applied
+  attestation binding     another host, another class, another schema, an
+                          unexpected device denominator, another claim id, a
+                          missing supplemental statement, a readback timestamp
+                          that predates the run it attests
 """
 from __future__ import annotations
 
@@ -66,13 +83,38 @@ $serves = @(
 )
 """
 
-GPU_MODE_SRC = """# synthetic core-lock applier (fixture)
+def gpu_mode_src(compute: str) -> str:
+    """A synthetic core-lock applier whose per-card computation is `compute`.
+
+    The surrounding shape mirrors the real applier: a per-device loop that
+    stores its computed lock into $lockByIdx, and a later nvidia-smi -lgc
+    application that reads it back. Only the computation varies between
+    witnesses, so every refusal is attributable to the executable rule.
+    """
+    return f"""# synthetic core-lock applier (fixture)
 # Effective core lock per card = min(mode's lock, the card's coreLockCapMHz).
-    $eff = $m.coreLock
-    if ($card2.coreLockCapMHz -lt $eff) {
-        $eff = [int]$card2.coreLockCapMHz
-    }
+$lockByIdx = @{{}}
+foreach ($line in (nvidia-smi --query-gpu=index,uuid --format=csv,noheader)) {{
+    $f2 = $line -split ',\\s*'; $i2 = [int]$f2[0]; $u2 = $f2[1].Trim()
+    $card2 = $registry.cards.$u2
+{compute}
+    $lockByIdx[$i2] = $eff
+}}
+foreach ($i in $idx) {{
+    if ($lockByIdx[$i] -gt 0) {{ nvidia-smi -i $i -lgc "210,$($lockByIdx[$i])" | Out-Null }}
+}}
 """
+
+
+# the committed rule, on the executable path
+LOCK_MIN_COMPUTE = """    $eff = $m.coreLock
+    if ($eff -gt 0 -and $registry) {
+        if ($card2 -and [int]$card2.coreLockCapMHz -gt 0 -and [int]$card2.coreLockCapMHz -lt $eff) {
+            $eff = [int]$card2.coreLockCapMHz
+        }
+    }"""
+
+GPU_MODE_SRC = gpu_mode_src(LOCK_MIN_COMPUTE)
 
 
 def gpu_lines(mibs):
@@ -154,7 +196,13 @@ def build_fixture(base: Path):
     }), encoding="utf-8")
     (ident / "IDENTITY-ATTESTATION.json").write_text(json.dumps({
         "schema": "estate/fabric-identity-attestation@1",
+        "attestation_id": "CLAUDE-5-IDENTITY-001",
+        "supplements": {
+            "capsule_claim_id": "CLAUDE-5",
+            "statement": "Supplements the qualification run; re-measures nothing.",
+        },
         "host": "OCTO-L01",
+        "observed_utc": "2026-08-29T01:56:08Z",
         "observation_class": "POST_RUN_READBACK",
         "nvidia_smi_rows": [
             f"0, {MSI}, NVIDIA GeForce RTX 3090, 00000000:04:00.0, 24576 MiB",
@@ -499,14 +547,110 @@ class SemanticWitnesses(unittest.TestCase):
                 lambda d: d["modes"]["decode"].update(coreLock=1695))
             self.assert_semantic_refusal(base, "effective core lock")
 
-    def test_lock_rule_removed_witness(self):
+    # ------------- executable core-lock rule (never substring presence) ------
+
+    def _lock_witness(self, source: str, fragment: str = "core-lock rule"):
         with tempfile.TemporaryDirectory() as tmp:
             base = Path(tmp)
             est, _ = build_fixture(base)
-            self.mutate_text(est, base, "identity/gpu-mode.ps1",
-                             lambda s: s.replace("$eff = [int]$card2.coreLockCapMHz",
-                                                 "# cap application removed"))
-            self.assert_semantic_refusal(base, "committed rule anchor")
+            (est / "identity" / "gpu-mode.ps1").write_text(source, encoding="utf-8")
+            self.rewrite(base, est)
+            self.assert_semantic_refusal(base, fragment)
+
+    def test_lock_rule_removed_witness(self):
+        self._lock_witness(gpu_mode_src("""    $eff = $m.coreLock
+    # cap application removed"""))
+
+    def test_lock_rule_only_in_a_comment_witness(self):
+        """The committed line is present verbatim - as a comment. The line the
+        applier actually executes sets an unrelated constant."""
+        self._lock_witness(gpu_mode_src("""    $eff = $m.coreLock
+    if ($card2 -and [int]$card2.coreLockCapMHz -lt $eff) {
+        # $eff = [int]$card2.coreLockCapMHz
+        $eff = 1695
+    }"""))
+
+    def test_lock_rule_only_in_a_string_witness(self):
+        self._lock_witness(gpu_mode_src("""    $eff = $m.coreLock
+    Write-Output "$eff = [int]$card2.coreLockCapMHz"
+"""))
+
+    def test_lock_rule_only_in_an_unused_function_witness(self):
+        self._lock_witness("""# the rule exists, in a function nothing ever calls
+function Get-EffectiveCoreLock {
+    $eff = $m.coreLock
+    if ([int]$card2.coreLockCapMHz -gt 0 -and [int]$card2.coreLockCapMHz -lt $eff) {
+        $eff = [int]$card2.coreLockCapMHz
+    }
+    return $eff
+}
+$lockByIdx = @{}
+foreach ($line in (nvidia-smi --query-gpu=index,uuid --format=csv,noheader)) {
+    $i2 = [int]($line -split ',\\s*')[0]
+    $eff = $m.coreLock
+    $lockByIdx[$i2] = $eff
+}
+foreach ($i in $idx) { nvidia-smi -i $i -lgc "210,$($lockByIdx[$i])" | Out-Null }
+""")
+
+    def test_lock_rule_mode_operand_only_witness(self):
+        self._lock_witness(gpu_mode_src("    $eff = $m.coreLock"))
+
+    def test_lock_rule_cap_operand_only_witness(self):
+        self._lock_witness(gpu_mode_src("    $eff = [int]$card2.coreLockCapMHz"))
+
+    def test_lock_rule_unconditional_cap_witness(self):
+        """Both operands present, but the cap is applied unconditionally - that
+        is not a minimum."""
+        self._lock_witness(gpu_mode_src("""    $eff = $m.coreLock
+    $eff = [int]$card2.coreLockCapMHz"""))
+
+    def test_lock_rule_inverted_comparison_witness(self):
+        """min() turned into max(): the cap is taken when it EXCEEDS the mode
+        lock, so a degraded card could be driven above its ceiling."""
+        self._lock_witness(gpu_mode_src("""    $eff = $m.coreLock
+    if ([int]$card2.coreLockCapMHz -gt $eff) {
+        $eff = [int]$card2.coreLockCapMHz
+    }"""))
+
+    def test_lock_rule_unrelated_operands_witness(self):
+        self._lock_witness(gpu_mode_src("""    $eff = $m.powerLimit
+    if ([int]$card2.memOffsetMHz -lt $eff) {
+        $eff = [int]$card2.memOffsetMHz
+    }"""))
+
+    def test_lock_rule_bypassed_before_application_witness(self):
+        """The minimum is computed correctly and then discarded before the
+        value reaches nvidia-smi."""
+        self._lock_witness(gpu_mode_src("""    $eff = $m.coreLock
+    if ($card2 -and [int]$card2.coreLockCapMHz -lt $eff) {
+        $eff = [int]$card2.coreLockCapMHz
+    }
+    $eff = $m.coreLock"""))
+
+    def test_lock_rule_never_applied_witness(self):
+        """The minimum is computed but the applier locks the mode value."""
+        self._lock_witness("""$lockByIdx = @{}
+foreach ($line in (nvidia-smi --query-gpu=index,uuid --format=csv,noheader)) {
+    $i2 = [int]($line -split ',\\s*')[0]
+    $card2 = $registry.cards.$u2
+    $eff = $m.coreLock
+    if ([int]$card2.coreLockCapMHz -lt $eff) {
+        $eff = [int]$card2.coreLockCapMHz
+    }
+    $lockByIdx[$i2] = $m.coreLock
+}
+foreach ($i in $idx) { nvidia-smi -i $i -lgc "210,$($lockByIdx[$i])" | Out-Null }
+""")
+
+    def test_min_rule_applier_parses_to_the_committed_rule(self):
+        """The positive control: a well-formed applier resolves to the exact
+        min-rule, its two operands, and the map that reaches nvidia-smi."""
+        rule = V.parse_lock_rule_ps(GPU_MODE_SRC)
+        self.assertEqual(rule["mode_object"], "m")
+        self.assertEqual(rule["card_object"], "card2")
+        self.assertEqual(rule["lock_map"], "lockByIdx")
+        self.assertIn("min(", rule["rule"])
 
     def test_ambiguous_default_mode_witness(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -552,6 +696,190 @@ class SemanticWitnesses(unittest.TestCase):
             (est / "identity" / "gpu-cards.json").unlink()
             self.rewrite(base, est)
             self.assert_capsule_refusal(base, "is not in the evidence denominator")
+
+    # ---------------- model identity denominator ----------------
+    #
+    # The model set must be DERIVED from the phases (driver dispatch + receipts)
+    # and must equal the capsule's identities and the bound manifests exactly.
+    # An omission is as fatal as a contradiction.
+
+    @staticmethod
+    def add_manifest(est: Path, name: str):
+        repo, tag = name.split(":")
+        p = est / "identity" / "ollama-manifests" / repo / tag
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps({"synthetic-manifest": name}), encoding="utf-8")
+
+    @staticmethod
+    def drop_identity(capsule: dict, name: str):
+        capsule["model_identities"] = [m for m in capsule["model_identities"]
+                                       if m["name"] != name]
+
+    def test_dispatched_model_without_identity_witness(self):
+        """The 70B phase still runs in the driver, the receipt and the capsule,
+        but its model identity is gone and the root recomputes cleanly."""
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.mutate_capsule(base, est,
+                                lambda c: self.drop_identity(c, "deepseek-r1:70b"))
+            self.assert_semantic_refusal(base, "missing=['deepseek-r1:70b']")
+
+    def test_dispatched_model_manifest_removed_witness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.mutate_capsule(base, est,
+                                lambda c: self.drop_identity(c, "deepseek-r1:70b"))
+            (est / "identity" / "ollama-manifests" / "deepseek-r1" / "70b").unlink()
+            self.rewrite(base, est)
+            self.assert_semantic_refusal(base, "absent from the raw estate")
+
+    def test_additional_unused_model_identity_witness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.add_manifest(est, "qwen3.5:8b")
+            self.mutate_capsule(base, est, lambda c: c["model_identities"].append(
+                {"name": "qwen3.5:8b", "ollama_manifest_sha256": "0" * 64,
+                 "ollama_manifest_path": "identity/ollama-manifests/qwen3.5/8b"}))
+            self.assert_semantic_refusal(base, "additional=['qwen3.5:8b']")
+
+    def test_bound_manifest_without_identity_witness(self):
+        """An extra manifest artifact in the denominator that no dispatched
+        model corresponds to."""
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.add_manifest(est, "qwen3.5:8b")
+            self.rewrite(base, est)
+            self.assert_semantic_refusal(base, "bound ollama manifest artifacts")
+
+    def test_phase_names_model_absent_from_driver_witness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.add_manifest(est, "deepseek-r1:32b")
+            self.mutate_text(est, base, "fabric_qual.py",
+                             lambda s: s.replace('"deepseek-r1:70b"',
+                                                 '"deepseek-r1:32b"'))
+            self.assert_semantic_refusal(base, "capsule phase results name models")
+
+    def test_receipt_names_model_without_capsule_identity_witness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.add_manifest(est, "deepseek-r1:32b")
+            self.mutate_text(est, base, "fabric_qual.py",
+                             lambda s: s.replace('"deepseek-r1:70b"',
+                                                 '"deepseek-r1:32b"'))
+            self.mutate_receipt(est, base, "split-70b-r1",
+                                lambda r: r.update(model="deepseek-r1:32b"))
+            self.mutate_capsule(base, est, lambda c: c["phase_results"][
+                "split-70b-r1"].update(model="deepseek-r1:32b"))
+            self.assert_semantic_refusal(base, "additional=['deepseek-r1:70b']")
+
+    # ---------------- device attestation binding ----------------
+
+    def _attestation_witness(self, mutate, fragment: str):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.mutate_identity_json(est, base, "IDENTITY-ATTESTATION.json", mutate)
+            self.assert_semantic_refusal(base, fragment)
+
+    def test_attestation_names_another_host_witness(self):
+        """Same UUID rows, rehashed cleanly, but the attestation states it
+        belongs to OCTO-W01."""
+        self._attestation_witness(lambda d: d.update(host="OCTO-W01"),
+                                  "which is not the capsule's host")
+
+    def test_attestation_class_witness(self):
+        self._attestation_witness(
+            lambda d: d.update(observation_class="PER_RUN_TELEMETRY"),
+            "attestation class")
+
+    def test_attestation_schema_witness(self):
+        self._attestation_witness(
+            lambda d: d.update(schema="estate/fabric-identity-attestation@2"),
+            "attestation schema")
+
+    def test_attestation_device_denominator_witness(self):
+        self._attestation_witness(
+            lambda d: d["nvidia_smi_rows"].append(
+                "2, GPU-deadbeef-0000-0000-0000-000000000000, "
+                "NVIDIA GeForce RTX 3090, 00000000:E1:00.0, 24576 MiB"),
+            "reads back 3 devices")
+
+    def test_attestation_claim_binding_witness(self):
+        self._attestation_witness(
+            lambda d: d["supplements"].update(capsule_claim_id="CLAUDE-11"),
+            "attestation supplements claim")
+
+    def test_attestation_supplemental_statement_witness(self):
+        self._attestation_witness(
+            lambda d: d["supplements"].pop("statement"),
+            "no supplemental statement")
+
+    def test_attestation_timestamp_classification_witness(self):
+        """A POST_RUN_READBACK that predates the run it reads back."""
+        self._attestation_witness(
+            lambda d: d.update(observed_utc="2026-08-26T00:00:00Z"),
+            "precedes the qualification date")
+
+    def test_attested_denominator_is_capsule_level_witness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.mutate_capsule(base, est, lambda c: c["identity_evidence"].update(
+                attested_device_denominator=3))
+            self.assert_capsule_refusal(base, "attested device denominator")
+
+    def test_identity_evidence_key_removed_witness(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.mutate_capsule(base, est,
+                                lambda c: c["identity_evidence"].pop("attestation_class"))
+            self.assert_capsule_refusal(base, "identity evidence missing required key")
+
+    # ---------------- per-card median role denominator ----------------
+
+    def _per_card_witness(self, mutate, fragment: str):
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp)
+            est, _ = build_fixture(base)
+            self.mutate_capsule(base, est, mutate)
+            self.assert_semantic_refusal(base, fragment)
+
+    def test_per_card_median_role_omitted_witness(self):
+        """The capsule publishes one card's median and claims per-card binding
+        for a phase that drove two pinned serves."""
+        self._per_card_witness(
+            lambda c: c["phase_results"]["double-27b-both"]["per_card_medians"]
+            .pop("dell_b"), "per-card median roles")
+
+    def test_per_card_median_role_added_witness(self):
+        self._per_card_witness(
+            lambda c: c["phase_results"]["double-27b-both"]["per_card_medians"]
+            .update(phantom=36.1), "per-card median roles")
+
+    def test_per_card_median_role_renamed_witness(self):
+        def rename(c):
+            medians = c["phase_results"]["double-27b-both"]["per_card_medians"]
+            medians["msi_card"] = medians.pop("msi")
+        self._per_card_witness(rename, "per-card median roles")
+
+    def test_per_card_median_roles_swapped_witness(self):
+        def swap(c):
+            medians = c["phase_results"]["double-27b-both"]["per_card_medians"]
+            medians["msi"], medians["dell_b"] = medians["dell_b"], medians["msi"]
+        self._per_card_witness(swap, "per-card median for")
+
+    def test_single_stream_phase_claims_per_card_medians_witness(self):
+        self._per_card_witness(
+            lambda c: c["phase_results"]["single-27b-msi"].update(
+                per_card_medians={"msi": 33.8}), "single stream")
 
 
 if __name__ == "__main__":

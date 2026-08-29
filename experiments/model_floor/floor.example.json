@@ -1,0 +1,176 @@
+{
+  "schema": "tier-bench/model-floor-config@1",
+  "id": "universal-model-floor-v1",
+  "minimum_sample_size": 3,
+  "minimum_distinct_tasks": 10,
+  "external_min_evidence": "detailed_report",
+  "allow_external_unattested": true,
+  "internal_identity_required": true,
+  "objectives": [
+    "cost_per_verified_success_usd",
+    "attention_per_verified_success",
+    "latency_ms"
+  ],
+  "family_rules": [
+    {
+      "family": "spec-following",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "judgment-boundary",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "repo-repair",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "cross-repository-reconciliation",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "architecture-contradiction",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "incomplete-referee",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "long-horizon-migration",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "evidence-synthesis",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "visual-fidelity",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "autonomous-recovery",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "counterexample-construction",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "authority-routing",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "computer-use",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "long-context",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "tool-use",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    },
+    {
+      "family": "knowledge-reasoning",
+      "metric": "accepted",
+      "direction": "higher",
+      "adequacy_threshold": 1.0,
+      "minimum_distinct_tasks": 10,
+      "require_cost": false,
+      "require_attention": false,
+      "max_critical_escaped_defects": 0
+    }
+  ]
+}

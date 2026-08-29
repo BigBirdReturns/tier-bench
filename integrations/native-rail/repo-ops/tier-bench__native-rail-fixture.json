@@ -1,0 +1,26 @@
+{
+  "schema": "tier-bench/repository-operation-manifest@1",
+  "repository": "tier-bench/native-rail-fixture",
+  "law": "Qualification fixture repository. `fixture.digest-drift` is a deliberate negative: it pins a digest that no admitted script can have, so the qualification can prove the manifest digest gate refuses execution.",
+  "operations": {
+    "fixture.run-tool": {
+      "purpose": "positive manifest witness inside a nested admitted subtree",
+      "script": "pkg/sub/tool.py",
+      "script_sha256": "f1281ee1991c860510bf2c46a8607efca5df6c34efd312299fe3d9322555f3ac",
+      "argv": ["--label", "{label}"],
+      "params": {
+        "label": {
+          "type": "enum",
+          "choices": ["nested-subtree-witness", "manifest-witness"]
+        }
+      }
+    },
+    "fixture.digest-drift": {
+      "purpose": "negative witness: manifest digest gate refuses a drifted script",
+      "script": "pkg/sub/tool.py",
+      "script_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "argv": [],
+      "params": {}
+    }
+  }
+}

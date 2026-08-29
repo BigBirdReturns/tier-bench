@@ -86,9 +86,23 @@ Exact changed-file denominator of this branch after the 2026-08-28 repair commit
 
 - `docs/agents/QUEUE.md` — rows CLAUDE-5..11 + 13, OP-2/3
 - `docs/agents/reviews/claude_estate_ladder_review_20260827.md` — this brief
-- `data/estate/fabric-qual-20260827/CAPSULE.json` — committed CLAUDE-5 evidence capsule (@3: adds the identity evidence denominator, serve pinning table, phase→serve binding, and per-card role keys; aggregate root `7d858295…` over 14 raw artifacts)
-- `data/estate/fabric-qual-20260827/verify_capsule.py` — deterministic verifier with three levels (CAPSULE_ONLY / RAW_BYTES / RAW_SEMANTICS; CLAUDE-5 closure supported only at RAW_SEMANTICS_VERIFIED, where raw artifact contents must reconstruct every decision-critical claim — GPU UUIDs, card roles via UUID-pinned serve ports, effective core locks under the committed min-rule, ollama manifest digests, every per-sample token count, and recomputed decode *and* prefill medians for both streams)
-- `tests/test_fabric_capsule_verifier.py` — hostile witnesses: internally-valid, correctly-rehashed raw evidence that contradicts the capsule must refuse (29 tests)
+- `data/estate/fabric-qual-20260827/CAPSULE.json` — committed CLAUDE-5 evidence capsule (@4: adds the identity evidence denominator, serve pinning table, phase→serve binding, per-card role keys, and the four derivation rules @4 makes mandatory; aggregate root `7d858295…` over 14 raw artifacts, carried forward unchanged from @3 because no raw evidence file moved)
+- `data/estate/fabric-qual-20260827/verify_capsule.py` — deterministic verifier with three levels (CAPSULE_ONLY / RAW_BYTES / RAW_SEMANTICS; CLAUDE-5 closure supported only at RAW_SEMANTICS_VERIFIED, where raw artifact contents must reconstruct every decision-critical claim — GPU UUIDs, card roles via UUID-pinned serve ports, effective core locks under the min-rule proven on the applier's *executable* path, the model denominator derived from the driver dispatch and every phase receipt, the device attestation bound to its own host/claim/class/device denominator, the complete per-card median role set, every per-sample token count, and recomputed decode *and* prefill medians for both streams)
+- `tests/test_fabric_capsule_verifier.py` — hostile witnesses: internally-valid, correctly-rehashed raw evidence that contradicts the capsule must refuse (60 tests)
+
+**What @4 closes.** @3 bound the identity artifacts but still let the *capsule* choose four
+denominators, so each could be shrunk while every level still passed:
+
+| bypass under @3 | @4 derivation |
+|---|---|
+| drop the `deepseek-r1:70b` identity and its manifest, recompute the root — the 70B phase still runs | the model set is derived from the driver's `bench()` dispatch and every phase receipt; the capsule identities, the models named by the phase results, and the bound manifest artifacts must equal it exactly, so a missing *and* an additional identity both refuse |
+| move the cap assignment into a comment — the substring anchors still match | the min-rule is established on the applier's executable path only: comments, literal string text and the bodies of functions no reachable code calls are erased, then a base `mode.coreLock` assignment, a strictly-deeper conditional `coreLockCapMHz` override guarded by a *cap-below-current* comparison, and an unbroken path to the `nvidia-smi -lgc` application are all required |
+| rehash the attestation as OCTO-W01, keep its UUID rows | the attestation must agree on host, schema, observation class, supplemented claim id and device denominator, and must remain explicitly supplemental — a post-run readback that predates the run, or one presented as per-run telemetry, refuses |
+| delete `dell_b` from `per_card_medians` | the role denominator is derived receipt streams → pinned serve ports → UUID-bound roles; the published keys must equal that set, and a single-stream phase may not claim per-card medians at all |
+
+Each row has a hostile witness in the suite and was replayed against the real private
+estate: unmutated evidence still reaches `RAW_SEMANTICS_VERIFIED`; all four mutations,
+resealed so `RAW_BYTES_VERIFIED` still passes, refuse.
 
 **Identity binding, stated honestly.** The @2 capsule asserted GPU UUIDs, core locks and
 ollama manifest digests that nothing in its evidence denominator supported — those fields

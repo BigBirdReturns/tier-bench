@@ -1,0 +1,11 @@
+# A deployment's accepted runner profile names its host, its account home and
+# absolute controller paths. It is emitted per host, held in private custody and
+# anchored by digest -- it is not a public product artifact. The synthetic
+# example (RUNNER-PROFILE.example.json) is the public shape.
+RUNNER-PROFILE.*.json
+!RUNNER-PROFILE.example.json
+
+# Derived at qualification time from the accepted profile.
+RUNNER-PROFILE.qualification.json
+
+__pycache__/

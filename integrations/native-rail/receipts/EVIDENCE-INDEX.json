@@ -1,0 +1,54 @@
+{
+  "anchored_at_commit": "6c47e076f7cae0c6dd3099e1fa1375d5bf654e59",
+  "artifacts": [
+    {
+      "bytes": 15102,
+      "name": "cold-qualification-v3-20260812.json",
+      "sha256": "428fab4cfc7a8dc20dda038a0e14a9169db838219be285d97853e9f1429d2f77"
+    },
+    {
+      "bytes": 25485,
+      "name": "cold-qualification-v4-20260812.json",
+      "sha256": "16b72f609d111c51ed8d0ff6e4b8f86cf74f3bd3c9dbd8ab97d415c34c770132"
+    },
+    {
+      "bytes": 9651,
+      "name": "cold-v3-burn-pids-RECEIPT.json",
+      "sha256": "9de4415ed98bceb83f942f4f725fee904b930a00c50b9cc0cf4a09c1a3dd55b1"
+    },
+    {
+      "bytes": 18014,
+      "name": "cold-v3-canary-py311-RECEIPT.json",
+      "sha256": "fc8035ff3d7455160d570c68dd7de2ff5c606c4a55cb2fdad5d352b284eec608"
+    },
+    {
+      "bytes": 13097,
+      "name": "cold-v3-crash-artifact-RECEIPT.json",
+      "sha256": "65119ba6e382862096886240f1e0cf063eef99f9aaac59ceedcc0c5b4ec0331f"
+    },
+    {
+      "bytes": 17487,
+      "name": "cold-v4-burn-pids-001-RECEIPT.json",
+      "sha256": "96a7300fb693bc4217a0f8ef30d54f6cc6f9c4f3b8f35c25939db51a6165ac6e"
+    },
+    {
+      "bytes": 38757,
+      "name": "cold-v4-canary-py311-001-RECEIPT.json",
+      "sha256": "d5695c749221ec28360c9217dd79c1c63ca144838866c224468dead0e33e3d54"
+    },
+    {
+      "bytes": 19701,
+      "name": "cold-v4-ckpt-bound-001-RECEIPT.json",
+      "sha256": "5563fbc5a67db6c5df93a83e9e3288c526cebdc699278ee58b8f29c0f5f19cf4"
+    },
+    {
+      "bytes": 28371,
+      "name": "cold-v4-settle-before-settled-update-001-RECEIPT.json",
+      "sha256": "c298afb1038b36789b989ed37352413f45b033b38bfa90245dc29aa3bb577a46"
+    }
+  ],
+  "count": 9,
+  "custody": "private holder custody: operator workstation, S:\\Scratch\tier-bench-native-rail-v5-private-20260812\\public-tree-removed (to be filed into the private estate evidence tree)",
+  "schema": "tier-bench/native-rail-evidence-index@1",
+  "statement": "These artifacts are RETAINED, not deleted. Their bodies name the deployment host, its account home and absolute controller paths, which do not belong in a public repository, so the public product carries their exact digests and the bodies live in private holder custody."
+}

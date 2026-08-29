@@ -1,0 +1,39 @@
+{
+  "anchored_at_commit": "6c47e076f7cae0c6dd3099e1fa1375d5bf654e59",
+  "artifacts": [
+    {
+      "bytes": 2900,
+      "name": "PROOFS.txt",
+      "sha256": "a73663d9dd140d9437d2f967980a21bfbfed59477e59e81809e07576d8fecb68"
+    },
+    {
+      "bytes": 3493,
+      "name": "canary-001-RECEIPT.json",
+      "sha256": "cddad892af38bcdcadf2d149da96a61021ac23ee5858f3607597330cc34336bb"
+    },
+    {
+      "bytes": 65,
+      "name": "canary-001-RECEIPT.sha256",
+      "sha256": "f88049618a7bc7b42b9094be034f5b6a455cf91c1134814260f39c2503746c34"
+    },
+    {
+      "bytes": 9989,
+      "name": "cold-canary-py311-RECEIPT.json",
+      "sha256": "1a039d7df4c851ae2322d343e3fcecfcb131912e44524d8435dd141e1e1ea612"
+    },
+    {
+      "bytes": 7104,
+      "name": "cold-qualification-20260812.json",
+      "sha256": "7b374e72aff5575e9c43647756a7f02f9c11c2ef9c4e940fce173b95cf22fad3"
+    },
+    {
+      "bytes": 2670,
+      "name": "defect-001-RECEIPT.json",
+      "sha256": "9f6699f9dffe4a8cacb96147ea465102ae6d7e3d9812edaa598e748dbcf55ed1"
+    }
+  ],
+  "count": 6,
+  "custody": "private holder custody: operator workstation, S:\\Scratch\tier-bench-native-rail-v5-private-20260812\\public-tree-removed (to be filed into the private estate evidence tree)",
+  "schema": "tier-bench/native-rail-evidence-index@1",
+  "statement": "These artifacts are RETAINED, not deleted. Their bodies name the deployment host, its account home and absolute controller paths, which do not belong in a public repository, so the public product carries their exact digests and the bodies live in private holder custody."
+}

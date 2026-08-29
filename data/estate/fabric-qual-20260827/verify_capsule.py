@@ -22,10 +22,16 @@ Zero-model, zero-network. Three verification levels, each strictly stronger:
 
         identity     GPU UUIDs and board roles, the port -> UUID pinning of
                      each serve, the phase -> port -> stream binding, the
-                     effective per-card core lock under the committed policy
-                     rule, and the ollama manifest digest of every served
-                     model - all derived from digest-bound raw artifacts, and
-                     NEVER from an nvidia-smi ordinal index.
+                     effective per-card core lock under the min-rule PROVEN on
+                     the applier's executable path (comments, string literals
+                     and unreferenced function bodies are erased first), the
+                     device attestation bound to its own host, claim, schema,
+                     class and device denominator, and the model denominator
+                     DERIVED from the driver dispatch and the phase receipts -
+                     with the capsule's model identities and the bound ollama
+                     manifest artifacts required to equal it exactly. All
+                     derived from digest-bound raw artifacts, and NEVER from an
+                     nvidia-smi ordinal index.
         workload     every primary and secondary sample's token count, against
                      the declared tokens_per_run and against the driver
                      source's own generation constant.
@@ -50,6 +56,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import datetime
 import hashlib
 import json
 import re
@@ -93,11 +100,33 @@ REQUIRED_IDENTITY_ARTIFACTS = [
     "identity/IDENTITY-ATTESTATION.json",
 ]
 
-# The two source lines that establish the committed core-lock rule inside
-# gpu-mode.ps1. Both must be present or the rule is not the one we claim.
-LOCK_RULE_ANCHORS = [
-    "$eff = $m.coreLock",
-    "$eff = [int]$card2.coreLockCapMHz",
+# The committed core-lock rule, as the property pair the applier must combine
+# and the nvidia-smi flag through which the computed value must actually reach
+# the device. TEXTUAL PRESENCE IS NOT EVIDENCE: a comment, a string literal, an
+# unreferenced function body, or an assignment that is discarded before the
+# application all "contain" the rule without executing it. The rule is proven
+# structurally on the executable path - see ps_executable_source() and
+# parse_lock_rule_ps().
+LOCK_RULE_MODE_PROPERTY = "coreLock"
+LOCK_RULE_CAP_PROPERTY = "coreLockCapMHz"
+LOCK_APPLY_FLAG = "-lgc"
+
+# Attestation binding. The device readback is SUPPLEMENTAL evidence about board
+# identity; it is never per-run telemetry, and it is only admissible for the
+# host and claim it names.
+ATTESTATION_SCHEMA = "estate/fabric-identity-attestation@1"
+SUPPLEMENTAL_ATTESTATION_CLASSES = {"POST_RUN_READBACK"}
+OLLAMA_MANIFEST_ROOT = "identity/ollama-manifests"
+
+# identity_evidence subkeys the capsule must declare so the attestation can be
+# bound to a coordinate rather than merely cited.
+REQUIRED_IDENTITY_EVIDENCE_KEYS = [
+    "core_lock_host_mode",
+    "core_lock_policy_rule",
+    "attestation",
+    "attestation_schema",
+    "attestation_class",
+    "attested_device_denominator",
 ]
 
 SERVE_ROW_RE = re.compile(
@@ -221,13 +250,340 @@ def parse_serve_pinning(source: str) -> dict[int, str | None]:
     return out
 
 
+# --------------------------------------------------------------------------
+# PowerShell executable-path analysis
+#
+# Everything below exists so the committed core-lock rule is established from
+# the code the applier RUNS. Comments, literal string text, and the bodies of
+# functions nothing reachable ever calls are erased first; the rule is then
+# required to appear as a real assignment chain that survives to the nvidia-smi
+# application. Expandable-string subexpressions ("$(...)") are executable and
+# are deliberately preserved.
+# --------------------------------------------------------------------------
+
+def _blank(chars: list[str], start: int, end: int) -> None:
+    for k in range(max(start, 0), min(end, len(chars))):
+        if chars[k] != "\n":
+            chars[k] = " "
+
+
+def _keep_interpolations(src: str, chars: list[str], start: int, end: int) -> None:
+    """Blank the literal text of an expandable string body, keeping only the
+    executable parts: `$( ... )` subexpressions and `$variable` references."""
+    i = start
+    while i < end:
+        c = src[i]
+        if c == "`":                       # backtick escape: two literal chars
+            _blank(chars, i, min(end, i + 2))
+            i += 2
+            continue
+        if c == "$" and i + 1 < end and src[i + 1] == "(":
+            depth, j = 0, i + 1
+            while j < end:
+                if src[j] == "(":
+                    depth += 1
+                elif src[j] == ")":
+                    depth -= 1
+                    if depth == 0:
+                        j += 1
+                        break
+                j += 1
+            i = min(j, end)                # kept verbatim
+            continue
+        if c == "$" and i + 1 < end and (src[i + 1].isalpha() or src[i + 1] in "_{"):
+            j = i + 1
+            if src[j] == "{":
+                while j < end and src[j] != "}":
+                    j += 1
+                j = min(end, j + 1)
+            else:
+                while j < end and (src[j].isalnum() or src[j] in "_:."):
+                    j += 1
+                while j < end and src[j] == "[":
+                    depth = 0
+                    while j < end:
+                        if src[j] == "[":
+                            depth += 1
+                        elif src[j] == "]":
+                            depth -= 1
+                            if depth == 0:
+                                j += 1
+                                break
+                        j += 1
+            i = j                          # kept verbatim
+            continue
+        _blank(chars, i, i + 1)
+        i += 1
+
+
+def ps_strip_noncode(src: str) -> str:
+    """Erase PowerShell comments and literal string text, preserving offsets."""
+    chars = list(src)
+    n = len(src)
+    i = 0
+    while i < n:
+        c = src[i]
+        if src.startswith("<#", i):
+            j = src.find("#>", i + 2)
+            j = n if j < 0 else j + 2
+            _blank(chars, i, j)
+            i = j
+            continue
+        if c == "#":
+            j = src.find("\n", i)
+            j = n if j < 0 else j
+            _blank(chars, i, j)
+            i = j
+            continue
+        if c == "@" and i + 1 < n and src[i + 1] in "'\"":
+            quote = src[i + 1]
+            term = "\n" + quote + "@"
+            j = src.find(term, i + 2)
+            body_end = n if j < 0 else j + 1
+            j = n if j < 0 else j + len(term)
+            _blank(chars, i, i + 2)
+            if quote == '"':
+                _keep_interpolations(src, chars, i + 2, body_end)
+            else:
+                _blank(chars, i + 2, body_end)
+            _blank(chars, body_end, j)
+            i = j
+            continue
+        if c == "'":
+            j = i + 1
+            while j < n:
+                if src[j] == "'":
+                    if j + 1 < n and src[j + 1] == "'":
+                        j += 2
+                        continue
+                    break
+                j += 1
+            _blank(chars, i, min(n, j + 1))
+            i = min(n, j + 1)
+            continue
+        if c == '"':
+            j = i + 1
+            while j < n:
+                if src[j] == "`":
+                    j += 2
+                    continue
+                if src[j] == '"':
+                    if j + 1 < n and src[j + 1] == '"':
+                        j += 2
+                        continue
+                    break
+                j += 1
+            end = min(n, j)
+            _blank(chars, i, i + 1)
+            _keep_interpolations(src, chars, i + 1, end)
+            _blank(chars, end, min(n, end + 1))
+            i = min(n, end + 1)
+            continue
+        i += 1
+    return "".join(chars)
+
+
+def _match_brace(text: str, open_idx: int) -> int:
+    depth = 0
+    for j in range(open_idx, len(text)):
+        if text[j] == "{":
+            depth += 1
+        elif text[j] == "}":
+            depth -= 1
+            if depth == 0:
+                return j
+    return -1
+
+
+def _blank_spans(text: str, spans: list[tuple[int, int]]) -> str:
+    chars = list(text)
+    for start, end in spans:
+        _blank(chars, start, end)
+    return "".join(chars)
+
+
+def ps_executable_source(src: str) -> str:
+    """Reduce a PowerShell script to the statements that can actually run:
+    comments and literal string text erased, plus the bodies of every function
+    that no reachable code ever names."""
+    clean = ps_strip_noncode(src)
+    funcs: dict[str, tuple[int, int, int]] = {}
+    for m in re.finditer(r"(?im)^[ \t]*function[ \t]+([A-Za-z_][\w\-]*)", clean):
+        brace = clean.find("{", m.end())
+        if brace < 0:
+            continue
+        end = _match_brace(clean, brace)
+        if end < 0:
+            continue
+        funcs[m.group(1).lower()] = (m.start(), brace + 1, end)
+    if not funcs:
+        return clean
+
+    all_spans = [(sp[0], sp[2] + 1) for sp in funcs.values()]
+
+    def search_text(exclude: str | None) -> str:
+        if exclude is None:
+            return _blank_spans(clean, all_spans)
+        span = funcs[exclude]
+        others = [(sp[0], sp[2] + 1) for name, sp in funcs.items() if name != exclude]
+        return _blank_spans(clean, others)[span[1]:span[2]]
+
+    live: set[str] = set()
+    frontier = [search_text(None)]
+    while frontier:
+        text = frontier.pop()
+        for name in funcs:
+            if name in live:
+                continue
+            if re.search(r"(?<![\w\-.])" + re.escape(name) + r"(?![\w\-])", text, re.I):
+                live.add(name)
+                frontier.append(search_text(name))
+
+    dead = [(funcs[n][1], funcs[n][2]) for n in funcs if n not in live]
+    return _blank_spans(clean, dead)
+
+
+_ASSIGN_RE = re.compile(r"^\s*\$(?P<var>[A-Za-z_]\w*)\s*=(?!=)\s*(?P<rhs>.+?)\s*$")
+_INDEX_ASSIGN_RE = re.compile(
+    r"^\s*\$(?P<map>[A-Za-z_]\w*)\s*\[(?P<idx>[^\]]*)\]\s*=(?!=)\s*(?P<rhs>.+?)\s*$")
+_MODE_LOCK_RE = re.compile(
+    r"\$(?P<obj>[A-Za-z_]\w*)\s*\.\s*" + LOCK_RULE_MODE_PROPERTY + r"(?![\w])")
+_CARD_CAP_RE = re.compile(
+    r"\$(?P<obj>[A-Za-z_]\w*)\s*\.\s*" + LOCK_RULE_CAP_PROPERTY + r"(?![\w])")
+
+
+def _ps_statements(text: str) -> list[dict]:
+    """Line-granular statement records carrying brace depth and, for every
+    statement, the block opener that introduced its innermost scope."""
+    out: list[dict] = []
+    openers: list[str] = []
+    for lineno, line in enumerate(text.splitlines()):
+        out.append({
+            "lineno": lineno,
+            "text": line,
+            "depth": len(openers),
+            "opener": openers[-1] if openers else "",
+        })
+        for ch in line:                    # in order: '{ ... }' on one line nets zero
+            if ch == "{":
+                openers.append(line)
+            elif ch == "}" and openers:
+                openers.pop()
+    return out
+
+
+def parse_lock_rule_ps(gpu_mode_src: str) -> dict:
+    """Prove the executable applier computes
+    min(<mode>.coreLock, <card>.coreLockCapMHz) and applies THAT value.
+
+    Structural requirements, all on the executable path:
+      1. a base assignment   $V = $<mode>.coreLock
+      2. a strictly-deeper (conditional) override $V = $<card>.coreLockCapMHz
+      3. whose innermost enclosing block is guarded by a comparison that only
+         takes the cap when the cap is strictly below $V (that IS min())
+      4. $V reaches the device: it is stored into a lock map that is applied
+         through the nvidia-smi lock flag, and nothing reassigns $V in between.
+    """
+    exe = ps_executable_source(gpu_mode_src)
+    stmts = _ps_statements(exe)
+
+    bases: list[tuple[dict, str, str]] = []       # stmt, var, mode object
+    overrides: list[tuple[dict, str, str]] = []   # stmt, var, card object
+    assignments: list[tuple[dict, str]] = []      # every $var = ... statement
+    stores: list[tuple[dict, str, str]] = []      # stmt, map name, rhs
+    for st in stmts:
+        m = _ASSIGN_RE.match(st["text"])
+        if m:
+            assignments.append((st, m.group("var")))
+            mode_hit = _MODE_LOCK_RE.search(m.group("rhs"))
+            cap_hit = _CARD_CAP_RE.search(m.group("rhs"))
+            if cap_hit:
+                overrides.append((st, m.group("var"), cap_hit.group("obj")))
+            elif mode_hit:
+                bases.append((st, m.group("var"), mode_hit.group("obj")))
+        mi = _INDEX_ASSIGN_RE.match(st["text"])
+        if mi:
+            stores.append((st, mi.group("map"), mi.group("rhs")))
+
+    if not bases:
+        refuse("core-lock rule: the executable applier never assigns the host "
+               f"mode's .{LOCK_RULE_MODE_PROPERTY} as the base lock value")
+    if not overrides:
+        refuse("core-lock rule: the executable applier never applies the card's "
+               f".{LOCK_RULE_CAP_PROPERTY} cap")
+
+    reasons: list[str] = []
+    for base_st, var, mode_obj in bases:
+        for ovr_st, ovr_var, card_obj in overrides:
+            if ovr_var != var:
+                continue
+            if ovr_st["lineno"] <= base_st["lineno"]:
+                reasons.append(f"the .{LOCK_RULE_CAP_PROPERTY} cap for ${var} is "
+                               f"applied before the base lock value")
+                continue
+            if ovr_st["depth"] <= base_st["depth"]:
+                reasons.append(f"the .{LOCK_RULE_CAP_PROPERTY} override of ${var} is "
+                               "unconditional, so the applier does not compute a minimum")
+                continue
+            guard = ovr_st["opener"]
+            cap = (r"(?:\[[^\]]*\]\s*)?\$" + re.escape(card_obj) + r"\s*\.\s*"
+                   + LOCK_RULE_CAP_PROPERTY + r"(?![\w])")
+            lt_forms = [
+                cap + r"\s*-lt\s*\$" + re.escape(var) + r"(?![\w])",
+                r"\$" + re.escape(var) + r"\s*-gt\s*" + cap,
+            ]
+            if not any(re.search(f, guard) for f in lt_forms):
+                reasons.append(
+                    f"the conditional that applies ${card_obj}.{LOCK_RULE_CAP_PROPERTY} "
+                    f"to ${var} is not guarded by a strict 'cap below current lock' "
+                    "comparison, so it is not a minimum")
+                continue
+            clobber = [a for a in assignments
+                       if a[1] == var and base_st["lineno"] < a[0]["lineno"]
+                       and a[0]["lineno"] != ovr_st["lineno"]
+                       and a[0]["depth"] <= base_st["depth"]]
+            for store_st, map_name, rhs in stores:
+                if rhs.strip() != f"${var}":
+                    continue
+                if store_st["lineno"] <= ovr_st["lineno"]:
+                    continue
+                if any(c[0]["lineno"] < store_st["lineno"] for c in clobber):
+                    reasons.append(f"${var} is reassigned between the core-lock "
+                                   "computation and its application")
+                    continue
+                applied = [s for s in stmts
+                           if LOCK_APPLY_FLAG in s["text"]
+                           and re.search(r"\$" + re.escape(map_name) + r"(?![\w])",
+                                         s["text"])]
+                if not applied:
+                    reasons.append(f"the computed lock is stored into ${map_name} but "
+                                   f"${map_name} never reaches an nvidia-smi "
+                                   f"{LOCK_APPLY_FLAG} application")
+                    continue
+                return {
+                    "lock_var": var,
+                    "mode_object": mode_obj,
+                    "card_object": card_obj,
+                    "lock_map": map_name,
+                    "base_line": base_st["lineno"] + 1,
+                    "override_line": ovr_st["lineno"] + 1,
+                    "apply_line": applied[0]["lineno"] + 1,
+                    "rule": (f"min(${mode_obj}.{LOCK_RULE_MODE_PROPERTY}, "
+                             f"${card_obj}.{LOCK_RULE_CAP_PROPERTY})"),
+                }
+            reasons.append(f"the computed lock ${var} is never stored for "
+                           f"{LOCK_APPLY_FLAG} application")
+
+    detail = "; ".join(dict.fromkeys(reasons)) or "no executable min-rule chain"
+    refuse(f"core-lock rule: the executable applier does not implement "
+           f"min(mode.{LOCK_RULE_MODE_PROPERTY}, card.{LOCK_RULE_CAP_PROPERTY}) - {detail}")
+
+
 def parse_lock_policy(host: dict, cards: dict, gpu_mode_src: str) -> dict:
     """Derive the effective core lock per GPU UUID under the committed rule
-    min(host_mode.coreLock, cards[uuid].coreLockCapMHz)."""
-    for anchor in LOCK_RULE_ANCHORS:
-        if anchor not in gpu_mode_src:
-            refuse(f"core-lock applier does not contain the committed rule "
-                   f"anchor {anchor!r}")
+    min(host_mode.coreLock, cards[uuid].coreLockCapMHz), after proving that the
+    applier's EXECUTABLE path is that rule."""
+    rule = parse_lock_rule_ps(gpu_mode_src)
 
     modes = host.get("modes")
     if not isinstance(modes, dict) or not modes:
@@ -243,6 +599,7 @@ def parse_lock_policy(host: dict, cards: dict, gpu_mode_src: str) -> dict:
         refuse("card registry declares no cards")
 
     out = {
+        "executable_rule": rule,
         "default_mode": default_mode,
         "mode_core_lock_mhz": modes[default_mode].get("coreLock"),
         "host_validated": bool(host.get("validated")),
@@ -280,7 +637,7 @@ def verify_capsule_only(capsule: dict) -> None:
     for field in REQUIRED_FIELDS:
         if field not in capsule:
             refuse(f"capsule missing required field {field!r}")
-    if capsule["schema"] != "estate/fabric-qual-capsule@3":
+    if capsule["schema"] != "estate/fabric-qual-capsule@4":
         refuse(f"unexpected schema {capsule['schema']!r}")
 
     manifest = capsule["receipt_manifest_sha256"]
@@ -331,6 +688,22 @@ def verify_capsule_only(capsule: dict) -> None:
             refuse(f"capsule ollama_manifest_sha256 for {model['name']!r} is not the "
                    f"digest bound for {rel!r}")
 
+    evidence = capsule["identity_evidence"]
+    for key in REQUIRED_IDENTITY_EVIDENCE_KEYS:
+        if key not in evidence:
+            refuse(f"identity evidence missing required key {key!r}")
+    if evidence["attestation_schema"] != ATTESTATION_SCHEMA:
+        refuse(f"capsule declares attestation schema "
+               f"{evidence['attestation_schema']!r}, not {ATTESTATION_SCHEMA!r}")
+    if evidence["attestation_class"] not in SUPPLEMENTAL_ATTESTATION_CLASSES:
+        refuse(f"attestation class {evidence['attestation_class']!r} is not a "
+               "supplemental class; the device readback must never be declared "
+               "as per-run telemetry")
+    if evidence["attested_device_denominator"] != len(capsule["gpu_identities"]):
+        refuse("attested device denominator "
+               f"{evidence['attested_device_denominator']} != the capsule's "
+               f"{len(capsule['gpu_identities'])} GPU identities")
+
     boundary = capsule["claim_boundary"]
     if not boundary.get("claims") or not boundary.get("non_claims"):
         refuse("claim boundary must state both claims and non-claims")
@@ -367,13 +740,6 @@ def reconstruct_from_estate(estate_root: Path, modes: list[str],
     attestation = json.loads(
         (estate_root / "identity" / "IDENTITY-ATTESTATION.json").read_text(encoding="utf-8"))
 
-    model_digests = {}
-    for name in (model_names or []):
-        p = estate_root / manifest_relpath_for_model(name)
-        if not p.is_file():
-            refuse(f"model manifest for {name!r} is absent from the raw estate")
-        model_digests[name] = sha256_file(p)
-
     recon: dict = {
         "summary_phase_denominator": sorted(summary.get("phases", {})),
         "terminal_verdict_pass": str(summary.get("verdict", "")).startswith("PASS"),
@@ -382,7 +748,7 @@ def reconstruct_from_estate(estate_root: Path, modes: list[str],
         "driver": driver,
         "serve_pinning": pinning,
         "lock_policy": lock,
-        "model_manifest_sha256": model_digests,
+        "model_manifest_sha256": {},
         "attestation": attestation,
         "phases": {},
     }
@@ -423,7 +789,138 @@ def reconstruct_from_estate(estate_root: Path, modes: list[str],
             phase["declared_secondary_prefill_median"] = r["secondary"]["prefill_median"]
             phase["aggregate_decode"] = r["aggregate_decode"]
         recon["phases"][mode] = phase
+
+    # The model denominator is DERIVED from the authoritative phase evidence -
+    # the driver's own dispatch and every phase receipt - never selected by the
+    # capsule. A capsule that drops an identity for a model its phases still
+    # run must refuse, and so must one that carries an identity no phase used.
+    driver_models = {driver["phases"][m]["model"]
+                     for m in modes if m in driver["phases"]}
+    receipt_models = {recon["phases"][m]["model"] for m in modes}
+    derived = driver_models | receipt_models
+    recon["derived_model_names"] = sorted(derived)
+    recon["driver_model_names"] = sorted(driver_models)
+    recon["receipt_model_names"] = sorted(receipt_models)
+
+    for name in sorted(derived):
+        p = estate_root / manifest_relpath_for_model(name)
+        if not p.is_file():
+            refuse(f"model manifest for {name!r} (dispatched by a phase) is "
+                   "absent from the raw estate")
+        recon["model_manifest_sha256"][name] = sha256_file(p)
+    # capsule-only names are hashed where possible so the set comparison, not a
+    # missing file, is what reports an identity no phase ever dispatched
+    for name in sorted(set(model_names or []) - derived):
+        p = estate_root / manifest_relpath_for_model(name)
+        recon["model_manifest_sha256"][name] = sha256_file(p) if p.is_file() else None
     return recon
+
+
+def _parse_utc(value: object, what: str) -> datetime.datetime:
+    if not isinstance(value, str) or not value.strip():
+        refuse(f"semantic identity: {what} carries no timestamp")
+    try:
+        ts = datetime.datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        refuse(f"semantic identity: {what} timestamp {value!r} is not ISO-8601")
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=datetime.timezone.utc)
+    return ts.astimezone(datetime.timezone.utc)
+
+
+def _verify_attestation(capsule: dict, recon: dict, claimed_uuids: list[str]) -> None:
+    """Bind the device attestation to its identity coordinate.
+
+    The attestation is admissible only for the host, claim, schema, class and
+    device denominator it is presented against. An attestation belonging to
+    another host - or one that presents itself as per-run telemetry rather than
+    a post-run readback - can never support this capsule, however faithfully
+    its UUID rows match.
+    """
+    att = recon["attestation"]
+    evidence = capsule["identity_evidence"]
+
+    if att.get("schema") != evidence["attestation_schema"]:
+        refuse(f"semantic identity: attestation schema {att.get('schema')!r} "
+               f"!= capsule {evidence['attestation_schema']!r}")
+    if att.get("host") != capsule["host"]:
+        refuse(f"semantic identity: attestation names host {att.get('host')!r}, "
+               f"which is not the capsule's host {capsule['host']!r}")
+    if att.get("observation_class") != evidence["attestation_class"]:
+        refuse(f"semantic identity: attestation class "
+               f"{att.get('observation_class')!r} != capsule "
+               f"{evidence['attestation_class']!r}")
+    if att.get("observation_class") not in SUPPLEMENTAL_ATTESTATION_CLASSES:
+        refuse(f"semantic identity: attestation class "
+               f"{att.get('observation_class')!r} is not a supplemental class")
+
+    supplements = att.get("supplements")
+    if not isinstance(supplements, dict):
+        refuse("semantic identity: attestation does not declare the claim it "
+               "supplements")
+    if supplements.get("capsule_claim_id") != capsule["claim_id"]:
+        refuse(f"semantic identity: attestation supplements claim "
+               f"{supplements.get('capsule_claim_id')!r} != capsule claim "
+               f"{capsule['claim_id']!r}")
+    if not str(supplements.get("statement", "")).strip():
+        refuse("semantic identity: attestation carries no supplemental statement, "
+               "so it does not disclaim being per-run telemetry")
+
+    rows = att.get("nvidia_smi_rows")
+    if not isinstance(rows, list) or not rows:
+        refuse("semantic identity: attestation carries no device rows")
+    if len(rows) != evidence["attested_device_denominator"]:
+        refuse(f"semantic identity: attestation reads back {len(rows)} devices "
+               f"!= capsule attested denominator "
+               f"{evidence['attested_device_denominator']}")
+    attested = sorted(row.split(",")[1].strip() for row in rows)
+    if len(set(attested)) != len(attested):
+        refuse(f"semantic identity: attestation repeats a device UUID {attested}")
+    if attested != claimed_uuids:
+        refuse(f"semantic identity: attested device UUIDs {attested} "
+               f"!= capsule GPU UUIDs {claimed_uuids}")
+
+    observed = _parse_utc(att.get("observed_utc"), "attestation")
+    run_date = _parse_utc(capsule["date"], "capsule date")
+    if observed < run_date:
+        refuse(f"semantic identity: attestation observed at "
+               f"{att.get('observed_utc')} precedes the qualification date "
+               f"{capsule['date']}, which contradicts its "
+               f"{att.get('observation_class')!r} classification")
+
+
+def _verify_model_denominator(capsule: dict, recon: dict) -> None:
+    """Require exact set equality between the models the phases actually
+    dispatch, the capsule's model identities, and the bound ollama manifests."""
+    derived = set(recon["derived_model_names"])
+    if not derived:
+        refuse("semantic identity: no phase dispatches a model")
+
+    names = [m["name"] for m in capsule["model_identities"]]
+    if len(set(names)) != len(names):
+        refuse(f"semantic identity: capsule declares a duplicate model identity "
+               f"in {sorted(names)}")
+
+    modes = capsule["qualification_mode_denominator"]["modes"]
+    claimed_by_phases = {capsule["phase_results"][mode]["model"] for mode in modes}
+    if claimed_by_phases != derived:
+        refuse("semantic identity: capsule phase results name models "
+               f"{sorted(claimed_by_phases)} != the models the driver and "
+               f"receipts dispatch {sorted(derived)}")
+
+    if set(names) != derived:
+        missing = sorted(derived - set(names))
+        additional = sorted(set(names) - derived)
+        refuse("semantic identity: model identity set does not equal the models "
+               f"the phases dispatch (missing={missing} additional={additional})")
+
+    manifest = capsule["receipt_manifest_sha256"]
+    bound = {rel for rel in manifest if rel.startswith(OLLAMA_MANIFEST_ROOT + "/")}
+    expected = {manifest_relpath_for_model(name) for name in derived}
+    if bound != expected:
+        refuse("semantic identity: bound ollama manifest artifacts "
+               f"{sorted(bound)} != the manifests of the dispatched models "
+               f"{sorted(expected)}")
 
 
 def _verify_identity(capsule: dict, recon: dict) -> dict:
@@ -451,11 +948,7 @@ def _verify_identity(capsule: dict, recon: dict) -> dict:
         refuse(f"semantic identity: driver-source UUIDs {driver['declared_uuids']} "
                f"!= capsule GPU UUIDs {claimed_uuids}")
 
-    attested = sorted(
-        row.split(",")[1].strip() for row in recon["attestation"]["nvidia_smi_rows"])
-    if attested != claimed_uuids:
-        refuse(f"semantic identity: attested device UUIDs {attested} "
-               f"!= capsule GPU UUIDs {claimed_uuids}")
+    _verify_attestation(capsule, recon, claimed_uuids)
 
     # capsule serve_pinning must be exactly the launcher's table
     raw_pin = {str(port): uuid for port, uuid in pinning.items()}
@@ -480,6 +973,8 @@ def _verify_identity(capsule: dict, recon: dict) -> dict:
         if len(ports) != 1:
             refuse(f"semantic identity: UUID {uuid} is pinned to {len(ports)} serves")
         roles[ident["capsule_key"]] = {"uuid": uuid, "port": ports[0]}
+
+    _verify_model_denominator(capsule, recon)
 
     for name, digest in recon["model_manifest_sha256"].items():
         claimed = next((m["ollama_manifest_sha256"] for m in capsule["model_identities"]
@@ -587,6 +1082,16 @@ def verify_raw_semantics(capsule: dict, recon: dict) -> None:
             # The ordinal nvidia-smi index is never consulted here.
             stream_by_port = {binding["primary_port"]: p["decode_median"],
                               binding["secondary_port"]: p["secondary_decode_median"]}
+            # The role denominator is DERIVED: receipt streams -> pinned serve
+            # ports -> UUID-bound card roles. Iterating only the entries the
+            # capsule supplies would accept an omission as silently as a match.
+            driven_roles = {rk for rk, r in roles.items()
+                            if r["port"] in stream_by_port}
+            declared_roles = set(claim["per_card_medians"])
+            if declared_roles != driven_roles:
+                refuse(f"semantic[{mode}]: per-card median roles "
+                       f"{sorted(declared_roles)} != the UUID-bound roles whose "
+                       f"pinned serves this phase drove {sorted(driven_roles)}")
             for role_key, declared in claim["per_card_medians"].items():
                 if role_key not in roles:
                     refuse(f"semantic[{mode}]: per-card median names unknown role "
@@ -614,6 +1119,9 @@ def verify_raw_semantics(capsule: dict, recon: dict) -> None:
                 refuse(f"semantic[{mode}]: concurrency retention {retention} "
                        f"!= capsule {claim['retention_pct']}")
         else:
+            if "per_card_medians" in claim:
+                refuse(f"semantic[{mode}]: phase drove a single stream but the "
+                       "capsule claims per-card medians for it")
             if p["decode_median"] != claim["decode_tok_s_median"]:
                 refuse(f"semantic[{mode}]: decode median {p['decode_median']} "
                        f"!= capsule {claim['decode_tok_s_median']}")
