@@ -1,0 +1,82 @@
+name: Supplier Foundry asset floor
+
+on:
+  pull_request:
+    paths:
+      - 'supplier_foundry/floor/**'
+      - 'supplier_foundry/README.md'
+      - 'supplier_foundry/CONTINUITY.md'
+      - '.github/workflows/supplier-foundry-asset-floor.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'supplier_foundry/floor/**'
+      - 'supplier_foundry/README.md'
+      - 'supplier_foundry/CONTINUITY.md'
+      - '.github/workflows/supplier-foundry-asset-floor.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supplier-foundry-asset-floor-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.12']
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Compile and test the provider-neutral floor
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile supplier_foundry/floor/asset_floor.py
+          python -m unittest discover -s supplier_foundry/floor/tests -v
+          python supplier_foundry/floor/asset_floor.py validate \
+            --catalog supplier_foundry/floor/catalog.json \
+            --intent supplier_foundry/floor/examples/underdrain-valve.asset-intent.json \
+            --intent supplier_foundry/floor/examples/underdrain-boss-toad.asset-intent.json
+
+      - name: Reconstruct the exact coverage and gap report
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/asset-floor"
+          python supplier_foundry/floor/asset_floor.py report \
+            --catalog supplier_foundry/floor/catalog.json \
+            --intent supplier_foundry/floor/examples/underdrain-valve.asset-intent.json \
+            --intent supplier_foundry/floor/examples/underdrain-boss-toad.asset-intent.json \
+            --output "$RUNNER_TEMP/asset-floor/floor-report.json"
+          cmp \
+            "$RUNNER_TEMP/asset-floor/floor-report.json" \
+            supplier_foundry/floor/examples/floor-report.json
+          cp supplier_foundry/floor/catalog.json "$RUNNER_TEMP/asset-floor/"
+          cp supplier_foundry/floor/examples/*.asset-intent.json "$RUNNER_TEMP/asset-floor/"
+          printf '%s\n' "${{ github.sha }}" > "$RUNNER_TEMP/asset-floor/repository-head.txt"
+          (
+            cd "$RUNNER_TEMP/asset-floor"
+            find . -type f ! -name SHA256SUMS -printf '%P\0' |
+              sort -z |
+              xargs -0 sha256sum > SHA256SUMS
+          )
+          git diff --check
+          test -z "$(git status --porcelain)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: supplier-foundry-asset-floor-python-${{ matrix.python }}
+          path: ${{ runner.temp }}/asset-floor
+          if-no-files-found: error
+          retention-days: 30

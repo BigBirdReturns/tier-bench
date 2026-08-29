@@ -1,0 +1,2141 @@
+{
+  "format": "axm-asset-floor-catalog/1",
+  "catalogId": "assetfloor1_24acffb97ca6cdf4476314f42c3c3a14b9787ecf2b7315852beb2e54fb94445c",
+  "authority": "measurement_only",
+  "aggregateReadinessScore": null,
+  "principles": [
+    "capability_not_supplier",
+    "intent_not_prompt",
+    "candidate_not_product",
+    "fixture_not_production",
+    "evidence_not_authority",
+    "source_and_fallback_survive_supplier_removal",
+    "no_aggregate_readiness_score"
+  ],
+  "gates": [
+    {
+      "id": "identity",
+      "hard": true,
+      "description": "Stable identity, units, axes, scale, and version are independently reconstructable."
+    },
+    {
+      "id": "structure",
+      "hard": true,
+      "description": "Required named parts, hierarchy, sockets, pivots, and variants are present."
+    },
+    {
+      "id": "geometry",
+      "hard": true,
+      "description": "Geometry is finite, bounded, nondegenerate, and matches the declared silhouette and dimensions."
+    },
+    {
+      "id": "topology",
+      "hard": false,
+      "description": "Topology supports the declared deformation, editing, baking, and runtime requirements."
+    },
+    {
+      "id": "uv",
+      "hard": false,
+      "description": "UV sets, coverage, seams, density, and overlap policy satisfy the profile."
+    },
+    {
+      "id": "materials",
+      "hard": false,
+      "description": "Material slots and PBR channels survive the declared interchange and engine path."
+    },
+    {
+      "id": "rig",
+      "hard": false,
+      "description": "Skeleton, joint hierarchy, bind pose, skin weights, and retarget basis are valid."
+    },
+    {
+      "id": "animation",
+      "hard": false,
+      "description": "Required clips, contacts, root policy, event anchors, and interaction alignment are valid."
+    },
+    {
+      "id": "physics",
+      "hard": true,
+      "description": "Colliders, mass regions, triggers, navigation, and moving-part clearances are valid."
+    },
+    {
+      "id": "lod",
+      "hard": false,
+      "description": "LOD, impostor, streaming, and fallback products preserve silhouette and behavior."
+    },
+    {
+      "id": "engine_import",
+      "hard": true,
+      "description": "The exact product imports into the declared engine without unwaived errors."
+    },
+    {
+      "id": "runtime_budget",
+      "hard": true,
+      "description": "Measured draw, memory, CPU, GPU, load, and storage budgets pass on the target."
+    },
+    {
+      "id": "gameplay_semantics",
+      "hard": true,
+      "description": "Named parts, interactions, damage zones, sockets, and state transitions match external game law."
+    },
+    {
+      "id": "style_consistency",
+      "hard": false,
+      "description": "The asset belongs to the declared family across palette, shape language, materials, and scale."
+    },
+    {
+      "id": "readability",
+      "hard": true,
+      "description": "Silhouette, affordances, telegraphs, weak points, and interaction anchors read at play distance."
+    },
+    {
+      "id": "security",
+      "hard": true,
+      "description": "Parsers, archives, scripts, shaders, and embedded data pass bounded hostile-input checks."
+    },
+    {
+      "id": "provenance",
+      "hard": true,
+      "description": "Inputs, model/tool versions, transformations, authorship, and output hashes are retained."
+    },
+    {
+      "id": "license",
+      "hard": true,
+      "description": "Source, model, dataset, output, redistribution, credit, and territory terms satisfy policy."
+    },
+    {
+      "id": "human_correction",
+      "hard": false,
+      "description": "Artist edits round-trip without destroying identity, behavior anchors, or supplier independence."
+    },
+    {
+      "id": "substitution",
+      "hard": true,
+      "description": "A second provider or neutral fallback can satisfy the same capability contract."
+    },
+    {
+      "id": "migration",
+      "hard": true,
+      "description": "Version upgrade, deprecation, rollback, and reconstruction procedures are explicit."
+    },
+    {
+      "id": "human_acceptance",
+      "hard": true,
+      "description": "A named human authority accepted the asset in the real product venue."
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "asset.intent.author/v1",
+      "owner": "asset-owner",
+      "description": "Express gameplay, art, budget, provenance, and fallback requirements without naming a supplier.",
+      "canonicalInputs": [
+        "axm-asset-intent/1"
+      ],
+      "canonicalOutputs": [
+        "axm-asset-intent/1"
+      ],
+      "requiredGates": [
+        "identity",
+        "gameplay_semantics",
+        "provenance",
+        "license",
+        "migration"
+      ],
+      "authority": "none",
+      "providerRequired": false
+    },
+    {
+      "id": "asset.reference.prepare/v1",
+      "owner": "asset-owner",
+      "description": "Normalize images, turnarounds, masks, dimensions, and rights metadata.",
+      "canonicalInputs": [
+        "reference-media"
+      ],
+      "canonicalOutputs": [
+        "axm-reference-pack/1"
+      ],
+      "requiredGates": [
+        "identity",
+        "provenance",
+        "license",
+        "security"
+      ],
+      "authority": "none",
+      "providerRequired": false
+    },
+    {
+      "id": "asset.shape.generate/v1",
+      "owner": "supplier-foundry",
+      "description": "Generate base geometry from bounded references or procedural recipes.",
+      "canonicalInputs": [
+        "axm-reference-pack/1",
+        "axm-asset-intent/1"
+      ],
+      "canonicalOutputs": [
+        "candidate-geometry"
+      ],
+      "requiredGates": [
+        "identity",
+        "geometry",
+        "provenance",
+        "license",
+        "security"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.parts.generate/v1",
+      "owner": "supplier-foundry",
+      "description": "Generate or recover named semantic parts under an application-owned part schema.",
+      "canonicalInputs": [
+        "candidate-geometry",
+        "axm-asset-intent/1"
+      ],
+      "canonicalOutputs": [
+        "part-structured-geometry"
+      ],
+      "requiredGates": [
+        "structure",
+        "geometry",
+        "gameplay_semantics",
+        "provenance"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.code.generate/v1",
+      "owner": "supplier-foundry",
+      "description": "Generate deterministic editable source programs that compile into assets.",
+      "canonicalInputs": [
+        "axm-asset-intent/1"
+      ],
+      "canonicalOutputs": [
+        "procedural-source",
+        "candidate-geometry"
+      ],
+      "requiredGates": [
+        "identity",
+        "structure",
+        "geometry",
+        "security",
+        "provenance"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.topology.rebuild/v1",
+      "owner": "supplier-foundry",
+      "description": "Produce edit- and deformation-suitable topology from a geometry candidate.",
+      "canonicalInputs": [
+        "candidate-geometry"
+      ],
+      "canonicalOutputs": [
+        "retopologized-geometry"
+      ],
+      "requiredGates": [
+        "geometry",
+        "topology",
+        "human_correction",
+        "provenance"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.uv.unwrap/v1",
+      "owner": "supplier-foundry",
+      "description": "Produce UV sets under density, seam, overlap, and channel policies.",
+      "canonicalInputs": [
+        "retopologized-geometry"
+      ],
+      "canonicalOutputs": [
+        "uv-mapped-geometry"
+      ],
+      "requiredGates": [
+        "uv",
+        "provenance"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.texture.pbr/v1",
+      "owner": "supplier-foundry",
+      "description": "Produce lighting-independent PBR texture channels under a material profile.",
+      "canonicalInputs": [
+        "uv-mapped-geometry",
+        "reference-media"
+      ],
+      "canonicalOutputs": [
+        "texture-set"
+      ],
+      "requiredGates": [
+        "materials",
+        "style_consistency",
+        "provenance",
+        "license"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.material.translate/v1",
+      "owner": "supplier-foundry",
+      "description": "Translate material intent through MaterialX/OpenPBR and engine profiles.",
+      "canonicalInputs": [
+        "texture-set",
+        "material-graph"
+      ],
+      "canonicalOutputs": [
+        "portable-material"
+      ],
+      "requiredGates": [
+        "materials",
+        "engine_import",
+        "provenance"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.rig.generate/v1",
+      "owner": "supplier-foundry",
+      "description": "Create skeleton, bind pose, skin weights, constraints, and retarget metadata.",
+      "canonicalInputs": [
+        "retopologized-geometry",
+        "axm-asset-intent/1"
+      ],
+      "canonicalOutputs": [
+        "rigged-asset"
+      ],
+      "requiredGates": [
+        "rig",
+        "topology",
+        "gameplay_semantics",
+        "provenance"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.motion.generate/v1",
+      "owner": "supplier-foundry",
+      "description": "Generate or retarget motion candidates without defining combat timing.",
+      "canonicalInputs": [
+        "rigged-asset",
+        "motion-intent"
+      ],
+      "canonicalOutputs": [
+        "animation-clips"
+      ],
+      "requiredGates": [
+        "animation",
+        "gameplay_semantics",
+        "provenance",
+        "license"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.physics.generate/v1",
+      "owner": "supplier-foundry",
+      "description": "Generate bounded colliders, triggers, mass regions, and navigation proxies.",
+      "canonicalInputs": [
+        "part-structured-geometry",
+        "axm-asset-intent/1"
+      ],
+      "canonicalOutputs": [
+        "physics-profile"
+      ],
+      "requiredGates": [
+        "physics",
+        "gameplay_semantics",
+        "runtime_budget"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.lod.generate/v1",
+      "owner": "supplier-foundry",
+      "description": "Generate LODs, impostors, streaming groups, and source-preserving fallbacks.",
+      "canonicalInputs": [
+        "production-geometry"
+      ],
+      "canonicalOutputs": [
+        "lod-family"
+      ],
+      "requiredGates": [
+        "lod",
+        "geometry",
+        "runtime_budget",
+        "migration"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.optimize.gltf/v1",
+      "owner": "supplier-foundry",
+      "description": "Optimize a glTF delivery product while preserving declared semantics.",
+      "canonicalInputs": [
+        "gltf"
+      ],
+      "canonicalOutputs": [
+        "optimized-gltf"
+      ],
+      "requiredGates": [
+        "geometry",
+        "materials",
+        "animation",
+        "runtime_budget",
+        "substitution"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.texture.compress/v1",
+      "owner": "supplier-foundry",
+      "description": "Compress texture products into portable GPU-ready KTX2/Basis forms.",
+      "canonicalInputs": [
+        "texture-set"
+      ],
+      "canonicalOutputs": [
+        "compressed-texture-set"
+      ],
+      "requiredGates": [
+        "materials",
+        "runtime_budget",
+        "engine_import",
+        "substitution"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.scene.compose/v1",
+      "owner": "pipeline-steward",
+      "description": "Compose variants, layers, references, and assemblies without destructive flattening.",
+      "canonicalInputs": [
+        "asset-products"
+      ],
+      "canonicalOutputs": [
+        "composed-scene"
+      ],
+      "requiredGates": [
+        "identity",
+        "structure",
+        "migration",
+        "human_correction"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.resolve/v1",
+      "owner": "pipeline-steward",
+      "description": "Resolve stable entity references to versions and platform products without path coupling.",
+      "canonicalInputs": [
+        "asset-entity-reference"
+      ],
+      "canonicalOutputs": [
+        "resolved-asset-traits"
+      ],
+      "requiredGates": [
+        "identity",
+        "provenance",
+        "migration",
+        "security"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.behavior.portable/v1",
+      "owner": "game-law-owner",
+      "description": "Package constrained portable behavior hints without acquiring game-law authority.",
+      "canonicalInputs": [
+        "axm-asset-intent/1",
+        "asset-product"
+      ],
+      "canonicalOutputs": [
+        "portable-behavior-graph"
+      ],
+      "requiredGates": [
+        "gameplay_semantics",
+        "security",
+        "engine_import",
+        "migration"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.validate.format/v1",
+      "owner": "independent-verifier",
+      "description": "Run format and profile conformance without supplier runtime.",
+      "canonicalInputs": [
+        "asset-product"
+      ],
+      "canonicalOutputs": [
+        "format-verification"
+      ],
+      "requiredGates": [
+        "security",
+        "identity",
+        "structure",
+        "geometry"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.validate.engine/v1",
+      "owner": "independent-verifier",
+      "description": "Import and exercise exact asset products in engine fixtures.",
+      "canonicalInputs": [
+        "asset-product",
+        "engine-fixture"
+      ],
+      "canonicalOutputs": [
+        "engine-qualification"
+      ],
+      "requiredGates": [
+        "engine_import",
+        "runtime_budget",
+        "gameplay_semantics",
+        "readability"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.validate.visual/v1",
+      "owner": "independent-verifier",
+      "description": "Evaluate silhouette, materials, style family, telegraphs, and play-distance readability.",
+      "canonicalInputs": [
+        "engine-captures",
+        "style-contract"
+      ],
+      "canonicalOutputs": [
+        "visual-qualification"
+      ],
+      "requiredGates": [
+        "style_consistency",
+        "readability",
+        "human_acceptance"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.provenance.attest/v1",
+      "owner": "custody-steward",
+      "description": "Bind source, tools, models, transforms, licenses, credits, and product hashes.",
+      "canonicalInputs": [
+        "pipeline-events"
+      ],
+      "canonicalOutputs": [
+        "asset-attestation"
+      ],
+      "requiredGates": [
+        "provenance",
+        "license",
+        "security",
+        "migration"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.security.scan/v1",
+      "owner": "independent-verifier",
+      "description": "Scan archives, parsers, scripts, shaders, and embedded resources under resource bounds.",
+      "canonicalInputs": [
+        "asset-package"
+      ],
+      "canonicalOutputs": [
+        "security-report"
+      ],
+      "requiredGates": [
+        "security"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.publish.package/v1",
+      "owner": "asset-owner",
+      "description": "Publish canonical source, engine variants, receipts, credits, and fallback as one product.",
+      "canonicalInputs": [
+        "qualified-products"
+      ],
+      "canonicalOutputs": [
+        "axm-asset-product/1"
+      ],
+      "requiredGates": [
+        "identity",
+        "provenance",
+        "license",
+        "substitution",
+        "migration"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.benchmark.compare/v1",
+      "owner": "tier-bench",
+      "description": "Compare suppliers on a frozen corpus without promoting a winner outside the measured cell.",
+      "canonicalInputs": [
+        "asset-intents",
+        "provider-products"
+      ],
+      "canonicalOutputs": [
+        "comparison-report"
+      ],
+      "requiredGates": [
+        "provenance",
+        "substitution",
+        "runtime_budget"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    },
+    {
+      "id": "asset.human.correct/v1",
+      "owner": "artist",
+      "description": "Round-trip asset corrections while retaining semantic and provenance continuity.",
+      "canonicalInputs": [
+        "asset-candidate"
+      ],
+      "canonicalOutputs": [
+        "corrected-candidate",
+        "edit-delta"
+      ],
+      "requiredGates": [
+        "human_correction",
+        "identity",
+        "structure",
+        "provenance"
+      ],
+      "authority": "none",
+      "providerRequired": true
+    }
+  ],
+  "profiles": [
+    {
+      "id": "3d_prop",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.reference.prepare/v1",
+        "asset.shape.generate/v1",
+        "asset.topology.rebuild/v1",
+        "asset.uv.unwrap/v1",
+        "asset.texture.pbr/v1",
+        "asset.physics.generate/v1",
+        "asset.lod.generate/v1",
+        "asset.validate.format/v1",
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "structure",
+        "geometry",
+        "topology",
+        "uv",
+        "materials",
+        "physics",
+        "lod",
+        "engine_import",
+        "runtime_budget",
+        "style_consistency",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "human_correction",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    },
+    {
+      "id": "3d_mechanism",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.reference.prepare/v1",
+        "asset.shape.generate/v1",
+        "asset.parts.generate/v1",
+        "asset.topology.rebuild/v1",
+        "asset.uv.unwrap/v1",
+        "asset.texture.pbr/v1",
+        "asset.physics.generate/v1",
+        "asset.behavior.portable/v1",
+        "asset.lod.generate/v1",
+        "asset.validate.format/v1",
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "structure",
+        "geometry",
+        "topology",
+        "uv",
+        "materials",
+        "physics",
+        "lod",
+        "engine_import",
+        "runtime_budget",
+        "gameplay_semantics",
+        "style_consistency",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "human_correction",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    },
+    {
+      "id": "3d_character",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.reference.prepare/v1",
+        "asset.shape.generate/v1",
+        "asset.parts.generate/v1",
+        "asset.topology.rebuild/v1",
+        "asset.uv.unwrap/v1",
+        "asset.texture.pbr/v1",
+        "asset.rig.generate/v1",
+        "asset.motion.generate/v1",
+        "asset.physics.generate/v1",
+        "asset.lod.generate/v1",
+        "asset.validate.format/v1",
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "structure",
+        "geometry",
+        "topology",
+        "uv",
+        "materials",
+        "rig",
+        "animation",
+        "physics",
+        "lod",
+        "engine_import",
+        "runtime_budget",
+        "gameplay_semantics",
+        "style_consistency",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "human_correction",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    },
+    {
+      "id": "3d_creature",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.reference.prepare/v1",
+        "asset.shape.generate/v1",
+        "asset.parts.generate/v1",
+        "asset.topology.rebuild/v1",
+        "asset.uv.unwrap/v1",
+        "asset.texture.pbr/v1",
+        "asset.rig.generate/v1",
+        "asset.motion.generate/v1",
+        "asset.physics.generate/v1",
+        "asset.lod.generate/v1",
+        "asset.validate.format/v1",
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "structure",
+        "geometry",
+        "topology",
+        "uv",
+        "materials",
+        "rig",
+        "animation",
+        "physics",
+        "lod",
+        "engine_import",
+        "runtime_budget",
+        "gameplay_semantics",
+        "style_consistency",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "human_correction",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    },
+    {
+      "id": "3d_environment_kit",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.reference.prepare/v1",
+        "asset.shape.generate/v1",
+        "asset.parts.generate/v1",
+        "asset.topology.rebuild/v1",
+        "asset.uv.unwrap/v1",
+        "asset.texture.pbr/v1",
+        "asset.physics.generate/v1",
+        "asset.lod.generate/v1",
+        "asset.scene.compose/v1",
+        "asset.resolve/v1",
+        "asset.validate.format/v1",
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "structure",
+        "geometry",
+        "topology",
+        "uv",
+        "materials",
+        "physics",
+        "lod",
+        "engine_import",
+        "runtime_budget",
+        "gameplay_semantics",
+        "style_consistency",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "human_correction",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    },
+    {
+      "id": "material",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.texture.pbr/v1",
+        "asset.material.translate/v1",
+        "asset.texture.compress/v1",
+        "asset.validate.format/v1",
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "materials",
+        "engine_import",
+        "runtime_budget",
+        "style_consistency",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    },
+    {
+      "id": "animation_clip",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.motion.generate/v1",
+        "asset.validate.engine/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "animation",
+        "engine_import",
+        "runtime_budget",
+        "gameplay_semantics",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    },
+    {
+      "id": "vfx",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.scene.compose/v1",
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "structure",
+        "materials",
+        "engine_import",
+        "runtime_budget",
+        "gameplay_semantics",
+        "style_consistency",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    },
+    {
+      "id": "audio",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.validate.engine/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "engine_import",
+        "runtime_budget",
+        "gameplay_semantics",
+        "style_consistency",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    },
+    {
+      "id": "ui",
+      "requiredCapabilities": [
+        "asset.intent.author/v1",
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1",
+        "asset.provenance.attest/v1",
+        "asset.publish.package/v1"
+      ],
+      "requiredGates": [
+        "identity",
+        "structure",
+        "engine_import",
+        "runtime_budget",
+        "gameplay_semantics",
+        "style_consistency",
+        "readability",
+        "security",
+        "provenance",
+        "license",
+        "human_correction",
+        "substitution",
+        "migration",
+        "human_acceptance"
+      ]
+    }
+  ],
+  "suppliers": [
+    {
+      "id": "provider.trellis2",
+      "name": "TRELLIS.2",
+      "role": "provider",
+      "capabilities": [
+        "asset.shape.generate/v1",
+        "asset.texture.pbr/v1"
+      ],
+      "source": "https://github.com/microsoft/TRELLIS.2",
+      "reportedLicense": "MIT",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.hunyuan3d21",
+      "name": "Hunyuan3D 2.1",
+      "role": "provider",
+      "capabilities": [
+        "asset.shape.generate/v1",
+        "asset.texture.pbr/v1"
+      ],
+      "source": "https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1",
+      "reportedLicense": "custom",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.spar3d",
+      "name": "SPAR3D",
+      "role": "provider",
+      "capabilities": [
+        "asset.shape.generate/v1"
+      ],
+      "source": "https://github.com/Stability-AI/stable-point-aware-3d",
+      "reportedLicense": "custom",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.stablefast3d",
+      "name": "Stable Fast 3D",
+      "role": "provider",
+      "capabilities": [
+        "asset.shape.generate/v1",
+        "asset.texture.pbr/v1"
+      ],
+      "source": "https://github.com/Stability-AI/stable-fast-3d",
+      "reportedLicense": "custom",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.cube3d",
+      "name": "Roblox Cube 3D",
+      "role": "provider",
+      "capabilities": [
+        "asset.shape.generate/v1"
+      ],
+      "source": "https://github.com/Roblox/cube",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.partcrafter",
+      "name": "PartCrafter",
+      "role": "provider",
+      "capabilities": [
+        "asset.parts.generate/v1"
+      ],
+      "source": "https://github.com/wgsxm/PartCrafter",
+      "reportedLicense": "MIT",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.cubepart",
+      "name": "CubePart",
+      "role": "research",
+      "capabilities": [
+        "asset.parts.generate/v1"
+      ],
+      "source": "https://cubepart.github.io/",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "research_only",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "research",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.nova3d",
+      "name": "Nova3D",
+      "role": "research",
+      "capabilities": [
+        "asset.code.generate/v1",
+        "asset.parts.generate/v1"
+      ],
+      "source": "https://arxiv.org/abs/2607.22738",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "research_only",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "research",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.imaginu",
+      "name": "imaginu",
+      "role": "provider",
+      "capabilities": [
+        "asset.code.generate/v1",
+        "asset.physics.generate/v1",
+        "asset.motion.generate/v1"
+      ],
+      "source": "https://vicotrbb.github.io/imaginu/",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.meshanythingv2",
+      "name": "MeshAnything V2",
+      "role": "provider",
+      "capabilities": [
+        "asset.topology.rebuild/v1"
+      ],
+      "source": "https://github.com/buaacyw/MeshAnythingV2",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.meshflow",
+      "name": "MeshFlow",
+      "role": "research",
+      "capabilities": [
+        "asset.topology.rebuild/v1"
+      ],
+      "source": "https://arxiv.org/abs/2606.00000",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "research_only",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "research",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.blender",
+      "name": "Blender",
+      "role": "provider",
+      "capabilities": [
+        "asset.topology.rebuild/v1",
+        "asset.uv.unwrap/v1",
+        "asset.rig.generate/v1",
+        "asset.motion.generate/v1",
+        "asset.physics.generate/v1",
+        "asset.lod.generate/v1",
+        "asset.scene.compose/v1",
+        "asset.human.correct/v1"
+      ],
+      "source": "https://www.blender.org/",
+      "reportedLicense": "GPL-3.0-or-later",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_dcc",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.xatlas",
+      "name": "xatlas",
+      "role": "provider",
+      "capabilities": [
+        "asset.uv.unwrap/v1"
+      ],
+      "source": "https://github.com/jpcy/xatlas",
+      "reportedLicense": "MIT",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.paint3d",
+      "name": "Paint3D",
+      "role": "provider",
+      "capabilities": [
+        "asset.texture.pbr/v1"
+      ],
+      "source": "https://github.com/OpenTexture/Paint3D",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.mvpaint",
+      "name": "MVPaint",
+      "role": "provider",
+      "capabilities": [
+        "asset.texture.pbr/v1"
+      ],
+      "source": "https://github.com/3DTopia/MVPaint",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.materialmaker",
+      "name": "Material Maker",
+      "role": "provider",
+      "capabilities": [
+        "asset.texture.pbr/v1",
+        "asset.material.translate/v1",
+        "asset.human.correct/v1"
+      ],
+      "source": "https://github.com/RodZill4/material-maker",
+      "reportedLicense": "MIT",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_dcc",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "standard.materialx-openpbr",
+      "name": "MaterialX and OpenPBR",
+      "role": "standard",
+      "capabilities": [
+        "asset.material.translate/v1"
+      ],
+      "source": "https://materialx.org/",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "standard",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.skintokens",
+      "name": "SkinTokens",
+      "role": "provider",
+      "capabilities": [
+        "asset.rig.generate/v1"
+      ],
+      "source": "https://github.com/VAST-AI-Research/SkinTokens",
+      "reportedLicense": "MIT",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.unirig",
+      "name": "UniRig",
+      "role": "provider",
+      "capabilities": [
+        "asset.rig.generate/v1"
+      ],
+      "source": "https://github.com/VAST-AI-Research/UniRig",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "research.anymate",
+      "name": "Anymate",
+      "role": "benchmark",
+      "capabilities": [
+        "asset.rig.generate/v1",
+        "asset.benchmark.compare/v1"
+      ],
+      "source": "https://anymate3d.github.io/",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "research_only",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "research",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "research.anigen",
+      "name": "AniGen",
+      "role": "research",
+      "capabilities": [
+        "asset.shape.generate/v1",
+        "asset.rig.generate/v1"
+      ],
+      "source": "https://yihua7.github.io/AniGen-web/",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "research_only",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "research",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.momask",
+      "name": "MoMask",
+      "role": "provider",
+      "capabilities": [
+        "asset.motion.generate/v1"
+      ],
+      "source": "https://github.com/EricGuo5513/momask-codes",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.mdm",
+      "name": "Motion Diffusion Model",
+      "role": "provider",
+      "capabilities": [
+        "asset.motion.generate/v1"
+      ],
+      "source": "https://github.com/GuyTevet/motion-diffusion-model",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_gpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.vhacd",
+      "name": "V-HACD",
+      "role": "provider",
+      "capabilities": [
+        "asset.physics.generate/v1"
+      ],
+      "source": "https://github.com/kmammou/v-hacd",
+      "reportedLicense": "BSD-3-Clause",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.coacd",
+      "name": "CoACD",
+      "role": "provider",
+      "capabilities": [
+        "asset.physics.generate/v1"
+      ],
+      "source": "https://github.com/SarahWeiii/CoACD",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.meshoptimizer",
+      "name": "meshoptimizer",
+      "role": "provider",
+      "capabilities": [
+        "asset.lod.generate/v1",
+        "asset.optimize.gltf/v1"
+      ],
+      "source": "https://github.com/zeux/meshoptimizer",
+      "reportedLicense": "MIT",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.gltf-transform",
+      "name": "glTF Transform",
+      "role": "provider",
+      "capabilities": [
+        "asset.optimize.gltf/v1"
+      ],
+      "source": "https://github.com/donmccurdy/glTF-Transform",
+      "reportedLicense": "MIT",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "fixture_qualified",
+      "executionClass": "local_cpu",
+      "evidence": [
+        "tier-bench supplierqual1"
+      ],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.gltfpack",
+      "name": "gltfpack",
+      "role": "provider",
+      "capabilities": [
+        "asset.optimize.gltf/v1"
+      ],
+      "source": "https://github.com/zeux/meshoptimizer/tree/master/gltf",
+      "reportedLicense": "MIT",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "fixture_qualified",
+      "executionClass": "local_cpu",
+      "evidence": [
+        "tier-bench supplierqual1"
+      ],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.ktx-software",
+      "name": "KTX-Software",
+      "role": "provider",
+      "capabilities": [
+        "asset.texture.compress/v1"
+      ],
+      "source": "https://github.com/KhronosGroup/KTX-Software",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.basisu",
+      "name": "Basis Universal",
+      "role": "provider",
+      "capabilities": [
+        "asset.texture.compress/v1"
+      ],
+      "source": "https://github.com/BinomialLLC/basis_universal",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "standard.openusd",
+      "name": "OpenUSD",
+      "role": "standard",
+      "capabilities": [
+        "asset.scene.compose/v1"
+      ],
+      "source": "https://aousd.org/usd-core-specification/",
+      "reportedLicense": "modified-Apache-2.0",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "standard",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "standard.openassetio",
+      "name": "OpenAssetIO",
+      "role": "standard",
+      "capabilities": [
+        "asset.resolve/v1"
+      ],
+      "source": "https://docs.openassetio.org/OpenAssetIO/",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "standard",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "standard.khr-interactivity",
+      "name": "KHR_interactivity",
+      "role": "standard",
+      "capabilities": [
+        "asset.behavior.portable/v1"
+      ],
+      "source": "https://www.khronos.org/news/press/gltf-interactivity-extension-submitted-for-ratification",
+      "reportedLicense": "royalty-free-standard",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "standard",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.gltf-validator",
+      "name": "Khronos glTF Validator",
+      "role": "provider",
+      "capabilities": [
+        "asset.validate.format/v1",
+        "asset.security.scan/v1"
+      ],
+      "source": "https://github.com/KhronosGroup/glTF-Validator",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "standard.c2pa",
+      "name": "C2PA",
+      "role": "standard",
+      "capabilities": [
+        "asset.provenance.attest/v1"
+      ],
+      "source": "https://c2pa.wiki/specifications/",
+      "reportedLicense": "open-standard",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "standard",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "standard.spdx3",
+      "name": "SPDX 3",
+      "role": "standard",
+      "capabilities": [
+        "asset.provenance.attest/v1"
+      ],
+      "source": "https://spdx.dev/",
+      "reportedLicense": "open-standard",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "standard",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.intoto",
+      "name": "in-toto",
+      "role": "provider",
+      "capabilities": [
+        "asset.provenance.attest/v1"
+      ],
+      "source": "https://github.com/in-toto/in-toto",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.openassetio",
+      "name": "OpenAssetIO reference implementation",
+      "role": "provider",
+      "capabilities": [
+        "asset.resolve/v1"
+      ],
+      "source": "https://github.com/OpenAssetIO/OpenAssetIO",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "local_cpu",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.ayon",
+      "name": "AYON",
+      "role": "provider",
+      "capabilities": [
+        "asset.resolve/v1",
+        "asset.human.correct/v1",
+        "asset.publish.package/v1"
+      ],
+      "source": "https://github.com/ynput/ayon-backend",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "service_optional",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.unity",
+      "name": "Unity",
+      "role": "engine",
+      "capabilities": [
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1"
+      ],
+      "source": "https://unity.com/",
+      "reportedLicense": "proprietary",
+      "license": {
+        "status": "legal_review",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "engine",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.godot",
+      "name": "Godot",
+      "role": "engine",
+      "capabilities": [
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1"
+      ],
+      "source": "https://github.com/godotengine/godot",
+      "reportedLicense": "MIT",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "engine",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "provider.babylon",
+      "name": "Babylon.js",
+      "role": "engine",
+      "capabilities": [
+        "asset.validate.engine/v1",
+        "asset.validate.visual/v1"
+      ],
+      "source": "https://github.com/BabylonJS/Babylon.js",
+      "reportedLicense": "Apache-2.0",
+      "license": {
+        "status": "shipping_eligible",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "engine",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "benchmark.hy3d",
+      "name": "HY3D-Bench",
+      "role": "benchmark",
+      "capabilities": [
+        "asset.benchmark.compare/v1"
+      ],
+      "source": "https://arxiv.org/abs/2602.03907",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "research_only",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "benchmark",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    },
+    {
+      "id": "benchmark.3dcodebench",
+      "name": "3DCodeBench",
+      "role": "benchmark",
+      "capabilities": [
+        "asset.benchmark.compare/v1",
+        "asset.code.generate/v1"
+      ],
+      "source": "https://www.3dcodebench.com/",
+      "reportedLicense": "unknown",
+      "license": {
+        "status": "research_only",
+        "reviewRef": null
+      },
+      "state": "discovered",
+      "executionClass": "benchmark",
+      "evidence": [],
+      "authority": {
+        "capability": "none",
+        "selection": "none",
+        "acceptance": "none",
+        "gameLaw": "none"
+      }
+    }
+  ],
+  "gaps": [
+    {
+      "id": "gap.intent-to-runtime",
+      "state": "open",
+      "firstExperiment": "Compile the UNDERDRAIN valve intent into one glTF and one Unity prefab while preserving named parts, pivots, sockets, and interaction anchors.",
+      "failureDefault": "Keep the generated object at design-reference or candidate tier."
+    },
+    {
+      "id": "gap.style-family-consistency",
+      "state": "open",
+      "firstExperiment": "Generate five mechanism assets from one style packet and compare palette, shape language, scale, texel density, and material response in one sewer scene.",
+      "failureDefault": "Reject family promotion even when individual assets look acceptable."
+    },
+    {
+      "id": "gap.gameplay-readability",
+      "state": "open",
+      "firstExperiment": "Measure mechanism affordance and enemy weak-point recognition at the production camera distance under sewer lighting.",
+      "failureDefault": "Hold the asset for redesign; studio renders do not count."
+    },
+    {
+      "id": "gap.semantic-part-schema",
+      "state": "emerging",
+      "firstExperiment": "Compare PartCrafter, CubePart, and manual Blender segmentation against the same valve and boss-toad part schema.",
+      "failureDefault": "Preserve the monolithic candidate but forbid behavior binding."
+    },
+    {
+      "id": "gap.fixed-deformation-topology",
+      "state": "open",
+      "firstExperiment": "Retopologize one hero head and one toad limb through multiple suppliers and run the same deformation corpus.",
+      "failureDefault": "No rig or animation promotion."
+    },
+    {
+      "id": "gap.rig-validity",
+      "state": "emerging",
+      "firstExperiment": "Compare SkinTokens, UniRig, and a Rigify correction path on hopper, shield brute, boss toad, and plumber.",
+      "failureDefault": "Retain only static or manually rigged variants."
+    },
+    {
+      "id": "gap.motion-gameplay-alignment",
+      "state": "open",
+      "firstExperiment": "Retarget generated locomotion and mechanism clips against authored contact frames, weapon arcs, cancel windows, and root policy.",
+      "failureDefault": "Treat motion as reference only."
+    },
+    {
+      "id": "gap.multi-asset-coherence",
+      "state": "open",
+      "firstExperiment": "Assemble a complete pump-room kit from independent providers and measure scale, snapping, seam, material, and lighting continuity.",
+      "failureDefault": "Do not publish a modular kit."
+    },
+    {
+      "id": "gap.engine-roundtrip",
+      "state": "open",
+      "firstExperiment": "Round-trip source through Blender, USD, glTF, Unity, and back while preserving identities, materials, clips, sockets, and variants.",
+      "failureDefault": "Declare the path lossy and retain the canonical source separately."
+    },
+    {
+      "id": "gap.runtime-cost",
+      "state": "open",
+      "firstExperiment": "Measure draw calls, texture residency, skinning, animation, colliders, load time, and frame cost on 4060 desktop and Quest profile.",
+      "failureDefault": "No engine-qualified status."
+    },
+    {
+      "id": "gap.output-rights",
+      "state": "open",
+      "firstExperiment": "Create a provider-by-provider legal packet covering model, weights, training-data terms, output rights, territory, credit, and redistribution.",
+      "failureDefault": "legal_review or research_only; no shipping product."
+    },
+    {
+      "id": "gap.provenance-cross-format",
+      "state": "standardizing",
+      "firstExperiment": "Bind one asset through SPDX 3, C2PA, in-toto, USD metadata, glTF extras, and engine package receipts without identity drift.",
+      "failureDefault": "Retain the AXM sidecar as the authority-neutral custody record."
+    },
+    {
+      "id": "gap.security-hostile-assets",
+      "state": "open",
+      "firstExperiment": "Build malformed GLB, USD, texture, archive, shader, and behavior-graph fixtures with parser, memory, path, and decompression limits.",
+      "failureDefault": "Sandbox and refuse untrusted products."
+    },
+    {
+      "id": "gap.human-correction-delta",
+      "state": "open",
+      "firstExperiment": "Record an artist correction as a semantic delta and prove supplier replacement can reapply or consciously supersede it.",
+      "failureDefault": "The corrected asset becomes a new lineage branch, never a silent overwrite."
+    },
+    {
+      "id": "gap.behavior-portability",
+      "state": "emerging",
+      "firstExperiment": "Represent a valve, door, and weak-point reaction in KHR_interactivity while keeping Arc or host game law external.",
+      "failureDefault": "Store behavior anchors only; host owns behavior."
+    },
+    {
+      "id": "gap.asset-resolution",
+      "state": "standardizing",
+      "firstExperiment": "Expose accepted products through OpenAssetIO entity references and resolve engine-specific variants without filesystem assumptions.",
+      "failureDefault": "Use content-addressed local references with explicit version pinning."
+    },
+    {
+      "id": "gap.benchmark-fragmentation",
+      "state": "open",
+      "firstExperiment": "Map HY3D-Bench, 3DCodeBench, Anymate, Nova3D-Bench, and engine fixtures into one cell-compatible report model.",
+      "failureDefault": "Keep external benchmark claims separate from local acceptance."
+    },
+    {
+      "id": "gap.provider-security",
+      "state": "open",
+      "firstExperiment": "Run every adapter without network, shell expansion, writable source tree, or unbounded subprocesses and retain exact environment receipts.",
+      "failureDefault": "Provider remains disabled."
+    },
+    {
+      "id": "gap.public-conformance-corpus",
+      "state": "open",
+      "firstExperiment": "Publish small CC0 fixtures for valve, root gate, modular wall kit, hero, hopper, and boss toad with hidden engine checks.",
+      "failureDefault": "No ecosystem-wide compatibility claim."
+    },
+    {
+      "id": "gap.distribution-package",
+      "state": "open",
+      "firstExperiment": "Package canonical source, USD composition, glTF delivery, Unity/Godot variants, credits, and receipts behind one entity identity.",
+      "failureDefault": "Publish engine-specific packages as separate variants with no equivalence claim."
+    }
+  ]
+}

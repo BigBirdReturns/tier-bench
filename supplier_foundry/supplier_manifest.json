@@ -1,0 +1,58 @@
+{
+  "format": "axm-supplier-pilot/1",
+  "id": "pilot.asset-gltf-optimization.001",
+  "organ": {
+    "id": "organ.supplier-foundry",
+    "name": "Supplier Foundry",
+    "mission": "Acquire, isolate, qualify, transform, package, substitute, and remove external suppliers without allowing a supplier or its integration layer to define domain capability or accepted authority."
+  },
+  "capability": {
+    "id": "asset.optimize.gltf/v1",
+    "input": "glTF 2.0 triangle assets within the bounded verifier surface",
+    "output": "standard uncompressed GLB preserving reachable world-space triangle geometry and named-node transforms",
+    "policy": "Select the smallest deterministic semantically equivalent product; use execution time only as a tie-breaker."
+  },
+  "fixture": "fixtures/two-triangles.gltf",
+  "providers": [
+    {
+      "id": "oss.gltf-transform.cli",
+      "package": "@gltf-transform/cli",
+      "version": "4.4.1",
+      "licensePolicy": ["MIT"],
+      "pipeline": ["dedup", "prune"]
+    },
+    {
+      "id": "oss.gltfpack",
+      "package": "gltfpack",
+      "version": "1.2.0",
+      "licensePolicy": ["MIT"],
+      "pipeline": ["gltfpack -kn -km -ke"]
+    }
+  ],
+  "fallback": {
+    "id": "builtin.preserve-source",
+    "behavior": "Retain the exact source glTF and its semantic receipt when no qualified optimizer is available."
+  },
+  "budgets": {
+    "maximumExecutionSecondsPerProvider": 60,
+    "maximumOutputBytes": 1048576,
+    "requireOutputNoLargerThanSource": true,
+    "requireRawDeterminism": true,
+    "requireSemanticEquivalence": true,
+    "requireRipOutVerification": true
+  },
+  "authority": {
+    "domainCapability": "none",
+    "supplierSelection": "measurement recommendation only",
+    "actionOutcome": "none",
+    "campaignMutation": "none",
+    "evidenceAcceptance": "none",
+    "estateScheduling": "none"
+  },
+  "limits": [
+    "Synthetic duplicate-geometry fixture only.",
+    "Hosted Linux build metrics do not establish Quest, browser, GPU, visual, animation, texture, skin, morph, sparse-accessor, or production-asset performance.",
+    "The pilot measures two exact package versions and does not generalize to other versions or suppliers.",
+    "The verifier rejects compressed, sparse, skinned, morphed, or non-triangle products rather than approximating them."
+  ]
+}
