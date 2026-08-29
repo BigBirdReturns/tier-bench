@@ -35,13 +35,26 @@ Design constraints carried from the estate:
     record cannot be built, the snapshot is restored and a bounded failure
     receipt - integers and strings only, so it cannot fail to canonicalise -
     is emitted. A step never ends with advanced target state and no receipt.
+  - Acceptance is RECONSTRUCTED, never adopted. Validating a receipt re-derives
+    every acceptance flag from the target's own pick, the proposed token and
+    the preceding accepted prefix, and requires a JSON boolean: a receipt that
+    records target disagreement can no longer also record acceptance, and a
+    truthy value is not an acceptance claim at all.
   - There is ONE adjudication authority, adjudicate_logit_row: dimension and
     finiteness are gated before any pick is derived, and the production ARM C
-    verifier imports it rather than calling argmax on a raw row.
+    verifier imports it rather than calling argmax on a raw row. EVERY
+    committed token goes through it - including the correction the target
+    contributes past the end of a fully accepted block, which carries the same
+    complete record under terminal_role full_acceptance_correction.
   - An auxiliary tap bundle is admissible only if it BINDS the outcome of the
-    target run that produced it (return code 0, terminal status ok). Captures
-    from a nonzero target run are preserved under a distinct failure schema
-    that validate_aux_bundle refuses.
+    target run that produced it (return code 0, terminal status ok) and the
+    identity of that run. Captures from a nonzero target run are preserved
+    under a distinct failure schema that validate_aux_bundle refuses.
+  - A tap-capture output root is a TRANSACTION. The root is claimed before the
+    target runs, quarantining any earlier success bundle; success is published
+    by one atomic rename; and a failed run leaves no file under the
+    conventional success name - so a downstream consumer can never fall through
+    to a previous run's captures.
 """
 from __future__ import annotations
 
@@ -50,9 +63,12 @@ import hashlib
 import json
 import math
 import operator
+import os
 import struct
 import time
+import uuid
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Protocol
 
 MAX_BLOCK = 7
@@ -342,6 +358,12 @@ def validate_aux_bundle(bundle: dict[str, Any], expected_layers: list[int]) -> N
             "aux_bundle", f"target run returned {rc!r}, not 0")
     if status != "ok":
         raise SpecStepError("aux_bundle", f"terminal status {status!r} is not ok")
+    run_identity = bundle.get("run_identity")
+    if not isinstance(run_identity, str) or not run_identity.strip():
+        raise SpecStepError(
+            "aux_bundle",
+            "bundle carries no run_identity: a capture that cannot be attributed "
+            "to the target run that produced it is not admissible drafter input")
     captures = bundle.get("captures")
     if not isinstance(captures, list) or not captures:
         raise SpecStepError("aux_bundle", "no captures present")
@@ -363,6 +385,127 @@ def capture_target_aux_hidden(
     """Adopt a TapSession receipt as the drafter's auxiliary bundle."""
     validate_aux_bundle(tap_session_receipt, expected_layers)
     return tap_session_receipt
+
+
+# --------------------------------------------------------------------------
+# Tap-capture output roots are TRANSACTIONS
+# --------------------------------------------------------------------------
+#
+# A capture directory is reused across retries. Without a transaction the
+# conventional success filename survives a failed retry, and a downstream
+# consumer that opens tap-bundle.json adopts the PREVIOUS run's captures while
+# believing they came from this one. So: claim the root before the target runs
+# (quarantining any earlier success bundle and recording its disposition),
+# publish success atomically, and on failure prove no success bundle remains.
+
+TAP_BUNDLE_NAME = "tap-bundle.json"
+FAILED_TAP_BUNDLE_NAME = "tap-bundle-FAILED.json"
+SUPERSEDED_DIR_NAME = "superseded"
+
+
+def allocate_tap_run_identity() -> str:
+    """A unique identity for one tap-capture attempt into an output root."""
+    return time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()) + "-" + uuid.uuid4().hex[:12]
+
+
+def _require_run_identity(run_identity: Any) -> str:
+    if not isinstance(run_identity, str) or not run_identity.strip():
+        raise SpecStepError(
+            "tap_output", f"run identity {run_identity!r} is not a non-empty string")
+    return run_identity
+
+
+def _quarantine(root: Path, run_identity: str, suffix: str) -> dict[str, Any]:
+    """Move the conventional success bundle out of every top-level lookup."""
+    bundle = root / TAP_BUNDLE_NAME
+    payload = bundle.read_bytes()
+    holding = root / SUPERSEDED_DIR_NAME
+    holding.mkdir(parents=True, exist_ok=True)
+    target = holding / f"tap-bundle-{run_identity}{suffix}.json"
+    os.replace(bundle, target)
+    return {
+        "quarantined_as": f"{SUPERSEDED_DIR_NAME}/{target.name}",
+        "sha256": hashlib.sha256(payload).hexdigest(),
+        "bytes": len(payload),
+    }
+
+
+def open_tap_output_root(out_root: Any, run_identity: str) -> dict[str, Any]:
+    """Claim an output root for one capture attempt, BEFORE the target runs."""
+    run_identity = _require_run_identity(run_identity)
+    root = Path(out_root)
+    root.mkdir(parents=True, exist_ok=True)
+    disposition: dict[str, Any] = {
+        "run_identity": run_identity,
+        "output_root": str(root),
+        "prior_success_bundle": None,
+        "prior_failure_artifact_removed": False,
+    }
+    if (root / TAP_BUNDLE_NAME).is_file():
+        disposition["prior_success_bundle"] = _quarantine(root, run_identity, "")
+    failed = root / FAILED_TAP_BUNDLE_NAME
+    if failed.is_file():
+        failed.unlink()
+        disposition["prior_failure_artifact_removed"] = True
+    if (root / TAP_BUNDLE_NAME).exists():
+        raise SpecStepError(
+            "tap_output",
+            f"{TAP_BUNDLE_NAME} still present in {root} after claiming the root")
+    return disposition
+
+
+def _publish_atomically(path: Path, bundle: dict[str, Any], run_identity: str) -> Path:
+    tmp = path.with_name(f".{path.name}.{run_identity}.tmp")
+    tmp.write_text(json.dumps(bundle, indent=1), encoding="utf-8")
+    os.replace(tmp, path)                      # single atomic rename
+    return path
+
+
+def publish_tap_bundle(out_root: Any, bundle: dict[str, Any]) -> Path:
+    """Publish a SUCCESSFUL capture bundle atomically under the success name."""
+    run_identity = _require_run_identity(bundle.get("run_identity"))
+    if bundle.get("schema") != TAP_BUNDLE_SCHEMA:
+        raise SpecStepError(
+            "tap_output",
+            f"refusing to publish schema {bundle.get('schema')!r} under "
+            f"{TAP_BUNDLE_NAME}")
+    if bundle.get("target_run_return_code") != 0 or bundle.get("terminal_status") != "ok":
+        raise SpecStepError(
+            "tap_output",
+            "refusing to publish a success bundle for a target run that did not "
+            f"succeed (rc={bundle.get('target_run_return_code')!r}, "
+            f"status={bundle.get('terminal_status')!r})")
+    return _publish_atomically(Path(out_root) / TAP_BUNDLE_NAME, bundle, run_identity)
+
+
+def preserve_failed_tap_bundle(
+    out_root: Any, bundle: dict[str, Any], return_code: int
+) -> Path:
+    """Record a failed target run's captures and leave NO admissible success
+    bundle behind - not this run's, and not an earlier run's."""
+    run_identity = _require_run_identity(bundle.get("run_identity"))
+    root = Path(out_root)
+    rc = int(return_code)
+    if rc == 0:
+        raise SpecStepError(
+            "tap_output", "a failure artifact requires a nonzero target return code")
+    bundle["schema"] = FAILED_TAP_BUNDLE_SCHEMA
+    bundle["target_run_return_code"] = rc
+    bundle["terminal_status"] = f"failed:target_run_rc={rc}"
+    bundle.setdefault("refusal", (
+        "the underlying K3 target run returned nonzero; these captures may be "
+        "partial or from an aborted traversal and must not be adopted as a "
+        "drafter auxiliary bundle"))
+    late = None
+    if (root / TAP_BUNDLE_NAME).is_file():
+        late = _quarantine(root, run_identity, "-late")
+    bundle["success_bundle_quarantined_on_failure"] = late
+    path = _publish_atomically(root / FAILED_TAP_BUNDLE_NAME, bundle, run_identity)
+    if (root / TAP_BUNDLE_NAME).exists():
+        raise SpecStepError(
+            "tap_output",
+            f"{TAP_BUNDLE_NAME} survives in {root} after a failed target run")
+    return path
 
 
 def _proposal_token(value: Any, index: int) -> int:
@@ -485,24 +628,36 @@ def logit_row_digest(values: list[float], position: int) -> str:
 def adjudicate_logit_row(
     row: Any,
     position: int,
-    proposed_token: int,
+    proposed_token: int | None,
     *,
     vocab_size: int | None = None,
     accepted_so_far: int = 0,
 ) -> tuple[dict[str, Any], list[float]]:
-    """THE adjudication authority for one proposed position.
+    """THE adjudication authority for one target-judged position.
 
-    Every production path that turns a target logit row into an acceptance
-    decision must come through here: the row is gated for dimension and
-    finiteness FIRST, and the pick, margins and row digest are then derived
-    from the validated values. There is deliberately no second, weaker path -
-    a NaN row must fail verification rather than silently select some other
-    finite token."""
+    Every production path that turns a target logit row into a committed token
+    - an acceptance decision OR a correction - must come through here: the row
+    is gated for dimension and finiteness FIRST, and the pick, margins and row
+    digest are then derived from the validated values. There is deliberately no
+    second, weaker path - a NaN row must fail verification rather than silently
+    select some other finite token.
+
+    ``proposed_token`` is None for a position that carries no proposal: the
+    correction the target contributes past the end of an accepted block, and
+    the post-commit next pick. Those positions still produce a full adjudication
+    record; they simply can never be 'accepted', because there was nothing
+    proposed there to agree with."""
+    if proposed_token is not None and (
+            isinstance(proposed_token, bool) or not isinstance(proposed_token, int)):
+        raise SpecStepError(
+            "verify",
+            f"proposed token at position {position} is "
+            f"{type(proposed_token).__name__}, not an integer token id")
     values = validate_logit_row(row, position, vocab_size)
     target_pick = greedy_pick(values)
     top = values[target_pick]
     runner_up = max((v for i, v in enumerate(values) if i != target_pick), default=None)
-    match = target_pick == proposed_token
+    match = proposed_token is not None and target_pick == proposed_token
     decision = {
         "position": position,
         "proposed": proposed_token,
@@ -541,6 +696,117 @@ def verify_proposed_block(
         if decision["accepted"]:
             accepted += 1
     return {"logits": logits, "accepted_length": accepted, "decisions": decisions}
+
+
+# --------------------------------------------------------------------------
+# Block adjudication: every COMMITTED token carries a complete record
+# --------------------------------------------------------------------------
+#
+# A speculative block commits the accepted prefix PLUS one correction token
+# contributed by the target. The correction is a committed token like any
+# other, so it goes through adjudicate_logit_row and preserves the same record.
+# There are two shapes of correction and they are labelled, never conflated:
+#
+#   first_rejected_position_correction  the target's pick at the position that
+#                                       broke the accepted prefix - the record
+#                                       is that position's own decision
+#   full_acceptance_correction          every proposed token was accepted, so
+#                                       the judge is the block's LAST row and
+#                                       there is no proposal to agree with
+
+REJECTED_POSITION_CORRECTION = "first_rejected_position_correction"
+FULL_ACCEPTANCE_CORRECTION = "full_acceptance_correction"
+POST_COMMIT_NEXT_PICK = "post_commit_next_pick"
+
+
+def adjudicate_block_proposal(
+    *,
+    proposed_tokens: list[int],
+    judging_rows: list[Any],
+    vocab_size: int,
+    first_position_decision: dict[str, Any],
+    row_label: Any = None,
+) -> dict[str, Any]:
+    """Greedy block acceptance plus the correction, all through the one gate.
+
+    ``judging_rows[i]`` judges proposed position ``i + 1``; position 0 is judged
+    by ``first_position_decision`` (in ARM C the parent run's own sealed argmax,
+    whose row digest follows a different, declared rule). The LAST row also
+    judges the position immediately after a fully accepted block, which is where
+    the full-acceptance correction comes from.
+
+    Returns accepted length, correction token, committed tokens, the per-position
+    decisions, and a complete ``correction_decision`` - so every committed token
+    in the receipt, including the correction, can be audited from the receipt
+    alone."""
+    if row_label is None:
+        def row_label(i: int) -> str:
+            return f"block row {i}"
+
+    proposed = [_proposal_token(t, i) for i, t in enumerate(proposed_tokens)]
+    if not proposed:
+        raise SpecStepError("verify", "block adjudication needs a non-empty proposal")
+    if len(judging_rows) != len(proposed):
+        raise SpecStepError(
+            "verify",
+            f"{len(judging_rows)} judging rows for {len(proposed)} proposed positions")
+
+    decisions: list[dict[str, Any]] = []
+    accepted = 0
+    for i, token in enumerate(proposed):
+        if i == 0:
+            decision = dict(first_position_decision)
+            if decision.get("position") != 0:
+                raise SpecStepError(
+                    "verify",
+                    f"first-position decision declares position "
+                    f"{decision.get('position')!r}, not 0")
+            if decision.get("proposed") != token:
+                raise SpecStepError(
+                    "verify",
+                    f"first-position decision names proposed token "
+                    f"{decision.get('proposed')!r} but the proposal carries {token!r}")
+            pick = decision.get("target_pick")
+            if isinstance(pick, bool) or not isinstance(pick, int):
+                raise SpecStepError(
+                    "verify",
+                    "first-position decision carries no integer target_pick, so its "
+                    "acceptance cannot be derived")
+            if not decision.get("finite_valid"):
+                raise SpecStepError(
+                    "verify", "first-position decision is not marked finite_valid")
+            # derived here, never adopted from the supplied record
+            decision["accepted"] = bool(pick == token)
+        else:
+            decision, _ = adjudicate_logit_row(
+                judging_rows[i - 1], i, token,
+                vocab_size=vocab_size, accepted_so_far=accepted)
+            decision["judge"] = row_label(i - 1)
+        decisions.append(decision)
+        if decision["accepted"]:
+            accepted += 1
+
+    if accepted < len(proposed):
+        source_position = accepted
+        correction_decision = dict(decisions[source_position])
+        correction_decision["terminal_role"] = REJECTED_POSITION_CORRECTION
+    else:
+        source_position = len(proposed) - 1
+        correction_decision, _ = adjudicate_logit_row(
+            judging_rows[source_position], len(proposed), None, vocab_size=vocab_size)
+        correction_decision["judge"] = row_label(source_position)
+        correction_decision["terminal_role"] = FULL_ACCEPTANCE_CORRECTION
+    correction_decision["source_position"] = source_position
+    correction = int(correction_decision["target_pick"])
+    correction_decision["correction_token"] = correction
+
+    return {
+        "accepted_length": accepted,
+        "correction_token": correction,
+        "committed_tokens": list(proposed[:accepted]) + [correction],
+        "per_position": decisions,
+        "correction_decision": correction_decision,
+    }
 
 
 def commit_verified_prefix(
@@ -670,21 +936,44 @@ def validate_speculative_receipt(receipt: dict[str, Any]) -> None:
                     "receipt",
                     f"decision at position {i} names proposed token "
                     f"{decision.get('proposed')!r} but the proposal carries {token!r}")
-        flags = [bool(d.get("accepted")) for d in decisions]
+        # Acceptance is RECONSTRUCTED from the target evidence, never adopted.
+        # Greedy acceptance at position i is exactly
+        #     target_pick == proposed  AND every preceding position accepted,
+        # so a receipt that records target disagreement cannot also record
+        # acceptance, and a truthy value is not an acceptance claim at all.
         prefix_len = 0
-        for flag in flags:
-            if flag:
+        prefix_unbroken = True
+        for i, decision in enumerate(decisions):
+            claimed = decision.get("accepted")
+            if not isinstance(claimed, bool):
+                raise SpecStepError(
+                    "receipt",
+                    f"decision at position {i} declares accepted "
+                    f"{claimed!r} ({type(claimed).__name__}) - acceptance must be a "
+                    "JSON boolean, not a truthy value")
+            pick = decision.get("target_pick")
+            if isinstance(pick, bool) or not isinstance(pick, int):
+                raise SpecStepError(
+                    "receipt",
+                    f"decision at position {i} carries target_pick {pick!r}, so its "
+                    "acceptance cannot be reconstructed from target evidence")
+            expected = prefix_unbroken and pick == decision.get("proposed")
+            if claimed != expected:
+                raise SpecStepError(
+                    "receipt",
+                    f"decision at position {i} claims accepted={claimed} but the "
+                    f"target picked {pick!r} against proposed "
+                    f"{decision.get('proposed')!r} with "
+                    f"{'an unbroken' if prefix_unbroken else 'a broken'} accepted "
+                    f"prefix - reconstructed acceptance is {expected}")
+            if expected:
                 prefix_len += 1
             else:
-                break
-        if any(flags[prefix_len:]):
-            raise SpecStepError(
-                "receipt",
-                "accepted decisions do not form one contiguous prefix")
+                prefix_unbroken = False
         if prefix_len != verified:
             raise SpecStepError(
                 "receipt",
-                f"contiguous accepted prefix {prefix_len} != "
+                f"reconstructed accepted prefix {prefix_len} != "
                 f"target_verified_prefix_length {verified}")
     if committed > 0 and status != "ok":
         raise SpecStepError(

@@ -33,7 +33,7 @@ SLICE = Path(r"C:\Users\octo-operator\TierFloor-Staging\kimi-runtime-slice")
 sys.path.insert(0, str(SLICE))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from k3_dspark_speculative.contracts import FAILED_TAP_BUNDLE_SCHEMA
+from k3_dspark_speculative import contracts
 from k3_dspark_speculative.tap_adapter import TapSession, TapSpec
 
 
@@ -87,7 +87,11 @@ def main() -> int:
         for l in layers
     )
     out_root = Path(args.out_root)
-    out_root.mkdir(parents=True, exist_ok=True)
+    # Claim the output root BEFORE the target runs: a capture directory is
+    # reused across retries, and an earlier run's tap-bundle.json must not be
+    # left where a downstream consumer would find it if this run fails.
+    run_identity = contracts.allocate_tap_run_identity()
+    disposition = contracts.open_tap_output_root(out_root, run_identity)
     active = out_root / "active.json"
 
     session = TapSession(specs=specs, enabled=True,
@@ -108,32 +112,30 @@ def main() -> int:
     bundle["stream_identity"] = convention
     bundle["captured_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
     bundle["run_active_path"] = str(active)
+    bundle["run_identity"] = run_identity
+    bundle["prior_artifact_disposition"] = disposition
     bundle["target_run_return_code"] = int(rc)
 
     if rc != 0:
         # A late target-run failure can still leave the requested tap layers
         # captured. Those captures are NOT drafter input: minting a normal
         # tap-bundle.json here would feed a valid-looking bundle from a failed
-        # generation into the drafter. Preserve them under a distinct name and
-        # a terminal status that validate_aux_bundle refuses.
-        bundle["schema"] = FAILED_TAP_BUNDLE_SCHEMA
-        bundle["terminal_status"] = f"failed:target_run_rc={rc}"
-        bundle["refusal"] = (
-            "the underlying K3 target run returned nonzero; these captures may be "
-            "partial or from an aborted traversal and must not be adopted as a "
-            "drafter auxiliary bundle")
-        failed_path = out_root / "tap-bundle-FAILED.json"
-        failed_path.write_text(json.dumps(bundle, indent=1), encoding="utf-8")
+        # generation into the drafter, and leaving an EARLIER run's bundle in
+        # place would do the same thing more quietly. The failure path preserves
+        # the captures under the refused schema and proves that nothing remains
+        # under the conventional success name.
+        failed_path = contracts.preserve_failed_tap_bundle(out_root, bundle, rc)
         print(json.dumps({"rc": rc, "captures": len(bundle["captures"]),
                           "bundle": None, "failure_artifact": str(failed_path),
+                          "run_identity": run_identity,
                           "terminal_status": bundle["terminal_status"]}))
         return rc
 
     bundle["terminal_status"] = "ok"
-    bundle_path = out_root / "tap-bundle.json"
-    bundle_path.write_text(json.dumps(bundle, indent=1), encoding="utf-8")
+    bundle_path = contracts.publish_tap_bundle(out_root, bundle)
     print(json.dumps({"rc": rc, "captures": len(bundle["captures"]),
-                      "bundle": str(bundle_path), "terminal_status": "ok"}))
+                      "bundle": str(bundle_path), "run_identity": run_identity,
+                      "terminal_status": "ok"}))
     return rc
 
 

@@ -107,9 +107,11 @@ def make_aux_bundle(layers: list[int]) -> dict[str, Any]:
     return {
         "schema": "octopodes/k3-dspark-tap-capture@1",
         # a synthetic bundle stands in for a SUCCESSFUL target run; admission
-        # requires the target-run outcome to be bound
+        # requires the target-run outcome AND the identity of the run that
+        # produced it to be bound
         "target_run_return_code": 0,
         "terminal_status": "ok",
+        "run_identity": "synthetic-tap-run-0000",
         "enabled": True,
         "specs": [{"layer": l, "location": "post", "declared_as": f"synthetic tap {l}"} for l in layers],
         "captures": [

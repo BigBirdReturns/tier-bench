@@ -2,16 +2,28 @@
 
 Synthetic only. Passing these proves the contracts, not K3 integration.
 
-Two witness families beyond the original control paths:
+Witness families beyond the original control paths:
   - StateCustodyWitnesses: the recursive type-tagged state manifest binds
     tensor CONTENT (raw bytes), not representation; unsupported types refuse.
   - ReceiptSemanticsWitnesses: schema @2 separates proposed / verified /
     committed lengths; the @1 contradiction (failed:commit with a positive
     accepted length) is structurally impossible.
+  - AcceptanceReconstructionWitnesses: every acceptance flag is re-derived from
+    the target's pick, the proposed token and the preceding accepted prefix. A
+    receipt that records target disagreement cannot also record acceptance, and
+    a truthy value is not an acceptance claim.
+  - BlockCorrectionWitnesses: the correction token is COMMITTED, so it carries
+    a complete adjudication record - including the full-acceptance shape, where
+    the judge is the block's last row and nothing was proposed there.
+  - TapOutputTransactionWitnesses: a capture output root is a transaction; a
+    failed retry can never leave a previous run's success bundle behind.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -738,8 +750,10 @@ class ExternalReceiptBindingWitnesses(unittest.TestCase):
             "schema": C.RECEIPT_SCHEMA_V2,
             "proposal": {"tokens": [11, 12]},
             "per_position_decisions": [
-                {"position": 0, "proposed": 11, "accepted": True},
-                {"position": 1, "proposed": 12, "accepted": False},
+                # acceptance is reconstructed from target_pick vs proposed, so
+                # a decision that omits the target's pick cannot be validated
+                {"position": 0, "proposed": 11, "target_pick": 11, "accepted": True},
+                {"position": 1, "proposed": 12, "target_pick": 77, "accepted": False},
             ],
             "proposed_length": 2,
             "target_verified_prefix_length": 1,
@@ -872,6 +886,341 @@ class SharedAdjudicationGateWitnesses(unittest.TestCase):
         a = C.logit_row_digest([1.0] * 64, 0)
         tail = [1.0] * 63 + [1.0000001]
         self.assertNotEqual(a, C.logit_row_digest(tail, 0))
+
+    def test_unproposed_position_adjudicates_but_can_never_accept(self):
+        d, _ = C.adjudicate_logit_row([0.5, 3.0, 1.0], 3, None, vocab_size=3)
+        self.assertEqual(d["target_pick"], 1)
+        self.assertIsNone(d["proposed"])
+        self.assertFalse(d["accepted"])
+        self.assertTrue(d["finite_valid"])
+        self.assertEqual(d["margin"], 2.0)
+
+    def test_noninteger_proposed_token_refuses(self):
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.adjudicate_logit_row([1.0, 0.0, 0.0], 0, True, vocab_size=3)
+        self.assertIn("not an integer token id", str(ctx.exception))
+
+
+class AcceptanceReconstructionWitnesses(unittest.TestCase):
+    """An externally constructed or replayed receipt cannot ASSERT acceptance.
+
+    Every flag is re-derived from the target's own pick, the proposed token and
+    the preceding accepted prefix; the stored flag must equal the reconstruction
+    and must be a JSON boolean.
+    """
+
+    def receipt(self, decisions, verified=1, committed=1, tokens=(11, 12)):
+        return {
+            "schema": C.RECEIPT_SCHEMA_V2,
+            "proposal": {"tokens": list(tokens)},
+            "per_position_decisions": decisions,
+            "proposed_length": len(tokens),
+            "target_verified_prefix_length": verified,
+            "committed_length": committed,
+            "rollback_performed": False,
+            "state_transition": "committed",
+            "state_hash_before": "a" * 64,
+            "state_hash_after": "b" * 64,
+            "terminal_status": "ok",
+        }
+
+    def refuse(self, receipt, fragment):
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.validate_speculative_receipt(receipt)
+        self.assertIn(fragment, str(ctx.exception))
+
+    def test_target_disagreement_cannot_claim_acceptance(self):
+        """The exact review witness: proposed 5, target_pick 6, accepted true."""
+        self.refuse(
+            self.receipt(
+                [{"position": 0, "proposed": 5, "target_pick": 6, "accepted": True}],
+                verified=1, committed=1, tokens=(5,)),
+            "reconstructed acceptance is False")
+
+    def test_integer_one_is_not_an_acceptance_claim(self):
+        self.refuse(
+            self.receipt(
+                [{"position": 0, "proposed": 11, "target_pick": 11, "accepted": 1},
+                 {"position": 1, "proposed": 12, "target_pick": 77, "accepted": False}]),
+            "must be a JSON boolean")
+
+    def test_string_true_is_not_an_acceptance_claim(self):
+        self.refuse(
+            self.receipt(
+                [{"position": 0, "proposed": 11, "target_pick": 11, "accepted": "true"},
+                 {"position": 1, "proposed": 12, "target_pick": 77, "accepted": False}]),
+            "must be a JSON boolean")
+
+    def test_missing_target_pick_cannot_be_reconstructed(self):
+        self.refuse(
+            self.receipt(
+                [{"position": 0, "proposed": 11, "accepted": True},
+                 {"position": 1, "proposed": 12, "target_pick": 77, "accepted": False}]),
+            "acceptance cannot be reconstructed")
+
+    def test_noncontiguous_acceptance_refuses(self):
+        self.refuse(
+            self.receipt(
+                [{"position": 0, "proposed": 11, "target_pick": 77, "accepted": False},
+                 {"position": 1, "proposed": 12, "target_pick": 12, "accepted": True}],
+                verified=0, committed=0),
+            "with a broken accepted prefix")
+
+    def test_invented_acceptance_after_a_correct_decision_refuses(self):
+        """Position 0 is honestly recorded; position 1 agrees with the target
+        but follows a rejection, so it cannot be accepted."""
+        self.refuse(
+            self.receipt(
+                [{"position": 0, "proposed": 11, "target_pick": 99, "accepted": False},
+                 {"position": 1, "proposed": 12, "target_pick": 12, "accepted": True}],
+                verified=1, committed=1),
+            "with a broken accepted prefix")
+
+    def test_verified_length_above_the_derived_prefix_refuses(self):
+        self.refuse(
+            self.receipt(
+                [{"position": 0, "proposed": 11, "target_pick": 11, "accepted": True},
+                 {"position": 1, "proposed": 12, "target_pick": 77, "accepted": False}],
+                verified=2, committed=2),
+            "reconstructed accepted prefix 1")
+
+    def test_committed_length_stays_bounded_by_the_derived_prefix(self):
+        self.refuse(
+            self.receipt(
+                [{"position": 0, "proposed": 11, "target_pick": 11, "accepted": True},
+                 {"position": 1, "proposed": 12, "target_pick": 77, "accepted": False}],
+                verified=1, committed=2),
+            "exceeds verified prefix")
+
+    def test_honest_receipt_still_validates(self):
+        C.validate_speculative_receipt(self.receipt(
+            [{"position": 0, "proposed": 11, "target_pick": 11, "accepted": True},
+             {"position": 1, "proposed": 12, "target_pick": 77, "accepted": False}]))
+
+
+class BlockCorrectionWitnesses(unittest.TestCase):
+    """The correction is a COMMITTED token and is adjudicated like one."""
+
+    def first(self, proposed, pick):
+        return {"position": 0, "proposed": proposed, "target_pick": pick,
+                "accepted": pick == proposed, "top_logit": 2.0,
+                "runner_up_logit": 1.0, "margin": 1.0, "vocab_dimension": 4,
+                "logit_row_sha256": "c" * 64, "finite_valid": True,
+                "judge": "parent run sealed final state"}
+
+    @staticmethod
+    def row(pick, dim=4):
+        return [3.0 if i == pick else 0.5 for i in range(dim)]
+
+    def test_full_acceptance_correction_carries_a_complete_adjudication(self):
+        # proposal [1, 2]; parent picks 1, block row 0 picks 2 -> all accepted;
+        # the correction comes from the LAST row, which picks 3.
+        out = C.adjudicate_block_proposal(
+            proposed_tokens=[1, 2],
+            judging_rows=[self.row(2), self.row(3)],
+            vocab_size=4,
+            first_position_decision=self.first(1, 1),
+        )
+        self.assertEqual(out["accepted_length"], 2)
+        self.assertEqual(out["correction_token"], 3)
+        self.assertEqual(out["committed_tokens"], [1, 2, 3])
+        d = out["correction_decision"]
+        self.assertEqual(d["terminal_role"], C.FULL_ACCEPTANCE_CORRECTION)
+        self.assertEqual(d["source_position"], 1)
+        self.assertEqual(d["position"], 2)
+        self.assertIsNone(d["proposed"])
+        self.assertFalse(d["accepted"])
+        self.assertEqual(d["vocab_dimension"], 4)
+        self.assertEqual(d["margin"], 2.5)
+        self.assertEqual(d["top_logit"], 3.0)
+        self.assertEqual(d["runner_up_logit"], 0.5)
+        self.assertEqual(len(d["logit_row_sha256"]), 64)
+        self.assertTrue(d["finite_valid"])
+        self.assertEqual(d["correction_token"], 3)
+        self.assertIn("judge", d)
+
+    def test_full_acceptance_correction_row_digest_is_the_last_row(self):
+        rows = [self.row(2), self.row(3)]
+        out = C.adjudicate_block_proposal(
+            proposed_tokens=[1, 2], judging_rows=rows, vocab_size=4,
+            first_position_decision=self.first(1, 1))
+        self.assertEqual(out["correction_decision"]["logit_row_sha256"],
+                         C.logit_row_digest(rows[1], 2))
+
+    def test_full_acceptance_correction_refuses_a_non_finite_last_row(self):
+        """Proof the correction goes through the gate: the very row that would
+        have been argmaxed silently is now refused."""
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.adjudicate_block_proposal(
+                proposed_tokens=[1, 2],
+                judging_rows=[self.row(2), [1.0, float("inf"), 0.0, 0.0]],
+                vocab_size=4,
+                first_position_decision=self.first(1, 1))
+        self.assertIn("non-finite", str(ctx.exception))
+
+    def test_partial_acceptance_correction_is_the_rejected_position(self):
+        out = C.adjudicate_block_proposal(
+            proposed_tokens=[1, 2],
+            judging_rows=[self.row(3), self.row(0)],
+            vocab_size=4,
+            first_position_decision=self.first(1, 1),
+        )
+        self.assertEqual(out["accepted_length"], 1)
+        self.assertEqual(out["correction_token"], 3)
+        self.assertEqual(out["committed_tokens"], [1, 3])
+        d = out["correction_decision"]
+        self.assertEqual(d["terminal_role"], C.REJECTED_POSITION_CORRECTION)
+        self.assertEqual(d["source_position"], 1)
+        self.assertEqual(d["proposed"], 2)
+        self.assertFalse(d["accepted"])
+
+    def test_zero_acceptance_correction_is_position_zero(self):
+        out = C.adjudicate_block_proposal(
+            proposed_tokens=[1, 2],
+            judging_rows=[self.row(2), self.row(2)],
+            vocab_size=4,
+            first_position_decision=self.first(1, 3),
+        )
+        self.assertEqual(out["accepted_length"], 0)
+        self.assertEqual(out["correction_token"], 3)
+        self.assertEqual(out["correction_decision"]["source_position"], 0)
+
+    def test_first_position_acceptance_is_derived_not_adopted(self):
+        supplied = self.first(1, 3)
+        supplied["accepted"] = True          # the parent disagreed; claim anyway
+        out = C.adjudicate_block_proposal(
+            proposed_tokens=[1, 2],
+            judging_rows=[self.row(2), self.row(2)],
+            vocab_size=4,
+            first_position_decision=supplied,
+        )
+        self.assertEqual(out["accepted_length"], 0)
+        self.assertFalse(out["per_position"][0]["accepted"])
+
+    def test_first_position_decision_must_bind_the_proposed_token(self):
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.adjudicate_block_proposal(
+                proposed_tokens=[1, 2],
+                judging_rows=[self.row(2), self.row(2)],
+                vocab_size=4,
+                first_position_decision=self.first(9, 9))
+        self.assertIn("but the proposal carries", str(ctx.exception))
+
+    def test_row_count_must_equal_the_proposal(self):
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.adjudicate_block_proposal(
+                proposed_tokens=[1, 2],
+                judging_rows=[self.row(2)],
+                vocab_size=4,
+                first_position_decision=self.first(1, 1))
+        self.assertIn("judging rows for", str(ctx.exception))
+
+
+class TapOutputTransactionWitnesses(unittest.TestCase):
+    """A capture output root is a transaction, not a directory."""
+
+    def bundle(self, run_identity, rc=0):
+        b = make_aux_bundle(LAYERS)
+        b["run_identity"] = run_identity
+        b["target_run_return_code"] = rc
+        b["terminal_status"] = "ok" if rc == 0 else f"failed:target_run_rc={rc}"
+        return b
+
+    def test_failed_retry_leaves_no_admissible_success_bundle(self):
+        """The exact review witness: a valid success bundle exists, a retry into
+        the same output root fails, and nothing admissible may remain."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = C.allocate_tap_run_identity()
+            C.open_tap_output_root(root, first)
+            good = self.bundle(first)
+            path = C.publish_tap_bundle(root, good)
+            C.validate_aux_bundle(
+                json.loads(path.read_text(encoding="utf-8")), LAYERS)
+
+            second = C.allocate_tap_run_identity()
+            disposition = C.open_tap_output_root(root, second)
+            self.assertIsNotNone(disposition["prior_success_bundle"])
+            failed = C.preserve_failed_tap_bundle(root, self.bundle(second), 9)
+
+            self.assertFalse((root / C.TAP_BUNDLE_NAME).exists())
+            self.assertTrue(failed.exists())
+            preserved = json.loads(failed.read_text(encoding="utf-8"))
+            self.assertEqual(preserved["schema"], C.FAILED_TAP_BUNDLE_SCHEMA)
+            self.assertEqual(preserved["target_run_return_code"], 9)
+            self.assertEqual(preserved["run_identity"], second)
+            with self.assertRaises(C.SpecStepError):
+                C.validate_aux_bundle(preserved, LAYERS)
+            # and the quarantined predecessor is not where a consumer looks
+            quarantined = root / C.SUPERSEDED_DIR_NAME
+            self.assertEqual([p.name for p in quarantined.iterdir()],
+                             [f"tap-bundle-{second}.json"])
+
+    def test_prior_success_bundle_disposition_is_recorded_with_its_digest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = C.allocate_tap_run_identity()
+            C.open_tap_output_root(root, first)
+            path = C.publish_tap_bundle(root, self.bundle(first))
+            digest = hashlib.sha256(path.read_bytes()).hexdigest()
+            disposition = C.open_tap_output_root(root, C.allocate_tap_run_identity())
+            self.assertEqual(disposition["prior_success_bundle"]["sha256"], digest)
+
+    def test_stale_failure_artifact_is_cleared_when_the_root_is_claimed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            first = C.allocate_tap_run_identity()
+            C.open_tap_output_root(root, first)
+            C.preserve_failed_tap_bundle(root, self.bundle(first), 3)
+            self.assertTrue((root / C.FAILED_TAP_BUNDLE_NAME).exists())
+            disposition = C.open_tap_output_root(root, C.allocate_tap_run_identity())
+            self.assertTrue(disposition["prior_failure_artifact_removed"])
+            self.assertFalse((root / C.FAILED_TAP_BUNDLE_NAME).exists())
+
+    def test_success_publication_leaves_no_partial_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = C.allocate_tap_run_identity()
+            C.open_tap_output_root(root, run)
+            C.publish_tap_bundle(root, self.bundle(run))
+            self.assertEqual(sorted(p.name for p in root.iterdir()),
+                             [C.TAP_BUNDLE_NAME])
+
+    def test_refuses_to_publish_a_failed_run_under_the_success_name(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = C.allocate_tap_run_identity()
+            C.open_tap_output_root(root, run)
+            with self.assertRaises(C.SpecStepError) as ctx:
+                C.publish_tap_bundle(root, self.bundle(run, rc=4))
+            self.assertIn("did not succeed", str(ctx.exception))
+            self.assertFalse((root / C.TAP_BUNDLE_NAME).exists())
+
+    def test_failure_artifact_requires_a_nonzero_return_code(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            run = C.allocate_tap_run_identity()
+            C.open_tap_output_root(root, run)
+            with self.assertRaises(C.SpecStepError) as ctx:
+                C.preserve_failed_tap_bundle(root, self.bundle(run), 0)
+            self.assertIn("nonzero target return code", str(ctx.exception))
+
+    def test_output_root_requires_a_run_identity(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(C.SpecStepError) as ctx:
+                C.open_tap_output_root(Path(tmp), "")
+            self.assertIn("not a non-empty string", str(ctx.exception))
+
+    def test_allocated_run_identities_are_unique(self):
+        self.assertNotEqual(C.allocate_tap_run_identity(),
+                            C.allocate_tap_run_identity())
+
+    def test_bundle_without_run_identity_is_not_drafter_input(self):
+        b = make_aux_bundle(LAYERS)
+        b.pop("run_identity")
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.validate_aux_bundle(b, LAYERS)
+        self.assertIn("no run_identity", str(ctx.exception))
 
 
 if __name__ == "__main__":

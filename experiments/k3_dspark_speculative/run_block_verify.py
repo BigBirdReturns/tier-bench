@@ -11,7 +11,11 @@ campaign freeze.
 Acceptance (greedy, predeclared): proposal p_1 is judged by the PARENT run's
 own final-state argmax (already sealed); p_{i+1} is judged by the block's
 position-i argmax. The correction token is the target's argmax at the first
-rejected position. Committed tokens = accepted prefix + correction.
+rejected position, or - when the whole block is accepted - at the block's last
+row, one position past the proposal. Committed tokens = accepted prefix +
+correction. The correction is a committed token, so it passes through the same
+contracts.adjudicate_logit_row gate as every proposed position and preserves
+the same complete record under its terminal role.
 
 Verification never mutates the parent: the parent cache lives on disk and the
 traversal only reads it (rollback = don't adopt). Commit produces a SEPARATE
@@ -169,8 +173,8 @@ def parent_position_decision(parent_final: dict, proposed_token: int, vocab: int
     }
 
 
-def adjudicate(parent_final: dict, proposed: list[int], logits: torch.Tensor):
-    """Greedy acceptance through the SHARED contracts gate.
+def adjudicate(parent_final: dict, proposed: list[int], logits: torch.Tensor) -> dict:
+    """Greedy acceptance AND correction through the SHARED contracts gate.
 
     p_1 is judged by the parent's own sealed argmax; p_{i+1} by block row i.
     Every judging row is validated for vocabulary dimension and finiteness
@@ -178,33 +182,19 @@ def adjudicate(parent_final: dict, proposed: list[int], logits: torch.Tensor):
     letting argmax select some other finite token. Each position preserves its
     complete row digest, finite-validation result, vocabulary dimension,
     target pick, proposed token, top and runner-up logits, margin, and its
-    accepted-prefix decision."""
-    vocab = int(logits.shape[-1])
-    decisions: list[dict] = []
-    accepted = 0
-    for i, p in enumerate(proposed):
-        if i == 0:
-            decision = parent_position_decision(parent_final, p, vocab, accepted)
-        else:
-            decision, _ = contracts.adjudicate_logit_row(
-                logits[i - 1].tolist(), i, p, vocab_size=vocab, accepted_so_far=accepted)
-            decision["judge"] = f"block row {i - 1}"
-        decisions.append(decision)
-        if decision["accepted"]:
-            accepted += 1
+    accepted-prefix decision.
 
-    # correction = the target's gated pick at the first rejected position
-    if accepted == 0:
-        correction = decisions[0]["target_pick"]
-    elif accepted < len(proposed):
-        correction = decisions[accepted]["target_pick"]
-    else:
-        # whole block accepted: the judge for the next position is the last row
-        values = contracts.validate_logit_row(
-            logits[accepted - 1].tolist(), accepted, vocab)
-        correction = contracts.greedy_pick(values)
-    committed = proposed[:accepted] + [int(correction)]
-    return accepted, int(correction), committed, decisions
+    The correction token is COMMITTED, so it is adjudicated the same way and
+    preserves the same record - including the full-acceptance case, where the
+    judge is the block's last row and there is no proposal to agree with."""
+    vocab = int(logits.shape[-1])
+    return contracts.adjudicate_block_proposal(
+        proposed_tokens=list(proposed),
+        judging_rows=[logits[i].tolist() for i in range(len(proposed))],
+        vocab_size=vocab,
+        first_position_decision=parent_position_decision(
+            parent_final, proposed[0], vocab, 0),
+    )
 
 
 def main() -> int:
@@ -241,8 +231,10 @@ def main() -> int:
         "adjudication_gate": (
             "every judging logit row passes contracts.adjudicate_logit_row: declared "
             "vocabulary dimension, numeric and finite everywhere, greedy pick with "
-            "lowest-index tie-break, complete row digest preserved. There is no "
-            "second ARM C adjudication path."),
+            "lowest-index tie-break, complete row digest preserved. EVERY committed "
+            "token is adjudicated there - the accepted prefix, the correction (both "
+            "the first-rejected-position and full-acceptance shapes), and the "
+            "post-commit next pick. There is no second ARM C adjudication path."),
         "kernel_note": ("block uses Moonshot's native multi-token chunk KDA with initial_state; "
                         "sequential decode uses the fused recurrent kernel - kernel choice is part "
                         "of the numerical contract, so state audit vs sequential is expected to "
@@ -257,16 +249,23 @@ def main() -> int:
             classes=classes, weight_map=weight_map, retain=False)
         logits = per_position_logits(hidden, block, weight_map, config)
         wall = round(time.perf_counter() - t0, 1)
-        accepted, correction, committed, decisions = adjudicate(
-            parent_final, proposal, logits)
+        verdict = adjudicate(parent_final, proposal, logits)
+        accepted = verdict["accepted_length"]
+        correction = verdict["correction_token"]
+        committed = verdict["committed_tokens"]
         unions = telemetry["expert_union_by_layer"]
         row = {
             "proposed": proposal,
             "accepted_length": accepted,
             "correction_token": correction,
+            # the correction is a committed token: its complete adjudication -
+            # judging row digest, finite marker, vocabulary dimension, target
+            # pick, top/runner-up logits, margin, source position and terminal
+            # role - is preserved here, not just the token id
+            "correction_decision": verdict["correction_decision"],
             "committed_tokens": committed,
             "committed_count": len(committed),
-            "per_position": decisions,
+            "per_position": verdict["per_position"],
             "verify_wall_s": wall,
             "committed_tokens_per_minute": round(len(committed) / (wall / 60), 3),
             "expert_union_mean": round(sum(unions.values()) / max(len(unions), 1), 2),
@@ -303,11 +302,11 @@ def main() -> int:
         str(core.MODEL_ROOT), trust_remote_code=True, local_files_only=True)
     # the post-commit next pick goes through the same gate as every other
     # adjudicated position - it is the seed of the next speculative step
-    next_values = contracts.validate_logit_row(
-        logits[-1].tolist(), len(committed), int(logits.shape[-1]))
-    next_pick = contracts.greedy_pick(next_values)
-    next_top = next_values[next_pick]
-    next_runner_up = max(v for i, v in enumerate(next_values) if i != next_pick)
+    next_decision, _ = contracts.adjudicate_logit_row(
+        logits[-1].tolist(), len(committed), None, vocab_size=int(logits.shape[-1]))
+    next_decision["terminal_role"] = contracts.POST_COMMIT_NEXT_PICK
+    next_decision["judge"] = f"commit block row {len(committed) - 1}"
+    next_pick = next_decision["target_pick"]
     receipt["commit"] = {
         "schema": "octopodes/k3-dspark-arm-c-commit@1",
         "label": "NOT adopted into the custody chain; state-comparison artifact only",
@@ -319,12 +318,13 @@ def main() -> int:
         "next_pick_after_commit": {
             "token_id": next_pick,
             "token_text": tokenizer.decode([next_pick], skip_special_tokens=False),
-            "top_logit": next_top,
-            "runner_up_logit": next_runner_up,
-            "logit_margin": next_top - next_runner_up,
-            "vocab_dimension": len(next_values),
-            "logit_row_sha256": contracts.logit_row_digest(next_values, len(committed)),
-            "finite_valid": True,
+            "top_logit": next_decision["top_logit"],
+            "runner_up_logit": next_decision["runner_up_logit"],
+            "logit_margin": next_decision["margin"],
+            "vocab_dimension": next_decision["vocab_dimension"],
+            "logit_row_sha256": next_decision["logit_row_sha256"],
+            "finite_valid": next_decision["finite_valid"],
+            "adjudication": next_decision,
         },
     }
     receipt["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
