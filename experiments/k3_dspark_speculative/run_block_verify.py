@@ -26,16 +26,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from pathlib import Path
 
 SLICE = Path(r"C:\Users\octo-operator\TierFloor-Staging\kimi-runtime-slice")
 sys.path.insert(0, str(SLICE))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import torch
 import torch.nn.functional as F
 from transformers import AutoConfig, AutoTokenizer
+
+from k3_dspark_speculative import contracts
 
 import run_cached_continuation as rcc
 import run_full_depth_map as full
@@ -120,21 +124,87 @@ def per_position_logits(hidden, block, weight_map, config):
     return logits  # [K, V]
 
 
-def adjudicate(parent_pick: int, proposed: list[int], logits: torch.Tensor):
-    """Greedy acceptance. p_1 judged by the parent's own argmax; p_{i+1} by
-    block position i. Correction = target argmax at first rejection."""
-    picks = [parent_pick] + logits.argmax(-1).tolist()  # picks[i] judges proposed[i]
+def parent_position_decision(parent_final: dict, proposed_token: int, vocab: int,
+                             accepted_so_far: int) -> dict:
+    """Position 0's judge is the PARENT run's sealed final state, not a row of
+    this block. It still has to clear the same gate: declared vocabulary
+    dimension, finiteness, and a real margin. The row digest is the parent's
+    own sealed logits-tensor digest, computed under the parent's rule - that
+    difference is recorded rather than papered over."""
+    meta = parent_final.get("logits")
+    if not isinstance(meta, dict):
+        raise contracts.SpecStepError("verify", "parent final state carries no logits record")
+    dim = int(meta["shape"][-1])
+    if dim != vocab:
+        raise contracts.SpecStepError(
+            "verify",
+            f"parent vocabulary dimension {dim} != block dimension {vocab}")
+    finite_rate = float(meta.get("finite_rate", 0.0))
+    if finite_rate != 1.0:
+        raise contracts.SpecStepError(
+            "verify", f"parent logits finite_rate {finite_rate} != 1.0")
+    candidates = parent_final.get("top_candidates") or []
+    if len(candidates) < 2:
+        raise contracts.SpecStepError(
+            "verify", "parent final state carries fewer than two ranked candidates")
+    top = float(candidates[0]["logit"])
+    runner_up = float(candidates[1]["logit"])
+    if not (math.isfinite(top) and math.isfinite(runner_up)):
+        raise contracts.SpecStepError("verify", "parent candidate logits are not finite")
+    pick = int(candidates[0]["token_id"])
+    return {
+        "position": 0,
+        "proposed": proposed_token,
+        "target_pick": pick,
+        "accepted": bool(pick == proposed_token and accepted_so_far == 0),
+        "top_logit": top,
+        "runner_up_logit": runner_up,
+        "margin": top - runner_up,
+        "vocab_dimension": dim,
+        "logit_row_sha256": meta["sha256"],
+        "logit_row_digest_rule": ("parent run's sealed logits-tensor sha256 (NOT the "
+                                  "contracts row encoding used for block positions)"),
+        "finite_valid": True,
+        "judge": "parent run sealed final state",
+    }
+
+
+def adjudicate(parent_final: dict, proposed: list[int], logits: torch.Tensor):
+    """Greedy acceptance through the SHARED contracts gate.
+
+    p_1 is judged by the parent's own sealed argmax; p_{i+1} by block row i.
+    Every judging row is validated for vocabulary dimension and finiteness
+    before a pick is derived from it - a NaN or Inf row refuses instead of
+    letting argmax select some other finite token. Each position preserves its
+    complete row digest, finite-validation result, vocabulary dimension,
+    target pick, proposed token, top and runner-up logits, margin, and its
+    accepted-prefix decision."""
+    vocab = int(logits.shape[-1])
+    decisions: list[dict] = []
     accepted = 0
-    decisions = []
     for i, p in enumerate(proposed):
-        ok = accepted == i and picks[i] == p
-        decisions.append({"position": i, "proposed": p, "target_pick": int(picks[i]),
-                          "accepted": bool(ok)})
-        if ok:
+        if i == 0:
+            decision = parent_position_decision(parent_final, p, vocab, accepted)
+        else:
+            decision, _ = contracts.adjudicate_logit_row(
+                logits[i - 1].tolist(), i, p, vocab_size=vocab, accepted_so_far=accepted)
+            decision["judge"] = f"block row {i - 1}"
+        decisions.append(decision)
+        if decision["accepted"]:
             accepted += 1
-    correction = int(picks[accepted])
-    committed = proposed[:accepted] + [correction]
-    return accepted, correction, committed, decisions
+
+    # correction = the target's gated pick at the first rejected position
+    if accepted == 0:
+        correction = decisions[0]["target_pick"]
+    elif accepted < len(proposed):
+        correction = decisions[accepted]["target_pick"]
+    else:
+        # whole block accepted: the judge for the next position is the last row
+        values = contracts.validate_logit_row(
+            logits[accepted - 1].tolist(), accepted, vocab)
+        correction = contracts.greedy_pick(values)
+    committed = proposed[:accepted] + [int(correction)]
+    return accepted, int(correction), committed, decisions
 
 
 def main() -> int:
@@ -168,6 +238,11 @@ def main() -> int:
         "parent_checkpoint_sha256": parent_progress.get("checkpoint_sha256"),
         "parent_pick": parent_pick,
         "proposed_full": proposed_full,
+        "adjudication_gate": (
+            "every judging logit row passes contracts.adjudicate_logit_row: declared "
+            "vocabulary dimension, numeric and finite everywhere, greedy pick with "
+            "lowest-index tie-break, complete row digest preserved. There is no "
+            "second ARM C adjudication path."),
         "kernel_note": ("block uses Moonshot's native multi-token chunk KDA with initial_state; "
                         "sequential decode uses the fused recurrent kernel - kernel choice is part "
                         "of the numerical contract, so state audit vs sequential is expected to "
@@ -183,7 +258,7 @@ def main() -> int:
         logits = per_position_logits(hidden, block, weight_map, config)
         wall = round(time.perf_counter() - t0, 1)
         accepted, correction, committed, decisions = adjudicate(
-            parent_pick, proposal, logits)
+            parent_final, proposal, logits)
         unions = telemetry["expert_union_by_layer"]
         row = {
             "proposed": proposal,
@@ -226,8 +301,13 @@ def main() -> int:
                          "sha256": core.sha256_file(path)})
     tokenizer = AutoTokenizer.from_pretrained(
         str(core.MODEL_ROOT), trust_remote_code=True, local_files_only=True)
-    next_logits = logits[-1]
-    next_pick = int(next_logits.argmax().item())
+    # the post-commit next pick goes through the same gate as every other
+    # adjudicated position - it is the seed of the next speculative step
+    next_values = contracts.validate_logit_row(
+        logits[-1].tolist(), len(committed), int(logits.shape[-1]))
+    next_pick = contracts.greedy_pick(next_values)
+    next_top = next_values[next_pick]
+    next_runner_up = max(v for i, v in enumerate(next_values) if i != next_pick)
     receipt["commit"] = {
         "schema": "octopodes/k3-dspark-arm-c-commit@1",
         "label": "NOT adopted into the custody chain; state-comparison artifact only",
@@ -239,8 +319,12 @@ def main() -> int:
         "next_pick_after_commit": {
             "token_id": next_pick,
             "token_text": tokenizer.decode([next_pick], skip_special_tokens=False),
-            "logit_margin": float(
-                (next_logits.topk(2).values[0] - next_logits.topk(2).values[1]).item()),
+            "top_logit": next_top,
+            "runner_up_logit": next_runner_up,
+            "logit_margin": next_top - next_runner_up,
+            "vocab_dimension": len(next_values),
+            "logit_row_sha256": contracts.logit_row_digest(next_values, len(committed)),
+            "finite_valid": True,
         },
     }
     receipt["finished_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")

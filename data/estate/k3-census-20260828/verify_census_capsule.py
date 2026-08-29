@@ -29,6 +29,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 CAPSULE = HERE / "CENSUS-CAPSULE.json"
 
+SHARD_TOTAL = 96
+
 EXPECTED_TOTALS = {
     "shards": "96/96",
     "tensors": 497220,
@@ -46,18 +48,16 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+class VerificationFailure(Exception):
+    pass
+
+
 def fail(msg: str) -> None:
-    print(f"FAIL: {msg}")
-    sys.exit(1)
+    raise VerificationFailure(msg)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--ledger-root", default=None,
-                        help="local raw census-ledger root (private custody level)")
-    args = parser.parse_args()
-
-    capsule = json.loads(CAPSULE.read_text(encoding="utf-8"))
+def run(capsule_path: Path, ledger_root: str | None = None) -> str:
+    capsule = json.loads(capsule_path.read_text(encoding="utf-8"))
     if capsule.get("schema") != "estate/k3-tensor-census-capsule@1":
         fail(f"unexpected schema {capsule.get('schema')!r}")
 
@@ -67,9 +67,19 @@ def main() -> None:
         fail(f"denominator is not a closed 96/96: {denom}")
     if len(rows) != 96:
         fail(f"capsule carries {len(rows)} rows, not 96")
+    # The denominator is the EXACT generated checkpoint shard-name set, not a
+    # count of unique names: omitting one shard and substituting any other
+    # sorted unique filename would otherwise still announce a closed 96/96.
+    expected_names = [f"model-{i:05d}-of-{SHARD_TOTAL:06d}.safetensors"
+                      for i in range(1, SHARD_TOTAL + 1)]
     names = [r["shard"] for r in rows]
-    if names != sorted(names) or len(set(names)) != 96:
-        fail("shard rows are not 96 unique names in sorted order")
+    if names != expected_names:
+        missing = sorted(set(expected_names) - set(names))
+        unexpected = sorted(set(names) - set(expected_names))
+        if missing or unexpected:
+            fail(f"shard rows are not the exact checkpoint set: "
+                 f"missing={missing[:5]} unexpected={unexpected[:5]}")
+        fail("shard rows carry the exact checkpoint set but not in canonical order")
 
     tensors = nan = inf = struct = 0
     for r in rows:
@@ -112,8 +122,8 @@ def main() -> None:
     print(f"  {reconstructed['shards']} shards | {tensors} tensors | "
           f"NaN {nan} | Inf {inf} | structural {struct}")
 
-    if args.ledger_root:
-        ledger = Path(args.ledger_root)
+    if ledger_root:
+        ledger = Path(ledger_root)
         problems = []
         for r in rows:
             p = ledger / f"census-{r['shard']}.json"
@@ -133,6 +143,23 @@ def main() -> None:
         if problems:
             fail("raw custody check: " + "; ".join(problems[:10]))
         print(f"RAW CUSTODY VERIFIED: 96 ledgers rehash and re-derive exactly under {ledger}")
+        return "RAW_CUSTODY_VERIFIED"
+    return "COMMITTED_CAPSULE_VERIFIED"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--ledger-root", default=None,
+                        help="local raw census-ledger root (private custody level)")
+    parser.add_argument("--capsule", default=None,
+                        help="capsule path override (verification testing)")
+    args = parser.parse_args()
+    capsule_path = Path(args.capsule) if args.capsule else CAPSULE
+    try:
+        run(capsule_path, args.ledger_root)
+    except VerificationFailure as exc:
+        print(f"FAIL: {exc}")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

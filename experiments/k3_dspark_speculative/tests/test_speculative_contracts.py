@@ -583,5 +583,296 @@ class LogitValidityWitnesses(unittest.TestCase):
             self.assertGreaterEqual(d["margin"], 0.0)
 
 
+class TelemetryDrafter:
+    """A drafter whose proposal telemetry is malformed in exactly one way."""
+
+    def __init__(self, tokens, **overrides):
+        self.tokens = list(tokens)
+        self.overrides = overrides
+
+    def propose(self, aux_bundle, prefix):
+        out = {"tokens": list(self.tokens),
+               "scores": [0.0] * len(self.tokens),
+               "confidence": 0.5}
+        out.update(self.overrides)
+        return out
+
+
+class ProposalTelemetryWitnesses(unittest.TestCase):
+    """Non-finite or malformed proposal telemetry must refuse BEFORE the target
+    is verified or advanced - never after the state has already moved."""
+
+    def _truth(self, n):
+        return SyntheticTarget(PREFIX).greedy_continuation(n)
+
+    def assert_refused_without_mutation(self, drafter, fragment):
+        t = SyntheticTarget(PREFIX)
+        before = C.state_hash(t.export_state())
+        r = step(t, drafter)
+        self.assertEqual(r["terminal_status"], "failed:draft")
+        self.assertEqual(r["committed_length"], 0)
+        self.assertEqual(r["target_verified_prefix_length"], 0)
+        self.assertEqual(C.state_hash(t.export_state()), before)
+        self.assertEqual(r["state_hash_after"], before)
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.draft_block(drafter, make_aux_bundle(LAYERS), PREFIX, LAYERS)
+        self.assertIn(fragment, str(ctx.exception))
+
+    def test_nan_score_refuses_before_verification(self):
+        truth = self._truth(2)
+        self.assert_refused_without_mutation(
+            TelemetryDrafter(truth[:2], scores=[float("nan"), 0.0]), "non-finite")
+
+    def test_inf_score_refuses(self):
+        truth = self._truth(2)
+        self.assert_refused_without_mutation(
+            TelemetryDrafter(truth[:2], scores=[0.0, float("inf")]), "non-finite")
+
+    def test_nan_confidence_refuses(self):
+        truth = self._truth(1)
+        self.assert_refused_without_mutation(
+            TelemetryDrafter(truth[:1], confidence=float("nan")), "non-finite")
+
+    def test_score_length_must_equal_token_length(self):
+        truth = self._truth(3)
+        self.assert_refused_without_mutation(
+            TelemetryDrafter(truth[:3], scores=[0.0, 0.0]),
+            "score length must equal proposal-token length")
+
+    def test_float_token_id_refuses(self):
+        truth = self._truth(1)
+        self.assert_refused_without_mutation(
+            TelemetryDrafter([float(truth[0])]), "not an integer token id")
+
+    def test_bool_token_id_refuses(self):
+        self.assert_refused_without_mutation(
+            TelemetryDrafter([True]), "is a bool")
+
+    def test_nonnumeric_confidence_refuses(self):
+        truth = self._truth(1)
+        self.assert_refused_without_mutation(
+            TelemetryDrafter(truth[:1], confidence="high"), "not a real number")
+
+
+class HostileIdentity(dict):
+    """An identity block that canonicalises only the first time it is hashed."""
+
+    def __init__(self):
+        super().__init__(name="hostile")
+        self.armed = False
+
+
+class ReceiptConstructionCustodyWitnesses(unittest.TestCase):
+    """The custody boundary must cover receipt construction itself: a step may
+    never end with advanced target state and no receipt."""
+
+    def test_receipt_failure_after_commit_restores_snapshot(self):
+        t = SyntheticTarget(PREFIX)
+        before = C.state_hash(t.export_state())
+        truth = t.greedy_continuation(2)
+
+        real = C.receipt_speculative_step
+        calls = {"n": 0}
+
+        def exploding(**kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise RuntimeError("receipt serialization exploded")
+            return real(**kwargs)
+
+        C.receipt_speculative_step = exploding
+        try:
+            r = step(t, ScriptedDrafter(truth[:2]))
+        finally:
+            C.receipt_speculative_step = real
+
+        # a receipt WAS emitted, the commit was undone, and nothing is claimed
+        self.assertIsNotNone(r)
+        self.assertIn("failed:receipt:RuntimeError", r["terminal_status"])
+        self.assertEqual(r["committed_length"], 0)
+        self.assertEqual(r["target_verified_prefix_length"], 0)
+        self.assertEqual(r["state_transition"], "rolled_back")
+        self.assertTrue(r["rollback_performed"])
+        self.assertEqual(r["state_hash_after"], before)
+        self.assertEqual(C.state_hash(t.export_state()), before)
+        # the bounded receipt keeps the proposal tokens but drops telemetry
+        self.assertTrue(r["proposal"]["bounded_failure_receipt"])
+        self.assertEqual(r["proposal"]["tokens"], truth[:2])
+        self.assertNotIn("scores", r["proposal"])
+        self.assertEqual(r["proposed_length"], 2)
+        self.assertEqual(len(r["receipt_sha256"]), 64)
+        C.validate_speculative_receipt(r)
+
+    def test_bounded_receipt_survives_noncanonical_identity(self):
+        t = SyntheticTarget(PREFIX)
+        truth = t.greedy_continuation(1)
+        real = C.receipt_speculative_step
+        calls = {"n": 0}
+
+        def exploding(**kwargs):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise RuntimeError("boom")
+            return real(**kwargs)
+
+        C.receipt_speculative_step = exploding
+        try:
+            r = C.speculative_step(
+                target=t, drafter=ScriptedDrafter(truth[:1]),
+                aux_bundle=make_aux_bundle(LAYERS), expected_layers=LAYERS,
+                target_identity={"obj": object()},   # not canonical
+                drafter_identity={"name": "scripted"},
+            )
+        finally:
+            C.receipt_speculative_step = real
+        self.assertTrue(r["target_identity"]["bounded"])
+        C.validate_speculative_receipt(r)
+
+
+class ExternalReceiptBindingWitnesses(unittest.TestCase):
+    """Externally constructed receipts must bind proposed_length and every
+    decision to the proposal's own tokens."""
+
+    def base(self):
+        return {
+            "schema": C.RECEIPT_SCHEMA_V2,
+            "proposal": {"tokens": [11, 12]},
+            "per_position_decisions": [
+                {"position": 0, "proposed": 11, "accepted": True},
+                {"position": 1, "proposed": 12, "accepted": False},
+            ],
+            "proposed_length": 2,
+            "target_verified_prefix_length": 1,
+            "committed_length": 1,
+            "rollback_performed": False,
+            "state_transition": "committed",
+            "state_hash_before": "a" * 64,
+            "state_hash_after": "b" * 64,
+            "terminal_status": "ok",
+        }
+
+    def refuse(self, mutate, fragment):
+        r = self.base()
+        mutate(r)
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.validate_speculative_receipt(r)
+        self.assertIn(fragment, str(ctx.exception))
+
+    def test_consistent_external_receipt_validates(self):
+        C.validate_speculative_receipt(self.base())
+
+    def test_proposed_length_must_equal_proposal_tokens(self):
+        # the exact review witness: an EMPTY proposal claiming one committed token
+        self.refuse(lambda r: r.update(proposal={"tokens": []}),
+                    "must be derived from the proposal itself")
+
+    def test_missing_proposal_refuses(self):
+        self.refuse(lambda r: r.pop("proposal"), "not a mapping")
+
+    def test_decision_naming_an_unproposed_token_refuses(self):
+        self.refuse(
+            lambda r: r["per_position_decisions"][1].update(proposed=999),
+            "but the proposal carries")
+
+    def test_reordered_decisions_refuse(self):
+        def swap(r):
+            r["per_position_decisions"] = list(reversed(r["per_position_decisions"]))
+        self.refuse(swap, "decisions must be in proposal order")
+
+    def test_duplicated_decision_refuses(self):
+        def dup(r):
+            r["per_position_decisions"] = [r["per_position_decisions"][0]] * 2
+        self.refuse(dup, "decisions must be in proposal order")
+
+    def test_decision_count_below_proposal_refuses(self):
+        def drop(r):
+            r["per_position_decisions"] = r["per_position_decisions"][:1]
+        self.refuse(drop, "!= proposal-token count")
+
+    def test_noninteger_proposal_token_refuses(self):
+        self.refuse(lambda r: r.update(proposal={"tokens": [11, 12.0]}),
+                    "not an int")
+
+
+class AuxBundleAdmissionWitnesses(unittest.TestCase):
+    """A bundle whose target run failed - or whose outcome is unbound - is not
+    drafter input."""
+
+    def refuse(self, bundle, fragment):
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.validate_aux_bundle(bundle, LAYERS)
+        self.assertIn(fragment, str(ctx.exception))
+
+    def test_successful_bundle_admits(self):
+        C.validate_aux_bundle(make_aux_bundle(LAYERS), LAYERS)
+
+    def test_unbound_outcome_refuses(self):
+        b = make_aux_bundle(LAYERS)
+        b.pop("target_run_return_code")
+        self.refuse(b, "binds no target-run outcome")
+
+    def test_nonzero_target_return_code_refuses(self):
+        b = make_aux_bundle(LAYERS)
+        b["target_run_return_code"] = 1
+        self.refuse(b, "target run returned 1")
+
+    def test_failed_terminal_status_refuses(self):
+        b = make_aux_bundle(LAYERS)
+        b["terminal_status"] = "failed:target_run_rc=1"
+        self.refuse(b, "is not ok")
+
+    def test_preserved_failure_artifact_refuses(self):
+        b = make_aux_bundle(LAYERS)
+        b["schema"] = C.FAILED_TAP_BUNDLE_SCHEMA
+        b["terminal_status"] = "failed:target_run_rc=3"
+        self.refuse(b, "preserved failure artifact")
+
+    def test_failed_bundle_never_reaches_the_target(self):
+        b = make_aux_bundle(LAYERS)
+        b["target_run_return_code"] = 2
+        t = SyntheticTarget(PREFIX)
+        before = C.state_hash(t.export_state())
+        r = step(t, ScriptedDrafter(t.greedy_continuation(1)), bundle=b)
+        self.assertEqual(r["terminal_status"], "failed:aux_bundle")
+        self.assertEqual(r["committed_length"], 0)
+        self.assertEqual(C.state_hash(t.export_state()), before)
+
+
+class SharedAdjudicationGateWitnesses(unittest.TestCase):
+    """One gate, one greedy rule - the production ARM C path imports these."""
+
+    def test_nan_row_refuses_instead_of_picking_a_finite_token(self):
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.adjudicate_logit_row([1.0, float("nan"), 0.0], 0, 0, vocab_size=3)
+        self.assertIn("non-finite", str(ctx.exception))
+
+    def test_dimension_mismatch_refuses(self):
+        with self.assertRaises(C.SpecStepError) as ctx:
+            C.adjudicate_logit_row([1.0, 0.0], 0, 0, vocab_size=3)
+        self.assertIn("vocabulary dimension", str(ctx.exception))
+
+    def test_decision_preserves_the_full_position_record(self):
+        d, values = C.adjudicate_logit_row([0.5, 3.0, 1.0], 2, 1, vocab_size=3,
+                                           accepted_so_far=2)
+        self.assertEqual(d["target_pick"], 1)
+        self.assertTrue(d["accepted"])
+        self.assertEqual(d["proposed"], 1)
+        self.assertEqual(d["vocab_dimension"], 3)
+        self.assertEqual(d["top_logit"], 3.0)
+        self.assertEqual(d["runner_up_logit"], 1.0)
+        self.assertEqual(d["margin"], 2.0)
+        self.assertTrue(d["finite_valid"])
+        self.assertEqual(d["logit_row_sha256"],
+                         C.logit_row_digest(values, 2))
+
+    def test_greedy_pick_breaks_ties_on_the_lowest_index(self):
+        self.assertEqual(C.greedy_pick([2.0, 2.0, 1.0]), 0)
+
+    def test_row_digest_covers_every_element(self):
+        a = C.logit_row_digest([1.0] * 64, 0)
+        tail = [1.0] * 63 + [1.0000001]
+        self.assertNotEqual(a, C.logit_row_digest(tail, 0))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
