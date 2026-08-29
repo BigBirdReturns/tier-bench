@@ -25,7 +25,47 @@ else:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from k3_dspark_speculative.strict_baseline_gate import sha256_file  # type: ignore
 
-CAPSULE_SCHEMA = "estate/k3-strict-state-capsule@1"
+CAPSULE_SCHEMA = "estate/k3-strict-state-capsule@2"
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# Code identity is bound through repository-stable coordinates, never the
+# mutable working-tree bytes: on Windows the checkout is CRLF, so a working-tree
+# digest can never be reproduced from a fresh clone or from git's own object.
+CODE_IDENTITY_FILES = (
+    "experiments/k3_dspark_speculative/run_strict_block_verify.py",
+    "experiments/k3_dspark_speculative/strict_baseline_gate.py",
+)
+
+
+def canonical_lf_bytes(path: Path) -> bytes:
+    """The file's content as git stores it: LF line endings."""
+    return path.read_bytes().replace(b"\r\n", b"\n")
+
+
+def git_blob_sha1(data: bytes) -> str:
+    """git's own object id for this content (no git binary required)."""
+    return hashlib.sha1(b"blob " + str(len(data)).encode() + b"\x00" + data).hexdigest()
+
+
+def code_identity(repo_root: Path, commit: str | None) -> dict:
+    files = {}
+    for rel in CODE_IDENTITY_FILES:
+        data = canonical_lf_bytes(repo_root / rel)
+        files[rel] = {
+            "canonical_lf_sha256": hashlib.sha256(data).hexdigest(),
+            "git_blob_sha1": git_blob_sha1(data),
+            "canonical_lf_bytes": len(data),
+        }
+    return {
+        "repository": "BigBirdReturns/tier-bench",
+        "commit": commit,
+        "rule": ("digests are over the canonical LF byte stream, which is what git "
+                 "stores; git_blob_sha1 is git's own object id for that content, so "
+                 "`git rev-parse <commit>:<path>` reproduces it from a fresh clone "
+                 "on any platform"),
+        "files": files,
+    }
 
 
 def main() -> int:
@@ -33,8 +73,9 @@ def main() -> int:
     parser.add_argument("--run-dir", type=Path, required=True)
     parser.add_argument("--baseline-manifest", type=Path, required=True)
     parser.add_argument("--parent-run-dir", type=Path, required=True)
-    parser.add_argument("--runner", type=Path, default=Path(__file__).resolve().parent
-                        / "run_strict_block_verify.py")
+    parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
+    parser.add_argument("--code-commit", default=None,
+                        help="commit that carries the verifier blobs recorded here")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
 
@@ -86,16 +127,21 @@ def main() -> int:
         "claim_id": "CLAUDE-12 strict-state successor",
         "runner": {
             "path": "experiments/k3_dspark_speculative/run_strict_block_verify.py",
-            "sha256": sha256_file(args.runner),
             "mode": receipt["mode"],
         },
+        "code_identity": code_identity(args.repo_root.resolve(), args.code_commit),
         "model_identity": {
             "model_index_sha256": progress["source"]["model_index_sha256"],
             "parent_checkpoint_sha256": progress["checkpoint_sha256"],
             "parent_sequence_length": progress["attention_cache"]["sequence_length"],
+            "parent_prefix_sha256": progress["source"]["sequence_sha256"],
+            "parent_prefix_length": progress["source"]["sequence_length"],
         },
         "baseline": {
+            "manifest_label": "../BASELINE-MANIFEST.json",
+            "manifest_schema": manifest["schema"],
             "manifest_aggregate_root_sha256": manifest["aggregate_root_sha256"],
+            "accepted_position_denominator": manifest["accepted_position_denominator"],
             "positions": {p: {"generation": e["generation"],
                               "sequence_length": e["sequence_length"],
                               "appended_token": e["appended_token"]}
@@ -125,11 +171,17 @@ def main() -> int:
             },
         },
         "verdicts": {
+            "schema": verdicts["schema"],
             "STRICT_CANONICAL_COMMIT": verdicts["STRICT_CANONICAL_COMMIT"],
             "criteria": verdicts["criteria"],
             "selected_checkpoint": verdicts["selected_checkpoint"],
             "first_divergence": verdicts["first_divergence"],
             "logit_equivalence": verdicts["logit_equivalence"],
+            # the denominator the PASS was gated on, so a reader can tell a
+            # gated invocation from an ungated one
+            "expected_accepted": verdicts["expected_accepted"],
+            "expected_accepted_supplied": verdicts["expected_accepted_supplied"],
+            "comparison_policy": verdicts["comparison_policy"],
         },
         "economics": {
             "sequential_baseline_s_per_token": 588.0,

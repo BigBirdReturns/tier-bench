@@ -7,21 +7,39 @@ output is bound in the committed capsule
 `data/estate/k3-strict-state-20260828/STRICT-STATE-CAPSULE.json`, whose
 aggregate private-evidence root is:
 
-    9dc58ce065e221be8c1fe773faa463ae5cfff24d9eca3668c4fda135cd5d4f78
+    743445ce88508bf7352066cae457e0644e3ca39bdf153c8aae6e2145f2c10a7e
 
 Sealed sequential-baseline manifest aggregate root (pinned by the gate with
 `--expect-baseline-root`; a substituted baseline is refused):
 
-    04bbce658b689d33898ee224033edd4c36fe2646f546d92016b8300abd047c73
+    a92f102b3459a613b86ed1a013209cf59006b6bbf8666d18b1c81370a96a2293
 
 Reproduce, on a host holding the authorized private evidence root:
 
 ```
 python data/estate/k3-strict-state-20260828/verify_strict_state_capsule.py                    # CAPSULE_VERIFIED
-python data/estate/k3-strict-state-20260828/verify_strict_state_capsule.py --private-root <R> # PRIVATE_EVIDENCE_VERIFIED
+python data/estate/k3-strict-state-20260828/verify_strict_state_capsule.py --private-root <R> # + PRIVATE_BYTES_VERIFIED, PRIVATE_EVIDENCE_VERIFIED
 python -m k3_dspark_speculative.strict_baseline_gate --run-dir <R> --parent-run-dir <P> \
-    --baseline-manifest <M> --expect-baseline-root 04bbce65... --expected-accepted 2
+    --baseline-manifest <M> \
+    --expect-baseline-root a92f102b3459a613b86ed1a013209cf59006b6bbf8666d18b1c81370a96a2293 \
+    --expected-accepted 2   # REQUIRED
 ```
+
+That baseline root is now the digest of the **complete canonical manifest**,
+excluding only its own root field. Under the `@1` rule it covered the layer,
+checkpoint and logit digests alone, so a substituted manifest could rewrite the
+model index, the parent checkpoint, the parent sequence length, the accepted
+denominator, or an `appended_token` - the token ground truth itself - and still
+satisfy `--expect-baseline-root`. Nothing outside the root field is unbound now.
+The manifest additionally carries the parent prefix digest, the accepted
+denominator, per-position content roots for the attn_res bank and final hidden,
+and the comparison policy the gate must implement.
+
+`--expected-accepted` is **required**. Omitting it made the boundary criterion
+unconditionally true and left no record of whether a denominator had been
+supplied, so a committed capsule could not distinguish a gated PASS from an
+ungated one. The gate now refuses to run without it, checks it against the
+manifest's own denominator, and serialises it into the verdict and the capsule.
 
 ## Headline (capsule-cited)
 
@@ -74,12 +92,22 @@ current drafter limit, not a lane limit.
 ## Repository state vs local state
 
 - **Local physical observation:** PASS (this run, this host).
-- **Repository reproducibility:** a fresh checkout reaches `CAPSULE_VERIFIED`
-  and can re-derive the verdict only with the authorized private evidence
-  root, since the per-position state tensors are model-derived state of a
-  1.5 TB checkpoint and stay in private custody. The capsule binds all 192
-  private artifacts by digest and the verifier refuses digest-correct evidence
-  whose contents contradict the capsule.
+- **Repository reproducibility:** `CONDITIONAL_PASS`. A fresh checkout reaches
+  `CAPSULE_VERIFIED` on its own — which now includes binding the two files that
+  compute the verdict (`run_strict_block_verify.py`, `strict_baseline_gate.py`)
+  by **repository-stable coordinates**: the canonical LF byte stream git
+  actually stores, and git's own blob id for it. The previous capsule recorded
+  the Windows working-tree CRLF digest, which no fresh checkout on any platform
+  could ever reproduce, and nothing rehashed it.
+  With the authorized private root the verifier reaches
+  `PRIVATE_EVIDENCE_VERIFIED`, which is no longer a reading of the precomputed
+  adjudication: it loads the authenticated baseline manifest, reloads all 188
+  retained per-position state tensors and both candidate checkpoints, and
+  **re-invokes the committed gate** to recompute all seven criteria from the
+  physical artifacts. The stored adjudication is then only a cross-check.
+  Digest-correct stub tensors reach `PRIVATE_BYTES_VERIFIED` and stop there —
+  the test fixture that once expected them to verify now asserts exactly that
+  refusal.
 - **Admission:** for the council. Nothing here merges itself.
 
 ## Next levers (not started)

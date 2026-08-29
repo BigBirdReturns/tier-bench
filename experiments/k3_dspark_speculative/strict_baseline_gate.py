@@ -14,7 +14,8 @@ roots from contracts.py, and emits PASS only when:
      and MLA tensor, the complete attn_res bank, position, prefix, final
      hidden);
   5. the baseline manifest and run identities verify (manifest aggregate
-     root, model index, parent cached state, baseline file digests);
+     root, model index, parent cached state, parent prefix digest, baseline
+     file digests, baseline content roots);
   6. no additional unbound state exists (exact per-kind tensor key sets,
      exact per-position file inventory);
   7. the adopted checkpoint is the checkpoint at the exact accepted boundary.
@@ -22,6 +23,19 @@ roots from contracts.py, and emits PASS only when:
 Logit comparison is reported SEPARATELY (LOGIT_ARGMAX_EQUIVALENCE,
 LOGIT_MARGIN_EQUIVALENCE, LOGIT_NUMERICAL_EQUIVALENCE) and never weakens the
 bit-exact state-adoption gate.
+
+Two properties the @1 gate did not have:
+
+  - The pinned root covers the WHOLE canonical baseline manifest, excluding
+    only its own root field, so identity fields, the token ground truth, the
+    accepted denominator and the comparison policy are all bound. Under @1 a
+    substituted manifest could rewrite any of them and still satisfy
+    --expect-baseline-root.
+  - --expected-accepted is REQUIRED. Omitting it used to make the boundary
+    criterion unconditionally true, and the emitted verdict did not record
+    whether a denominator had been supplied at all. It is now mandatory,
+    checked against the manifest's own denominator, and serialised into the
+    verdict.
 
 CLI re-adjudication over existing artifacts (no K3 execution):
 
@@ -49,11 +63,54 @@ else:  # direct script execution
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from k3_dspark_speculative import contracts as C  # type: ignore
 
-MANIFEST_SCHEMA = "octopodes/k3-sequential-baseline-manifest@1"
+MANIFEST_SCHEMA = "octopodes/k3-sequential-baseline-manifest@2"
 EXPECTED_TENSOR_KEYS = {"KDA": {"conv_q", "conv_k", "conv_v", "recurrent"},
                         "MLA": {"key", "value"}}
 LAYERS = 93
 MARGIN_TOLERANCE = 1e-3
+TENSOR_ROOT_RULE = "sha256 of contracts._encode_state binary encoding (dtype, shape, layout, logical bytes)"
+
+# the root covers the WHOLE canonical manifest, excluding only its own field
+ROOT_EXCLUDED_FIELD = "aggregate_root_sha256"
+
+REQUIRED_MANIFEST_FIELDS = (
+    "schema",
+    "model_index_sha256",
+    "parent_checkpoint_sha256",
+    "parent_sequence_length",
+    "parent_prefix_sha256",
+    "accepted_position_denominator",
+    "comparison_policy",
+    "positions",
+)
+
+REQUIRED_POSITION_FIELDS = (
+    "generation",
+    "sequence_length",
+    "appended_token",
+    "layer_cache_dir",
+    "layer_files",
+    "checkpoint_file",
+    "checkpoint_sha256",
+    "final_hidden_root",
+    "attn_res_bank_root",
+    "logits_file",
+    "logits_sha256",
+)
+
+
+def comparison_policy() -> dict[str, Any]:
+    """The comparison semantics this module implements, in manifest form.
+
+    A manifest that declares a different policy is refused: the pinned root
+    must bind HOW the comparison is performed, not only what it compares."""
+    return {
+        "layers": LAYERS,
+        "expected_tensor_keys": {k: sorted(v) for k, v in EXPECTED_TENSOR_KEYS.items()},
+        "tensor_root_rule": TENSOR_ROOT_RULE,
+        "margin_tolerance": MARGIN_TOLERANCE,
+        "state_file_inventory": ["layer-000.pt .. layer-092.pt", "attn-res-bank.pt"],
+    }
 
 
 def tensor_root(t: torch.Tensor) -> str:
@@ -69,24 +126,58 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def canonical_manifest_body(manifest: dict[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in manifest.items() if k != ROOT_EXCLUDED_FIELD}
+
+
 def manifest_aggregate_root(manifest: dict[str, Any]) -> str:
-    lines = []
-    for pos in sorted(manifest["positions"], key=int):
-        entry = manifest["positions"][pos]
-        for name in sorted(entry["layer_files"]):
-            lines.append(f"position {pos} {name} {entry['layer_files'][name]}")
-        lines.append(f"position {pos} checkpoint {entry['checkpoint_sha256']}")
-        lines.append(f"position {pos} logits {entry['logits_sha256']}")
-    body = "\n".join(lines) + "\n"
-    return hashlib.sha256(body.encode("utf-8")).hexdigest()
+    """Digest of the COMPLETE canonical manifest, excluding only its own root
+    field.
+
+    The @1 rule hashed the layer/checkpoint/logit digests alone, so identity
+    fields (model index, parent checkpoint, parent sequence length), the token
+    ground truth (appended_token), the accepted denominator and the comparison
+    policy could all be rewritten while --expect-baseline-root stayed
+    satisfied. Nothing outside the root field is unbound now."""
+    body = canonical_manifest_body(manifest)
+    return hashlib.sha256(
+        json.dumps(body, sort_keys=True, separators=(",", ":"),
+                   allow_nan=False, ensure_ascii=True).encode("utf-8")
+    ).hexdigest()
 
 
 def load_manifest(path: Path, expected_root: str | None) -> dict[str, Any]:
     manifest = json.loads(path.read_text(encoding="utf-8"))
     if manifest.get("schema") != MANIFEST_SCHEMA:
         raise ValueError(f"baseline manifest schema {manifest.get('schema')!r}")
+    missing = [f for f in REQUIRED_MANIFEST_FIELDS if f not in manifest]
+    if missing:
+        raise ValueError(f"baseline manifest missing required fields {missing}")
+    if manifest["comparison_policy"] != comparison_policy():
+        raise ValueError(
+            "baseline manifest declares a comparison policy this gate does not "
+            "implement - refusing a relaxed or substituted policy")
+    positions = manifest["positions"]
+    if not positions:
+        raise ValueError("baseline manifest carries no positions")
+    for pos, entry in positions.items():
+        gaps = [f for f in REQUIRED_POSITION_FIELDS if f not in entry]
+        if gaps:
+            raise ValueError(f"baseline position {pos} missing fields {gaps}")
+        if len(entry["layer_files"]) != LAYERS:
+            raise ValueError(
+                f"baseline position {pos} binds {len(entry['layer_files'])} layer "
+                f"files, not {LAYERS}")
+    denom = manifest["accepted_position_denominator"]
+    if not isinstance(denom, int) or denom < 1:
+        raise ValueError(
+            f"baseline manifest accepted_position_denominator {denom!r} is not a "
+            "positive integer")
+    if sorted(int(p) for p in positions) != list(range(1, denom + 1)):
+        raise ValueError(
+            "baseline manifest positions are not exactly 1..accepted_position_denominator")
     root = manifest_aggregate_root(manifest)
-    if root != manifest.get("aggregate_root_sha256"):
+    if root != manifest.get(ROOT_EXCLUDED_FIELD):
         raise ValueError("baseline manifest aggregate root does not recompute")
     if expected_root is not None and root != expected_root:
         raise ValueError(
@@ -129,14 +220,20 @@ def gate(
     accepted: int,
     committed: list[int],
     expected_accepted: int | None,
+    parent_prefix_sha256: str | None = None,
 ) -> dict[str, Any]:
     verdicts: dict[str, Any] = {
-        "schema": "octopodes/k3-strict-canonical-commit-verdict@1",
+        "schema": "octopodes/k3-strict-canonical-commit-verdict@2",
         "criteria": {},
         "failures": [],
         "first_divergence": None,
         "positions": {},
         "logit_equivalence": {},
+        # the denominator this adjudication was gated on is part of the record:
+        # a verdict can no longer be read without knowing whether one was given
+        "expected_accepted": expected_accepted,
+        "expected_accepted_supplied": expected_accepted is not None,
+        "comparison_policy": comparison_policy(),
     }
 
     # criterion 5: manifest and run identities
@@ -150,12 +247,29 @@ def gate(
     if manifest.get("parent_sequence_length") != parent_sequence_length:
         identity_ok = False
         _fail(verdicts, "manifest parent sequence length != run parent")
+    if parent_prefix_sha256 is not None and \
+            manifest.get("parent_prefix_sha256") != parent_prefix_sha256:
+        identity_ok = False
+        _fail(verdicts, "manifest parent prefix digest != run parent prefix digest")
 
-    # criterion 2: accepted boundary
-    boundary_ok = expected_accepted is None or accepted == expected_accepted
-    if not boundary_ok:
+    # criterion 2: accepted boundary. A PASS-capable adjudication REQUIRES a
+    # denominator - without one, boundary_ok was unconditionally true and the
+    # committed capsule could not tell a gated invocation from an ungated one.
+    if expected_accepted is None:
+        boundary_ok = False
+        _fail(verdicts, "no accepted-position denominator supplied "
+                        "(--expected-accepted): a PASS may not be emitted ungated")
+    elif accepted != expected_accepted:
+        boundary_ok = False
         _fail(verdicts, f"accepted boundary {accepted} != expected denominator "
                         f"{expected_accepted}")
+    elif manifest["accepted_position_denominator"] != expected_accepted:
+        boundary_ok = False
+        _fail(verdicts, f"baseline manifest covers "
+                        f"{manifest['accepted_position_denominator']} accepted "
+                        f"positions, not the claimed {expected_accepted}")
+    else:
+        boundary_ok = True
 
     # criterion 1: token stream (accepted tokens + correction vs baselines)
     token_ok = True
@@ -267,10 +381,20 @@ def gate(
             bank = torch.load(pos_dir / "attn-res-bank.pt", map_location="cpu",
                               weights_only=False)
             ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
-            report["bank_exact"] = tensor_root(bank["attn_res_bank"]) == tensor_root(
-                ckpt["block_residual"])
-            report["hidden_exact"] = tensor_root(bank["final_hidden"]) == tensor_root(
-                ckpt["hidden_states"])
+            base_bank_root = tensor_root(ckpt["block_residual"])
+            base_hidden_root = tensor_root(ckpt["hidden_states"])
+            # the manifest's declared content roots are part of the pinned root,
+            # so the baseline's own tensors must match what was sealed
+            if base_bank_root != entry["attn_res_bank_root"]:
+                state_ok = False
+                _fail(verdicts, f"position {p}: baseline attn_res bank content root "
+                                f"!= manifest-declared root")
+            if base_hidden_root != entry["final_hidden_root"]:
+                state_ok = False
+                _fail(verdicts, f"position {p}: baseline final hidden content root "
+                                f"!= manifest-declared root")
+            report["bank_exact"] = tensor_root(bank["attn_res_bank"]) == base_bank_root
+            report["hidden_exact"] = tensor_root(bank["final_hidden"]) == base_hidden_root
             if not report["bank_exact"]:
                 state_ok = False
                 _fail(verdicts, f"position {p}: attn_res bank divergent",
@@ -331,7 +455,9 @@ def main() -> int:
     parser.add_argument("--parent-run-dir", type=Path, required=True)
     parser.add_argument("--baseline-manifest", type=Path, required=True)
     parser.add_argument("--expect-baseline-root", default=None)
-    parser.add_argument("--expected-accepted", type=int, default=None)
+    parser.add_argument("--expected-accepted", type=int, required=True,
+                        help="accepted-position denominator; REQUIRED - a PASS may "
+                             "not be emitted without one")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args()
 
@@ -351,6 +477,7 @@ def main() -> int:
         accepted=receipt["accepted_length"],
         committed=receipt["committed_tokens"],
         expected_accepted=args.expected_accepted,
+        parent_prefix_sha256=progress["source"].get("sequence_sha256"),
     )
     verdicts["baseline_manifest_root"] = manifest["aggregate_root_sha256"]
     verdicts["source_receipt"] = "STRICT-VERIFY-RECEIPT.json"

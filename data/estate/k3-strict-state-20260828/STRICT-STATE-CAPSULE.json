@@ -1,19 +1,40 @@
 {
- "schema": "estate/k3-strict-state-capsule@1",
+ "schema": "estate/k3-strict-state-capsule@2",
  "mission": "OCTO-L01-STACK-ADMISSION-CLOSURE-002",
  "claim_id": "CLAUDE-12 strict-state successor",
  "runner": {
   "path": "experiments/k3_dspark_speculative/run_strict_block_verify.py",
-  "sha256": "2c02bfec8ee6e528911a5bf7e301c016ac0760ec62882e4f46cb4b51e58b9f41",
   "mode": "SEQUENTIAL_WITHIN_LAYER_STRICT"
+ },
+ "code_identity": {
+  "repository": "BigBirdReturns/tier-bench",
+  "commit": null,
+  "rule": "digests are over the canonical LF byte stream, which is what git stores; git_blob_sha1 is git's own object id for that content, so `git rev-parse <commit>:<path>` reproduces it from a fresh clone on any platform",
+  "files": {
+   "experiments/k3_dspark_speculative/run_strict_block_verify.py": {
+    "canonical_lf_sha256": "57c052ebe813b9ab38dc19aeeb369f8533deedbde152cd83686ce91e012cde26",
+    "git_blob_sha1": "72a21b3ea97d4ee9dba7f318bd302ece1e81ef2a",
+    "canonical_lf_bytes": 22524
+   },
+   "experiments/k3_dspark_speculative/strict_baseline_gate.py": {
+    "canonical_lf_sha256": "1d9a8ca09b4bbe682b3a9060f763dce2bc91ecb40d25b2e5557eb9381338cf1e",
+    "git_blob_sha1": "b5af2af3dfd41743694db501b7067428a993d081",
+    "canonical_lf_bytes": 22879
+   }
+  }
  },
  "model_identity": {
   "model_index_sha256": "a1c5210650ce71d2d3ae9ec5a101ac4afd3cf4b10091be589853437eb967febd",
   "parent_checkpoint_sha256": "7c1a88d8cbac7d8a2c2b86788673ed2707c1a0613be6b56a16fb836f50f5a56c",
-  "parent_sequence_length": 139
+  "parent_sequence_length": 139,
+  "parent_prefix_sha256": "62b292ddb1967313df3ed1fe9c587ad9cac862e1400b51b23bf031a33185a13b",
+  "parent_prefix_length": 139
  },
  "baseline": {
-  "manifest_aggregate_root_sha256": "04bbce658b689d33898ee224033edd4c36fe2646f546d92016b8300abd047c73",
+  "manifest_label": "../BASELINE-MANIFEST.json",
+  "manifest_schema": "octopodes/k3-sequential-baseline-manifest@2",
+  "manifest_aggregate_root_sha256": "a92f102b3459a613b86ed1a013209cf59006b6bbf8666d18b1c81370a96a2293",
+  "accepted_position_denominator": 2,
   "positions": {
    "1": {
     "generation": 12,
@@ -75,6 +96,7 @@
   }
  },
  "verdicts": {
+  "schema": "octopodes/k3-strict-canonical-commit-verdict@2",
   "STRICT_CANONICAL_COMMIT": "PASS",
   "criteria": {
    "1_token_stream_exact": true,
@@ -100,6 +122,29 @@
     "LOGIT_NUMERICAL_EQUIVALENCE": false,
     "max_abs_diff": 7.62939453125e-06
    }
+  },
+  "expected_accepted": 2,
+  "expected_accepted_supplied": true,
+  "comparison_policy": {
+   "layers": 93,
+   "expected_tensor_keys": {
+    "KDA": [
+     "conv_k",
+     "conv_q",
+     "conv_v",
+     "recurrent"
+    ],
+    "MLA": [
+     "key",
+     "value"
+    ]
+   },
+   "tensor_root_rule": "sha256 of contracts._encode_state binary encoding (dtype, shape, layout, logical bytes)",
+   "margin_tolerance": 0.001,
+   "state_file_inventory": [
+    "layer-000.pt .. layer-092.pt",
+    "attn-res-bank.pt"
+   ]
   }
  },
  "economics": {
@@ -115,23 +160,23 @@
  },
  "private_evidence": {
   "artifact_count": 192,
-  "total_bytes": 1328601028,
+  "total_bytes": 1328602636,
   "manifest": {
    "STRICT-VERIFY-RECEIPT.json": {
     "sha256": "6a8ab10704495a16c4ebbb2f05d213e79553f31ccfa09a10fbd5d0d3c0fc8a97",
     "bytes": 2113
    },
    "STRICT-ADJUDICATION.json": {
-    "sha256": "3788903b1063d4802c005e98f4b80715a503fd3081bc102418d1be4ce30191b8",
-    "bytes": 1281
+    "sha256": "db148707857fdbba0cac4faa3bd1b738a20f4feb8be72ee2935d2d9876eaf685",
+    "bytes": 1790
    },
    "per-position-logits.pt": {
     "sha256": "a59f87cf5132c19fd9fee716b03cd3d37da81d6498464afacc77442aa0359c91",
     "bytes": 4589181
    },
    "../BASELINE-MANIFEST.json": {
-    "sha256": "1125f053ab4b5872f432c2083380c945a0773d309de90a2f8fd9ec039e72774b",
-    "bytes": 18433
+    "sha256": "499b6c20fe371f13d936be10b8847adb8d35f2b52a5b7cdd8cf8f75d7312d3d2",
+    "bytes": 19532
    },
    "strict-state/position-01/attn-res-bank.pt": {
     "sha256": "d7ef8e6ee90faedf0a9c743cd1f98ad27a12ce6008fb132937b6098ec7d8a341",
@@ -887,7 +932,7 @@
    }
   }
  },
- "aggregate_private_evidence_root_sha256": "9dc58ce065e221be8c1fe773faa463ae5cfff24d9eca3668c4fda135cd5d4f78",
+ "aggregate_private_evidence_root_sha256": "743445ce88508bf7352066cae457e0644e3ca39bdf153c8aae6e2145f2c10a7e",
  "aggregate_root_rule": "sha256 over one line per private artifact in sorted label order: '<label><SP><sha256><LF>'",
  "private_custody_boundary": "Per-position K3 state tensors, sequential baselines, and the raw run artifacts remain in the operator's private estate tree on OCTO-L01, off-repository (they are model-derived state of a 1.5 TB checkpoint). This capsule commits their digests, the allowlisted comparison results, and the aggregate root. PRIVATE_EVIDENCE_VERIFIED reopens them on the custody host.",
  "claims": [

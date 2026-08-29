@@ -21,11 +21,14 @@ import sys
 from pathlib import Path
 
 if __package__:
-    from .strict_baseline_gate import MANIFEST_SCHEMA, manifest_aggregate_root, sha256_file
+    from .strict_baseline_gate import (
+        MANIFEST_SCHEMA, comparison_policy, manifest_aggregate_root, sha256_file,
+        tensor_root)
 else:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from k3_dspark_speculative.strict_baseline_gate import (  # type: ignore
-        MANIFEST_SCHEMA, manifest_aggregate_root, sha256_file)
+        MANIFEST_SCHEMA, comparison_policy, manifest_aggregate_root, sha256_file,
+        tensor_root)
 
 LAYERS = 93
 
@@ -41,14 +44,20 @@ def main() -> int:
 
     progress = json.loads(
         (args.parent_run_dir / "progress.json").read_text(encoding="utf-8-sig"))
+    pairs = args.positions.split(",")
     manifest = {
         "schema": MANIFEST_SCHEMA,
         "model_index_sha256": progress["source"]["model_index_sha256"],
         "parent_checkpoint_sha256": progress["checkpoint_sha256"],
         "parent_sequence_length": progress["attention_cache"]["sequence_length"],
+        "parent_prefix_sha256": progress["source"]["sequence_sha256"],
+        "parent_prefix_length": progress["source"]["sequence_length"],
+        "parent_run_dir": str(args.parent_run_dir),
+        "accepted_position_denominator": len(pairs),
+        "comparison_policy": comparison_policy(),
         "positions": {},
     }
-    for pair in args.positions.split(","):
+    for pair in pairs:
         pos_s, gen_s = pair.split(":")
         pos, gen = int(pos_s), int(gen_s)
         cache_dirs = glob.glob(str(
@@ -69,6 +78,9 @@ def main() -> int:
         import torch  # noqa: PLC0415
         rec = torch.load(cache_dir / "layer-000.pt", map_location="cpu",
                          weights_only=False)
+        # bind the CONTENT of the checkpoint's two carriers, not only its file
+        # bytes: these are the ground truth the gate compares strict state to
+        ckpt_obj = torch.load(ckpt, map_location="cpu", weights_only=False)
         manifest["positions"][str(pos)] = {
             "generation": gen,
             "sequence_length": rec["sequence_length"],
@@ -77,9 +89,12 @@ def main() -> int:
             "layer_files": layer_files,
             "checkpoint_file": str(ckpt),
             "checkpoint_sha256": sha256_file(ckpt),
+            "attn_res_bank_root": tensor_root(ckpt_obj["block_residual"]),
+            "final_hidden_root": tensor_root(ckpt_obj["hidden_states"]),
             "logits_file": str(logits),
             "logits_sha256": sha256_file(logits),
         }
+        del ckpt_obj
         expected_len = manifest["parent_sequence_length"] + pos
         if rec["sequence_length"] != expected_len:
             raise SystemExit(
