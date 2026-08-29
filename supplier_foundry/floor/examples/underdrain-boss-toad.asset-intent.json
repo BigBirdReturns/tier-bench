@@ -1,0 +1,361 @@
+{
+  "format": "axm-asset-intent/1",
+  "intentId": "assetint1_12cf4b03595960f5f057e4a0fdcf606d26c82bda2bd5015bd21c91fe4849ba88",
+  "authority": "human_owned",
+  "profile": "3d_creature",
+  "name": "UNDERDRAIN Crown toad boss",
+  "purpose": "A large fungal amphibian boss with readable attacks, weak points, locomotion, and sewer-world material identity.",
+  "references": [
+    {
+      "id": "reference.underdrain.enemy-sheet",
+      "kind": "image",
+      "sha256": "3c83989db0c4797832c1b8a69a7c3b80bffaf0443af8dd28837839422b880bd3",
+      "rights": "owned",
+      "role": "shape_parts_actions"
+    },
+    {
+      "id": "reference.underdrain.world-keyart",
+      "kind": "image",
+      "sha256": "4350f51fb198f3c3a710d437d7fd783a1d8b7e0ff77b2a73f1a3d1e074f3378e",
+      "rights": "owned",
+      "role": "style_lighting"
+    }
+  ],
+  "style": {
+    "familyId": "style.underdrain.fungal-amphibian-v1",
+    "shapeLanguage": [
+      "low_amphibian_mass",
+      "overgrown_back",
+      "readable_throat",
+      "root_bound_limbs",
+      "wet_asymmetry"
+    ],
+    "palette": [
+      "sewer_olive",
+      "mold_umber",
+      "spore_amber",
+      "wound_coral",
+      "root_black"
+    ],
+    "materialLanguage": [
+      "wet_skin",
+      "keratin",
+      "root_fiber",
+      "mushroom_cap",
+      "spore_emission"
+    ],
+    "forbidden": [
+      "thick_black_outline",
+      "cute_mascot",
+      "random_armor",
+      "unreadable_surface_noise"
+    ],
+    "scaleReferenceMm": 4100
+  },
+  "gameplay": {
+    "semanticParts": [
+      {
+        "id": "part.body",
+        "role": "root_body",
+        "required": true
+      },
+      {
+        "id": "part.jaw",
+        "role": "attack_and_expression",
+        "required": true
+      },
+      {
+        "id": "part.tongue",
+        "role": "attack",
+        "required": true
+      },
+      {
+        "id": "part.eye_left",
+        "role": "aim_and_damage",
+        "required": true
+      },
+      {
+        "id": "part.eye_right",
+        "role": "aim_and_damage",
+        "required": true
+      },
+      {
+        "id": "part.forelimbs",
+        "role": "locomotion_and_attack",
+        "required": true
+      },
+      {
+        "id": "part.hindlimbs",
+        "role": "locomotion_and_leap",
+        "required": true
+      },
+      {
+        "id": "part.back_growths",
+        "role": "destructible_silhouette",
+        "required": true
+      },
+      {
+        "id": "part.throat_weakpoint",
+        "role": "weakpoint",
+        "required": true
+      }
+    ],
+    "sockets": [
+      {
+        "id": "socket.mouth",
+        "partId": "part.jaw",
+        "kind": "attack"
+      },
+      {
+        "id": "socket.tongue_tip",
+        "partId": "part.tongue",
+        "kind": "attack"
+      },
+      {
+        "id": "socket.throat_vfx",
+        "partId": "part.throat_weakpoint",
+        "kind": "vfx"
+      },
+      {
+        "id": "socket.spore_left",
+        "partId": "part.back_growths",
+        "kind": "vfx"
+      },
+      {
+        "id": "socket.spore_right",
+        "partId": "part.back_growths",
+        "kind": "vfx"
+      },
+      {
+        "id": "socket.audio",
+        "partId": "part.body",
+        "kind": "audio"
+      }
+    ],
+    "interactions": [
+      {
+        "id": "interaction.bite",
+        "verb": "enemy_attack",
+        "partId": "part.jaw",
+        "socketIds": [
+          "socket.mouth"
+        ],
+        "authority": "game_law_external"
+      },
+      {
+        "id": "interaction.tongue_lash",
+        "verb": "enemy_attack",
+        "partId": "part.tongue",
+        "socketIds": [
+          "socket.tongue_tip"
+        ],
+        "authority": "game_law_external"
+      },
+      {
+        "id": "interaction.throat_break",
+        "verb": "damage_weakpoint",
+        "partId": "part.throat_weakpoint",
+        "socketIds": [
+          "socket.throat_vfx"
+        ],
+        "authority": "game_law_external"
+      },
+      {
+        "id": "interaction.growth_break",
+        "verb": "damage_part",
+        "partId": "part.back_growths",
+        "socketIds": [
+          "socket.spore_left",
+          "socket.spore_right"
+        ],
+        "authority": "game_law_external"
+      }
+    ],
+    "stateMachine": {
+      "states": [
+        "dormant",
+        "active",
+        "telegraph",
+        "attacking",
+        "staggered",
+        "weakpoint_open",
+        "defeated"
+      ],
+      "transitions": [
+        {
+          "from": "dormant",
+          "to": "active",
+          "verb": "encounter_start",
+          "authority": "game_law_external"
+        },
+        {
+          "from": "active",
+          "to": "telegraph",
+          "verb": "select_attack",
+          "authority": "game_law_external"
+        },
+        {
+          "from": "telegraph",
+          "to": "attacking",
+          "verb": "commit_attack",
+          "authority": "game_law_external"
+        },
+        {
+          "from": "attacking",
+          "to": "active",
+          "verb": "recover",
+          "authority": "game_law_external"
+        },
+        {
+          "from": "active",
+          "to": "staggered",
+          "verb": "stagger_threshold",
+          "authority": "game_law_external"
+        },
+        {
+          "from": "staggered",
+          "to": "weakpoint_open",
+          "verb": "open_weakpoint",
+          "authority": "game_law_external"
+        },
+        {
+          "from": "weakpoint_open",
+          "to": "defeated",
+          "verb": "health_zero",
+          "authority": "game_law_external"
+        }
+      ]
+    },
+    "requiredAnimations": [
+      "idle",
+      "walk",
+      "turn",
+      "leap",
+      "land",
+      "bite",
+      "tongue_lash",
+      "spore_burst",
+      "stagger",
+      "weakpoint_open",
+      "defeat"
+    ],
+    "requiredColliders": [
+      "body_hurt",
+      "jaw_hit",
+      "tongue_hit",
+      "limb_hurt",
+      "throat_weakpoint",
+      "arena_push"
+    ],
+    "requiredRig": {
+      "root": "root",
+      "minimumJoints": 38,
+      "maximumJoints": 96,
+      "rootMotion": "external_game_law",
+      "retargetProfile": "axm-creature-amphibian-v1"
+    }
+  },
+  "budgets": [
+    {
+      "platform": "quest_low",
+      "limits": {
+        "maxTriangles": 55000,
+        "maxVertices": 60000,
+        "maxMaterials": 4,
+        "maxTextureBytes": 67108864,
+        "maxDrawCalls": 5,
+        "maxSkinnedMeshes": 2,
+        "maxJoints": 96,
+        "maxColliderHulls": 18,
+        "maxAnimationBytes": 12582912
+      }
+    },
+    {
+      "platform": "desktop_standard",
+      "limits": {
+        "maxTriangles": 120000,
+        "maxVertices": 130000,
+        "maxMaterials": 6,
+        "maxTextureBytes": 201326592,
+        "maxDrawCalls": 7,
+        "maxSkinnedMeshes": 3,
+        "maxJoints": 128,
+        "maxColliderHulls": 24,
+        "maxAnimationBytes": 33554432
+      }
+    }
+  ],
+  "acceptance": {
+    "requiredGates": [
+      "identity",
+      "structure",
+      "geometry",
+      "topology",
+      "uv",
+      "materials",
+      "rig",
+      "animation",
+      "physics",
+      "lod",
+      "engine_import",
+      "runtime_budget",
+      "gameplay_semantics",
+      "style_consistency",
+      "readability",
+      "security",
+      "provenance",
+      "license",
+      "human_correction",
+      "substitution",
+      "migration",
+      "human_acceptance"
+    ],
+    "aggregateScore": null,
+    "requiredVenues": [
+      "neutral_viewer",
+      "blender_deformation_corpus",
+      "unity_editmode",
+      "unity_windows_player",
+      "underdrain_boss_arena"
+    ],
+    "requiredHumanRoles": [
+      "character_artist",
+      "animator",
+      "gameplay_designer",
+      "technical_artist"
+    ]
+  },
+  "provenancePolicy": {
+    "retainInputs": true,
+    "retainPrompts": true,
+    "retainSeeds": true,
+    "retainModelWeightsIdentity": true,
+    "retainTransforms": true,
+    "retainHumanEditDeltas": true,
+    "attestation": [
+      "spdx3",
+      "c2pa",
+      "in_toto"
+    ]
+  },
+  "licensePolicy": {
+    "allowed": [
+      "shipping_eligible"
+    ],
+    "review": [
+      "legal_review"
+    ],
+    "prohibited": [
+      "research_only",
+      "blocked",
+      "unknown"
+    ],
+    "worldwideDistributionRequired": true,
+    "creditMustRoundTrip": true
+  },
+  "fallback": {
+    "kind": "governed_low_poly_creature",
+    "reference": "fallback.underdrain.boss-toad-v1",
+    "mustRemainUsableWithoutSupplier": true
+  }
+}

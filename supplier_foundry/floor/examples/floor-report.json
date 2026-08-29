@@ -1,0 +1,214 @@
+{
+  "format": "axm-asset-floor-report/1",
+  "catalogId": "assetfloor1_24acffb97ca6cdf4476314f42c3c3a14b9787ecf2b7315852beb2e54fb94445c",
+  "authority": "measurement_only",
+  "summary": {
+    "gateCount": 22,
+    "capabilityCount": 26,
+    "profileCount": 10,
+    "supplierCount": 44,
+    "intentCount": 2,
+    "openGapCount": 15
+  },
+  "intents": [
+    {
+      "intentId": "assetint1_12cf4b03595960f5f057e4a0fdcf606d26c82bda2bd5015bd21c91fe4849ba88",
+      "name": "UNDERDRAIN Crown toad boss",
+      "profile": "3d_creature"
+    },
+    {
+      "intentId": "assetint1_d723bbc7c6d6d03af1ec9b1392f5f0d1c32ffff432cdd602da91cf3db35b0c88",
+      "name": "UNDERDRAIN pressure-release valve assembly",
+      "profile": "3d_mechanism"
+    }
+  ],
+  "coverage": {
+    "missingProviderCapabilities": [],
+    "singleProviderCapabilities": [
+      "asset.behavior.portable/v1",
+      "asset.publish.package/v1",
+      "asset.security.scan/v1",
+      "asset.validate.format/v1"
+    ],
+    "noQualifiedProviderCapabilities": [
+      "asset.behavior.portable/v1",
+      "asset.benchmark.compare/v1",
+      "asset.code.generate/v1",
+      "asset.human.correct/v1",
+      "asset.intent.author/v1",
+      "asset.lod.generate/v1",
+      "asset.material.translate/v1",
+      "asset.motion.generate/v1",
+      "asset.parts.generate/v1",
+      "asset.physics.generate/v1",
+      "asset.provenance.attest/v1",
+      "asset.publish.package/v1",
+      "asset.reference.prepare/v1",
+      "asset.resolve/v1",
+      "asset.rig.generate/v1",
+      "asset.scene.compose/v1",
+      "asset.security.scan/v1",
+      "asset.shape.generate/v1",
+      "asset.texture.compress/v1",
+      "asset.texture.pbr/v1",
+      "asset.topology.rebuild/v1",
+      "asset.uv.unwrap/v1",
+      "asset.validate.engine/v1",
+      "asset.validate.format/v1",
+      "asset.validate.visual/v1"
+    ],
+    "licenseReviewSuppliers": [
+      "benchmark.3dcodebench",
+      "benchmark.hy3d",
+      "provider.ayon",
+      "provider.blender",
+      "provider.coacd",
+      "provider.cube3d",
+      "provider.cubepart",
+      "provider.hunyuan3d21",
+      "provider.imaginu",
+      "provider.materialmaker",
+      "provider.mdm",
+      "provider.meshanythingv2",
+      "provider.meshflow",
+      "provider.momask",
+      "provider.mvpaint",
+      "provider.nova3d",
+      "provider.paint3d",
+      "provider.partcrafter",
+      "provider.skintokens",
+      "provider.spar3d",
+      "provider.stablefast3d",
+      "provider.trellis2",
+      "provider.unirig",
+      "provider.unity",
+      "provider.vhacd",
+      "provider.xatlas",
+      "research.anigen",
+      "research.anymate"
+    ]
+  },
+  "gaps": [
+    {
+      "id": "gap.asset-resolution",
+      "state": "standardizing",
+      "firstExperiment": "Expose accepted products through OpenAssetIO entity references and resolve engine-specific variants without filesystem assumptions.",
+      "failureDefault": "Use content-addressed local references with explicit version pinning."
+    },
+    {
+      "id": "gap.behavior-portability",
+      "state": "emerging",
+      "firstExperiment": "Represent a valve, door, and weak-point reaction in KHR_interactivity while keeping Arc or host game law external.",
+      "failureDefault": "Store behavior anchors only; host owns behavior."
+    },
+    {
+      "id": "gap.benchmark-fragmentation",
+      "state": "open",
+      "firstExperiment": "Map HY3D-Bench, 3DCodeBench, Anymate, Nova3D-Bench, and engine fixtures into one cell-compatible report model.",
+      "failureDefault": "Keep external benchmark claims separate from local acceptance."
+    },
+    {
+      "id": "gap.distribution-package",
+      "state": "open",
+      "firstExperiment": "Package canonical source, USD composition, glTF delivery, Unity/Godot variants, credits, and receipts behind one entity identity.",
+      "failureDefault": "Publish engine-specific packages as separate variants with no equivalence claim."
+    },
+    {
+      "id": "gap.engine-roundtrip",
+      "state": "open",
+      "firstExperiment": "Round-trip source through Blender, USD, glTF, Unity, and back while preserving identities, materials, clips, sockets, and variants.",
+      "failureDefault": "Declare the path lossy and retain the canonical source separately."
+    },
+    {
+      "id": "gap.fixed-deformation-topology",
+      "state": "open",
+      "firstExperiment": "Retopologize one hero head and one toad limb through multiple suppliers and run the same deformation corpus.",
+      "failureDefault": "No rig or animation promotion."
+    },
+    {
+      "id": "gap.gameplay-readability",
+      "state": "open",
+      "firstExperiment": "Measure mechanism affordance and enemy weak-point recognition at the production camera distance under sewer lighting.",
+      "failureDefault": "Hold the asset for redesign; studio renders do not count."
+    },
+    {
+      "id": "gap.human-correction-delta",
+      "state": "open",
+      "firstExperiment": "Record an artist correction as a semantic delta and prove supplier replacement can reapply or consciously supersede it.",
+      "failureDefault": "The corrected asset becomes a new lineage branch, never a silent overwrite."
+    },
+    {
+      "id": "gap.intent-to-runtime",
+      "state": "open",
+      "firstExperiment": "Compile the UNDERDRAIN valve intent into one glTF and one Unity prefab while preserving named parts, pivots, sockets, and interaction anchors.",
+      "failureDefault": "Keep the generated object at design-reference or candidate tier."
+    },
+    {
+      "id": "gap.motion-gameplay-alignment",
+      "state": "open",
+      "firstExperiment": "Retarget generated locomotion and mechanism clips against authored contact frames, weapon arcs, cancel windows, and root policy.",
+      "failureDefault": "Treat motion as reference only."
+    },
+    {
+      "id": "gap.multi-asset-coherence",
+      "state": "open",
+      "firstExperiment": "Assemble a complete pump-room kit from independent providers and measure scale, snapping, seam, material, and lighting continuity.",
+      "failureDefault": "Do not publish a modular kit."
+    },
+    {
+      "id": "gap.output-rights",
+      "state": "open",
+      "firstExperiment": "Create a provider-by-provider legal packet covering model, weights, training-data terms, output rights, territory, credit, and redistribution.",
+      "failureDefault": "legal_review or research_only; no shipping product."
+    },
+    {
+      "id": "gap.provenance-cross-format",
+      "state": "standardizing",
+      "firstExperiment": "Bind one asset through SPDX 3, C2PA, in-toto, USD metadata, glTF extras, and engine package receipts without identity drift.",
+      "failureDefault": "Retain the AXM sidecar as the authority-neutral custody record."
+    },
+    {
+      "id": "gap.provider-security",
+      "state": "open",
+      "firstExperiment": "Run every adapter without network, shell expansion, writable source tree, or unbounded subprocesses and retain exact environment receipts.",
+      "failureDefault": "Provider remains disabled."
+    },
+    {
+      "id": "gap.public-conformance-corpus",
+      "state": "open",
+      "firstExperiment": "Publish small CC0 fixtures for valve, root gate, modular wall kit, hero, hopper, and boss toad with hidden engine checks.",
+      "failureDefault": "No ecosystem-wide compatibility claim."
+    },
+    {
+      "id": "gap.rig-validity",
+      "state": "emerging",
+      "firstExperiment": "Compare SkinTokens, UniRig, and a Rigify correction path on hopper, shield brute, boss toad, and plumber.",
+      "failureDefault": "Retain only static or manually rigged variants."
+    },
+    {
+      "id": "gap.runtime-cost",
+      "state": "open",
+      "firstExperiment": "Measure draw calls, texture residency, skinning, animation, colliders, load time, and frame cost on 4060 desktop and Quest profile.",
+      "failureDefault": "No engine-qualified status."
+    },
+    {
+      "id": "gap.security-hostile-assets",
+      "state": "open",
+      "firstExperiment": "Build malformed GLB, USD, texture, archive, shader, and behavior-graph fixtures with parser, memory, path, and decompression limits.",
+      "failureDefault": "Sandbox and refuse untrusted products."
+    },
+    {
+      "id": "gap.semantic-part-schema",
+      "state": "emerging",
+      "firstExperiment": "Compare PartCrafter, CubePart, and manual Blender segmentation against the same valve and boss-toad part schema.",
+      "failureDefault": "Preserve the monolithic candidate but forbid behavior binding."
+    },
+    {
+      "id": "gap.style-family-consistency",
+      "state": "open",
+      "firstExperiment": "Generate five mechanism assets from one style packet and compare palette, shape language, scale, texel density, and material response in one sewer scene.",
+      "failureDefault": "Reject family promotion even when individual assets look acceptable."
+    }
+  ],
+  "reportId": "assetfloorreport1_1773d5ea803617827dd56b2a949b4da343839ee053dee20ee005b8b6ba1abaab"
+}

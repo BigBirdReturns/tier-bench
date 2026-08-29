@@ -1,0 +1,160 @@
+{
+  "_note": "SYNTHETIC EXAMPLE. Shape only: paths, host name and digests are placeholders. Emit the real profile for a deployment with `tbrail profile-emit`, keep it in private holder custody, and anchor execution to its digest.",
+  "aggregate_enforcement": {
+    "controllers_required": [
+      "cpu",
+      "memory",
+      "pids"
+    ],
+    "delegated_root": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service",
+    "mechanism": "cgroup-v2 scope via systemd-run --user --scope",
+    "subtree_control": [
+      "cpu",
+      "memory",
+      "pids"
+    ]
+  },
+  "ceilings": {
+    "checkpoint_quota_bytes": 2147483648,
+    "heartbeat_seconds": 10.0,
+    "lease_ttl_seconds": 90.0,
+    "limits": {
+      "address_space_bytes": 4294967296,
+      "cpu_seconds": 900,
+      "file_size_bytes": 1073741824,
+      "max_output_bytes": 4194304,
+      "max_processes": 512,
+      "open_files": 1024,
+      "workspace_bytes": 8589934592
+    },
+    "max_phases": 32,
+    "max_timeout": 1800,
+    "source_quota_bytes": 5368709120
+  },
+  "controller": {
+    "path": "/home/runner/tbrail-v5/tbrail.py",
+    "sha256": "<sha256-of-this-hosts-bytes>"
+  },
+  "guest_root": "/w",
+  "host": "example-runner",
+  "interpreter": {
+    "path": "/usr/bin/python3.14",
+    "sha256": "<sha256-of-this-hosts-bytes>",
+    "version": "3.14.4"
+  },
+  "launch_chain": {
+    "bwrap": {
+      "path": "/usr/bin/bwrap",
+      "sha256": "<sha256-of-this-hosts-bytes>"
+    },
+    "prlimit": {
+      "path": "/usr/bin/prlimit",
+      "sha256": "<sha256-of-this-hosts-bytes>"
+    },
+    "sh": {
+      "path": "/usr/bin/dash",
+      "sha256": "<sha256-of-this-hosts-bytes>"
+    },
+    "systemd-run": {
+      "path": "/usr/bin/systemd-run",
+      "sha256": "<sha256-of-this-hosts-bytes>"
+    }
+  },
+  "operations": [
+    "git.diff_exit_code",
+    "python.py_compile",
+    "python.unittest",
+    "rail.append_byte",
+    "rail.burn_cpu",
+    "rail.burn_disk",
+    "rail.burn_memory",
+    "rail.burn_output",
+    "rail.burn_pids",
+    "rail.credential_probe",
+    "rail.hold_resource",
+    "rail.produce_artifact",
+    "rail.require_artifact",
+    "rail.spawn_descendant",
+    "rail.workspace_shape",
+    "repo.operation"
+  ],
+  "repository_manifests": {
+    "BigBirdReturns/estate": {
+      "operations": [
+        "estate.authority-verify",
+        "estate.render-organ-map"
+      ],
+      "path": "/home/runner/tbrail-v5/repo-ops/BigBirdReturns__estate.json",
+      "sha256": "<sha256-of-this-hosts-bytes>"
+    },
+    "tier-bench/native-rail-fixture": {
+      "operations": [
+        "fixture.digest-drift",
+        "fixture.run-tool"
+      ],
+      "path": "/home/runner/tbrail-v5/repo-ops/tier-bench__native-rail-fixture.json",
+      "sha256": "<sha256-of-this-hosts-bytes>"
+    }
+  },
+  "resource_semantics": {
+    "aggregate": {
+      "cpu_enforced_by": "controller monitor sampling cgroup cpu.stat usage_usec, then cgroup.kill",
+      "cpu_seconds_budget": 900,
+      "mechanism": "cgroup-v2 scope (systemd-run --user --scope)",
+      "memory_max_bytes": 4294967296,
+      "memory_swap_max_bytes": 0,
+      "output_bytes": 4194304,
+      "output_enforced_by": "controller output pump, then cgroup.kill",
+      "tasks_max": 512,
+      "workspace_bytes": 8589934592,
+      "workspace_enforced_by": "controller monitor sampling workspace tree bytes, then cgroup.kill"
+    },
+    "disk": {
+      "checkpoint_quota_bytes": 2147483648,
+      "checkpoint_retention": "latest admitted checkpoint only",
+      "source_quota_bytes": 5368709120,
+      "statement": "source materialization and checkpoint bytes are enforced against these quotas, not merely declared"
+    },
+    "per_process": {
+      "mechanism": "prlimit(1), applied outside the sandbox before exec",
+      "rlimit_as_bytes": 4294967296,
+      "rlimit_cpu_seconds": 900,
+      "rlimit_fsize_bytes": 1073741824,
+      "rlimit_nofile": 1024
+    },
+    "statement": "max_processes is AGGREGATE (cgroup pids.max). address_space_bytes and cpu_seconds are enforced BOTH aggregate (cgroup memory.max / cpu.stat monitor) AND per-process (RLIMIT_AS / RLIMIT_CPU). file_size_bytes and open_files are PER-PROCESS ONLY (RLIMIT_FSIZE / RLIMIT_NOFILE); no aggregate file-size or descriptor budget is claimed. workspace_bytes and max_output_bytes are controller-monitored aggregates. RLIMIT_NPROC is no longer used: it is charged per account, so it could never express a phase ceiling."
+  },
+  "runtimes": {
+    "git": {
+      "path": "/usr/bin/git",
+      "sha256": "<sha256-of-this-hosts-bytes>",
+      "version": "git version 2.53.0"
+    },
+    "python3.11": {
+      "path": "/opt/tbrail/py311/bin/python3.11",
+      "sha256": "<sha256-of-this-hosts-bytes>",
+      "version": "Python 3.11.15"
+    },
+    "python3.14": {
+      "path": "/usr/bin/python3.14",
+      "sha256": "<sha256-of-this-hosts-bytes>",
+      "version": "Python 3.14.4"
+    }
+  },
+  "sandbox": {
+    "engine": "bubblewrap",
+    "path": "/usr/bin/bwrap",
+    "sha256": "<sha256-of-this-hosts-bytes>"
+  },
+  "schema": "tier-bench/native-rail-runner-profile@2",
+  "scripts": {
+    "append_byte.py": "<sha256-of-this-hosts-bytes>",
+    "burn.py": "<sha256-of-this-hosts-bytes>",
+    "credential_probe.py": "<sha256-of-this-hosts-bytes>",
+    "hold_resource.py": "<sha256-of-this-hosts-bytes>",
+    "produce_artifact.py": "<sha256-of-this-hosts-bytes>",
+    "require_artifact.py": "<sha256-of-this-hosts-bytes>",
+    "spawn_descendant.py": "<sha256-of-this-hosts-bytes>",
+    "workspace_shape.py": "<sha256-of-this-hosts-bytes>"
+  }
+}

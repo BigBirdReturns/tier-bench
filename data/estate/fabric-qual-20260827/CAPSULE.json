@@ -1,5 +1,5 @@
 {
-  "schema": "estate/fabric-qual-capsule@3",
+  "schema": "estate/fabric-qual-capsule@4",
   "claim_id": "CLAUDE-5",
   "claim": "The dual-3090 TB3 eGPU pool on OCTO-L01 is a qualified 48 GB fabric in both throughput (per-card pinned) and capacity (layer-split) modes, at the phase results recorded below, measured 2026-08-27.",
   "host": "OCTO-L01",
@@ -170,12 +170,17 @@
   "verification_levels": {
     "CAPSULE_ONLY_VERIFIED": "committed capsule authenticated (fields, manifest, aggregate root, denominator)",
     "RAW_BYTES_VERIFIED": "plus: every raw private evidence file rehashes to its manifest digest",
-    "RAW_SEMANTICS_VERIFIED": "plus: GPU UUIDs, card roles (via UUID-pinned serve ports), effective core locks (via the committed min-rule over the host mode and card cap), ollama manifest digests, per-sample token counts, recomputed decode AND prefill medians for both streams, per-card medians, aggregate/scaling/retention, VRAM and terminal verdict are all reconstructed from raw artifact content and agree with the capsule; the only level that supports CLAUDE-5 repository closure"
+    "RAW_SEMANTICS_VERIFIED": "plus: GPU UUIDs, card roles (via UUID-pinned serve ports), effective core locks (via the min-rule proven on the applier's executable path), the derived model denominator and its ollama manifest digests, the host/claim/class/denominator binding of the device attestation, per-sample token counts, recomputed decode AND prefill medians for both streams, the complete per-card median role denominator, aggregate/scaling/retention, VRAM and terminal verdict are all reconstructed from raw artifact content and agree with the capsule; the only level that supports CLAUDE-5 repository closure"
   },
   "supersedes": {
-    "schema": "estate/fabric-qual-capsule@2",
-    "aggregate_evidence_root_sha256": "e0b0f7851aa94ec8cf19c2402dd47f6e12411889b8bb9025fc1d3123193f87f6",
-    "why": "The @2 capsule asserted GPU UUIDs, core locks and ollama manifest digests that no artifact in the evidence denominator supported, so those identity fields could be rewritten while all three verification levels still passed. @3 adds the contemporaneous pinning/lock/manifest artifacts to the denominator, digest-binds them, and derives every identity, workload and per-card statistic from them. No measured phase result changed."
+    "schema": "estate/fabric-qual-capsule@3",
+    "aggregate_evidence_root_sha256": "7d858295293c1017da02639c8ab7ec33f29ccc1588599b344237cae2066cc2aa",
+    "why": "@3 bound the identity artifacts but still let the CAPSULE choose four denominators. The model set was whatever model_identities listed, so an identity and its manifest could be dropped while the phase that ran that model remained; the core-lock rule was established by substring anchors that a comment or an unreachable line satisfies; the device attestation was accepted on its UUID rows alone, so an attestation belonging to another host supported this one; and the per-card median map was iterated rather than required, so an omitted card role passed. @4 derives all four from authoritative evidence: the model set from the driver dispatch and the phase receipts, the lock rule from the applier's executable path, the attestation from its own host/claim/class/denominator, and the per-card roles from receipt streams through pinned serve ports. No raw evidence file changed, so the aggregate evidence root is carried forward unchanged; no measured phase result changed.",
+    "prior": {
+      "schema": "estate/fabric-qual-capsule@2",
+      "aggregate_evidence_root_sha256": "e0b0f7851aa94ec8cf19c2402dd47f6e12411889b8bb9025fc1d3123193f87f6",
+      "why": "The @2 capsule asserted GPU UUIDs, core locks and ollama manifest digests that no artifact in the evidence denominator supported, so those identity fields could be rewritten while all three verification levels still passed. @3 adds the contemporaneous pinning/lock/manifest artifacts to the denominator, digest-binds them, and derives every identity, workload and per-card statistic from them. No measured phase result changed."
+    }
   },
   "serve_pinning": {
     "11504": "GPU-b84a8323-dbd6-e432-074b-3ce8fadd3326",
@@ -214,11 +219,17 @@
       "identity/gpu-mode.ps1"
     ],
     "core_lock_policy_rule": "min(host_mode.coreLock, cards[uuid].coreLockCapMHz)",
+    "core_lock_rule_derivation": "the rule is established from the EXECUTABLE path of identity/gpu-mode.ps1, not from textual presence: comments, literal string text and the bodies of functions no reachable code calls are erased first, then the applier must contain a base assignment of the mode's coreLock, a strictly-deeper conditional override by the card's coreLockCapMHz guarded by a 'cap below current lock' comparison, and an unbroken path from that value to the nvidia-smi -lgc application.",
     "core_lock_host_mode": "decode",
     "core_lock_host_mode_derivation": "the unique mode in the host calibration whose note declares DEFAULT",
     "ollama_manifest_root": "identity/ollama-manifests",
     "ollama_manifest_path_rule": "'<repo>:<tag>' -> identity/ollama-manifests/<repo>/<tag>",
+    "model_identity_denominator_derivation": "the model set is derived from the authoritative phase denominator - the driver's own bench() dispatch and every phase receipt - and must equal, exactly, the capsule model_identities names, the models named by the capsule phase results, and the bound ollama manifest artifacts. A missing identity and an additional identity both refuse.",
     "attestation": "identity/IDENTITY-ATTESTATION.json",
-    "card_role_derivation": "capsule role -> UUID -> the serve port that pins that UUID in the launcher -> the receipt stream the driver drove on that port. nvidia-smi ordinal indices are never used to assign a card role."
+    "attestation_schema": "estate/fabric-identity-attestation@1",
+    "attestation_class": "POST_RUN_READBACK",
+    "attested_device_denominator": 2,
+    "attestation_binding": "the attestation is admissible only against the host, claim id, schema, class and device denominator declared here. It is SUPPLEMENTAL post-run board-identity evidence and is never represented as per-run telemetry; an attestation naming another host, another class, or another device denominator cannot support this capsule however faithfully its UUID rows match.",
+    "card_role_derivation": "capsule role -> UUID -> the serve port that pins that UUID in the launcher -> the receipt stream the driver drove on that port. nvidia-smi ordinal indices are never used to assign a card role. For a phase that drove two streams, the per-card median keys must equal exactly the set of UUID-bound roles whose pinned serves that phase drove."
   }
 }
