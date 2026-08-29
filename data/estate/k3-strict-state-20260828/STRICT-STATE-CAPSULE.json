@@ -1,5 +1,5 @@
 {
- "schema": "estate/k3-strict-state-capsule@2",
+ "schema": "estate/k3-strict-state-capsule@3",
  "mission": "OCTO-L01-STACK-ADMISSION-CLOSURE-002",
  "claim_id": "CLAUDE-12 strict-state successor",
  "runner": {
@@ -8,18 +8,18 @@
  },
  "code_identity": {
   "repository": "BigBirdReturns/tier-bench",
-  "commit": "8909e6a3b1bdc9bec2e47e1a33915e6150800810",
+  "commit": "c5113cb5fe984b58e153fd19b75685a56d5a7627",
   "rule": "digests are over the canonical LF byte stream, which is what git stores; git_blob_sha1 is git's own object id for that content, so `git rev-parse <commit>:<path>` reproduces it from a fresh clone on any platform",
   "files": {
    "experiments/k3_dspark_speculative/run_strict_block_verify.py": {
-    "canonical_lf_sha256": "57c052ebe813b9ab38dc19aeeb369f8533deedbde152cd83686ce91e012cde26",
-    "git_blob_sha1": "72a21b3ea97d4ee9dba7f318bd302ece1e81ef2a",
-    "canonical_lf_bytes": 22524
+    "canonical_lf_sha256": "e204d6f4c2665965bd9983178818ccc8d0a420e1045b93b5b0818ee79f3a009b",
+    "git_blob_sha1": "fe2d8aa2a14a7ccd0350edd7976ed31d949aec6d",
+    "canonical_lf_bytes": 24122
    },
    "experiments/k3_dspark_speculative/strict_baseline_gate.py": {
-    "canonical_lf_sha256": "1d9a8ca09b4bbe682b3a9060f763dce2bc91ecb40d25b2e5557eb9381338cf1e",
-    "git_blob_sha1": "b5af2af3dfd41743694db501b7067428a993d081",
-    "canonical_lf_bytes": 22879
+    "canonical_lf_sha256": "30beca66b10aece60fffe754a4660fc66145af72425a6ea0495658a8a3efa4ac",
+    "git_blob_sha1": "ed1f42cedee5c38c388412422f4202adb868fe87",
+    "canonical_lf_bytes": 26429
    }
   }
  },
@@ -28,7 +28,10 @@
   "parent_checkpoint_sha256": "7c1a88d8cbac7d8a2c2b86788673ed2707c1a0613be6b56a16fb836f50f5a56c",
   "parent_sequence_length": 139,
   "parent_prefix_sha256": "62b292ddb1967313df3ed1fe9c587ad9cac862e1400b51b23bf031a33185a13b",
-  "parent_prefix_length": 139
+  "parent_prefix_length": 139,
+  "parent_prefix_digest_rule": "sha256 over json.dumps(token_ids, ensure_ascii=False, indent=2, sort_keys=True, allow_nan=False) + '\\n', UTF-8 - the K3 runtime's canonical sequence digest (progress.source.sequence_sha256)",
+  "parent_prefix_binding_class": "RECOVERED_FROM_AUTHENTICATED_PARENT",
+  "parent_prefix_provenance": "recomputed from the parent run's own token ids, matched against the digest the parent sealed, and required to equal the identity the physical run receipt and the baseline manifest carry"
  },
  "baseline": {
   "manifest_label": "../BASELINE-MANIFEST.json",
@@ -96,7 +99,7 @@
   }
  },
  "verdicts": {
-  "schema": "octopodes/k3-strict-canonical-commit-verdict@2",
+  "schema": "octopodes/k3-strict-canonical-commit-verdict@3",
   "STRICT_CANONICAL_COMMIT": "PASS",
   "criteria": {
    "1_token_stream_exact": true,
@@ -125,6 +128,9 @@
   },
   "expected_accepted": 2,
   "expected_accepted_supplied": true,
+  "parent_prefix_sha256": "62b292ddb1967313df3ed1fe9c587ad9cac862e1400b51b23bf031a33185a13b",
+  "parent_prefix_supplied": true,
+  "receipt_parent_prefix_sha256": "62b292ddb1967313df3ed1fe9c587ad9cac862e1400b51b23bf031a33185a13b",
   "comparison_policy": {
    "layers": 93,
    "expected_tensor_keys": {
@@ -160,15 +166,15 @@
  },
  "private_evidence": {
   "artifact_count": 192,
-  "total_bytes": 1328602636,
+  "total_bytes": 1328604152,
   "manifest": {
    "STRICT-VERIFY-RECEIPT.json": {
-    "sha256": "6a8ab10704495a16c4ebbb2f05d213e79553f31ccfa09a10fbd5d0d3c0fc8a97",
-    "bytes": 2113
+    "sha256": "febe3e3f1e337be40c0e419d0ef2a6439122e5152dd5a0c36f650246a6f16266",
+    "bytes": 3143
    },
    "STRICT-ADJUDICATION.json": {
-    "sha256": "db148707857fdbba0cac4faa3bd1b738a20f4feb8be72ee2935d2d9876eaf685",
-    "bytes": 1790
+    "sha256": "4c06a73edbd1ea53df91e4c11e0b2ecf9cfaa6451a0818796bfd39bd93b81a47",
+    "bytes": 2276
    },
    "per-position-logits.pt": {
     "sha256": "a59f87cf5132c19fd9fee716b03cd3d37da81d6498464afacc77442aa0359c91",
@@ -932,7 +938,7 @@
    }
   }
  },
- "aggregate_private_evidence_root_sha256": "743445ce88508bf7352066cae457e0644e3ca39bdf153c8aae6e2145f2c10a7e",
+ "aggregate_private_evidence_root_sha256": "7f3369ee5977d324ee14628dff5e14ce9e26cae5d7b156f4fb4b22ceea5fa19e",
  "aggregate_root_rule": "sha256 over one line per private artifact in sorted label order: '<label><SP><sha256><LF>'",
  "private_custody_boundary": "Per-position K3 state tensors, sequential baselines, and the raw run artifacts remain in the operator's private estate tree on OCTO-L01, off-repository (they are model-derived state of a 1.5 TB checkpoint). This capsule commits their digests, the allowlisted comparison results, and the aggregate root. PRIVATE_EVIDENCE_VERIFIED reopens them on the custody host.",
  "claims": [
@@ -945,7 +951,8 @@
   "no claim of logit bit-equality; the stateless finalize matmul differs at ~1e-5 and is reported separately, never as part of the state gate",
   "no claim that chunk-derived (FAST_CHUNK_EXPERIMENTAL) state is canonical",
   "no claim about other prefixes, models, drafters, or hosts",
-  "no CLAUDE-10 registered item was consumed"
+  "no CLAUDE-10 registered item was consumed",
+  "no claim that the runner EMITTED its parent-prefix identity at run time: this physical run predates prefix binding, so the identity was recovered afterwards by recomputing it from the token bytes of the authenticated parent the receipt names, and is recorded under binding class RECOVERED_FROM_AUTHENTICATED_PARENT. A run under the current runner emits it before the traversal begins"
  ],
  "verifier": "data/estate/k3-strict-state-20260828/verify_strict_state_capsule.py"
 }

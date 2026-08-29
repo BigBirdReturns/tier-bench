@@ -7,7 +7,7 @@ output is bound in the committed capsule
 `data/estate/k3-strict-state-20260828/STRICT-STATE-CAPSULE.json`, whose
 aggregate private-evidence root is:
 
-    743445ce88508bf7352066cae457e0644e3ca39bdf153c8aae6e2145f2c10a7e
+    7f3369ee5977d324ee14628dff5e14ce9e26cae5d7b156f4fb4b22ceea5fa19e
 
 Sealed sequential-baseline manifest aggregate root (pinned by the gate with
 `--expect-baseline-root`; a substituted baseline is refused):
@@ -40,6 +40,30 @@ unconditionally true and left no record of whether a denominator had been
 supplied, so a committed capsule could not distinguish a gated PASS from an
 ungated one. The gate now refuses to run without it, checks it against the
 manifest's own denominator, and serialises it into the verdict and the capsule.
+
+The **parent prefix identity** is required the same way, and for the same
+reason. While it was optional, the runner invoked the gate without it, so
+criterion 5's prefix check was skipped entirely: a run conducted from a
+different prefix was indistinguishable from one conducted from the baseline's.
+It is now recomputed from the parent run's own token ids under the K3 runtime's
+canonical sequence-digest rule and required to equal the digest the parent
+sealed — so a prefix of the right *length* whose token bytes differ refuses
+before any state is compared. One identity must appear at six coordinates: the
+physical run receipt (top level and checkpoint bindings), the baseline
+manifest, the gate invocation, the adjudication verdict, the capsule, and the
+capsule verifier's reconstruction. The verifier takes the digest from the
+retained receipt, never from the capsule — a value the capsule supplies about
+itself attributes nothing.
+
+The 2026-08-28 physical run predates prefix binding and emitted no prefix
+identity, so its retained receipt carries one **recovered** on 2026-08-29 by
+recomputing it from the token bytes of the authenticated parent the receipt
+names. That is recorded as binding class
+`RECOVERED_FROM_AUTHENTICATED_PARENT`, is named in the capsule's non-claims,
+and can never read as a run-time emission; a run under the current runner emits
+`EMITTED_BY_RUNNER` before the traversal begins. Recovering it moved the
+private-evidence root from `743445ce…` to `7f3369ee…`. **No K3 traversal was
+rerun and no state tensor changed.**
 
 ## Headline (capsule-cited)
 
