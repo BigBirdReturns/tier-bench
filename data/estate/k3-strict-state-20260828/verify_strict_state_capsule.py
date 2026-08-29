@@ -32,6 +32,14 @@ Zero-network. Three levels, each strictly stronger:
       refuses. This level does not read the precomputed verdict as evidence -
       it reproduces it.
 
+      PARENT PREFIX ATTRIBUTION: the digest the gate is held to is taken from
+      the PHYSICAL RUN's retained receipt, never from the capsule - a value the
+      capsule supplies about itself attributes nothing. Receipt, baseline
+      manifest, capsule, gate invocation and recomputed verdict must all name
+      the same prefix, and where the parent run is reachable the identity is
+      re-derived from the parent's own token bytes so a same-length prefix with
+      different tokens cannot pass.
+
 Exit 0 = verified at the requested level; 1 = any check failed.
 """
 
@@ -57,6 +65,11 @@ REQUIRED = [
 ]
 
 GATE_RELPATH = "experiments/k3_dspark_speculative/strict_baseline_gate.py"
+
+# How the physical run's receipt came to carry its parent-prefix identity.
+# Mirrors strict_checkpoint.PREFIX_BINDING_CLASSES; the capsule verifier must
+# stay readable without importing the runner package at the capsule-only level.
+PREFIX_BINDING_CLASSES = ("EMITTED_BY_RUNNER", "RECOVERED_FROM_AUTHENTICATED_PARENT")
 
 
 class VerificationFailure(Exception):
@@ -146,8 +159,26 @@ def verify_capsule(capsule: dict, repo_root: Path | None = None) -> None:
     for field in REQUIRED:
         if field not in capsule:
             refuse(f"capsule missing required field {field!r}")
-    if capsule["schema"] != "estate/k3-strict-state-capsule@2":
+    if capsule["schema"] != "estate/k3-strict-state-capsule@3":
         refuse(f"unexpected schema {capsule['schema']!r}")
+
+    identity = capsule["model_identity"]
+    for key in ("parent_prefix_sha256", "parent_prefix_length",
+                "parent_prefix_digest_rule", "parent_prefix_binding_class"):
+        if not identity.get(key):
+            refuse(f"model identity carries no {key!r}: the run's parent prefix "
+                   "must be an explicit coordinate, not an assumption")
+    if len(identity["parent_prefix_sha256"]) != 64:
+        refuse("parent prefix identity is not a sha256 digest")
+    if identity["parent_prefix_binding_class"] not in PREFIX_BINDING_CLASSES:
+        refuse(f"parent prefix binding class "
+               f"{identity['parent_prefix_binding_class']!r} is not one of "
+               f"{list(PREFIX_BINDING_CLASSES)}")
+    if identity["parent_prefix_binding_class"] == "RECOVERED_FROM_AUTHENTICATED_PARENT" \
+            and not any("RECOVERED_FROM_AUTHENTICATED_PARENT" in c
+                        for c in capsule["non_claims"]):
+        refuse("a recovered parent-prefix binding must be named in the "
+               "capsule's non-claims, not presented as a run-time emission")
 
     verify_code_identity(capsule, repo_root or REPO_ROOT)
 
@@ -216,6 +247,15 @@ def verify_capsule(capsule: dict, repo_root: Path | None = None) -> None:
                    f"but the capsule claims accepted length {accepted}")
         if capsule["baseline"].get("accepted_position_denominator") != accepted:
             refuse("the baseline manifest does not cover the claimed accepted boundary")
+        # a PASS may not come from an unattributed invocation either
+        if not verdicts.get("parent_prefix_supplied"):
+            refuse("PASS claimed without a parent prefix identity")
+        if verdicts.get("parent_prefix_sha256") != identity["parent_prefix_sha256"]:
+            refuse("the adjudicated parent prefix is not the capsule's parent prefix")
+        if verdicts.get("receipt_parent_prefix_sha256") != identity[
+                "parent_prefix_sha256"]:
+            refuse("the physical run receipt's parent prefix, as recorded in the "
+                   "verdict, is not the capsule's parent prefix")
 
     econ = capsule["economics"]
     if econ.get("verification_only_chunk_speedup") == econ.get(
@@ -291,6 +331,34 @@ def verify_private_evidence(capsule: dict, root_dir: Path,
     if receipt.get("committed_tokens") != capsule["proposal"]["committed_tokens"]:
         refuse("semantic: run receipt committed tokens disagree with the capsule")
 
+    # PARENT PREFIX ATTRIBUTION. The digest the gate is held to comes from the
+    # PHYSICAL RUN's own receipt, never from the capsule: a value the capsule
+    # supplies about itself attributes nothing. The capsule, the receipt and the
+    # baseline manifest must then all name the same prefix.
+    try:
+        run_prefix = gate.receipt_prefix_identity(receipt)
+    except ValueError as exc:
+        refuse(f"semantic: {exc}")
+    if not run_prefix:
+        refuse("semantic: the retained run receipt carries no parent prefix "
+               "identity, so the physical run cannot be attributed to the "
+               "prefix the capsule and baseline claim")
+    if run_prefix != capsule["model_identity"]["parent_prefix_sha256"]:
+        refuse("semantic: run receipt parent prefix disagrees with the capsule")
+    bindings = receipt.get("checkpoint_bindings") or {}
+    if bindings and bindings.get("prefix_length") != capsule["model_identity"][
+            "parent_prefix_length"]:
+        refuse("semantic: run receipt parent prefix length disagrees with the capsule")
+    if receipt.get("parent_prefix_digest_rule") and \
+            receipt["parent_prefix_digest_rule"] != capsule["model_identity"][
+                "parent_prefix_digest_rule"]:
+        refuse("semantic: run receipt parent prefix digest rule disagrees with "
+               "the capsule")
+    if receipt.get("parent_prefix_binding_class") != capsule["model_identity"][
+            "parent_prefix_binding_class"]:
+        refuse("semantic: run receipt parent prefix binding class disagrees with "
+               "the capsule")
+
     # the baseline manifest is authenticated against the root the capsule pins
     manifest_path = (root_dir / capsule["baseline"]["manifest_label"]).resolve()
     try:
@@ -306,6 +374,31 @@ def verify_private_evidence(capsule: dict, root_dir: Path,
                 claimed["sequence_length"] != entry["sequence_length"] or \
                 claimed["generation"] != entry["generation"]:
             refuse(f"semantic: baseline position {pos} disagrees with the capsule")
+    if manifest.get("parent_prefix_sha256") != run_prefix:
+        refuse("semantic: baseline manifest parent prefix disagrees with the "
+               "prefix the physical run receipt carries")
+
+    # When the parent run itself is reachable on this host the prefix identity
+    # is re-derived from its token BYTES, so a prefix of the right length whose
+    # tokens differ cannot survive. Off the custody host this coordinate is
+    # simply unavailable; the four bound coordinates above still hold.
+    parent_dir = Path(receipt.get("parent_run_dir", ""))
+    parent_progress = parent_dir / "progress.json"
+    if parent_progress.is_file():
+        progress = json.loads(parent_progress.read_text(encoding="utf-8-sig"))
+        if progress.get("checkpoint_sha256") != receipt.get("parent_checkpoint_sha256"):
+            refuse("semantic: the named parent run is not the parent this receipt "
+                   "was produced from")
+        try:
+            derived = gate.SC.authenticated_parent_prefix(progress)
+        except gate.SC.UnauthenticatedParentPrefix as exc:
+            refuse(f"semantic: parent prefix bytes do not authenticate: {exc}")
+        if derived["sha256"] != run_prefix:
+            refuse(f"semantic: parent prefix re-derived from the parent's own "
+                   f"tokens is {derived['sha256']}, not the claimed {run_prefix}")
+        if derived["length"] != capsule["model_identity"]["parent_prefix_length"]:
+            refuse("semantic: re-derived parent prefix length disagrees with the "
+                   "capsule")
 
     # THE recomputation: loads all 93 layer states per position, both
     # checkpoints, the per-position logits, and reruns the strict comparison
@@ -323,7 +416,9 @@ def verify_private_evidence(capsule: dict, root_dir: Path,
         accepted=receipt["accepted_length"],
         committed=receipt["committed_tokens"],
         expected_accepted=expected_accepted,
-        parent_prefix_sha256=capsule["model_identity"].get("parent_prefix_sha256"),
+        # both coordinates come from the physical run's retained receipt
+        parent_prefix_sha256=run_prefix,
+        receipt_parent_prefix_sha256=run_prefix,
     )
 
     if recomputed["failures"]:
@@ -343,6 +438,10 @@ def verify_private_evidence(capsule: dict, root_dir: Path,
     if recomputed["expected_accepted"] != expected_accepted or \
             not recomputed["expected_accepted_supplied"]:
         refuse("recomputation was not gated on the capsule's denominator")
+    if not recomputed.get("parent_prefix_supplied") or \
+            recomputed.get("parent_prefix_sha256") != run_prefix or \
+            recomputed.get("receipt_parent_prefix_sha256") != run_prefix:
+        refuse("recomputation was not attributed to the physical run's parent prefix")
     if recomputed["comparison_policy"] != capsule["verdicts"]["comparison_policy"]:
         refuse("the committed gate implements a different comparison policy "
                "than the capsule records")

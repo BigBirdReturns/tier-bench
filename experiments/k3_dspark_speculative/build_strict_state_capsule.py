@@ -20,12 +20,15 @@ import sys
 from pathlib import Path
 
 if __package__:
-    from .strict_baseline_gate import sha256_file
+    from . import strict_checkpoint as SC
+    from .strict_baseline_gate import receipt_prefix_identity, sha256_file
 else:
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-    from k3_dspark_speculative.strict_baseline_gate import sha256_file  # type: ignore
+    from k3_dspark_speculative import strict_checkpoint as SC  # type: ignore
+    from k3_dspark_speculative.strict_baseline_gate import (  # type: ignore
+        receipt_prefix_identity, sha256_file)
 
-CAPSULE_SCHEMA = "estate/k3-strict-state-capsule@2"
+CAPSULE_SCHEMA = "estate/k3-strict-state-capsule@3"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -87,6 +90,30 @@ def main() -> int:
         encoding="utf-8-sig"))
     accepted = int(receipt["accepted_length"])
 
+    # The capsule may not INVENT a parent prefix identity. It is recomputed from
+    # the parent's own token bytes, checked against the digest the parent sealed,
+    # and then required to equal what the physical run receipt and the baseline
+    # manifest already carry. A capsule that would have to supply the value is
+    # refused here rather than published.
+    prefix = SC.authenticated_parent_prefix(progress)
+    run_prefix = receipt_prefix_identity(receipt)
+    if not run_prefix:
+        raise SystemExit(
+            "run receipt carries no parent prefix identity: this run cannot be "
+            "attributed to a prefix, so no capsule may claim one for it")
+    if run_prefix != prefix["sha256"]:
+        raise SystemExit(
+            f"run receipt parent prefix {run_prefix} != the prefix authenticated "
+            f"from the parent run {prefix['sha256']}")
+    if manifest.get("parent_prefix_sha256") != prefix["sha256"]:
+        raise SystemExit(
+            "baseline manifest parent prefix != the authenticated parent prefix")
+    binding_class = receipt.get("parent_prefix_binding_class")
+    if binding_class not in SC.PREFIX_BINDING_CLASSES:
+        raise SystemExit(
+            f"run receipt declares parent prefix binding class {binding_class!r}, "
+            f"which is not one of {list(SC.PREFIX_BINDING_CLASSES)}")
+
     private: dict[str, dict] = {}
 
     def bind(label: str, path: Path) -> None:
@@ -134,8 +161,14 @@ def main() -> int:
             "model_index_sha256": progress["source"]["model_index_sha256"],
             "parent_checkpoint_sha256": progress["checkpoint_sha256"],
             "parent_sequence_length": progress["attention_cache"]["sequence_length"],
-            "parent_prefix_sha256": progress["source"]["sequence_sha256"],
-            "parent_prefix_length": progress["source"]["sequence_length"],
+            "parent_prefix_sha256": prefix["sha256"],
+            "parent_prefix_length": prefix["length"],
+            "parent_prefix_digest_rule": prefix["digest_rule"],
+            "parent_prefix_binding_class": binding_class,
+            "parent_prefix_provenance": (
+                "recomputed from the parent run's own token ids, matched against "
+                "the digest the parent sealed, and required to equal the identity "
+                "the physical run receipt and the baseline manifest carry"),
         },
         "baseline": {
             "manifest_label": "../BASELINE-MANIFEST.json",
@@ -181,6 +214,11 @@ def main() -> int:
             # gated invocation from an ungated one
             "expected_accepted": verdicts["expected_accepted"],
             "expected_accepted_supplied": verdicts["expected_accepted_supplied"],
+            # the prefix the adjudication was ATTRIBUTED to, and the identity the
+            # physical run receipt carried when it was gated
+            "parent_prefix_sha256": verdicts["parent_prefix_sha256"],
+            "parent_prefix_supplied": verdicts["parent_prefix_supplied"],
+            "receipt_parent_prefix_sha256": verdicts["receipt_parent_prefix_sha256"],
             "comparison_policy": verdicts["comparison_policy"],
         },
         "economics": {
@@ -230,6 +268,14 @@ def main() -> int:
         ],
         "verifier": "data/estate/k3-strict-state-20260828/verify_strict_state_capsule.py",
     }
+    if binding_class == SC.PREFIX_BINDING_RECOVERED:
+        capsule["non_claims"].append(
+            "no claim that the runner EMITTED its parent-prefix identity at run "
+            "time: this physical run predates prefix binding, so the identity was "
+            "recovered afterwards by recomputing it from the token bytes of the "
+            "authenticated parent the receipt names, and is recorded under binding "
+            "class RECOVERED_FROM_AUTHENTICATED_PARENT. A run under the current "
+            "runner emits it before the traversal begins")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     with args.out.open("w", encoding="utf-8", newline="\n") as f:
         json.dump(capsule, f, indent=1, ensure_ascii=True)

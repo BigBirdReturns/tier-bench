@@ -51,6 +51,47 @@ def committed() -> dict:
     return json.loads(CAPSULE.read_text(encoding="utf-8"))
 
 
+def synthetic_manifest(capsule: dict, gate, **overrides) -> dict:
+    """A baseline manifest that satisfies the committed gate's own loader.
+
+    Only JSON structure is exercised - no tensor is read - so a witness can
+    reach the identity checks that sit between manifest authentication and the
+    physical recomputation."""
+    accepted = capsule["proposal"]["accepted_length"]
+    identity = capsule["model_identity"]
+    manifest = {
+        "schema": gate.MANIFEST_SCHEMA,
+        "model_index_sha256": identity["model_index_sha256"],
+        "parent_checkpoint_sha256": identity["parent_checkpoint_sha256"],
+        "parent_sequence_length": identity["parent_sequence_length"],
+        "parent_prefix_sha256": identity["parent_prefix_sha256"],
+        "parent_prefix_length": identity["parent_prefix_length"],
+        "accepted_position_denominator": accepted,
+        "comparison_policy": gate.comparison_policy(),
+        "positions": {
+            str(p): {
+                "generation": capsule["baseline"]["positions"][str(p)]["generation"],
+                "sequence_length": capsule["baseline"]["positions"][str(p)][
+                    "sequence_length"],
+                "appended_token": capsule["baseline"]["positions"][str(p)][
+                    "appended_token"],
+                "layer_cache_dir": f"/absent/baseline/position-{p:02d}",
+                "layer_files": {f"layer-{i:03d}.pt": f"{i:064x}" for i in range(93)},
+                "checkpoint_file": f"/absent/baseline/position-{p:02d}/checkpoint.pt",
+                "checkpoint_sha256": "1" * 64,
+                "final_hidden_root": "2" * 64,
+                "attn_res_bank_root": "3" * 64,
+                "logits_file": f"/absent/baseline/position-{p:02d}/logits.pt",
+                "logits_sha256": "4" * 64,
+            }
+            for p in range(1, accepted + 1)
+        },
+    }
+    manifest.update(overrides)
+    manifest["aggregate_root_sha256"] = gate.manifest_aggregate_root(manifest)
+    return manifest
+
+
 class CapsuleLevel(unittest.TestCase):
     def refuse(self, mutate, fragment: str):
         capsule = committed()
@@ -115,6 +156,40 @@ class CapsuleLevel(unittest.TestCase):
 
     # ---- code identity ----
 
+    # ---- parent prefix attribution ----
+
+    def test_missing_parent_prefix_coordinate_refused(self):
+        for key in ("parent_prefix_sha256", "parent_prefix_length",
+                    "parent_prefix_digest_rule", "parent_prefix_binding_class"):
+            with self.subTest(key=key):
+                self.refuse(lambda c, k=key: c["model_identity"].pop(k),
+                            "must be an explicit coordinate")
+
+    def test_unknown_prefix_binding_class_refused(self):
+        self.refuse(lambda c: c["model_identity"].update(
+            parent_prefix_binding_class="ASSUMED"), "is not one of")
+
+    def test_recovered_binding_must_be_named_in_the_non_claims(self):
+        def hide(c):
+            c["model_identity"]["parent_prefix_binding_class"] = \
+                "RECOVERED_FROM_AUTHENTICATED_PARENT"
+            c["non_claims"] = [n for n in c["non_claims"]
+                               if "RECOVERED_FROM_AUTHENTICATED_PARENT" not in n]
+        self.refuse(hide, "must be named in the")
+
+    def test_pass_without_a_parent_prefix_refused(self):
+        self.refuse(lambda c: c["verdicts"].update(parent_prefix_supplied=False),
+                    "without a parent prefix identity")
+
+    def test_pass_adjudicated_on_another_prefix_refused(self):
+        self.refuse(lambda c: c["verdicts"].update(parent_prefix_sha256="0" * 64),
+                    "is not the capsule's parent prefix")
+
+    def test_pass_whose_receipt_named_another_prefix_refused(self):
+        self.refuse(
+            lambda c: c["verdicts"].update(receipt_parent_prefix_sha256="0" * 64),
+            "as recorded in the verdict")
+
     def test_code_identity_must_bind_the_gate(self):
         self.refuse(
             lambda c: c["code_identity"]["files"].pop(V.GATE_RELPATH),
@@ -166,14 +241,24 @@ class StubFixtureIsCapped(unittest.TestCase):
     """A private root of correctly-digested stub bytes reaches the BYTES level
     and never the EVIDENCE level."""
 
-    def build(self, tmp: Path, mutate_receipt=None, mutate_verdicts=None):
+    def build(self, tmp: Path, mutate_receipt=None, mutate_verdicts=None,
+              baseline_manifest=None, mutate_capsule=None):
         capsule = committed()
         accepted = capsule["proposal"]["accepted_length"]
+        identity = capsule["model_identity"]
         receipt = {
             "mode": capsule["runner"]["mode"],
-            "model_index_sha256": capsule["model_identity"]["model_index_sha256"],
-            "parent_checkpoint_sha256": capsule["model_identity"][
-                "parent_checkpoint_sha256"],
+            "model_index_sha256": identity["model_index_sha256"],
+            "parent_checkpoint_sha256": identity["parent_checkpoint_sha256"],
+            # the PHYSICAL RUN's own parent-prefix identity: the gate is held to
+            # this, never to the digest the capsule states about itself
+            "parent_prefix_sha256": identity["parent_prefix_sha256"],
+            "parent_prefix_length": identity["parent_prefix_length"],
+            "parent_prefix_digest_rule": identity["parent_prefix_digest_rule"],
+            "parent_prefix_binding_class": identity["parent_prefix_binding_class"],
+            # a parent that is absent here, so the optional re-derivation from
+            # the parent's token bytes is simply unavailable in this fixture
+            "parent_run_dir": str(tmp / "absent-parent-run"),
             "proposed": capsule["proposal"]["proposed_tokens"],
             "accepted_length": accepted,
             "committed_tokens": capsule["proposal"]["committed_tokens"],
@@ -202,6 +287,8 @@ class StubFixtureIsCapped(unittest.TestCase):
             mutate_receipt(receipt)
         if mutate_verdicts:
             mutate_verdicts(verdicts)
+        if mutate_capsule:
+            mutate_capsule(capsule)
 
         manifest = {}
 
@@ -214,7 +301,13 @@ class StubFixtureIsCapped(unittest.TestCase):
         write("STRICT-VERIFY-RECEIPT.json", json.dumps(receipt).encode("utf-8"))
         write("STRICT-ADJUDICATION.json", json.dumps(verdicts).encode("utf-8"))
         write("per-position-logits.pt", b"stub")
-        write(capsule["baseline"]["manifest_label"], b"stub-manifest")
+        if baseline_manifest is None:
+            write(capsule["baseline"]["manifest_label"], b"stub-manifest")
+        else:
+            write(capsule["baseline"]["manifest_label"],
+                  json.dumps(baseline_manifest).encode("utf-8"))
+            capsule["baseline"]["manifest_aggregate_root_sha256"] = \
+                baseline_manifest["aggregate_root_sha256"]
         for p in range(1, accepted + 1):
             for i in range(93):
                 write(f"strict-state/position-{p:02d}/layer-{i:03d}.pt",
@@ -291,6 +384,94 @@ class StubFixtureIsCapped(unittest.TestCase):
                 committed_tokens=[1, 2, 3]))
             self.assert_refused_before_recomputation(capsule, tmp, "committed tokens")
 
+    # ---- parent prefix attribution, against the retained receipt ----
+
+    def test_receipt_without_a_parent_prefix_refused(self):
+        """The exact review witness: the physical run's receipt carries no
+        prefix identity, so nothing attributes the run to the prefix the
+        capsule and baseline claim."""
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            capsule = self.build(tmp, mutate_receipt=lambda r: [
+                r.pop("parent_prefix_sha256"), r.pop("parent_prefix_digest_rule"),
+                r.pop("parent_prefix_binding_class")])
+            self.assert_refused_before_recomputation(
+                capsule, tmp, "carries no parent prefix identity")
+
+    def test_correct_checkpoint_identity_with_wrong_parent_prefix_refused(self):
+        """The parent CACHED STATE identity is correct; only the prefix the run
+        was conducted from is substituted."""
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            capsule = self.build(tmp, mutate_receipt=lambda r: r.update(
+                parent_prefix_sha256="0" * 64))
+            self.assertEqual(capsule["model_identity"]["parent_checkpoint_sha256"],
+                             json.loads((tmp / "STRICT-VERIFY-RECEIPT.json")
+                                        .read_text(encoding="utf-8"))
+                             ["parent_checkpoint_sha256"])
+            self.assert_refused_before_recomputation(
+                capsule, tmp, "run receipt parent prefix disagrees with the capsule")
+
+    def test_receipt_disagreeing_with_its_own_bindings_refused(self):
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            capsule = self.build(tmp, mutate_receipt=lambda r: r.update(
+                checkpoint_bindings={"prefix_sha256": "0" * 64}))
+            self.assert_refused_before_recomputation(
+                capsule, tmp, "disagrees with itself about the parent prefix")
+
+    def test_receipt_prefix_length_disagreement_refused(self):
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            capsule = self.build(tmp, mutate_receipt=lambda r: r.update(
+                checkpoint_bindings={"prefix_length": 1}))
+            self.assert_refused_before_recomputation(
+                capsule, tmp, "parent prefix length disagrees")
+
+    def test_receipt_digest_rule_disagreement_refused(self):
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            capsule = self.build(tmp, mutate_receipt=lambda r: r.update(
+                parent_prefix_digest_rule="sha256 of the comma-joined token ids"))
+            self.assert_refused_before_recomputation(
+                capsule, tmp, "parent prefix digest rule disagrees")
+
+    def test_receipt_binding_class_disagreement_refused(self):
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            capsule = self.build(tmp, mutate_receipt=lambda r: r.update(
+                parent_prefix_binding_class="EMITTED_BY_RUNNER"
+                if committed()["model_identity"]["parent_prefix_binding_class"]
+                != "EMITTED_BY_RUNNER" else "RECOVERED_FROM_AUTHENTICATED_PARENT"))
+            self.assert_refused_before_recomputation(
+                capsule, tmp, "parent prefix binding class disagrees")
+
+    def test_substituted_baseline_prefix_refused(self):
+        """A baseline manifest that authenticates against its own pinned root
+        but names a different parent prefix than the physical run."""
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            gate = V.load_gate(REPO)
+            manifest = synthetic_manifest(committed(), gate,
+                                          parent_prefix_sha256="0" * 64)
+            capsule = self.build(tmp, baseline_manifest=manifest)
+            self.assert_refused_before_recomputation(
+                capsule, tmp, "baseline manifest parent prefix disagrees")
+
+    def test_authentic_baseline_prefix_passes_the_attribution_checks(self):
+        """Control: with the same prefix everywhere, attribution is satisfied
+        and the fixture only fails later, on its stub tensors."""
+        with tempfile.TemporaryDirectory() as t:
+            tmp = Path(t)
+            gate = V.load_gate(REPO)
+            capsule = self.build(
+                tmp, baseline_manifest=synthetic_manifest(committed(), gate))
+            V.verify_capsule(capsule, REPO)
+            V.verify_private_bytes(capsule, tmp)
+            with self.assertRaises(Exception) as ctx:
+                V.verify_private_evidence(capsule, tmp, REPO)
+            self.assertNotIn("parent prefix", str(ctx.exception))
+
     def test_missing_private_artifact_refused(self):
         with tempfile.TemporaryDirectory() as t:
             tmp = Path(t)
@@ -331,6 +512,12 @@ class RealRecomputation(unittest.TestCase):
         self.assertEqual(recomputed["selected_checkpoint"],
                          capsule["proposal"]["accepted_length"])
         self.assertTrue(recomputed["expected_accepted_supplied"])
+        # the recomputation is ATTRIBUTED to the physical run's parent prefix
+        self.assertTrue(recomputed["parent_prefix_supplied"])
+        self.assertEqual(recomputed["parent_prefix_sha256"],
+                         capsule["model_identity"]["parent_prefix_sha256"])
+        self.assertEqual(recomputed["receipt_parent_prefix_sha256"],
+                         capsule["model_identity"]["parent_prefix_sha256"])
         for p in range(1, capsule["proposal"]["accepted_length"] + 1):
             row = recomputed["positions"][p]
             self.assertEqual(row["layers_exact"], 93)
@@ -344,6 +531,32 @@ class RealRecomputation(unittest.TestCase):
         with self.assertRaises(V.VerificationFailure) as ctx:
             V.verify_private_evidence(capsule, CUSTODY_ROOT, REPO)
         self.assertIn("failures", str(ctx.exception))
+
+    def test_substituted_capsule_prefix_fails_the_recomputation(self):
+        """The capsule cannot supply a prefix the physical run does not carry."""
+        capsule = committed()
+        capsule["model_identity"]["parent_prefix_sha256"] = "0" * 64
+        with self.assertRaises(V.VerificationFailure) as ctx:
+            V.verify_private_evidence(capsule, CUSTODY_ROOT, REPO)
+        self.assertIn("run receipt parent prefix disagrees with the capsule",
+                      str(ctx.exception))
+
+    def test_parent_prefix_is_re_derived_from_the_parent_token_bytes(self):
+        """On the custody host the parent run is reachable, so the identity is
+        recomputed from its tokens rather than read from any record."""
+        capsule = committed()
+        receipt = json.loads(
+            (CUSTODY_ROOT / "STRICT-VERIFY-RECEIPT.json").read_text(encoding="utf-8"))
+        parent = Path(receipt["parent_run_dir"]) / "progress.json"
+        if not parent.is_file():
+            self.skipTest("parent run absent on this host")
+        gate = V.load_gate(REPO)
+        progress = json.loads(parent.read_text(encoding="utf-8-sig"))
+        derived = gate.SC.authenticated_parent_prefix(progress)
+        self.assertEqual(derived["sha256"],
+                         capsule["model_identity"]["parent_prefix_sha256"])
+        self.assertEqual(derived["length"],
+                         capsule["model_identity"]["parent_prefix_length"])
 
 
 if __name__ == "__main__":

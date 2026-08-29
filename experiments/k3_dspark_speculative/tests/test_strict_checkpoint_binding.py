@@ -151,6 +151,91 @@ class CheckpointBindingWitnesses(unittest.TestCase):
             SC.validate_resume(p, bindings())
         self.assertEqual(ctx.exception.binding, "schema")
 
+    def test_changed_prefix_digest_rule(self):
+        """The rule the prefix digest was computed under is itself a binding:
+        two digests are only comparable if they were computed the same way."""
+        b = bindings()
+        p = payload(b)
+        p["bindings"]["prefix_digest_rule"] = "sha256 of the comma-joined token ids"
+        with self.assertRaises(SC.IncompatibleCheckpoint) as ctx:
+            SC.validate_resume(p, bindings())
+        self.assertEqual(ctx.exception.binding, "prefix_digest_rule")
+
+    def test_bindings_refuse_an_absent_prefix_identity(self):
+        for bad in (None, "", "not-a-digest", "a" * 63):
+            with self.assertRaises(ValueError) as ctx:
+                bindings(prefix_sha256=bad)
+            self.assertIn("parent prefix identity", str(ctx.exception))
+
+
+class ParentPrefixAuthenticationWitnesses(unittest.TestCase):
+    """The parent prefix identity is RECOMPUTED from the parent's own token
+    bytes and matched against the digest the parent sealed. A field copied out
+    of the parent record would prove nothing about the bytes."""
+
+    TOKENS = [163587, 2778, 6244, 878, 14062, 1, 1798]
+
+    def progress(self, **overrides):
+        tokens = overrides.pop("tokens", self.TOKENS)
+        source = {
+            "parent_token_ids": list(tokens[:-1]),
+            "token_id": tokens[-1],
+            "sequence_length": len(tokens),
+            "sequence_sha256": SC.canonical_prefix_sha256(tokens),
+        }
+        source.update(overrides)
+        return {"source": source}
+
+    def refuse(self, progress, fragment):
+        with self.assertRaises(SC.UnauthenticatedParentPrefix) as ctx:
+            SC.authenticated_parent_prefix(progress)
+        self.assertIn(fragment, str(ctx.exception))
+
+    def test_authentic_parent_prefix_recovers_its_identity(self):
+        got = SC.authenticated_parent_prefix(self.progress())
+        self.assertEqual(got["tokens"], self.TOKENS)
+        self.assertEqual(got["length"], len(self.TOKENS))
+        self.assertEqual(got["sha256"], SC.canonical_prefix_sha256(self.TOKENS))
+        self.assertEqual(got["digest_rule"], SC.PREFIX_DIGEST_RULE)
+
+    def test_same_length_different_token_bytes_refuses(self):
+        """The witness the review named: a prefix of the right LENGTH whose
+        tokens differ must not authenticate."""
+        swapped = list(self.TOKENS)
+        swapped[3] = 999
+        p = self.progress()
+        p["source"]["parent_token_ids"] = swapped[:-1]
+        self.refuse(p, "but the parent sealed")
+
+    def test_declared_length_disagreeing_with_the_tokens_refuses(self):
+        p = self.progress()
+        p["source"]["sequence_length"] = len(self.TOKENS) + 1
+        self.refuse(p, "sequence_length")
+
+    def test_missing_sealed_digest_refuses(self):
+        p = self.progress()
+        p["source"].pop("sequence_sha256")
+        self.refuse(p, "the parent sealed None")
+
+    def test_missing_source_record_refuses(self):
+        self.refuse({}, "no source record")
+
+    def test_no_prefix_tokens_refuses(self):
+        self.refuse({"source": {"sequence_length": 0}}, "names no prefix tokens")
+
+    def test_canonical_rule_is_the_k3_runtime_sequence_digest(self):
+        """The digest must be the K3 runtime's own canonical sequence digest -
+        any other rule makes the run receipt and the baseline manifest
+        incomparable, which is how a substitution stays invisible."""
+        import hashlib
+        import json as _json
+        body = _json.dumps(self.TOKENS, ensure_ascii=False, indent=2,
+                           sort_keys=True, allow_nan=False) + "\n"
+        self.assertEqual(SC.canonical_prefix_sha256(self.TOKENS),
+                         hashlib.sha256(body.encode("utf-8")).hexdigest())
+        self.assertNotEqual(SC.canonical_prefix_sha256(self.TOKENS),
+                            SC.tokens_sha256(self.TOKENS))
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

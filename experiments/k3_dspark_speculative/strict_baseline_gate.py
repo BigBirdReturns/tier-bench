@@ -37,6 +37,17 @@ Two properties the @1 gate did not have:
     checked against the manifest's own denominator, and serialised into the
     verdict.
 
+And the property @2 did not have:
+
+  - The PARENT PREFIX IDENTITY is required, recomputed, and cross-bound. While
+    it was optional, an omitted digest left criterion 5 true, so a run
+    conducted from a different prefix was indistinguishable from one conducted
+    from the baseline's. It is now recomputed from the parent's own token bytes
+    (and required to equal the digest the parent sealed), the physical run's
+    receipt must carry the same identity, and both are serialised into the
+    verdict. A digest supplied only by the object making the claim attributes
+    nothing, so the capsule's copy is never what the gate is invoked with.
+
 CLI re-adjudication over existing artifacts (no K3 execution):
 
   python -m k3_dspark_speculative.strict_baseline_gate \
@@ -59,9 +70,11 @@ import torch
 
 if __package__:
     from . import contracts as C
+    from . import strict_checkpoint as SC
 else:  # direct script execution
     sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
     from k3_dspark_speculative import contracts as C  # type: ignore
+    from k3_dspark_speculative import strict_checkpoint as SC  # type: ignore
 
 MANIFEST_SCHEMA = "octopodes/k3-sequential-baseline-manifest@2"
 EXPECTED_TENSOR_KEYS = {"KDA": {"conv_q", "conv_k", "conv_v", "recurrent"},
@@ -186,6 +199,21 @@ def load_manifest(path: Path, expected_root: str | None) -> dict[str, Any]:
     return manifest
 
 
+def receipt_prefix_identity(receipt: dict[str, Any]) -> str | None:
+    """The parent-prefix identity the PHYSICAL RUN's own receipt carries.
+
+    Both places a receipt may record it must agree; a receipt that carries
+    neither returns None, which the gate refuses."""
+    bindings = receipt.get("checkpoint_bindings") or {}
+    top = receipt.get("parent_prefix_sha256")
+    bound = bindings.get("prefix_sha256")
+    if top and bound and top != bound:
+        raise ValueError(
+            f"run receipt disagrees with itself about the parent prefix: "
+            f"{top} (receipt) vs {bound} (checkpoint bindings)")
+    return top or bound
+
+
 def _fail(verdicts: dict, reason: str, divergence: dict | None = None) -> None:
     verdicts["failures"].append(reason)
     if divergence is not None and verdicts["first_divergence"] is None:
@@ -221,9 +249,10 @@ def gate(
     committed: list[int],
     expected_accepted: int | None,
     parent_prefix_sha256: str | None = None,
+    receipt_parent_prefix_sha256: str | None = None,
 ) -> dict[str, Any]:
     verdicts: dict[str, Any] = {
-        "schema": "octopodes/k3-strict-canonical-commit-verdict@2",
+        "schema": "octopodes/k3-strict-canonical-commit-verdict@3",
         "criteria": {},
         "failures": [],
         "first_divergence": None,
@@ -233,6 +262,12 @@ def gate(
         # a verdict can no longer be read without knowing whether one was given
         "expected_accepted": expected_accepted,
         "expected_accepted_supplied": expected_accepted is not None,
+        # the parent-prefix identity this adjudication was attributed to is part
+        # of the record: a verdict can no longer be read without knowing which
+        # prefix the physical run was conducted from, or whether one was given
+        "parent_prefix_sha256": parent_prefix_sha256,
+        "parent_prefix_supplied": bool(parent_prefix_sha256),
+        "receipt_parent_prefix_sha256": receipt_parent_prefix_sha256,
         "comparison_policy": comparison_policy(),
     }
 
@@ -247,10 +282,27 @@ def gate(
     if manifest.get("parent_sequence_length") != parent_sequence_length:
         identity_ok = False
         _fail(verdicts, "manifest parent sequence length != run parent")
-    if parent_prefix_sha256 is not None and \
-            manifest.get("parent_prefix_sha256") != parent_prefix_sha256:
+
+    # Parent-prefix identity is MANDATORY. While it was optional, an omitted
+    # digest left criterion 5 true and a run conducted from a different prefix
+    # was indistinguishable from one conducted from the baseline's. The physical
+    # run's own receipt must carry the same identity: a digest supplied only by
+    # the object making the claim attributes nothing.
+    if not parent_prefix_sha256:
+        identity_ok = False
+        _fail(verdicts, "no parent prefix identity supplied: a PASS may not be "
+                        "emitted for a run whose prefix cannot be attributed")
+    elif manifest.get("parent_prefix_sha256") != parent_prefix_sha256:
         identity_ok = False
         _fail(verdicts, "manifest parent prefix digest != run parent prefix digest")
+    if not receipt_parent_prefix_sha256:
+        identity_ok = False
+        _fail(verdicts, "the physical run receipt carries no parent prefix "
+                        "identity, so the run cannot be attributed to this prefix")
+    elif receipt_parent_prefix_sha256 != parent_prefix_sha256:
+        identity_ok = False
+        _fail(verdicts, "run receipt parent prefix digest != adjudicated parent "
+                        "prefix digest")
 
     # criterion 2: accepted boundary. A PASS-capable adjudication REQUIRES a
     # denominator - without one, boundary_ok was unconditionally true and the
@@ -466,6 +518,15 @@ def main() -> int:
         (args.run_dir / "STRICT-VERIFY-RECEIPT.json").read_text(encoding="utf-8"))
     progress = json.loads(
         (args.parent_run_dir / "progress.json").read_text(encoding="utf-8-sig"))
+    # the prefix identity is RECOMPUTED from the parent's own token bytes and
+    # required to equal the digest the parent sealed - never copied out of a
+    # field that a substitution would rewrite along with everything else
+    try:
+        prefix = SC.authenticated_parent_prefix(progress)
+    except SC.UnauthenticatedParentPrefix as exc:
+        print(json.dumps({"STRICT_CANONICAL_COMMIT": "FAIL",
+                          "failures": [f"parent prefix: {exc}"]}, indent=1))
+        return 1
     verdicts = gate(
         state_dir=args.run_dir / "strict-state",
         per_position_logits=args.run_dir / "per-position-logits.pt",
@@ -477,10 +538,13 @@ def main() -> int:
         accepted=receipt["accepted_length"],
         committed=receipt["committed_tokens"],
         expected_accepted=args.expected_accepted,
-        parent_prefix_sha256=progress["source"].get("sequence_sha256"),
+        parent_prefix_sha256=prefix["sha256"],
+        receipt_parent_prefix_sha256=receipt_prefix_identity(receipt),
     )
     verdicts["baseline_manifest_root"] = manifest["aggregate_root_sha256"]
     verdicts["source_receipt"] = "STRICT-VERIFY-RECEIPT.json"
+    verdicts["parent_prefix_length"] = prefix["length"]
+    verdicts["parent_prefix_digest_rule"] = prefix["digest_rule"]
     out = args.out or (args.run_dir / "STRICT-ADJUDICATION.json")
     out.write_text(json.dumps(verdicts, indent=1), encoding="utf-8")
     print(json.dumps({"STRICT_CANONICAL_COMMIT": verdicts["STRICT_CANONICAL_COMMIT"],

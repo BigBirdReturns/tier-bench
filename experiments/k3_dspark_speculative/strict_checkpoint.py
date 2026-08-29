@@ -22,7 +22,25 @@ from typing import Any
 
 from . import contracts as C
 
-CHECKPOINT_SCHEMA = "octopodes/k3-strict-traversal-checkpoint@2"
+CHECKPOINT_SCHEMA = "octopodes/k3-strict-traversal-checkpoint@3"
+
+# The parent prefix identity is the K3 RUNTIME's own canonical sequence digest,
+# so a strict run's prefix binding is the very value the parent sealed and the
+# sequential-baseline manifest carries. Any other rule would make the four
+# coordinates (run receipt, baseline manifest, gate invocation, capsule)
+# incomparable, which is exactly how a prefix substitution stays invisible.
+# How a receipt came to carry its parent-prefix identity. A run that emitted it
+# before traversing is the strong form; a pre-binding run whose identity was
+# recovered afterwards from the authenticated parent it names is admissible but
+# is never allowed to look like the strong form.
+PREFIX_BINDING_EMITTED = "EMITTED_BY_RUNNER"
+PREFIX_BINDING_RECOVERED = "RECOVERED_FROM_AUTHENTICATED_PARENT"
+PREFIX_BINDING_CLASSES = (PREFIX_BINDING_EMITTED, PREFIX_BINDING_RECOVERED)
+
+PREFIX_DIGEST_RULE = (
+    "sha256 over json.dumps(token_ids, ensure_ascii=False, indent=2, "
+    "sort_keys=True, allow_nan=False) + '\\n', UTF-8 - the K3 runtime's "
+    "canonical sequence digest (progress.source.sequence_sha256)")
 
 
 def tensor_root(t: Any) -> str:
@@ -31,8 +49,51 @@ def tensor_root(t: Any) -> str:
 
 
 def tokens_sha256(tokens: list[int]) -> str:
+    """Compact digest for the PROPOSAL identity (not the parent prefix)."""
     return hashlib.sha256(
         ",".join(str(int(t)) for t in tokens).encode("ascii")).hexdigest()
+
+
+def canonical_prefix_sha256(tokens: list[int]) -> str:
+    """The K3 runtime's canonical token-sequence digest."""
+    body = json.dumps([int(t) for t in tokens], ensure_ascii=False, indent=2,
+                      sort_keys=True, allow_nan=False) + "\n"
+    return hashlib.sha256(body.encode("utf-8")).hexdigest()
+
+
+class UnauthenticatedParentPrefix(Exception):
+    """The parent prefix could not be reconstructed from the parent's bytes."""
+
+
+def authenticated_parent_prefix(parent_progress: dict[str, Any]) -> dict[str, Any]:
+    """Recover the parent prefix IDENTITY from the parent's own token bytes.
+
+    The digest is recomputed from the parent's token ids and then required to
+    equal the digest the parent itself sealed. A field copied out of the parent
+    record would prove nothing about the bytes; recomputing and matching proves
+    the length, the token content and the seal all agree. A prefix of the right
+    length whose tokens differ therefore refuses here, before any state is
+    compared."""
+    source = parent_progress.get("source")
+    if not isinstance(source, dict):
+        raise UnauthenticatedParentPrefix("parent progress carries no source record")
+    tokens = list(source.get("parent_token_ids") or [])
+    if "token_id" in source:
+        tokens.append(int(source["token_id"]))
+    if not tokens:
+        raise UnauthenticatedParentPrefix("parent progress names no prefix tokens")
+    declared_length = source.get("sequence_length")
+    if declared_length != len(tokens):
+        raise UnauthenticatedParentPrefix(
+            f"parent prefix is {len(tokens)} tokens but the parent declares "
+            f"sequence_length {declared_length!r}")
+    digest = canonical_prefix_sha256(tokens)
+    sealed = source.get("sequence_sha256")
+    if digest != sealed:
+        raise UnauthenticatedParentPrefix(
+            f"parent prefix bytes hash to {digest} but the parent sealed {sealed!r}")
+    return {"tokens": tokens, "length": len(tokens), "sha256": digest,
+            "digest_rule": PREFIX_DIGEST_RULE}
 
 
 def make_bindings(
@@ -47,6 +108,10 @@ def make_bindings(
     proposal_tokens: list[int],
     output_root_id: str,
 ) -> dict[str, Any]:
+    if not isinstance(prefix_sha256, str) or len(prefix_sha256) != 64:
+        raise ValueError(
+            f"prefix_sha256 {prefix_sha256!r} is not a sha256 digest - a strict "
+            "run may not be bound to an absent parent prefix identity")
     return {
         "schema": CHECKPOINT_SCHEMA,
         "runner_sha256": runner_sha256,
@@ -56,6 +121,7 @@ def make_bindings(
         "baseline_root_sha256": baseline_root_sha256,
         "prefix_length": int(prefix_length),
         "prefix_sha256": prefix_sha256,
+        "prefix_digest_rule": PREFIX_DIGEST_RULE,
         "proposal_length": len(proposal_tokens),
         "proposal_sha256": tokens_sha256(proposal_tokens),
         "output_root_id": output_root_id,
@@ -65,7 +131,8 @@ def make_bindings(
 BINDING_FIELDS = [
     "schema", "runner_sha256", "mode", "model_index_sha256",
     "parent_checkpoint_sha256", "baseline_root_sha256", "prefix_length",
-    "prefix_sha256", "proposal_length", "proposal_sha256", "output_root_id",
+    "prefix_sha256", "prefix_digest_rule", "proposal_length", "proposal_sha256",
+    "output_root_id",
 ]
 
 

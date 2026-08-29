@@ -355,6 +355,16 @@ def main() -> int:
     parent_progress = json.loads(
         (args.parent_run_dir / "progress.json").read_text(encoding="utf-8-sig"))
     parent_len = int(parent_progress["source"]["sequence_length"])
+    # The physical run's parent-prefix identity is recomputed from the parent's
+    # own token bytes and required to equal the digest the parent sealed. It is
+    # obtained HERE, before any traversal, so the run receipt itself carries the
+    # prefix the gate and the baseline manifest are held to. A run whose prefix
+    # cannot be authenticated does not proceed.
+    try:
+        parent_prefix = SC.authenticated_parent_prefix(parent_progress)
+    except SC.UnauthenticatedParentPrefix as exc:
+        print(json.dumps({"refused": f"parent prefix identity: {exc}"}))
+        return 1
 
     receipt = {
         "schema": "octopodes/k3-dspark-strict-block-verify@1",
@@ -363,6 +373,14 @@ def main() -> int:
         "parent_run_dir": str(args.parent_run_dir),
         "parent_sequence_length": parent_len,
         "parent_checkpoint_sha256": parent_progress.get("checkpoint_sha256"),
+        "parent_prefix_sha256": parent_prefix["sha256"],
+        "parent_prefix_length": parent_prefix["length"],
+        "parent_prefix_digest_rule": parent_prefix["digest_rule"],
+        "parent_prefix_binding_class": SC.PREFIX_BINDING_EMITTED,
+        "parent_prefix_provenance": (
+            "recomputed from the parent run's own token ids and matched against "
+            "the digest the parent sealed (progress.source.sequence_sha256), "
+            "before the traversal began"),
         "parent_pick": parent_pick,
         "model_index_sha256": model_index_sha,
         "proposed": proposed,
@@ -373,15 +391,14 @@ def main() -> int:
             "CPU state round-trip between positions); layer-outer order is "
             "numerically exact vs position-outer."),
     }
-    prefix_tokens = list(parent_progress["source"].get("parent_token_ids", []))
     bindings = SC.make_bindings(
         runner_sha256=core.sha256_file(Path(__file__).resolve()),
         mode=args.mode,
         model_index_sha256=model_index_sha,
         parent_checkpoint_sha256=parent_progress.get("checkpoint_sha256"),
         baseline_root_sha256=(baseline_manifest or {}).get("aggregate_root_sha256"),
-        prefix_length=parent_len,
-        prefix_sha256=SC.tokens_sha256(prefix_tokens),
+        prefix_length=parent_prefix["length"],
+        prefix_sha256=parent_prefix["sha256"],
         proposal_tokens=proposed,
         output_root_id=str(out),
     )
@@ -418,8 +435,12 @@ def main() -> int:
     logits = chunk_mode.per_position_logits(hidden, bank, weight_map, config)
     verify_wall = round(time.perf_counter() - t0, 1)
 
-    accepted, correction, committed, decisions = chunk_mode.adjudicate(
-        parent_pick, proposed, logits)
+    # the parent's SEALED FINAL STATE judges position 0, so the whole record -
+    # not just its argmax - goes to the shared gate
+    verdict = chunk_mode.adjudicate(parent_final, proposed, logits)
+    accepted = verdict["accepted_length"]
+    correction = verdict["correction_token"]
+    committed = verdict["committed_tokens"]
     tokenizer = AutoTokenizer.from_pretrained(
         str(core.MODEL_ROOT), trust_remote_code=True, local_files_only=True)
     torch.save(logits.detach().to("cpu"),
@@ -428,9 +449,10 @@ def main() -> int:
     receipt.update({
         "accepted_length": accepted,
         "correction_token": correction,
+        "correction_decision": verdict["correction_decision"],
         "correction_text": tokenizer.decode([correction], skip_special_tokens=False),
         "committed_tokens": committed,
-        "per_position": decisions,
+        "per_position": verdict["per_position"],
         "verify_wall_s": verify_wall,
         "per_layer_wall_s_sum": round(sum(telemetry["per_layer_wall_s"]), 1),
         "target_weight_bytes_read": sum(telemetry.get("per_layer_load_bytes", [])),
@@ -460,6 +482,10 @@ def main() -> int:
             accepted=accepted,
             committed=committed,
             expected_accepted=args.expected_accepted,
+            # the prefix the PHYSICAL run was conducted from, and the identity
+            # this run's own receipt carries - the gate refuses without both
+            parent_prefix_sha256=parent_prefix["sha256"],
+            receipt_parent_prefix_sha256=gate_mod.receipt_prefix_identity(receipt),
         )
         verdicts["baseline_manifest_root"] = baseline_manifest["aggregate_root_sha256"]
         (out / "STRICT-ADJUDICATION.json").write_text(
