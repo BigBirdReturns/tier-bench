@@ -86,9 +86,21 @@ Exact changed-file denominator of this branch after the 2026-08-28 repair commit
 
 - `docs/agents/QUEUE.md` — rows CLAUDE-5..11 + 13, OP-2/3
 - `docs/agents/reviews/claude_estate_ladder_review_20260827.md` — this brief
-- `data/estate/fabric-qual-20260827/CAPSULE.json` — committed CLAUDE-5 evidence capsule (@2: adds per-phase execution record + verification levels)
-- `data/estate/fabric-qual-20260827/verify_capsule.py` — deterministic verifier with three levels (CAPSULE_ONLY / RAW_BYTES / RAW_SEMANTICS; CLAUDE-5 closure supported only at RAW_SEMANTICS_VERIFIED, where raw receipt contents must reconstruct every decision-critical claim)
-- `tests/test_fabric_capsule_verifier.py` — hostile witnesses: internally-valid, correctly-rehashed raw evidence that contradicts the capsule must refuse (11 tests)
+- `data/estate/fabric-qual-20260827/CAPSULE.json` — committed CLAUDE-5 evidence capsule (@3: adds the identity evidence denominator, serve pinning table, phase→serve binding, and per-card role keys; aggregate root `7d858295…` over 14 raw artifacts)
+- `data/estate/fabric-qual-20260827/verify_capsule.py` — deterministic verifier with three levels (CAPSULE_ONLY / RAW_BYTES / RAW_SEMANTICS; CLAUDE-5 closure supported only at RAW_SEMANTICS_VERIFIED, where raw artifact contents must reconstruct every decision-critical claim — GPU UUIDs, card roles via UUID-pinned serve ports, effective core locks under the committed min-rule, ollama manifest digests, every per-sample token count, and recomputed decode *and* prefill medians for both streams)
+- `tests/test_fabric_capsule_verifier.py` — hostile witnesses: internally-valid, correctly-rehashed raw evidence that contradicts the capsule must refuse (29 tests)
+
+**Identity binding, stated honestly.** The @2 capsule asserted GPU UUIDs, core locks and
+ollama manifest digests that nothing in its evidence denominator supported — those fields
+could be rewritten and all three levels still passed. @3 closes that by adding the
+*contemporaneous* artifacts to the denominator: the serve launcher's port→UUID pinning
+table, the host mode + card registry + the applier that implements
+`min(mode.coreLock, card.coreLockCapMHz)`, the three ollama manifest files themselves, and
+a post-run device attestation. Card roles are now derived
+role → UUID → pinned serve port → receipt stream, never from an nvidia-smi ordinal.
+What this does **not** establish is named in `claim_boundary.non_claims`: the phase
+receipts carry no per-run device telemetry, so the binding is policy-level. Closing that
+needs a future run that emits per-run UUID and clock telemetry, not a rewrite of this one.
 
 An earlier revision of this branch also changed `tier_runner/kimi3_common.py` and
 `tests/test_kimi3_observatory.py` (blanket `.lock` partial-suffix rule). That behavior
