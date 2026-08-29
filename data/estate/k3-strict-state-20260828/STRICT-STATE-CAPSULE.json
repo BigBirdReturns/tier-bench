@@ -8,7 +8,7 @@
  },
  "code_identity": {
   "repository": "BigBirdReturns/tier-bench",
-  "commit": null,
+  "commit": "8909e6a3b1bdc9bec2e47e1a33915e6150800810",
   "rule": "digests are over the canonical LF byte stream, which is what git stores; git_blob_sha1 is git's own object id for that content, so `git rev-parse <commit>:<path>` reproduces it from a fresh clone on any platform",
   "files": {
    "experiments/k3_dspark_speculative/run_strict_block_verify.py": {

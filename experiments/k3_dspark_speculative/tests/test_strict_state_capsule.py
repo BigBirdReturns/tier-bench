@@ -140,6 +140,15 @@ class CapsuleLevel(unittest.TestCase):
                 V.verify_capsule(committed(), fake)
             self.assertIn("canonical LF sha256", str(ctx.exception))
 
+    def test_missing_commit_refused(self):
+        self.refuse(lambda c: c["code_identity"].update(commit=None),
+                    "records no commit")
+
+    @unittest.skipUnless((REPO / ".git").exists(), "not a git checkout")
+    def test_commit_that_does_not_carry_the_blobs_refused(self):
+        self.refuse(lambda c: c["code_identity"].update(commit="0" * 40),
+                    "is not present at commit")
+
     def test_line_ending_conversion_does_not_change_identity(self):
         """CRLF and LF checkouts of the same content must bind identically -
         that is the whole point of using the canonical LF byte stream."""

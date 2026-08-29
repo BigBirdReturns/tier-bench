@@ -41,6 +41,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -111,6 +112,34 @@ def verify_code_identity(capsule: dict, repo_root: Path) -> None:
                    f"{claim.get('git_blob_sha1')}")
         if len(data) != claim.get("canonical_lf_bytes"):
             refuse(f"code identity: {rel} canonical byte count disagrees")
+    verify_code_commit(ci, repo_root)
+
+
+def verify_code_commit(ci: dict, repo_root: Path) -> None:
+    """When this is a git checkout, the recorded commit must actually carry the
+    recorded blobs. Outside a checkout (tarball, vendored copy) the content-
+    addressed digests above still stand on their own."""
+    commit = ci.get("commit")
+    if not commit:
+        refuse("code identity records no commit")
+    if not (repo_root / ".git").exists():
+        print(f"  note: {repo_root} is not a git checkout - code identity rests on "
+              f"the canonical LF digests and blob ids, not on commit {commit[:12]}")
+        return
+    for rel, claim in sorted(ci["files"].items()):
+        try:
+            got = subprocess.run(
+                ["git", "-C", str(repo_root), "rev-parse", f"{commit}:{rel}"],
+                capture_output=True, text=True, check=False).stdout.strip()
+        except OSError:
+            print("  note: git unavailable - commit binding not checked")
+            return
+        # git echoes the unresolved revision back on failure instead of erroring
+        if len(got) != 40 or not all(ch in "0123456789abcdef" for ch in got):
+            refuse(f"code identity: {rel} is not present at commit {commit[:12]}")
+        if got != claim["git_blob_sha1"]:
+            refuse(f"code identity: {rel} at commit {commit[:12]} is blob {got}, "
+                   f"not the recorded {claim['git_blob_sha1']}")
 
 
 def verify_capsule(capsule: dict, repo_root: Path | None = None) -> None:
