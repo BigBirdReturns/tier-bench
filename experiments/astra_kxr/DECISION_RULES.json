@@ -1,0 +1,103 @@
+{
+  "schema": "tier-bench/astra-kxr-decision-rules@1",
+  "preregistration": "experiments/astra_kxr/PREREGISTRATION.md",
+  "stage": 1,
+  "frozen_at": "2026-09-02",
+  "terminals": [
+    "TOKEN_SERIAL_CONSISTENT",
+    "RECURRENT_DEPTH_CONSISTENT",
+    "PARALLEL_WIDTH_CONSISTENT",
+    "ROUTED_OR_ENSEMBLE_CONSISTENT",
+    "HIDDEN_SERIAL_OR_RECURRENT_INDISTINGUISHABLE",
+    "INCONCLUSIVE"
+  ],
+  "authority": {
+    "sentinel": "provisional_terminal_only",
+    "confirmatory": "terminal_promotion",
+    "single_latency_curve_may_carry_architecture_claim": false,
+    "minimum_task_families_for_promotion": 2,
+    "governing_order": "waterline_before_geometry"
+  },
+  "admission_gates": {
+    "input_token_parity": "provider-reported input token counts identical across matched cells; byte equality insufficient",
+    "output_length": "fixed across all cells",
+    "sampling_parameters": "identical across matched cells",
+    "retries": "prohibited inside measurement cells",
+    "concurrency": 1,
+    "route_stability": "response-side model string and backend fingerprint stable within a block; violating blocks invalidated",
+    "invalidated_cells": "excluded before analysis and reported in the invalidated-cell ledger"
+  },
+  "campaigns": {
+    "launch_sentinel": {
+      "k_levels": [1, 8, 32],
+      "r_levels": [1, 4, 16],
+      "effort_rungs": 2,
+      "replicates_per_cell": 4,
+      "subject_calls": 72,
+      "reserved_control_calls": 8,
+      "request_ceiling": 80,
+      "baselines_consume_subject_budget": false
+    },
+    "confirmatory": {
+      "required_for": "any non-INCONCLUSIVE terminal promotion",
+      "adds": ["seeds", "task_families", "time_blocks"]
+    }
+  },
+  "analyses": {
+    "kxr_lattice": {
+      "estimator": "blocked mixed-effects model over latency and accuracy with block random effects; K, R, E fixed effects",
+      "stage_2_numeric": "pending"
+    },
+    "effort_staircase": {
+      "endpoints": ["accuracy", "ttft", "discrete_plateaus"],
+      "stage_2_numeric": "pending"
+    },
+    "token_compute_residual": {
+      "definition": "latency unexplained after observed input, cached, output, and reasoning tokens",
+      "stage_2_numeric": "pending"
+    },
+    "continuation_reuse": {
+      "primary_endpoint": "accuracy",
+      "secondary_endpoint": "latency",
+      "matched_on": "cached token counts and byte-identical reconstructed transcript",
+      "rationale": "KV reuse is universal; only an accuracy delta at matched cache indicates state carried beyond text"
+    }
+  },
+  "conditions": {
+    "reporting_truthfulness": {
+      "rule": "RECURRENT_DEPTH_CONSISTENT requires residual growth with R at approximately constant reported reasoning tokens",
+      "on_violation": "strongest admissible terminal for R-sensitive results is HIDDEN_SERIAL_OR_RECURRENT_INDISTINGUISHABLE",
+      "violation_signs": ["field absent", "quantized", "summarized", "internally inconsistent across matched cells"]
+    },
+    "parallel_width_promotion": {
+      "requires": [
+        "R-sensitive residual surface",
+        "K-flat below estimated capacity knee",
+        "stable route identity",
+        "preserved accuracy below knee",
+        "reproduction across >= 2 task families",
+        "confirmatory campaign"
+      ]
+    }
+  },
+  "classifier": {
+    "features": "normalized shape invariants only: signs, normalized slopes, knee locations, monotonicity classes",
+    "absolute_timings_admissible": false,
+    "calibration_controls": [
+      "LOTUS 3B looped (positive: recurrent latent)",
+      "LoopCoder-v2 7B parallel-loop (positive: parallel latent; non-monotonic loop-count control)",
+      "conventional transformer (negative control)"
+    ],
+    "frozen": "at stage 2, before any subject call",
+    "out_of_distribution_return": "INCONCLUSIVE permitted; forcing the subject into a known family prohibited"
+  },
+  "amendment_rules": {
+    "stage_2_may": "fill fields marked stage_2_numeric: pending; freeze generator implementations",
+    "stage_2_may_not": "alter hypotheses, terminals, gates, endpoints, or the two-stage freeze section",
+    "any_other_change": "new preregistration under a new id"
+  },
+  "subject_binding": {
+    "bound_model_identity": null,
+    "rule": "a contract binds only an exact callable identifier, in a separate private manifest, never in this file"
+  }
+}
