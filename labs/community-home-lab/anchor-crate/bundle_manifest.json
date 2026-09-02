@@ -17,9 +17,9 @@
       "sha256": "1341e8735e38c7325ebd6b9396bdd44d6e7ea60f86f8c7a006282eb8fbed9158"
     },
     {
-      "bytes": 3611,
+      "bytes": 3620,
       "path": "labs/community-home-lab/README.md",
-      "sha256": "ac11efc24934751eea0f74989fef5b6d17a5b42afaa1859868dafad157b2025e"
+      "sha256": "322616ac10578ff05ea5ba03147ba18228572cf15deaf058799d9f6089daac41"
     },
     {
       "bytes": 4585,
@@ -147,9 +147,9 @@
       "sha256": "0ba90c8ee787665a6bd278949c6ad0d6923472a9587bb9ec67fa058480d6e28c"
     },
     {
-      "bytes": 3857,
+      "bytes": 3854,
       "path": "labs/community-home-lab/anchor-crate/PHYSICAL_4060_SMOKE.md",
-      "sha256": "bdf79a292dd6bbf57d5c563f32eb8bf60208a96031ff2ae00a832c5311262232"
+      "sha256": "32ca3b9e1980604a852a52c650624aad03bad1a6b35117605bc524c353df60f7"
     },
     {
       "bytes": 24792,
@@ -162,9 +162,9 @@
       "sha256": "6a45e65989453058c0630b4e10d37e53dcb4e8d69b0832ae78b8f27074d5ed58"
     },
     {
-      "bytes": 20764,
+      "bytes": 20775,
       "path": "tests/test_anchor_crate_physical.py",
-      "sha256": "858cee85ac2dcc71f87e196a5fb01f8afddfb324bdfaaf1a42945a67cd047df7"
+      "sha256": "c3ef9091ffee14d4a40943ef72ef1de3913abe40e1c5b2a3f9bad697eff776cc"
     }
   ],
   "id": "community-home-lab.anchor-crate-bundle-v1",
