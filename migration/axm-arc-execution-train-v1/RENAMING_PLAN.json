@@ -1,0 +1,91 @@
+{
+  "acceptance_gates": [
+    "source export outer digest and internal checksum ledger pass",
+    "all three exact source heads and trees match",
+    "generic core has no ASOIAF lore or canon authority dependency",
+    "ASOIAF adapter remains independently usable from axm-canon/asoiaf",
+    "all retained negative and replay witnesses survive renaming",
+    "public commands, schemas, docs, and paths use Tier Bench vocabulary",
+    "Linux product mechanism reproduces from the renamed destination",
+    "Windows mechanism reproduces in a clean seven-surface product candidate",
+    "old axm-arc branches close only after destination qualification and rollback custody"
+  ],
+  "migration_accepted": false,
+  "module_map": [
+    [
+      "asoiaf-answer-work-order",
+      "work-order"
+    ],
+    [
+      "asoiaf-answer-work-lease",
+      "work-lease"
+    ],
+    [
+      "asoiaf-answer-desk-estate",
+      "work-estate"
+    ],
+    [
+      "asoiaf-answer-desk-worker",
+      "work-worker"
+    ],
+    [
+      "asoiaf-answer-desk-exchange",
+      "work-exchange"
+    ],
+    [
+      "asoiaf-answer-desk-supervisor",
+      "work-supervisor"
+    ],
+    [
+      "asoiaf-answer-desk-transport",
+      "authenticated-work-transport"
+    ],
+    [
+      "asoiaf-answer-desk-transport-operations",
+      "work-transport-operations"
+    ],
+    [
+      "asoiaf-answer-desk-supervised-delivery",
+      "supervised-work-delivery"
+    ],
+    [
+      "asoiaf-answer-desk-transport-enrollment",
+      "work-credential-enrollment"
+    ],
+    [
+      "asoiaf-answer-credential-deployment",
+      "work-credential-deployment"
+    ],
+    [
+      "asoiaf-answer-credential-broker",
+      "work-credential-broker"
+    ],
+    [
+      "asoiaf-answer-credential-provider-host",
+      "work-credential-provider-host"
+    ],
+    [
+      "asoiaf-answer-credential-broker-service",
+      "work-credential-broker-service"
+    ],
+    [
+      "asoiaf-answer-credential-broker-loopback-tls",
+      "work-credential-loopback-tls"
+    ],
+    [
+      "asoiaf-answer-actor-runtime",
+      "actor-runtime"
+    ],
+    [
+      "asoiaf-answer-actor-adapter-host",
+      "actor-adapter-host"
+    ],
+    [
+      "asoiaf-answer-actor-capability-broker",
+      "actor-capability-broker"
+    ]
+  ],
+  "receipt_sha256": "4135bbe1ac0c8740a0e9703e2ba6f31a4c168e172b08c7411645945866d93be6",
+  "rule": "No blind global replacement. Separate generic protocols from the ASOIAF adapter before public API renaming.",
+  "schema": "tier-bench/axm-arc-execution-renaming-plan@1"
+}

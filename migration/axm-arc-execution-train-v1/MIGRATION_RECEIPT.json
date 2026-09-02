@@ -1,0 +1,19 @@
+{
+  "destination_base": "9693cb99694338e72c15d0ffbb87b5a1c5bbf16a",
+  "destination_qualified": false,
+  "destination_repository": "BigBirdReturns/tier-bench",
+  "next_transaction": "extract generic protocols, retain ASOIAF adapter boundary, rename public surfaces, and independently qualify the destination product",
+  "old_home_cleanup_authorized": false,
+  "ownership_map_sha256": "8c7c890800f7809de8ac04c2cf777e3ca48b4cb6a35c6f4e1390ed78accd1f47",
+  "public_api_renamed": false,
+  "receipt_sha256": "675c36c8efcbc04036c040757b417094bec1f844868e5a8262b00be39a601f4a",
+  "renaming_plan_sha256": "4135bbe1ac0c8740a0e9703e2ba6f31a4c168e172b08c7411645945866d93be6",
+  "residue_ledger_sha256": "520a085c55b75c7ee22f5aab08ae1263f0aa3581f15e4721cd81b53f63138341",
+  "schema": "tier-bench/axm-arc-execution-migration-stage-receipt@1",
+  "source_code_imported": false,
+  "source_export_artifact": 9111377925,
+  "source_export_run": 31516794814,
+  "source_export_sha256": "7ba0655985cd8d15eae45d275c23638a937eb00698b77aa4a6651e00d22ed592",
+  "source_heads_sha256": "cef5bfb530fa8c87f6960688e30e114f93742251565def18b1f095bbd1dc0ed3",
+  "state": "SOURCE_CUSTODY_SEALED_DESTINATION_STAGED"
+}
