@@ -4,7 +4,9 @@
 id: CLAUDE-ASTRA-KXR-PREREG-1
 owner: claude
 lane: driver
-state: prereg_stage1_in_reachable_custody
+state: prereg_stage1_superseded_in_campaign_design
+superseded_by: CLAUDE-FRR-ASTRA-PREREG-1 (campaign-design scope only; all other
+  frozen content incorporated by reference and still standing)
 authorized_by: operator
 authorized_at: 2026-09-02
 branch: claude/astra-kxr-prereg-20260902
