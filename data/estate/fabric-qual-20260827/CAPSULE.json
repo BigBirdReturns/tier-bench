@@ -1,0 +1,235 @@
+{
+  "schema": "estate/fabric-qual-capsule@4",
+  "claim_id": "CLAUDE-5",
+  "claim": "The dual-3090 TB3 eGPU pool on OCTO-L01 is a qualified 48 GB fabric in both throughput (per-card pinned) and capacity (layer-split) modes, at the phase results recorded below, measured 2026-08-27.",
+  "host": "OCTO-L01",
+  "date": "2026-08-27",
+  "qualification_mode_denominator": {
+    "modes_total": 4,
+    "modes": [
+      "single-27b-msi",
+      "double-27b-both",
+      "split-35b-a3b-q8",
+      "split-70b-r1"
+    ],
+    "runs_per_mode": 9,
+    "tokens_per_run": 512
+  },
+  "phase_results": {
+    "single-27b-msi": {
+      "model": "qwen3.5:27b",
+      "decode_tok_s_median": 33.8,
+      "prefill_tok_s_median": 104.1,
+      "note": "baseline, one card (MSI, 1200 core-lock cap)"
+    },
+    "double-27b-both": {
+      "model": "qwen3.5:27b",
+      "aggregate_decode_tok_s": 69.4,
+      "per_card_medians": {
+        "msi": 33.3,
+        "dell_b": 36.1
+      },
+      "scaling_x": 2.05,
+      "retention_pct": 98.5,
+      "note": "two pinned instances, one per card; card gap ~8% = the 1410-vs-1200 lock gap"
+    },
+    "split-35b-a3b-q8": {
+      "model": "qwen3.5:35b-a3b-q8_0",
+      "decode_tok_s_median": 51.6,
+      "vram_split_gb": [
+        19.7,
+        17.2
+      ],
+      "note": "39 GB MoE q8 layer-split; capacity mode faster than single-card dense"
+    },
+    "split-70b-r1": {
+      "model": "deepseek-r1:70b",
+      "decode_tok_s_median": 18.1,
+      "prefill_tok_s_median": 156.9,
+      "vram_split_gb": [
+        21.9,
+        21.8
+      ],
+      "note": "43.7 GB of 48 GB in use; ~200 W/card, 61/56 C during run"
+    }
+  },
+  "gpu_identities": [
+    {
+      "role": "fabric-card-msi",
+      "capsule_key": "msi",
+      "uuid": "GPU-b84a8323-dbd6-e432-074b-3ce8fadd3326",
+      "label": "MSI",
+      "board": "NVIDIA GeForce RTX 3090 (TB3 eGPU)",
+      "pci_bus": "04",
+      "core_lock_mhz": 1200,
+      "lock_reason": "cards.json coreLockCapMHz 1200 caps the host default mode's 1410; pending OP-2 repaste",
+      "serve_port": 11504
+    },
+    {
+      "role": "fabric-card-dell-b",
+      "capsule_key": "dell_b",
+      "uuid": "GPU-493239dc-f76e-bbbb-8e68-ffd34a5e7bbc",
+      "label": "Dell-B",
+      "board": "NVIDIA GeForce RTX 3090 (TB3 eGPU)",
+      "pci_bus": "CA",
+      "core_lock_mhz": 1410,
+      "lock_reason": "host default mode 'decode' coreLock 1410, uncapped for this card",
+      "serve_port": 11505
+    }
+  ],
+  "model_identities": [
+    {
+      "name": "qwen3.5:27b",
+      "ollama_manifest_sha256": "7653528ba5cba4dd8e19da24aaddc7f4d0b5ecd93571c0825dfd4137958ec06e",
+      "ollama_manifest_path": "identity/ollama-manifests/qwen3.5/27b"
+    },
+    {
+      "name": "qwen3.5:35b-a3b-q8_0",
+      "ollama_manifest_sha256": "655d273ede3adc056594f511c120d616d92bf4c4d5bcfe580f3cfa29abe8109d",
+      "ollama_manifest_path": "identity/ollama-manifests/qwen3.5/35b-a3b-q8_0"
+    },
+    {
+      "name": "deepseek-r1:70b",
+      "ollama_manifest_sha256": "d37b54d01a76512a5adbaa9da4ee1c00833bf2dfefb0d4cc54351ba529e0f4da",
+      "ollama_manifest_path": "identity/ollama-manifests/deepseek-r1/70b"
+    }
+  ],
+  "summary_receipt_sha256": "93c97e6d2052238e60138bfb5850ed7fe6b9e754a9c54b35c04851b84910cebb",
+  "receipt_manifest_sha256": {
+    "fabric_qual.py": "d67399230d92004d8f7120a6b9f6f3897b6ac54033a4e35ae7ec7f9f0d39849b",
+    "identity/gpu-cards.json": "03d1d8cfd012643e705570624f6554cd55215a227ac09c6ae30d5d0a3aa0c28a",
+    "identity/gpu-host-OCTO-L01.json": "a6872a4be38bbb0adabdb9a8c64e4312e86726a0743b1de91de838481c76e505",
+    "identity/gpu-mode.ps1": "fb145d93e197b193d119e14fbbe0883b9d6e2d6c574d52fe394b4ed199a84161",
+    "identity/IDENTITY-ATTESTATION.json": "7ae06e7c57c28665e1924ab25f8d4b1bc875ed7c2e9ae4a0984201639a1bc742",
+    "identity/launch-fabric-serves.ps1": "adc71f127fc76792f9f4245bf42f0354c47bbe3187b86634921ff27f8f44f8ad",
+    "identity/ollama-manifests/deepseek-r1/70b": "d37b54d01a76512a5adbaa9da4ee1c00833bf2dfefb0d4cc54351ba529e0f4da",
+    "identity/ollama-manifests/qwen3.5/27b": "7653528ba5cba4dd8e19da24aaddc7f4d0b5ecd93571c0825dfd4137958ec06e",
+    "identity/ollama-manifests/qwen3.5/35b-a3b-q8_0": "655d273ede3adc056594f511c120d616d92bf4c4d5bcfe580f3cfa29abe8109d",
+    "QUAL-SUMMARY.json": "93c97e6d2052238e60138bfb5850ed7fe6b9e754a9c54b35c04851b84910cebb",
+    "receipts/double-27b-both.json": "a001deb75974bd84b1c9e2248b608fb9ccaa3bac87877303040561b318937c51",
+    "receipts/single-27b-msi.json": "7bc6a422150d3665f26345f1bc49a97e2e76a4beb6561496b4a081a18cbfc13e",
+    "receipts/split-35b-a3b-q8.json": "efc337c9ad0a46f26aeaf25c2b4dcbfe07c0177c29992e6d76b5c9a2c7a9256f",
+    "receipts/split-70b-r1.json": "6e662be38fcd4a7ce83d7223c51ec8ed294bb731181f2617d0b43fb7ae2041c1"
+  },
+  "aggregate_evidence_root_sha256": "7d858295293c1017da02639c8ab7ec33f29ccc1588599b344237cae2066cc2aa",
+  "aggregate_root_rule": "sha256 over the UTF-8 text formed by one line per manifest entry, '<relative-name><SPACE><sha256><LF>', entries sorted lexicographically by name",
+  "claim_boundary": {
+    "claims": [
+      "the four phase results above, on this host, these two GPU UUIDs, at the stated effective core locks, with the stated ollama model manifests",
+      "throughput mode: 2.05x aggregate scaling with 98.5% per-card retention",
+      "capacity mode: dense 70B (43.7 GB resident) decodes at 18.1 tok/s across the TB3 boundary",
+      "the per-card medians are bound to card roles through UUID-pinned serve ports, not through nvidia-smi ordinals"
+    ],
+    "non_claims": [
+      "no cross-host or four-card (w01) claim - that is CLAUDE-11, blocked on OP-3",
+      "no thermal-envelope qualification of the MSI card beyond the 1200 cap - OP-2 remains open",
+      "no model-quality or benchmark-accuracy claim for the served models",
+      "no batching/concurrency claim beyond the measured one-request-per-instance pattern",
+      "no K3/observatory claim - this capsule is fabric plumbing only",
+      "IDENTITY INSTRUMENTATION GAP: the phase receipts carry no per-run UUID or clock telemetry. The identity binding is POLICY-level - the pinning table, the core-lock policy and the ollama manifest bytes all predate the first phase and are digest-bound, and the two UUIDs are attested present on the host - but nothing proves the serve processes listening during the phases were started by that launcher, or that gpu-mode.ps1 had been applied in the live session. A future run must emit per-run device telemetry to close this."
+    ]
+  },
+  "raw_evidence_custody": {
+    "classification": "DONE_LOCAL_EVIDENCE_WITH_COMMITTED_CAPSULE",
+    "statement": "Raw phase receipts (per-run walls, nvidia-smi occupancy lines), the bench driver, and the contemporaneous identity artifacts (serve pinning table, core-lock policy and card registry, ollama model manifests, device attestation) remain in the operator's private estate tree on OCTO-L01, off-repository. This capsule commits their digests, the allowlisted numeric results, and the aggregate root; the committed capsule is the citable closure artifact. Any future dispute reopens the raw artifacts against receipt_manifest_sha256.",
+    "raw_files_bound": 14
+  },
+  "verifier": "data/estate/fabric-qual-20260827/verify_capsule.py",
+  "phase_execution": {
+    "single-27b-msi": {
+      "active_devices": [
+        0
+      ],
+      "excluded_devices": [
+        1
+      ],
+      "note": "baseline isolation: the second card must be unallocated during the run"
+    },
+    "double-27b-both": {
+      "active_devices": [
+        0,
+        1
+      ],
+      "excluded_devices": []
+    },
+    "split-35b-a3b-q8": {
+      "active_devices": [
+        0,
+        1
+      ],
+      "excluded_devices": []
+    },
+    "split-70b-r1": {
+      "active_devices": [
+        0,
+        1
+      ],
+      "excluded_devices": []
+    }
+  },
+  "verification_levels": {
+    "CAPSULE_ONLY_VERIFIED": "committed capsule authenticated (fields, manifest, aggregate root, denominator)",
+    "RAW_BYTES_VERIFIED": "plus: every raw private evidence file rehashes to its manifest digest",
+    "RAW_SEMANTICS_VERIFIED": "plus: GPU UUIDs, card roles (via UUID-pinned serve ports), effective core locks (via the min-rule proven on the applier's executable path), the derived model denominator and its ollama manifest digests, the host/claim/class/denominator binding of the device attestation, per-sample token counts, recomputed decode AND prefill medians for both streams, the complete per-card median role denominator, aggregate/scaling/retention, VRAM and terminal verdict are all reconstructed from raw artifact content and agree with the capsule; the only level that supports CLAUDE-5 repository closure"
+  },
+  "supersedes": {
+    "schema": "estate/fabric-qual-capsule@3",
+    "aggregate_evidence_root_sha256": "7d858295293c1017da02639c8ab7ec33f29ccc1588599b344237cae2066cc2aa",
+    "why": "@3 bound the identity artifacts but still let the CAPSULE choose four denominators. The model set was whatever model_identities listed, so an identity and its manifest could be dropped while the phase that ran that model remained; the core-lock rule was established by substring anchors that a comment or an unreachable line satisfies; the device attestation was accepted on its UUID rows alone, so an attestation belonging to another host supported this one; and the per-card median map was iterated rather than required, so an omitted card role passed. @4 derives all four from authoritative evidence: the model set from the driver dispatch and the phase receipts, the lock rule from the applier's executable path, the attestation from its own host/claim/class/denominator, and the per-card roles from receipt streams through pinned serve ports. No raw evidence file changed, so the aggregate evidence root is carried forward unchanged; no measured phase result changed.",
+    "prior": {
+      "schema": "estate/fabric-qual-capsule@2",
+      "aggregate_evidence_root_sha256": "e0b0f7851aa94ec8cf19c2402dd47f6e12411889b8bb9025fc1d3123193f87f6",
+      "why": "The @2 capsule asserted GPU UUIDs, core locks and ollama manifest digests that no artifact in the evidence denominator supported, so those identity fields could be rewritten while all three verification levels still passed. @3 adds the contemporaneous pinning/lock/manifest artifacts to the denominator, digest-binds them, and derives every identity, workload and per-card statistic from them. No measured phase result changed."
+    }
+  },
+  "serve_pinning": {
+    "11504": "GPU-b84a8323-dbd6-e432-074b-3ce8fadd3326",
+    "11505": "GPU-493239dc-f76e-bbbb-8e68-ffd34a5e7bbc",
+    "11506": null
+  },
+  "phase_serve_binding": {
+    "single-27b-msi": {
+      "primary_port": 11504,
+      "secondary_port": null,
+      "note": "MSI-pinned serve only"
+    },
+    "double-27b-both": {
+      "primary_port": 11504,
+      "secondary_port": 11505,
+      "note": "primary stream = MSI serve, secondary stream = Dell-B serve"
+    },
+    "split-35b-a3b-q8": {
+      "primary_port": 11506,
+      "secondary_port": null,
+      "note": "unpinned fabric serve, layer-split across both cards"
+    },
+    "split-70b-r1": {
+      "primary_port": 11506,
+      "secondary_port": null,
+      "note": "unpinned fabric serve, layer-split across both cards"
+    }
+  },
+  "identity_evidence": {
+    "binding_class": "PRE_RUN_CONFIG_BOUND + POST_RUN_READBACK",
+    "driver_source": "fabric_qual.py",
+    "serve_pinning_source": "identity/launch-fabric-serves.ps1",
+    "core_lock_policy_sources": [
+      "identity/gpu-host-OCTO-L01.json",
+      "identity/gpu-cards.json",
+      "identity/gpu-mode.ps1"
+    ],
+    "core_lock_policy_rule": "min(host_mode.coreLock, cards[uuid].coreLockCapMHz)",
+    "core_lock_rule_derivation": "the rule is established from the EXECUTABLE path of identity/gpu-mode.ps1, not from textual presence: comments, literal string text and the bodies of functions no reachable code calls are erased first, then the applier must contain a base assignment of the mode's coreLock, a strictly-deeper conditional override by the card's coreLockCapMHz guarded by a 'cap below current lock' comparison, and an unbroken path from that value to the nvidia-smi -lgc application.",
+    "core_lock_host_mode": "decode",
+    "core_lock_host_mode_derivation": "the unique mode in the host calibration whose note declares DEFAULT",
+    "ollama_manifest_root": "identity/ollama-manifests",
+    "ollama_manifest_path_rule": "'<repo>:<tag>' -> identity/ollama-manifests/<repo>/<tag>",
+    "model_identity_denominator_derivation": "the model set is derived from the authoritative phase denominator - the driver's own bench() dispatch and every phase receipt - and must equal, exactly, the capsule model_identities names, the models named by the capsule phase results, and the bound ollama manifest artifacts. A missing identity and an additional identity both refuse.",
+    "attestation": "identity/IDENTITY-ATTESTATION.json",
+    "attestation_schema": "estate/fabric-identity-attestation@1",
+    "attestation_class": "POST_RUN_READBACK",
+    "attested_device_denominator": 2,
+    "attestation_binding": "the attestation is admissible only against the host, claim id, schema, class and device denominator declared here. It is SUPPLEMENTAL post-run board-identity evidence and is never represented as per-run telemetry; an attestation naming another host, another class, or another device denominator cannot support this capsule however faithfully its UUID rows match.",
+    "card_role_derivation": "capsule role -> UUID -> the serve port that pins that UUID in the launcher -> the receipt stream the driver drove on that port. nvidia-smi ordinal indices are never used to assign a card role. For a phase that drove two streams, the per-card median keys must equal exactly the set of UUID-bound roles whose pinned serves that phase drove."
+  }
+}
