@@ -1,0 +1,145 @@
+name: halo3-cell-zero
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free-contract:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Compile HALO3 Cell Zero sources
+        run: >-
+          python -m py_compile
+          tier_runner/halo3_cell_common.py
+          tier_runner/halo3_cell_schema.py
+          tier_runner/halo3_cell_plan.py
+          tier_runner/halo3_cell.py
+          tests/test_halo3_cell.py
+
+      - name: Exercise provider-free refusal laws
+        run: python tests/test_halo3_cell.py
+
+      - name: Regenerate deterministic products
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/halo3-cell-zero"
+          mkdir -p "$OUT"
+          LAB="labs/halo3-cell-zero/lab.json"
+          FINGERPRINT="labs/halo3-cell-zero/model_fingerprint_contract.json"
+
+          python -m tier_runner.halo3_cell validate \
+            --lab "$LAB" \
+            --fingerprint "$FINGERPRINT" \
+            > "$OUT/validation.json"
+
+          python -m tier_runner.halo3_cell plan \
+            --lab "$LAB" \
+            --fingerprint "$FINGERPRINT" \
+            --out "$OUT/plan.json"
+
+          python -m tier_runner.halo3_cell verify \
+            --lab "$LAB" \
+            --fingerprint "$FINGERPRINT" \
+            --plan "$OUT/plan.json" \
+            > "$OUT/plan-verification.json"
+
+          python -m tier_runner.halo3_cell proof-matrix \
+            --lab "$LAB" \
+            --fingerprint "$FINGERPRINT" \
+            --out-json "$OUT/proof_matrix.json" \
+            --out-markdown "$OUT/PROOF_MATRIX.md"
+
+          python -m tier_runner.halo3_cell verify-proof-matrix \
+            --lab "$LAB" \
+            --fingerprint "$FINGERPRINT" \
+            --matrix "$OUT/proof_matrix.json" \
+            > "$OUT/proof-verification.json"
+
+          python -m tier_runner.halo3_cell templates \
+            --plan "$OUT/plan.json" \
+            --out "$OUT/observation_templates.json"
+
+      - name: Require exact plan and committed proof matrix projection
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          generated = Path(os.environ["RUNNER_TEMP"]) / "halo3-cell-zero"
+          committed = Path("labs/halo3-cell-zero")
+          assert (generated / "PROOF_MATRIX.md").read_bytes() == (committed / "PROOF_MATRIX.md").read_bytes()
+
+          plan = json.loads((generated / "plan.json").read_text(encoding="utf-8"))
+          matrix = json.loads((generated / "proof_matrix.json").read_text(encoding="utf-8"))
+          templates = json.loads(
+              (generated / "observation_templates.json").read_text(encoding="utf-8")
+          )
+
+          assert plan["totals"]["fingerprint_cells"] == 54
+          assert plan["totals"]["stages"] == 12
+          assert plan["totals"]["cells"] == 66
+          assert len(templates) == 66
+          assert all(row["status"] == "unmeasured" for row in templates)
+          assert matrix["totals"]["claims"] == 12
+          assert matrix["totals"]["accepted"] == 0
+          assert plan["production_claim"] is False
+          assert matrix["promotion_authorized"] is False
+
+          rendered = json.dumps({"plan": plan, "matrix": matrix}, sort_keys=True)
+          assert '"aggregate_score"' not in rendered
+          assert '"score"' not in rendered
+          PY
+
+      - name: Preserve exact-head evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUT="$RUNNER_TEMP/halo3-cell-zero"
+          cp labs/halo3-cell-zero/lab.json "$OUT/lab.json"
+          cp labs/halo3-cell-zero/model_fingerprint_contract.json "$OUT/model_fingerprint_contract.json"
+          cp labs/halo3-cell-zero/README.md "$OUT/README.md"
+          cp labs/halo3-cell-zero/LAB_CHARTER.md "$OUT/LAB_CHARTER.md"
+          git rev-parse HEAD > "$OUT/repository-head.txt"
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"]) / "halo3-cell-zero"
+          rows = []
+          for path in sorted(item for item in root.rglob("*") if item.is_file() and item.name != "SHA256SUMS"):
+              rows.append(
+                  f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(root).as_posix()}"
+              )
+          (root / "SHA256SUMS").write_bytes(("\n".join(rows) + "\n").encode("utf-8"))
+          PY
+          git diff --check
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: halo3-cell-zero-${{ matrix.os }}-python-${{ matrix.python-version }}
+          path: ${{ runner.temp }}/halo3-cell-zero
+          if-no-files-found: error

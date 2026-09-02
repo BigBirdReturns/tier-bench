@@ -54,3 +54,9 @@ ANCHOR4060.cmd -text -whitespace
 scripts/build_anchor_4060_manifest.py -text -whitespace
 scripts/run-anchor-crate-4060-smoke.ps1 -text -whitespace
 tests/test_anchor_crate_physical.py -text -whitespace
+
+# HALO3 Cell Zero is a deterministic cross-platform proof contract.
+.github/workflows/halo3-cell-zero.yml -text -whitespace
+labs/halo3-cell-zero/** -text -whitespace
+tests/test_halo3_cell.py -text -whitespace
+tier_runner/halo3_cell*.py -text -whitespace
