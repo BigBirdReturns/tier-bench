@@ -22,7 +22,7 @@
     "roles": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["custodian_id", "verifier_id", "coordinator_id", "verifier_lineage", "verifier_lineage_conflicts", "custodian_is_verifier", "coordinator_is_verifier", "verifier_is_not_rubric_author", "verifier_is_not_grading_instrument", "verifier_is_administration_only"],
+      "required": ["custodian_id", "verifier_id", "coordinator_id", "verifier_lineage", "verifier_lineage_conflicts", "custodian_is_verifier", "coordinator_is_verifier", "verifier_is_not_rubric_author", "verifier_is_not_grading_instrument", "verifier_is_administration_only", "verifier_has_raw_read_access"],
       "properties": {
         "custodian_id": {"$ref": "#/$defs/identifier"},
         "verifier_id": {"$ref": "#/$defs/identifier"},
@@ -41,7 +41,8 @@
         "coordinator_is_verifier": {"const": false},
         "verifier_is_not_rubric_author": {"const": true},
         "verifier_is_not_grading_instrument": {"const": true},
-        "verifier_is_administration_only": {"const": true}
+        "verifier_is_administration_only": {"const": true},
+        "verifier_has_raw_read_access": {"const": true}
       }
     },
     "retention": {
@@ -58,13 +59,15 @@
     "audit": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["authentication", "validator_path", "validator_commit", "validator_sha256", "authentication_verifier_path", "authentication_verifier_sha256"],
+      "required": ["authentication", "authentication_repository", "authentication_identity", "validator_path", "validator_commit", "validator_sha256", "authentication_verifier_path", "authentication_verifier_sha256"],
       "properties": {
         "authentication": {"enum": ["github_actions_oidc", "signed_commit"]},
-        "validator_path": {"const": "scripts/validate_arc_d_b2_admission_v2.py"},
+        "authentication_repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$"},
+        "authentication_identity": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:@/+\\-]{2,255}$"},
+        "validator_path": {"const": "scripts/validate_arc_d_b2_custody_v2.py"},
         "validator_commit": {"$ref": "#/$defs/gitsha"},
         "validator_sha256": {"$ref": "#/$defs/sha256"},
-        "authentication_verifier_path": {"type": "string", "pattern": "^[A-Za-z0-9._/-]{1,160}$"},
+        "authentication_verifier_path": {"const": "scripts/verify_arc_d_b2_audit_auth.py"},
         "authentication_verifier_sha256": {"$ref": "#/$defs/sha256"}
       }
     },

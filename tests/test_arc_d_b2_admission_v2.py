@@ -151,8 +151,10 @@ def test_batch_receipt_is_an_exact_keyed_three_by_two_grid():
         "activation_commit": "c" * 40,
         "preregistration_manifest_sha256": "d" * 64,
         "preregistration_commit": "e" * 40,
+        "preregistration_path": "attempt/preregistration.json",
         "dispatch_ledger_sha256": "f" * 64,
         "dispatch_ledger_commit": "1" * 40,
+        "dispatch_ledger_path": "attempt/dispatch-ledger.json",
         "required_receipt_count": 6,
         "receipts": {"grade_a": lane, "grade_b": lane},
         "seal": {
@@ -199,6 +201,11 @@ def test_public_dispatch_ledger_represents_failed_attempts():
         "attempt_id": "arc-d-b2-v2-failed",
         "preregistration_manifest_sha256": "b" * 64,
         "preregistration_commit": "c" * 40,
+        "preregistration_path": "attempt/preregistration.json",
+        "ledger_path": "attempt/dispatch-ledger.json",
+        "revision": 1,
+        "previous_ledger_sha256": "d" * 64,
+        "previous_ledger_commit": "e" * 40,
         "cells": {"grade_a": lane, "grade_b": lane},
         "state": "SEALED_PARTIAL_UNPAIRED",
     }

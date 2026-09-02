@@ -144,3 +144,10 @@ jobs:
           python -m py_compile scripts/validate_arc_d_b2_admission_v2.py tests/test_arc_d_b2_admission_v2.py
           python scripts/validate_arc_d_b2_admission_v2.py
           python tests/test_arc_d_b2_admission_v2.py
+      - name: ARC-D B2 custody v2 components (content-blind; activation still gated)
+        run: |
+          python -m py_compile scripts/validate_arc_d_b2_custody_v2.py \
+            scripts/verify_arc_d_b2_audit_auth.py \
+            tests/test_arc_d_b2_custody_v2.py
+          python scripts/validate_arc_d_b2_custody_v2.py components
+          python tests/test_arc_d_b2_custody_v2.py

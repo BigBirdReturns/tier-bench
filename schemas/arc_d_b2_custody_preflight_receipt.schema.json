@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/arc_d_b2_custody_preflight_receipt.schema.json",
+  "title": "ARC-D B2 content-blind two-venue custody preflight receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "protocol_id",
+    "preflight_id",
+    "executed_at",
+    "content_used",
+    "lanes",
+    "result"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/arc-d-b2-custody-preflight-receipt@2"},
+    "protocol_id": {"const": "arc_d_buffalo_pilot_v2"},
+    "preflight_id": {"type": "string", "pattern": "^arc-d-b2-v2-preflight-[a-z0-9][a-z0-9._-]{2,63}$"},
+    "executed_at": {"type": "string", "format": "date-time"},
+    "content_used": {"const": "NON_GRADER_SENTINELS_ONLY"},
+    "lanes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grade_a", "grade_b"],
+      "properties": {
+        "grade_a": {"$ref": "#/$defs/lane"},
+        "grade_b": {"$ref": "#/$defs/lane"}
+      }
+    },
+    "result": {"const": "PASS"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "object_id": {"type": "string", "pattern": "^[0-9a-f]{40,64}$"},
+    "lane": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "opaque_venue_id",
+        "sentinel_path_sha256",
+        "sentinel_sha256",
+        "sentinel_bytes",
+        "object_id",
+        "tree_id",
+        "write_receipt_sha256",
+        "readback_sha256",
+        "immutable_objects",
+        "result"
+      ],
+      "properties": {
+        "opaque_venue_id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]{8,128}$"},
+        "sentinel_path_sha256": {"$ref": "#/$defs/sha256"},
+        "sentinel_sha256": {"$ref": "#/$defs/sha256"},
+        "sentinel_bytes": {"type": "integer", "minimum": 1},
+        "object_id": {"$ref": "#/$defs/object_id"},
+        "tree_id": {"$ref": "#/$defs/object_id"},
+        "write_receipt_sha256": {"$ref": "#/$defs/sha256"},
+        "readback_sha256": {"$ref": "#/$defs/sha256"},
+        "immutable_objects": {"const": true},
+        "result": {"const": "PASS"}
+      }
+    }
+  }
+}
