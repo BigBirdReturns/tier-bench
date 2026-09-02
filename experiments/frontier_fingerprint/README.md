@@ -15,8 +15,12 @@ Example release manifests remain live-disabled. `TIER_FABLE_51_MODEL` and `TIER_
 ## Provider-free qualification
 
 ```bash
-python -m py_compile frontier_fingerprint/*.py scripts/frontier_fingerprint.py tests/test_frontier_fingerprint.py
-python tests/test_frontier_fingerprint.py
+python -m py_compile \
+  frontier_fingerprint/*.py \
+  scripts/frontier_fingerprint.py \
+  scripts/frontier_qualification.py \
+  tests/test_frontier_*.py
+python -m unittest discover -s tests -p 'test_frontier_*.py' -v
 
 run_dir="$(mktemp -d)/frontier-run"
 python scripts/frontier_fingerprint.py plan \
@@ -31,6 +35,12 @@ python scripts/frontier_fingerprint.py summarize \
   --out "${run_dir}.summary.json"
 ```
 
-The dedicated GitHub workflow performs the same provider-free sequence. A green standing repository workflow over a documentation-only diff is not evidence that this observatory passed. Qualification attaches only to a reachable head containing these bytes and the dedicated workflow file.
+The dedicated GitHub workflow performs the provider-free sequence from the exact pull-request source head. A green standing repository workflow over a documentation-only diff is not evidence that this observatory passed. Qualification attaches only to a reachable source head containing the implementation, the closure script, the schemas, the adversarial tests, and the dedicated workflow.
 
-Opaque provider request identifiers are hash-only in public receipts. Contract-version headers, rate-limit or processing telemetry, and request identifiers are summarized separately so volatile transport metadata cannot masquerade as an API revision.
+## Machine-derived closure custody
+
+`scripts/frontier_qualification.py` derives the closure ledger from Git, unittest output, campaign JSON, the public receipts file, passive observations, and every committed manifest carrying schema `tier-bench/frontier-fingerprint-manifest@1` under `experiments/frontier_fingerprint`. It refuses a source-head mismatch, missing or ambiguous test counts, disagreement among planned, executed, authenticated, and rederived counts, identity or provider errors, an enabled committed live manifest, a recognized provider credential in the runner environment, a forbidden public-text marker, or a mismatched receipt payload hash.
+
+A passing run uploads a public-safe evidence artifact containing the machine receipt and its supporting files. The workflow uses the artifact ID, artifact URL, and upload digest returned by GitHub to render a pull-request comment. It records the returned comment ID and evidence artifact identity in a publication-index object, uploads that index as a second artifact, renders the final comment with both artifact identities, and reads the comment back from GitHub for exact comparison. The pull-request body and this README intentionally contain no current test count, receipt count, head SHA, run ID, comment ID, or artifact ID because those fields must be re-derived after every source-head change.
+
+The closure receipt qualifies implementation custody and provider-free conformance. Its measurement authority leaves live provider behavior, frontier capability, live cache behavior, cost, and routing as `UNMEASURED`; it also records network egress as `UNMEASURED`. Opaque provider request identifiers remain hash-only in public receipts. Contract-version headers, rate-limit or processing telemetry, and request identifiers are summarized separately so volatile transport metadata cannot masquerade as an API revision.
