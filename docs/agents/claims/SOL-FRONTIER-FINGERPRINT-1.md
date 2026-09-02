@@ -24,9 +24,10 @@ implementation:
 qualification_authority:
   source_binding: exact_source_head
   receipt_schema: tier-bench/frontier-fingerprint-qualification@1
-  publication_index_schema: tier-bench/frontier-fingerprint-qualification-index@1
+  artifact_index_schema: tier-bench/frontier-fingerprint-qualification-index@1
   workflow: .github/workflows/frontier-fingerprint.yml
-  pr_comment_marker: frontier-fingerprint-qualification
+  remote_publication_marker: frontier-fingerprint-qualification
+  publisher_authority: separately_authenticated_remote_writer
 manual_closure_ledger: prohibited
 live_provider_dispatch: prohibited_in_committed_manifests
 benchmark_verdict_authority: none
@@ -34,8 +35,10 @@ benchmark_verdict_authority: none
 
 The first branch head, `94851d5`, contained only this claim path. The previously reported harness files and dedicated green workflow were not in reachable custody. The standing repository workflows passed a documentation-only diff, so they did not qualify the observatory. Any session-local test, file, artifact, comment, or status assertion attached to that head had no standing outside its session workspace.
 
-The implementation and its closure mechanism are separate controls. The observatory rebuilds exact requests from the frozen manifest and generator, authenticates retained request and response bodies, and rederives usage, identity, stopping state, and exact synthetic-anchor results. The qualification control checks out the exact pull-request source head, inventories the base-to-head path set, discovers the full committed manifest set by schema, derives test counts from the emitted unittest ledger, reconciles all campaign counts, rejects public-text canaries, checks a declared provider-credential environment set, and emits a hash-bound qualification receipt.
+The implementation and its closure mechanism are separate controls. The observatory rebuilds exact requests from the frozen manifest and generator, authenticates retained request and response bodies, and rederives usage, identity, stopping state, and exact synthetic-anchor results. The qualification control checks out the exact pushed source head, inventories the merge-base-to-head path set, discovers the full committed manifest set by schema, derives test counts from the emitted unittest ledger, reconciles all campaign counts, rejects public-text canaries, checks a declared provider-credential environment set, and emits a hash-bound qualification receipt.
 
-The workflow uploads only the public-safe receipt, plan, run record, verification, summary, passive observations, receipts, and test ledger. It then publishes or updates a marker-bearing pull-request comment from the receipt, records the returned GitHub comment identity with the evidence artifact identity in a second machine-readable index, replaces the comment with a final rendering that names both artifacts, and reads the comment back from GitHub for byte-for-byte comparison. Raw request and response bodies remain inside the ephemeral private run directory and are not placed in the public-safe workflow artifacts.
+The Actions workflow uploads the public-safe receipt, plan, run record, verification, summary, passive observations, receipts, and test ledger. It also uploads an artifact index and a marker-bearing comment draft. It does not claim that the draft was posted, because the repository's Actions token has not demonstrated authority to create the PR comment. Remote publication is a second transaction: a separately authenticated GitHub writer downloads the artifacts, recomputes their digests and payload hashes, obtains the returned GitHub comment ID, binds the exact source head, run, artifacts, and comment identity into the remote publication object, updates the marker-bearing comment, and reads that comment back from GitHub. A missing or stale publication comment does not erase the run receipt, but it leaves remote publication unqualified.
+
+Raw request and response bodies remain inside the ephemeral private run directory and are not placed in the public-safe workflow artifacts. The public artifacts retain only the bounded evidence named by the qualification receipt. The workflow actions are pinned by commit SHA, and the uploaded artifacts use the longest configured retention period supported by this repository workflow.
 
 This claim document carries no PASS count, current head, workflow-run ID, artifact ID, or comment ID. Those values change when the branch changes and therefore belong only to the generated receipt, returned Actions artifact objects, workflow log, and verified GitHub comment. Network egress is explicitly `UNMEASURED`. Live provider behavior, frontier capability, live cache behavior, provider cost, and routing remain `UNMEASURED` until separately authorized evidence exists.
