@@ -1,0 +1,273 @@
+{
+  "actions": [
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "compute.topology.plan",
+        "ownership_epoch": 2,
+        "role": "operator"
+      },
+      "expected": {
+        "after": "degraded-two-3090-plus-4060"
+      },
+      "operation": "set",
+      "projection": {
+        "display": {
+          "surface": "gpu-topology"
+        }
+      },
+      "required_mandate": "compute.topology.plan",
+      "required_role": "operator",
+      "route_ids": [
+        "route.zombie.replan"
+      ],
+      "route_query": {},
+      "semantic_id": "compute.topology.replan",
+      "state_path": "/compute/plan",
+      "step_id": "replan-zombie-compute",
+      "subject": "compute.topology",
+      "value": "degraded-two-3090-plus-4060"
+    },
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "earcrate.live.control",
+        "ownership_epoch": 5,
+        "role": "performer"
+      },
+      "expected": {
+        "after": 0.72
+      },
+      "operation": "set",
+      "projection": {
+        "audio": {
+          "boundary": "next-legal-phrase"
+        },
+        "display": {
+          "surface": "performance-deck"
+        }
+      },
+      "required_mandate": "earcrate.live.control",
+      "required_role": "performer",
+      "route_ids": [
+        "route.earcrate.performance"
+      ],
+      "route_query": {},
+      "semantic_id": "earcrate.live.energy.set",
+      "state_path": "/audio/energy",
+      "step_id": "raise-earcrate-energy",
+      "subject": "earcrate.performance",
+      "value": 0.72
+    },
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "estate.organ.propose",
+        "ownership_epoch": 9,
+        "role": "steward"
+      },
+      "expected": {
+        "after": [
+          {
+            "action": "graft",
+            "decision": "human-required",
+            "organ": "semantic-surface-runtime"
+          }
+        ]
+      },
+      "operation": "append",
+      "projection": {
+        "display": {
+          "surface": "organ-evolution"
+        }
+      },
+      "required_mandate": "estate.organ.propose",
+      "required_role": "steward",
+      "route_ids": [
+        "route.organ.proposal"
+      ],
+      "route_query": {},
+      "semantic_id": "estate.organ.proposal",
+      "state_path": "/estate/proposals",
+      "step_id": "propose-surface-organ",
+      "subject": "estate.organ",
+      "value": {
+        "action": "graft",
+        "decision": "human-required",
+        "organ": "semantic-surface-runtime"
+      }
+    },
+    {
+      "authority": {
+        "actor": "ghostbox",
+        "mandate": "attention.candidate",
+        "ownership_epoch": 1,
+        "role": "observer"
+      },
+      "expected": {
+        "after": [
+          {
+            "authority": "candidate-only",
+            "topic": "physical-equivalence-gap"
+          }
+        ]
+      },
+      "operation": "append",
+      "projection": {
+        "display": {
+          "state": "attention-candidate",
+          "surface": "operator-console"
+        }
+      },
+      "required_mandate": "attention.candidate",
+      "required_role": "observer",
+      "route_ids": [
+        "route.attention.candidate"
+      ],
+      "route_query": {},
+      "semantic_id": "attention.candidate.raise",
+      "state_path": "/attention/candidates",
+      "step_id": "raise-attention-candidate",
+      "subject": "attention.surface",
+      "value": {
+        "authority": "candidate-only",
+        "topic": "physical-equivalence-gap"
+      }
+    }
+  ],
+  "equivalence_route_ids": [],
+  "expected_final_state": {
+    "attention": {
+      "candidates": [
+        {
+          "authority": "candidate-only",
+          "topic": "physical-equivalence-gap"
+        }
+      ]
+    },
+    "audio": {
+      "energy": 0.72
+    },
+    "compute": {
+      "plan": "degraded-two-3090-plus-4060"
+    },
+    "estate": {
+      "proposals": [
+        {
+          "action": "graft",
+          "decision": "human-required",
+          "organ": "semantic-surface-runtime"
+        }
+      ]
+    }
+  },
+  "fault_trials": [
+    {
+      "expected_outcome": "refused:no_admissible_route",
+      "fault": "route_unavailable",
+      "id": "compute-route-loss-refuses",
+      "parameters": {
+        "candidate_route_ids": [
+          "route.zombie.replan"
+        ],
+        "step_id": "replan-zombie-compute"
+      },
+      "route_id": "route.zombie.replan"
+    },
+    {
+      "expected_outcome": "faulted:adapter_semantic_mutation",
+      "fault": "adapter_semantic_mutation",
+      "id": "attention-semantic-mutation-fails",
+      "parameters": {
+        "step_id": "raise-attention-candidate"
+      },
+      "route_id": "route.attention.candidate"
+    }
+  ],
+  "format": "axm-estate-scenario/1",
+  "id": "estate-circuit-001",
+  "initial_state": {
+    "_ownership": {
+      "attention.surface": {
+        "actor": "ghostbox",
+        "epoch": 1,
+        "mandate": "attention.candidate",
+        "role": "observer"
+      },
+      "compute.topology": {
+        "actor": "jonathan",
+        "epoch": 2,
+        "mandate": "compute.topology.plan",
+        "role": "operator"
+      },
+      "earcrate.performance": {
+        "actor": "jonathan",
+        "epoch": 5,
+        "mandate": "earcrate.live.control",
+        "role": "performer"
+      },
+      "estate.organ": {
+        "actor": "jonathan",
+        "epoch": 9,
+        "mandate": "estate.organ.propose",
+        "role": "steward"
+      }
+    },
+    "attention": {
+      "candidates": []
+    },
+    "audio": {
+      "energy": 0.25
+    },
+    "compute": {
+      "plan": "nominal"
+    },
+    "estate": {
+      "proposals": []
+    }
+  },
+  "invariants": [
+    "Each organ receives only the action class it owns.",
+    "Planning, performance control, proposals, and attention candidates do not borrow authority from one another.",
+    "Can the lab exercise distant estate organs through one route contract while preserving every organ's refusal boundary?"
+  ],
+  "kind": "sequence",
+  "objective": "Exercise compute planning, live-audio control, organ evolution, and attention candidacy through one route instrument while preserving each receiver's authority refusal.",
+  "routing_trials": [
+    {
+      "action_prefix": "compute.topology.replan",
+      "candidate_route_ids": [
+        "route.zombie.replan"
+      ],
+      "constraints": {
+        "require_tags": [
+          "planning"
+        ],
+        "required_mandate": "compute.topology.plan",
+        "required_role": "operator"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.zombie.replan",
+      "id": "compute-route-is-planner-only",
+      "unavailable_route_ids": []
+    },
+    {
+      "action_prefix": "attention.candidate.raise",
+      "candidate_route_ids": [
+        "route.attention.candidate"
+      ],
+      "constraints": {
+        "require_tags": [
+          "no-authority"
+        ],
+        "required_mandate": "attention.candidate",
+        "required_role": "observer"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.attention.candidate",
+      "id": "attention-candidate-has-no-authority-tag",
+      "unavailable_route_ids": []
+    }
+  ],
+  "title": "Cross-Organ Estate Circuit"
+}

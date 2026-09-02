@@ -1,0 +1,16 @@
+{
+  "$id": "https://surface-interop.dev/contracts/doctor.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checks": {"items": {"type": "object"}, "type": "array"},
+    "format": {"const": "surface-interop-doctor/1"},
+    "platform": {"type": "object"},
+    "report_id": {"pattern": "^surfdoctor1_[0-9a-f]{32}$", "type": "string"},
+    "status": {"enum": ["PASS", "FAIL"]},
+    "version": {"type": "string"}
+  },
+  "required": ["format", "status", "version", "platform", "checks", "report_id"],
+  "title": "Surface Interop doctor report",
+  "type": "object"
+}

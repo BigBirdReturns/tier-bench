@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axm.tools/schemas/axm-estate-scenario-1.schema.json",
+  "title": "AXM Estate Lab scenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "id", "title", "kind", "objective", "initial_state", "actions", "equivalence_route_ids", "expected_final_state", "routing_trials", "fault_trials", "invariants"],
+  "properties": {
+    "format": {"const": "axm-estate-scenario/1"},
+    "id": {"type": "string", "minLength": 1},
+    "title": {"type": "string", "minLength": 1},
+    "kind": {"enum": ["equivalence", "sequence"]},
+    "objective": {"type": "string", "minLength": 1},
+    "initial_state": {"type": "object"},
+    "actions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/action"}},
+    "equivalence_route_ids": {"$ref": "#/$defs/stringArray"},
+    "expected_final_state": {"type": "object"},
+    "routing_trials": {"type": "array", "items": {"$ref": "#/$defs/routingTrial"}},
+    "fault_trials": {"type": "array", "items": {"$ref": "#/$defs/faultTrial"}},
+    "invariants": {"$ref": "#/$defs/stringArray"}
+  },
+  "$defs": {
+    "stringArray": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actor", "role", "mandate", "ownership_epoch"],
+      "properties": {
+        "actor": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "mandate": {"type": "string", "minLength": 1},
+        "ownership_epoch": {"type": "integer", "minimum": 0}
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["step_id", "semantic_id", "subject", "operation", "state_path", "value", "required_role", "required_mandate", "authority", "route_ids", "route_query", "expected", "projection"],
+      "properties": {
+        "step_id": {"type": "string", "minLength": 1},
+        "semantic_id": {"type": "string", "minLength": 1},
+        "subject": {"type": "string", "minLength": 1},
+        "operation": {"enum": ["set", "increment", "append", "remove", "toggle"]},
+        "state_path": {"type": "string", "pattern": "^/.+"},
+        "value": true,
+        "required_role": {"type": "string", "minLength": 1},
+        "required_mandate": {"type": "string", "minLength": 1},
+        "authority": {"$ref": "#/$defs/authority"},
+        "route_ids": {"$ref": "#/$defs/stringArray"},
+        "route_query": {"type": "object"},
+        "expected": {"type": "object"},
+        "projection": {"type": "object"}
+      }
+    },
+    "routingTrial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "action_prefix", "candidate_route_ids", "unavailable_route_ids", "constraints", "expected_route_id", "expected_outcome"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "action_prefix": {"type": "string", "minLength": 1},
+        "candidate_route_ids": {"$ref": "#/$defs/stringArray"},
+        "unavailable_route_ids": {"$ref": "#/$defs/stringArray"},
+        "constraints": {"type": "object"},
+        "expected_route_id": {"type": ["string", "null"]},
+        "expected_outcome": {"enum": ["selected", "refused"]}
+      }
+    },
+    "faultTrial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "fault", "route_id", "expected_outcome", "parameters"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "fault": {"type": "string", "minLength": 1},
+        "route_id": {"type": ["string", "null"]},
+        "expected_outcome": {"type": "string", "minLength": 1},
+        "parameters": {"type": "object"}
+      }
+    }
+  }
+}

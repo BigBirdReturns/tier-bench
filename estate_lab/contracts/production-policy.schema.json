@@ -1,0 +1,29 @@
+{
+  "$id": "https://surface-interop.dev/contracts/production-policy.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "format": {"const": "surface-interop-production-policy/1"},
+    "max_capture_bytes": {"minimum": 1, "type": "integer"},
+    "max_release_bytes": {"minimum": 1, "type": "integer"},
+    "max_release_file_bytes": {"minimum": 1, "type": "integer"},
+    "max_request_bytes": {"minimum": 1, "type": "integer"},
+    "max_response_bytes": {"minimum": 1, "type": "integer"},
+    "require_pinned_entrypoint": {"type": "boolean"},
+    "strip_secret_environment": {"type": "boolean"},
+    "timeout_seconds": {"minimum": 1, "maximum": 300, "type": "integer"}
+  },
+  "required": [
+    "format",
+    "max_capture_bytes",
+    "max_release_bytes",
+    "max_release_file_bytes",
+    "max_request_bytes",
+    "max_response_bytes",
+    "require_pinned_entrypoint",
+    "strip_secret_environment",
+    "timeout_seconds"
+  ],
+  "title": "Surface Interop production policy",
+  "type": "object"
+}

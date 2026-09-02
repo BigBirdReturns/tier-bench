@@ -1,0 +1,109 @@
+{
+  "$id": "https://surface-interop.dev/contracts/release-manifest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "canonicalization": {
+      "const": "utf8-sorted-json-sha256-v1"
+    },
+    "format": {
+      "const": "surface-interop-release/1"
+    },
+    "generated_bytes": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "generated_files": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "0644",
+              "0755"
+            ]
+          },
+          "path": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "bytes",
+          "sha256",
+          "mode"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "release_id": {
+      "pattern": "^surfrelease1_[0-9a-f]{32}$",
+      "type": "string"
+    },
+    "source_bytes": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "source_files": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "0644",
+              "0755"
+            ]
+          },
+          "path": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "bytes",
+          "sha256",
+          "mode"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "version": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "source_files",
+    "generated_files",
+    "source_bytes",
+    "generated_bytes",
+    "canonicalization",
+    "release_id"
+  ],
+  "title": "Surface Interop release manifest",
+  "type": "object"
+}

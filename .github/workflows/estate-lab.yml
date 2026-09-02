@@ -1,0 +1,184 @@
+name: AXM Estate Lab production source publication
+
+on:
+  push:
+    branches: [agent/axm-estate-lab]
+    paths:
+      - '.github/workflows/estate-lab.yml'
+      - '.prod-v1-payload-*'
+      - '.prod-v1-bootstrap-patch.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/estate-lab.yml'
+      - '.prod-v1-payload-*'
+      - '.prod-v1-bootstrap-patch.py'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: estate-lab-production-source-publication
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      PYTHONHASHSEED: '0'
+      PYTHONNOUSERSITE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/axm-estate-lab
+          fetch-depth: 0
+
+      - id: required
+        name: Check whether source publication is required
+        shell: bash
+        run: |
+          if grep -qx '1.0.0' estate_lab/VERSION; then
+            echo 'value=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'value=true' >> "$GITHUB_OUTPUT"
+          fi
+
+      - if: steps.required.outputs.value == 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - if: steps.required.outputs.value == 'true'
+        name: Materialize reviewed production source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat .prod-v1-payload-* | base64 -d > "$RUNNER_TEMP/production-v1.tar.xz"
+          echo "cffb81ee8e6aaccf380a071265deb0f92755a9c745862c378d20e39f5bbdab41  $RUNNER_TEMP/production-v1.tar.xz" | sha256sum -c -
+          python - <<'PY'
+          from __future__ import annotations
+
+          import os
+          import tarfile
+          from pathlib import Path
+
+          root = Path.cwd().resolve()
+          archive_path = Path(os.environ['RUNNER_TEMP']) / 'production-v1.tar.xz'
+          with tarfile.open(archive_path, mode='r:xz') as archive:
+              for member in archive.getmembers():
+                  if member.name.startswith('/') or '..' in Path(member.name).parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+                  if member.issym() or member.islnk() or member.isdev():
+                      raise SystemExit(f'unsupported archive entry: {member.name}')
+                  target = (root / member.name).resolve()
+                  target.relative_to(root)
+                  if member.isdir():
+                      target.mkdir(parents=True, exist_ok=True)
+                      continue
+                  if not member.isfile():
+                      raise SystemExit(f'unsupported archive member type: {member.name}')
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  source = archive.extractfile(member)
+                  if source is None:
+                      raise SystemExit(f'missing archive payload: {member.name}')
+                  payload = source.read()
+                  descriptor = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+                  with os.fdopen(descriptor, 'wb') as handle:
+                      handle.write(payload)
+                      handle.flush()
+                      os.fsync(handle.fileno())
+          PY
+          python .prod-v1-bootstrap-patch.py
+
+      - if: steps.required.outputs.value == 'true'
+        name: Qualify production source
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONPYCACHEPREFIX="$RUNNER_TEMP/pycache"
+          python -m compileall -q estate_lab
+          test "$(python -m estate_lab.production_cli --version)" = '1.0.0'
+          doctor_status=0
+          python -m estate_lab.production_cli doctor \
+            --root . \
+            --output "$RUNNER_TEMP/doctor.json" \
+            || doctor_status=$?
+          cat "$RUNNER_TEMP/doctor.json"
+          test "$doctor_status" -eq 0
+          python -m estate_lab.production_cli build-release \
+            --root . \
+            --output "$RUNNER_TEMP/pretest-release.zip" \
+            > "$RUNNER_TEMP/pretest-release.json"
+          rm -rf "$RUNNER_TEMP/pretest-extract"
+          mkdir -p "$RUNNER_TEMP/pretest-extract"
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import zipfile
+          from pathlib import Path
+          from estate_lab.production import run_bounded_process
+
+          root = Path(os.environ['RUNNER_TEMP'])
+          extract = root / 'pretest-extract'
+          with zipfile.ZipFile(root / 'pretest-release.zip') as archive:
+              archive.extractall(extract)
+          receipt, stdout, stderr = run_bounded_process(
+              [sys.executable, str(extract / 'surface-interop.py'), '--version'],
+              cwd=extract,
+              timeout_seconds=10,
+              max_capture_bytes=4096,
+          )
+          print(json.dumps(receipt.__dict__, indent=2, sort_keys=True))
+          print('stdout=' + stdout.decode('utf-8', errors='replace'))
+          print('stderr=' + stderr.decode('utf-8', errors='replace'))
+          if receipt.exit_code != 0 or stdout.decode('utf-8').strip() != '1.0.0':
+              raise SystemExit(receipt.exit_code or 1)
+          PY
+          python -m estate_lab validate > "$RUNNER_TEMP/estate-validation.json"
+          python -m estate_lab commodities --format json > "$RUNNER_TEMP/commodity-plan.json"
+          python -m estate_lab.production_cli validate-spec > "$RUNNER_TEMP/floor-spec.json"
+          python -m estate_lab.production_cli validate-adapter > "$RUNNER_TEMP/reference-adapter.json"
+          python -m unittest discover -s estate_lab/tests -v 2>&1 | tee "$RUNNER_TEMP/tests.log"
+          rm -rf "$RUNNER_TEMP/scenarios" "$RUNNER_TEMP/conformance"
+          python -m estate_lab run-all --output "$RUNNER_TEMP/scenarios" 2>&1 | tee "$RUNNER_TEMP/scenarios.log"
+          python -m estate_lab.production_cli conform \
+            --allow-exec \
+            --output "$RUNNER_TEMP/conformance" \
+            > "$RUNNER_TEMP/conformance.json"
+          bundle="$(find "$RUNNER_TEMP/conformance" -mindepth 1 -maxdepth 1 -type d -print -quit)"
+          test -n "$bundle"
+          python -m estate_lab.production_cli verify-submission "$bundle" > "$RUNNER_TEMP/submission-verification.json"
+          python -m estate_lab.production_cli build-release \
+            --root . \
+            --output "$RUNNER_TEMP/surface-interop-a.zip" \
+            > "$RUNNER_TEMP/release-a.json"
+          python -m estate_lab.production_cli build-release \
+            --root . \
+            --output "$RUNNER_TEMP/surface-interop-b.zip" \
+            > "$RUNNER_TEMP/release-b.json"
+          cmp "$RUNNER_TEMP/surface-interop-a.zip" "$RUNNER_TEMP/surface-interop-b.zip"
+          python -m estate_lab.production_cli verify-release \
+            "$RUNNER_TEMP/surface-interop-a.zip" \
+            --output "$RUNNER_TEMP/release-verification.json"
+          python -m estate_lab.production_cli support-bundle \
+            --root . \
+            --report "$RUNNER_TEMP/doctor.json" \
+            --report "$RUNNER_TEMP/release-verification.json" \
+            --output "$RUNNER_TEMP/support-bundle.json" \
+            > "$RUNNER_TEMP/support-bundle-receipt.json"
+          git diff --check
+
+      - if: steps.required.outputs.value == 'true'
+        name: Publish carrier-free production source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add pyproject.toml estate_lab
+          git commit -m 'Harden Surface Interop for production'
+          test -z "$(git status --porcelain)"
+          git push origin HEAD:agent/axm-estate-lab

@@ -1,0 +1,11 @@
+{
+  "format": "surface-interop-production-policy/1",
+  "max_capture_bytes": 262144,
+  "max_release_bytes": 268435456,
+  "max_release_file_bytes": 67108864,
+  "max_request_bytes": 1048576,
+  "max_response_bytes": 1048576,
+  "require_pinned_entrypoint": true,
+  "strip_secret_environment": true,
+  "timeout_seconds": 60
+}

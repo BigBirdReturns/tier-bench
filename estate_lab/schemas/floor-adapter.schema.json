@@ -1,0 +1,377 @@
+{
+  "$id": "https://axm.tools/schemas/interaction-floor-adapter-1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "accessibility": {
+      "properties": {
+        "fallbacks": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "input_modalities": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "output_modalities": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "input_modalities",
+        "output_modalities",
+        "fallbacks"
+      ],
+      "type": "object"
+    },
+    "adapter_id": {
+      "pattern": "^[a-z0-9]+(?:[._-][a-z0-9]+)+$",
+      "type": "string"
+    },
+    "adapter_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "authority": {
+      "properties": {
+        "consumes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 4,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "may_grant": {
+          "const": false
+        },
+        "may_rewrite_semantics": {
+          "const": false
+        }
+      },
+      "required": [
+        "consumes",
+        "may_grant",
+        "may_rewrite_semantics"
+      ],
+      "type": "object"
+    },
+    "authority_exclusions": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "bindings": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "capabilities": {
+      "properties": {
+        "directions": {
+          "items": {
+            "enum": [
+              "source",
+              "target"
+            ]
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "modalities": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "operations": {
+          "items": {
+            "enum": [
+              "set",
+              "increment",
+              "append",
+              "remove",
+              "toggle"
+            ]
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "directions",
+        "operations",
+        "modalities"
+      ],
+      "type": "object"
+    },
+    "command": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "delegation": {
+      "properties": {
+        "accepts_agent": {
+          "type": "boolean"
+        },
+        "accepts_human": {
+          "type": "boolean"
+        },
+        "may_escalate_authority": {
+          "const": false
+        }
+      },
+      "required": [
+        "accepts_human",
+        "accepts_agent",
+        "may_escalate_authority"
+      ],
+      "type": "object"
+    },
+    "description": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "descriptor_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "deterministic": {
+      "type": "boolean"
+    },
+    "floor": {
+      "properties": {
+        "extensions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "profiles": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "versions": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "versions",
+        "profiles",
+        "extensions"
+      ],
+      "type": "object"
+    },
+    "format": {
+      "const": "axm-interaction-adapter/1"
+    },
+    "idempotency_key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "lifecycle": {
+      "properties": {
+        "health_states": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "supports_reset": {
+          "type": "boolean"
+        },
+        "supports_snapshot": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "health_states",
+        "supports_snapshot",
+        "supports_reset"
+      ],
+      "type": "object"
+    },
+    "local_only": {
+      "type": "boolean"
+    },
+    "name": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "network_required": {
+      "type": "boolean"
+    },
+    "observability": {
+      "properties": {
+        "structured_logs": {
+          "type": "boolean"
+        },
+        "trace_context": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "trace_context",
+        "structured_logs"
+      ],
+      "type": "object"
+    },
+    "privacy": {
+      "properties": {
+        "classes": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "retention": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "classes",
+        "retention"
+      ],
+      "type": "object"
+    },
+    "replayable": {
+      "type": "boolean"
+    },
+    "supply": {
+      "properties": {
+        "artifacts": {
+          "items": {
+            "properties": {
+              "path": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "type": "object"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "license_expression": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "provenance_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sbom_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "license_expression",
+        "artifacts",
+        "sbom_ref",
+        "provenance_ref"
+      ],
+      "type": "object"
+    },
+    "timeout_seconds": {
+      "maximum": 300,
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "format",
+    "descriptor_id",
+    "adapter_id",
+    "adapter_version",
+    "name",
+    "description",
+    "floor",
+    "bindings",
+    "command",
+    "timeout_seconds",
+    "deterministic",
+    "replayable",
+    "local_only",
+    "network_required",
+    "idempotency_key",
+    "capabilities",
+    "authority",
+    "lifecycle",
+    "observability",
+    "privacy",
+    "accessibility",
+    "delegation",
+    "supply",
+    "authority_exclusions"
+  ],
+  "title": "Interaction Floor adapter declaration",
+  "type": "object"
+}

@@ -1,0 +1,1348 @@
+{
+  "adapters": [
+    {
+      "capabilities": [
+        "semantic.input"
+      ],
+      "deterministic": true,
+      "evidence_class": "confirmed",
+      "id": "lab.direct",
+      "kind": "direct-semantic",
+      "local_only": true,
+      "mode": "synthetic",
+      "notes": "Reference direct semantic adapter owned by the lab.",
+      "organ_id": "estate-lab",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "action.authority"
+      ],
+      "deterministic": true,
+      "evidence_class": "confirmed",
+      "id": "arc.authority",
+      "kind": "action-authority",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "axm-arc",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "semantic.receive",
+        "state.render"
+      ],
+      "deterministic": true,
+      "evidence_class": "measured",
+      "id": "world.input",
+      "kind": "world-semantic-input",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "axm-world",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "screen.procedure",
+        "semantic.input"
+      ],
+      "deterministic": true,
+      "evidence_class": "measured",
+      "id": "screen.procedure",
+      "kind": "bounded-interface-procedure",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "screenghost",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "agent.tool",
+        "semantic.input"
+      ],
+      "deterministic": true,
+      "evidence_class": "measured",
+      "id": "agent.tool",
+      "kind": "bounded-agent-tool",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "agent-runtime",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "quest.input",
+        "semantic.input"
+      ],
+      "deterministic": true,
+      "evidence_class": "derived",
+      "id": "embodied.quest",
+      "kind": "quest-hand-controller",
+      "local_only": true,
+      "mode": "artifact",
+      "notes": "Software contract until Quest hardware is exercised.",
+      "organ_id": "axm-embodied",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "hardware.input",
+        "semantic.input"
+      ],
+      "deterministic": true,
+      "evidence_class": "reported",
+      "id": "embodied.esp32",
+      "kind": "esp32-physical-control",
+      "local_only": true,
+      "mode": "artifact",
+      "notes": "Physical adapter contract; synthetic mode does not claim electrical proof.",
+      "organ_id": "axm-embodied",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "operator.input",
+        "record.marker"
+      ],
+      "deterministic": true,
+      "evidence_class": "measured",
+      "id": "console.marker",
+      "kind": "operator-marker",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "axm-console",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "proposal.record"
+      ],
+      "deterministic": true,
+      "evidence_class": "measured",
+      "id": "aide.proposal",
+      "kind": "proposal-receiver",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "axm-aide",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "job.reference"
+      ],
+      "deterministic": true,
+      "evidence_class": "measured",
+      "id": "bloodstream.reference",
+      "kind": "job-reference-receiver",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "axm-bloodstream",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "hinge.propose"
+      ],
+      "deterministic": true,
+      "evidence_class": "derived",
+      "id": "hinge.proposal",
+      "kind": "hinge-proposal-receiver",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "axm-hinge",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "audio.control"
+      ],
+      "deterministic": true,
+      "evidence_class": "measured",
+      "id": "earcrate.control",
+      "kind": "performance-control",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "earcrate",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "compute.plan",
+        "compute.replan"
+      ],
+      "deterministic": true,
+      "evidence_class": "measured",
+      "id": "zombie.plan",
+      "kind": "topology-plan",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "axm-zombie-adapter",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "organ.evaluate"
+      ],
+      "deterministic": true,
+      "evidence_class": "measured",
+      "id": "tools.organ",
+      "kind": "organ-evolution-input",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "axm-tools",
+      "replayable": true
+    },
+    {
+      "capabilities": [
+        "attention.candidate"
+      ],
+      "deterministic": true,
+      "evidence_class": "derived",
+      "id": "ghostbox.attention",
+      "kind": "attention-candidate",
+      "local_only": true,
+      "mode": "artifact",
+      "organ_id": "ghostbox",
+      "replayable": true
+    }
+  ],
+  "estate_id": "bigbirdreturns-axm-estate",
+  "format": "axm-estate-lab/1",
+  "organs": [
+    {
+      "capabilities": [
+        "estate.route",
+        "estate.measure",
+        "semantic.input",
+        "receipt.emit"
+      ],
+      "function": "Measure cross-project routes, equivalence, recovery, and cost without owning domain law.",
+      "id": "estate-lab",
+      "local_names": [
+        "tier-bench"
+      ],
+      "owns": [
+        "experiment manifests",
+        "route measurement",
+        "fault trials",
+        "receipt assembly"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "estate_lab/tests",
+            "-v"
+          ],
+          "evidence_class": "measured",
+          "id": "estate-lab-tests",
+          "profile": "smoke",
+          "required_paths": [
+            "estate_lab/tests"
+          ],
+          "timeout_seconds": 120
+        },
+        {
+          "command": [
+            "python",
+            "-m",
+            "unittest",
+            "discover",
+            "-v"
+          ],
+          "evidence_class": "measured",
+          "id": "tier-bench-full",
+          "profile": "full",
+          "timeout_seconds": 600
+        }
+      ],
+      "refuses": [
+        "game-law authorship",
+        "human disposition",
+        "physical safety authority",
+        "silent route mutation"
+      ],
+      "repository": "BigBirdReturns/tier-bench"
+    },
+    {
+      "capabilities": [
+        "action.authority",
+        "cartridge.validate",
+        "consequence.commit"
+      ],
+      "function": "Own creator-authored deterministic scenario and action law.",
+      "id": "axm-arc",
+      "local_names": [
+        "axm-arc"
+      ],
+      "owns": [
+        "cartridge law",
+        "action compilation",
+        "cycle consequences",
+        "receipt verification"
+      ],
+      "probes": [
+        {
+          "command": [
+            "npm",
+            "run",
+            "typecheck"
+          ],
+          "evidence_class": "measured",
+          "id": "typecheck",
+          "profile": "smoke",
+          "required_paths": [
+            "package.json"
+          ],
+          "timeout_seconds": 240
+        },
+        {
+          "command": [
+            "npm",
+            "run",
+            "check"
+          ],
+          "evidence_class": "measured",
+          "id": "check",
+          "profile": "full",
+          "required_paths": [
+            "package.json"
+          ],
+          "timeout_seconds": 900
+        }
+      ],
+      "refuses": [
+        "renderer ownership",
+        "input-device policy",
+        "hardware actuation"
+      ],
+      "repository": "BigBirdReturns/axm-arc"
+    },
+    {
+      "capabilities": [
+        "semantic.receive",
+        "state.render",
+        "action.input",
+        "replay.present"
+      ],
+      "function": "Render and control governed Arc state without reimplementing law.",
+      "id": "axm-world",
+      "local_names": [
+        "axm-world"
+      ],
+      "owns": [
+        "presentation",
+        "input capture",
+        "world representation",
+        "player feedback"
+      ],
+      "probes": [
+        {
+          "command": [
+            "npm",
+            "run",
+            "typecheck"
+          ],
+          "evidence_class": "measured",
+          "id": "typecheck",
+          "profile": "smoke",
+          "required_paths": [
+            "package.json"
+          ],
+          "timeout_seconds": 240
+        },
+        {
+          "command": [
+            "npm",
+            "test"
+          ],
+          "evidence_class": "measured",
+          "id": "test",
+          "profile": "full",
+          "required_paths": [
+            "package.json"
+          ],
+          "timeout_seconds": 900
+        }
+      ],
+      "refuses": [
+        "cartridge-law mutation",
+        "statistical reroll",
+        "custody invention"
+      ],
+      "repository": "BigBirdReturns/axm-world"
+    },
+    {
+      "capabilities": [
+        "screen.observe",
+        "screen.procedure",
+        "semantic.input"
+      ],
+      "function": "Turn user-visible interfaces into bounded observations and procedures.",
+      "id": "screenghost",
+      "local_names": [
+        "ScreenGhost",
+        "screenghost"
+      ],
+      "owns": [
+        "surface observation",
+        "bounded interface procedure",
+        "drift evidence"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "unittest",
+            "discover",
+            "-s",
+            "tests",
+            "-v"
+          ],
+          "evidence_class": "measured",
+          "id": "tests",
+          "profile": "full",
+          "required_paths": [
+            "tests"
+          ],
+          "timeout_seconds": 600
+        }
+      ],
+      "refuses": [
+        "unbounded improvisation",
+        "platform-truth claims",
+        "authority escalation"
+      ],
+      "repository": "BigBirdReturns/ScreenGhost"
+    },
+    {
+      "capabilities": [
+        "agent.tool",
+        "semantic.input",
+        "trace.emit"
+      ],
+      "function": "Run bounded, schema-validated tool plans with deterministic traces.",
+      "id": "agent-runtime",
+      "local_names": [
+        "agent-runtime"
+      ],
+      "owns": [
+        "tool validation",
+        "call budgets",
+        "planner trace",
+        "bounded execution"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "-q"
+          ],
+          "evidence_class": "measured",
+          "id": "tests",
+          "profile": "full",
+          "timeout_seconds": 600
+        }
+      ],
+      "refuses": [
+        "hidden authority",
+        "unbounded retries",
+        "silent tool substitution"
+      ],
+      "repository": "BigBirdReturns/agent-runtime"
+    },
+    {
+      "capabilities": [
+        "quest.input",
+        "hardware.input",
+        "physical.guard",
+        "semantic.input"
+      ],
+      "function": "Own physical evidence, signed safety envelopes, and actuation refusal.",
+      "id": "axm-embodied",
+      "local_names": [
+        "axm-embodied",
+        "Embodied-AR-Lab"
+      ],
+      "owns": [
+        "physical capture",
+        "ownership confidence",
+        "safety envelope",
+        "ESTOP"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests",
+            "-q"
+          ],
+          "evidence_class": "measured",
+          "id": "tests",
+          "profile": "full",
+          "required_paths": [
+            "tests"
+          ],
+          "timeout_seconds": 900
+        }
+      ],
+      "refuses": [
+        "unsigned motion",
+        "missing action-class actuation",
+        "narrative-over-physics"
+      ],
+      "repository": "BigBirdReturns/axm-embodied"
+    },
+    {
+      "capabilities": [
+        "operator.input",
+        "record.marker",
+        "review.route"
+      ],
+      "function": "Provide one operator seat over spoke-owned capabilities and human review.",
+      "id": "axm-console",
+      "local_names": [
+        "axm-console"
+      ],
+      "owns": [
+        "surface selection",
+        "detached verification entry",
+        "review queue",
+        "operator attribution"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests",
+            "-q"
+          ],
+          "evidence_class": "measured",
+          "id": "tests",
+          "profile": "full",
+          "required_paths": [
+            "tests"
+          ],
+          "timeout_seconds": 600
+        }
+      ],
+      "refuses": [
+        "custody minting",
+        "truth adjudication",
+        "spoke-law ownership"
+      ],
+      "repository": "BigBirdReturns/axm-console"
+    },
+    {
+      "capabilities": [
+        "proposal.record",
+        "record.marker"
+      ],
+      "function": "Preserve journals, tasks, sessions, and proposals while surrendering judgment.",
+      "id": "axm-aide",
+      "local_names": [
+        "axm-aide"
+      ],
+      "owns": [
+        "memory custody",
+        "proposal record",
+        "brief projection"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests",
+            "-q"
+          ],
+          "evidence_class": "measured",
+          "id": "tests",
+          "profile": "full",
+          "required_paths": [
+            "tests"
+          ],
+          "timeout_seconds": 600
+        }
+      ],
+      "refuses": [
+        "proposal execution",
+        "inferred tags",
+        "autonomous disposition"
+      ],
+      "repository": "BigBirdReturns/axm-aide"
+    },
+    {
+      "capabilities": [
+        "job.reference",
+        "record.marker",
+        "route.observe"
+      ],
+      "function": "Circulate externally admitted work through an append-only job ledger.",
+      "id": "axm-bloodstream",
+      "local_names": [
+        "axm-bloodstream"
+      ],
+      "owns": [
+        "job circulation",
+        "claim and route state",
+        "invalidation and recovery record"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "tests",
+            "-q"
+          ],
+          "evidence_class": "measured",
+          "id": "tests",
+          "profile": "full",
+          "required_paths": [
+            "tests"
+          ],
+          "timeout_seconds": 600
+        }
+      ],
+      "refuses": [
+        "priority inference",
+        "provider selection",
+        "execution",
+        "outcome acceptance"
+      ],
+      "repository": "BigBirdReturns/axm-bloodstream"
+    },
+    {
+      "capabilities": [
+        "hinge.propose",
+        "record.marker",
+        "assumption.test"
+      ],
+      "function": "Attach explicit invalidators and human review states to plans and forecasts.",
+      "id": "axm-hinge",
+      "local_names": [
+        "axm-hinge"
+      ],
+      "owns": [
+        "hinge ledger",
+        "assumption linkage",
+        "review-priority projection"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "-q"
+          ],
+          "evidence_class": "measured",
+          "id": "tests",
+          "profile": "full",
+          "timeout_seconds": 600
+        }
+      ],
+      "refuses": [
+        "forecasting",
+        "hinge admission by model",
+        "automatic consequence execution"
+      ],
+      "repository": "BigBirdReturns/axm-hinge"
+    },
+    {
+      "capabilities": [
+        "audio.control",
+        "performance.surface",
+        "receipt.emit"
+      ],
+      "function": "Plan and execute local live audio through sealed material and phrase boundaries.",
+      "id": "earcrate",
+      "local_names": [
+        "earcrate"
+      ],
+      "owns": [
+        "audio material atlas",
+        "phrase planning",
+        "binding",
+        "render receipts"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "tests/run_gates.py"
+          ],
+          "evidence_class": "measured",
+          "id": "gates",
+          "profile": "full",
+          "required_paths": [
+            "tests/run_gates.py"
+          ],
+          "timeout_seconds": 1200
+        }
+      ],
+      "refuses": [
+        "raw-slice composition",
+        "runtime sample fallback",
+        "planning in audio callback"
+      ],
+      "repository": "BigBirdReturns/earcrate"
+    },
+    {
+      "capabilities": [
+        "compute.plan",
+        "compute.replan",
+        "topology.inject"
+      ],
+      "function": "Plan inspectable model placement over heterogeneous consumer GPU topology.",
+      "id": "axm-zombie-adapter",
+      "local_names": [
+        "axm-zombie-adapter"
+      ],
+      "owns": [
+        "cluster manifest",
+        "placement plan",
+        "failure replan",
+        "export scaffold"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "tests/golden_check.py"
+          ],
+          "evidence_class": "measured",
+          "id": "golden",
+          "profile": "smoke",
+          "required_paths": [
+            "tests/golden_check.py"
+          ],
+          "timeout_seconds": 240
+        }
+      ],
+      "refuses": [
+        "inference execution",
+        "hand-edited placement truth",
+        "OOM-shaped fake plans"
+      ],
+      "repository": "BigBirdReturns/axm-zombie-adapter"
+    },
+    {
+      "capabilities": [
+        "organ.evaluate",
+        "estate.observe",
+        "record.marker"
+      ],
+      "function": "Host self-contained, durable instruments and estate organ evaluation.",
+      "id": "axm-tools",
+      "local_names": [
+        "axm-tools"
+      ],
+      "owns": [
+        "organ-evolution evaluation",
+        "static tools",
+        "committed observation products"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "organ-evolution/scripts/validate.py"
+          ],
+          "evidence_class": "measured",
+          "id": "organ-evolution-validate",
+          "profile": "smoke",
+          "required_paths": [
+            "organ-evolution/scripts/validate.py"
+          ],
+          "timeout_seconds": 240
+        }
+      ],
+      "refuses": [
+        "hidden backend authority",
+        "silent staleness",
+        "cross-tool runtime dependencies"
+      ],
+      "repository": "BigBirdReturns/axm-tools"
+    },
+    {
+      "capabilities": [
+        "attention.candidate",
+        "tension.observe",
+        "record.marker"
+      ],
+      "function": "Derive semantic tension and attention candidates from heterogeneous observations.",
+      "id": "ghostbox",
+      "local_names": [
+        "GhostBox",
+        "ghostbox"
+      ],
+      "owns": [
+        "semantic coordinates",
+        "tension computation",
+        "attention candidate"
+      ],
+      "probes": [
+        {
+          "command": [
+            "python",
+            "-m",
+            "pytest",
+            "-q"
+          ],
+          "evidence_class": "measured",
+          "id": "tests",
+          "profile": "full",
+          "timeout_seconds": 900
+        }
+      ],
+      "refuses": [
+        "truth adjudication",
+        "action authority",
+        "automatic decision"
+      ],
+      "repository": "BigBirdReturns/GhostBox"
+    }
+  ],
+  "policy": {
+    "minimum_evidence": 2,
+    "prefer_local": true,
+    "require_determinism": true,
+    "require_replayability": true,
+    "weights": {
+      "authority_risk": -60,
+      "cost_microunits": -2,
+      "determinism": 45,
+      "evidence": 100,
+      "fragility": -35,
+      "latency_ms": -1,
+      "locality": 20,
+      "replayability": 40
+    }
+  },
+  "routes": [
+    {
+      "action_prefixes": [
+        "engineering",
+        "ship"
+      ],
+      "id": "route.world.direct",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 5,
+        "fragility": 1,
+        "latency_ms": 5,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "ship.engineering.control",
+      "required_role": "engineering",
+      "source_adapter": "lab.direct",
+      "tags": [
+        "software",
+        "direct",
+        "local",
+        "deterministic",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "engineering",
+        "ship"
+      ],
+      "fallback_route_ids": [
+        "route.world.direct"
+      ],
+      "id": "route.world.screen",
+      "metrics": {
+        "authority_risk": 1,
+        "cost_microunits": 1,
+        "determinism": 5,
+        "evidence": 4,
+        "fragility": 2,
+        "latency_ms": 45,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "ship.engineering.control",
+      "required_role": "engineering",
+      "source_adapter": "screen.procedure",
+      "tags": [
+        "software",
+        "screen",
+        "local",
+        "bounded-procedure",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "engineering",
+        "ship"
+      ],
+      "fallback_route_ids": [
+        "route.world.direct"
+      ],
+      "id": "route.world.agent",
+      "metrics": {
+        "authority_risk": 2,
+        "cost_microunits": 2,
+        "determinism": 4,
+        "evidence": 4,
+        "fragility": 2,
+        "latency_ms": 70,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "ship.engineering.control",
+      "required_role": "engineering",
+      "source_adapter": "agent.tool",
+      "tags": [
+        "software",
+        "agent",
+        "local",
+        "tool-schema",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "engineering",
+        "ship"
+      ],
+      "fallback_route_ids": [
+        "route.world.direct"
+      ],
+      "id": "route.world.quest",
+      "metrics": {
+        "authority_risk": 1,
+        "cost_microunits": 1,
+        "determinism": 4,
+        "evidence": 3,
+        "fragility": 3,
+        "latency_ms": 16,
+        "locality": 5,
+        "replayability": 4
+      },
+      "required_mandate": "ship.engineering.control",
+      "required_role": "engineering",
+      "source_adapter": "embodied.quest",
+      "tags": [
+        "embodied",
+        "quest",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "engineering",
+        "ship"
+      ],
+      "fallback_route_ids": [
+        "route.world.direct"
+      ],
+      "id": "route.world.esp32",
+      "metrics": {
+        "authority_risk": 1,
+        "cost_microunits": 1,
+        "determinism": 5,
+        "evidence": 3,
+        "fragility": 3,
+        "latency_ms": 4,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "ship.engineering.control",
+      "required_role": "engineering",
+      "source_adapter": "embodied.esp32",
+      "tags": [
+        "embodied",
+        "physical",
+        "esp32",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "underdrain"
+      ],
+      "id": "route.underdrain.direct",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 5,
+        "fragility": 1,
+        "latency_ms": 5,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "source_adapter": "lab.direct",
+      "tags": [
+        "software",
+        "direct",
+        "local",
+        "deterministic",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "underdrain"
+      ],
+      "fallback_route_ids": [
+        "route.underdrain.direct"
+      ],
+      "id": "route.underdrain.screen",
+      "metrics": {
+        "authority_risk": 1,
+        "cost_microunits": 1,
+        "determinism": 5,
+        "evidence": 4,
+        "fragility": 2,
+        "latency_ms": 45,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "source_adapter": "screen.procedure",
+      "tags": [
+        "software",
+        "screen",
+        "local",
+        "bounded-procedure",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "underdrain"
+      ],
+      "fallback_route_ids": [
+        "route.underdrain.direct"
+      ],
+      "id": "route.underdrain.quest",
+      "metrics": {
+        "authority_risk": 1,
+        "cost_microunits": 1,
+        "determinism": 4,
+        "evidence": 3,
+        "fragility": 3,
+        "latency_ms": 16,
+        "locality": 5,
+        "replayability": 4
+      },
+      "required_mandate": "underdrain.pump.control",
+      "required_role": "plumber",
+      "source_adapter": "embodied.quest",
+      "tags": [
+        "embodied",
+        "quest",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "record.marker"
+      ],
+      "id": "route.marker.aide",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 4,
+        "fragility": 1,
+        "latency_ms": 12,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "estate.record.marker",
+      "required_role": "operator",
+      "source_adapter": "console.marker",
+      "tags": [
+        "record",
+        "proposal",
+        "no-execution",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "aide.proposal"
+    },
+    {
+      "action_prefixes": [
+        "record.marker"
+      ],
+      "id": "route.marker.bloodstream",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 4,
+        "fragility": 1,
+        "latency_ms": 14,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "estate.record.marker",
+      "required_role": "operator",
+      "source_adapter": "console.marker",
+      "tags": [
+        "record",
+        "circulation-reference",
+        "no-priority",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "bloodstream.reference"
+    },
+    {
+      "action_prefixes": [
+        "record.marker"
+      ],
+      "id": "route.marker.hinge",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 3,
+        "fragility": 1,
+        "latency_ms": 16,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "estate.record.marker",
+      "required_role": "operator",
+      "source_adapter": "console.marker",
+      "tags": [
+        "record",
+        "hinge-proposal",
+        "human-review",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "hinge.proposal"
+    },
+    {
+      "action_prefixes": [
+        "ship.navigation"
+      ],
+      "fallback_route_ids": [
+        "route.ship.quest"
+      ],
+      "id": "route.ship.agent",
+      "metrics": {
+        "authority_risk": 2,
+        "cost_microunits": 2,
+        "determinism": 4,
+        "evidence": 4,
+        "fragility": 2,
+        "latency_ms": 65,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "ship.navigation.control",
+      "required_role": "navigator",
+      "source_adapter": "agent.tool",
+      "tags": [
+        "agent",
+        "crew",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "ship.navigation"
+      ],
+      "id": "route.ship.quest",
+      "metrics": {
+        "authority_risk": 1,
+        "cost_microunits": 1,
+        "determinism": 4,
+        "evidence": 3,
+        "fragility": 3,
+        "latency_ms": 15,
+        "locality": 5,
+        "replayability": 4
+      },
+      "required_mandate": "ship.navigation.control",
+      "required_role": "navigator",
+      "source_adapter": "embodied.quest",
+      "tags": [
+        "quest",
+        "crew",
+        "embodied",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "ship.navigation.ownership"
+      ],
+      "id": "route.ship.handoff",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 5,
+        "fragility": 1,
+        "latency_ms": 10,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "ship.command.handoff",
+      "required_role": "captain",
+      "source_adapter": "console.marker",
+      "tags": [
+        "command",
+        "handoff",
+        "human-attributed",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "world.input"
+    },
+    {
+      "action_prefixes": [
+        "earcrate.live"
+      ],
+      "id": "route.earcrate.performance",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 4,
+        "fragility": 2,
+        "latency_ms": 8,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "earcrate.live.control",
+      "required_role": "performer",
+      "source_adapter": "console.marker",
+      "tags": [
+        "audio",
+        "performance",
+        "phrase-boundary",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "earcrate.control"
+    },
+    {
+      "action_prefixes": [
+        "compute.topology"
+      ],
+      "id": "route.zombie.replan",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 4,
+        "fragility": 2,
+        "latency_ms": 25,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "compute.topology.plan",
+      "required_role": "operator",
+      "source_adapter": "console.marker",
+      "tags": [
+        "compute",
+        "planning",
+        "failure-injection",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "zombie.plan"
+    },
+    {
+      "action_prefixes": [
+        "estate.organ"
+      ],
+      "id": "route.organ.proposal",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 4,
+        "fragility": 1,
+        "latency_ms": 20,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "estate.organ.propose",
+      "required_role": "steward",
+      "source_adapter": "console.marker",
+      "tags": [
+        "estate",
+        "organ-evolution",
+        "human-decision",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "tools.organ"
+    },
+    {
+      "action_prefixes": [
+        "attention.candidate"
+      ],
+      "id": "route.attention.candidate",
+      "metrics": {
+        "authority_risk": 0,
+        "cost_microunits": 0,
+        "determinism": 5,
+        "evidence": 3,
+        "fragility": 2,
+        "latency_ms": 18,
+        "locality": 5,
+        "replayability": 5
+      },
+      "required_mandate": "attention.candidate",
+      "required_role": "observer",
+      "source_adapter": "ghostbox.attention",
+      "tags": [
+        "attention",
+        "candidate-only",
+        "no-authority",
+        "local",
+        "replayable"
+      ],
+      "target_adapter": "console.marker"
+    }
+  ]
+}

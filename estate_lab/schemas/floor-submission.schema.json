@@ -1,0 +1,163 @@
+{
+  "$id": "https://axm.tools/schemas/interaction-floor-conformance-1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adapter_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "adapter_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "badges": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "declared_profiles": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "descriptor_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "environment": {
+      "type": "object"
+    },
+    "evidence": {
+      "type": "object"
+    },
+    "floor_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "floor_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "format": {
+      "const": "axm-interaction-conformance/1"
+    },
+    "quality_tier": {
+      "enum": [
+        "declared",
+        "bronze",
+        "silver",
+        "gold",
+        "platinum"
+      ]
+    },
+    "result": {
+      "enum": [
+        "pass",
+        "fail"
+      ]
+    },
+    "submission_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "tests": {
+      "items": {
+        "properties": {
+          "profile": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "repeats": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "response_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "response_sha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "passed",
+              "failed"
+            ]
+          },
+          "vector_id": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "vector_id",
+          "profile",
+          "status",
+          "reason",
+          "request_id",
+          "response_id",
+          "response_sha256",
+          "repeats"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "verified_profiles": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array",
+      "uniqueItems": true
+    },
+    "verifier": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "format",
+    "submission_id",
+    "floor_id",
+    "floor_version",
+    "adapter_id",
+    "adapter_version",
+    "descriptor_id",
+    "declared_profiles",
+    "verified_profiles",
+    "quality_tier",
+    "badges",
+    "result",
+    "tests",
+    "evidence",
+    "verifier",
+    "environment"
+  ],
+  "title": "Interaction Floor conformance submission",
+  "type": "object"
+}

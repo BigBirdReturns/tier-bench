@@ -1,0 +1,882 @@
+{
+  "format": "axm-interaction-gap-ledger/1",
+  "gaps": [
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "protocol",
+      "closure_artifact": "FLOOR_SPECIFICATION.md + schemas",
+      "closure_test": "An implementation can exchange a semantic event without importing Estate Lab.",
+      "dependencies": [],
+      "evidence": [],
+      "failure_mode": "Every integration invents its own wire vocabulary.",
+      "id": "G001",
+      "mechanism": "Public request, event, response, descriptor, submission, and registry formats.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "closed",
+      "title": "Neutral interaction narrow waist"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "identity",
+      "closure_artifact": "canonical vectors",
+      "closure_test": "All golden identity vectors match the Python implementation.",
+      "dependencies": [
+        "G001"
+      ],
+      "evidence": [],
+      "failure_mode": "Different languages sign or replay different bytes.",
+      "id": "G002",
+      "mechanism": "Sorted UTF-8 JSON, finite numbers, duplicate-key refusal, and SHA-256 namespaced identifiers.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "closed",
+      "title": "Cross-language canonical identities"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "authority",
+      "closure_artifact": "authority fields + negative vectors",
+      "closure_test": "Removing or changing any required authority field refuses before acceptance.",
+      "dependencies": [
+        "G001"
+      ],
+      "evidence": [],
+      "failure_mode": "A device or model gains authority merely by producing an input.",
+      "id": "G003",
+      "mechanism": "Authority remains explicit and immutable through an adapter.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "closed",
+      "title": "Actor, role, mandate, and ownership envelope"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "ordering",
+      "closure_artifact": "ordering section + vectors",
+      "closure_test": "Duplicate bytes are idempotent, altered duplicate bytes refuse, and expired requests refuse.",
+      "dependencies": [
+        "G002",
+        "G003"
+      ],
+      "evidence": [],
+      "failure_mode": "Retries double-apply actions or stale sources regain control.",
+      "id": "G004",
+      "mechanism": "Content-derived request/event IDs, sequence, deadline, correlation, and duplicate rule.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "closed",
+      "title": "Ordering, deadline, causality, and idempotency law"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "discovery",
+      "closure_artifact": "floor-adapter.schema.json + adapter example",
+      "closure_test": "A declaration validates without an AXM manifest.",
+      "dependencies": [
+        "G001"
+      ],
+      "evidence": [],
+      "failure_mode": "Discovery depends on tribal knowledge or repository-specific configuration.",
+      "id": "G005",
+      "mechanism": "Adapter declaration names versions, profiles, bindings, capabilities, supply bytes, modalities, and authority exclusions.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Portable adapter self-description"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "versioning",
+      "closure_artifact": "version-negotiation section",
+      "closure_test": "Unknown majors refuse and unknown extensions are preserved or explicitly reported.",
+      "dependencies": [
+        "G001"
+      ],
+      "evidence": [],
+      "failure_mode": "Upgrades silently reinterpret fields.",
+      "id": "G006",
+      "mechanism": "Same-major compatibility rule and explicit unknown-major/extension behavior.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Major-version negotiation and extension preservation"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "extensions",
+      "closure_artifact": "FLOOR_GOVERNANCE.md",
+      "closure_test": "An extension that grants authority fails review and conformance.",
+      "dependencies": [
+        "G001"
+      ],
+      "evidence": [],
+      "failure_mode": "Vendor fields seize core semantics.",
+      "id": "G007",
+      "mechanism": "Reverse-domain extension identifiers and authority non-expansion rule.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Namespaced extension governance"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "bindings",
+      "closure_artifact": "reference adapter + binding spec",
+      "closure_test": "Reference adapter passes positive and negative vectors under shell=False.",
+      "dependencies": [
+        "G005"
+      ],
+      "evidence": [],
+      "failure_mode": "Adapters execute unbounded shell text or mutate semantics.",
+      "id": "G008",
+      "mechanism": "Shell-free argv invocation with exact request and response files.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "closed",
+      "title": "Reference command-json binding"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "bindings",
+      "closure_artifact": "floor bindings table + binding guide",
+      "closure_test": "Each binding states correlation and authority carriage without changing the core envelope.",
+      "dependencies": [
+        "G001"
+      ],
+      "evidence": [],
+      "failure_mode": "Each transport invents a different semantic model.",
+      "id": "G009",
+      "mechanism": "Declared mappings for CloudEvents, AsyncAPI, MQTT, WebSocket, OSC, WIT, and WoT.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "medium",
+      "status": "closed",
+      "title": "Protocol binding registry"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "conformance",
+      "closure_artifact": "FLOOR_CONFORMANCE.md + vectors",
+      "closure_test": "The reference adapter passes every claimed profile and negative control.",
+      "dependencies": [
+        "G002",
+        "G003",
+        "G008"
+      ],
+      "evidence": [],
+      "failure_mode": "Compatibility remains a README claim.",
+      "id": "G010",
+      "mechanism": "Core, replay, lifecycle, observability, supply, privacy, accessibility, and delegation profiles.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "closed",
+      "title": "Public conformance profiles and vectors"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "conformance",
+      "closure_artifact": "quality tier definitions",
+      "closure_test": "Tier projection cannot exceed verified profiles or independent evidence.",
+      "dependencies": [
+        "G010"
+      ],
+      "evidence": [],
+      "failure_mode": "A single green smoke test is presented as full compatibility.",
+      "id": "G011",
+      "mechanism": "Declared, bronze, silver, gold, platinum tiers from verified profile sets.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Quality tiers and badges"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "evidence",
+      "closure_artifact": "floor-submission.schema.json",
+      "closure_test": "Editing any identity-bearing field changes or invalidates submission_id.",
+      "dependencies": [
+        "G010",
+        "G011"
+      ],
+      "evidence": [],
+      "failure_mode": "Badges cannot be independently checked.",
+      "id": "G012",
+      "mechanism": "Submission binds floor, descriptor, vectors, tests, tier, and evidence digests.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "closed",
+      "title": "Content-addressed conformance submission"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "registry",
+      "closure_artifact": "floor-registry.schema.json + builder",
+      "closure_test": "Failed, declared-only, duplicate, or wrong-floor submissions refuse admission.",
+      "dependencies": [
+        "G012"
+      ],
+      "evidence": [],
+      "failure_mode": "Discovery becomes a popularity list or vendor assertion.",
+      "id": "G013",
+      "mechanism": "Registry admits pass plus bronze-or-higher submissions, keyed by adapter/version.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Portable adapter registry"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "onboarding",
+      "closure_artifact": "floor init-adapter command",
+      "closure_test": "A fresh generated adapter passes the same public conformance suite.",
+      "dependencies": [
+        "G005",
+        "G010"
+      ],
+      "evidence": [],
+      "failure_mode": "Only AXM maintainers can implement the protocol.",
+      "id": "G014",
+      "mechanism": "Generator emits stdlib adapter, descriptor, docs, and supply digest.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Zero-dependency adapter starter"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "governance",
+      "closure_artifact": "floor-gap-ledger.schema.json",
+      "closure_test": "Closed gaps may not depend on open gaps and the dependency graph is acyclic.",
+      "dependencies": [
+        "G001"
+      ],
+      "evidence": [],
+      "failure_mode": "Roadmaps relabel intentions as completion.",
+      "id": "G015",
+      "mechanism": "Every missing layer carries mechanism, failure mode, artifact, test, owner, and dependencies.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "medium",
+      "status": "closed",
+      "title": "Executable gap ledger"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "governance",
+      "closure_artifact": "FLOOR_GOVERNANCE.md",
+      "closure_test": "A breaking change cannot retain the same major or vector identity.",
+      "dependencies": [
+        "G006",
+        "G007",
+        "G015"
+      ],
+      "evidence": [],
+      "failure_mode": "A maintainer can change meaning without a migration path.",
+      "id": "G016",
+      "mechanism": "Spec changes require vectors, compatibility statement, migration, and authority review.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Public change, deprecation, and extension law"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "observability",
+      "closure_artifact": "observability@1",
+      "closure_test": "Trace context survives while response authority remains unchanged.",
+      "dependencies": [
+        "G010"
+      ],
+      "evidence": [],
+      "failure_mode": "Logs become implicit proof or cannot correlate a run.",
+      "id": "G017",
+      "mechanism": "W3C traceparent echo and structured observation profile.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Trace context without telemetry authority"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "privacy",
+      "closure_artifact": "privacy@1",
+      "closure_test": "Descriptor and vector preserve restricted classification.",
+      "dependencies": [
+        "G010"
+      ],
+      "evidence": [],
+      "failure_mode": "Adapters silently retain or downgrade sensitive payloads.",
+      "id": "G018",
+      "mechanism": "Public/internal/confidential/restricted classes and explicit retention behavior.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Privacy classification and retention declaration"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "accessibility",
+      "closure_artifact": "accessibility@1",
+      "closure_test": "Descriptor without modalities or fallback fails validation.",
+      "dependencies": [
+        "G010"
+      ],
+      "evidence": [],
+      "failure_mode": "Accessible routes become undocumented side paths.",
+      "id": "G019",
+      "mechanism": "Input/output modalities and fallbacks are first-class profile data.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "Accessibility modalities and fallback declaration"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "agents",
+      "closure_artifact": "agent-delegation@1",
+      "closure_test": "Delegation ID survives and may_escalate=true is refused.",
+      "dependencies": [
+        "G003",
+        "G017"
+      ],
+      "evidence": [],
+      "failure_mode": "An agent converts delegated access into broader authority.",
+      "id": "G020",
+      "mechanism": "Delegation identity is preserved and authority escalation is forbidden.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "closed",
+      "title": "Human and agent delegation boundary"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "supply-chain",
+      "closure_artifact": "supply@1",
+      "closure_test": "Changing adapter bytes without updating descriptor fails validation.",
+      "dependencies": [
+        "G005",
+        "G010"
+      ],
+      "evidence": [],
+      "failure_mode": "A passing name points to different code later.",
+      "id": "G021",
+      "mechanism": "Descriptor binds license expression and artifact SHA-256.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "closed",
+      "title": "License and exact implementation byte binding"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "portability",
+      "closure_artifact": "interaction-floor.wit",
+      "closure_test": "WIT package exposes one strict handle function and no ambient authority.",
+      "dependencies": [
+        "G001"
+      ],
+      "evidence": [],
+      "failure_mode": "Language-neutral sandboxing remains aspirational.",
+      "id": "G022",
+      "mechanism": "WIT world defines a sandbox-friendly request/response export.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "medium",
+      "status": "closed",
+      "title": "WebAssembly Component Model interface"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "contracts",
+      "closure_artifact": "generated interaction-floor.asyncapi.yaml",
+      "closure_test": "Repeated rendering is byte-identical and binds floor_id.",
+      "dependencies": [
+        "G001",
+        "G009"
+      ],
+      "evidence": [],
+      "failure_mode": "Event-driven consumers must hand-author a second contract.",
+      "id": "G023",
+      "mechanism": "Deterministic AsyncAPI channel projection references floor schemas.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "medium",
+      "status": "closed",
+      "title": "AsyncAPI projection"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "independence",
+      "closure_artifact": "Rust or TypeScript verifier",
+      "closure_test": "Independent verifier accepts gold vectors and rejects all invalid vectors.",
+      "dependencies": [
+        "G002",
+        "G010",
+        "G012"
+      ],
+      "evidence": [],
+      "failure_mode": "Reference implementation bugs define correctness.",
+      "id": "G024",
+      "mechanism": "A second implementation validates descriptors, vectors, submissions, and registry IDs.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "open",
+      "title": "Independent non-Python verifier"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "sdk",
+      "closure_artifact": "multi-language SDKs",
+      "closure_test": "Each SDK produces the same IDs and passes all vectors.",
+      "dependencies": [
+        "G002",
+        "G010"
+      ],
+      "evidence": [],
+      "failure_mode": "Adopters rewrite protocol code and drift.",
+      "id": "G025",
+      "mechanism": "Generated types and canonicalization helpers from the public schemas.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "open",
+      "title": "TypeScript, Rust, and C# SDKs"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "testing",
+      "closure_artifact": "fuzz corpus + CI",
+      "closure_test": "No crash, silent acceptance, or identity collision over the bounded corpus.",
+      "dependencies": [
+        "G010",
+        "G012",
+        "G013"
+      ],
+      "evidence": [],
+      "failure_mode": "Only curated vectors are safe.",
+      "id": "G026",
+      "mechanism": "Fuzz strict JSON, envelope validation, response mutation, and registry admission.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "open",
+      "title": "Property, mutation, and fuzz tests"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "distribution",
+      "closure_artifact": "OCI layout + ORAS recipe",
+      "closure_test": "A clean host pulls and verifies the floor without Git.",
+      "dependencies": [
+        "G012",
+        "G021"
+      ],
+      "evidence": [],
+      "failure_mode": "Consumers depend on one repository layout.",
+      "id": "G027",
+      "mechanism": "Publish spec, schemas, vectors, SDKs, and submissions as OCI artifacts.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "medium",
+      "status": "open",
+      "title": "OCI artifact publication"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "supply-chain",
+      "closure_artifact": "signed release bundle",
+      "closure_test": "Offline verifier binds archive, source commit, SBOM, and conformance submission.",
+      "dependencies": [
+        "G021",
+        "G027"
+      ],
+      "evidence": [],
+      "failure_mode": "A registry entry cannot prove which release produced it.",
+      "id": "G028",
+      "mechanism": "SLSA provenance, Sigstore bundle, SPDX/CycloneDX, and offline verification.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "open",
+      "title": "Signed release and transparency evidence"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "registry",
+      "closure_artifact": "hosted registry + mirror test",
+      "closure_test": "Two independent mirrors reproduce the same registry_id.",
+      "dependencies": [
+        "G013",
+        "G027"
+      ],
+      "evidence": [],
+      "failure_mode": "One maintainer controls discoverability or outage availability.",
+      "id": "G029",
+      "mechanism": "Static registry, append-only submissions, mirrors, and revocation rows.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "medium",
+      "status": "open",
+      "title": "Hosted public registry and mirror protocol"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "adapters",
+      "closure_artifact": "supplier qualification cells",
+      "closure_test": "Each supplier can be installed, exercised, removed, and replaced with identical semantic receipts.",
+      "dependencies": [
+        "G010",
+        "G013",
+        "G014"
+      ],
+      "evidence": [],
+      "failure_mode": "The floor proves only an echo adapter.",
+      "id": "G030",
+      "mechanism": "DCS-BIOS, MobiFlight, CockpitOS, WLED, Unity Input System, and OpenXR adapters run the common vectors.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "in-progress",
+      "title": "Live upstream reference cells"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "physical",
+      "closure_artifact": "system-physical@1 profile",
+      "closure_test": "A real device cold-boots, reconnects, and replays to identical semantic state.",
+      "dependencies": [
+        "G004",
+        "G010",
+        "G030"
+      ],
+      "evidence": [],
+      "failure_mode": "Software evidence borrows physical credibility.",
+      "id": "G031",
+      "mechanism": "Calibration, raw events, health, disconnect/reconnect, snapshot restoration, and independent replay.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "open",
+      "title": "Commissioned physical conformance profile"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "accessibility",
+      "closure_artifact": "system-accessibility@1 receipts",
+      "closure_test": "Named user journeys pass with retained evidence and no semantic downgrade.",
+      "dependencies": [
+        "G019",
+        "G030"
+      ],
+      "evidence": [],
+      "failure_mode": "Declared modalities do not work for actual users.",
+      "id": "G032",
+      "mechanism": "Keyboard, switch, voice, controller, screen-reader, caption, contrast, and reduced-motion trials.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "open",
+      "title": "User-tested accessibility conformance"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "hardware-lab",
+      "closure_artifact": "board farm manifest + reservation receipts",
+      "closure_test": "Concurrent jobs cannot claim the same device and every run restores baseline.",
+      "dependencies": [
+        "G031"
+      ],
+      "evidence": [],
+      "failure_mode": "Physical qualification cannot scale or reproduce.",
+      "id": "G033",
+      "mechanism": "labgrid/OpenHTF-backed inventory, lease, flash, power-cycle, capture, and cleanup.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "open",
+      "title": "Shared hardware reservation and board farm"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "community",
+      "closure_artifact": "CONTRIBUTING floor path",
+      "closure_test": "A clean third-party starter reaches registry admission without private instructions.",
+      "dependencies": [
+        "G013",
+        "G014",
+        "G016"
+      ],
+      "evidence": [],
+      "failure_mode": "The registry remains effectively private.",
+      "id": "G034",
+      "mechanism": "Template PR, automated conformance, maintainer review, revocation, and appeal process.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "medium",
+      "status": "open",
+      "title": "External submission and review workflow"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "security",
+      "closure_artifact": "SECURITY_FLOOR.md + review",
+      "closure_test": "Every threat has a negative vector, mitigation, owner, and residual risk.",
+      "dependencies": [
+        "G003",
+        "G004",
+        "G007",
+        "G010"
+      ],
+      "evidence": [],
+      "failure_mode": "Conformance enables unsafe integration patterns.",
+      "id": "G035",
+      "mechanism": "Threat model covers confused deputy, replay, injection, resource exhaustion, extension abuse, and malicious descriptors.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "critical",
+      "status": "open",
+      "title": "External protocol threat model and security review"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "versioning",
+      "closure_artifact": "compatibility vector family",
+      "closure_test": "Old verifier behavior is stable and new optional fields preserve identity law.",
+      "dependencies": [
+        "G006",
+        "G010"
+      ],
+      "evidence": [],
+      "failure_mode": "Version rules exist only in prose.",
+      "id": "G036",
+      "mechanism": "Frozen v1 vectors plus additive v1.x and rejecting v2 fixtures.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "in-progress",
+      "title": "Backward and forward compatibility vectors"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "durability",
+      "closure_artifact": "resurrection kit",
+      "closure_test": "A clean-room implementation passes vectors using only frozen documents and primitives.",
+      "dependencies": [
+        "G002",
+        "G010",
+        "G024"
+      ],
+      "evidence": [],
+      "failure_mode": "The floor dies with its toolchain.",
+      "id": "G037",
+      "mechanism": "Spec-only reimplementation with no package registry, service, or reference code.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "open",
+      "title": "Offline resurrection and stranded-implementer test"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "privacy",
+      "closure_artifact": "privacy data-flow ledger",
+      "closure_test": "Each field has purpose, retention, and crossing rules with negative tests.",
+      "dependencies": [
+        "G018",
+        "G035"
+      ],
+      "evidence": [],
+      "failure_mode": "Privacy classes do not constrain data flow.",
+      "id": "G038",
+      "mechanism": "Map collection, storage, export, deletion, redaction, and cross-boundary movement.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "high",
+      "status": "open",
+      "title": "Protocol threat and data-flow model"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "badges",
+      "closure_artifact": "registry markdown + submission badges",
+      "closure_test": "Editing claimed badges cannot change verified profile computation.",
+      "dependencies": [
+        "G011",
+        "G012",
+        "G013"
+      ],
+      "evidence": [],
+      "failure_mode": "Projects self-award compatibility logos.",
+      "id": "G039",
+      "mechanism": "Registry and conformance receipt derive tier and badges from verified profiles.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "low",
+      "status": "closed",
+      "title": "Deterministic certification badge and status projection"
+    },
+    {
+      "actors": [
+        "external adapter author",
+        "floor verifier",
+        "domain authority"
+      ],
+      "category": "measurement",
+      "closure_artifact": "public metrics ledger",
+      "closure_test": "Reports distinguish declarations, conformance, live qualification, and replacements.",
+      "dependencies": [
+        "G029",
+        "G030",
+        "G034"
+      ],
+      "evidence": [],
+      "failure_mode": "The floor optimizes for adoption count rather than reduced integration burden.",
+      "id": "G040",
+      "mechanism": "Measure adapter pass rate, fault classes, upgrade burden, replacement time, and recovery.",
+      "owner": "Interaction Floor maintainers",
+      "severity": "medium",
+      "status": "open",
+      "title": "Adoption, failure, and replacement metrics"
+    }
+  ],
+  "ledger_id": "floorgaps1_c871e6d91a8fe7992ba3c6d60b7390f3",
+  "reviewed_as_of": "2026-07-28",
+  "scope": "Public interoperability, conformance, distribution, governance, physical proof, accessibility, security, and community adoption gaps."
+}

@@ -1,0 +1,288 @@
+{
+  "actions": [
+    {
+      "authority": {
+        "actor": "nav-ai",
+        "mandate": "ship.navigation.control",
+        "ownership_epoch": 11,
+        "role": "navigator"
+      },
+      "expected": {
+        "after": 0.35
+      },
+      "operation": "set",
+      "projection": {
+        "display": {
+          "holder": "nav-ai",
+          "station": "navigation"
+        }
+      },
+      "required_mandate": "ship.navigation.control",
+      "required_role": "navigator",
+      "route_ids": [
+        "route.ship.agent"
+      ],
+      "route_query": {},
+      "semantic_id": "ship.navigation.throttle.set",
+      "state_path": "/navigation/throttle",
+      "step_id": "ai-throttle",
+      "subject": "ship.navigation.throttle",
+      "value": 0.35
+    },
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "ship.command.handoff",
+        "ownership_epoch": 4,
+        "role": "captain"
+      },
+      "expected": {
+        "after": {
+          "actor": "jonathan",
+          "epoch": 12,
+          "mandate": "ship.navigation.control",
+          "role": "navigator"
+        }
+      },
+      "operation": "set",
+      "projection": {
+        "audio": {
+          "cue": "control-transferred"
+        },
+        "display": {
+          "event": "ownership-transfer",
+          "station": "command"
+        }
+      },
+      "required_mandate": "ship.command.handoff",
+      "required_role": "captain",
+      "route_ids": [
+        "route.ship.handoff"
+      ],
+      "route_query": {},
+      "semantic_id": "ship.navigation.ownership.transfer",
+      "state_path": "/_ownership/ship.navigation.throttle",
+      "step_id": "transfer-ownership",
+      "subject": "ship.navigation.ownership",
+      "value": {
+        "actor": "jonathan",
+        "epoch": 12,
+        "mandate": "ship.navigation.control",
+        "role": "navigator"
+      }
+    },
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "ship.command.handoff",
+        "ownership_epoch": 4,
+        "role": "captain"
+      },
+      "expected": {
+        "after": "jonathan"
+      },
+      "operation": "set",
+      "projection": {
+        "display": {
+          "holder": "jonathan",
+          "station": "navigation"
+        }
+      },
+      "required_mandate": "ship.command.handoff",
+      "required_role": "captain",
+      "route_ids": [
+        "route.ship.handoff"
+      ],
+      "route_query": {},
+      "semantic_id": "ship.navigation.ownership.display",
+      "state_path": "/navigation/control_holder",
+      "step_id": "record-holder",
+      "subject": "ship.navigation.ownership",
+      "value": "jonathan"
+    },
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "ship.navigation.control",
+        "ownership_epoch": 12,
+        "role": "navigator"
+      },
+      "expected": {
+        "after": 0.6
+      },
+      "operation": "set",
+      "projection": {
+        "display": {
+          "holder": "jonathan",
+          "station": "navigation"
+        },
+        "haptic": {
+          "pattern": "soft-takeover-complete"
+        }
+      },
+      "required_mandate": "ship.navigation.control",
+      "required_role": "navigator",
+      "route_ids": [
+        "route.ship.quest"
+      ],
+      "route_query": {},
+      "semantic_id": "ship.navigation.throttle.set",
+      "state_path": "/navigation/throttle",
+      "step_id": "human-throttle",
+      "subject": "ship.navigation.throttle",
+      "value": 0.6
+    },
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "ship.command.handoff",
+        "ownership_epoch": 4,
+        "role": "captain"
+      },
+      "expected": {
+        "after": [
+          {
+            "epoch": 12,
+            "from": "nav-ai",
+            "state_jump": false,
+            "to": "jonathan"
+          }
+        ]
+      },
+      "operation": "append",
+      "projection": {
+        "display": {
+          "receipt": "handoff-recorded",
+          "station": "command"
+        }
+      },
+      "required_mandate": "ship.command.handoff",
+      "required_role": "captain",
+      "route_ids": [
+        "route.ship.handoff"
+      ],
+      "route_query": {},
+      "semantic_id": "ship.navigation.ownership.log",
+      "state_path": "/navigation/handoff_log",
+      "step_id": "log-handoff",
+      "subject": "ship.navigation.ownership",
+      "value": {
+        "epoch": 12,
+        "from": "nav-ai",
+        "state_jump": false,
+        "to": "jonathan"
+      }
+    }
+  ],
+  "equivalence_route_ids": [],
+  "expected_final_state": {
+    "_ownership": {
+      "ship.navigation.throttle": {
+        "actor": "jonathan",
+        "epoch": 12,
+        "mandate": "ship.navigation.control",
+        "role": "navigator"
+      }
+    },
+    "navigation": {
+      "control_holder": "jonathan",
+      "handoff_log": [
+        {
+          "epoch": 12,
+          "from": "nav-ai",
+          "state_jump": false,
+          "to": "jonathan"
+        }
+      ],
+      "throttle": 0.6
+    }
+  },
+  "fault_trials": [
+    {
+      "expected_outcome": "refused:ownership_epoch_stale",
+      "fault": "stale_epoch",
+      "id": "stale-human-epoch-cannot-act-after-transfer",
+      "parameters": {
+        "delta": -1,
+        "setup_step_ids": [
+          "transfer-ownership"
+        ],
+        "step_id": "human-throttle"
+      },
+      "route_id": "route.ship.quest"
+    },
+    {
+      "expected_outcome": "duplicate",
+      "fault": "duplicate_event",
+      "id": "handoff-duplicate-idempotent",
+      "parameters": {
+        "step_id": "transfer-ownership"
+      },
+      "route_id": "route.ship.handoff"
+    }
+  ],
+  "format": "axm-estate-scenario/1",
+  "id": "common-ship-handoff-001",
+  "initial_state": {
+    "_ownership": {
+      "ship.navigation.ownership": {
+        "actor": "jonathan",
+        "epoch": 4,
+        "mandate": "ship.command.handoff",
+        "role": "captain"
+      },
+      "ship.navigation.throttle": {
+        "actor": "nav-ai",
+        "epoch": 11,
+        "mandate": "ship.navigation.control",
+        "role": "navigator"
+      }
+    },
+    "navigation": {
+      "control_holder": "nav-ai",
+      "handoff_log": [],
+      "throttle": 0.0
+    }
+  },
+  "invariants": [
+    "Only the current ownership epoch may actuate the controlled subject.",
+    "Handoff changes authority before the new source acts.",
+    "Can AI, captain, and human embodied sources transfer one control without a value jump, stale command, or hidden authority leak?"
+  ],
+  "kind": "sequence",
+  "objective": "Prove an AI navigator can hold a control lease, a captain can transfer it, and a human Quest source can take over without a state jump or stale-epoch action.",
+  "routing_trials": [
+    {
+      "action_prefix": "ship.navigation.throttle.set",
+      "candidate_route_ids": [
+        "route.ship.agent"
+      ],
+      "constraints": {
+        "required_mandate": "ship.navigation.control",
+        "required_role": "navigator"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.ship.quest",
+      "id": "agent-loss-falls-back-to-quest",
+      "unavailable_route_ids": [
+        "route.ship.agent"
+      ]
+    },
+    {
+      "action_prefix": "ship.navigation.ownership.transfer",
+      "candidate_route_ids": [
+        "route.ship.handoff",
+        "route.ship.agent"
+      ],
+      "constraints": {
+        "required_mandate": "ship.command.handoff",
+        "required_role": "captain"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.ship.handoff",
+      "id": "handoff-needs-command-route",
+      "unavailable_route_ids": []
+    }
+  ],
+  "title": "Common Ship Source Ownership Handoff"
+}

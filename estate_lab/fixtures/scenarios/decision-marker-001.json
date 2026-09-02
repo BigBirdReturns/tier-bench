@@ -1,0 +1,265 @@
+{
+  "actions": [
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "estate.record.marker",
+        "ownership_epoch": 1,
+        "role": "operator"
+      },
+      "expected": {
+        "state_subset": {
+          "records": {
+            "aide": [
+              {
+                "authority": "proposal-only",
+                "kind": "decision",
+                "text": "Use one semantic surface contract across game and physical adapters"
+              }
+            ]
+          }
+        }
+      },
+      "operation": "append",
+      "projection": {
+        "display": {
+          "lane": "aide",
+          "state": "proposal-recorded"
+        }
+      },
+      "required_mandate": "estate.record.marker",
+      "required_role": "operator",
+      "route_ids": [
+        "route.marker.aide"
+      ],
+      "route_query": {},
+      "semantic_id": "record.marker.decision",
+      "state_path": "/records/aide",
+      "step_id": "mark-decision",
+      "subject": "estate.marker.aide",
+      "value": {
+        "authority": "proposal-only",
+        "kind": "decision",
+        "text": "Use one semantic surface contract across game and physical adapters"
+      }
+    },
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "estate.record.marker",
+        "ownership_epoch": 1,
+        "role": "operator"
+      },
+      "expected": {
+        "after": [
+          {
+            "kind": "handoff",
+            "priority": "unstated",
+            "text": "Common Control Proof may circulate after all equivalence gates pass"
+          }
+        ]
+      },
+      "operation": "append",
+      "projection": {
+        "display": {
+          "lane": "bloodstream",
+          "state": "reference-recorded"
+        }
+      },
+      "required_mandate": "estate.record.marker",
+      "required_role": "operator",
+      "route_ids": [
+        "route.marker.bloodstream"
+      ],
+      "route_query": {},
+      "semantic_id": "record.marker.handoff",
+      "state_path": "/records/bloodstream",
+      "step_id": "mark-handoff",
+      "subject": "estate.marker.bloodstream",
+      "value": {
+        "kind": "handoff",
+        "priority": "unstated",
+        "text": "Common Control Proof may circulate after all equivalence gates pass"
+      }
+    },
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "estate.record.marker",
+        "ownership_epoch": 1,
+        "role": "operator"
+      },
+      "expected": {
+        "after": [
+          {
+            "kind": "risk",
+            "review_state": "proposed",
+            "text": "Physical equivalence is invalid until electrical commissioning passes"
+          }
+        ]
+      },
+      "operation": "append",
+      "projection": {
+        "display": {
+          "lane": "hinge",
+          "state": "candidate-recorded"
+        }
+      },
+      "required_mandate": "estate.record.marker",
+      "required_role": "operator",
+      "route_ids": [
+        "route.marker.hinge"
+      ],
+      "route_query": {},
+      "semantic_id": "record.marker.risk",
+      "state_path": "/records/hinge",
+      "step_id": "mark-risk",
+      "subject": "estate.marker.hinge",
+      "value": {
+        "kind": "risk",
+        "review_state": "proposed",
+        "text": "Physical equivalence is invalid until electrical commissioning passes"
+      }
+    }
+  ],
+  "equivalence_route_ids": [],
+  "expected_final_state": {
+    "records": {
+      "aide": [
+        {
+          "authority": "proposal-only",
+          "kind": "decision",
+          "text": "Use one semantic surface contract across game and physical adapters"
+        }
+      ],
+      "bloodstream": [
+        {
+          "kind": "handoff",
+          "priority": "unstated",
+          "text": "Common Control Proof may circulate after all equivalence gates pass"
+        }
+      ],
+      "hinge": [
+        {
+          "kind": "risk",
+          "review_state": "proposed",
+          "text": "Physical equivalence is invalid until electrical commissioning passes"
+        }
+      ]
+    }
+  },
+  "fault_trials": [
+    {
+      "expected_outcome": "duplicate",
+      "fault": "duplicate_event",
+      "id": "marker-duplicate-idempotent",
+      "parameters": {
+        "step_id": "mark-decision"
+      },
+      "route_id": "route.marker.aide"
+    },
+    {
+      "expected_outcome": "refused:ownership_epoch_stale",
+      "fault": "stale_epoch",
+      "id": "marker-stale-epoch-refused",
+      "parameters": {
+        "delta": 1,
+        "step_id": "mark-handoff"
+      },
+      "route_id": "route.marker.bloodstream"
+    }
+  ],
+  "format": "axm-estate-scenario/1",
+  "id": "decision-marker-001",
+  "initial_state": {
+    "_ownership": {
+      "estate.marker.aide": {
+        "actor": "jonathan",
+        "epoch": 1,
+        "mandate": "estate.record.marker",
+        "role": "operator"
+      },
+      "estate.marker.bloodstream": {
+        "actor": "jonathan",
+        "epoch": 1,
+        "mandate": "estate.record.marker",
+        "role": "operator"
+      },
+      "estate.marker.hinge": {
+        "actor": "jonathan",
+        "epoch": 1,
+        "mandate": "estate.record.marker",
+        "role": "operator"
+      }
+    },
+    "records": {
+      "aide": [],
+      "bloodstream": [],
+      "hinge": []
+    }
+  },
+  "invariants": [
+    "Markers preserve declared meaning and actor attribution.",
+    "A proposal, job reference, or hinge candidate never becomes execution authority.",
+    "Can one operator gesture create durable, correctly routed records without allowing any receiver to decide or act?"
+  ],
+  "kind": "sequence",
+  "objective": "Route one operator's decision, handoff, and risk markers into Aide, Bloodstream, and Hinge without granting any receiver execution or disposition authority.",
+  "routing_trials": [
+    {
+      "action_prefix": "record.marker.decision",
+      "candidate_route_ids": [
+        "route.marker.aide",
+        "route.marker.bloodstream",
+        "route.marker.hinge"
+      ],
+      "constraints": {
+        "required_mandate": "estate.record.marker",
+        "required_role": "operator"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.marker.aide",
+      "id": "default-marker-goes-to-aide",
+      "unavailable_route_ids": []
+    },
+    {
+      "action_prefix": "record.marker.risk",
+      "candidate_route_ids": [
+        "route.marker.aide",
+        "route.marker.bloodstream",
+        "route.marker.hinge"
+      ],
+      "constraints": {
+        "require_tags": [
+          "hinge-proposal"
+        ],
+        "required_mandate": "estate.record.marker",
+        "required_role": "operator"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.marker.hinge",
+      "id": "hinge-tag-selects-hinge",
+      "unavailable_route_ids": []
+    },
+    {
+      "action_prefix": "record.marker.decision",
+      "candidate_route_ids": [
+        "route.marker.aide",
+        "route.marker.bloodstream",
+        "route.marker.hinge"
+      ],
+      "constraints": {
+        "require_tags": [
+          "execution"
+        ],
+        "required_mandate": "estate.record.marker",
+        "required_role": "operator"
+      },
+      "expected_outcome": "refused",
+      "expected_route_id": null,
+      "id": "execution-route-refused",
+      "unavailable_route_ids": []
+    }
+  ],
+  "title": "Decision Marker Cross-Estate Intake"
+}

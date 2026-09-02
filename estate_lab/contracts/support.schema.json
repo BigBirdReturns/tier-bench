@@ -1,0 +1,15 @@
+{
+  "$id": "https://surface-interop.dev/contracts/support.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "disclosure": {"type": "string"},
+    "doctor": {"type": "object"},
+    "format": {"const": "surface-interop-support/1"},
+    "reports": {"items": {"type": "object"}, "type": "array"},
+    "support_id": {"pattern": "^surfsupport1_[0-9a-f]{32}$", "type": "string"}
+  },
+  "required": ["format", "doctor", "reports", "disclosure", "support_id"],
+  "title": "Surface Interop redacted support receipt",
+  "type": "object"
+}

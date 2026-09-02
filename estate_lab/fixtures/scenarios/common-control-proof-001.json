@@ -1,0 +1,224 @@
+{
+  "actions": [
+    {
+      "authority": {
+        "actor": "jonathan",
+        "mandate": "ship.engineering.control",
+        "ownership_epoch": 7,
+        "role": "engineering"
+      },
+      "expected": {
+        "after": true,
+        "control_question": "Did every embodiment engage the same governed bypass state?",
+        "state_subset": {
+          "engineering": {
+            "coolant_bypass": true
+          }
+        }
+      },
+      "operation": "set",
+      "projection": {
+        "audio": {
+          "cue": "coolant-bypass-engaged",
+          "priority": 40
+        },
+        "display": {
+          "field": "coolant_bypass",
+          "station": "engineering"
+        },
+        "haptic": {
+          "pattern": "confirm-short"
+        },
+        "indicator": {
+          "pattern": "steady",
+          "semantic": "engaged"
+        }
+      },
+      "required_mandate": "ship.engineering.control",
+      "required_role": "engineering",
+      "route_ids": [
+        "route.world.direct",
+        "route.world.screen",
+        "route.world.agent",
+        "route.world.quest",
+        "route.world.esp32"
+      ],
+      "route_query": {},
+      "semantic_id": "engineering.coolant_bypass.set",
+      "state_path": "/engineering/coolant_bypass",
+      "step_id": "engage-coolant-bypass",
+      "subject": "ship.engineering.coolant_bypass",
+      "value": true
+    }
+  ],
+  "equivalence_route_ids": [
+    "route.world.direct",
+    "route.world.screen",
+    "route.world.agent",
+    "route.world.quest",
+    "route.world.esp32"
+  ],
+  "expected_final_state": {
+    "engineering": {
+      "coolant_bypass": true
+    }
+  },
+  "fault_trials": [
+    {
+      "expected_outcome": "refused:ownership_epoch_stale",
+      "fault": "stale_epoch",
+      "id": "stale-ownership-epoch",
+      "parameters": {
+        "delta": 1
+      },
+      "route_id": "route.world.direct"
+    },
+    {
+      "expected_outcome": "duplicate",
+      "fault": "duplicate_event",
+      "id": "duplicate-is-idempotent",
+      "parameters": {},
+      "route_id": "route.world.direct"
+    },
+    {
+      "expected_outcome": "selected:route.world.direct",
+      "fault": "route_unavailable",
+      "id": "screen-route-loss-uses-declared-fallback",
+      "parameters": {
+        "candidate_route_ids": [
+          "route.world.screen"
+        ]
+      },
+      "route_id": "route.world.screen"
+    },
+    {
+      "expected_outcome": "faulted:adapter_semantic_mutation",
+      "fault": "adapter_semantic_mutation",
+      "id": "adapter-semantic-mutation-fails",
+      "parameters": {},
+      "route_id": "route.world.agent"
+    },
+    {
+      "expected_outcome": "faulted:projection_digest_mismatch",
+      "fault": "projection_mutation",
+      "id": "projection-corruption-fails",
+      "parameters": {},
+      "route_id": "route.world.direct"
+    },
+    {
+      "expected_outcome": "faulted:injected_target_refusal",
+      "fault": "target_refusal",
+      "id": "target-refusal-is-visible",
+      "parameters": {},
+      "route_id": "route.world.quest"
+    },
+    {
+      "expected_outcome": "refused:role_not_authorized",
+      "fault": "authority_role_mismatch",
+      "id": "wrong-role-refuses",
+      "parameters": {},
+      "route_id": "route.world.direct"
+    }
+  ],
+  "format": "axm-estate-scenario/1",
+  "id": "common-control-proof-001",
+  "initial_state": {
+    "_ownership": {
+      "ship.engineering.coolant_bypass": {
+        "actor": "jonathan",
+        "epoch": 7,
+        "mandate": "ship.engineering.control",
+        "role": "engineering"
+      }
+    },
+    "engineering": {
+      "alarm": "nominal",
+      "coolant_bypass": false,
+      "coolant_temperature_c": 87
+    }
+  },
+  "invariants": [
+    "Semantic meaning is independent of source embodiment.",
+    "Authority is checked before state mutation.",
+    "Duplicate events are idempotent.",
+    "Can direct, ScreenGhost, agent, Quest, and ESP32 routes reproduce the same committed state, desired outputs, and causal debrief?"
+  ],
+  "kind": "equivalence",
+  "objective": "Prove one authored coolant-bypass action survives direct, screen, agent, Quest, and ESP32 embodiments without changing governed state, outputs, or debrief.",
+  "routing_trials": [
+    {
+      "action_prefix": "engineering.coolant_bypass.set",
+      "candidate_route_ids": [
+        "route.world.direct",
+        "route.world.screen",
+        "route.world.agent",
+        "route.world.quest",
+        "route.world.esp32"
+      ],
+      "constraints": {
+        "required_mandate": "ship.engineering.control",
+        "required_role": "engineering"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.world.direct",
+      "id": "normal-cheapest-verified",
+      "unavailable_route_ids": []
+    },
+    {
+      "action_prefix": "engineering.coolant_bypass.set",
+      "candidate_route_ids": [
+        "route.world.screen"
+      ],
+      "constraints": {
+        "required_mandate": "ship.engineering.control",
+        "required_role": "engineering"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.world.direct",
+      "id": "screen-drift-falls-back-direct",
+      "unavailable_route_ids": [
+        "route.world.screen"
+      ]
+    },
+    {
+      "action_prefix": "engineering.coolant_bypass.set",
+      "candidate_route_ids": [
+        "route.world.direct",
+        "route.world.screen",
+        "route.world.agent",
+        "route.world.quest",
+        "route.world.esp32"
+      ],
+      "constraints": {
+        "require_tags": [
+          "physical"
+        ],
+        "required_mandate": "ship.engineering.control",
+        "required_role": "engineering"
+      },
+      "expected_outcome": "selected",
+      "expected_route_id": "route.world.esp32",
+      "id": "physical-evidence-selects-esp32",
+      "unavailable_route_ids": []
+    },
+    {
+      "action_prefix": "engineering.coolant_bypass.set",
+      "candidate_route_ids": [
+        "route.world.direct",
+        "route.world.screen"
+      ],
+      "constraints": {
+        "require_tags": [
+          "cloud"
+        ],
+        "required_mandate": "ship.engineering.control",
+        "required_role": "engineering"
+      },
+      "expected_outcome": "refused",
+      "expected_route_id": null,
+      "id": "impossible-cloud-route-refuses",
+      "unavailable_route_ids": []
+    }
+  ],
+  "title": "Common Control Proof 001"
+}

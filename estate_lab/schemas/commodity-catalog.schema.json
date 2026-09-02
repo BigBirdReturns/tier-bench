@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://axm.tools/schemas/commodity-catalog.schema.json",
+  "title": "AXM Commodity Catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "catalog_id", "reviewed_as_of", "scope", "candidates"],
+  "properties": {
+    "format": {"const": "axm-commodity-catalog/1"},
+    "catalog_id": {"type": "string", "pattern": "^commoditycat1_[0-9a-f]{32}$"},
+    "reviewed_as_of": {"type": "string", "format": "date"},
+    "scope": {"type": "string", "minLength": 1},
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/candidate"}
+    }
+  },
+  "$defs": {
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "locator", "claim"],
+      "properties": {
+        "kind": {"type": "string", "minLength": 1},
+        "locator": {"type": "string", "format": "uri", "pattern": "^https://"},
+        "claim": {"type": "string", "minLength": 1}
+      }
+    },
+    "upstream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["project_url", "repository"],
+      "properties": {
+        "project_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+        "repository": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^[^/]+/[^/]+$"}
+          ]
+        }
+      }
+    },
+    "candidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "name", "category", "supplier_role", "decision", "priority",
+        "maturity", "license", "license_posture", "integration_mode", "upstream",
+        "community_signal", "capabilities", "estate_targets", "decision_basis",
+        "reuse_surface", "required_adapter", "substitution_test",
+        "authority_exclusions", "risks", "evidence"
+      ],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+        "name": {"type": "string", "minLength": 1},
+        "category": {"type": "string", "minLength": 1},
+        "supplier_role": {"type": "string", "minLength": 1},
+        "decision": {"enum": ["consume", "adapt", "reference", "reject"]},
+        "priority": {"enum": ["P0", "P1", "P2", "P3"]},
+        "maturity": {
+          "enum": ["standard", "commodity", "mature-community", "active-emerging", "reference-only", "retired"]
+        },
+        "license": {"type": "string", "minLength": 1},
+        "license_posture": {
+          "enum": ["permissive", "weak-copyleft", "strong-copyleft", "standard", "mixed", "proprietary", "unknown"]
+        },
+        "integration_mode": {
+          "enum": ["library", "protocol", "external-process", "firmware-supplier", "test-harness", "visualization-client", "design-reference", "retired-avoid"]
+        },
+        "upstream": {"$ref": "#/$defs/upstream"},
+        "community_signal": {"type": "string", "minLength": 1},
+        "capabilities": {"$ref": "#/$defs/nonEmptyStringArray"},
+        "estate_targets": {"$ref": "#/$defs/nonEmptyStringArray"},
+        "decision_basis": {"type": "string", "minLength": 1},
+        "reuse_surface": {"type": "string", "minLength": 1},
+        "required_adapter": {"type": ["string", "null"], "minLength": 1},
+        "substitution_test": {"type": ["string", "null"], "minLength": 1},
+        "authority_exclusions": {"$ref": "#/$defs/nonEmptyStringArray"},
+        "risks": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/evidence"}
+        }
+      }
+    }
+  }
+}

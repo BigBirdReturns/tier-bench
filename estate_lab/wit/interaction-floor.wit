@@ -1,0 +1,22 @@
+package axm:interaction-floor@1.0.0;
+
+interface interaction {
+  record authority { actor: string, role: string, mandate: string, ownership-epoch: u64 }
+  record semantic-event {
+    event-id: string,
+    semantic-id: string,
+    subject: string,
+    operation: string,
+    state-path: string,
+    value-json: string,
+    semantic-digest: string,
+    authority: authority,
+  }
+  record request { request-id: string, kind: string, phase: string, event-json: option<string>, context-json: string }
+  record response { response-id: string, request-id: string, adapter-id: string, accepted: bool, reason: option<string>, body-json: string }
+  handle: func(request: request) -> response;
+}
+
+world adapter {
+  export interaction;
+}
