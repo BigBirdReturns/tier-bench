@@ -1,28 +1,23 @@
 name: frontier-fingerprint
 
-# Provider-free conformance only. A branch push supplies the immutable source
-# head. This workflow derives and uploads the qualification evidence. It does
-# not claim PR-comment custody because this repository's Actions token cannot
-# write that comment; a separately authenticated publisher must bind and read
-# back the remote comment after independently verifying the artifacts.
+# Provider-free conformance only. Every branch push supplies a new immutable
+# source head, so every push must either earn a fresh receipt or remain
+# unqualified. This workflow derives and uploads the qualification evidence. It
+# does not claim PR-comment custody because this repository's Actions token
+# cannot write that comment; a separately authenticated publisher must bind and
+# read back the remote comment after independently verifying the artifacts.
 on:
   push:
     branches:
       - main
       - codex/frontier-fingerprint-20260901
-    paths:
-      - "frontier_fingerprint/**"
-      - "scripts/frontier_fingerprint.py"
-      - "scripts/frontier_qualification.py"
-      - "tests/test_frontier_fingerprint.py"
-      - "tests/test_frontier_qualification.py"
-      - "experiments/frontier_fingerprint/**"
-      - "schemas/frontier-fingerprint-*.schema.json"
-      - ".github/workflows/frontier-fingerprint.yml"
-      - "docs/agents/claims/SOL-FRONTIER-FINGERPRINT-1.md"
 
 permissions:
   contents: read
+
+concurrency:
+  group: frontier-fingerprint-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   provider-free-conformance:

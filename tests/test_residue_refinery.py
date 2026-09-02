@@ -148,6 +148,15 @@ def wait_campaign(store: DeskStore, expected: str, timeout: float = 6) -> dict:
     )
 
 
+def wait_file(path: Path, timeout: float = 6) -> None:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if path.is_file():
+            return
+        time.sleep(0.02)
+    raise AssertionError(f"projection did not materialize: {path}")
+
+
 def test_local_clear_avoids_frontier(parent: Path) -> None:
     root = repo(parent)
     store = DeskStore(parent / "state" / "desk.sqlite3", root)
@@ -185,9 +194,50 @@ def test_k_wall_earns_frontier_and_candidate(parent: Path) -> None:
         assert candidate["kind"] == "capability_residue"
         assert candidate["evidence"]["k"] == 2
         assert candidate["evidence"]["capture_plan"]["mode"] == "mechanistic"
-        assert Path(candidate["projection_path"]).is_file()
-        assert Path(campaign["projection_path"]).is_file()
+        wait_file(Path(candidate["projection_path"]))
+        wait_file(Path(campaign["projection_path"]))
     finally:
+        scheduler.stop()
+
+
+def test_terminal_campaign_and_candidate_commit_atomically(parent: Path) -> None:
+    root = repo(parent)
+    database = parent / "state" / "desk.sqlite3"
+    store = DeskStore(database, root)
+    observer = DeskStore(database, root)
+    executor = RouteExecutor(
+        {"arm_a": ["REJECTED", "REJECTED"], "arm_b": ["ACCEPTED", "ACCEPTED"]}
+    )
+    scheduler = DeskScheduler(store, root, parent / "state", executor)
+    candidate_inserted = threading.Event()
+    release_commit = threading.Event()
+    original_insert = store._insert_candidate
+
+    def blocking_insert(db: object, record: dict) -> bool:
+        inserted = original_insert(db, record)
+        candidate_inserted.set()
+        if not release_commit.wait(6):
+            raise AssertionError("test did not release the candidate transaction")
+        return inserted
+
+    store._insert_candidate = blocking_insert  # type: ignore[method-assign]
+    store.create_campaign(plan(k=2))
+    scheduler.start()
+    try:
+        assert candidate_inserted.wait(6), "candidate insertion was not reached"
+        observed = observer.get_campaign("fixture-campaign")
+        assert observed is not None
+        assert observed["state"] == "ACTIVE"
+        assert observer.list_residue_candidates() == []
+
+        release_commit.set()
+        campaign = wait_campaign(observer, "CLEARED")
+        candidates = observer.list_residue_candidates()
+        assert campaign["result"]["winner"]["route_id"] == "open"
+        assert len(candidates) == 1
+        assert candidates[0]["campaign_id"] == campaign["id"]
+    finally:
+        release_commit.set()
         scheduler.stop()
 
 
@@ -275,6 +325,7 @@ def main() -> int:
     tests = [
         test_local_clear_avoids_frontier,
         test_k_wall_earns_frontier_and_candidate,
+        test_terminal_campaign_and_candidate_commit_atomically,
         test_errors_do_not_buy_frontier_escalation,
         test_survey_runs_every_preregistered_route,
         test_campaign_budget_blocks_unknown_or_expensive_next_route,

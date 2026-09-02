@@ -324,7 +324,7 @@ class ResidueControllerMixin:
             ),
         }
 
-    def _maybe_candidate(
+    def _candidate_record(
         self, campaign: dict[str, Any], winner_position: int
     ) -> dict[str, Any] | None:
         if not campaign["policy"].get("materialize_candidates", True) or winner_position <= 0:
@@ -385,37 +385,62 @@ class ResidueControllerMixin:
         candidate_id = "res-" + hashlib.sha256(
             f"{campaign['id']}:{winner_position}:{evidence['task_fingerprint']}".encode()
         ).hexdigest()[:16]
-        stamp = now()
-        db = self.db()
-        db.execute("BEGIN IMMEDIATE")
-        try:
+        return {
+            "id": candidate_id,
+            "campaign_id": campaign["id"],
+            "winning_position": winner_position,
+            "kind": kind,
+            "evidence": evidence,
+            "created_at": now(),
+        }
+
+    def _insert_candidate(self, db: Any, record: dict[str, Any]) -> bool:
+        inserted = (
             db.execute(
                 """INSERT OR IGNORE INTO residue_candidates(
                   id,campaign_id,winning_position,kind,state,evidence_json,created_at
                 ) VALUES(?,?,?,?, 'CANDIDATE',?,?)""",
                 (
-                    candidate_id,
-                    campaign["id"],
-                    winner_position,
-                    kind,
-                    canonical(evidence),
-                    stamp,
+                    record["id"],
+                    record["campaign_id"],
+                    record["winning_position"],
+                    record["kind"],
+                    canonical(record["evidence"]),
+                    record["created_at"],
                 ),
-            )
+            ).rowcount
+            == 1
+        )
+        if inserted:
             self.event(
                 "residue.candidate.created",
                 detail={
-                    "campaign_id": campaign["id"],
-                    "candidate_id": candidate_id,
-                    "kind": kind,
+                    "campaign_id": record["campaign_id"],
+                    "candidate_id": record["id"],
+                    "kind": record["kind"],
                 },
                 db=db,
             )
+        return inserted
+
+    def _maybe_candidate(
+        self, campaign: dict[str, Any], winner_position: int
+    ) -> dict[str, Any] | None:
+        if not campaign["policy"].get("materialize_candidates", True) or winner_position <= 0:
+            return None
+        db = self.db()
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            record = self._candidate_record(campaign, winner_position)
+            if record is None:
+                db.execute("ROLLBACK")
+                return None
+            self._insert_candidate(db, record)
             db.execute("COMMIT")
         except Exception:
             db.execute("ROLLBACK")
             raise
-        candidate = self.get_residue_candidate(candidate_id)
+        candidate = self.get_residue_candidate(record["id"])
         assert candidate is not None
         self._write_candidate_projection(candidate)
         return candidate
@@ -429,17 +454,21 @@ class ResidueControllerMixin:
         reason: str,
         policy_decision: dict[str, Any] | None = None,
     ) -> None:
-        campaign = self.get_campaign(campaign_id)
-        if campaign is None or campaign["state"] != "ACTIVE":
-            return
-        result = self._campaign_result(
-            campaign, state, winner_position, reason, policy_decision
-        )
-        stamp = now()
+        candidate_record: dict[str, Any] | None = None
         db = self.db()
         db.execute("BEGIN IMMEDIATE")
         try:
-            db.execute(
+            campaign = self.get_campaign(campaign_id)
+            if campaign is None or campaign["state"] != "ACTIVE":
+                db.execute("ROLLBACK")
+                return
+            result = self._campaign_result(
+                campaign, state, winner_position, reason, policy_decision
+            )
+            if winner_position is not None:
+                candidate_record = self._candidate_record(campaign, winner_position)
+            stamp = now()
+            updated = db.execute(
                 """UPDATE residue_campaigns SET state=?,result_json=?,updated_at=?,completed_at=?,
                    last_error=? WHERE id=? AND state='ACTIVE'""",
                 (
@@ -450,22 +479,28 @@ class ResidueControllerMixin:
                     reason if state in {"ERROR", "INCONCLUSIVE", "BUDGET_BLOCKED"} else None,
                     campaign_id,
                 ),
-            )
+            ).rowcount
+            if updated != 1:
+                db.execute("ROLLBACK")
+                return
             self.event(
                 "residue.campaign.completed",
                 detail={"campaign_id": campaign_id, "state": state, "reason": reason},
                 db=db,
             )
+            if candidate_record is not None:
+                self._insert_candidate(db, candidate_record)
             db.execute("COMMIT")
         except Exception:
             db.execute("ROLLBACK")
             raise
+
+        if candidate_record is not None:
+            candidate = self.get_residue_candidate(candidate_record["id"])
+            assert candidate is not None
+            self._write_candidate_projection(candidate)
         refreshed = self.get_campaign(campaign_id)
         assert refreshed is not None
-        if winner_position is not None:
-            self._maybe_candidate(refreshed, winner_position)
-            refreshed = self.get_campaign(campaign_id)
-            assert refreshed is not None
         self._write_campaign_projection(refreshed)
 
     def _fail_campaign(self, campaign_id: str, message: str) -> None:
