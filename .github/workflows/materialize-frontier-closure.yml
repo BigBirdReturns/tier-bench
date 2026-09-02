@@ -80,6 +80,8 @@ jobs:
                   data = source.read()
                   if len(data) != member.size:
                       raise SystemExit(f"truncated closure payload member: {member.name}")
+                  if member.name == ".github/workflows/frontier-fingerprint.yml":
+                      continue
                   target = Path(*pure.parts)
                   target.parent.mkdir(parents=True, exist_ok=True)
                   temporary = target.with_name(f".{target.name}.materialize")
@@ -92,7 +94,6 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf .frontier-closure-materialize
-          rm -f .github/workflows/materialize-frontier-closure.yml
 
           python -m py_compile \
             frontier_fingerprint/*.py \
@@ -118,7 +119,7 @@ jobs:
                   raise SystemExit(f"{name}: runtime schema identifier mismatch")
           PY
 
-      - name: Commit only the materialized closure controls
+      - name: Commit materialized non-workflow closure controls
         shell: bash
         run: |
           set -euo pipefail
@@ -133,8 +134,6 @@ jobs:
               ".frontier-closure-materialize/payload.000",
               ".frontier-closure-materialize/payload.001",
               ".frontier-closure-materialize/payload.002",
-              ".github/workflows/frontier-fingerprint.yml",
-              ".github/workflows/materialize-frontier-closure.yml",
               "docs/agents/claims/SOL-FRONTIER-FINGERPRINT-1.md",
               "experiments/frontier_fingerprint/README.md",
               "schemas/frontier-fingerprint-qualification-index.schema.json",
@@ -153,6 +152,6 @@ jobs:
           PY
 
           git diff --cached --check
-          git commit -m "ci(frontier): make closure evidence machine-derived"
+          git commit -m "feat(frontier): materialize closure receipt controls"
           git push origin HEAD:codex/frontier-fingerprint-20260901
           printf 'Materialized commit: `%s`\n' "$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
