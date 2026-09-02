@@ -1,0 +1,158 @@
+name: materialize-frontier-closure
+
+on:
+  push:
+    branches:
+      - codex/frontier-fingerprint-20260901
+    paths:
+      - ".frontier-closure-materialize/**"
+      - ".github/workflows/materialize-frontier-closure.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: materialize-frontier-closure
+  cancel-in-progress: false
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout bootstrap head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: codex/frontier-fingerprint-20260901
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Authenticate and materialize exact closure payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64
+          import hashlib
+          import io
+          import tarfile
+          from pathlib import Path, PurePosixPath
+
+          expected_digest = "3d02eb223795fb87f22f7d1f4be613648e1b36d44d80848a8262c2f6d5d66cb4"
+          expected_members = {
+              ".github/workflows/frontier-fingerprint.yml",
+              "docs/agents/claims/SOL-FRONTIER-FINGERPRINT-1.md",
+              "experiments/frontier_fingerprint/README.md",
+              "schemas/frontier-fingerprint-qualification-index.schema.json",
+              "schemas/frontier-fingerprint-qualification.schema.json",
+              "scripts/frontier_qualification.py",
+              "tests/test_frontier_qualification.py",
+          }
+          parts = sorted(Path(".frontier-closure-materialize").glob("payload.*"))
+          if [path.name for path in parts] != ["payload.000", "payload.001", "payload.002"]:
+              raise SystemExit(f"unexpected payload parts: {[path.name for path in parts]}")
+          encoded = "".join("".join(path.read_text(encoding="ascii").split()) for path in parts)
+          payload = base64.b64decode(encoded, validate=True)
+          observed_digest = hashlib.sha256(payload).hexdigest()
+          if observed_digest != expected_digest:
+              raise SystemExit(
+                  f"closure payload digest mismatch: {observed_digest} != {expected_digest}"
+              )
+
+          with tarfile.open(fileobj=io.BytesIO(payload), mode="r:gz") as archive:
+              members = archive.getmembers()
+              observed_members = {member.name for member in members}
+              if observed_members != expected_members or len(members) != len(expected_members):
+                  raise SystemExit(
+                      f"closure payload member mismatch: {sorted(observed_members)}"
+                  )
+              for member in members:
+                  pure = PurePosixPath(member.name)
+                  if pure.is_absolute() or ".." in pure.parts or not member.isfile():
+                      raise SystemExit(f"unsafe closure payload member: {member.name}")
+                  source = archive.extractfile(member)
+                  if source is None:
+                      raise SystemExit(f"unreadable closure payload member: {member.name}")
+                  data = source.read()
+                  if len(data) != member.size:
+                      raise SystemExit(f"truncated closure payload member: {member.name}")
+                  target = Path(*pure.parts)
+                  target.parent.mkdir(parents=True, exist_ok=True)
+                  temporary = target.with_name(f".{target.name}.materialize")
+                  temporary.write_bytes(data)
+                  temporary.replace(target)
+          PY
+
+      - name: Remove bootstrap carrier and validate materialized tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .frontier-closure-materialize
+          rm -f .github/workflows/materialize-frontier-closure.yml
+
+          python -m py_compile \
+            frontier_fingerprint/*.py \
+            scripts/frontier_fingerprint.py \
+            scripts/frontier_qualification.py \
+            tests/test_frontier_*.py
+          python -m unittest discover -s tests -p 'test_frontier_*.py' -v
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              "schemas/frontier-fingerprint-qualification.schema.json":
+                  "tier-bench/frontier-fingerprint-qualification@1",
+              "schemas/frontier-fingerprint-qualification-index.schema.json":
+                  "tier-bench/frontier-fingerprint-qualification-index@1",
+          }
+          for name, schema in expected.items():
+              value = json.loads(Path(name).read_text(encoding="utf-8"))
+              if value.get("$schema") != "https://json-schema.org/draft/2020-12/schema":
+                  raise SystemExit(f"{name}: wrong JSON Schema dialect")
+              if value.get("properties", {}).get("schema", {}).get("const") != schema:
+                  raise SystemExit(f"{name}: runtime schema identifier mismatch")
+          PY
+
+      - name: Commit only the materialized closure controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "tier-bench-custody-bot"
+          git config user.email "tier-bench-custody-bot@users.noreply.github.com"
+          git add -A
+
+          python - <<'PY'
+          import subprocess
+
+          expected = {
+              ".frontier-closure-materialize/payload.000",
+              ".frontier-closure-materialize/payload.001",
+              ".frontier-closure-materialize/payload.002",
+              ".github/workflows/frontier-fingerprint.yml",
+              ".github/workflows/materialize-frontier-closure.yml",
+              "docs/agents/claims/SOL-FRONTIER-FINGERPRINT-1.md",
+              "experiments/frontier_fingerprint/README.md",
+              "schemas/frontier-fingerprint-qualification-index.schema.json",
+              "schemas/frontier-fingerprint-qualification.schema.json",
+              "scripts/frontier_qualification.py",
+              "tests/test_frontier_qualification.py",
+          }
+          observed = set(
+              subprocess.check_output(
+                  ["git", "diff", "--cached", "--name-only", "-z"]
+              ).decode("utf-8").split("\0")
+          )
+          observed.discard("")
+          if observed != expected:
+              raise SystemExit(f"staged path mismatch: {sorted(observed)}")
+          PY
+
+          git diff --cached --check
+          git commit -m "ci(frontier): make closure evidence machine-derived"
+          git push origin HEAD:codex/frontier-fingerprint-20260901
+          printf 'Materialized commit: `%s`\n' "$(git rev-parse HEAD)" >> "$GITHUB_STEP_SUMMARY"
