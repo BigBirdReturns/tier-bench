@@ -1,0 +1,109 @@
+name: frontier-fingerprint
+
+# Provider-free conformance only. This workflow never receives provider keys and
+# cannot make a paid model call.
+on:
+  pull_request:
+    paths:
+      - "frontier_fingerprint/**"
+      - "scripts/frontier_fingerprint.py"
+      - "tests/test_frontier_fingerprint.py"
+      - "experiments/frontier_fingerprint/**"
+      - "schemas/frontier-fingerprint-*.schema.json"
+      - ".github/workflows/frontier-fingerprint.yml"
+      - "docs/agents/claims/SOL-FRONTIER-FINGERPRINT-1.md"
+  push:
+    branches: [main]
+    paths:
+      - "frontier_fingerprint/**"
+      - "scripts/frontier_fingerprint.py"
+      - "tests/test_frontier_fingerprint.py"
+      - "experiments/frontier_fingerprint/**"
+      - "schemas/frontier-fingerprint-*.schema.json"
+      - ".github/workflows/frontier-fingerprint.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate head
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compile observatory
+        run: |
+          python -m py_compile \
+            frontier_fingerprint/*.py \
+            scripts/frontier_fingerprint.py \
+            tests/test_frontier_fingerprint.py
+
+      - name: Run adversarial conformance suite
+        run: python tests/test_frontier_fingerprint.py
+
+      - name: Execute provider-free campaign from checked-out bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$(mktemp -d)"
+          run_dir="$root/run"
+          python scripts/frontier_fingerprint.py plan \
+            --manifest experiments/frontier_fingerprint/mock-smoke.json \
+            --out "$root/plan.json"
+          python scripts/frontier_fingerprint.py run \
+            --manifest experiments/frontier_fingerprint/mock-smoke.json \
+            --out "$run_dir"
+          python scripts/frontier_fingerprint.py verify \
+            --run-dir "$run_dir" \
+            --out "$root/verification.json"
+          python scripts/frontier_fingerprint.py summarize \
+            --run-dir "$run_dir" \
+            --out "$root/summary.json"
+          python scripts/frontier_fingerprint.py passive \
+            --input experiments/frontier_fingerprint/fixtures/passive-claude.jsonl \
+            --adapter claude_code_jsonl \
+            --out "$root/passive-claude.json"
+          python scripts/frontier_fingerprint.py passive \
+            --input experiments/frontier_fingerprint/fixtures/passive-openai.jsonl \
+            --adapter codex_jsonl \
+            --out "$root/passive-openai.json"
+
+          test "$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["receipt_count"])' "$root/verification.json")" -eq 58
+          test "$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["raw_response_bodies_authenticated"])' "$root/verification.json")" -eq 58
+          test "$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["usage_objects_rederived"])' "$root/verification.json")" -eq 58
+
+          if grep -R -E 'SENSITIVE_CANARY|AXM_ANCHOR_|Reply with' \
+            "$root/plan.json" \
+            "$root/verification.json" \
+            "$root/summary.json" \
+            "$root/passive-claude.json" \
+            "$root/passive-openai.json" \
+            "$run_dir/receipts.jsonl"; then
+            echo "public artifact retained forbidden prompt or transcript text" >&2
+            exit 1
+          fi
+
+      - name: Prove live dispatch remains disabled in committed examples
+        shell: bash
+        run: |
+          set -euo pipefail
+          for manifest in \
+            experiments/frontier_fingerprint/fable-5-baseline.example.json \
+            experiments/frontier_fingerprint/fable-5-1.example.json \
+            experiments/frontier_fingerprint/sol-current-baseline.example.json \
+            experiments/frontier_fingerprint/astral-candidate.example.json; do
+            python - "$manifest" <<'PY'
+          import json
+          import sys
+          manifest = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert manifest["execution"]["allow_live"] is False
+          assert manifest["execution"]["max_estimated_usd"] == 0
+          PY
+          done
