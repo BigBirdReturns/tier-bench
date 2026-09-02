@@ -1,0 +1,43 @@
+{
+  "artifacts": {
+    "plan": {
+      "bytes": 5658,
+      "path_name": "plan.json",
+      "sha256": "3c503b98acb4d8660fea282db2d659006bea87436c3a9404f044178a60e5c60b"
+    },
+    "response": {
+      "bytes": 7469,
+      "path_name": "response.json",
+      "sha256": "a4cf33a4c41a0d17172ccf4de6d9c64215292998ded93f97dda3f6721d846d77"
+    },
+    "verdict": {
+      "bytes": 7279,
+      "path_name": "verdict.json",
+      "sha256": "dc3c1f5a3eec55bf4766a97f51b6aeff946dc7a91d9e1cb95541881ac8b92322"
+    }
+  },
+  "authority": {
+    "candidate_only": true,
+    "model_may_decide_ownership": false,
+    "ownership_decider": "deterministic_registry",
+    "production_claim": false,
+    "promotion_authorized": false
+  },
+  "claim_boundary": "This treatment verifies the structure, self-digests, cross-bindings, ownership law, evidence references, read-only machine sessions, and provider-free route behavior of supplied MARY operator-aperture artifacts. It does not qualify the live sources, model quality, physical systems, mutation authority, production operation, or field use.",
+  "observations": {
+    "frontier_model_used": false,
+    "internet_used": false,
+    "machine_query_count": 5,
+    "machine_session_count": 4,
+    "mutation_attempted": false,
+    "owned_clause_count": 5,
+    "unowned_clause_count": 2
+  },
+  "plan_sha256": "68fe930e4a0de5b4782f16cd61af1fc489ea9c7cc21840623043f863270de558",
+  "provider_free": true,
+  "response_sha256": "b7b394d07f8811b281595687547f6434ac6e5594ed9d0ee088d3d409180e9627",
+  "schema": "tierbench/mary-aperture-treatment@1",
+  "status": "pass",
+  "treatment_sha256": "b130fb8a8066d5e922d237c6f0c8b30b79cee8ecfb2e7e88b6fb243a1cb830a2",
+  "verdict_sha256": "c068038d96d0f2deb55938a3e0c2fb295286ed055275b396367226a3a222e9d7"
+}
