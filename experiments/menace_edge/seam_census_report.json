@@ -1,0 +1,1360 @@
+{
+  "campaign_id": "menace-edge-01",
+  "coverage_matrix_sha256": "1642d826f8ca2bef4befc0048108716c525411446bfa9c94ae29363362929a1f",
+  "donor_piles": [
+    {
+      "donor_count": 3,
+      "evidence_classes": [
+        "implemented_fixture"
+      ],
+      "pile_id": "pile.circulation-orchestration",
+      "seam_count": 13,
+      "seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reattachment",
+        "seam.resource-placement",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.shift-handoff",
+        "seam.state-compilation",
+        "seam.substitution"
+      ],
+      "title": "Circulation, orchestration, and recovery",
+      "witness_count": 3
+    },
+    {
+      "donor_count": 3,
+      "evidence_classes": [
+        "implemented_fixture"
+      ],
+      "pile_id": "pile.evidence-qualification",
+      "seam_count": 17,
+      "seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.execution",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reattachment",
+        "seam.reconciliation",
+        "seam.resource-placement",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.shift-handoff",
+        "seam.state-compilation",
+        "seam.substitution",
+        "seam.synchronization"
+      ],
+      "title": "Evidence, provenance, and qualification",
+      "witness_count": 7
+    },
+    {
+      "donor_count": 3,
+      "evidence_classes": [
+        "implemented_fixture",
+        "operator_observation",
+        "private_reported_trace"
+      ],
+      "pile_id": "pile.local-control",
+      "seam_count": 11,
+      "seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.execution",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reconciliation",
+        "seam.state-compilation",
+        "seam.synchronization",
+        "seam.track-handoff"
+      ],
+      "title": "Local sensing and control",
+      "witness_count": 2
+    },
+    {
+      "donor_count": 3,
+      "evidence_classes": [
+        "implemented_fixture",
+        "private_reported_trace"
+      ],
+      "pile_id": "pile.people-communications",
+      "seam_count": 16,
+      "seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.execution",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reattachment",
+        "seam.reconciliation",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.shift-handoff",
+        "seam.state-compilation",
+        "seam.synchronization",
+        "seam.track-handoff"
+      ],
+      "title": "People, communications, and attention",
+      "witness_count": 4
+    },
+    {
+      "donor_count": 3,
+      "evidence_classes": [
+        "implemented_fixture",
+        "private_reported_trace"
+      ],
+      "pile_id": "pile.platform-sovereignty",
+      "seam_count": 6,
+      "seams": [
+        "seam.custody",
+        "seam.degradation",
+        "seam.reattachment",
+        "seam.resource-placement",
+        "seam.state-compilation",
+        "seam.substitution"
+      ],
+      "title": "Platform sovereignty and substitution",
+      "witness_count": 1
+    },
+    {
+      "donor_count": 3,
+      "evidence_classes": [
+        "implemented_fixture",
+        "operator_observation"
+      ],
+      "pile_id": "pile.readiness-sustainment",
+      "seam_count": 9,
+      "seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.state-compilation"
+      ],
+      "title": "Readiness and sustainment",
+      "witness_count": 2
+    }
+  ],
+  "donor_piles_sha256": "565965f84d966cf9f4ca0da6c8488c0ef4c41ed6a6f8463d397728bae4cbd1c7",
+  "minimal_witness_plan": {
+    "alternative_optima": [],
+    "plan_id": "menaceseamplan1_c87ac8f53e8938b4c52f45b2fe9d58e06b473f27aa24319cb4e0beb09b4e9d79",
+    "selected_witnesses": [
+      "witness.cooperative-handoff",
+      "witness.multi-role-handoff",
+      "witness.partitioned-controller",
+      "witness.physical-availability",
+      "witness.stack-recovery"
+    ],
+    "total_cost_units": 31,
+    "witness_count": 5
+  },
+  "minimal_witness_plan_id": "menaceseamplan1_c87ac8f53e8938b4c52f45b2fe9d58e06b473f27aa24319cb4e0beb09b4e9d79",
+  "pile_intersections": [
+    {
+      "order": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reattachment",
+        "seam.resource-placement",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.shift-handoff",
+        "seam.state-compilation",
+        "seam.substitution"
+      ],
+      "shared_witnesses": [
+        "witness.multi-role-handoff",
+        "witness.saleops-cephalopod",
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.local-control"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.people-communications"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reattachment",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.shift-handoff",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": [
+        "witness.multi-role-handoff",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.degradation",
+        "seam.reattachment",
+        "seam.resource-placement",
+        "seam.state-compilation",
+        "seam.substitution"
+      ],
+      "shared_witnesses": [
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": [
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.local-control"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.execution",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reconciliation",
+        "seam.state-compilation",
+        "seam.synchronization"
+      ],
+      "shared_witnesses": [
+        "witness.partitioned-controller"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.people-communications"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.execution",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reattachment",
+        "seam.reconciliation",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.shift-handoff",
+        "seam.state-compilation",
+        "seam.synchronization"
+      ],
+      "shared_witnesses": [
+        "witness.multi-role-handoff",
+        "witness.partitioned-controller",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.degradation",
+        "seam.reattachment",
+        "seam.resource-placement",
+        "seam.state-compilation",
+        "seam.substitution"
+      ],
+      "shared_witnesses": [
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": [
+        "witness.physical-availability",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.execution",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reconciliation",
+        "seam.state-compilation",
+        "seam.synchronization",
+        "seam.track-handoff"
+      ],
+      "shared_witnesses": [
+        "witness.cooperative-handoff",
+        "witness.partitioned-controller"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.local-control",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.degradation",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.local-control",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.disposition",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.people-communications",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.degradation",
+        "seam.reattachment",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": [
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "order": 2,
+      "piles": [
+        "pile.platform-sovereignty",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.local-control"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.people-communications"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reattachment",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.shift-handoff",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": [
+        "witness.multi-role-handoff",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.degradation",
+        "seam.reattachment",
+        "seam.resource-placement",
+        "seam.state-compilation",
+        "seam.substitution"
+      ],
+      "shared_witnesses": [
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": [
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.local-control",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.degradation",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.local-control",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.people-communications",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.degradation",
+        "seam.reattachment",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": [
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.platform-sovereignty",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.degradation",
+        "seam.disposition",
+        "seam.execution",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.reconciliation",
+        "seam.state-compilation",
+        "seam.synchronization"
+      ],
+      "shared_witnesses": [
+        "witness.partitioned-controller"
+      ]
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.degradation",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.disposition",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.people-communications",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.degradation",
+        "seam.reattachment",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.custody",
+        "seam.disposition",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.role-aperture",
+        "seam.selection",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": [
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.platform-sovereignty",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.local-control",
+        "pile.people-communications",
+        "pile.platform-sovereignty"
+      ],
+      "shared_seams": [
+        "seam.degradation",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.local-control",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.capture",
+        "seam.disposition",
+        "seam.identity",
+        "seam.interpretation",
+        "seam.outcome",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.local-control",
+        "pile.platform-sovereignty",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    },
+    {
+      "order": 3,
+      "piles": [
+        "pile.people-communications",
+        "pile.platform-sovereignty",
+        "pile.readiness-sustainment"
+      ],
+      "shared_seams": [
+        "seam.custody",
+        "seam.state-compilation"
+      ],
+      "shared_witnesses": []
+    }
+  ],
+  "production_claim": false,
+  "promotion_authorized": false,
+  "report_id": "menaceseamreport1_c14e3fc8ab0ca8bb4da52c2bf17693e6ad03be37db86706e638f56a8b6c52604",
+  "schema": "tier-bench/menace-edge-seam-census-report@1",
+  "seam_catalog_sha256": "e51f4c693793467398e407ba6126560a24dce7466291c937da19a6ff5e14fd9c",
+  "seam_support": [
+    {
+      "category": "survival",
+      "evidence_classes": [
+        "implemented_fixture",
+        "private_reported_trace",
+        "synthetic_control"
+      ],
+      "independence_groups": [
+        "group.cooperative-sensing",
+        "group.dirty-export",
+        "group.human-correction",
+        "group.mesh-handoff",
+        "group.multi-arm-assistant",
+        "group.partition-authority",
+        "group.private-control-trace",
+        "group.readiness-demo"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "seam_id": "seam.capture",
+      "support_state": "multi_pile",
+      "title": "Attributed capture",
+      "witnesses": [
+        "witness.cooperative-handoff",
+        "witness.partitioned-controller",
+        "witness.physical-availability",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "category": "survival",
+      "evidence_classes": [
+        "implemented_fixture"
+      ],
+      "independence_groups": [
+        "group.attention-broker",
+        "group.chat-radar",
+        "group.dirty-export",
+        "group.genesis-verifier",
+        "group.human-correction",
+        "group.multi-arm-assistant",
+        "group.readiness-demo",
+        "group.role-apertures",
+        "group.stack-sovereignty",
+        "group.system-fabric",
+        "group.workflow-recovery"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.people-communications",
+        "pile.platform-sovereignty",
+        "pile.readiness-sustainment"
+      ],
+      "seam_id": "seam.custody",
+      "support_state": "multi_pile",
+      "title": "Durable byte and lineage custody",
+      "witnesses": [
+        "witness.multi-role-handoff",
+        "witness.offline-verified-query",
+        "witness.physical-availability",
+        "witness.saleops-cephalopod",
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "category": "survival",
+      "evidence_classes": [
+        "implemented_fixture",
+        "private_reported_trace",
+        "synthetic_control"
+      ],
+      "independence_groups": [
+        "group.cooperative-sensing",
+        "group.mesh-handoff",
+        "group.partition-authority",
+        "group.private-control-trace",
+        "group.stack-sovereignty",
+        "group.system-fabric",
+        "group.workflow-recovery"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications",
+        "pile.platform-sovereignty"
+      ],
+      "seam_id": "seam.degradation",
+      "support_state": "multi_pile",
+      "title": "Explicit survival degradation",
+      "witnesses": [
+        "witness.cooperative-handoff",
+        "witness.partitioned-controller",
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "category": "judgment",
+      "evidence_classes": [
+        "implemented_fixture",
+        "private_reported_trace"
+      ],
+      "independence_groups": [
+        "group.attention-broker",
+        "group.chat-radar",
+        "group.dirty-export",
+        "group.human-correction",
+        "group.multi-arm-assistant",
+        "group.partition-authority",
+        "group.private-control-trace",
+        "group.readiness-demo",
+        "group.role-apertures"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "seam_id": "seam.disposition",
+      "support_state": "multi_pile",
+      "title": "Named authority disposition",
+      "witnesses": [
+        "witness.multi-role-handoff",
+        "witness.partitioned-controller",
+        "witness.physical-availability",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "category": "survival",
+      "evidence_classes": [
+        "private_reported_trace"
+      ],
+      "independence_groups": [
+        "group.partition-authority",
+        "group.private-control-trace"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 1,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "seam_id": "seam.execution",
+      "support_state": "multi_pile",
+      "title": "Idempotent bounded execution",
+      "witnesses": [
+        "witness.partitioned-controller"
+      ]
+    },
+    {
+      "category": "survival",
+      "evidence_classes": [
+        "implemented_fixture",
+        "synthetic_control"
+      ],
+      "independence_groups": [
+        "group.cooperative-sensing",
+        "group.dirty-export",
+        "group.mesh-handoff",
+        "group.readiness-demo"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "seam_id": "seam.identity",
+      "support_state": "multi_pile",
+      "title": "Identity resolution without collapse",
+      "witnesses": [
+        "witness.cooperative-handoff",
+        "witness.physical-availability"
+      ]
+    },
+    {
+      "category": "judgment",
+      "evidence_classes": [
+        "implemented_fixture",
+        "private_reported_trace",
+        "synthetic_control"
+      ],
+      "independence_groups": [
+        "group.attention-broker",
+        "group.chat-radar",
+        "group.dirty-export",
+        "group.human-correction",
+        "group.multi-arm-assistant",
+        "group.partition-authority",
+        "group.private-control-trace",
+        "group.raw-model-control",
+        "group.readiness-demo",
+        "group.role-apertures"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "seam_id": "seam.interpretation",
+      "support_state": "multi_pile",
+      "title": "Bounded stochastic interpretation",
+      "witnesses": [
+        "witness.multi-role-handoff",
+        "witness.partitioned-controller",
+        "witness.physical-availability",
+        "witness.raw-model-endpoint",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "category": "survival",
+      "evidence_classes": [
+        "implemented_fixture",
+        "private_reported_trace",
+        "synthetic_control"
+      ],
+      "independence_groups": [
+        "group.cooperative-sensing",
+        "group.dirty-export",
+        "group.human-correction",
+        "group.mesh-handoff",
+        "group.multi-arm-assistant",
+        "group.partition-authority",
+        "group.private-control-trace",
+        "group.readiness-demo"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "seam_id": "seam.outcome",
+      "support_state": "multi_pile",
+      "title": "Outcome and acceptance receipt",
+      "witnesses": [
+        "witness.cooperative-handoff",
+        "witness.partitioned-controller",
+        "witness.physical-availability",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "category": "judgment",
+      "evidence_classes": [
+        "implemented_fixture"
+      ],
+      "independence_groups": [
+        "group.attention-broker",
+        "group.chat-radar",
+        "group.role-apertures",
+        "group.stack-sovereignty",
+        "group.system-fabric",
+        "group.workflow-recovery"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 1,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.people-communications",
+        "pile.platform-sovereignty"
+      ],
+      "seam_id": "seam.reattachment",
+      "support_state": "multi_pile",
+      "title": "Human and task reattachment",
+      "witnesses": [
+        "witness.multi-role-handoff",
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "category": "survival",
+      "evidence_classes": [
+        "private_reported_trace"
+      ],
+      "independence_groups": [
+        "group.partition-authority",
+        "group.private-control-trace"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 1,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "seam_id": "seam.reconciliation",
+      "support_state": "multi_pile",
+      "title": "Branch-preserving reconciliation",
+      "witnesses": [
+        "witness.partitioned-controller"
+      ]
+    },
+    {
+      "category": "portability",
+      "evidence_classes": [
+        "implemented_fixture"
+      ],
+      "independence_groups": [
+        "group.stack-sovereignty",
+        "group.system-fabric",
+        "group.workflow-recovery"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 1,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.platform-sovereignty"
+      ],
+      "seam_id": "seam.resource-placement",
+      "support_state": "multi_pile",
+      "title": "Visible resource placement",
+      "witnesses": [
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "category": "judgment",
+      "evidence_classes": [
+        "implemented_fixture"
+      ],
+      "independence_groups": [
+        "group.attention-broker",
+        "group.chat-radar",
+        "group.human-correction",
+        "group.multi-arm-assistant",
+        "group.role-apertures"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 1,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "seam_id": "seam.role-aperture",
+      "support_state": "multi_pile",
+      "title": "Role-scoped projection",
+      "witnesses": [
+        "witness.multi-role-handoff",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "category": "judgment",
+      "evidence_classes": [
+        "implemented_fixture"
+      ],
+      "independence_groups": [
+        "group.attention-broker",
+        "group.chat-radar",
+        "group.dirty-export",
+        "group.human-correction",
+        "group.multi-arm-assistant",
+        "group.readiness-demo",
+        "group.role-apertures"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.people-communications",
+        "pile.readiness-sustainment"
+      ],
+      "seam_id": "seam.selection",
+      "support_state": "multi_pile",
+      "title": "Source-bound relevance selection",
+      "witnesses": [
+        "witness.multi-role-handoff",
+        "witness.physical-availability",
+        "witness.saleops-cephalopod"
+      ]
+    },
+    {
+      "category": "judgment",
+      "evidence_classes": [
+        "implemented_fixture"
+      ],
+      "independence_groups": [
+        "group.attention-broker",
+        "group.chat-radar",
+        "group.role-apertures"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 1,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.people-communications"
+      ],
+      "seam_id": "seam.shift-handoff",
+      "support_state": "multi_pile",
+      "title": "Human shift and role handoff",
+      "witnesses": [
+        "witness.multi-role-handoff"
+      ]
+    },
+    {
+      "category": "survival",
+      "evidence_classes": [
+        "implemented_fixture",
+        "private_reported_trace"
+      ],
+      "independence_groups": [
+        "group.dirty-export",
+        "group.genesis-verifier",
+        "group.partition-authority",
+        "group.private-control-trace",
+        "group.readiness-demo",
+        "group.stack-sovereignty",
+        "group.system-fabric",
+        "group.workflow-recovery"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications",
+        "pile.platform-sovereignty",
+        "pile.readiness-sustainment"
+      ],
+      "seam_id": "seam.state-compilation",
+      "support_state": "multi_pile",
+      "title": "Deterministic state compilation",
+      "witnesses": [
+        "witness.offline-verified-query",
+        "witness.partitioned-controller",
+        "witness.physical-availability",
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "category": "portability",
+      "evidence_classes": [
+        "implemented_fixture"
+      ],
+      "independence_groups": [
+        "group.stack-sovereignty",
+        "group.system-fabric",
+        "group.workflow-recovery"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 1,
+      "piles": [
+        "pile.circulation-orchestration",
+        "pile.evidence-qualification",
+        "pile.platform-sovereignty"
+      ],
+      "seam_id": "seam.substitution",
+      "support_state": "multi_pile",
+      "title": "Component and vendor substitution",
+      "witnesses": [
+        "witness.stack-recovery"
+      ]
+    },
+    {
+      "category": "portability",
+      "evidence_classes": [
+        "private_reported_trace",
+        "synthetic_control"
+      ],
+      "independence_groups": [
+        "group.cooperative-sensing",
+        "group.mesh-handoff",
+        "group.partition-authority",
+        "group.private-control-trace"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 2,
+      "piles": [
+        "pile.evidence-qualification",
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "seam_id": "seam.synchronization",
+      "support_state": "multi_pile",
+      "title": "Source-preserving synchronization",
+      "witnesses": [
+        "witness.cooperative-handoff",
+        "witness.partitioned-controller"
+      ]
+    },
+    {
+      "category": "portability",
+      "evidence_classes": [
+        "synthetic_control"
+      ],
+      "independence_groups": [
+        "group.cooperative-sensing",
+        "group.mesh-handoff"
+      ],
+      "mandatory": true,
+      "minimum_independent_piles": 1,
+      "piles": [
+        "pile.local-control",
+        "pile.people-communications"
+      ],
+      "seam_id": "seam.track-handoff",
+      "support_state": "multi_pile",
+      "title": "Cooperative track handoff",
+      "witnesses": [
+        "witness.cooperative-handoff"
+      ]
+    }
+  ],
+  "single_pile_seams": [],
+  "totals": {
+    "coverage_witnesses": 8,
+    "donor_piles": 6,
+    "donors": 18,
+    "mandatory_seams": 18,
+    "negative_witnesses": 18,
+    "pair_and_triple_intersections": 35,
+    "seams": 18,
+    "selected_witnesses": 5
+  },
+  "uncovered_mandatory_seams": [],
+  "under_supported_mandatory_seams": []
+}

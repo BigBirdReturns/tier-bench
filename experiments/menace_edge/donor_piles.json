@@ -1,0 +1,294 @@
+{
+  "schema": "tier-bench/menace-edge-donor-piles@1",
+  "campaign_id": "menace-edge-01",
+  "public_boundary": {
+    "private_source_bytes_allowed": false,
+    "personal_names_required": false,
+    "operational_locations_allowed": false,
+    "sanitized_private_shapes_allowed": true
+  },
+  "piles": [
+    {
+      "id": "pile.local-control",
+      "title": "Local sensing and control",
+      "domain": "local_sensing_control",
+      "core_questions": [
+        "Which loop must remain local and deterministic?",
+        "How are tracks, controller health, and handoffs preserved when links degrade?",
+        "What information may a model interpret without owning control authority?"
+      ],
+      "irreducible_constraints": [
+        "Fast controller and safety loops cannot depend on remote inference.",
+        "Track identity, event time, freshness, and handoff provenance must survive transport changes.",
+        "A common operating picture may consume local state without becoming the local control loop."
+      ],
+      "donors": [
+        {
+          "id": "donor.partitioned-control-shape",
+          "title": "Sanitized high-volume partitioned-control trace",
+          "kind": "private_reported_trace",
+          "evidence_class": "private_reported_trace",
+          "custody": "private_evidence_ledger",
+          "source_visibility": "private",
+          "allowed_public_use": "sanitized_shape_only",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.cooperative-sensing-review",
+          "title": "Cooperative sensing, handoff, and contested-communications review",
+          "kind": "operator_observation",
+          "evidence_class": "operator_observation",
+          "custody": "private_evidence_ledger",
+          "source_visibility": "private",
+          "allowed_public_use": "sanitized_shape_only",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.controller-state-fixtures",
+          "title": "AXM controller-state and partition fixtures",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        }
+      ]
+    },
+    {
+      "id": "pile.readiness-sustainment",
+      "title": "Readiness and sustainment",
+      "domain": "readiness_sustainment",
+      "core_questions": [
+        "Does the administrative record match physical availability?",
+        "Which condition, allocation, maintenance, due-in, or movement record is the actual blocker?",
+        "What minimum dirty-data handshake can an operational user provide?"
+      ],
+      "irreducible_constraints": [
+        "On-hand quantity cannot establish serviceability by itself.",
+        "Evidence gaps must remain visible instead of being filled by model narration.",
+        "The intake path must tolerate ordinary spreadsheets, screenshots, and incomplete exports."
+      ],
+      "donors": [
+        {
+          "id": "donor.readiness-acceptance-demo",
+          "title": "Inventory, maintenance, and due-in acceptance demo",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.dirty-export-boundary",
+          "title": "Operational spreadsheet and data-granularity boundary",
+          "kind": "operator_observation",
+          "evidence_class": "operator_observation",
+          "custody": "private_evidence_ledger",
+          "source_visibility": "private",
+          "allowed_public_use": "sanitized_shape_only",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.flow-constraint-comparison",
+          "title": "Transaction, buffer, and constraint-flow comparison",
+          "kind": "operator_observation",
+          "evidence_class": "operator_observation",
+          "custody": "private_evidence_ledger",
+          "source_visibility": "mixed",
+          "allowed_public_use": "sanitized_shape_only",
+          "contains_private_source_bytes": false
+        }
+      ]
+    },
+    {
+      "id": "pile.people-communications",
+      "title": "People, communications, and attention",
+      "domain": "people_communications_attention",
+      "core_questions": [
+        "Which named human currently holds the role, mandate, and decision?",
+        "What changed, who acknowledged it, and what must survive a shift or device transition?",
+        "How should the node compress many streams into a bounded human decision object?"
+      ],
+      "irreducible_constraints": [
+        "Human presence, role, acknowledgment, and disposition must be attributable.",
+        "A role-specific aperture may filter state but may not rewrite shared truth.",
+        "The user must be returned to the decision surface rather than a transcript."
+      ],
+      "donors": [
+        {
+          "id": "donor.chat-radar-handoff",
+          "title": "Browser and handset alert-return fixture",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.operator-presence-shape",
+          "title": "Sanitized operator-presence, lease, and reconciliation shape",
+          "kind": "private_reported_trace",
+          "evidence_class": "private_reported_trace",
+          "custody": "private_evidence_ledger",
+          "source_visibility": "private",
+          "allowed_public_use": "sanitized_shape_only",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.human-correction-loop",
+          "title": "Multi-arm assistant with blocking critic and human correction",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        }
+      ]
+    },
+    {
+      "id": "pile.platform-sovereignty",
+      "title": "Platform sovereignty and substitution",
+      "domain": "platform_sovereignty",
+      "core_questions": [
+        "Can compute, boot, RF, update, evidence, and recovery providers be replaced independently?",
+        "Does a head or runtime change create a new treatment without creating a new mission history?",
+        "Can the system recover after the preferred vendor, adapter, or accelerator disappears?"
+      ],
+      "irreducible_constraints": [
+        "A component swap must not become a program restart.",
+        "Hardware, runtime, model, adapter, and mission identities remain distinct.",
+        "The surviving system must retain a neutral export, rollback, and verification route."
+      ],
+      "donors": [
+        {
+          "id": "donor.stack-sovereignty-shape",
+          "title": "Sanitized compute, boot, RF, update, and evidence sovereignty analysis",
+          "kind": "private_reported_trace",
+          "evidence_class": "private_reported_trace",
+          "custody": "private_evidence_ledger",
+          "source_visibility": "private",
+          "allowed_public_use": "sanitized_shape_only",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.system-fabric",
+          "title": "AXM System Fabric topology and recovery contracts",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.edge-identity-attestation",
+          "title": "Hardware identity, attestation, and selective-disclosure fixtures",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        }
+      ]
+    },
+    {
+      "id": "pile.evidence-qualification",
+      "title": "Evidence, provenance, and qualification",
+      "domain": "evidence_qualification",
+      "core_questions": [
+        "Which exact bytes, model, runtime, hardware, and acceptance authority produced the result?",
+        "Can the current state and claim be reconstructed without the original model or provider?",
+        "Does an error remain infrastructure evidence rather than becoming a capability score?"
+      ],
+      "irreducible_constraints": [
+        "Evidence must remain source-bound, content-addressed, and independently verifiable.",
+        "Model identity, runtime identity, hardware identity, and capability remain separate ledgers.",
+        "No aggregate score may conceal a failed authority, custody, or survival gate."
+      ],
+      "donors": [
+        {
+          "id": "donor.genesis-kernel",
+          "title": "AXM Genesis local verification and deterministic query",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.tierbench-venkman",
+          "title": "Tier Bench and Venkman treatment and telemetry custody",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.model-fingerprint-labs",
+          "title": "Model-waterline, behavioral fingerprint, and open-weight observatory fixtures",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        }
+      ]
+    },
+    {
+      "id": "pile.circulation-orchestration",
+      "title": "Circulation, orchestration, and recovery",
+      "domain": "circulation_orchestration_recovery",
+      "core_questions": [
+        "How does accepted work survive interruption, process death, and head replacement?",
+        "Which resource should carry a task without pretending separate GPUs share memory?",
+        "How are approvals, effects, outcomes, and compensation preserved across retries?"
+      ],
+      "irreducible_constraints": [
+        "Work state must be durable and reconstructable outside a model session.",
+        "Side effects require idempotency and explicit outcome receipts.",
+        "Resource placement must expose CPU spill, link limits, throttling, and worker loss."
+      ],
+      "donors": [
+        {
+          "id": "donor.estate-kernel",
+          "title": "Accepted-action cache, durable workflow, and Work IR",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.bloodstream-recovery",
+          "title": "Append-only circulation and partial-write recovery fixtures",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "mixed",
+          "allowed_public_use": "sanitized_shape_only",
+          "contains_private_source_bytes": false
+        },
+        {
+          "id": "donor.task-floor-desk",
+          "title": "Task Floor, Desk, and detachable-worker contracts",
+          "kind": "implemented_system",
+          "evidence_class": "implemented_fixture",
+          "custody": "repository",
+          "source_visibility": "public",
+          "allowed_public_use": "exact",
+          "contains_private_source_bytes": false
+        }
+      ]
+    }
+  ]
+}
