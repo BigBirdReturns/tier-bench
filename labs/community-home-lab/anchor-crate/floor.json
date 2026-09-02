@@ -1,0 +1,183 @@
+{
+  "authority": {
+    "controller_owns": [
+      "acceptance",
+      "anchor_hashing",
+      "artifact_hashing",
+      "backend_binding",
+      "budget_enforcement",
+      "crate_hashing",
+      "dag_state",
+      "effect_admission",
+      "validator_execution"
+    ],
+    "executor_may": [
+      "bounded_candidate_output",
+      "bounded_transform_output",
+      "runtime_telemetry"
+    ],
+    "forbidden": [
+      "aggregate_memory_pooling",
+      "backend_self_acceptance",
+      "model_as_state_authority",
+      "silent_backend_substitution"
+    ],
+    "planner_may": [
+      "anchor_semantics",
+      "crate_semantics",
+      "dag_proposal",
+      "candidate_strategy"
+    ]
+  },
+  "claim": "A task can retain one portable semantic identity while deterministic controller software lowers its DAG nodes onto replaceable CPU, CUDA, RISC-V, or future accelerator backends and accepts only controller-verified products.",
+  "commodity_bindings": {
+    "evaluation": [
+      "inspect-ai"
+    ],
+    "immutable-evidence": [
+      "parquet"
+    ],
+    "model-runtime": [
+      "llama-cpp",
+      "vllm"
+    ],
+    "mutable-state": [
+      "sqlite"
+    ],
+    "policy": [
+      "opa"
+    ],
+    "source-custody": [
+      "git"
+    ],
+    "task-constitution": [
+      "task-floor",
+      "tier-desk"
+    ],
+    "telemetry": [
+      "opentelemetry"
+    ],
+    "transport": [
+      "nats-jetstream"
+    ]
+  },
+  "executor_protocol": {
+    "controller_injected_fields": [
+      "anchor_sha256",
+      "backend_manifest_sha256",
+      "crate_sha256",
+      "input_artifact_sha256",
+      "node_semantic_id",
+      "plan_id",
+      "remaining_budget"
+    ],
+    "operations": [
+      "describe",
+      "probe",
+      "execute",
+      "cancel",
+      "collect"
+    ],
+    "schema": "tier-bench/anchor-executor-abi-v1",
+    "transport": "canonical-json-stdin-stdout"
+  },
+  "id": "community-home-lab.anchor-crate-v1",
+  "node_kinds": [
+    {
+      "authority_ceiling": "bounded-transform-output",
+      "cacheable": true,
+      "description": "Controller-specified pure transformation whose accepted output is byte or structure exact.",
+      "id": "deterministic.transform",
+      "semantic_class": "exact"
+    },
+    {
+      "authority_ceiling": "candidate-output-only",
+      "cacheable": false,
+      "description": "Replaceable stochastic or accelerator-backed candidate generation judged by controller validators.",
+      "id": "candidate.generate",
+      "semantic_class": "validator_equivalent"
+    },
+    {
+      "authority_ceiling": "named-human-event",
+      "cacheable": false,
+      "description": "Explicit human disposition bound to a state and role.",
+      "id": "human.disposition",
+      "semantic_class": "human_disposition"
+    },
+    {
+      "authority_ceiling": "controller-admitted-effect",
+      "cacheable": false,
+      "description": "Idempotent bounded effect admitted and verified by the controller.",
+      "id": "effect.apply",
+      "semantic_class": "effect"
+    },
+    {
+      "authority_ceiling": "controller-acceptance-only",
+      "cacheable": true,
+      "description": "Controller-owned verification and final product projection.",
+      "id": "verify.accept",
+      "semantic_class": "exact"
+    }
+  ],
+  "notes": "Community suppliers remain replaceable. The floor owns the ABI, task identity, receipts, and acceptance boundary rather than any one runtime.",
+  "operations": [
+    {
+      "authority_ceiling": "pure canonicalization only",
+      "deterministic_output": true,
+      "id": "records.normalize",
+      "input_schema": "schema.readiness-records-v1",
+      "output_schema": "schema.readiness-normalized-v1",
+      "semantic_class": "exact"
+    },
+    {
+      "authority_ceiling": "derived local state only",
+      "deterministic_output": true,
+      "id": "readiness.derive",
+      "input_schema": "schema.readiness-normalized-v1",
+      "output_schema": "schema.readiness-state-v1",
+      "semantic_class": "exact"
+    },
+    {
+      "authority_ceiling": "candidate decision packet only",
+      "deterministic_output": false,
+      "id": "decision.generate",
+      "input_schema": "schema.readiness-state-v1",
+      "output_schema": "schema.readiness-decision-v1",
+      "semantic_class": "validator_equivalent"
+    },
+    {
+      "authority_ceiling": "projection only; controller retains acceptance",
+      "deterministic_output": true,
+      "id": "acceptance.project",
+      "input_schema": "schema.readiness-product-input-v1",
+      "output_schema": "schema.readiness-accepted-product-v1",
+      "semantic_class": "exact"
+    }
+  ],
+  "placement_policy": {
+    "energy_policy": "Measure complete-node energy and prefer the lowest admitted backend unless the cartridge explicitly ranks another backend first.",
+    "fallback_creates_new_treatment": true,
+    "no_implicit_pooling": true,
+    "selection_order": [
+      "backend_preference",
+      "energy_class",
+      "backend_id"
+    ],
+    "wall_clock_policy": "Wall clock may expand when the task contract permits it; accepted work and recovery remain primary."
+  },
+  "required_seams": [
+    "seam.capture",
+    "seam.custody",
+    "seam.degradation",
+    "seam.disposition",
+    "seam.identity",
+    "seam.interpretation",
+    "seam.outcome",
+    "seam.resource-placement",
+    "seam.selection",
+    "seam.state-compilation",
+    "seam.substitution"
+  ],
+  "schema": "tier-bench/anchor-crate-floor@1",
+  "title": "Community Home Lab Anchor Crate Floor v1"
+}

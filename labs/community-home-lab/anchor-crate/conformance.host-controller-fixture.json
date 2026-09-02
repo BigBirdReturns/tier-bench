@@ -1,0 +1,32 @@
+{
+  "backend_id": "backend.host-controller-fixture",
+  "backend_manifest_sha256": "4f8fed7ca1645deea3c240d4443d618d8bac73a3d267d3b96ce053275d36bd69",
+  "cases": [
+    {
+      "id": "describe",
+      "passed": true
+    },
+    {
+      "id": "probe",
+      "passed": true
+    },
+    {
+      "id": "execute",
+      "passed": true
+    },
+    {
+      "id": "collect",
+      "passed": true
+    },
+    {
+      "id": "cancel",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "physical_qualification": false,
+  "production_claim": false,
+  "promotion_authorized": false,
+  "report_sha256": "a2ef9bb76983f041d4760409e742dab0e4ae618f3645ef35ece1c01dea7aec61",
+  "schema": "tier-bench/anchor-backend-conformance@1"
+}

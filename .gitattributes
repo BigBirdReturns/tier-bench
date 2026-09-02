@@ -22,6 +22,19 @@ docs/cart0-anchor-prototype.md -text -whitespace
 memory/lenses/shard/** -text -whitespace
 memory/lenses/shard.sha256 -text -whitespace
 
+# Community Home Lab Anchor Crate is a self-verifying exact-byte bundle.
+# Keep its manifests, canonical products, source, tests, launchers, and CI bytes
+# identical on Windows and Linux so checkout policy cannot invalidate custody.
+.github/workflows/anchor-crate.yml -text -whitespace
+ANCHORCRATE.cmd -text -whitespace
+examples/anchor_crate/** -text -whitespace
+labs/community-home-lab/README.md -text -whitespace
+labs/community-home-lab/anchor-crate/** -text -whitespace
+scripts/run-anchor-crate-lab.ps1 -text -whitespace
+scripts/verify_anchor_crate_bundle.py -text -whitespace
+tests/test_anchor_crate.py -text -whitespace
+tier_runner/anchor_crate*.py -text -whitespace
+
 # Activated pilot execution sources are compared byte-for-byte at runtime.
 # Force LF in both Git and the worktree so newline normalization cannot hide
 # behavior-changing CRLF inside string literals.
@@ -36,3 +49,8 @@ tier_runner/pilot_manifest.py text eol=lf
 tier_runner/core.py text eol=lf
 tier_runner/manifest.py text eol=lf
 tier_runner/events.py text eol=lf
+# Physical RTX 4060 Anchor Crate source and launcher bytes.
+ANCHOR4060.cmd -text -whitespace
+scripts/build_anchor_4060_manifest.py -text -whitespace
+scripts/run-anchor-crate-4060-smoke.ps1 -text -whitespace
+tests/test_anchor_crate_physical.py -text -whitespace

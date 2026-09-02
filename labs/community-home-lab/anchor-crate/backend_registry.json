@@ -1,0 +1,159 @@
+{
+  "backends": [
+    {
+      "architecture": "x86_64",
+      "capabilities": [
+        "acceptance-projection",
+        "deterministic-transform",
+        "structured-json"
+      ],
+      "driver_command": [
+        "python",
+        "examples/anchor_crate/reference_executor.py",
+        "--backend",
+        "backend.host-controller-fixture"
+      ],
+      "effects": [
+        "none",
+        "local_read"
+      ],
+      "energy_class": 1,
+      "execution_cartridge_id": "exec.host-readiness-stdlib-v1",
+      "execution_cartridge_sha256": "488e0dcbb930e950dda6b44ceca9c76ae74a6e95425c75f8f9ec74664208a617",
+      "execution_class": "host_process",
+      "id": "backend.host-controller-fixture",
+      "isa": "x86-64-v2",
+      "lowerings": {
+        "acceptance.project": "e1a3acfc7618ac83d6ce308f395fef889d48f6919c41494e9a6dd5a42fce7a2a",
+        "readiness.derive": "618ac4e73d8a50aa021e66c6c4a3e9a460fe5c6b853f47ea1eb8fd94fd84567d",
+        "records.normalize": "a5c84f8fdc89e68fa66ce4418b2f298d4842b85c46fdeffc303716ff157d7a45"
+      },
+      "memory_mib": 1024,
+      "model_formats": [
+        "none"
+      ],
+      "model_identity": "none",
+      "network": "none",
+      "notes": "Fixture implementation of controller-side pure operations. It is not a physical performance claim.",
+      "physical_qualification": false,
+      "power_limit_w": 30,
+      "preference": 0,
+      "runtime_id": "python-stdlib",
+      "runtime_version": "3.10+",
+      "schema": "tier-bench/anchor-backend@1",
+      "storage_mib": 1024,
+      "telemetry": [
+        "elapsed_ms",
+        "energy_mwh",
+        "memory_peak_mib",
+        "status"
+      ],
+      "title": "Deterministic host controller fixture",
+      "toolchain_sha256": "17b5e04d56a310a69e364a5fe67cffe2e0ec4d1bdc6df53f4d4d25245c0d87d1"
+    },
+    {
+      "architecture": "cuda-sm86",
+      "capabilities": [
+        "candidate-generation",
+        "llm-inference",
+        "structured-json"
+      ],
+      "driver_command": [
+        "python",
+        "examples/anchor_crate/reference_executor.py",
+        "--backend",
+        "backend.cuda3090-fixture"
+      ],
+      "effects": [
+        "none",
+        "local_read"
+      ],
+      "energy_class": 3,
+      "execution_cartridge_id": "exec.cuda-sm86-readiness-fixture-v1",
+      "execution_cartridge_sha256": "a1f9ad43ea4de810d708a3bdcdc74d53aa07f82a728fe579c3504f59aaae6dd7",
+      "execution_class": "accelerator_driver",
+      "id": "backend.cuda3090-fixture",
+      "isa": "NVIDIA Ampere SM86",
+      "lowerings": {
+        "decision.generate": "a6884731400b5a1ad822cdaf5a2c2192d778a04930aeb1be1eac6d71a472aed9"
+      },
+      "memory_mib": 24576,
+      "model_formats": [
+        "gguf",
+        "safetensors"
+      ],
+      "model_identity": "fixture-model.readiness-decision-v1",
+      "network": "none",
+      "notes": "ABI witness shaped like the arriving 3090 route. No physical card call is claimed.",
+      "physical_qualification": false,
+      "power_limit_w": 250,
+      "preference": 10,
+      "runtime_id": "anchor-fixture-cuda",
+      "runtime_version": "1",
+      "schema": "tier-bench/anchor-backend@1",
+      "storage_mib": 8192,
+      "telemetry": [
+        "elapsed_ms",
+        "energy_mwh",
+        "memory_peak_mib",
+        "status"
+      ],
+      "title": "RTX 3090 CUDA candidate fixture",
+      "toolchain_sha256": "e42df50186dd6bb52b881b7225e9ea4640a8c3d94e327afabc0ddcada1b5f8c2"
+    },
+    {
+      "architecture": "riscv64",
+      "capabilities": [
+        "candidate-generation",
+        "llm-inference",
+        "structured-json"
+      ],
+      "driver_command": [
+        "python",
+        "examples/anchor_crate/reference_executor.py",
+        "--backend",
+        "backend.riscv-llm-fixture"
+      ],
+      "effects": [
+        "none",
+        "local_read"
+      ],
+      "energy_class": 0,
+      "execution_cartridge_id": "exec.riscv64-readiness-fixture-v1",
+      "execution_cartridge_sha256": "8a5dc2e622535fec456090948b1ffe036106f2810e18fc4b1a617ac41fe02cb7",
+      "execution_class": "bare_metal_coprocessor",
+      "id": "backend.riscv-llm-fixture",
+      "isa": "RV64GCV plus vendor tensor extension",
+      "lowerings": {
+        "decision.generate": "402120dd53cc408a9277b5c6ca71073efb9c98a8cd0139abf640a61e52769622"
+      },
+      "memory_mib": 4096,
+      "model_formats": [
+        "anchor-ir",
+        "gguf-subset"
+      ],
+      "model_identity": "fixture-model.readiness-decision-v1",
+      "network": "none",
+      "notes": "Conformance witness for a future military or industrial accelerator. It proves only the ABI fixture.",
+      "physical_qualification": false,
+      "power_limit_w": 30,
+      "preference": 20,
+      "runtime_id": "anchor-fixture-riscv",
+      "runtime_version": "1",
+      "schema": "tier-bench/anchor-backend@1",
+      "storage_mib": 4096,
+      "telemetry": [
+        "elapsed_ms",
+        "energy_mwh",
+        "memory_peak_mib",
+        "status"
+      ],
+      "title": "RISC-V LLM accelerator ABI fixture",
+      "toolchain_sha256": "9a7164b7751dd7178e5b11c6a8b654b855cb15c1ceb85f3bb5ad5db20a411d21"
+    }
+  ],
+  "claim_boundary": "Registry entries are execution suppliers. Presence or conformance does not prove physical performance, security, military suitability, or production admission.",
+  "id": "community-home-lab.anchor-backends-v1",
+  "schema": "tier-bench/anchor-backend-registry@1",
+  "title": "Community Home Lab Anchor Crate backend registry"
+}

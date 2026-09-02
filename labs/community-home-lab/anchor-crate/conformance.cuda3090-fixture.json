@@ -1,0 +1,32 @@
+{
+  "backend_id": "backend.cuda3090-fixture",
+  "backend_manifest_sha256": "e512ebb16e913e57a882aaf172b16cfd35acc346dbdf36c861e26ed89eaeb032",
+  "cases": [
+    {
+      "id": "describe",
+      "passed": true
+    },
+    {
+      "id": "probe",
+      "passed": true
+    },
+    {
+      "id": "execute",
+      "passed": true
+    },
+    {
+      "id": "collect",
+      "passed": true
+    },
+    {
+      "id": "cancel",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "physical_qualification": false,
+  "production_claim": false,
+  "promotion_authorized": false,
+  "report_sha256": "ee5f2ffb19f6b4d5ee0283c02a34cc8c9a482c2cdb4c4008b9d3f66bc26803e5",
+  "schema": "tier-bench/anchor-backend-conformance@1"
+}

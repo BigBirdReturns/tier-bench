@@ -1,0 +1,175 @@
+{
+  "claim_boundary": "This manifest binds source, contracts, fixtures, canonical plans, conformance reports, tests, launchers, and documentation. It does not prove physical accelerator behavior.",
+  "files": [
+    {
+      "bytes": 8545,
+      "path": ".github/workflows/anchor-crate.yml",
+      "sha256": "ad9faf1c2493786ca1c75886d380f75aceba5d07a9118a8d01998bc9438ffbd5"
+    },
+    {
+      "bytes": 139,
+      "path": "ANCHORCRATE.cmd",
+      "sha256": "ce112f5434b3f2e6ff7051c9ffd47299e9ced1e136bc4b050cef7013a5e37f07"
+    },
+    {
+      "bytes": 6100,
+      "path": "examples/anchor_crate/reference_executor.py",
+      "sha256": "1341e8735e38c7325ebd6b9396bdd44d6e7ea60f86f8c7a006282eb8fbed9158"
+    },
+    {
+      "bytes": 3620,
+      "path": "labs/community-home-lab/README.md",
+      "sha256": "322616ac10578ff05ea5ba03147ba18228572cf15deaf058799d9f6089daac41"
+    },
+    {
+      "bytes": 4585,
+      "path": "labs/community-home-lab/anchor-crate/README.md",
+      "sha256": "bd64b38b524c6beb192735bba6d096cbca3c164b14d54d64c7aa4acb63568a67"
+    },
+    {
+      "bytes": 2266,
+      "path": "labs/community-home-lab/anchor-crate/START_HERE.md",
+      "sha256": "493495d437fd10baf2440759cf48f646bae66628d917d78b40f192424ad70855"
+    },
+    {
+      "bytes": 2811,
+      "path": "labs/community-home-lab/anchor-crate/CONTINUITY.md",
+      "sha256": "e3d774535c8d2b5dd92c1dbc5a9ec7d626a5cbc25215fe8353c77f890b2480b4"
+    },
+    {
+      "bytes": 4863,
+      "path": "labs/community-home-lab/anchor-crate/ANCHOR_CRATE_ABI.md",
+      "sha256": "7535abb6e82d1b77a1fff740e7c5ef1022dadd829b7b61ac7833d98a034725d9"
+    },
+    {
+      "bytes": 4759,
+      "path": "labs/community-home-lab/anchor-crate/SCIENCE_PROGRAM.md",
+      "sha256": "03771204442850575abd238c214430f0d059d74db4fac9d40a8181f57364f349"
+    },
+    {
+      "bytes": 2724,
+      "path": "labs/community-home-lab/anchor-crate/DAG_AND_STORAGE.md",
+      "sha256": "c67f55a125796a2f89e16185dc85495567504d481990bed5d217eea519b1c6ff"
+    },
+    {
+      "bytes": 5462,
+      "path": "labs/community-home-lab/anchor-crate/floor.json",
+      "sha256": "72559ba4ed2d13c80df7ac6e8138d1b8afeda5c5c5402834bc314308716221be"
+    },
+    {
+      "bytes": 7526,
+      "path": "labs/community-home-lab/anchor-crate/physical_availability_cartridge.json",
+      "sha256": "46c272aa12b0b041b01c55aaafc1cc93cd5373e435cf5a0d6b1d0962120ae85d"
+    },
+    {
+      "bytes": 5457,
+      "path": "labs/community-home-lab/anchor-crate/backend_registry.json",
+      "sha256": "2d9bb76b540af6b3c3abb330e0660523f3bb3772afc4069786588aaf075af803"
+    },
+    {
+      "bytes": 13437,
+      "path": "labs/community-home-lab/anchor-crate/plan.cuda-fixture.json",
+      "sha256": "4472641270534b447ba44d5de38a34ee2cfc61c444b85ec3bd50acd2d27f3aa2"
+    },
+    {
+      "bytes": 13453,
+      "path": "labs/community-home-lab/anchor-crate/plan.riscv-fixture.json",
+      "sha256": "17c852477bf6509844aad78840c07d5b18b1ea62a2095c58c8a34d2faa2e72dd"
+    },
+    {
+      "bytes": 2349,
+      "path": "labs/community-home-lab/anchor-crate/backend_equivalence.json",
+      "sha256": "a3a51677d2c47bb17e49ea0e09cbfd76dff207cb7510684abaa592110c4c724b"
+    },
+    {
+      "bytes": 708,
+      "path": "labs/community-home-lab/anchor-crate/conformance.host-controller-fixture.json",
+      "sha256": "72e3ac1b3c325a5a555bd978cb36921dabf972ab62024a39dceea53fe49a7a63"
+    },
+    {
+      "bytes": 701,
+      "path": "labs/community-home-lab/anchor-crate/conformance.cuda3090-fixture.json",
+      "sha256": "62b2efcf60531406ed273a6e5312994ab2f75da0953e7aef03fc56a2a21e02fc"
+    },
+    {
+      "bytes": 702,
+      "path": "labs/community-home-lab/anchor-crate/conformance.riscv-llm-fixture.json",
+      "sha256": "c7e96fb111f22c0b9e43fef67986877bceb0fe1f1296ba92c72a3d8ab2ab8570"
+    },
+    {
+      "bytes": 3067,
+      "path": "scripts/run-anchor-crate-lab.ps1",
+      "sha256": "0a552a38872042412c33c43c3c00892ce5c0a57d5f16d1a9ffd77ee35e024777"
+    },
+    {
+      "bytes": 2380,
+      "path": "scripts/verify_anchor_crate_bundle.py",
+      "sha256": "51453dc9f4638a0c370974fdc5e81a0e94ae1b290713fc645c43d9276a9ac97e"
+    },
+    {
+      "bytes": 13529,
+      "path": "tests/test_anchor_crate.py",
+      "sha256": "c395fae72dc2116649c12f205a34a4b07b45d8b3f3f4d0c1b24964614081a79f"
+    },
+    {
+      "bytes": 5924,
+      "path": "tier_runner/anchor_crate_common.py",
+      "sha256": "e1cc19a39b02dbbdb72fe6a8654104eaa95e585a0cb38e79c914334ff6c186b8"
+    },
+    {
+      "bytes": 28515,
+      "path": "tier_runner/anchor_crate_schema.py",
+      "sha256": "c6bc797d57ebd6e2451a7815316a12b57e9be83260f8cf68361e8b69412a2f81"
+    },
+    {
+      "bytes": 16768,
+      "path": "tier_runner/anchor_crate_plan.py",
+      "sha256": "c6d2a10b7cc55b17a16ecd6a68cdb774a16eb1df3c6c0a766d013edda78d60bf"
+    },
+    {
+      "bytes": 33956,
+      "path": "tier_runner/anchor_crate_runtime.py",
+      "sha256": "217b0b4bc6bf9cda449377ecb2602319ab0a285466fd8a68d54ec0e6f8e89757"
+    },
+    {
+      "bytes": 6804,
+      "path": "tier_runner/anchor_crate.py",
+      "sha256": "b7981915684520acd33e18237ab6b47e5a1a4f2f97ce1794787a307d7f577c9a"
+    },
+    {
+      "bytes": 150,
+      "path": "ANCHOR4060.cmd",
+      "sha256": "a5fe752eac6741724ecb32dc8498aee46dc262c2f3d44b31b73b53dd199531b4"
+    },
+    {
+      "bytes": 23969,
+      "path": "examples/anchor_crate/ollama_4060_executor.py",
+      "sha256": "0ba90c8ee787665a6bd278949c6ad0d6923472a9587bb9ec67fa058480d6e28c"
+    },
+    {
+      "bytes": 3854,
+      "path": "labs/community-home-lab/anchor-crate/PHYSICAL_4060_SMOKE.md",
+      "sha256": "32ca3b9e1980604a852a52c650624aad03bad1a6b35117605bc524c353df60f7"
+    },
+    {
+      "bytes": 24792,
+      "path": "scripts/build_anchor_4060_manifest.py",
+      "sha256": "dfdabaf89b973b392eddf687f225aeffd5693eeb2ba866ac30a043648a54d6b2"
+    },
+    {
+      "bytes": 18769,
+      "path": "scripts/run-anchor-crate-4060-smoke.ps1",
+      "sha256": "6a45e65989453058c0630b4e10d37e53dcb4e8d69b0832ae78b8f27074d5ed58"
+    },
+    {
+      "bytes": 20775,
+      "path": "tests/test_anchor_crate_physical.py",
+      "sha256": "c3ef9091ffee14d4a40943ef72ef1de3913abe40e1c5b2a3f9bad697eff776cc"
+    }
+  ],
+  "id": "community-home-lab.anchor-crate-bundle-v1",
+  "portable_task_id": "anchortask1_1b31b15a68d5ef8c0b21588755d3a7c157070fcfa33bff2aa98478a74656cc8e",
+  "production_claim": false,
+  "promotion_authorized": false,
+  "schema": "tier-bench/anchor-crate-bundle-manifest@1"
+}

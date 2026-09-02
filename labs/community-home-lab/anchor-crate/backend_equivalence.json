@@ -1,0 +1,43 @@
+{
+  "assertions": {
+    "acceptance_contract_equal": true,
+    "execution_cartridge_distinct": true,
+    "execution_identity_distinct": true,
+    "model_identity_equal": true,
+    "plan_identity_distinct": true,
+    "portable_task_identity_equal": true,
+    "semantic_node_identity_equal": true
+  },
+  "backend_a": {
+    "architecture": "cuda-sm86",
+    "execution_cartridge_id": "exec.cuda-sm86-readiness-fixture-v1",
+    "execution_cartridge_sha256": "a1f9ad43ea4de810d708a3bdcdc74d53aa07f82a728fe579c3504f59aaae6dd7",
+    "execution_id": "anchorexec1_8f3667f2e991a26bc5796d732b1e8b99af760225cc84ceefc1dc5236d7c8fe2a",
+    "id": "backend.cuda3090-fixture",
+    "isa": "NVIDIA Ampere SM86",
+    "model_identity": "fixture-model.readiness-decision-v1",
+    "physical_qualification": false,
+    "plan_id": "anchorplan1_acd60429eeed790f27276053d000af254cc65f24fa7fe5ab24ef35df12afc0cc"
+  },
+  "backend_b": {
+    "architecture": "riscv64",
+    "execution_cartridge_id": "exec.riscv64-readiness-fixture-v1",
+    "execution_cartridge_sha256": "8a5dc2e622535fec456090948b1ffe036106f2810e18fc4b1a617ac41fe02cb7",
+    "execution_id": "anchorexec1_e101edefaaa305dd10c19e897b0df237c9fd98cfcff05acc8ec96de3066b4a96",
+    "id": "backend.riscv-llm-fixture",
+    "isa": "RV64GCV plus vendor tensor extension",
+    "model_identity": "fixture-model.readiness-decision-v1",
+    "physical_qualification": false,
+    "plan_id": "anchorplan1_a533336e40b3ed32cc78d2cc83ae458ded9a554c5edebe22b4e2d6a50c2806a6"
+  },
+  "claim_boundary": "This proves deterministic plan-level portability across two declared ABI fixtures. It does not prove physical execution, performance, security, or production admission.",
+  "comparison_id": "anchorcompare1_bf7301c5c865585d7a6a4472f707cb96e9b8bc84ecd0ee5615ec6e98e9ff33b4",
+  "floor_contract_sha256": "6b44319b470979b523d9fde4bf71fd3f75cd288db749716bacde81e9379c05b1",
+  "node_id": "generate_decision_packet",
+  "node_semantic_id": "anchornode1_2aaa21ecbef8a70c162afd60c65f56dbda37736919a283dd5178a236bdb35270",
+  "portable_task_id": "anchortask1_1b31b15a68d5ef8c0b21588755d3a7c157070fcfa33bff2aa98478a74656cc8e",
+  "production_claim": false,
+  "promotion_authorized": false,
+  "schema": "tier-bench/anchor-backend-equivalence-plan@1",
+  "semantic_cartridge_sha256": "01a338915b5f61e478d04c90788d6b1971720df7eb412d4dc6725c81b0aa4d49"
+}
