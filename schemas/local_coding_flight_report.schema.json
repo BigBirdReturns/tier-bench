@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://bigbirdreturns.example/schemas/local_coding_flight_report.schema.json",
+  "title": "Tier Bench local coding flight report",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "flight_id",
+    "profile",
+    "started_at",
+    "completed_at",
+    "runtime",
+    "server_attestation",
+    "fixture",
+    "observations",
+    "model_summaries",
+    "unloads",
+    "gpu",
+    "qualification",
+    "report_path"
+  ],
+  "properties": {
+    "schema": {"const": "tier-bench/local-coding-flight-report@1"},
+    "flight_id": {"type": "string", "minLength": 1},
+    "profile": {"enum": ["smoke", "core", "adversarial"]},
+    "started_at": {"type": "string", "format": "date-time"},
+    "completed_at": {"type": "string", "format": "date-time"},
+    "runtime": {"type": "object"},
+    "server_attestation": {"type": "object"},
+    "fixture": {"type": "object"},
+    "observations": {"type": "array", "items": {"type": "object"}},
+    "model_summaries": {"type": "array", "items": {"type": "object"}},
+    "unloads": {"type": "array", "items": {"type": "object"}},
+    "gpu": {"type": "object"},
+    "qualification": {
+      "type": "object",
+      "required": [
+        "all_runs_accepted_and_verified",
+        "all_accepted_runs_runtime_attested",
+        "physical_gpu_attestation",
+        "physical_qualification",
+        "promotion_authorized",
+        "promotion_note"
+      ],
+      "properties": {
+        "all_runs_accepted_and_verified": {"type": "boolean"},
+        "all_accepted_runs_runtime_attested": {"type": "boolean"},
+        "physical_gpu_attestation": {"type": "boolean"},
+        "physical_qualification": {"type": "boolean"},
+        "promotion_authorized": {"const": false},
+        "promotion_note": {"type": "string", "minLength": 1}
+      }
+    },
+    "report_path": {"type": "string", "minLength": 1}
+  }
+}
