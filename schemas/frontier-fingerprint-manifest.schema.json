@@ -1,0 +1,256 @@
+{
+  "$id": "https://tier-bench.local/schemas/frontier-fingerprint-manifest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "campaign_id": {
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,127}$",
+      "type": "string"
+    },
+    "execution": {
+      "additionalProperties": false,
+      "properties": {
+        "allow_live": {
+          "type": "boolean"
+        },
+        "max_estimated_usd": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "max_provider_errors": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_requests": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_wall_seconds": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "request_timeout_seconds": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "allow_live",
+        "max_requests",
+        "max_wall_seconds",
+        "max_estimated_usd",
+        "request_timeout_seconds",
+        "max_provider_errors"
+      ],
+      "type": "object"
+    },
+    "pricing": {
+      "additionalProperties": false,
+      "properties": {
+        "cache_read_per_million": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "cache_write_per_million": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "input_per_million": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "output_per_million": {
+          "minimum": 0,
+          "type": "number"
+        }
+      },
+      "required": [
+        "input_per_million",
+        "cache_write_per_million",
+        "cache_read_per_million",
+        "output_per_million"
+      ],
+      "type": "object"
+    },
+    "probes": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "cache_reuse",
+              "cache_threshold",
+              "prefix_boundary",
+              "context_sweep",
+              "retention",
+              "serialization",
+              "tool_schema",
+              "effort",
+              "identity"
+            ]
+          },
+          "max_output_tokens": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "repeats": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "seed": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "repeats",
+          "seed",
+          "max_output_tokens"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "retention": {
+      "additionalProperties": false,
+      "properties": {
+        "hash_algorithm": {
+          "const": "sha256"
+        },
+        "public_text": {
+          "const": "forbidden"
+        },
+        "raw_evidence": {
+          "const": "private-run-artifact"
+        }
+      },
+      "required": [
+        "public_text",
+        "raw_evidence",
+        "hash_algorithm"
+      ],
+      "type": "object"
+    },
+    "schema": {
+      "const": "tier-bench/frontier-fingerprint-manifest@1"
+    },
+    "subject": {
+      "additionalProperties": true,
+      "properties": {
+        "adapter": {
+          "enum": [
+            "mock",
+            "anthropic_messages",
+            "openai_responses"
+          ]
+        },
+        "api_contract": {
+          "additionalProperties": false,
+          "properties": {
+            "endpoint": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "request_headers": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            },
+            "response_headers_to_capture": {
+              "items": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "response_identity_signal": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "revision": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "usage_semantics_id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "endpoint",
+            "revision",
+            "usage_semantics_id",
+            "response_identity_signal",
+            "request_headers",
+            "response_headers_to_capture"
+          ],
+          "type": "object"
+        },
+        "model_binding": {
+          "oneOf": [
+            {
+              "not": {
+                "required": [
+                  "environment"
+                ]
+              },
+              "required": [
+                "literal"
+              ]
+            },
+            {
+              "not": {
+                "required": [
+                  "literal"
+                ]
+              },
+              "required": [
+                "environment"
+              ]
+            }
+          ],
+          "properties": {
+            "environment": {
+              "pattern": "^TIER_",
+              "type": "string"
+            },
+            "literal": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "provider": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "adapter",
+        "model_binding",
+        "api_contract"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema",
+    "campaign_id",
+    "subject",
+    "retention",
+    "execution",
+    "probes"
+  ],
+  "title": "Tier-Bench frontier fingerprint manifest",
+  "type": "object"
+}

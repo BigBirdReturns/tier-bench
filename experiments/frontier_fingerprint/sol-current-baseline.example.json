@@ -1,0 +1,105 @@
+{
+  "campaign_id": "sol-current-baseline-v1",
+  "execution": {
+    "allow_live": false,
+    "max_estimated_usd": 0,
+    "max_provider_errors": 1,
+    "max_requests": 80,
+    "max_wall_seconds": 1800,
+    "request_timeout_seconds": 180
+  },
+  "probes": [
+    {
+      "id": "cache-threshold",
+      "kind": "cache_threshold",
+      "max_output_tokens": 32,
+      "repeats": 2,
+      "seed": 6000,
+      "suffix_units": 32,
+      "threshold_units": [
+        256,
+        512,
+        768,
+        1024,
+        1536
+      ]
+    },
+    {
+      "id": "cache-reuse",
+      "kind": "cache_reuse",
+      "max_output_tokens": 32,
+      "mutation_fraction": 0.25,
+      "prefix_units": 1400,
+      "repeats": 8,
+      "seed": 6101,
+      "suffix_units": 32
+    },
+    {
+      "id": "prefix-boundary",
+      "kind": "prefix_boundary",
+      "max_output_tokens": 32,
+      "mutation_fractions": [
+        0,
+        0.25,
+        0.5,
+        0.75,
+        0.95
+      ],
+      "prefix_units": 1600,
+      "repeats": 2,
+      "seed": 6102,
+      "suffix_units": 32
+    },
+    {
+      "anchor_positions": [
+        0.01,
+        0.25,
+        0.5,
+        0.75,
+        0.99
+      ],
+      "context_units": 8000,
+      "id": "retention",
+      "kind": "retention",
+      "max_output_tokens": 64,
+      "repeats": 2,
+      "seed": 6103,
+      "suffix_units": 32
+    },
+    {
+      "id": "identity",
+      "kind": "identity",
+      "max_output_tokens": 16,
+      "prefix_units": 64,
+      "repeats": 4,
+      "seed": 6104,
+      "suffix_units": 8
+    }
+  ],
+  "retention": {
+    "hash_algorithm": "sha256",
+    "public_text": "forbidden",
+    "raw_evidence": "private-run-artifact"
+  },
+  "schema": "tier-bench/frontier-fingerprint-manifest@1",
+  "subject": {
+    "adapter": "openai_responses",
+    "api_contract": {
+      "endpoint": "https://api.openai.com/v1/responses",
+      "request_headers": {},
+      "response_headers_to_capture": [
+        "openai-version",
+        "x-request-id",
+        "openai-processing-ms"
+      ],
+      "response_identity_signal": "system-fingerprint-when-returned-else-weak-response-model",
+      "revision": "responses-v1-observed-2026-09-01",
+      "usage_semantics_id": "openai-responses-input-includes-cached-v1"
+    },
+    "model_binding": {
+      "environment": "TIER_SOL_CURRENT_MODEL"
+    },
+    "provider": "openai",
+    "release_status": "operator-bound-baseline"
+  }
+}
