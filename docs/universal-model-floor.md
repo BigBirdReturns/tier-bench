@@ -245,7 +245,9 @@ Every network response receives an immutable raw snapshot and a receipt containi
 
 ### Hugging Face benchmark discovery
 
-The default source configuration discovers official benchmark datasets and imports the current SWE-bench Verified and Humanity's Last Exam leaderboards. Add any official benchmark dataset by copying an `hf_leaderboard` source and preserving the exact benchmark revision and setup fields.
+The default source configuration discovers official benchmark datasets and imports the current SWE-bench Verified and Humanity's Last Exam leaderboards. It also imports the current LM Arena text, agent, web-development, search, and document cells through the Hugging Face dataset viewer. The rows endpoint is paginated to completion with bounded request pacing and rate-limit cooldown, every page receives an immutable snapshot receipt, and the published `category` field is preserved as an exact comparison dimension. A source that reports a partial dataset view, exhausts its retry budget, or exceeds its declared page ceiling fails closed instead of presenting an incomplete external baseline.
+
+Add any official benchmark dataset by copying an `hf_leaderboard` or paginated `http_json` source and preserving the exact benchmark revision, dimensions, and setup fields.
 
 The observatory never averages rows across different:
 
@@ -259,7 +261,7 @@ metrics
 directions
 ```
 
-Each distinct setup receives its own comparison key.
+Each distinct setup receives its own comparison key. Optional benchmark dimensions such as category, language, modality, hardware class, or agent policy are included in that key, so leaderboard subcategories cannot be averaged together accidentally.
 
 ### GitHub and practitioner reports
 

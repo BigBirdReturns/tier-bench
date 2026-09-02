@@ -4,6 +4,7 @@ from __future__ import annotations
 import base64
 import csv
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 import hashlib
 import html
 import io
@@ -14,7 +15,7 @@ import re
 import time
 from typing import Any, Iterable
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote, urlencode
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
 
@@ -72,6 +73,8 @@ MODEL_TOKEN = re.compile(
     r"\b(?:claude|opus|fable|sonnet|haiku|gpt|gemini|qwen|kimi|deepseek|mistral|llama|glm|minimax)[A-Za-z0-9._:/+-]*\b",
     re.I,
 )
+HF_ROWS_HOST = "datasets-server.huggingface.co"
+HF_ROWS_PATH = "/rows"
 
 
 def _clean_text(value: Any, limit: int) -> str:
@@ -83,25 +86,60 @@ def _clean_text(value: Any, limit: int) -> str:
     return text[:limit]
 
 
+def _is_hf_rows_url(url: str) -> bool:
+    parsed = urlsplit(url)
+    return (
+        parsed.scheme.lower() == "https"
+        and (parsed.hostname or "").lower() == HF_ROWS_HOST
+        and parsed.path.rstrip("/") == HF_ROWS_PATH
+    )
+
+
 def _request(
     url: str,
     *,
     headers: dict[str, str] | None = None,
     data: bytes | None = None,
     timeout: float = 30.0,
+    retries: int = 5,
 ) -> tuple[bytes, dict[str, str], int]:
-    request = Request(url, headers=headers or {}, data=data)
-    try:
-        with urlopen(request, timeout=timeout) as response:
-            payload = response.read()
-            response_headers = {key.lower(): value for key, value in response.headers.items()}
-            status = int(getattr(response, "status", 200))
-    except HTTPError as exc:
-        body = exc.read(2000).decode("utf-8", errors="replace")
-        raise ModelFloorError(f"HTTP {exc.code} for {url}: {body}") from exc
-    except URLError as exc:
-        raise ModelFloorError(f"network failure for {url}: {exc}") from exc
-    return payload, response_headers, status
+    for attempt in range(retries + 1):
+        request = Request(url, headers=headers or {}, data=data)
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                payload = response.read()
+                response_headers = {
+                    key.lower(): value for key, value in response.headers.items()
+                }
+                status = int(getattr(response, "status", 200))
+            return payload, response_headers, status
+        except HTTPError as exc:
+            retryable = exc.code in {429, 502, 503, 504}
+            if retryable and attempt < retries:
+                retry_after = exc.headers.get("Retry-After") if exc.headers else None
+                try:
+                    if retry_after is None:
+                        raise ValueError
+                    delay = float(retry_after)
+                except ValueError:
+                    try:
+                        retry_at = parsedate_to_datetime(retry_after or "")
+                        if retry_at.tzinfo is None:
+                            retry_at = retry_at.replace(tzinfo=timezone.utc)
+                        delay = max(
+                            0.0,
+                            (retry_at - datetime.now(timezone.utc)).total_seconds(),
+                        )
+                    except (TypeError, ValueError):
+                        delay = 60.0 * (2**attempt) if exc.code == 429 else 2**attempt
+                exc.close()
+                time.sleep(max(0.0, min(delay, 300.0)))
+                continue
+            body = exc.read(2000).decode("utf-8", errors="replace")
+            raise ModelFloorError(f"HTTP {exc.code} for {url}: {body}") from exc
+        except URLError as exc:
+            raise ModelFloorError(f"network failure for {url}: {exc}") from exc
+    raise ModelFloorError(f"request retry budget exhausted for {url}")
 
 
 def _request_json(
@@ -130,6 +168,14 @@ def _benchmark(raw: Any, label: str) -> dict[str, Any]:
     direction = value.get("direction", "higher")
     if direction not in DIRECTIONS:
         raise ModelFloorError(f"{label}.direction must be higher or lower")
+    dimensions_raw = value.get("dimensions", {})
+    dimensions = need_object(dimensions_raw, f"{label}.dimensions")
+    normalized_dimensions = {
+        safe_id(key, f"{label}.dimensions key", limit=200): need_text(
+            str(item), f"{label}.dimensions.{key}", limit=500
+        )
+        for key, item in sorted(dimensions.items())
+    }
     return {
         **value,
         "id": benchmark_id,
@@ -151,6 +197,7 @@ def _benchmark(raw: Any, label: str) -> dict[str, Any]:
             f"{label}.adequacy_threshold",
             allow_none=True,
         ),
+        "dimensions": normalized_dimensions,
     }
 
 
@@ -275,9 +322,93 @@ def validate_source_config(raw: Any, *, config_path: Path | None = None) -> dict
             normalized["url"] = need_text(row.get("url"), f"{identifier}.url", limit=2000)
             normalized["benchmark"] = _benchmark(row.get("benchmark"), f"{identifier}.benchmark")
             normalized["mapping"] = need_object(row.get("mapping"), f"{identifier}.mapping")
+            dimensions_mapping = normalized["mapping"].get("dimensions", {})
+            normalized["mapping"]["dimensions"] = {
+                safe_id(key, f"{identifier}.mapping.dimensions key", limit=200): need_text(
+                    path, f"{identifier}.mapping.dimensions.{key}", limit=1000
+                )
+                for key, path in sorted(
+                    need_object(
+                        dimensions_mapping,
+                        f"{identifier}.mapping.dimensions",
+                    ).items()
+                )
+            }
             normalized["token_env"] = optional_text(
                 row.get("token_env"), f"{identifier}.token_env", limit=100
             )
+            if kind == "http_json" and row.get("pagination") is not None:
+                pagination = need_object(row.get("pagination"), f"{identifier}.pagination")
+                pagination_kind = need_text(
+                    pagination.get("kind", "offset_length"),
+                    f"{identifier}.pagination.kind",
+                    limit=100,
+                )
+                if pagination_kind != "offset_length":
+                    raise ModelFloorError(
+                        f"{identifier}.pagination.kind must be offset_length"
+                    )
+                normalized["pagination"] = {
+                    "kind": pagination_kind,
+                    "offset_param": need_text(
+                        pagination.get("offset_param", "offset"),
+                        f"{identifier}.pagination.offset_param",
+                        limit=100,
+                    ),
+                    "length_param": need_text(
+                        pagination.get("length_param", "length"),
+                        f"{identifier}.pagination.length_param",
+                        limit=100,
+                    ),
+                    "page_size": need_int(
+                        pagination.get("page_size", 100),
+                        f"{identifier}.pagination.page_size",
+                        low=1,
+                        high=1000,
+                    ),
+                    "start_offset": need_int(
+                        pagination.get("start_offset", 0),
+                        f"{identifier}.pagination.start_offset",
+                        low=0,
+                        high=10**12,
+                    ),
+                    "max_pages": need_int(
+                        pagination.get("max_pages", 1000),
+                        f"{identifier}.pagination.max_pages",
+                        low=1,
+                        high=100000,
+                    ),
+                    "total_path": optional_text(
+                        pagination.get("total_path", "num_rows_total"),
+                        f"{identifier}.pagination.total_path",
+                        limit=1000,
+                    ),
+                    "partial_path": optional_text(
+                        pagination.get("partial_path", "partial"),
+                        f"{identifier}.pagination.partial_path",
+                        limit=1000,
+                    ),
+                    "allow_partial": need_bool(
+                        pagination.get("allow_partial", False),
+                        f"{identifier}.pagination.allow_partial",
+                    ),
+                    "request_interval_seconds": need_number(
+                        pagination.get("request_interval_seconds", 2.0),
+                        f"{identifier}.pagination.request_interval_seconds",
+                        low=0.0,
+                        high=60.0,
+                    ),
+                }
+            if (
+                kind == "http_json"
+                and normalized["enabled"]
+                and _is_hf_rows_url(normalized["url"])
+                and "pagination" not in normalized
+            ):
+                raise ModelFloorError(
+                    f"{identifier} must declare pagination for the official "
+                    f"{HF_ROWS_HOST}{HF_ROWS_PATH} endpoint"
+                )
         elif kind == "atom":
             normalized["urls"] = [
                 need_text(item, f"{identifier}.urls[]", limit=2000)
@@ -303,9 +434,14 @@ def validate_source_config(raw: Any, *, config_path: Path | None = None) -> dict
     }
 
 
-def _observation_id(source_id: str, external_id: str, benchmark_id: str, model_id: str) -> str:
+def _observation_id(
+    source_id: str,
+    external_id: str,
+    comparison_key: str,
+    model_id: str,
+) -> str:
     digest = hashlib.sha256(
-        f"{source_id}\0{external_id}\0{benchmark_id}\0{model_id}".encode("utf-8")
+        f"{source_id}\0{external_id}\0{comparison_key}\0{model_id}".encode("utf-8")
     ).hexdigest()[:24]
     return f"ext-{digest}"
 
@@ -326,6 +462,7 @@ def _comparison_key(benchmark: dict[str, Any]) -> str:
             "context_policy",
         )
     }
+    fields["dimensions"] = dict(sorted((benchmark.get("dimensions") or {}).items()))
     return hash_json(fields)
 
 
@@ -357,9 +494,10 @@ def _make_observation(
         "latency_ms": latency_ms,
         "attention_minutes": attention_minutes,
     }
+    comparison_key = _comparison_key(benchmark)
     observation = {
         "schema": OBSERVATION_SCHEMA,
-        "id": _observation_id(source["id"], external_id, benchmark["id"], model_id),
+        "id": _observation_id(source["id"], external_id, comparison_key, model_id),
         "observed_at": observed_at or now_utc(),
         "source": {
             "id": source["id"],
@@ -378,7 +516,7 @@ def _make_observation(
         },
         "benchmark": {
             **benchmark,
-            "comparison_key": _comparison_key(benchmark),
+            "comparison_key": comparison_key,
         },
         "result": result,
         "evidence": {
@@ -861,6 +999,12 @@ def _mapped_observations(
             mapped = nested_get(raw, path) if path else None
             if mapped is not None:
                 benchmark[target] = str(mapped)
+        dimensions = dict(benchmark.get("dimensions") or {})
+        for dimension, path in mapping.get("dimensions", {}).items():
+            mapped = nested_get(raw, path)
+            if mapped is not None:
+                dimensions[dimension] = str(mapped)
+        benchmark["dimensions"] = dimensions
         observations.append(
             _make_observation(
                 source=source,
@@ -917,6 +1061,38 @@ def _mapped_observations(
     return observations
 
 
+def _pagination_url(url: str, pagination: dict[str, Any], offset: int) -> str:
+    split = urlsplit(url)
+    replace = {
+        pagination["offset_param"]: str(offset),
+        pagination["length_param"]: str(pagination["page_size"]),
+    }
+    query = [
+        (key, value)
+        for key, value in parse_qsl(split.query, keep_blank_values=True)
+        if key not in replace
+    ]
+    query.extend(replace.items())
+    return urlunsplit(
+        (split.scheme, split.netloc, split.path, urlencode(query), split.fragment)
+    )
+
+
+def _pagination_total(
+    source: dict[str, Any],
+    value: Any,
+    pagination: dict[str, Any],
+) -> int:
+    path = pagination.get("total_path")
+    total = nested_get(value, path) if path else None
+    if isinstance(total, bool) or not isinstance(total, int) or total < 0:
+        raise ModelFloorError(
+            f"{source['id']} paginated response must expose a non-negative integer "
+            f"at {path!r}"
+        )
+    return total
+
+
 def _sync_http_json(
     source: dict[str, Any], *, state_dir: Path
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
@@ -924,29 +1100,134 @@ def _sync_http_json(
     token_env = source.get("token_env")
     if token_env and os.environ.get(token_env):
         headers["Authorization"] = f"Bearer {os.environ[token_env]}"
-    value, response_headers, status, payload = _request_json(source["url"], headers=headers)
-    receipt, _ = _snapshot(
-        source,
-        uri=source["url"],
-        payload=payload,
-        status=status,
-        response_headers=response_headers,
-        state_dir=state_dir,
-    )
-    records_path = source["mapping"].get("records")
-    records = nested_get(value, records_path) if records_path else value
-    if not isinstance(records, list):
-        raise ModelFloorError(f"{source['id']} mapped records must be an array")
-    return (
-        _mapped_observations(
+    pagination = source.get("pagination")
+    if pagination is None:
+        value, response_headers, status, payload = _request_json(
+            source["url"], headers=headers
+        )
+        receipt, _ = _snapshot(
             source,
-            records,
-            snapshot_sha256=receipt["snapshot_sha256"],
             uri=source["url"],
-        ),
-        [],
-        [receipt],
-    )
+            payload=payload,
+            status=status,
+            response_headers=response_headers,
+            state_dir=state_dir,
+        )
+        records_path = source["mapping"].get("records")
+        records = nested_get(value, records_path) if records_path else value
+        if not isinstance(records, list):
+            raise ModelFloorError(f"{source['id']} mapped records must be an array")
+        return (
+            _mapped_observations(
+                source,
+                records,
+                snapshot_sha256=receipt["snapshot_sha256"],
+                uri=source["url"],
+            ),
+            [],
+            [receipt],
+        )
+
+    observations: list[dict[str, Any]] = []
+    receipts: list[dict[str, Any]] = []
+    offset = pagination["start_offset"]
+    expected_total: int | None = None
+    expected_rows: int | None = None
+    rows_seen = 0
+    completed = False
+    is_hf_rows = _is_hf_rows_url(source["url"])
+    for _ in range(pagination["max_pages"]):
+        uri = _pagination_url(source["url"], pagination, offset)
+        value, response_headers, status, payload = _request_json(uri, headers=headers)
+        receipt, _ = _snapshot(
+            source,
+            uri=uri,
+            payload=payload,
+            status=status,
+            response_headers=response_headers,
+            state_dir=state_dir,
+        )
+        receipts.append(receipt)
+        partial_path = pagination.get("partial_path")
+        partial = nested_get(value, partial_path) if partial_path else False
+        if (
+            partial_path
+            and partial is not False
+            and not pagination["allow_partial"]
+        ):
+            raise ModelFloorError(
+                f"{source['id']} returned a partial dataset view or lacks "
+                f"partial=false attestation at offset {offset}"
+            )
+        total = _pagination_total(source, value, pagination)
+        if expected_total is None:
+            expected_total = total
+            if offset > total:
+                raise ModelFloorError(
+                    f"{source['id']} start_offset={offset} exceeds total {total}"
+                )
+            expected_rows = total - offset
+            required_pages = (
+                expected_rows + pagination["page_size"] - 1
+            ) // pagination["page_size"]
+            if required_pages > pagination["max_pages"]:
+                raise ModelFloorError(
+                    f"{source['id']} requires {required_pages} pages, exceeding "
+                    f"max_pages={pagination['max_pages']}"
+                )
+        elif total != expected_total:
+            raise ModelFloorError(
+                f"{source['id']} total row count changed during pagination: "
+                f"{expected_total} -> {total}"
+            )
+        records_path = source["mapping"].get("records")
+        records = nested_get(value, records_path) if records_path else value
+        if not isinstance(records, list):
+            raise ModelFloorError(f"{source['id']} mapped records must be an array")
+        if len(records) > pagination["page_size"]:
+            raise ModelFloorError(
+                f"{source['id']} returned {len(records)} rows at offset {offset} "
+                f"for page_size={pagination['page_size']}"
+            )
+        if is_hf_rows:
+            for position, record in enumerate(records):
+                if (
+                    not isinstance(record, dict)
+                    or record.get("row_idx") != offset + position
+                ):
+                    raise ModelFloorError(
+                        f"{source['id']} does not attest contiguous row_idx "
+                        f"at offset {offset + position}"
+                    )
+        rows_seen += len(records)
+        if expected_rows is not None and rows_seen > expected_rows:
+            raise ModelFloorError(
+                f"{source['id']} pagination exceeded declared total {expected_total}"
+            )
+        observations.extend(
+            _mapped_observations(
+                source,
+                records,
+                snapshot_sha256=receipt["snapshot_sha256"],
+                uri=uri,
+            )
+        )
+        if rows_seen == expected_rows:
+            completed = True
+            break
+        if not records:
+            raise ModelFloorError(
+                f"{source['id']} pagination returned no rows before total {total}"
+            )
+        if pagination["request_interval_seconds"]:
+            time.sleep(pagination["request_interval_seconds"])
+        offset += pagination["page_size"]
+    if not completed:
+        raise ModelFloorError(
+            f"{source['id']} exceeded pagination max_pages={pagination['max_pages']} "
+            f"before collecting {expected_total} rows"
+        )
+    return observations, [], receipts
 
 
 def _sync_http_csv(
