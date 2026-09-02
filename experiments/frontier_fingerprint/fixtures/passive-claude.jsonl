@@ -1,0 +1,2 @@
+{"type":"assistant","message":{"model":"fable-fixture","usage":{"input_tokens":1200,"cache_creation_input_tokens":800,"cache_read_input_tokens":0,"output_tokens":20},"content":[{"type":"text","text":"SENSITIVE_CANARY_CLAUDE_DO_NOT_RETAIN"}]}}
+{"type":"system","context_management":{"compacted":true},"message":{"model":"fable-fixture","usage":{"input_tokens":400,"cache_creation_input_tokens":0,"cache_read_input_tokens":300,"output_tokens":18},"content":[{"type":"text","text":"SECOND_SECRET_CANARY"}]}}

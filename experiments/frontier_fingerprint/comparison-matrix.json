@@ -1,0 +1,40 @@
+{
+  "frozen_questions": [
+    "Did provider-reported cache-read accounting change under an identical API and probe contract?",
+    "Did cache-creation accounting change under an identical API and probe contract?",
+    "Did exact synthetic-anchor retention change by position?",
+    "Did response-side model binding or backend fingerprint evidence change?",
+    "Did the interleaved latency distribution move in the same direction as provider counters?"
+  ],
+  "matrix_id": "frontier-release-deltas-2026-09-01-v1",
+  "pairs": [
+    {
+      "id": "fable-5-to-fable-5-1",
+      "left_campaign_id": "fable-5-baseline-v1",
+      "required_equal": [
+        "api_contract_sha256",
+        "usage_semantics_id",
+        "probe_suite_sha256"
+      ],
+      "right_campaign_id": "fable-5-1-candidate-v1"
+    },
+    {
+      "id": "sol-current-to-astral-candidate",
+      "left_campaign_id": "sol-current-baseline-v1",
+      "required_equal": [
+        "api_contract_sha256",
+        "usage_semantics_id",
+        "probe_suite_sha256"
+      ],
+      "right_campaign_id": "astral-unverified-candidate-v1"
+    }
+  ],
+  "rules": {
+    "capability_ranking": "prohibited",
+    "cross_provider_token_delta": "refused",
+    "latency_evidence_role": "corroborating_only",
+    "token_metric_comparison_requires_same_api_contract": true,
+    "token_metric_comparison_requires_same_usage_semantics": true
+  },
+  "schema": "tier-bench/frontier-fingerprint-comparison@1"
+}
