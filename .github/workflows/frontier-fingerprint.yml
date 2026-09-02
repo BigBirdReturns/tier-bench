@@ -1,13 +1,15 @@
 name: frontier-fingerprint
 
-# Provider-free conformance only. This workflow never receives provider keys and
-# cannot make a paid model call.
+# Provider-free conformance only. The workflow checks out the exact source head,
+# derives its closure ledger from runner outputs, and uploads only public-safe evidence.
 on:
   pull_request:
     paths:
       - "frontier_fingerprint/**"
       - "scripts/frontier_fingerprint.py"
+      - "scripts/frontier_qualification.py"
       - "tests/test_frontier_fingerprint.py"
+      - "tests/test_frontier_qualification.py"
       - "experiments/frontier_fingerprint/**"
       - "schemas/frontier-fingerprint-*.schema.json"
       - ".github/workflows/frontier-fingerprint.yml"
@@ -17,93 +19,316 @@ on:
     paths:
       - "frontier_fingerprint/**"
       - "scripts/frontier_fingerprint.py"
+      - "scripts/frontier_qualification.py"
       - "tests/test_frontier_fingerprint.py"
+      - "tests/test_frontier_qualification.py"
       - "experiments/frontier_fingerprint/**"
       - "schemas/frontier-fingerprint-*.schema.json"
       - ".github/workflows/frontier-fingerprint.yml"
 
 permissions:
+  actions: read
   contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: frontier-fingerprint-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   provider-free-conformance:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      EVIDENCE_ROOT: ${{ runner.temp }}/frontier-fingerprint-qualification
+      PRIVATE_RUN_ROOT: ${{ runner.temp }}/frontier-fingerprint-private
+      SOURCE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+      PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+      COMMENT_REQUIRED: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+
     steps:
-      - name: Checkout exact candidate head
-        uses: actions/checkout@v4
+      - name: Checkout exact source head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
 
-      - name: Compile observatory
+      - name: Bind checkout, tree, base, and changed paths
+        id: custody
+        shell: bash
         run: |
+          set -euo pipefail
+          rm -rf "$EVIDENCE_ROOT" "$PRIVATE_RUN_ROOT"
+          mkdir -p "$EVIDENCE_ROOT" "$PRIVATE_RUN_ROOT"
+
+          observed_head="$(git rev-parse HEAD)"
+          if [[ "$observed_head" != "$SOURCE_HEAD_SHA" ]]; then
+            echo "checkout custody mismatch: expected $SOURCE_HEAD_SHA, observed $observed_head" >&2
+            exit 1
+          fi
+          tree_sha="$(git rev-parse 'HEAD^{tree}')"
+          effective_base="$BASE_SHA"
+          if [[ -n "$effective_base" && ! "$effective_base" =~ ^0+$ ]]; then
+            git cat-file -e "${effective_base}^{commit}"
+            git diff --name-only -z "${effective_base}...${observed_head}" \
+              > "$EVIDENCE_ROOT/changed-paths.z"
+          else
+            effective_base=""
+            git diff-tree --root --no-commit-id --name-only -r -z "$observed_head" \
+              > "$EVIDENCE_ROOT/changed-paths.z"
+          fi
+
+          printf 'checked_out_sha=%s\n' "$observed_head" >> "$GITHUB_OUTPUT"
+          printf 'tree_sha=%s\n' "$tree_sha" >> "$GITHUB_OUTPUT"
+          printf 'base_sha=%s\n' "$effective_base" >> "$GITHUB_OUTPUT"
+
+      - name: Compile observatory and qualification controls
+        shell: bash
+        run: |
+          set -euo pipefail
           python -m py_compile \
             frontier_fingerprint/*.py \
             scripts/frontier_fingerprint.py \
-            tests/test_frontier_fingerprint.py
+            scripts/frontier_qualification.py \
+            tests/test_frontier_*.py
 
-      - name: Run adversarial conformance suite
-        run: python tests/test_frontier_fingerprint.py
+      - name: Run all frontier adversarial conformance tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_frontier_*.py' -v 2>&1 \
+            | tee "$EVIDENCE_ROOT/test-frontier-suite.log"
 
       - name: Execute provider-free campaign from checked-out bytes
         shell: bash
         run: |
           set -euo pipefail
-          root="$(mktemp -d)"
-          run_dir="$root/run"
+          run_dir="$PRIVATE_RUN_ROOT/run"
           python scripts/frontier_fingerprint.py plan \
             --manifest experiments/frontier_fingerprint/mock-smoke.json \
-            --out "$root/plan.json"
+            --out "$EVIDENCE_ROOT/plan.json"
           python scripts/frontier_fingerprint.py run \
             --manifest experiments/frontier_fingerprint/mock-smoke.json \
-            --out "$run_dir"
+            --out "$run_dir" \
+            | tee "$EVIDENCE_ROOT/run-result.json"
           python scripts/frontier_fingerprint.py verify \
             --run-dir "$run_dir" \
-            --out "$root/verification.json"
+            --out "$EVIDENCE_ROOT/verification.json"
           python scripts/frontier_fingerprint.py summarize \
             --run-dir "$run_dir" \
-            --out "$root/summary.json"
+            --out "$EVIDENCE_ROOT/summary.json"
           python scripts/frontier_fingerprint.py passive \
             --input experiments/frontier_fingerprint/fixtures/passive-claude.jsonl \
             --adapter claude_code_jsonl \
-            --out "$root/passive-claude.json"
+            --out "$EVIDENCE_ROOT/passive-claude.json"
           python scripts/frontier_fingerprint.py passive \
             --input experiments/frontier_fingerprint/fixtures/passive-openai.jsonl \
             --adapter codex_jsonl \
-            --out "$root/passive-openai.json"
+            --out "$EVIDENCE_ROOT/passive-openai.json"
+          cp "$run_dir/receipts.jsonl" "$EVIDENCE_ROOT/receipts.jsonl"
 
-          test "$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["receipt_count"])' "$root/verification.json")" -eq 58
-          test "$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["raw_response_bodies_authenticated"])' "$root/verification.json")" -eq 58
-          test "$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["usage_objects_rederived"])' "$root/verification.json")" -eq 58
-
-          if grep -R -E 'SENSITIVE_CANARY|AXM_ANCHOR_|Reply with' \
-            "$root/plan.json" \
-            "$root/verification.json" \
-            "$root/summary.json" \
-            "$root/passive-claude.json" \
-            "$root/passive-openai.json" \
-            "$run_dir/receipts.jsonl"; then
-            echo "public artifact retained forbidden prompt or transcript text" >&2
-            exit 1
-          fi
-
-      - name: Prove live dispatch remains disabled in committed examples
+      - name: Derive machine qualification receipt
         shell: bash
         run: |
           set -euo pipefail
-          for manifest in \
-            experiments/frontier_fingerprint/fable-5-baseline.example.json \
-            experiments/frontier_fingerprint/fable-5-1.example.json \
-            experiments/frontier_fingerprint/sol-current-baseline.example.json \
-            experiments/frontier_fingerprint/astral-candidate.example.json; do
-            python - "$manifest" <<'PY'
-          import json
-          import sys
-          manifest = json.load(open(sys.argv[1], encoding="utf-8"))
-          assert manifest["execution"]["allow_live"] is False
-          assert manifest["execution"]["max_estimated_usd"] == 0
-          PY
-          done
+          python scripts/frontier_qualification.py collect \
+            --repository "$GITHUB_REPOSITORY" \
+            --event-name "$GITHUB_EVENT_NAME" \
+            --workflow "$GITHUB_WORKFLOW" \
+            --workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --pr-number "$PR_NUMBER" \
+            --source-head-sha "$SOURCE_HEAD_SHA" \
+            --checked-out-sha "${{ steps.custody.outputs.checked_out_sha }}" \
+            --tree-sha "${{ steps.custody.outputs.tree_sha }}" \
+            --base-sha "${{ steps.custody.outputs.base_sha }}" \
+            --changed-paths-z "$EVIDENCE_ROOT/changed-paths.z" \
+            --test-log "$EVIDENCE_ROOT/test-frontier-suite.log" \
+            --run-result "$EVIDENCE_ROOT/run-result.json" \
+            --verification "$EVIDENCE_ROOT/verification.json" \
+            --summary "$EVIDENCE_ROOT/summary.json" \
+            --plan "$EVIDENCE_ROOT/plan.json" \
+            --receipts "$EVIDENCE_ROOT/receipts.jsonl" \
+            --passive "$EVIDENCE_ROOT/passive-claude.json" \
+            --passive "$EVIDENCE_ROOT/passive-openai.json" \
+            --manifest-root experiments/frontier_fingerprint \
+            --out "$EVIDENCE_ROOT/qualification-receipt.json"
+          python scripts/frontier_qualification.py verify \
+            --input "$EVIDENCE_ROOT/qualification-receipt.json" \
+            --schema tier-bench/frontier-fingerprint-qualification@1
+
+      - name: Upload public-safe evidence
+        id: evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontier-fingerprint-public-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.EVIDENCE_ROOT }}/qualification-receipt.json
+            ${{ env.EVIDENCE_ROOT }}/plan.json
+            ${{ env.EVIDENCE_ROOT }}/run-result.json
+            ${{ env.EVIDENCE_ROOT }}/verification.json
+            ${{ env.EVIDENCE_ROOT }}/summary.json
+            ${{ env.EVIDENCE_ROOT }}/passive-claude.json
+            ${{ env.EVIDENCE_ROOT }}/passive-openai.json
+            ${{ env.EVIDENCE_ROOT }}/receipts.jsonl
+            ${{ env.EVIDENCE_ROOT }}/test-frontier-suite.log
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Render machine-derived PR ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/frontier_qualification.py render \
+            --receipt "$EVIDENCE_ROOT/qualification-receipt.json" \
+            --artifact-id "${{ steps.evidence.outputs.artifact-id }}" \
+            --artifact-url "${{ steps.evidence.outputs.artifact-url }}" \
+            --artifact-digest "${{ steps.evidence.outputs.artifact-digest }}" \
+            --out "$EVIDENCE_ROOT/qualification-comment.md"
+
+      - name: Publish or update machine-derived PR ledger
+        if: env.COMMENT_REQUIRED == 'true'
+        id: ledger_comment
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          COMMENT_PATH: ${{ env.EVIDENCE_ROOT }}/qualification-comment.md
+        with:
+          script: |
+            const fs = require('fs')
+            const marker = '<!-- frontier-fingerprint-qualification -->'
+            const body = fs.readFileSync(process.env.COMMENT_PATH, 'utf8')
+            if (!body.startsWith(marker)) {
+              core.setFailed('qualification comment lacks its control marker')
+              return
+            }
+            const { owner, repo } = context.repo
+            const issue_number = context.issue.number
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number, per_page: 100 }
+            )
+            const existing = comments.find(
+              comment => comment.user?.login === 'github-actions[bot]' &&
+                typeof comment.body === 'string' && comment.body.includes(marker)
+            )
+            const response = existing
+              ? await github.rest.issues.updateComment({
+                  owner, repo, comment_id: existing.id, body
+                })
+              : await github.rest.issues.createComment({ owner, repo, issue_number, body })
+            core.setOutput('comment_id', String(response.data.id))
+            core.setOutput('comment_url', response.data.html_url)
+
+      - name: Bind returned artifact and comment identities
+        shell: bash
+        env:
+          COMMENT_ID: ${{ steps.ledger_comment.outputs.comment_id }}
+          COMMENT_URL: ${{ steps.ledger_comment.outputs.comment_url }}
+        run: |
+          set -euo pipefail
+          python scripts/frontier_qualification.py index \
+            --receipt "$EVIDENCE_ROOT/qualification-receipt.json" \
+            --artifact-id "${{ steps.evidence.outputs.artifact-id }}" \
+            --artifact-url "${{ steps.evidence.outputs.artifact-url }}" \
+            --artifact-digest "${{ steps.evidence.outputs.artifact-digest }}" \
+            --comment-id "$COMMENT_ID" \
+            --comment-url "$COMMENT_URL" \
+            --out "$EVIDENCE_ROOT/qualification-index.json"
+          python scripts/frontier_qualification.py verify \
+            --input "$EVIDENCE_ROOT/qualification-index.json" \
+            --schema tier-bench/frontier-fingerprint-qualification-index@1
+
+      - name: Upload publication index
+        id: publication
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontier-fingerprint-publication-index-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ env.EVIDENCE_ROOT }}/qualification-index.json
+            ${{ env.EVIDENCE_ROOT }}/qualification-comment.md
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+
+      - name: Render final PR ledger with publication index
+        if: env.COMMENT_REQUIRED == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/frontier_qualification.py render \
+            --receipt "$EVIDENCE_ROOT/qualification-receipt.json" \
+            --artifact-id "${{ steps.evidence.outputs.artifact-id }}" \
+            --artifact-url "${{ steps.evidence.outputs.artifact-url }}" \
+            --artifact-digest "${{ steps.evidence.outputs.artifact-digest }}" \
+            --publication-artifact-id "${{ steps.publication.outputs.artifact-id }}" \
+            --publication-artifact-url "${{ steps.publication.outputs.artifact-url }}" \
+            --publication-artifact-digest "${{ steps.publication.outputs.artifact-digest }}" \
+            --comment-id "${{ steps.ledger_comment.outputs.comment_id }}" \
+            --out "$EVIDENCE_ROOT/qualification-comment-final.md"
+
+      - name: Replace PR ledger with final machine rendering
+        if: env.COMMENT_REQUIRED == 'true'
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          COMMENT_ID: ${{ steps.ledger_comment.outputs.comment_id }}
+          COMMENT_PATH: ${{ env.EVIDENCE_ROOT }}/qualification-comment-final.md
+        with:
+          script: |
+            const fs = require('fs')
+            const { owner, repo } = context.repo
+            const body = fs.readFileSync(process.env.COMMENT_PATH, 'utf8')
+            await github.rest.issues.updateComment({
+              owner,
+              repo,
+              comment_id: Number(process.env.COMMENT_ID),
+              body
+            })
+
+      - name: Verify published PR ledger byte-for-byte
+        if: env.COMMENT_REQUIRED == 'true'
+        id: published
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        env:
+          COMMENT_ID: ${{ steps.ledger_comment.outputs.comment_id }}
+          COMMENT_PATH: ${{ env.EVIDENCE_ROOT }}/qualification-comment-final.md
+        with:
+          script: |
+            const fs = require('fs')
+            const expected = fs.readFileSync(process.env.COMMENT_PATH, 'utf8')
+            const { owner, repo } = context.repo
+            const response = await github.rest.issues.getComment({
+              owner,
+              repo,
+              comment_id: Number(process.env.COMMENT_ID)
+            })
+            if (response.data.body !== expected) {
+              core.setFailed('published qualification comment differs from machine rendering')
+              return
+            }
+            core.setOutput('verified_comment_id', String(response.data.id))
+
+      - name: Seal job summary and publication invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.evidence.outputs.artifact-id }}"
+          test -n "${{ steps.evidence.outputs.artifact-digest }}"
+          test -n "${{ steps.publication.outputs.artifact-id }}"
+          test -n "${{ steps.publication.outputs.artifact-digest }}"
+          if [[ "$COMMENT_REQUIRED" == "true" ]]; then
+            test -n "${{ steps.ledger_comment.outputs.comment_id }}"
+            test "${{ steps.published.outputs.verified_comment_id }}" \
+              = "${{ steps.ledger_comment.outputs.comment_id }}"
+            cat "$EVIDENCE_ROOT/qualification-comment-final.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            cat "$EVIDENCE_ROOT/qualification-comment.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
