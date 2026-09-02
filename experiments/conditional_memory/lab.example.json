@@ -1,0 +1,227 @@
+{
+  "schema": "tier-bench/conditional-memory-lab@1",
+  "id": "conditional-memory-association-canary-v1",
+  "title": "Matched conditional-memory architecture and placement canary",
+  "purpose": "Measure whether sparse learned memory improves held validation loss per active parameter and hot-memory byte under the same data, seeds, optimizer, decoder, and target hardware.",
+  "state_root": "<tier-runs-root>/ConditionalMemory",
+  "default_profile": "smoke",
+  "dataset": {
+    "kind": "synthetic_associations",
+    "vocab_size": 512,
+    "sequence_length": 64,
+    "train_sequences": 2048,
+    "validation_sequences": 256,
+    "seed": 1729,
+    "association_rate": 0.6,
+    "bigram_rate": 0.25,
+    "random_rate": 0.15
+  },
+  "model": {
+    "d_model": 64,
+    "layers": 4,
+    "heads": 4,
+    "ffn_hidden": 192,
+    "dropout": 0.0,
+    "tie_embeddings": true,
+    "bias": false
+  },
+  "training": {
+    "seeds": [
+      11,
+      17,
+      23,
+      29
+    ],
+    "steps": 600,
+    "batch_size": 32,
+    "learning_rate": 0.001,
+    "weight_decay": 0.01,
+    "warmup_steps": 40,
+    "gradient_clip": 1.0,
+    "eval_interval": 100,
+    "amp": "auto",
+    "deterministic": true,
+    "compile": false,
+    "save_checkpoint": true,
+    "optimizer": "adamw"
+  },
+  "measurement": {
+    "warmup_steps": 5,
+    "profile_steps": 20,
+    "capture_logits": true,
+    "trace_access": true,
+    "sample_gpu": true
+  },
+  "topology": {
+    "assignment": "paired_crossover",
+    "seats": [
+      {
+        "id": "gpu.3090-a",
+        "kind": "cuda",
+        "uuid_env": "TIER_GPU_3090_A_UUID",
+        "expected_name_contains": "3090",
+        "require_identity": true
+      },
+      {
+        "id": "gpu.3090-b",
+        "kind": "cuda",
+        "uuid_env": "TIER_GPU_3090_B_UUID",
+        "expected_name_contains": "3090",
+        "require_identity": true
+      }
+    ]
+  },
+  "arms": [
+    {
+      "id": "dense",
+      "architecture": "dense",
+      "role": "control",
+      "description": "Matched active-core control with no conditional-memory path."
+    },
+    {
+      "id": "ple-no-table",
+      "architecture": "ple_no_table",
+      "role": "candidate",
+      "description": "PLE projection, gates, and layer injection with the lookup table removed.",
+      "memory": {
+        "memory_dim": 96,
+        "injection_layers": "all",
+        "placement": "vram",
+        "storage_dtype": "fp32",
+        "runtime_dtype": "fp32"
+      }
+    },
+    {
+      "id": "ple-vram",
+      "architecture": "ple",
+      "role": "candidate",
+      "description": "Token-indexed per-layer embeddings resident with the active core.",
+      "memory": {
+        "table_rows": "vocab",
+        "memory_dim": 96,
+        "injection_layers": "all",
+        "placement": "vram",
+        "storage_dtype": "fp32",
+        "runtime_dtype": "fp32"
+      }
+    },
+    {
+      "id": "ple-pinned",
+      "architecture": "ple",
+      "role": "candidate",
+      "description": "The same PLE table retained in pinned host RAM and copied by selected row.",
+      "memory": {
+        "table_rows": "vocab",
+        "memory_dim": 96,
+        "injection_layers": "all",
+        "placement": "pinned_ram",
+        "storage_dtype": "fp32",
+        "runtime_dtype": "fp32",
+        "prefetch_layers": 0
+      }
+    },
+    {
+      "id": "fat-embedding",
+      "architecture": "fat_embedding",
+      "role": "candidate",
+      "description": "The same token-indexed row budget injected once at the input.",
+      "memory": {
+        "table_rows": "vocab",
+        "memory_dim": 96,
+        "injection_layers": "all",
+        "placement": "vram",
+        "storage_dtype": "fp32",
+        "runtime_dtype": "fp32"
+      }
+    },
+    {
+      "id": "engram-lite",
+      "architecture": "engram_lite",
+      "role": "candidate",
+      "description": "Hashed bigram conditional memory injected through the same layer gates.",
+      "memory": {
+        "table_rows": 32768,
+        "memory_dim": 96,
+        "ngram_order": 2,
+        "injection_layers": "all",
+        "placement": "vram",
+        "storage_dtype": "fp32",
+        "runtime_dtype": "fp32"
+      }
+    },
+    {
+      "id": "big-dense",
+      "architecture": "big_dense",
+      "role": "candidate",
+      "description": "A larger active core used to test whether ordinary dense capacity is the better spend.",
+      "model_overrides": {
+        "d_model": 96,
+        "heads": 4,
+        "ffn_hidden": 288
+      }
+    }
+  ],
+  "profiles": {
+    "smoke": {
+      "dataset": {
+        "train_sequences": 64,
+        "validation_sequences": 16
+      },
+      "training": {
+        "seeds": [
+          11,
+          17
+        ],
+        "steps": 4,
+        "batch_size": 4,
+        "warmup_steps": 1,
+        "eval_interval": 2,
+        "save_checkpoint": true
+      },
+      "measurement": {
+        "warmup_steps": 1,
+        "profile_steps": 4
+      }
+    },
+    "canary": {
+      "dataset": {},
+      "training": {},
+      "measurement": {}
+    },
+    "full": {
+      "dataset": {
+        "train_sequences": 16384,
+        "validation_sequences": 1024
+      },
+      "training": {
+        "seeds": [
+          11,
+          17,
+          23,
+          29,
+          31,
+          37
+        ],
+        "steps": 5000,
+        "batch_size": 64,
+        "warmup_steps": 200,
+        "eval_interval": 250,
+        "save_checkpoint": true
+      },
+      "measurement": {
+        "warmup_steps": 20,
+        "profile_steps": 100
+      }
+    }
+  },
+  "promotion": {
+    "baseline_arm": "dense",
+    "min_complete_seeds": 3,
+    "min_relative_validation_loss_improvement": 0.02,
+    "max_p95_step_time_regression": 0.15,
+    "max_peak_memory_regression": 0.1,
+    "require_seat_balance": true,
+    "require_checkpoint_identity": true,
+    "failure_default": "hold"
+  }
+}

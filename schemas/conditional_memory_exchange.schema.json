@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/conditional_memory_exchange.schema.json",
+  "title": "Tier Bench Conditional Memory Cluster",
+  "type": "object",
+  "required": ["schema", "id", "coordinator", "worker", "exchange"],
+  "properties": {
+    "schema": {"const": "tier-bench/conditional-memory-cluster@1"},
+    "id": {"type": "string", "minLength": 1},
+    "coordinator": {
+      "type": "object",
+      "required": ["id", "service_gpu_uuid_env", "service_gpu_expected_name_contains"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "hostname_env": {"type": "string"},
+        "expected_hostname": {"type": "string"},
+        "require_hostname": {"type": "boolean"},
+        "service_gpu_uuid_env": {"type": "string", "minLength": 1},
+        "service_gpu_expected_name_contains": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "worker": {
+      "type": "object",
+      "required": ["id", "seats"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "hostname_env": {"type": "string"},
+        "expected_hostname": {"type": "string"},
+        "require_hostname": {"type": "boolean"},
+        "seats": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": ["id", "kind"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "kind": {"enum": ["cuda", "cpu"]},
+              "uuid_env": {"type": "string"},
+              "gpu_uuid": {"type": "string"},
+              "expected_name_contains": {"type": "string"},
+              "require_identity": {"type": "boolean"}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "exchange": {
+      "type": "object",
+      "required": ["kind", "root_env"],
+      "properties": {
+        "kind": {"const": "shared_filesystem"},
+        "root_env": {"type": "string", "minLength": 1},
+        "poll_seconds": {"type": "number", "minimum": 0.1},
+        "heartbeat_seconds": {"type": "number", "minimum": 0.25},
+        "lease_seconds": {"type": "number", "minimum": 1},
+        "copy_checkpoints": {"type": "boolean"},
+        "cross_verify": {"type": "boolean"},
+        "verification_loss_tolerance": {"type": "number", "minimum": 0, "maximum": 1},
+        "require_top_token_match": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

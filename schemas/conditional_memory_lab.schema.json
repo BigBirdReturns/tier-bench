@@ -1,0 +1,490 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tier-bench.local/schemas/conditional_memory_lab.schema.json",
+  "title": "Tier Bench Conditional Memory Lab",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "purpose",
+    "dataset",
+    "model",
+    "training",
+    "measurement",
+    "topology",
+    "arms",
+    "promotion"
+  ],
+  "properties": {
+    "schema": {
+      "const": "tier-bench/conditional-memory-lab@1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "state_root": {
+      "type": "string"
+    },
+    "default_profile": {
+      "type": "string"
+    },
+    "dataset": {
+      "type": "object",
+      "required": [
+        "kind",
+        "vocab_size",
+        "sequence_length",
+        "train_sequences",
+        "validation_sequences"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "synthetic_associations",
+            "uint16_tokens"
+          ]
+        },
+        "vocab_size": {
+          "type": "integer",
+          "minimum": 32
+        },
+        "sequence_length": {
+          "type": "integer",
+          "minimum": 8
+        },
+        "train_sequences": {
+          "type": "integer",
+          "minimum": 8
+        },
+        "validation_sequences": {
+          "type": "integer",
+          "minimum": 4
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "association_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "bigram_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "random_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "validation_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "validation_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "model": {
+      "$ref": "#/$defs/model"
+    },
+    "training": {
+      "$ref": "#/$defs/training"
+    },
+    "measurement": {
+      "$ref": "#/$defs/measurement"
+    },
+    "topology": {
+      "type": "object",
+      "required": [
+        "assignment",
+        "seats"
+      ],
+      "properties": {
+        "assignment": {
+          "enum": [
+            "paired_crossover",
+            "round_robin",
+            "fixed"
+          ]
+        },
+        "service_gpu_uuid_env": {
+          "type": "string"
+        },
+        "fixed_assignments": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "seats": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "cuda",
+                  "cpu"
+                ]
+              },
+              "uuid_env": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "gpu_uuid": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "expected_name_contains": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "require_identity": {
+                "type": "boolean"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "service_gpu_expected_name_contains": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "arms": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "architecture",
+          "role"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "architecture": {
+            "enum": [
+              "dense",
+              "big_dense",
+              "fat_embedding",
+              "ple_no_table",
+              "ple",
+              "engram_lite"
+            ]
+          },
+          "role": {
+            "enum": [
+              "control",
+              "candidate"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "model_overrides": {
+            "type": "object"
+          },
+          "memory": {
+            "$ref": "#/$defs/memory"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "profiles": {
+      "type": "object"
+    },
+    "promotion": {
+      "type": "object",
+      "required": [
+        "baseline_arm"
+      ],
+      "properties": {
+        "baseline_arm": {
+          "type": "string"
+        },
+        "min_complete_seeds": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "min_relative_validation_loss_improvement": {
+          "type": "number"
+        },
+        "max_p95_step_time_regression": {
+          "type": "number"
+        },
+        "max_peak_memory_regression": {
+          "type": "number"
+        },
+        "require_seat_balance": {
+          "type": "boolean"
+        },
+        "require_checkpoint_identity": {
+          "type": "boolean"
+        },
+        "failure_default": {
+          "enum": [
+            "hold",
+            "open"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "model": {
+      "type": "object",
+      "required": [
+        "d_model",
+        "layers",
+        "heads"
+      ],
+      "properties": {
+        "d_model": {
+          "type": "integer",
+          "minimum": 16
+        },
+        "layers": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "heads": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ffn_hidden": {
+          "type": "integer",
+          "minimum": 16
+        },
+        "dropout": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 0.95
+        },
+        "tie_embeddings": {
+          "type": "boolean"
+        },
+        "bias": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "training": {
+      "type": "object",
+      "required": [
+        "seeds",
+        "steps",
+        "batch_size",
+        "learning_rate"
+      ],
+      "properties": {
+        "seeds": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "batch_size": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "learning_rate": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "weight_decay": {
+          "type": "number",
+          "minimum": 0
+        },
+        "warmup_steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gradient_clip": {
+          "type": "number",
+          "minimum": 0
+        },
+        "eval_interval": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "amp": {
+          "enum": [
+            "off",
+            "auto",
+            "fp16",
+            "bf16"
+          ]
+        },
+        "deterministic": {
+          "type": "boolean"
+        },
+        "compile": {
+          "type": "boolean"
+        },
+        "save_checkpoint": {
+          "type": "boolean"
+        },
+        "optimizer": {
+          "const": "adamw"
+        }
+      },
+      "additionalProperties": false
+    },
+    "measurement": {
+      "type": "object",
+      "properties": {
+        "warmup_steps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "profile_steps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "capture_logits": {
+          "type": "boolean"
+        },
+        "trace_access": {
+          "type": "boolean"
+        },
+        "sample_gpu": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "memory": {
+      "type": "object",
+      "properties": {
+        "table_rows": {
+          "oneOf": [
+            {
+              "const": "vocab"
+            },
+            {
+              "type": "integer",
+              "minimum": 1
+            }
+          ]
+        },
+        "memory_dim": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "ngram_order": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 8
+        },
+        "injection_layers": {
+          "oneOf": [
+            {
+              "const": "all"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          ]
+        },
+        "placement": {
+          "enum": [
+            "vram",
+            "host_ram",
+            "pinned_ram",
+            "mmap"
+          ]
+        },
+        "storage_dtype": {
+          "enum": [
+            "fp32",
+            "fp16",
+            "bf16"
+          ]
+        },
+        "runtime_dtype": {
+          "enum": [
+            "fp32",
+            "fp16",
+            "bf16"
+          ]
+        },
+        "prefetch_layers": {
+          "const": 0
+        },
+        "cache_bytes": {
+          "const": 0
+        },
+        "artifact_path": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
