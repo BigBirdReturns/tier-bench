@@ -1,0 +1,301 @@
+name: astra-stage2-calibration
+
+# Provider-free scaffold qualification only. This workflow receives no model
+# credentials and contains no live-provider adapter.
+on:
+  push:
+    branches:
+      - joint/astra-stage2-calibration-impl-20260902
+  pull_request:
+    paths:
+      - "astra_stage2/**"
+      - "experiments/astra_kxr/stage2/**"
+      - "schemas/astra-stage2-*.schema.json"
+      - "scripts/astra_stage2_calibration.py"
+      - "tests/test_astra_stage2_calibration.py"
+      - ".github/workflows/astra-stage2-calibration.yml"
+      - "docs/agents/claims/FRR-ASTRA-STAGE2-CALIBRATION-IMPL-1.md"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-calibration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  provider-free-scaffold:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Bind exact head, tree, base, and changed paths
+        id: custody
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="$RUNNER_TEMP/astra-stage2-scaffold"
+          rm -rf "$evidence_root"
+          mkdir -p "$evidence_root"
+
+          observed_head="$(git rev-parse HEAD)"
+          expected_head="${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}"
+          test "$observed_head" = "$expected_head"
+
+          git fetch --no-tags origin \
+            +refs/heads/joint/astra-stage2-calibration-20260902:refs/remotes/origin/joint/astra-stage2-calibration-20260902
+          base_sha="$(git merge-base "$observed_head" refs/remotes/origin/joint/astra-stage2-calibration-20260902)"
+          test "$base_sha" = "60bca963d63edca267106bc5c7725c2cc1df8dd7"
+          parent_sha="$(git rev-parse HEAD^)"
+          tree_sha="$(git rev-parse 'HEAD^{tree}')"
+          git diff --name-only -z "${base_sha}...${observed_head}" > "$evidence_root/changed-paths.z"
+          test -s "$evidence_root/changed-paths.z"
+
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+          printf 'head_sha=%s\n' "$observed_head" >> "$GITHUB_OUTPUT"
+          printf 'tree_sha=%s\n' "$tree_sha" >> "$GITHUB_OUTPUT"
+          printf 'base_sha=%s\n' "$base_sha" >> "$GITHUB_OUTPUT"
+          printf 'parent_sha=%s\n' "$parent_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Compile scaffold
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            astra_stage2/*.py \
+            scripts/astra_stage2_calibration.py \
+            tests/test_astra_stage2_calibration.py
+
+      - name: Run adversarial witnesses
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_astra_stage2_calibration.py' -v 2>&1 \
+            | tee "${{ steps.custody.outputs.evidence_root }}/test-astra-stage2.log"
+
+      - name: Parse committed schemas and manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          for path in schemas/astra-stage2-*.schema.json experiments/astra_kxr/stage2/*.json; do
+            python -m json.tool "$path" >/dev/null
+          done
+
+      - name: Regenerate frozen products byte-for-byte
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="${{ steps.custody.outputs.evidence_root }}"
+          python scripts/astra_stage2_calibration.py generator-manifest \
+            --out "$evidence_root/generator-manifest.json"
+          python - "$evidence_root/generator-manifest.json" "$evidence_root/generator-manifest.index.json" <<'PY'
+          import hashlib
+          import json
+          import sys
+          manifest = json.load(open(sys.argv[1], encoding="utf-8"))
+          index = {
+              "schema": "tier-bench/astra-stage2-generator-manifest-index@1",
+              "generator_version": manifest["generator_version"],
+              "case_count": manifest["case_count"],
+              "families": manifest["families"],
+              "k_levels": manifest["k_levels"],
+              "r_levels": manifest["r_levels"],
+              "replicates": manifest["replicates"],
+              "cases_sha256": hashlib.sha256(
+                  json.dumps(manifest["cases"], sort_keys=True, separators=(",", ":")).encode()
+              ).hexdigest(),
+              "generator_manifest_payload_sha256": manifest["payload_sha256"],
+          }
+          index["payload_sha256"] = hashlib.sha256(
+              json.dumps(index, sort_keys=True, separators=(",", ":")).encode()
+          ).hexdigest()
+          with open(sys.argv[2], "w", encoding="utf-8", newline="\n") as handle:
+              json.dump(index, handle, sort_keys=True, indent=2)
+              handle.write("\n")
+          PY
+          cmp "$evidence_root/generator-manifest.index.json" \
+            experiments/astra_kxr/stage2/generator-manifest.index.json
+
+          python scripts/astra_stage2_calibration.py fixture-control-manifest \
+            --out "$evidence_root/fixture-control-manifest.json"
+          cmp "$evidence_root/fixture-control-manifest.json" \
+            experiments/astra_kxr/stage2/fixture-control-manifest.json
+
+          python scripts/astra_stage2_calibration.py empirical-control-template \
+            --out "$evidence_root/empirical-control-manifest.template.json"
+          cmp "$evidence_root/empirical-control-manifest.template.json" \
+            experiments/astra_kxr/stage2/empirical-control-manifest.template.json
+
+          python scripts/astra_stage2_calibration.py plan \
+            --generator-manifest "$evidence_root/generator-manifest.json" \
+            --control-manifest "$evidence_root/fixture-control-manifest.json" \
+            --out "$evidence_root/calibration-plan.fixture.json"
+          python scripts/astra_stage2_calibration.py plan-index \
+            --generator-manifest "$evidence_root/generator-manifest.json" \
+            --control-manifest "$evidence_root/fixture-control-manifest.json" \
+            --plan "$evidence_root/calibration-plan.fixture.json" \
+            --out "$evidence_root/calibration-plan.fixture.index.json"
+          cmp "$evidence_root/calibration-plan.fixture.index.json" \
+            experiments/astra_kxr/stage2/calibration-plan.fixture.index.json
+
+      - name: Execute fixture-only conformance
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="${{ steps.custody.outputs.evidence_root }}"
+          python scripts/astra_stage2_calibration.py fixture-observations \
+            --generator-manifest "$evidence_root/generator-manifest.json" \
+            --control-manifest "$evidence_root/fixture-control-manifest.json" \
+            --plan "$evidence_root/calibration-plan.fixture.json" \
+            --out "$evidence_root/fixture-observations.jsonl"
+          python scripts/astra_stage2_calibration.py derive \
+            --generator-manifest "$evidence_root/generator-manifest.json" \
+            --control-manifest "$evidence_root/fixture-control-manifest.json" \
+            --plan "$evidence_root/calibration-plan.fixture.json" \
+            --observations "$evidence_root/fixture-observations.jsonl" \
+            --out "$evidence_root/fixture-result.json"
+          python - "$evidence_root/fixture-result.json" <<'PY'
+          import json
+          import sys
+          value = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert value["state"] == "FIXTURE_CONFORMANCE_ONLY"
+          assert value["stage2_frozen"] is False
+          assert value["candidate_thresholds"] == {}
+          assert value["observation_count"] == 648
+          assert value["feature_sample_count"] == 36
+          PY
+
+      - name: Verify frozen Stage 1 ancestry bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python scripts/astra_stage2_calibration.py verify-stage1 \
+            --repo-root . \
+            --out "${{ steps.custody.outputs.evidence_root }}/stage1-blob-verification.json"
+
+      - name: Refuse retained text and authority leakage
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="${{ steps.custody.outputs.evidence_root }}"
+          if grep -R -E 'SENSITIVE_CANARY|PRIVATE_TRANSCRIPT_CANARY|Reply with' "$evidence_root"; then
+            echo "public evidence retained forbidden text" >&2
+            exit 1
+          fi
+          if grep -R '"stage2_frozen": true' "$evidence_root"; then
+            echo "fixture evidence attempted to freeze Stage 2" >&2
+            exit 1
+          fi
+
+      - name: Derive exact-head qualification receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="${{ steps.custody.outputs.evidence_root }}"
+          python scripts/astra_stage2_calibration.py qualify \
+            --repo-root . \
+            --repository "$GITHUB_REPOSITORY" \
+            --branch "$GITHUB_REF_NAME" \
+            --source-head "${{ steps.custody.outputs.head_sha }}" \
+            --tree "${{ steps.custody.outputs.tree_sha }}" \
+            --parent "${{ steps.custody.outputs.parent_sha }}" \
+            --changed-paths-z "$evidence_root/changed-paths.z" \
+            --test-log "$evidence_root/test-astra-stage2.log" \
+            --generator-manifest "$evidence_root/generator-manifest.json" \
+            --control-manifest "$evidence_root/fixture-control-manifest.json" \
+            --plan "$evidence_root/calibration-plan.fixture.json" \
+            --fixture-result "$evidence_root/fixture-result.json" \
+            --out "$evidence_root/qualification-receipt.json"
+          python scripts/astra_stage2_calibration.py verify-qualification \
+            --input "$evidence_root/qualification-receipt.json"
+          cat "$evidence_root/qualification-receipt.json"
+
+      - name: Upload provider-free evidence
+        id: evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: astra-stage2-scaffold-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ steps.custody.outputs.evidence_root }}/qualification-receipt.json
+            ${{ steps.custody.outputs.evidence_root }}/stage1-blob-verification.json
+            ${{ steps.custody.outputs.evidence_root }}/generator-manifest.json
+            ${{ steps.custody.outputs.evidence_root }}/generator-manifest.index.json
+            ${{ steps.custody.outputs.evidence_root }}/fixture-control-manifest.json
+            ${{ steps.custody.outputs.evidence_root }}/empirical-control-manifest.template.json
+            ${{ steps.custody.outputs.evidence_root }}/calibration-plan.fixture.json
+            ${{ steps.custody.outputs.evidence_root }}/calibration-plan.fixture.index.json
+            ${{ steps.custody.outputs.evidence_root }}/fixture-observations.jsonl
+            ${{ steps.custody.outputs.evidence_root }}/fixture-result.json
+            ${{ steps.custody.outputs.evidence_root }}/test-astra-stage2.log
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Build publication index
+        shell: bash
+        env:
+          ARTIFACT_ID: ${{ steps.evidence.outputs.artifact-id }}
+          ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
+          ARTIFACT_DIGEST: ${{ steps.evidence.outputs.artifact-digest }}
+        run: |
+          set -euo pipefail
+          evidence_root="${{ steps.custody.outputs.evidence_root }}"
+          python - "$evidence_root/qualification-receipt.json" "$evidence_root/publication-index.json" <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          receipt = json.load(open(sys.argv[1], encoding="utf-8"))
+          index = {
+              "schema": "tier-bench/astra-stage2-scaffold-publication-index@1",
+              "run": {
+                  "id": int(os.environ["GITHUB_RUN_ID"]),
+                  "attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+                  "workflow": os.environ["GITHUB_WORKFLOW"],
+              },
+              "source": receipt["source"],
+              "qualification_payload_sha256": receipt["payload_sha256"],
+              "artifact": {
+                  "id": int(os.environ["ARTIFACT_ID"]),
+                  "url": os.environ["ARTIFACT_URL"],
+                  "digest": os.environ["ARTIFACT_DIGEST"],
+              },
+              "classification": receipt["classification"],
+          }
+          canonical = json.dumps(index, sort_keys=True, separators=(",", ":")).encode()
+          index["payload_sha256"] = hashlib.sha256(canonical).hexdigest()
+          with open(sys.argv[2], "w", encoding="utf-8", newline="\n") as handle:
+              json.dump(index, handle, sort_keys=True, indent=2)
+              handle.write("\n")
+          PY
+
+      - name: Upload publication index
+        id: publication
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: astra-stage2-scaffold-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}/publication-index.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Seal runner ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.evidence.outputs.artifact-id }}"
+          test -n "${{ steps.evidence.outputs.artifact-digest }}"
+          test -n "${{ steps.publication.outputs.artifact-id }}"
+          test -n "${{ steps.publication.outputs.artifact-digest }}"
+          cat "${{ steps.custody.outputs.evidence_root }}/publication-index.json" >> "$GITHUB_STEP_SUMMARY"

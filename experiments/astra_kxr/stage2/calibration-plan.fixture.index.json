@@ -1,0 +1,13 @@
+{
+  "calibration_plan_payload_sha256": "67b0a09801d67a051e30861aed1980bf18cad68374b0f5efa88077bf2e180e64",
+  "case_count": 108,
+  "control_count": 3,
+  "control_manifest_sha256": "bb9da137a8ec05047e4534c3abf1957e48bd5b56b84e3fa8a73f5635f5a4d679",
+  "effort_count": 2,
+  "generator_manifest_sha256": "2050de80cb4688b182cf9e006a97959da422dce24138c6451774f03320517328",
+  "observation_count": 648,
+  "observations_sha256": "9348a929b9b2445407038f334f0e95df2e88c608e9d8397e0beef306a529ed4f",
+  "payload_sha256": "b0666c0ed865d3f20de292344254e73243733900cc71a4d1c6794edc7d017110",
+  "schema": "tier-bench/astra-stage2-calibration-plan-index@1",
+  "stage1_join_head": "60bca963d63edca267106bc5c7725c2cc1df8dd7"
+}

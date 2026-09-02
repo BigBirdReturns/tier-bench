@@ -1,0 +1,30 @@
+{
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/astra-stage2-calibration-result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "absolute_timing_transfer": {"const": "PROHIBITED"},
+    "accuracy_gate": {"type": "object"},
+    "candidate_thresholds": {"type": "object"},
+    "control_manifest_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "empirical_candidate_may_self_freeze": {"const": false},
+    "envelopes": {"type": "object"},
+    "evidence_class": {"enum": ["fixture_synthetic", "empirical_local"]},
+    "feature_sample_count": {"const": 36},
+    "features": {"type": "array"},
+    "fixture_may_freeze": {"const": false},
+    "freeze_authority": {"const": "ABSENT_IN_SCAFFOLD"},
+    "next_required_authority": {"type": "string"},
+    "observation_count": {"const": 648},
+    "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "plan_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "schema": {"const": "tier-bench/astra-stage2-calibration-result@1"},
+    "separation_checks": {"type": "array"},
+    "stage2_frozen": {"const": false},
+    "state": {"enum": ["FIXTURE_CONFORMANCE_ONLY", "EMPIRICAL_CALIBRATION_CANDIDATE", "CALIBRATION_INCONCLUSIVE"]},
+    "threshold_derivation": {"type": "string"}
+  },
+  "required": ["schema", "state", "evidence_class", "stage2_frozen", "freeze_authority", "plan_sha256", "control_manifest_sha256", "observation_count", "feature_sample_count", "features", "envelopes", "separation_checks", "accuracy_gate", "candidate_thresholds", "threshold_derivation", "absolute_timing_transfer", "fixture_may_freeze", "empirical_candidate_may_self_freeze", "next_required_authority", "payload_sha256"],
+  "title": "Astra Stage 2 calibration result",
+  "type": "object"
+}

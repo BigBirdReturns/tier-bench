@@ -1,0 +1,60 @@
+{
+  "controls": [
+    {
+      "class_label": "recurrent_latent",
+      "control_id": "lotus_3b_recurrent",
+      "identity": {
+        "adapter_sha256": null,
+        "evidence_class": "empirical_local",
+        "hardware_sha256": null,
+        "model_revision_sha256": null,
+        "role": "lotus_3b_recurrent",
+        "runtime_sha256": null,
+        "source_commit_sha1": "eb77e2f7909c5006f58ff0ad7cd6629b942caa9e",
+        "source_repository": "yingfan-bot/lotus",
+        "tokenizer_sha256": null,
+        "weights_sha256": null
+      },
+      "identity_sha256": null
+    },
+    {
+      "class_label": "parallel_latent",
+      "control_id": "loopcoder_v2_7b_parallel",
+      "identity": {
+        "adapter_sha256": null,
+        "evidence_class": "empirical_local",
+        "hardware_sha256": null,
+        "model_revision_sha256": null,
+        "role": "loopcoder_v2_7b_parallel",
+        "runtime_sha256": null,
+        "source_commit_sha1": "ab0d92d7cc87c4ed0fd30c1db1f2edd685435c4c",
+        "source_repository": "CSJianYang/LoopCoder",
+        "tokenizer_sha256": null,
+        "weights_sha256": null
+      },
+      "identity_sha256": null
+    },
+    {
+      "class_label": "conventional_negative",
+      "control_id": "conventional_transformer_negative",
+      "identity": {
+        "adapter_sha256": null,
+        "evidence_class": "empirical_local",
+        "hardware_sha256": null,
+        "model_revision_sha256": null,
+        "role": "conventional_transformer_negative",
+        "runtime_sha256": null,
+        "source_commit_sha1": "eb77e2f7909c5006f58ff0ad7cd6629b942caa9e",
+        "source_repository": "yingfan-bot/lotus",
+        "tokenizer_sha256": null,
+        "weights_sha256": null
+      },
+      "identity_sha256": null
+    }
+  ],
+  "evidence_class": "empirical_local",
+  "payload_sha256": null,
+  "schema": "tier-bench/astra-stage2-control-manifest@1",
+  "stage1_join_head": "60bca963d63edca267106bc5c7725c2cc1df8dd7",
+  "status": "UNBOUND_TEMPLATE"
+}

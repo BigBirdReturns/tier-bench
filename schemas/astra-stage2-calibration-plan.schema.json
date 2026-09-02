@@ -1,0 +1,43 @@
+{
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/astra-stage2-calibration-plan.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "case_count": {"const": 108},
+    "control_count": {"const": 3},
+    "control_manifest_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "effort_count": {"const": 2},
+    "generator_manifest_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "observation_count": {"const": 648},
+    "observations": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "case_id": {"pattern": "^s2case_[0-9a-f]{24}$", "type": "string"},
+          "control_class": {"enum": ["recurrent_latent", "parallel_latent", "conventional_negative"]},
+          "control_id": {"enum": ["lotus_3b_recurrent", "loopcoder_v2_7b_parallel", "conventional_transformer_negative"]},
+          "control_identity_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+          "effort": {"enum": ["low", "high"]},
+          "expected_checksum": {"pattern": "^[0-9a-f]{16}$", "type": "string"},
+          "family": {"enum": ["pointer_chase", "coupled_ring", "branch_reconcile"]},
+          "k": {"enum": [1, 8, 32]},
+          "observation_id": {"pattern": "^s2obs_[0-9a-f]{24}$", "type": "string"},
+          "r": {"enum": [1, 4, 16]},
+          "replicate": {"enum": [0, 1, 2, 3]},
+          "task_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"}
+        },
+        "required": ["observation_id", "case_id", "family", "k", "r", "replicate", "task_sha256", "expected_checksum", "control_id", "control_class", "control_identity_sha256", "effort"],
+        "type": "object"
+      },
+      "maxItems": 648,
+      "minItems": 648,
+      "type": "array"
+    },
+    "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "schema": {"const": "tier-bench/astra-stage2-calibration-plan@1"},
+    "stage1_join_head": {"pattern": "^[0-9a-f]{40}$", "type": "string"}
+  },
+  "required": ["schema", "stage1_join_head", "generator_manifest_sha256", "control_manifest_sha256", "case_count", "control_count", "effort_count", "observation_count", "observations", "payload_sha256"],
+  "title": "Astra Stage 2 calibration plan",
+  "type": "object"
+}

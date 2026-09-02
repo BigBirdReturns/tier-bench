@@ -1,0 +1,47 @@
+{
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/astra-stage2-control-manifest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "controls": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "class_label": {"enum": ["recurrent_latent", "parallel_latent", "conventional_negative"]},
+          "control_id": {"enum": ["lotus_3b_recurrent", "loopcoder_v2_7b_parallel", "conventional_transformer_negative"]},
+          "identity": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter_sha256": {"anyOf": [{"pattern": "^[0-9a-f]{64}$", "type": "string"}, {"type": "null"}]},
+              "evidence_class": {"enum": ["fixture_synthetic", "empirical_local"]},
+              "hardware_sha256": {"anyOf": [{"pattern": "^[0-9a-f]{64}$", "type": "string"}, {"type": "null"}]},
+              "model_revision_sha256": {"anyOf": [{"pattern": "^[0-9a-f]{64}$", "type": "string"}, {"type": "null"}]},
+              "role": {"type": "string"},
+              "runtime_sha256": {"anyOf": [{"pattern": "^[0-9a-f]{64}$", "type": "string"}, {"type": "null"}]},
+              "source_commit_sha1": {"pattern": "^[0-9a-f]{40}$", "type": "string"},
+              "source_repository": {"minLength": 1, "type": "string"},
+              "tokenizer_sha256": {"anyOf": [{"pattern": "^[0-9a-f]{64}$", "type": "string"}, {"type": "null"}]},
+              "weights_sha256": {"anyOf": [{"pattern": "^[0-9a-f]{64}$", "type": "string"}, {"type": "null"}]}
+            },
+            "required": ["evidence_class", "role", "source_repository", "source_commit_sha1", "model_revision_sha256", "weights_sha256", "tokenizer_sha256", "runtime_sha256", "adapter_sha256", "hardware_sha256"],
+            "type": "object"
+          },
+          "identity_sha256": {"anyOf": [{"pattern": "^[0-9a-f]{64}$", "type": "string"}, {"type": "null"}]}
+        },
+        "required": ["control_id", "class_label", "identity", "identity_sha256"],
+        "type": "object"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "evidence_class": {"enum": ["fixture_synthetic", "empirical_local"]},
+    "payload_sha256": {"anyOf": [{"pattern": "^[0-9a-f]{64}$", "type": "string"}, {"type": "null"}]},
+    "schema": {"const": "tier-bench/astra-stage2-control-manifest@1"},
+    "stage1_join_head": {"pattern": "^[0-9a-f]{40}$", "type": "string"},
+    "status": {"type": "string"}
+  },
+  "required": ["schema", "evidence_class", "stage1_join_head", "controls", "payload_sha256"],
+  "title": "Astra Stage 2 control manifest",
+  "type": "object"
+}

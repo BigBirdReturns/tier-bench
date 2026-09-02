@@ -1,0 +1,29 @@
+{
+  "case_count": 108,
+  "cases_sha256": "adcd8ea6a8a622445f4ac6db6933e50097fa5b5187088f4ce38e1e1d2f66f170",
+  "families": [
+    "pointer_chase",
+    "coupled_ring",
+    "branch_reconcile"
+  ],
+  "generator_manifest_payload_sha256": "2050de80cb4688b182cf9e006a97959da422dce24138c6451774f03320517328",
+  "generator_version": "astra-stage2-generator-v1",
+  "k_levels": [
+    1,
+    8,
+    32
+  ],
+  "payload_sha256": "1f9bacbbcfe57f99faf419808f7555b15796bdde324f8fadd3dee90ad4d4130e",
+  "r_levels": [
+    1,
+    4,
+    16
+  ],
+  "replicates": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "schema": "tier-bench/astra-stage2-generator-manifest-index@1"
+}

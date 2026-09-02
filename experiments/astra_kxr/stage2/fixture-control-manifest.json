@@ -1,0 +1,59 @@
+{
+  "controls": [
+    {
+      "class_label": "recurrent_latent",
+      "control_id": "lotus_3b_recurrent",
+      "identity": {
+        "adapter_sha256": "20123c460d9a500b85fc02ceaa4a916e5af708e34eca277e0b64468019a4bafd",
+        "evidence_class": "fixture_synthetic",
+        "hardware_sha256": "3be3f09dca732282af82df8a6e25e2473e4e41c261519b22e879d82e3a33e3f2",
+        "model_revision_sha256": "e02f050a1c4b391f9af668412ca06087092940a0ab744362cfc433da97e8a053",
+        "role": "lotus_3b_recurrent",
+        "runtime_sha256": "99a1122617007de260b942419d2bf93bcd8cac4b4f01d7e1d411c79ca82de09f",
+        "source_commit_sha1": "3694e7ef106537c2c9ad57c03782b753a2ebc406",
+        "source_repository": "fixture://lotus_3b_recurrent",
+        "tokenizer_sha256": "d7eb02a0beafcf4d7495057178e546a8f7e725db950c6317d93e14ac5ca5aff8",
+        "weights_sha256": "0877c94d7c54a73373a9f98adea236c32f4309fb12d6a322407a949326c4ba9b"
+      },
+      "identity_sha256": "4e70314885b907372c6cdd8f02233ed24de893f4cf12d7ec78f90594adb7d954"
+    },
+    {
+      "class_label": "parallel_latent",
+      "control_id": "loopcoder_v2_7b_parallel",
+      "identity": {
+        "adapter_sha256": "07dedcf518932cad84e0425490e752a35318f449550168beb8160f3832c85a0f",
+        "evidence_class": "fixture_synthetic",
+        "hardware_sha256": "2fbb5aef340dbb1688b53226c93a99eef71645c0aebf25edcb46b9ff57f40a87",
+        "model_revision_sha256": "6d79103afd562fa6947cea8b1be02a42241aead71face8953502e27b00e95411",
+        "role": "loopcoder_v2_7b_parallel",
+        "runtime_sha256": "01200089038ac8bbea2cefa003760eeb7f2af3eeb9ce0ad0e51b303230be8c94",
+        "source_commit_sha1": "367d8a7ab1119ec07e4ace63b85bdbf89c079c17",
+        "source_repository": "fixture://loopcoder_v2_7b_parallel",
+        "tokenizer_sha256": "ffb501b613565f30a25fd3c048eb53951b661b763ccf9a59714d5cefc8eba497",
+        "weights_sha256": "2d2de532da85babacd955d47402672fc05ba77a5f08e3d00ff62142b7d5e5432"
+      },
+      "identity_sha256": "0e5a22ad1c77b793ace4265137600c7b5a6b11f6701e40b13de80586e4a18dc9"
+    },
+    {
+      "class_label": "conventional_negative",
+      "control_id": "conventional_transformer_negative",
+      "identity": {
+        "adapter_sha256": "bde409171f7b382f647fba9804e57ca10289bcdf252c0f4f52c1fdd8c13ce00a",
+        "evidence_class": "fixture_synthetic",
+        "hardware_sha256": "8cdde01274da24822cd4754aa2beb3c3df6a3a22362cb2e3b32b8fc5470a4bb3",
+        "model_revision_sha256": "a878d7e9ac3b18b2f66730a9f5a972e43f724a4d1e22e1e308c280ae0edd7069",
+        "role": "conventional_transformer_negative",
+        "runtime_sha256": "eb2390a0555098ac3ad575fb91655d31e24e4339dc2bb2449c21c918d19db4bc",
+        "source_commit_sha1": "08ada368ed2bb5ee19fd9e507a80068fc86fc1d7",
+        "source_repository": "fixture://conventional_transformer_negative",
+        "tokenizer_sha256": "eb2d94c3100788c5092b61a341f087c2ad45f6808009a5ff1dca7e710054061a",
+        "weights_sha256": "718563c2725737c3e3d1dc6eeb98973c1b0ea57ed2c9bd8f1ff2753f357bbf11"
+      },
+      "identity_sha256": "3c7abd010eb5c7852f5a6ae61b55ac4f892b5b56b74f8f235c627190211fe1cc"
+    }
+  ],
+  "evidence_class": "fixture_synthetic",
+  "payload_sha256": "bb9da137a8ec05047e4534c3abf1957e48bd5b56b84e3fa8a73f5635f5a4d679",
+  "schema": "tier-bench/astra-stage2-control-manifest@1",
+  "stage1_join_head": "60bca963d63edca267106bc5c7725c2cc1df8dd7"
+}
