@@ -1,0 +1,97 @@
+{
+  "$id": "https://tier-bench.local/schemas/frontier-fingerprint-qualification-index.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "evidence_artifact": {
+      "additionalProperties": false,
+      "properties": {
+        "digest": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "id": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "url": {
+          "pattern": "^https://github\\.com/",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "url",
+        "digest"
+      ],
+      "type": "object"
+    },
+    "payload_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "pr_comment": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minimum": 1,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "url": {
+          "oneOf": [
+            {
+              "pattern": "^https://github\\.com/",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "url"
+      ],
+      "type": "object"
+    },
+    "qualification_payload_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "run_attempt": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "run_id": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "schema": {
+      "const": "tier-bench/frontier-fingerprint-qualification-index@1"
+    },
+    "source_head_sha": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    },
+    "tree_sha": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "run_id",
+    "run_attempt",
+    "source_head_sha",
+    "tree_sha",
+    "qualification_payload_sha256",
+    "evidence_artifact",
+    "pr_comment",
+    "payload_sha256"
+  ],
+  "type": "object"
+}

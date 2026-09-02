@@ -1,0 +1,217 @@
+name: frontier-fingerprint
+
+# Provider-free conformance only. A branch push supplies the immutable source
+# head. This workflow derives and uploads the qualification evidence. It does
+# not claim PR-comment custody because this repository's Actions token cannot
+# write that comment; a separately authenticated publisher must bind and read
+# back the remote comment after independently verifying the artifacts.
+on:
+  push:
+    branches:
+      - main
+      - codex/frontier-fingerprint-20260901
+    paths:
+      - "frontier_fingerprint/**"
+      - "scripts/frontier_fingerprint.py"
+      - "scripts/frontier_qualification.py"
+      - "tests/test_frontier_fingerprint.py"
+      - "tests/test_frontier_qualification.py"
+      - "experiments/frontier_fingerprint/**"
+      - "schemas/frontier-fingerprint-*.schema.json"
+      - ".github/workflows/frontier-fingerprint.yml"
+      - "docs/agents/claims/SOL-FRONTIER-FINGERPRINT-1.md"
+
+permissions:
+  contents: read
+
+jobs:
+  provider-free-conformance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact pushed head
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Bind exact head, tree, base, and changed paths
+        id: custody
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="$RUNNER_TEMP/frontier-fingerprint-qualification"
+          private_root="$RUNNER_TEMP/frontier-fingerprint-private"
+          rm -rf "$evidence_root" "$private_root"
+          mkdir -p "$evidence_root" "$private_root"
+
+          observed_head="$(git rev-parse HEAD)"
+          if [[ "$observed_head" != "$GITHUB_SHA" ]]; then
+            echo "checkout custody mismatch: expected $GITHUB_SHA, observed $observed_head" >&2
+            exit 1
+          fi
+
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if [[ "$GITHUB_REF_NAME" == "main" ]]; then
+            base_sha="$(git rev-parse HEAD^)"
+          else
+            base_sha="$(git merge-base "$observed_head" refs/remotes/origin/main)"
+          fi
+          git cat-file -e "${base_sha}^{commit}"
+          tree_sha="$(git rev-parse 'HEAD^{tree}')"
+          git diff --name-only -z "${base_sha}...${observed_head}" \
+            > "$evidence_root/changed-paths.z"
+          test -s "$evidence_root/changed-paths.z"
+
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+          printf 'private_root=%s\n' "$private_root" >> "$GITHUB_OUTPUT"
+          printf 'source_head_sha=%s\n' "$observed_head" >> "$GITHUB_OUTPUT"
+          printf 'tree_sha=%s\n' "$tree_sha" >> "$GITHUB_OUTPUT"
+          printf 'base_sha=%s\n' "$base_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Compile observatory and qualification controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            frontier_fingerprint/*.py \
+            scripts/frontier_fingerprint.py \
+            scripts/frontier_qualification.py \
+            tests/test_frontier_*.py
+
+      - name: Run all frontier adversarial conformance tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_frontier_*.py' -v 2>&1 \
+            | tee "${{ steps.custody.outputs.evidence_root }}/test-frontier-suite.log"
+
+      - name: Execute provider-free campaign from checked-out bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="${{ steps.custody.outputs.evidence_root }}"
+          run_dir="${{ steps.custody.outputs.private_root }}/run"
+          python scripts/frontier_fingerprint.py plan \
+            --manifest experiments/frontier_fingerprint/mock-smoke.json \
+            --out "$evidence_root/plan.json"
+          python scripts/frontier_fingerprint.py run \
+            --manifest experiments/frontier_fingerprint/mock-smoke.json \
+            --out "$run_dir" \
+            | tee "$evidence_root/run-result.json"
+          python scripts/frontier_fingerprint.py verify \
+            --run-dir "$run_dir" \
+            --out "$evidence_root/verification.json"
+          python scripts/frontier_fingerprint.py summarize \
+            --run-dir "$run_dir" \
+            --out "$evidence_root/summary.json"
+          python scripts/frontier_fingerprint.py passive \
+            --input experiments/frontier_fingerprint/fixtures/passive-claude.jsonl \
+            --adapter claude_code_jsonl \
+            --out "$evidence_root/passive-claude.json"
+          python scripts/frontier_fingerprint.py passive \
+            --input experiments/frontier_fingerprint/fixtures/passive-openai.jsonl \
+            --adapter codex_jsonl \
+            --out "$evidence_root/passive-openai.json"
+          cp "$run_dir/receipts.jsonl" "$evidence_root/receipts.jsonl"
+
+      - name: Derive and verify machine qualification receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="${{ steps.custody.outputs.evidence_root }}"
+          python scripts/frontier_qualification.py collect \
+            --repository "$GITHUB_REPOSITORY" \
+            --event-name "$GITHUB_EVENT_NAME" \
+            --workflow "$GITHUB_WORKFLOW" \
+            --workflow-ref "$GITHUB_WORKFLOW_REF" \
+            --run-id "$GITHUB_RUN_ID" \
+            --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --source-head-sha "${{ steps.custody.outputs.source_head_sha }}" \
+            --checked-out-sha "${{ steps.custody.outputs.source_head_sha }}" \
+            --tree-sha "${{ steps.custody.outputs.tree_sha }}" \
+            --base-sha "${{ steps.custody.outputs.base_sha }}" \
+            --changed-paths-z "$evidence_root/changed-paths.z" \
+            --test-log "$evidence_root/test-frontier-suite.log" \
+            --run-result "$evidence_root/run-result.json" \
+            --verification "$evidence_root/verification.json" \
+            --summary "$evidence_root/summary.json" \
+            --plan "$evidence_root/plan.json" \
+            --receipts "$evidence_root/receipts.jsonl" \
+            --passive "$evidence_root/passive-claude.json" \
+            --passive "$evidence_root/passive-openai.json" \
+            --manifest-root experiments/frontier_fingerprint \
+            --out "$evidence_root/qualification-receipt.json"
+          python scripts/frontier_qualification.py verify \
+            --input "$evidence_root/qualification-receipt.json" \
+            --schema tier-bench/frontier-fingerprint-qualification@1
+          cat "$evidence_root/qualification-receipt.json"
+
+      - name: Upload public-safe evidence
+        id: evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontier-fingerprint-public-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ steps.custody.outputs.evidence_root }}/qualification-receipt.json
+            ${{ steps.custody.outputs.evidence_root }}/plan.json
+            ${{ steps.custody.outputs.evidence_root }}/run-result.json
+            ${{ steps.custody.outputs.evidence_root }}/verification.json
+            ${{ steps.custody.outputs.evidence_root }}/summary.json
+            ${{ steps.custody.outputs.evidence_root }}/passive-claude.json
+            ${{ steps.custody.outputs.evidence_root }}/passive-openai.json
+            ${{ steps.custody.outputs.evidence_root }}/receipts.jsonl
+            ${{ steps.custody.outputs.evidence_root }}/test-frontier-suite.log
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Render ledger and qualification index
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="${{ steps.custody.outputs.evidence_root }}"
+          python scripts/frontier_qualification.py render \
+            --receipt "$evidence_root/qualification-receipt.json" \
+            --artifact-id "${{ steps.evidence.outputs.artifact-id }}" \
+            --artifact-url "${{ steps.evidence.outputs.artifact-url }}" \
+            --artifact-digest "${{ steps.evidence.outputs.artifact-digest }}" \
+            --out "$evidence_root/qualification-comment.md"
+          python scripts/frontier_qualification.py index \
+            --receipt "$evidence_root/qualification-receipt.json" \
+            --artifact-id "${{ steps.evidence.outputs.artifact-id }}" \
+            --artifact-url "${{ steps.evidence.outputs.artifact-url }}" \
+            --artifact-digest "${{ steps.evidence.outputs.artifact-digest }}" \
+            --out "$evidence_root/qualification-index.json"
+          python scripts/frontier_qualification.py verify \
+            --input "$evidence_root/qualification-index.json" \
+            --schema tier-bench/frontier-fingerprint-qualification-index@1
+
+      - name: Upload publication draft
+        id: publication
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: frontier-fingerprint-publication-draft-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ steps.custody.outputs.evidence_root }}/qualification-index.json
+            ${{ steps.custody.outputs.evidence_root }}/qualification-comment.md
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Seal runner-derived ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_root="${{ steps.custody.outputs.evidence_root }}"
+          test -n "${{ steps.evidence.outputs.artifact-id }}"
+          test -n "${{ steps.evidence.outputs.artifact-digest }}"
+          test -n "${{ steps.publication.outputs.artifact-id }}"
+          test -n "${{ steps.publication.outputs.artifact-digest }}"
+          cat "$evidence_root/qualification-index.json"
+          cat "$evidence_root/qualification-comment.md"
+          cat "$evidence_root/qualification-comment.md" >> "$GITHUB_STEP_SUMMARY"

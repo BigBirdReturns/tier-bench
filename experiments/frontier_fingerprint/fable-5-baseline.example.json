@@ -1,0 +1,107 @@
+{
+  "campaign_id": "fable-5-baseline-v1",
+  "execution": {
+    "allow_live": false,
+    "max_estimated_usd": 0,
+    "max_provider_errors": 1,
+    "max_requests": 80,
+    "max_wall_seconds": 1800,
+    "request_timeout_seconds": 180
+  },
+  "probes": [
+    {
+      "id": "cache-threshold",
+      "kind": "cache_threshold",
+      "max_output_tokens": 32,
+      "repeats": 2,
+      "seed": 5000,
+      "suffix_units": 32,
+      "threshold_units": [
+        256,
+        512,
+        768,
+        1024,
+        1536
+      ]
+    },
+    {
+      "id": "cache-reuse",
+      "kind": "cache_reuse",
+      "max_output_tokens": 32,
+      "mutation_fraction": 0.25,
+      "prefix_units": 1400,
+      "repeats": 8,
+      "seed": 5101,
+      "suffix_units": 32
+    },
+    {
+      "id": "prefix-boundary",
+      "kind": "prefix_boundary",
+      "max_output_tokens": 32,
+      "mutation_fractions": [
+        0,
+        0.25,
+        0.5,
+        0.75,
+        0.95
+      ],
+      "prefix_units": 1600,
+      "repeats": 2,
+      "seed": 5102,
+      "suffix_units": 32
+    },
+    {
+      "anchor_positions": [
+        0.01,
+        0.25,
+        0.5,
+        0.75,
+        0.99
+      ],
+      "context_units": 8000,
+      "id": "retention",
+      "kind": "retention",
+      "max_output_tokens": 64,
+      "repeats": 2,
+      "seed": 5103,
+      "suffix_units": 32
+    },
+    {
+      "id": "identity",
+      "kind": "identity",
+      "max_output_tokens": 16,
+      "prefix_units": 64,
+      "repeats": 4,
+      "seed": 5104,
+      "suffix_units": 8
+    }
+  ],
+  "retention": {
+    "hash_algorithm": "sha256",
+    "public_text": "forbidden",
+    "raw_evidence": "private-run-artifact"
+  },
+  "schema": "tier-bench/frontier-fingerprint-manifest@1",
+  "subject": {
+    "adapter": "anthropic_messages",
+    "api_contract": {
+      "endpoint": "https://api.anthropic.com/v1/messages",
+      "request_headers": {
+        "anthropic-version": "2023-06-01"
+      },
+      "response_headers_to_capture": [
+        "request-id",
+        "anthropic-ratelimit-tokens-remaining",
+        "anthropic-ratelimit-tokens-reset"
+      ],
+      "response_identity_signal": "weak-response-model-only",
+      "revision": "messages-2023-06-01-cache-v1",
+      "usage_semantics_id": "anthropic-messages-split-cache-v1"
+    },
+    "model_binding": {
+      "environment": "TIER_FABLE_5_MODEL"
+    },
+    "provider": "anthropic",
+    "release_status": "operator-bound-baseline"
+  }
+}

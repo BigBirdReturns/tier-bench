@@ -1,0 +1,104 @@
+{
+  "$id": "https://tier-bench.local/schemas/frontier-fingerprint-summary.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adapter": {
+      "type": "string"
+    },
+    "api_contract_observations": {
+      "type": "object"
+    },
+    "api_contract_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "cache_accounting": {
+      "type": "object"
+    },
+    "cache_threshold": {
+      "type": "object"
+    },
+    "campaign_id": {
+      "type": "string"
+    },
+    "context_sweep": {
+      "type": "object"
+    },
+    "identity": {
+      "type": "object"
+    },
+    "latency": {
+      "type": "object"
+    },
+    "manifest_sha256": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "measurement_boundary": {
+      "type": "object"
+    },
+    "probe_suite_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "provider": {
+      "type": "string"
+    },
+    "receipt_count": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "resolved_model": {
+      "type": "string"
+    },
+    "retention": {
+      "type": "object"
+    },
+    "retention_audit": {
+      "type": "object"
+    },
+    "schema": {
+      "const": "tier-bench/frontier-fingerprint-summary@1"
+    },
+    "summary_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "usage_semantics_id": {
+      "type": "string"
+    },
+    "verification": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema",
+    "campaign_id",
+    "manifest_sha256",
+    "api_contract_sha256",
+    "usage_semantics_id",
+    "probe_suite_sha256",
+    "provider",
+    "adapter",
+    "resolved_model",
+    "receipt_count",
+    "verification",
+    "cache_accounting",
+    "cache_threshold",
+    "api_contract_observations",
+    "latency",
+    "identity",
+    "retention",
+    "context_sweep",
+    "measurement_boundary",
+    "retention_audit",
+    "summary_sha256"
+  ],
+  "title": "Tier-Bench frontier fingerprint summary",
+  "type": "object"
+}

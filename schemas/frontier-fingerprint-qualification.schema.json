@@ -1,0 +1,412 @@
+{
+  "$id": "https://tier-bench.local/schemas/frontier-fingerprint-qualification.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "conformance": {
+      "additionalProperties": false,
+      "properties": {
+        "campaign": {
+          "additionalProperties": false,
+          "properties": {
+            "exact_requests_rebuilt": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "identity_mismatch_count": {
+              "const": 0
+            },
+            "identity_objects_rederived": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "planned_request_count": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "provider_error_count": {
+              "const": 0
+            },
+            "raw_request_bodies_authenticated": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "raw_response_bodies_authenticated": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "receipt_count": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "termination_reason": {
+              "const": "completed"
+            },
+            "usage_objects_rederived": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "verified": {
+              "const": true
+            }
+          },
+          "required": [
+            "receipt_count",
+            "exact_requests_rebuilt",
+            "raw_request_bodies_authenticated",
+            "raw_response_bodies_authenticated",
+            "usage_objects_rederived",
+            "identity_objects_rederived",
+            "identity_mismatch_count",
+            "provider_error_count",
+            "planned_request_count",
+            "termination_reason",
+            "verified"
+          ],
+          "type": "object"
+        },
+        "test_suites": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "bytes": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "count": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "path": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "count",
+              "bytes",
+              "sha256"
+            ],
+            "type": "object"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "test_total": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "test_total",
+        "test_suites",
+        "campaign"
+      ],
+      "type": "object"
+    },
+    "dispatch": {
+      "additionalProperties": false,
+      "properties": {
+        "committed_manifests": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "adapter": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "allow_live": {
+                "const": false
+              },
+              "campaign_id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "max_estimated_usd": {
+                "const": 0
+              },
+              "path": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "provider": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "sha256",
+              "campaign_id",
+              "provider",
+              "adapter",
+              "allow_live",
+              "max_estimated_usd"
+            ],
+            "type": "object"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        "credential_check_scope": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "execution_path": {
+          "additionalProperties": false,
+          "properties": {
+            "adapter": {
+              "const": "mock"
+            },
+            "provider": {
+              "const": "mock"
+            }
+          },
+          "required": [
+            "provider",
+            "adapter"
+          ],
+          "type": "object"
+        },
+        "live_provider_dispatch_authorized": {
+          "const": false
+        },
+        "manifest_discovery_root": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "network_egress_observed": {
+          "const": "UNMEASURED"
+        },
+        "recognized_provider_credentials_present": {
+          "maxItems": 0,
+          "type": "array"
+        }
+      },
+      "required": [
+        "execution_path",
+        "live_provider_dispatch_authorized",
+        "credential_check_scope",
+        "recognized_provider_credentials_present",
+        "network_egress_observed",
+        "manifest_discovery_root",
+        "committed_manifests"
+      ],
+      "type": "object"
+    },
+    "evidence": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "label": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "path": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "path",
+          "bytes",
+          "sha256"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "measurement_authority": {
+      "additionalProperties": false,
+      "properties": {
+        "frontier_cache_behavior": {
+          "const": "UNMEASURED"
+        },
+        "frontier_capability": {
+          "const": "UNMEASURED"
+        },
+        "frontier_cost": {
+          "const": "UNMEASURED"
+        },
+        "frontier_routing": {
+          "const": "UNMEASURED"
+        },
+        "harness_custody": {
+          "const": "QUALIFIED"
+        },
+        "live_provider_behavior": {
+          "const": "UNMEASURED"
+        },
+        "provider_free_conformance": {
+          "const": "QUALIFIED"
+        }
+      },
+      "required": [
+        "harness_custody",
+        "provider_free_conformance",
+        "live_provider_behavior",
+        "frontier_capability",
+        "frontier_cache_behavior",
+        "frontier_cost",
+        "frontier_routing"
+      ],
+      "type": "object"
+    },
+    "payload_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "qualification": {
+      "const": "PASS"
+    },
+    "run": {
+      "additionalProperties": false,
+      "properties": {
+        "event_name": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "pr_number": {
+          "minimum": 1,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "repository": {
+          "pattern": "^[^/]+/[^/]+$",
+          "type": "string"
+        },
+        "run_attempt": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "run_id": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "workflow": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "workflow_ref": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository",
+        "event_name",
+        "workflow",
+        "workflow_ref",
+        "run_id",
+        "run_attempt",
+        "pr_number"
+      ],
+      "type": "object"
+    },
+    "schema": {
+      "const": "tier-bench/frontier-fingerprint-qualification@1"
+    },
+    "scope": {
+      "additionalProperties": false,
+      "properties": {
+        "changed_path_count": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "changed_paths": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "changed_path_count",
+        "changed_paths"
+      ],
+      "type": "object"
+    },
+    "source": {
+      "additionalProperties": false,
+      "properties": {
+        "base_sha": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "checked_out_sha": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "checkout_binding": {
+          "const": "exact-source-head"
+        },
+        "source_head_sha": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "tree_sha": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "base_sha",
+        "source_head_sha",
+        "checked_out_sha",
+        "tree_sha",
+        "checkout_binding"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema",
+    "qualification",
+    "generated_at",
+    "run",
+    "source",
+    "scope",
+    "conformance",
+    "dispatch",
+    "measurement_authority",
+    "evidence",
+    "payload_sha256"
+  ],
+  "type": "object"
+}

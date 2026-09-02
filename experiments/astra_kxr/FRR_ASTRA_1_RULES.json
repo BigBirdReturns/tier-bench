@@ -1,0 +1,68 @@
+{
+  "schema": "tier-bench/frr-astra-rules@1",
+  "id": "FRR-ASTRA-1",
+  "stage": 1,
+  "frozen_at": "2026-09-02",
+  "supersedes": {
+    "id": "ASTRA-KXR-1",
+    "scope": "campaigns.launch_sentinel and campaigns.confirmatory of DECISION_RULES.json; PREREGISTRATION.md section 5",
+    "receipt_commit": "ea451a9e6894c10b09666606d4a445d8cc2826e4",
+    "everything_else": "incorporated by reference, unmodified"
+  },
+  "decision_authority": {
+    "primary": "model_waterline",
+    "sequence": [
+      "establish identical cheap floor",
+      "locate surviving walls",
+      "buy one next justified rung",
+      "admit subject only where the wall survives",
+      "isolate judgment residue",
+      "compute marginal shadow price",
+      "issue distillation work order",
+      "rerun cheap floor"
+    ],
+    "nested_recurrence_owner": "H3",
+    "nested_recurrence_first_test": "existing cheap harness converts the boundary into search"
+  },
+  "execution_law": {
+    "subject_request_ceiling": 80,
+    "ceiling_is_target": false,
+    "attempts_per_justified_rung": 1,
+    "subject_call_may_reconfirm_cleared_floor": false,
+    "formation_matrices": "prohibited",
+    "self_necessity_verdicts": "prohibited"
+  },
+  "geometry": {
+    "mode": "sidecar_on_justified_calls",
+    "sidecar_observables": "full ASTRA-KXR-1 observable vector",
+    "inconclusive_by_construction_acceptable": true,
+    "gated_instrumentation_block": {
+      "enabled": false,
+      "max_calls": 24,
+      "purpose": "pure synthetic-lattice telemetry, no capability claim",
+      "activation": "explicit separate operator authorization recorded as its own gated act before execution",
+      "draws_waterline_justification": false,
+      "absence_blocks_closure": false
+    }
+  },
+  "outputs": [
+    "waterline_table",
+    "residue_map",
+    "shadow_price_ledger",
+    "distillation_work_orders",
+    "kxr_sidecar_report",
+    "machine_closure_receipts"
+  ],
+  "chronology_guard": {
+    "astral_placeholder_commit": "9cefd78f75f26ceb2a725dab0e5496a06b31641e",
+    "astral_placeholder_utc": "2026-09-02T05:28:27Z",
+    "pre_naming_claim_publishable": false,
+    "unlock_condition": "an earlier coordinate hash-bound to remote custody",
+    "provable_claim": "refinery doctrine, cheap-floor law, boundary-judgment hypothesis, and conflicted-model rule predate Astra (agent/frontier-residue-refinery-v1 @ 57bf971d 2026-07-26; HYPOTHESES.md 2026-07-08/13)"
+  },
+  "amendment_rules": {
+    "stage_2_may": "fill stage_2_numeric pending fields; freeze generators",
+    "instrumentation_block_activation": "operator authorization only",
+    "any_other_change": "new preregistration under a new id"
+  }
+}

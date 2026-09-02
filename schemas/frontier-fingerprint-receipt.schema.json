@@ -1,0 +1,146 @@
+{
+  "$id": "https://tier-bench.local/schemas/frontier-fingerprint-receipt.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "api_contract_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "block": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "budget": {
+      "type": "object"
+    },
+    "campaign_id": {
+      "type": "string"
+    },
+    "condition": {
+      "type": "string"
+    },
+    "evidence_binding": {
+      "required": [
+        "request_body_authenticated",
+        "request_body_rebuilt_from_frozen_generator",
+        "response_body_authenticated",
+        "usage_rederived_from_response_body",
+        "identity_rederived_from_response_body",
+        "public_prompt_text_retained",
+        "public_response_text_retained"
+      ],
+      "type": "object"
+    },
+    "manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "observation_id": {
+      "type": "string"
+    },
+    "ordinal": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "previous_receipt_sha256": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      ]
+    },
+    "probe_contract_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "probe_id": {
+      "type": "string"
+    },
+    "probe_kind": {
+      "type": "string"
+    },
+    "receipt_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "request": {
+      "required": [
+        "body_path",
+        "body_sha256",
+        "body_bytes",
+        "model",
+        "api_contract_sha256",
+        "prompt_descriptor"
+      ],
+      "type": "object"
+    },
+    "response": {
+      "required": [
+        "body_path",
+        "body_sha256",
+        "body_bytes",
+        "http_status",
+        "captured_headers",
+        "captured_headers_sha256",
+        "usage",
+        "usage_sha256",
+        "usage_source_paths",
+        "identity",
+        "identity_sha256",
+        "anchor_match"
+      ],
+      "type": "object"
+    },
+    "schema": {
+      "const": "tier-bench/frontier-fingerprint-receipt@1"
+    },
+    "sequence_in_block": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "status": {
+      "enum": [
+        "observed",
+        "provider_error",
+        "identity_mismatch",
+        "budget_exceeded"
+      ]
+    },
+    "timing": {
+      "type": "object"
+    },
+    "usage_semantics_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "campaign_id",
+    "manifest_sha256",
+    "api_contract_sha256",
+    "usage_semantics_id",
+    "observation_id",
+    "ordinal",
+    "probe_id",
+    "probe_kind",
+    "probe_contract_sha256",
+    "block",
+    "condition",
+    "sequence_in_block",
+    "status",
+    "request",
+    "response",
+    "timing",
+    "budget",
+    "evidence_binding",
+    "previous_receipt_sha256",
+    "receipt_sha256"
+  ],
+  "title": "Tier-Bench frontier fingerprint receipt",
+  "type": "object"
+}

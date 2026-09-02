@@ -1,0 +1,150 @@
+{
+  "campaign_id": "frontier-mock-smoke-v1",
+  "execution": {
+    "allow_live": false,
+    "max_estimated_usd": 0,
+    "max_provider_errors": 1,
+    "max_requests": 60,
+    "max_wall_seconds": 60,
+    "request_timeout_seconds": 10
+  },
+  "probes": [
+    {
+      "id": "cache-threshold",
+      "kind": "cache_threshold",
+      "max_output_tokens": 16,
+      "repeats": 1,
+      "seed": 100,
+      "suffix_units": 12,
+      "threshold_units": [
+        32,
+        64,
+        128
+      ]
+    },
+    {
+      "id": "cache-reuse",
+      "kind": "cache_reuse",
+      "max_output_tokens": 16,
+      "mutation_fraction": 0.25,
+      "prefix_units": 128,
+      "repeats": 4,
+      "seed": 101,
+      "suffix_units": 12
+    },
+    {
+      "id": "prefix-boundary",
+      "kind": "prefix_boundary",
+      "max_output_tokens": 16,
+      "mutation_fractions": [
+        0,
+        0.5,
+        0.9
+      ],
+      "prefix_units": 160,
+      "repeats": 2,
+      "seed": 102,
+      "suffix_units": 12
+    },
+    {
+      "context_units": [
+        128,
+        256,
+        512
+      ],
+      "id": "context-sweep",
+      "kind": "context_sweep",
+      "max_output_tokens": 16,
+      "repeats": 2,
+      "seed": 103,
+      "suffix_units": 12
+    },
+    {
+      "anchor_positions": [
+        0.05,
+        0.5,
+        0.95
+      ],
+      "context_units": 384,
+      "id": "retention",
+      "kind": "retention",
+      "max_output_tokens": 32,
+      "repeats": 2,
+      "seed": 104,
+      "suffix_units": 16
+    },
+    {
+      "id": "serialization",
+      "kind": "serialization",
+      "max_output_tokens": 16,
+      "prefix_units": 128,
+      "repeats": 2,
+      "seed": 105,
+      "suffix_units": 12,
+      "variants": [
+        "canonical",
+        "pretty",
+        "reordered"
+      ]
+    },
+    {
+      "id": "tool-schema",
+      "kind": "tool_schema",
+      "max_output_tokens": 16,
+      "prefix_units": 128,
+      "repeats": 2,
+      "seed": 106,
+      "suffix_units": 12,
+      "variants": [
+        "stable",
+        "description_mutated"
+      ]
+    },
+    {
+      "id": "effort",
+      "kind": "effort",
+      "levels": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "max_output_tokens": 16,
+      "prefix_units": 96,
+      "repeats": 2,
+      "seed": 107,
+      "suffix_units": 12
+    },
+    {
+      "id": "identity",
+      "kind": "identity",
+      "max_output_tokens": 16,
+      "prefix_units": 64,
+      "repeats": 4,
+      "seed": 108,
+      "suffix_units": 8
+    }
+  ],
+  "retention": {
+    "hash_algorithm": "sha256",
+    "public_text": "forbidden",
+    "raw_evidence": "private-run-artifact"
+  },
+  "schema": "tier-bench/frontier-fingerprint-manifest@1",
+  "subject": {
+    "adapter": "mock",
+    "api_contract": {
+      "endpoint": "mock://responses",
+      "request_headers": {},
+      "response_headers_to_capture": [
+        "x-mock-contract"
+      ],
+      "response_identity_signal": "backend-fingerprint-and-response-model",
+      "revision": "mock-v1",
+      "usage_semantics_id": "mock-split-cache-v1"
+    },
+    "model_binding": {
+      "literal": "mock-frontier-v1"
+    },
+    "provider": "mock"
+  }
+}
