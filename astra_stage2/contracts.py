@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import math
 import re
+import subprocess
 from pathlib import Path
 from typing import Any, Iterable
 
-from .canonical import Stage2Error, git_blob_sha1_bytes, sha256_object, without_field
+from .canonical import Stage2Error, sha256_object, without_field
 from .generator import (
     CONTROL_ROLES,
     EFFORTS,
@@ -50,6 +51,37 @@ FORBIDDEN_RETAINED_KEYS = {
     "raw_response",
 }
 
+OBSERVATION_FIELDS = frozenset(
+    {
+        "accepted",
+        "api_contract_sha256",
+        "cached_input_tokens",
+        "case_id",
+        "control_class",
+        "control_id",
+        "control_identity_sha256",
+        "effort",
+        "evidence_class",
+        "expected_checksum",
+        "family",
+        "input_tokens",
+        "k",
+        "latency_ms",
+        "observation_id",
+        "observed_checksum",
+        "output_tokens",
+        "provider_error",
+        "r",
+        "reasoning_tokens",
+        "record_sha256",
+        "replicate",
+        "route_identity_sha256",
+        "schema",
+        "task_sha256",
+        "ttft_ms",
+    }
+)
+
 IDENTITY_DIGEST_FIELDS = (
     "model_revision_sha256",
     "weights_sha256",
@@ -70,6 +102,16 @@ def _require_list(value: Any, label: str) -> list[Any]:
     if not isinstance(value, list):
         raise Stage2Error(f"{label} must be an array")
     return value
+
+
+def _require_exact_keys(value: dict[str, Any], expected: frozenset[str], label: str) -> None:
+    observed = set(value)
+    missing = sorted(expected - observed)
+    unexpected = sorted(observed - expected)
+    if missing or unexpected:
+        raise Stage2Error(
+            f"{label} property set mismatch: missing={missing}, unexpected={unexpected}"
+        )
 
 
 def _require_int(value: Any, label: str, *, minimum: int | None = None) -> int:
@@ -123,17 +165,56 @@ def _walk_forbidden(value: Any, path: str = "$") -> None:
             _walk_forbidden(child, f"{path}[{index}]")
 
 
+def _run_git(repo_root: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(
+            ["git", "-C", str(repo_root), *arguments],
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            capture_output=True,
+            check=False,
+        )
+    except OSError as exc:
+        raise Stage2Error(f"Git is required for Stage 1 custody verification: {exc}") from exc
+
+
+def _git_output(repo_root: Path, *arguments: str) -> str:
+    process = _run_git(repo_root, *arguments)
+    if process.returncode != 0:
+        detail = process.stderr.strip() or process.stdout.strip() or f"exit {process.returncode}"
+        raise Stage2Error(f"Git custody command failed ({' '.join(arguments)}): {detail}")
+    return process.stdout.strip()
+
+
+def _require_clean_git_path(repo_root: Path, relative: str) -> None:
+    checks = (
+        ("worktree", ("diff", "--quiet", "--no-ext-diff", "--", relative)),
+        ("index", ("diff", "--cached", "--quiet", "--no-ext-diff", "HEAD", "--", relative)),
+    )
+    for label, arguments in checks:
+        process = _run_git(repo_root, *arguments)
+        if process.returncode == 1:
+            raise Stage2Error(f"Stage 1 {label} drift for {relative}")
+        if process.returncode != 0:
+            detail = process.stderr.strip() or process.stdout.strip() or f"exit {process.returncode}"
+            raise Stage2Error(f"Git {label} custody check failed for {relative}: {detail}")
+
+
 def verify_stage1_blobs(repo_root: Path) -> dict[str, str]:
+    requested_root = repo_root.resolve()
+    repository_root = Path(_git_output(requested_root, "rev-parse", "--show-toplevel")).resolve()
     observed: dict[str, str] = {}
     for relative, expected in STAGE1_BLOBS.items():
-        path = repo_root / relative
+        path = repository_root / relative
         if not path.is_file():
             raise Stage2Error(f"missing frozen Stage 1 path: {relative}")
-        digest = git_blob_sha1_bytes(path.read_bytes())
+        digest = _git_output(repository_root, "rev-parse", "--verify", f"HEAD:{relative}")
         if digest != expected:
             raise Stage2Error(
                 f"Stage 1 blob drift for {relative}: expected {expected}, observed {digest}"
             )
+        _require_clean_git_path(repository_root, relative)
         observed[relative] = digest
     return observed
 
@@ -312,7 +393,8 @@ def validate_observations(
     evidence_classes: set[str] = set()
     route_bindings: dict[tuple[str, str], str] = {}
     contract_bindings: dict[tuple[str, str], str] = {}
-    for row in rows:
+    for index, row in enumerate(rows):
+        _require_exact_keys(row, OBSERVATION_FIELDS, f"observations[{index}]")
         _walk_forbidden(row)
         if row.get("schema") != "tier-bench/astra-stage2-observation@1":
             raise Stage2Error("unexpected observation schema")
@@ -331,6 +413,7 @@ def validate_observations(
             "r",
             "replicate",
             "task_sha256",
+            "expected_checksum",
             "control_id",
             "control_class",
             "control_identity_sha256",
@@ -349,6 +432,8 @@ def validate_observations(
         reconstructed_acceptance = checksum == expected_row["expected_checksum"]
         if not isinstance(accepted, bool) or accepted != reconstructed_acceptance:
             raise Stage2Error("accepted flag is not reconstructed from the deterministic answer")
+        if not reconstructed_acceptance:
+            raise Stage2Error("every deterministic calibration answer must be accepted")
         for field in (
             "input_tokens",
             "cached_input_tokens",
