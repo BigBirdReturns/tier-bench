@@ -88,6 +88,23 @@ class Stage2ScaffoldTests(unittest.TestCase):
             rehash_observation(row)
         return bound, plan, rows
 
+    def _validate_result(
+        self,
+        result: dict,
+        *,
+        control: dict | None = None,
+        plan: dict | None = None,
+        rows: list[dict] | None = None,
+    ) -> dict:
+        return validate_calibration_result(
+            result,
+            generator_manifest=self.generator,
+            control_manifest=self.fixture_control if control is None else control,
+            plan=self.plan if plan is None else plan,
+            observations=self.observations if rows is None else rows,
+            repo_root=self.repo_root,
+        )
+
     def test_01_generator_denominator_is_108(self) -> None:
         self.assertEqual(self.generator["case_count"], EXPECTED_CASE_COUNT)
         self.assertEqual(len(self.generator["cases"]), 108)
@@ -124,6 +141,12 @@ class Stage2ScaffoldTests(unittest.TestCase):
         with self.assertRaises(Stage2Error):
             validate_generator_manifest(unknown_case)
 
+        unfrozen_version = copy.deepcopy(self.generator)
+        unfrozen_version["generator_version"] = "astra-stage2-generator-v999"
+        rehash(unfrozen_version)
+        with self.assertRaises(Stage2Error):
+            validate_generator_manifest(unfrozen_version)
+
     def test_05_plan_denominator_is_648(self) -> None:
         self.assertEqual(self.plan["observation_count"], EXPECTED_OBSERVATION_COUNT)
         self.assertEqual(len(self.plan["observations"]), 648)
@@ -151,6 +174,39 @@ class Stage2ScaffoldTests(unittest.TestCase):
         with self.assertRaises(Stage2Error):
             validate_observations(self.observations, unknown_row, self.fixture_control)
 
+        rewritten_generator_binding = copy.deepcopy(self.plan)
+        rewritten_generator_binding["generator_manifest_sha256"] = "0" * 64
+        rehash(rewritten_generator_binding)
+        with self.assertRaises(Stage2Error):
+            derive_calibration_result(
+                copy.deepcopy(self.observations),
+                rewritten_generator_binding,
+                self.fixture_control,
+                generator_manifest=self.generator,
+                repo_root=self.repo_root,
+            )
+
+        nonderived_id_plan = copy.deepcopy(self.plan)
+        nonderived_id_rows = copy.deepcopy(self.observations)
+        replacement = "s2obs_" + "0" * 24
+        if any(
+            row["observation_id"] == replacement
+            for row in nonderived_id_plan["observations"]
+        ):
+            replacement = "s2obs_" + "f" * 24
+        nonderived_id_plan["observations"][0]["observation_id"] = replacement
+        rehash(nonderived_id_plan)
+        nonderived_id_rows[0]["observation_id"] = replacement
+        rehash_observation(nonderived_id_rows[0])
+        with self.assertRaises(Stage2Error):
+            derive_calibration_result(
+                nonderived_id_rows,
+                nonderived_id_plan,
+                self.fixture_control,
+                generator_manifest=self.generator,
+                repo_root=self.repo_root,
+            )
+
     def test_07_plan_control_binding_refuses(self) -> None:
         mutated = copy.deepcopy(self.plan)
         mutated["control_manifest_sha256"] = "0" * 64
@@ -170,36 +226,39 @@ class Stage2ScaffoldTests(unittest.TestCase):
             self.observations,
             self.plan,
             self.fixture_control,
+            generator_manifest=self.generator,
             repo_root=self.repo_root,
         )
         self.assertEqual(result["state"], "FIXTURE_CONFORMANCE_ONLY")
         self.assertFalse(result["stage2_frozen"])
         self.assertEqual(result["candidate_thresholds"], {})
-        validate_calibration_result(result)
+        self._validate_result(result)
 
     def test_10_fixture_cannot_claim_frozen(self) -> None:
         result = derive_calibration_result(
             self.observations,
             self.plan,
             self.fixture_control,
+            generator_manifest=self.generator,
             repo_root=self.repo_root,
         )
         result["stage2_frozen"] = True
         rehash(result)
         with self.assertRaises(Stage2Error):
-            validate_calibration_result(result)
+            self._validate_result(result)
 
     def test_11_fixture_cannot_retain_thresholds(self) -> None:
         result = derive_calibration_result(
             self.observations,
             self.plan,
             self.fixture_control,
+            generator_manifest=self.generator,
             repo_root=self.repo_root,
         )
         result["candidate_thresholds"] = {"fabricated": 1.0}
         rehash(result)
         with self.assertRaises(Stage2Error):
-            validate_calibration_result(result)
+            self._validate_result(result)
 
     def test_12_incomplete_observation_denominator_refuses(self) -> None:
         with self.assertRaises(Stage2Error):
@@ -291,6 +350,23 @@ class Stage2ScaffoldTests(unittest.TestCase):
         with self.assertRaises(Stage2Error):
             validate_control_manifest(bound, require_bound_empirical=True)
 
+        wrong_join = self._empirical_template_with_digests()
+        wrong_join["stage1_join_head"] = "f" * 40
+        with self.assertRaises(Stage2Error):
+            bind_empirical_control_manifest(wrong_join)
+
+        wrong_repository = self._empirical_template_with_digests()
+        wrong_repository["controls"][0]["identity"]["source_repository"] = (
+            "attacker/substitute-control"
+        )
+        with self.assertRaises(Stage2Error):
+            bind_empirical_control_manifest(wrong_repository)
+
+        wrong_commit = self._empirical_template_with_digests()
+        wrong_commit["controls"][0]["identity"]["source_commit_sha1"] = "1" * 40
+        with self.assertRaises(Stage2Error):
+            bind_empirical_control_manifest(wrong_commit)
+
     def test_21_overlapping_empirical_envelopes_are_inconclusive(self) -> None:
         bound, plan, rows = self._bound_empirical_rows()
         for row in rows:
@@ -301,6 +377,7 @@ class Stage2ScaffoldTests(unittest.TestCase):
             rows,
             plan,
             bound,
+            generator_manifest=self.generator,
             repo_root=self.repo_root,
         )
         self.assertEqual(result["state"], "CALIBRATION_INCONCLUSIVE")
@@ -322,15 +399,18 @@ class Stage2ScaffoldTests(unittest.TestCase):
             run_git(root, "config", "core.autocrlf", "true")
             path.write_bytes(b"exact frozen bytes\r\n")
             self.assertEqual(run_git(root, "diff", "--quiet", check=False).returncode, 0)
-            original = contracts.STAGE1_BLOBS
+            original_blobs = contracts.STAGE1_BLOBS
+            original_join = contracts.STAGE1_JOIN_HEAD
             try:
                 contracts.STAGE1_BLOBS = {"frozen.txt": expected}
+                contracts.STAGE1_JOIN_HEAD = run_git(root, "rev-parse", "HEAD").stdout.strip()
                 self.assertEqual(verify_stage1_blobs(root)["frozen.txt"], expected)
                 path.write_bytes(b"mutated\r\n")
                 with self.assertRaises(Stage2Error):
                     verify_stage1_blobs(root)
             finally:
-                contracts.STAGE1_BLOBS = original
+                contracts.STAGE1_BLOBS = original_blobs
+                contracts.STAGE1_JOIN_HEAD = original_join
 
     def test_23_unknown_observation_property_refuses(self) -> None:
         rows = copy.deepcopy(self.observations)
@@ -345,6 +425,7 @@ class Stage2ScaffoldTests(unittest.TestCase):
             rows,
             plan,
             bound,
+            generator_manifest=self.generator,
             repo_root=self.repo_root,
         )
         self.assertEqual(baseline["state"], "EMPIRICAL_CALIBRATION_CANDIDATE")
@@ -359,6 +440,7 @@ class Stage2ScaffoldTests(unittest.TestCase):
                 rows,
                 plan,
                 bound,
+                generator_manifest=self.generator,
                 repo_root=self.repo_root,
             )
 
@@ -372,6 +454,7 @@ class Stage2ScaffoldTests(unittest.TestCase):
                     self.observations,
                     self.plan,
                     self.fixture_control,
+                    generator_manifest=self.generator,
                     repo_root=self.repo_root,
                 )
 
@@ -380,22 +463,79 @@ class Stage2ScaffoldTests(unittest.TestCase):
             self.observations,
             self.plan,
             self.fixture_control,
+            generator_manifest=self.generator,
             repo_root=self.repo_root,
         )
         self.assertEqual(result["stage1_custody"]["status"], "VERIFIED")
         self.assertEqual(result["stage1_custody"]["blobs"], contracts.STAGE1_BLOBS)
+        self.assertEqual(result["stage1_join_head"], contracts.STAGE1_JOIN_HEAD)
+        self.assertEqual(
+            result["generator_manifest_sha256"], self.generator["payload_sha256"]
+        )
+        self.assertEqual(result["plan_sha256"], self.plan["payload_sha256"])
+        self.assertEqual(
+            result["control_manifest_sha256"],
+            self.fixture_control["payload_sha256"],
+        )
+        self._validate_result(result)
 
     def test_27_unknown_calibration_result_property_refuses(self) -> None:
         result = derive_calibration_result(
             self.observations,
             self.plan,
             self.fixture_control,
+            generator_manifest=self.generator,
             repo_root=self.repo_root,
         )
         result["notes"] = "PRIVATE_TRANSCRIPT_CANARY"
         rehash(result)
         with self.assertRaises(Stage2Error):
-            validate_calibration_result(result)
+            self._validate_result(result)
+
+        nested_unknown = derive_calibration_result(
+            self.observations,
+            self.plan,
+            self.fixture_control,
+            generator_manifest=self.generator,
+            repo_root=self.repo_root,
+        )
+        nested_unknown["envelopes"]["lotus_3b_recurrent"]["r_elasticity"][
+            "notes"
+        ] = "PRIVATE_TRANSCRIPT_CANARY"
+        rehash(nested_unknown)
+        with self.assertRaises(Stage2Error):
+            self._validate_result(nested_unknown)
+
+        valid = derive_calibration_result(
+            self.observations,
+            self.plan,
+            self.fixture_control,
+            generator_manifest=self.generator,
+            repo_root=self.repo_root,
+        )
+        with self.assertRaises(Stage2Error):
+            validate_calibration_result(valid)
+
+        changed_rows = copy.deepcopy(self.observations)
+        changed_rows[0]["latency_ms"] += 1.0
+        rehash_observation(changed_rows[0])
+        with self.assertRaises(Stage2Error):
+            self._validate_result(valid, rows=changed_rows)
+
+        bound, plan, rows = self._bound_empirical_rows()
+        fabricated = derive_calibration_result(
+            rows,
+            plan,
+            bound,
+            generator_manifest=self.generator,
+            repo_root=self.repo_root,
+        )
+        fabricated["candidate_thresholds"] = {"fabricated": 999.0}
+        fabricated["separation_checks"] = []
+        fabricated["envelopes"] = {}
+        rehash(fabricated)
+        with self.assertRaises(Stage2Error):
+            self._validate_result(fabricated, control=bound, plan=plan, rows=rows)
 
 
 if __name__ == "__main__":

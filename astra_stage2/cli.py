@@ -110,7 +110,15 @@ def _qualification(args: argparse.Namespace) -> dict[str, Any]:
     generator = _load_generator(args.generator_manifest)
     control = _load_control(args.control_manifest)
     plan = _load_plan(args.plan, generator, control)
-    fixture_result = validate_calibration_result(strict_json_load(args.fixture_result))
+    fixture_observations = strict_jsonl_load(args.fixture_observations)
+    fixture_result = validate_calibration_result(
+        strict_json_load(args.fixture_result),
+        generator_manifest=generator,
+        control_manifest=control,
+        plan=plan,
+        observations=fixture_observations,
+        repo_root=args.repo_root,
+    )
     if fixture_result["state"] != "FIXTURE_CONFORMANCE_ONLY":
         raise Stage2Error("provider-free qualification requires fixture-only result")
     if fixture_result["observation_count"] != EXPECTED_OBSERVATION_COUNT:
@@ -127,6 +135,7 @@ def _qualification(args: argparse.Namespace) -> dict[str, Any]:
             args.generator_manifest,
             args.control_manifest,
             args.plan,
+            args.fixture_observations,
             args.fixture_result,
             args.test_log,
         ]
@@ -172,6 +181,13 @@ def _qualification(args: argparse.Namespace) -> dict[str, Any]:
             "stage1_git_object_verification": True,
             "stage1_crlf_portability_witness": True,
             "derive_stage1_custody_binding": True,
+            "generator_semantic_identity_pinned": True,
+            "stage1_join_ancestry_verified": True,
+            "control_sources_pinned": True,
+            "plan_observation_ids_reconstructed": True,
+            "result_input_graph_rederived": True,
+            "observation_set_sha256": fixture_result["observation_set_sha256"],
+            "input_binding_sha256": fixture_result["input_binding_sha256"],
         },
         "authority": {
             "sol_calibration_law_blob": "UNBOUND_PENDING_ACTIVE_CLAIM_5516294861",
@@ -195,6 +211,7 @@ def _qualification(args: argparse.Namespace) -> dict[str, Any]:
                 args.generator_manifest,
                 args.control_manifest,
                 args.plan,
+                args.fixture_observations,
                 args.fixture_result,
                 args.test_log,
             )
@@ -270,6 +287,7 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--generator-manifest", type=Path, required=True)
     command.add_argument("--control-manifest", type=Path, required=True)
     command.add_argument("--plan", type=Path, required=True)
+    command.add_argument("--fixture-observations", type=Path, required=True)
     command.add_argument("--fixture-result", type=Path, required=True)
     command.add_argument("--out", type=Path, required=True)
 
@@ -319,6 +337,7 @@ def main(argv: list[str] | None = None) -> int:
                     observations,
                     plan,
                     control,
+                    generator_manifest=generator,
                     repo_root=args.repo_root,
                 ),
             )
