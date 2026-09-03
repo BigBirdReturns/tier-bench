@@ -613,7 +613,19 @@ def _backend(raw: Any, index: int) -> dict[str, Any]:
             "model_formats",
             "lowerings",
         },
-        {"notes"},
+        {
+            "notes",
+            "backend_family",
+            "ollama_vulkan",
+            "cuda_visible_devices",
+            "thermal_profile_id",
+            "thermal_profile_receipt_sha256",
+            "thermal_profile_public_receipt_sha256",
+            "thermal_control_manifest_sha256",
+            "fan_governance",
+            "power_limit_target_watts",
+            "fan_channels",
+        },
         f"backends[{index}]",
     )
     if row["schema"] != BACKEND_SCHEMA:
@@ -700,6 +712,50 @@ def _backend(raw: Any, index: int) -> dict[str, Any]:
         ),
         "lowerings": normalized_lowerings,
     }
+    if row.get("backend_family") is not None:
+        result["backend_family"] = need_text(
+            row["backend_family"], f"backends[{index}].backend_family", limit=80
+        )
+    if row.get("ollama_vulkan") is not None:
+        result["ollama_vulkan"] = need_text(
+            row["ollama_vulkan"], f"backends[{index}].ollama_vulkan", limit=40
+        )
+    if row.get("cuda_visible_devices") is not None:
+        result["cuda_visible_devices"] = need_text(
+            row["cuda_visible_devices"], f"backends[{index}].cuda_visible_devices", limit=200
+        )
+    if row.get("thermal_profile_id") is not None:
+        result["thermal_profile_id"] = need_text(
+            row["thermal_profile_id"], f"backends[{index}].thermal_profile_id", limit=200
+        )
+    if row.get("thermal_profile_receipt_sha256") is not None:
+        result["thermal_profile_receipt_sha256"] = need_digest(
+            row["thermal_profile_receipt_sha256"],
+            f"backends[{index}].thermal_profile_receipt_sha256",
+        )
+    if row.get("thermal_profile_public_receipt_sha256") is not None:
+        result["thermal_profile_public_receipt_sha256"] = need_digest(
+            row["thermal_profile_public_receipt_sha256"],
+            f"backends[{index}].thermal_profile_public_receipt_sha256",
+        )
+    if row.get("thermal_control_manifest_sha256") is not None:
+        result["thermal_control_manifest_sha256"] = need_digest(
+            row["thermal_control_manifest_sha256"],
+            f"backends[{index}].thermal_control_manifest_sha256",
+        )
+    if row.get("fan_governance") is not None:
+        result["fan_governance"] = need_text(
+            row["fan_governance"], f"backends[{index}].fan_governance", limit=200
+        )
+    if row.get("power_limit_target_watts") is not None:
+        power_target = row["power_limit_target_watts"]
+        if not isinstance(power_target, (int, float)) or power_target <= 0:
+            raise AnchorError(f"backends[{index}].power_limit_target_watts must be a positive number")
+        result["power_limit_target_watts"] = int(power_target)
+    if row.get("fan_channels") is not None:
+        result["fan_channels"] = string_set(
+            row["fan_channels"], f"backends[{index}].fan_channels", nonempty=True
+        )
     notes = optional_text(row.get("notes"), f"backends[{index}].notes", limit=3000)
     if notes is not None:
         result["notes"] = notes

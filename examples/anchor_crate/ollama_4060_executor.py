@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import socket
 import subprocess
@@ -67,6 +68,17 @@ def sha256_bytes(value: bytes) -> str:
 
 def hash_json(value: Any) -> str:
     return sha256_bytes(canonical_bytes(value))
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    try:
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+    except OSError as exc:
+        raise ExecutorError(f"cannot hash bound artifact {path}: {exc}") from exc
+    return digest.hexdigest()
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -165,7 +177,7 @@ def query_gpu(binding: Mapping[str, Any]) -> dict[str, Any]:
         *prefix,
         "-i",
         require_text(gpu.get("uuid"), "gpu.uuid"),
-        "--query-gpu=uuid,name,memory.total,memory.used,driver_version,pci.bus_id,pstate,power.limit,power.draw,utilization.gpu",
+        "--query-gpu=uuid,name,vbios_version,memory.total,memory.used,driver_version,pci.bus_id,pstate,power.limit,power.draw,utilization.gpu",
         "--format=csv,noheader,nounits",
     ]
     try:
@@ -186,23 +198,24 @@ def query_gpu(binding: Mapping[str, Any]) -> dict[str, Any]:
     if len(lines) != 1:
         raise ExecutorError(f"expected one GPU row for bound UUID, received {len(lines)}")
     parts = [part.strip() for part in lines[0].split(",")]
-    if len(parts) < 10:
+    if len(parts) < 11:
         raise ExecutorError("nvidia-smi GPU row is incomplete")
     row = {
         "captured_monotonic_ns": time.monotonic_ns(),
         "uuid": parts[0],
         "name": parts[1],
-        "memory_total_mib": parse_csv_number(parts[2]),
-        "memory_used_mib": parse_csv_number(parts[3]),
-        "driver_version": parts[4],
-        "pci_bus_id": parts[5],
-        "pstate": parts[6],
-        "power_limit_watts": parse_csv_number(parts[7]),
-        "power_draw_watts": parse_csv_number(parts[8]),
-        "utilization_percent": parse_csv_number(parts[9]),
+        "vbios_version": parts[2],
+        "memory_total_mib": parse_csv_number(parts[3]),
+        "memory_used_mib": parse_csv_number(parts[4]),
+        "driver_version": parts[5],
+        "pci_bus_id": parts[6],
+        "pstate": parts[7],
+        "power_limit_watts": parse_csv_number(parts[8]),
+        "power_draw_watts": parse_csv_number(parts[9]),
+        "utilization_percent": parse_csv_number(parts[10]),
     }
     expected = binding["gpu"]
-    for key in ("uuid", "name", "driver_version", "pci_bus_id"):
+    for key in ("uuid", "name", "vbios_version", "driver_version", "pci_bus_id"):
         if str(row.get(key)) != str(expected.get(key)):
             raise ExecutorError(f"bound GPU {key} changed: expected {expected.get(key)!r}, got {row.get(key)!r}")
     expected_memory = int(expected["memory_total_mib"])
@@ -210,6 +223,325 @@ def query_gpu(binding: Mapping[str, Any]) -> dict[str, Any]:
     if observed_memory is None or int(round(observed_memory)) != expected_memory:
         raise ExecutorError("bound GPU memory envelope changed")
     return row
+
+
+def query_gpu_inventory(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
+    execution = binding["execution"]
+    prefix = execution.get("nvidia_smi_command")
+    if prefix is None:
+        prefix = [require_text(execution.get("nvidia_smi_path"), "execution.nvidia_smi_path")]
+    if not isinstance(prefix, list) or not prefix or not all(isinstance(item, str) and item for item in prefix):
+        raise ExecutorError("execution.nvidia_smi_command must be a non-empty string array")
+    command = [
+        *prefix,
+        "--query-gpu=uuid,name,vbios_version,memory.total,memory.used,driver_version,pci.bus_id,pstate,power.limit,power.draw,utilization.gpu",
+        "--format=csv,noheader,nounits",
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            shell=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ExecutorError(f"nvidia-smi inventory query failed: {exc}") from exc
+    if completed.returncode != 0:
+        diagnostic = completed.stderr.decode("utf-8", errors="replace")[:500]
+        raise ExecutorError(f"nvidia-smi inventory exited {completed.returncode}: {diagnostic}")
+    rows: list[dict[str, Any]] = []
+    for line in completed.stdout.decode("utf-8", errors="replace").strip().splitlines():
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) < 11:
+            raise ExecutorError("nvidia-smi inventory row is incomplete")
+        rows.append(
+            {
+                "uuid": parts[0],
+                "name": parts[1],
+                "vbios_version": parts[2],
+                "memory_total_mib": parse_csv_number(parts[3]),
+                "memory_used_mib": parse_csv_number(parts[4]),
+                "driver_version": parts[5],
+                "pci_bus_id": parts[6],
+            }
+        )
+    if not rows:
+        raise ExecutorError("nvidia-smi inventory returned no NVIDIA GPUs")
+    return rows
+
+
+def query_compute_rows(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
+    execution = binding["execution"]
+    prefix = execution.get("nvidia_smi_command")
+    if prefix is None:
+        prefix = [require_text(execution.get("nvidia_smi_path"), "execution.nvidia_smi_path")]
+    if not isinstance(prefix, list) or not prefix or not all(isinstance(item, str) and item for item in prefix):
+        raise ExecutorError("execution.nvidia_smi_command must be a non-empty string array")
+    command = [
+        *prefix,
+        "--query-compute-apps=gpu_uuid,pid,process_name,used_memory",
+        "--format=csv,noheader,nounits",
+    ]
+    try:
+        completed = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            shell=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ExecutorError(f"nvidia-smi compute query failed: {exc}") from exc
+    if completed.returncode != 0:
+        return []
+    rows = []
+    for raw_line in completed.stdout.decode("utf-8", errors="replace").strip().splitlines():
+        parts = [part.strip() for part in raw_line.split(",")]
+        if len(parts) < 4:
+            continue
+        try:
+            pid = int(parts[1])
+        except ValueError:
+            continue
+        used_memory = parse_csv_number(parts[3])
+        if used_memory is None:
+            continue
+        rows.append(
+            {
+                "gpu_uuid": parts[0],
+                "pid": pid,
+                "process_name": parts[2],
+                "used_memory_mib": used_memory,
+            }
+        )
+    return rows
+
+
+def require_process_residency(binding: Mapping[str, Any], *, require_loaded: bool) -> list[dict[str, Any]]:
+    execution = binding["execution"]
+    target_uuid = require_text(execution.get("cuda_visible_devices"), "execution.cuda_visible_devices")
+    rows = query_compute_rows(binding)
+    bound_pids = require_process_tree(binding)
+    ollama_rows = [row for row in rows if "ollama" in str(row.get("process_name", "")).lower()]
+    if not ollama_rows:
+        raise ExecutorError("no Ollama compute process is visible to nvidia-smi")
+    off_target = [row for row in ollama_rows if str(row.get("gpu_uuid")) != target_uuid]
+    if off_target:
+        raise ExecutorError(
+            "Ollama process is not target-specific and is visible on non-target GPU(s): "
+            + ",".join(str(row.get("gpu_uuid")) for row in off_target)
+        )
+    on_target = [
+        row
+        for row in rows
+        if str(row.get("gpu_uuid")) == target_uuid and int(row.get("pid") or -1) in bound_pids
+    ]
+    if require_loaded and not on_target:
+        raise ExecutorError("target GPU compute process is not a member of the launched Ollama tree")
+    total_on_target = sum(float(row.get("used_memory_mib") or 0.0) for row in on_target)
+    if total_on_target <= 0:
+        raise ExecutorError("Ollama process is not resident on target GPU (residency below required threshold)")
+    return rows
+
+
+def query_process_inventory(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
+    execution = binding["execution"]
+    command = execution.get("process_inventory_command")
+    if not command:
+        script = (
+            "$rows=Get-CimInstance Win32_Process|ForEach-Object{[ordered]@{"
+            "pid=[int]$_.ProcessId;parent_pid=[int]$_.ParentProcessId;"
+            "executable_path=[string]$_.ExecutablePath;"
+            "creation_time=$_.CreationDate.ToUniversalTime().ToString('o')}};"
+            "@($rows)|ConvertTo-Json -Compress"
+        )
+        command = ["powershell.exe", "-NoProfile", "-Command", script]
+    if not isinstance(command, list) or not command or not all(isinstance(item, str) and item for item in command):
+        raise ExecutorError("execution.process_inventory_command must be a string array")
+    try:
+        completed = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            shell=False,
+            timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ExecutorError(f"process inventory query failed: {exc}") from exc
+    if completed.returncode != 0:
+        raise ExecutorError("process inventory query failed")
+    try:
+        value = json.loads(completed.stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ExecutorError("process inventory query returned invalid JSON") from exc
+    rows = value if isinstance(value, list) else [value]
+    if not all(isinstance(row, Mapping) for row in rows):
+        raise ExecutorError("process inventory rows must be objects")
+    return [dict(row) for row in rows]
+
+
+def require_process_tree(binding: Mapping[str, Any]) -> set[int]:
+    execution = binding["execution"]
+    bound = execution.get("ollama_process_tree")
+    root_pid = execution.get("ollama_root_pid")
+    if not isinstance(bound, list) or not bound or not isinstance(root_pid, int):
+        raise ExecutorError("dedicated Ollama process-tree binding is incomplete")
+    current = {int(row.get("pid") or -1): row for row in query_process_inventory(binding)}
+    bound_pids: set[int] = set()
+    for index, row in enumerate(bound):
+        if not isinstance(row, Mapping) or not isinstance(row.get("pid"), int):
+            raise ExecutorError(f"bound process-tree row {index} is invalid")
+        pid = int(row["pid"])
+        live = current.get(pid)
+        if live is None:
+            raise ExecutorError(f"bound Ollama process {pid} is no longer running")
+        expected_path = Path(require_text(row.get("executable_path"), f"process {pid}.executable_path"))
+        live_path = Path(require_text(live.get("executable_path"), f"live process {pid}.executable_path"))
+        if os.path.normcase(str(expected_path.resolve())) != os.path.normcase(str(live_path.resolve())):
+            raise ExecutorError(f"bound Ollama process {pid} executable changed")
+        if live.get("creation_time") != row.get("creation_time"):
+            raise ExecutorError(f"bound Ollama process {pid} creation time changed")
+        if sha256_file(live_path) != require_text(row.get("executable_sha256"), f"process {pid}.executable_sha256"):
+            raise ExecutorError(f"bound Ollama process {pid} executable digest changed")
+        bound_pids.add(pid)
+    if root_pid not in bound_pids:
+        raise ExecutorError("dedicated Ollama root PID is not in its bound tree")
+    return bound_pids
+
+
+def require_environment(binding: Mapping[str, Any]) -> None:
+    runtime = binding["runtime"]
+    execution = binding["execution"]
+    parsed = urllib.parse.urlparse(require_text(runtime.get("endpoint"), "runtime.endpoint"))
+    expected = {
+        "OLLAMA_HOST": parsed.netloc,
+        "CUDA_VISIBLE_DEVICES": require_text(execution.get("cuda_visible_devices"), "execution.cuda_visible_devices"),
+        "OLLAMA_VULKAN": "0",
+        "OLLAMA_KEEP_ALIVE": require_text(runtime.get("keep_alive"), "runtime.keep_alive"),
+    }
+    for name, value in expected.items():
+        if os.environ.get(name) != value:
+            raise ExecutorError(f"process environment {name} does not match the physical binding")
+    if os.environ.get("OLLAMA_SCHED_SPREAD"):
+        raise ExecutorError("OLLAMA_SCHED_SPREAD widens placement and is refused")
+
+
+def require_bound_files(binding: Mapping[str, Any]) -> None:
+    execution = binding["execution"]
+    source_receipts = binding["source_receipts"]
+    control_path = Path(require_text(execution.get("thermal_control_manifest_path"), "execution.thermal_control_manifest_path"))
+    controlling_control = require_text(
+        execution.get("thermal_control_manifest_expected_sha256"),
+        "execution.thermal_control_manifest_expected_sha256",
+    )
+    observed_control = sha256_file(control_path)
+    if observed_control != controlling_control:
+        raise ExecutorError("thermal control manifest controlling identity drift")
+    if source_receipts.get("thermal_control_manifest_observed_sha256") != observed_control:
+        raise ExecutorError("thermal control manifest observed identity differs")
+    try:
+        control = json.loads(control_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ExecutorError("bound thermal control manifest is unreadable") from exc
+    control_receipts = control.get("receipts") if isinstance(control, Mapping) else None
+    if not isinstance(control_receipts, Mapping):
+        raise ExecutorError("bound thermal control receipt identities are missing")
+    for path_key, digest_key in (
+        ("thermal_profile_public_receipt_path", "thermal_profile_public_receipt_sha256"),
+        ("thermal_profile_private_receipt_path", "thermal_profile_private_receipt_sha256"),
+    ):
+        path = Path(require_text(execution.get(path_key), f"execution.{path_key}"))
+        expected = require_text(source_receipts.get(digest_key), f"source_receipts.{digest_key}")
+        if sha256_file(path) != expected:
+            raise ExecutorError(f"bound thermal receipt digest drift: {path}")
+    if source_receipts.get("thermal_profile_public_receipt_sha256") != control_receipts.get("public_sha256"):
+        raise ExecutorError("public thermal receipt differs from controlling identity")
+    if source_receipts.get("thermal_profile_private_receipt_sha256") != control_receipts.get("private_sha256"):
+        raise ExecutorError("private thermal receipt differs from controlling identity")
+    artifacts = execution.get("thermal_coverage_artifacts")
+    if not isinstance(artifacts, list) or not artifacts:
+        raise ExecutorError("execution.thermal_coverage_artifacts must be a non-empty array")
+    if artifacts != control.get("artifacts"):
+        raise ExecutorError("thermal coverage differs from controlling manifest")
+    measured_holder = execution.get("thermal_holder")
+    accepted_holder = control.get("holder")
+    if not isinstance(measured_holder, Mapping) or not isinstance(accepted_holder, Mapping):
+        raise ExecutorError("thermal holder identity binding is incomplete")
+    for name in ("executable", "lhm", "pawnio", "policy"):
+        measured = measured_holder.get(name)
+        accepted = accepted_holder.get(name)
+        if not isinstance(measured, Mapping) or measured != accepted:
+            raise ExecutorError(f"thermal holder {name} identity differs from controlling manifest")
+        path = Path(require_text(measured.get("path"), f"thermal holder {name}.path"))
+        if sha256_file(path) != require_text(measured.get("sha256"), f"thermal holder {name}.sha256"):
+            raise ExecutorError(f"thermal holder {name} digest drift")
+    accepted_fans = control.get("fan_channels")
+    measured_fans = execution.get("thermal_fan_channels")
+    if not isinstance(accepted_fans, list) or not isinstance(measured_fans, list):
+        raise ExecutorError("thermal fan identity binding is incomplete")
+    for accepted in accepted_fans:
+        if not isinstance(accepted, Mapping):
+            raise ExecutorError("thermal control fan identity is invalid")
+        matches = [
+            row
+            for row in measured_fans
+            if isinstance(row, Mapping)
+            and row.get("channel") == accepted.get("channel")
+            and row.get("control_identity") == accepted.get("control_identity")
+            and row.get("tachometer_sensor_identity") == accepted.get("tachometer_sensor_identity")
+            and isinstance(row.get("tachometer_rpm"), (int, float))
+            and float(row["tachometer_rpm"]) > 0
+            and isinstance(row.get("timestamp"), str)
+            and bool(row["timestamp"])
+        ]
+        if len(matches) != 1:
+            raise ExecutorError(f"thermal fan evidence differs for {accepted.get('channel')}")
+    for index, artifact in enumerate(artifacts):
+        if not isinstance(artifact, Mapping):
+            raise ExecutorError(f"thermal coverage artifact {index} must be an object")
+        path = Path(require_text(artifact.get("path"), f"thermal coverage artifact {index}.path"))
+        expected = require_text(artifact.get("sha256"), f"thermal coverage artifact {index}.sha256")
+        if sha256_file(path) != expected:
+            raise ExecutorError(f"thermal covered-artifact digest drift: {path}")
+
+
+def require_gpu_inventory(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
+    execution = binding["execution"]
+    target_uuid = require_text(execution.get("cuda_visible_devices"), "execution.cuda_visible_devices")
+    baseline = execution.get("gpu_inventory_baseline_mib")
+    if not isinstance(baseline, Mapping) or target_uuid not in baseline:
+        raise ExecutorError("GPU inventory baseline is absent or does not include the target")
+    rows = query_gpu_inventory(binding)
+    observed = {str(row["uuid"]): row for row in rows}
+    if set(observed) != {str(key) for key in baseline}:
+        raise ExecutorError("live NVIDIA GPU inventory differs from the admitted inventory")
+    model_floor_mib = max(1024.0, float(binding["runtime"]["min_size_vram_bytes"]) / 1024**2 * 0.75)
+    for uuid, row in observed.items():
+        if uuid == target_uuid:
+            continue
+        used = float(row.get("memory_used_mib") or 0.0)
+        before = float(baseline[uuid])
+        if used - before >= model_floor_mib:
+            raise ExecutorError(f"model-sized VRAM growth is visible on non-target GPU {uuid}")
+    return rows
+
+
+def require_power_target(binding: Mapping[str, Any], gpu: Mapping[str, Any]) -> None:
+    execution = binding["execution"]
+    target = execution.get("power_limit_target_watts")
+    if target is None:
+        raise ExecutorError("execution.power_limit_target_watts is missing")
+    if not isinstance(target, (int, float)) or float(target) <= 0:
+        raise ExecutorError("execution.power_limit_target_watts must be a positive number")
+    limit = gpu.get("power_limit_watts")
+    if not isinstance(limit, (int, float)):
+        raise ExecutorError("GPU query did not expose power_limit_watts")
+    if abs(float(limit) - float(target)) > 0.001:
+        raise ExecutorError("execution power target does not match live GPU power limit")
 
 
 class GpuSampler:
@@ -296,11 +628,28 @@ def validate_binding(raw: Mapping[str, Any], *, backend_id: str, expected_digest
     require_text(runtime.get("model"), "runtime.model")
     require_text(runtime.get("model_digest"), "runtime.model_digest")
     require_int(runtime.get("min_size_vram_bytes"), "runtime.min_size_vram_bytes", minimum=1)
+    require_text(execution.get("backend_family"), "execution.backend_family")
+    if execution["backend_family"] != "cuda":
+        raise ExecutorError("execution backend family mismatch")
+    require_text(execution.get("ollama_vulkan"), "execution.ollama_vulkan")
+    if execution["ollama_vulkan"] != "0":
+        raise ExecutorError("execution requires OLLAMA_VULKAN=0")
+    require_text(execution.get("cuda_visible_devices"), "execution.cuda_visible_devices")
+    if str(execution["cuda_visible_devices"]) != str(gpu.get("uuid")):
+        raise ExecutorError("execution.cuda_visible_devices does not match bound GPU")
+    if not isinstance(execution.get("fan_channels"), list) or not execution["fan_channels"]:
+        raise ExecutorError("execution.fan_channels must be a non-empty array")
+    require_text(execution.get("fan_governance"), "execution.fan_governance")
+    require_text(execution.get("thermal_profile_id"), "execution.thermal_profile_id")
+    require_text(execution.get("thermal_profile_receipt_sha256"), "execution.thermal_profile_receipt_sha256")
+    require_bound_files(raw)
     require_int(gpu.get("memory_total_mib"), "gpu.memory_total_mib", minimum=2048)
     return dict(raw)
 
 
 def inspect_runtime(binding: Mapping[str, Any], *, require_loaded: bool) -> dict[str, Any]:
+    require_environment(binding)
+    require_bound_files(binding)
     runtime = binding["runtime"]
     endpoint = runtime["endpoint"]
     timeout = float(runtime.get("probe_timeout_seconds", 10))
@@ -320,6 +669,9 @@ def inspect_runtime(binding: Mapping[str, Any], *, require_loaded: bool) -> dict
         if not isinstance(size_vram, int) or size_vram < int(runtime["min_size_vram_bytes"]):
             raise ExecutorError("Ollama reports insufficient accelerator residency for the bound model")
     gpu = query_gpu(binding)
+    require_power_target(binding, gpu)
+    inventory = require_gpu_inventory(binding)
+    compute_processes = require_process_residency(binding, require_loaded=require_loaded)
     if require_loaded:
         used = gpu.get("memory_used_mib")
         minimum_used = int(binding["gpu"].get("min_loaded_memory_mib", 1024))
@@ -330,6 +682,8 @@ def inspect_runtime(binding: Mapping[str, Any], *, require_loaded: bool) -> dict
         "catalog_model": tag,
         "loaded_model": loaded,
         "gpu": gpu,
+        "gpu_inventory": inventory,
+        "compute_processes": compute_processes,
     }
 
 
@@ -397,6 +751,7 @@ def execute_candidate(binding: Mapping[str, Any], inputs: Mapping[str, Any]) -> 
             "num_ctx": int(runtime.get("context_length", 8192)),
         },
     }
+    preflight_runtime_state = inspect_runtime(binding, require_loaded=True)
     started = time.monotonic_ns()
     with GpuSampler(binding) as sampler:
         provider = http_json(
@@ -413,7 +768,7 @@ def execute_candidate(binding: Mapping[str, Any], inputs: Mapping[str, Any]) -> 
         candidate = validate_candidate(json.loads(text))
     except json.JSONDecodeError as exc:
         raise ExecutorError("Ollama candidate is not valid JSON") from exc
-    runtime_state = inspect_runtime(binding, require_loaded=True)
+    postflight_runtime_state = inspect_runtime(binding, require_loaded=True)
     metrics = sampler.metrics()
     evidence_event = {
         "schema": "tier-bench/anchor-physical-executor-event@1",
@@ -429,7 +784,8 @@ def execute_candidate(binding: Mapping[str, Any], inputs: Mapping[str, Any]) -> 
             "prompt_eval_duration_ns": provider.get("prompt_eval_duration"),
             "eval_duration_ns": provider.get("eval_duration"),
         },
-        "runtime_state": runtime_state,
+        "preflight_runtime_state": preflight_runtime_state,
+        "postflight_runtime_state": postflight_runtime_state,
         "gpu_samples": metrics["samples"],
         "sampler_errors": metrics["errors"],
         "candidate_sha256": hash_json(candidate),
