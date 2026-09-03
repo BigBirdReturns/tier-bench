@@ -187,8 +187,8 @@ jobs:
           TARGET_BRANCH: joint/astra-stage2-control-identities-20260903
         run: |
           set -euo pipefail
+          rm -f .github/workflows/astra-stage2-control-identity.yml
           git add -- \
-            .github/workflows/astra-stage2-control-identity.yml \
             astra_stage2/control_identity.py \
             docs/agents/claims/FRR-ASTRA-STAGE2-CONTROL-IDENTITY-1.md \
             experiments/astra_kxr/stage2/control_identity/README.md \
@@ -200,12 +200,12 @@ jobs:
             scripts/astra_stage2_bind_controls.ps1 \
             scripts/astra_stage2_bind_controls.py \
             tests/test_astra_stage2_control_identity.py
-          test "$(git diff --cached --name-only "$JOIN_HEAD" -- | wc -l)" -eq 12
+          test "$(git diff --cached --name-only "$JOIN_HEAD" -- | wc -l)" -eq 11
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit \
-            -m "feat(astra): bind executable calibration identities" \
-            -m "Add the provider-free control-identity binder, private and public receipt contracts, deterministic 648-cell plan binding, Windows entrypoint, hostile tests, and exact-head qualification workflow. Actual model identities remain unbound until local evidence is supplied."
+            -m "feat(astra): add executable control-identity binder" \
+            -m "Add the provider-free binder, receipt contracts, deterministic plan binding, Windows entrypoint, and hostile tests. The workflow file is admitted separately by the connected GitHub app. Actual model identities remain unbound until local evidence is supplied."
           target_head="$(git rev-parse HEAD)"
           target_tree="$(git rev-parse 'HEAD^{tree}')"
           test "$(git rev-parse HEAD^)" = "$JOIN_HEAD"
@@ -217,8 +217,9 @@ jobs:
             echo "target_head=$target_head"
             echo "target_tree=$target_tree"
             echo "parent=$JOIN_HEAD"
-            echo "changed_paths=12"
+            echo "changed_paths=11"
             echo "tests=20"
             echo "provider_or_model_calls=0"
+            echo "workflow_path=DEFERRED_TO_CONNECTED_APP"
             echo "actual_control_identities=UNBOUND"
           } >> "$GITHUB_STEP_SUMMARY"
