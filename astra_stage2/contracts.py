@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import math
 import re
 import subprocess
@@ -51,6 +52,102 @@ FORBIDDEN_RETAINED_KEYS = {
     "raw_response",
 }
 
+GENERATOR_MANIFEST_FIELDS = frozenset(
+    {
+        "schema",
+        "generator_version",
+        "families",
+        "k_levels",
+        "r_levels",
+        "replicates",
+        "lane_count",
+        "table_size",
+        "case_count",
+        "cases",
+        "payload_sha256",
+    }
+)
+
+GENERATOR_CASE_FIELDS = frozenset(
+    {
+        "case_id",
+        "family",
+        "k",
+        "r",
+        "replicate",
+        "task_sha256",
+        "task_bytes",
+        "expected_checksum",
+    }
+)
+
+CONTROL_MANIFEST_BASE_FIELDS = frozenset(
+    {
+        "schema",
+        "evidence_class",
+        "stage1_join_head",
+        "controls",
+        "payload_sha256",
+    }
+)
+CONTROL_MANIFEST_EMPIRICAL_FIELDS = CONTROL_MANIFEST_BASE_FIELDS | {"status"}
+
+CONTROL_FIELDS = frozenset(
+    {
+        "control_id",
+        "class_label",
+        "identity",
+        "identity_sha256",
+    }
+)
+
+CONTROL_IDENTITY_FIELDS = frozenset(
+    {
+        "evidence_class",
+        "role",
+        "source_repository",
+        "source_commit_sha1",
+        "model_revision_sha256",
+        "weights_sha256",
+        "tokenizer_sha256",
+        "runtime_sha256",
+        "adapter_sha256",
+        "hardware_sha256",
+    }
+)
+
+PLAN_FIELDS = frozenset(
+    {
+        "schema",
+        "stage1_join_head",
+        "generator_manifest_sha256",
+        "control_manifest_sha256",
+        "case_count",
+        "control_count",
+        "effort_count",
+        "observation_count",
+        "observations",
+        "payload_sha256",
+    }
+)
+
+PLAN_OBSERVATION_FIELDS = frozenset(
+    {
+        "observation_id",
+        "case_id",
+        "family",
+        "k",
+        "r",
+        "replicate",
+        "task_sha256",
+        "expected_checksum",
+        "control_id",
+        "control_class",
+        "control_identity_sha256",
+        "effort",
+    }
+)
+
 OBSERVATION_FIELDS = frozenset(
     {
         "accepted",
@@ -90,6 +187,12 @@ IDENTITY_DIGEST_FIELDS = (
     "adapter_sha256",
     "hardware_sha256",
 )
+
+CONTROL_CLASS_BY_ROLE = {
+    "lotus_3b_recurrent": "recurrent_latent",
+    "loopcoder_v2_7b_parallel": "parallel_latent",
+    "conventional_transformer_negative": "conventional_negative",
+}
 
 
 def _require_mapping(value: Any, label: str) -> dict[str, Any]:
@@ -219,11 +322,48 @@ def verify_stage1_blobs(repo_root: Path) -> dict[str, str]:
     return observed
 
 
+def _validate_plan_closed_shape(plan: Any) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    plan = _require_mapping(plan, "calibration plan")
+    _require_exact_keys(plan, PLAN_FIELDS, "calibration plan")
+    if plan.get("schema") != "tier-bench/astra-stage2-calibration-plan@1":
+        raise Stage2Error("unexpected calibration-plan schema")
+    _require_sha1(plan.get("stage1_join_head"), "stage1_join_head")
+    _require_sha256(plan.get("generator_manifest_sha256"), "generator_manifest_sha256")
+    _require_sha256(plan.get("control_manifest_sha256"), "control_manifest_sha256")
+    if _require_int(plan.get("case_count"), "case_count") != EXPECTED_CASE_COUNT:
+        raise Stage2Error("plan case denominator mismatch")
+    if _require_int(plan.get("control_count"), "control_count") != len(CONTROL_ROLES):
+        raise Stage2Error("plan control denominator mismatch")
+    if _require_int(plan.get("effort_count"), "effort_count") != len(EFFORTS):
+        raise Stage2Error("plan effort denominator mismatch")
+    if _require_int(plan.get("observation_count"), "observation_count") != EXPECTED_OBSERVATION_COUNT:
+        raise Stage2Error("plan observation denominator mismatch")
+    raw_rows = _require_list(plan.get("observations"), "observations")
+    if len(raw_rows) != EXPECTED_OBSERVATION_COUNT:
+        raise Stage2Error("plan observation array is incomplete")
+    rows: list[dict[str, Any]] = []
+    for index, raw_row in enumerate(raw_rows):
+        row = _require_mapping(raw_row, f"observations[{index}]")
+        _require_exact_keys(row, PLAN_OBSERVATION_FIELDS, f"observations[{index}]")
+        rows.append(row)
+    _walk_forbidden(plan)
+    _verify_self_hash(plan, "payload_sha256", "calibration plan")
+    return plan, rows
+
+
 def validate_generator_manifest(manifest: Any) -> dict[str, Any]:
     manifest = _require_mapping(manifest, "generator manifest")
+    _require_exact_keys(manifest, GENERATOR_MANIFEST_FIELDS, "generator manifest")
     if manifest.get("schema") != "tier-bench/astra-stage2-generator-manifest@1":
         raise Stage2Error("unexpected generator-manifest schema")
+    cases = _require_list(manifest.get("cases"), "cases")
+    for index, raw_case in enumerate(cases):
+        case = _require_mapping(raw_case, f"cases[{index}]")
+        _require_exact_keys(case, GENERATOR_CASE_FIELDS, f"cases[{index}]")
+    _walk_forbidden(manifest)
     _verify_self_hash(manifest, "payload_sha256", "generator manifest")
+    if not isinstance(manifest.get("generator_version"), str) or not manifest["generator_version"]:
+        raise Stage2Error("generator_version must be a non-empty string")
     if manifest.get("families") != list(FAMILIES):
         raise Stage2Error("generator families differ from frozen order")
     if manifest.get("k_levels") != list(K_LEVELS):
@@ -232,9 +372,12 @@ def validate_generator_manifest(manifest: Any) -> dict[str, Any]:
         raise Stage2Error("R levels differ from frozen order")
     if manifest.get("replicates") != list(REPLICATES):
         raise Stage2Error("replicate denominator differs from frozen order")
+    if manifest.get("lane_count") != 32:
+        raise Stage2Error("generator lane count differs from frozen value")
+    if manifest.get("table_size") != 16:
+        raise Stage2Error("generator table size differs from frozen value")
     if _require_int(manifest.get("case_count"), "case_count") != EXPECTED_CASE_COUNT:
         raise Stage2Error("generator case denominator is incomplete")
-    cases = _require_list(manifest.get("cases"), "cases")
     if len(cases) != EXPECTED_CASE_COUNT:
         raise Stage2Error("generator case array length is incomplete")
     coordinates: set[tuple[Any, ...]] = set()
@@ -246,7 +389,7 @@ def validate_generator_manifest(manifest: Any) -> dict[str, Any]:
             raise Stage2Error(f"duplicate generator coordinate: {coordinate}")
         coordinates.add(coordinate)
         case_id = case.get("case_id")
-        if not isinstance(case_id, str) or not case_id.startswith("s2case_"):
+        if not isinstance(case_id, str) or not re.fullmatch(r"s2case_[0-9a-f]{24}", case_id):
             raise Stage2Error("invalid case id")
         if case_id in case_ids:
             raise Stage2Error(f"duplicate case id: {case_id}")
@@ -269,57 +412,101 @@ def validate_generator_manifest(manifest: Any) -> dict[str, Any]:
     return manifest
 
 
-def validate_control_manifest(manifest: Any, *, require_bound_empirical: bool = False) -> dict[str, Any]:
+def validate_control_manifest(
+    manifest: Any,
+    *,
+    require_bound_empirical: bool = False,
+) -> dict[str, Any]:
     manifest = _require_mapping(manifest, "control manifest")
-    if manifest.get("schema") != "tier-bench/astra-stage2-control-manifest@1":
-        raise Stage2Error("unexpected control-manifest schema")
     evidence_class = manifest.get("evidence_class")
     if evidence_class not in {"fixture_synthetic", "empirical_local"}:
         raise Stage2Error("unsupported control-manifest evidence class")
+    expected_fields = (
+        CONTROL_MANIFEST_BASE_FIELDS
+        if evidence_class == "fixture_synthetic"
+        else CONTROL_MANIFEST_EMPIRICAL_FIELDS
+    )
+    _require_exact_keys(manifest, expected_fields, "control manifest")
+    _walk_forbidden(manifest)
+    if manifest.get("schema") != "tier-bench/astra-stage2-control-manifest@1":
+        raise Stage2Error("unexpected control-manifest schema")
     _require_sha1(manifest.get("stage1_join_head"), "stage1_join_head")
+
+    status = manifest.get("status") if evidence_class == "empirical_local" else None
+    if evidence_class == "empirical_local" and status not in {
+        "UNBOUND_TEMPLATE",
+        "BOUND_EMPIRICAL_IDENTITIES",
+    }:
+        raise Stage2Error("empirical control-manifest status is invalid")
+    bound_empirical = status == "BOUND_EMPIRICAL_IDENTITIES"
+    if require_bound_empirical and not bound_empirical:
+        raise Stage2Error("empirical control manifest is not bound")
+
     controls = _require_list(manifest.get("controls"), "controls")
+    if len(controls) != len(CONTROL_ROLES):
+        raise Stage2Error("control denominator must equal the frozen three controls")
     if [item.get("control_id") for item in controls if isinstance(item, dict)] != list(CONTROL_ROLES):
         raise Stage2Error("control roles must equal the frozen three-control denominator")
+
     for index, raw_control in enumerate(controls):
         control = _require_mapping(raw_control, f"controls[{index}]")
+        _require_exact_keys(control, CONTROL_FIELDS, f"controls[{index}]")
         identity = _require_mapping(control.get("identity"), f"controls[{index}].identity")
+        _require_exact_keys(identity, CONTROL_IDENTITY_FIELDS, f"controls[{index}].identity")
         if identity.get("evidence_class") != evidence_class:
             raise Stage2Error("control identity evidence class mismatch")
         if identity.get("role") != control.get("control_id"):
             raise Stage2Error("control identity role mismatch")
+        expected_class = CONTROL_CLASS_BY_ROLE.get(control.get("control_id"))
+        if control.get("class_label") != expected_class:
+            raise Stage2Error("control class label does not match its frozen role")
         repository = identity.get("source_repository")
         if not isinstance(repository, str) or not repository:
             raise Stage2Error("source_repository is required")
         _require_sha1(identity.get("source_commit_sha1"), "source_commit_sha1")
-        if evidence_class == "fixture_synthetic" or require_bound_empirical:
+
+        if evidence_class == "fixture_synthetic" or bound_empirical:
             for field in IDENTITY_DIGEST_FIELDS:
                 _require_sha256(identity.get(field), f"identity.{field}")
             expected_identity = sha256_object(identity)
             if control.get("identity_sha256") != expected_identity:
                 raise Stage2Error("control identity digest mismatch")
-        elif require_bound_empirical:
-            raise Stage2Error("empirical manifest is unbound")
-    if evidence_class == "fixture_synthetic" or require_bound_empirical:
+        else:
+            for field in IDENTITY_DIGEST_FIELDS:
+                value = identity.get(field)
+                if value is not None:
+                    _require_sha256(value, f"identity.{field}")
+            if control.get("identity_sha256") is not None:
+                raise Stage2Error("unbound empirical control must not carry identity_sha256")
+
+    if evidence_class == "fixture_synthetic" or bound_empirical:
         _verify_self_hash(manifest, "payload_sha256", "control manifest")
+    elif manifest.get("payload_sha256") is not None:
+        raise Stage2Error("unbound empirical control manifest must not carry payload_sha256")
     return manifest
 
 
 def bind_empirical_control_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
-    manifest = _require_mapping(manifest, "control manifest")
+    manifest = validate_control_manifest(manifest, require_bound_empirical=False)
     if manifest.get("evidence_class") != "empirical_local":
         raise Stage2Error("only an empirical-local manifest may be bound")
-    bound = {key: value for key, value in manifest.items() if key not in {"payload_sha256", "status"}}
+    if manifest.get("status") != "UNBOUND_TEMPLATE":
+        raise Stage2Error("only an unbound empirical template may be bound")
+    bound = copy.deepcopy(
+        {key: value for key, value in manifest.items() if key not in {"payload_sha256", "status"}}
+    )
     controls = _require_list(bound.get("controls"), "controls")
-    for raw_control in controls:
-        control = _require_mapping(raw_control, "control")
-        identity = _require_mapping(control.get("identity"), "identity")
+    for index, raw_control in enumerate(controls):
+        control = _require_mapping(raw_control, f"controls[{index}]")
+        _require_exact_keys(control, CONTROL_FIELDS, f"controls[{index}]")
+        identity = _require_mapping(control.get("identity"), f"controls[{index}].identity")
+        _require_exact_keys(identity, CONTROL_IDENTITY_FIELDS, f"controls[{index}].identity")
         for field in IDENTITY_DIGEST_FIELDS:
-            _require_sha256(identity.get(field), field)
+            _require_sha256(identity.get(field), f"identity.{field}")
         control["identity_sha256"] = sha256_object(identity)
     bound["status"] = "BOUND_EMPIRICAL_IDENTITIES"
     bound["payload_sha256"] = sha256_object(bound)
-    validate_control_manifest(bound, require_bound_empirical=True)
-    return bound
+    return validate_control_manifest(bound, require_bound_empirical=True)
 
 
 def validate_plan(
@@ -327,35 +514,27 @@ def validate_plan(
     generator_manifest: dict[str, Any],
     control_manifest: dict[str, Any],
 ) -> dict[str, Any]:
-    plan = _require_mapping(plan, "calibration plan")
-    if plan.get("schema") != "tier-bench/astra-stage2-calibration-plan@1":
-        raise Stage2Error("unexpected calibration-plan schema")
-    _verify_self_hash(plan, "payload_sha256", "calibration plan")
+    generator_manifest = validate_generator_manifest(generator_manifest)
+    control_manifest = _require_mapping(control_manifest, "control manifest")
+    control_manifest = validate_control_manifest(
+        control_manifest,
+        require_bound_empirical=control_manifest.get("evidence_class") == "empirical_local",
+    )
+    plan, rows = _validate_plan_closed_shape(plan)
     if plan.get("generator_manifest_sha256") != generator_manifest.get("payload_sha256"):
         raise Stage2Error("plan generator binding mismatch")
     if plan.get("control_manifest_sha256") != control_manifest.get("payload_sha256"):
         raise Stage2Error("plan control binding mismatch")
     if plan.get("stage1_join_head") != control_manifest.get("stage1_join_head"):
         raise Stage2Error("plan Stage 1 join binding mismatch")
-    if _require_int(plan.get("case_count"), "case_count") != EXPECTED_CASE_COUNT:
-        raise Stage2Error("plan case denominator mismatch")
-    if _require_int(plan.get("control_count"), "control_count") != len(CONTROL_ROLES):
-        raise Stage2Error("plan control denominator mismatch")
-    if _require_int(plan.get("effort_count"), "effort_count") != len(EFFORTS):
-        raise Stage2Error("plan effort denominator mismatch")
-    if _require_int(plan.get("observation_count"), "observation_count") != EXPECTED_OBSERVATION_COUNT:
-        raise Stage2Error("plan observation denominator mismatch")
-    rows = _require_list(plan.get("observations"), "observations")
-    if len(rows) != EXPECTED_OBSERVATION_COUNT:
-        raise Stage2Error("plan observation array is incomplete")
+
     expected_cases = {case["case_id"]: case for case in generator_manifest["cases"]}
     expected_controls = {control["control_id"]: control for control in control_manifest["controls"]}
     observed_ids: set[str] = set()
     observed_cells: set[tuple[str, str, str]] = set()
-    for index, raw_row in enumerate(rows):
-        row = _require_mapping(raw_row, f"observations[{index}]")
+    for index, row in enumerate(rows):
         observation_id = row.get("observation_id")
-        if not isinstance(observation_id, str) or not observation_id.startswith("s2obs_"):
+        if not isinstance(observation_id, str) or not re.fullmatch(r"s2obs_[0-9a-f]{24}", observation_id):
             raise Stage2Error("invalid observation id")
         if observation_id in observed_ids:
             raise Stage2Error(f"duplicate observation id: {observation_id}")
@@ -383,6 +562,17 @@ def validate_observations(
     plan: dict[str, Any],
     control_manifest: dict[str, Any],
 ) -> tuple[list[dict[str, Any]], str]:
+    control_manifest = _require_mapping(control_manifest, "control manifest")
+    control_manifest = validate_control_manifest(
+        control_manifest,
+        require_bound_empirical=control_manifest.get("evidence_class") == "empirical_local",
+    )
+    plan, _ = _validate_plan_closed_shape(plan)
+    if plan.get("control_manifest_sha256") != control_manifest.get("payload_sha256"):
+        raise Stage2Error("plan control binding mismatch")
+    if plan.get("stage1_join_head") != control_manifest.get("stage1_join_head"):
+        raise Stage2Error("plan Stage 1 join binding mismatch")
+
     rows = [_require_mapping(row, "observation") for row in observations]
     if len(rows) != EXPECTED_OBSERVATION_COUNT:
         raise Stage2Error(
@@ -461,6 +651,4 @@ def validate_observations(
     evidence_class = next(iter(evidence_classes))
     if evidence_class != control_manifest.get("evidence_class"):
         raise Stage2Error("observation and control-manifest evidence classes differ")
-    if evidence_class == "empirical_local":
-        validate_control_manifest(control_manifest, require_bound_empirical=True)
     return rows, evidence_class
