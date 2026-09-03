@@ -40,7 +40,7 @@ function Invoke-BinderCommand {
     param(
         [Parameter(Mandatory = $true)][string]$BinderRoot,
         [Parameter(Mandatory = $true)][string]$Wrapper,
-        [Parameter(Mandatory = $true)][string[]]$Arguments
+        [Parameter(Mandatory = $true)][hashtable]$Parameters
     )
 
     $hadPythonPath = Test-Path Env:PYTHONPATH
@@ -58,10 +58,11 @@ function Invoke-BinderCommand {
 
         Push-Location -LiteralPath $BinderRoot
         $locationPushed = $true
-        & $Wrapper @Arguments
+        & $Wrapper @Parameters
         $exitCode = $LASTEXITCODE
         if ($exitCode -ne 0) {
-            throw "Binder command failed ($exitCode): $($Arguments -join ' ')"
+            $command = $Parameters['Command']
+            throw "Binder command failed ($exitCode): $command"
         }
     }
     finally {
@@ -342,12 +343,10 @@ if ($Mode -eq 'Preflight') {
     Invoke-BinderCommand `
         -BinderRoot $BinderRoot `
         -Wrapper $wrapper `
-        -Arguments @(
-            '-Command',
-            'template',
-            '-Out',
-            $PreflightBinderProbe
-        )
+        -Parameters @{
+            Command = 'template'
+            Out = $PreflightBinderProbe
+        }
 
     if (-not (Test-Path -LiteralPath $PreflightBinderProbe)) {
         throw 'Binder import probe did not create its template output.'
@@ -430,16 +429,12 @@ if ($Mode -eq 'Prepare') {
     Invoke-BinderCommand `
         -BinderRoot $BinderRoot `
         -Wrapper $wrapper `
-        -Arguments @(
-            '-Command',
-            'probe-hardware',
-            '-Out',
-            $HardwareRoot,
-            '-NvidiaSmi',
-            $gpu.NvidiaSmi,
-            '-DeviceIndices',
-            ([string]$gpu.Device.Index)
-        )
+        -Parameters @{
+            Command = 'probe-hardware'
+            Out = $HardwareRoot
+            NvidiaSmi = $gpu.NvidiaSmi
+            DeviceIndices = [string]$gpu.Device.Index
+        }
 
     Write-PreparedConfig `
         -BinderRoot $BinderRoot `
@@ -453,14 +448,11 @@ if ($Mode -eq 'Prepare') {
     Invoke-BinderCommand `
         -BinderRoot $BinderRoot `
         -Wrapper $wrapper `
-        -Arguments @(
-            '-Command',
-            'inventory',
-            '-Config',
-            $PrivateConfig,
-            '-Out',
-            $InventoriedConfig
-        )
+        -Parameters @{
+            Command = 'inventory'
+            Config = $PrivateConfig
+            Out = $InventoriedConfig
+        }
 
     $receipt = [ordered]@{
         schema = 'tier-bench/astra-stage2-control-identity-prepare@1'
@@ -511,38 +503,28 @@ if ($Mode -eq 'Bind') {
     Invoke-BinderCommand `
         -BinderRoot $BinderRoot `
         -Wrapper $wrapper `
-        -Arguments @(
-            '-Command',
-            'validate-config',
-            '-Config',
-            $InventoriedConfig
-        )
+        -Parameters @{
+            Command = 'validate-config'
+            Config = $InventoriedConfig
+        }
     Invoke-BinderCommand `
         -BinderRoot $BinderRoot `
         -Wrapper $wrapper `
-        -Arguments @(
-            '-Command',
-            'bind',
-            '-Config',
-            $InventoriedConfig,
-            '-RepoRoot',
-            $BinderRoot,
-            '-Out',
-            $BoundRoot
-        )
+        -Parameters @{
+            Command = 'bind'
+            Config = $InventoriedConfig
+            RepoRoot = $BinderRoot
+            Out = $BoundRoot
+        }
     Invoke-BinderCommand `
         -BinderRoot $BinderRoot `
         -Wrapper $wrapper `
-        -Arguments @(
-            '-Command',
-            'verify',
-            '-Config',
-            $InventoriedConfig,
-            '-RepoRoot',
-            $BinderRoot,
-            '-Out',
-            $BoundRoot
-        )
+        -Parameters @{
+            Command = 'verify'
+            Config = $InventoriedConfig
+            RepoRoot = $BinderRoot
+            Out = $BoundRoot
+        }
     Write-Host 'Executable identities bound and verified. No model was executed.'
     exit 0
 }
@@ -555,16 +537,12 @@ if ($Mode -eq 'Verify') {
     Invoke-BinderCommand `
         -BinderRoot $BinderRoot `
         -Wrapper $wrapper `
-        -Arguments @(
-            '-Command',
-            'verify',
-            '-Config',
-            $InventoriedConfig,
-            '-RepoRoot',
-            $BinderRoot,
-            '-Out',
-            $BoundRoot
-        )
+        -Parameters @{
+            Command = 'verify'
+            Config = $InventoriedConfig
+            RepoRoot = $BinderRoot
+            Out = $BoundRoot
+        }
     Write-Host 'Executable identities reproduce from current local bytes.'
     exit 0
 }
