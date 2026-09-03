@@ -1,0 +1,279 @@
+name: build-astra-current-head-repair
+
+on:
+  push:
+    branches:
+      - repair/astra-stage2-current-head-repair-builder-20260903
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Build and validate exact three-file successor
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_HEAD: 3566cb374f1df85eb7729fd64ba7f5771469aba1
+          BASE_TREE: 5c6856412991539465c7542d0cd05684e31b21eb
+          LAUNCHER_BLOB: 8a3cbbc8d2c088da11e1e94ed01374a865af6694
+          PREDECESSOR_WORKFLOW_BLOB: 70af029d2c4574038e02d4cdf1e05d59a56bde6f
+          RELEASE_WORKFLOW_BLOB: aa3515ea2e1994f0ccd6f71e8ec6cc55e09b3f0a
+          OUTPUT_BRANCH: repair/astra-stage2-current-head-repair-staging-20260903
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=96 origin \
+            "+${BASE_HEAD}:refs/astra-current-repair/base"
+          git checkout --detach refs/astra-current-repair/base
+
+          test "$(git rev-parse HEAD)" = "$BASE_HEAD"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$BASE_TREE"
+          test "$(git rev-parse 'HEAD:scripts/Invoke-AstraStage2ControlIdentityBinding.ps1')" = "$LAUNCHER_BLOB"
+          test "$(git rev-parse 'HEAD:.github/workflows/astra-stage2-control-identity.yml')" = "$PREDECESSOR_WORKFLOW_BLOB"
+          test "$(git rev-parse 'HEAD:.github/workflows/astra-stage2-control-identity-release.yml')" = "$RELEASE_WORKFLOW_BLOB"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          launcher_path = Path(
+              "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          )
+          launcher = launcher_path.read_text(encoding="utf-8")
+          old = '"Pinned binder command failed ($exitCode) from $expectedRoot: " +'
+          new = '"Pinned binder command failed ($exitCode) from ${expectedRoot}: " +'
+          if launcher.count(old) != 1:
+              raise SystemExit("launcher parser-repair anchor mismatch")
+          launcher_path.write_text(
+              launcher.replace(old, new, 1),
+              encoding="utf-8",
+              newline="\n",
+          )
+
+          predecessor_path = Path(
+              ".github/workflows/astra-stage2-control-identity.yml"
+          )
+          predecessor = predecessor_path.read_text(encoding="utf-8")
+          old = "  pull_request:\n    paths:\n"
+          new = (
+              "  pull_request:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-calibration-impl-20260902\n"
+              "    paths:\n"
+          )
+          if predecessor.count(old) != 1:
+              raise SystemExit("predecessor workflow trigger anchor mismatch")
+          predecessor_path.write_text(
+              predecessor.replace(old, new, 1),
+              encoding="utf-8",
+              newline="\n",
+          )
+
+          release_path = Path(
+              ".github/workflows/astra-stage2-control-identity-release.yml"
+          )
+          release = release_path.read_text(encoding="utf-8")
+
+          replacements = [
+              (
+                  '          expected = {\n'
+                  '              ".github/workflows/astra-stage2-control-identity-release.yml",\n',
+                  '          expected = {\n'
+                  '              ".github/workflows/astra-stage2-control-identity-release.yml",\n'
+                  '              ".github/workflows/astra-stage2-control-identity.yml",\n',
+                  "release path denominator",
+              ),
+              (
+                  '          if observed != expected:\n'
+                  '              raise SystemExit(\n'
+                  '                  f"release path set mismatch: expected={sorted(expected)}, "\n'
+                  '                  f"observed={sorted(observed)}"\n'
+                  '              )\n'
+                  '          PY\n',
+                  '          if observed != expected:\n'
+                  '              raise SystemExit(\n'
+                  '                  f"release path set mismatch: expected={sorted(expected)}, "\n'
+                  '                  f"observed={sorted(observed)}"\n'
+                  '              )\n'
+                  '\n'
+                  '          predecessor = Path(\n'
+                  '              ".github/workflows/astra-stage2-control-identity.yml"\n'
+                  '          ).read_text(encoding="utf-8")\n'
+                  '          required_scope = (\n'
+                  '              "  pull_request:\\n"\n'
+                  '              "    branches:\\n"\n'
+                  '              "      - joint/astra-stage2-calibration-impl-20260902\\n"\n'
+                  '              "    paths:\\n"\n'
+                  '          )\n'
+                  '          if required_scope not in predecessor:\n'
+                  '              raise SystemExit(\n'
+                  '                  "predecessor workflow lacks its exact PR-base scope"\n'
+                  '              )\n'
+                  '          required_push = (\n'
+                  '              "  push:\\n"\n'
+                  '              "    branches:\\n"\n'
+                  '              "      - joint/astra-stage2-control-identities-20260903\\n"\n'
+                  '          )\n'
+                  '          if required_push not in predecessor:\n'
+                  '              raise SystemExit(\n'
+                  '                  "predecessor workflow lost its candidate push lane"\n'
+                  '              )\n'
+                  '          PY\n',
+                  "predecessor scope verification",
+              ),
+              (
+                  '          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \\\n'
+                  '            "$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1"\n',
+                  '          cp .github/workflows/astra-stage2-control-identity.yml \\\n'
+                  '            "$EVIDENCE_ROOT/predecessor-control-identity-workflow.yml"\n'
+                  '          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \\\n'
+                  '            "$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1"\n',
+                  "release evidence retention",
+              ),
+              (
+                  '                  "repository_root_discovery_tested": True,\n'
+                  '                  "cross_platform_runtime_fixture": True,\n',
+                  '                  "repository_root_discovery_tested": True,\n'
+                  '                  "predecessor_workflow_successor_scope": True,\n'
+                  '                  "cross_platform_runtime_fixture": True,\n',
+                  "qualification scope receipt",
+              ),
+              (
+                  '              "pinned_launcher": (\n'
+                  '                  "Invoke-AstraStage2ControlIdentityBinding.ps1"\n'
+                  '              ),\n'
+                  '              "actual_control_identities": "UNBOUND",\n',
+                  '              "pinned_launcher": (\n'
+                  '                  "Invoke-AstraStage2ControlIdentityBinding.ps1"\n'
+                  '              ),\n'
+                  '              "predecessor_workflow_successor_scope": True,\n'
+                  '              "actual_control_identities": "UNBOUND",\n',
+                  "publication scope receipt",
+              ),
+          ]
+
+          for before, after, label in replacements:
+              if release.count(before) != 1:
+                  raise SystemExit(f"{label} anchor mismatch")
+              release = release.replace(before, after, 1)
+
+          release_path.write_text(
+              release,
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+
+          git diff --check
+          git diff --name-only > "$RUNNER_TEMP/changed-paths.txt"
+          test "$(wc -l < "$RUNNER_TEMP/changed-paths.txt")" -eq 3
+          grep -Fxq 'scripts/Invoke-AstraStage2ControlIdentityBinding.ps1' "$RUNNER_TEMP/changed-paths.txt"
+          grep -Fxq '.github/workflows/astra-stage2-control-identity.yml' "$RUNNER_TEMP/changed-paths.txt"
+          grep -Fxq '.github/workflows/astra-stage2-control-identity-release.yml' "$RUNNER_TEMP/changed-paths.txt"
+
+          command -v pwsh >/dev/null
+          ASTRA_RELEASE_LAUNCHER="$PWD/scripts/Invoke-AstraStage2ControlIdentityBinding.ps1" \
+          pwsh -NoProfile -Command \
+            '$ErrorActionPreference = "Stop"; $text = Get-Content -Raw -LiteralPath $env:ASTRA_RELEASE_LAUNCHER; [void][scriptblock]::Create($text); Write-Output "POWERSHELL_PARSE_PASS"'
+
+          python3 -m py_compile \
+            astra_stage2/control_identity.py \
+            scripts/astra_stage2_bind_controls.py \
+            tests/test_astra_stage2_control_identity.py \
+            tests/test_astra_stage2_control_identity_release.py
+          PYTHONPATH=. python3 -m unittest discover \
+            -s tests \
+            -p 'test_astra_stage2_control_identity*.py' \
+            -v 2>&1 | tee "$RUNNER_TEMP/test-current-head-repair-linux.log"
+          grep -q '^Ran 27 tests in ' "$RUNNER_TEMP/test-current-head-repair-linux.log"
+          grep -q '^OK$' "$RUNNER_TEMP/test-current-head-repair-linux.log"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          launcher = Path(
+              "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          ).read_text(encoding="utf-8")
+          predecessor = Path(
+              ".github/workflows/astra-stage2-control-identity.yml"
+          ).read_text(encoding="utf-8")
+          release = Path(
+              ".github/workflows/astra-stage2-control-identity-release.yml"
+          ).read_text(encoding="utf-8")
+
+          if '$expectedRoot:' in launcher:
+              raise SystemExit("ambiguous PowerShell interpolation remains")
+          if '${expectedRoot}:' not in launcher:
+              raise SystemExit("delimited PowerShell interpolation is absent")
+
+          required_scope = (
+              "  pull_request:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-calibration-impl-20260902\n"
+              "    paths:\n"
+          )
+          if required_scope not in predecessor:
+              raise SystemExit("predecessor PR-base scope is absent")
+          if (
+              "      - joint/astra-stage2-control-identities-20260903\n"
+              not in predecessor
+          ):
+              raise SystemExit("predecessor push lane is absent")
+          for marker in (
+              '".github/workflows/astra-stage2-control-identity.yml"',
+              "predecessor-control-identity-workflow.yml",
+              '"predecessor_workflow_successor_scope": True',
+          ):
+              if marker not in release:
+                  raise SystemExit(
+                      f"release scope-evidence marker is absent: {marker}"
+                  )
+          PY
+
+          staging_root="staging/astra-stage2-current-head-repair-20260903"
+          mkdir -p "$staging_root"
+          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \
+            "$staging_root/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          cp .github/workflows/astra-stage2-control-identity.yml \
+            "$staging_root/astra-stage2-control-identity.yml"
+          cp .github/workflows/astra-stage2-control-identity-release.yml \
+            "$staging_root/astra-stage2-control-identity-release.yml"
+          (
+            cd "$staging_root"
+            sha256sum \
+              Invoke-AstraStage2ControlIdentityBinding.ps1 \
+              astra-stage2-control-identity.yml \
+              astra-stage2-control-identity-release.yml \
+              > SHA256SUMS
+          )
+
+          git restore \
+            scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \
+            .github/workflows/astra-stage2-control-identity.yml \
+            .github/workflows/astra-stage2-control-identity-release.yml
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add "$staging_root"
+          test "$(git diff --cached --name-only | wc -l)" -eq 4
+          git commit -m "stage(astra): retain current-head repair blobs"
+
+          staging_head="$(git rev-parse HEAD)"
+          staging_tree="$(git rev-parse 'HEAD^{tree}')"
+          launcher_blob="$(git rev-parse "HEAD:${staging_root}/Invoke-AstraStage2ControlIdentityBinding.ps1")"
+          predecessor_blob="$(git rev-parse "HEAD:${staging_root}/astra-stage2-control-identity.yml")"
+          release_blob="$(git rev-parse "HEAD:${staging_root}/astra-stage2-control-identity-release.yml")"
+          git push --force origin "HEAD:refs/heads/${OUTPUT_BRANCH}"
+
+          {
+            echo "staging_head=${staging_head}"
+            echo "staging_tree=${staging_tree}"
+            echo "launcher_blob=${launcher_blob}"
+            echo "predecessor_workflow_blob=${predecessor_blob}"
+            echo "release_workflow_blob=${release_blob}"
+            echo "output_branch=${OUTPUT_BRANCH}"
+          } >> "$GITHUB_STEP_SUMMARY"
