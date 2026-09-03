@@ -1,0 +1,168 @@
+{
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/astra-stage2-calibration-result.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "absolute_timing_transfer": {
+      "const": "PROHIBITED"
+    },
+    "accuracy_gate": {
+      "additionalProperties": false,
+      "properties": {
+        "observed_minimum": {
+          "const": 1.0
+        },
+        "passed": {
+          "const": true
+        },
+        "required_minimum": {
+          "const": 1.0
+        }
+      },
+      "required": [
+        "required_minimum",
+        "observed_minimum",
+        "passed"
+      ],
+      "type": "object"
+    },
+    "candidate_thresholds": {
+      "type": "object"
+    },
+    "control_manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "empirical_candidate_may_self_freeze": {
+      "const": false
+    },
+    "envelopes": {
+      "type": "object"
+    },
+    "evidence_class": {
+      "enum": [
+        "fixture_synthetic",
+        "empirical_local"
+      ]
+    },
+    "feature_sample_count": {
+      "const": 36
+    },
+    "features": {
+      "const": [
+        "r_elasticity",
+        "k_elasticity",
+        "k_curvature",
+        "r_monotonicity",
+        "r_nonmonotonicity",
+        "token_residual_r_contrast",
+        "effort_ttft_elasticity",
+        "accuracy_floor"
+      ]
+    },
+    "fixture_may_freeze": {
+      "const": false
+    },
+    "freeze_authority": {
+      "const": "ABSENT_IN_SCAFFOLD"
+    },
+    "next_required_authority": {
+      "type": "string"
+    },
+    "observation_count": {
+      "const": 648
+    },
+    "payload_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "plan_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema": {
+      "const": "tier-bench/astra-stage2-calibration-result@1"
+    },
+    "separation_checks": {
+      "type": "array"
+    },
+    "stage1_custody": {
+      "additionalProperties": false,
+      "properties": {
+        "blobs": {
+          "additionalProperties": {
+            "pattern": "^[0-9a-f]{40}$",
+            "type": "string"
+          },
+          "minProperties": 7,
+          "type": "object"
+        },
+        "status": {
+          "const": "VERIFIED"
+        }
+      },
+      "required": [
+        "status",
+        "blobs"
+      ],
+      "type": "object"
+    },
+    "stage2_frozen": {
+      "const": false
+    },
+    "state": {
+      "enum": [
+        "FIXTURE_CONFORMANCE_ONLY",
+        "EMPIRICAL_CALIBRATION_CANDIDATE",
+        "CALIBRATION_INCONCLUSIVE"
+      ]
+    },
+    "threshold_derivation": {
+      "type": "string"
+    },
+    "generator_manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "observation_set_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "input_binding_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "stage1_join_head": {
+      "const": "60bca963d63edca267106bc5c7725c2cc1df8dd7"
+    }
+  },
+  "required": [
+    "schema",
+    "state",
+    "evidence_class",
+    "stage2_frozen",
+    "freeze_authority",
+    "generator_manifest_sha256",
+    "observation_set_sha256",
+    "input_binding_sha256",
+    "stage1_join_head",
+    "plan_sha256",
+    "control_manifest_sha256",
+    "stage1_custody",
+    "observation_count",
+    "feature_sample_count",
+    "features",
+    "envelopes",
+    "separation_checks",
+    "accuracy_gate",
+    "candidate_thresholds",
+    "threshold_derivation",
+    "absolute_timing_transfer",
+    "fixture_may_freeze",
+    "empirical_candidate_may_self_freeze",
+    "next_required_authority",
+    "payload_sha256"
+  ],
+  "title": "Astra Stage 2 calibration result",
+  "type": "object"
+}

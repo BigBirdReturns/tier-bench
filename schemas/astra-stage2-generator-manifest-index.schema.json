@@ -1,0 +1,20 @@
+{
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/astra-stage2-generator-manifest-index.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "case_count": {"const": 108},
+    "cases_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "families": {"const": ["pointer_chase", "coupled_ring", "branch_reconcile"]},
+    "generator_manifest_payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "generator_version": {"const": "astra-stage2-generator-v1"},
+    "k_levels": {"const": [1, 8, 32]},
+    "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "r_levels": {"const": [1, 4, 16]},
+    "replicates": {"const": [0, 1, 2, 3]},
+    "schema": {"const": "tier-bench/astra-stage2-generator-manifest-index@1"}
+  },
+  "required": ["schema", "generator_version", "case_count", "families", "k_levels", "r_levels", "replicates", "cases_sha256", "generator_manifest_payload_sha256", "payload_sha256"],
+  "title": "Astra Stage 2 generator manifest index",
+  "type": "object"
+}

@@ -1,0 +1,40 @@
+{
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/astra-stage2-generator-manifest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "case_count": {"const": 108},
+    "cases": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "case_id": {"pattern": "^s2case_[0-9a-f]{24}$", "type": "string"},
+          "expected_checksum": {"pattern": "^[0-9a-f]{16}$", "type": "string"},
+          "family": {"enum": ["pointer_chase", "coupled_ring", "branch_reconcile"]},
+          "k": {"enum": [1, 8, 32]},
+          "r": {"enum": [1, 4, 16]},
+          "replicate": {"enum": [0, 1, 2, 3]},
+          "task_bytes": {"minimum": 1, "type": "integer"},
+          "task_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"}
+        },
+        "required": ["case_id", "family", "k", "r", "replicate", "task_sha256", "task_bytes", "expected_checksum"],
+        "type": "object"
+      },
+      "maxItems": 108,
+      "minItems": 108,
+      "type": "array"
+    },
+    "families": {"const": ["pointer_chase", "coupled_ring", "branch_reconcile"]},
+    "generator_version": {"type": "string"},
+    "k_levels": {"const": [1, 8, 32]},
+    "lane_count": {"const": 32},
+    "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "r_levels": {"const": [1, 4, 16]},
+    "replicates": {"const": [0, 1, 2, 3]},
+    "schema": {"const": "tier-bench/astra-stage2-generator-manifest@1"},
+    "table_size": {"const": 16}
+  },
+  "required": ["schema", "generator_version", "families", "k_levels", "r_levels", "replicates", "lane_count", "table_size", "case_count", "cases", "payload_sha256"],
+  "title": "Astra Stage 2 generator manifest",
+  "type": "object"
+}

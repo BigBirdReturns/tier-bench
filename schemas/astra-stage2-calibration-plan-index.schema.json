@@ -1,0 +1,61 @@
+{
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/astra-stage2-calibration-plan-index.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "calibration_plan_payload_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "case_count": {
+      "const": 108
+    },
+    "control_count": {
+      "const": 3
+    },
+    "control_manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "effort_count": {
+      "const": 2
+    },
+    "generator_manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "observation_count": {
+      "const": 648
+    },
+    "observations_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "payload_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema": {
+      "const": "tier-bench/astra-stage2-calibration-plan-index@1"
+    },
+    "stage1_join_head": {
+      "pattern": "^[0-9a-f]{40}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema",
+    "stage1_join_head",
+    "generator_manifest_sha256",
+    "control_manifest_sha256",
+    "case_count",
+    "control_count",
+    "effort_count",
+    "observation_count",
+    "observations_sha256",
+    "calibration_plan_payload_sha256",
+    "payload_sha256"
+  ],
+  "title": "Astra Stage 2 calibration plan index",
+  "type": "object"
+}

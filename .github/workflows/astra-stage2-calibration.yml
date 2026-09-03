@@ -1,0 +1,120 @@
+name: astra-stage2-calibration
+
+on:
+  push:
+    branches:
+      - joint/astra-stage2-calibration-impl-20260902
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-calibration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  provider-free-scaffold:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate without submodule traversal
+        id: custody
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+          CANDIDATE_BRANCH: joint/astra-stage2-calibration-impl-20260902
+          BASE_BRANCH: joint/astra-stage2-calibration-20260902
+          EXPECTED_BASE: 60bca963d63edca267106bc5c7725c2cc1df8dd7
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git -c protocol.version=2 fetch --no-tags --depth=64 origin \
+            "+refs/heads/${CANDIDATE_BRANCH}:refs/remotes/origin/candidate" \
+            "+refs/heads/${BASE_BRANCH}:refs/remotes/origin/base"
+          git checkout --detach refs/remotes/origin/candidate
+          head_sha="$(git rev-parse HEAD)"
+          test "$head_sha" = "$EXPECTED_HEAD"
+          base_sha="$(git merge-base "$head_sha" refs/remotes/origin/base)"
+          test "$base_sha" = "$EXPECTED_BASE"
+          tree_sha="$(git rev-parse 'HEAD^{tree}')"
+          parent_sha="$(git rev-parse HEAD^)"
+          evidence_root="$RUNNER_TEMP/astra-stage2-scaffold"
+          mkdir -p "$evidence_root"
+          git diff --name-only -z "${base_sha}...${head_sha}" > "$evidence_root/changed-paths.z"
+          test -s "$evidence_root/changed-paths.z"
+          printf 'head_sha=%s\n' "$head_sha" >> "$GITHUB_OUTPUT"
+          printf 'tree_sha=%s\n' "$tree_sha" >> "$GITHUB_OUTPUT"
+          printf 'parent_sha=%s\n' "$parent_sha" >> "$GITHUB_OUTPUT"
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+
+      - name: Execute complete provider-free transaction
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile astra_stage2/*.py scripts/astra_stage2_calibration.py tests/test_astra_stage2_calibration.py
+          python3 -m astra_stage2.ci_runner \
+            --repo-root . \
+            --output "${{ steps.custody.outputs.evidence_root }}" \
+            --repository "$GITHUB_REPOSITORY" \
+            --branch joint/astra-stage2-calibration-impl-20260902 \
+            --source-head "${{ steps.custody.outputs.head_sha }}" \
+            --tree "${{ steps.custody.outputs.tree_sha }}" \
+            --parent "${{ steps.custody.outputs.parent_sha }}" \
+            --changed-paths-z "${{ steps.custody.outputs.evidence_root }}/changed-paths.z"
+
+      - name: Upload provider-free evidence
+        id: evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-scaffold-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Build publication index
+        shell: bash
+        env:
+          ARTIFACT_ID: ${{ steps.evidence.outputs.artifact-id }}
+          ARTIFACT_URL: ${{ steps.evidence.outputs.artifact-url }}
+          ARTIFACT_DIGEST: ${{ steps.evidence.outputs.artifact-digest }}
+        run: |
+          set -euo pipefail
+          root="${{ steps.custody.outputs.evidence_root }}"
+          python3 - "$root/qualification-receipt.json" "$root/publication-index.json" <<'PY'
+          import hashlib, json, os, sys
+          receipt = json.load(open(sys.argv[1], encoding="utf-8"))
+          index = {
+              "schema": "tier-bench/astra-stage2-scaffold-publication-index@1",
+              "run": {"id": int(os.environ["GITHUB_RUN_ID"]), "attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]), "workflow": os.environ["GITHUB_WORKFLOW"]},
+              "source": receipt["source"],
+              "qualification_payload_sha256": receipt["payload_sha256"],
+              "artifact": {"id": int(os.environ["ARTIFACT_ID"]), "url": os.environ["ARTIFACT_URL"], "digest": os.environ["ARTIFACT_DIGEST"]},
+              "classification": receipt["classification"],
+          }
+          index["payload_sha256"] = hashlib.sha256(json.dumps(index, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+          with open(sys.argv[2], "w", encoding="utf-8", newline="\n") as handle:
+              json.dump(index, handle, sort_keys=True, indent=2)
+              handle.write("\n")
+          PY
+
+      - name: Upload publication index
+        id: publication
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-scaffold-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}/publication-index.json
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Seal runner ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.evidence.outputs.artifact-id }}"
+          test -n "${{ steps.evidence.outputs.artifact-digest }}"
+          test -n "${{ steps.publication.outputs.artifact-id }}"
+          test -n "${{ steps.publication.outputs.artifact-digest }}"
+          cat "${{ steps.custody.outputs.evidence_root }}/publication-index.json" >> "$GITHUB_STEP_SUMMARY"

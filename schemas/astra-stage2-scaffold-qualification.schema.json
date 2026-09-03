@@ -1,0 +1,18 @@
+{
+  "$id": "https://bigbirdreturns.github.io/tier-bench/schemas/astra-stage2-scaffold-qualification.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "authority": {"type": "object"},
+    "classification": {"const": "PROVIDER_FREE_SCAFFOLD_QUALIFIED_EMPIRICAL_CALIBRATION_PENDING"},
+    "conformance": {"type": "object"},
+    "environment": {"type": "object"},
+    "files": {"type": "object"},
+    "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "schema": {"const": "tier-bench/astra-stage2-scaffold-qualification@1"},
+    "source": {"type": "object"}
+  },
+  "required": ["schema", "classification", "source", "conformance", "authority", "environment", "files", "payload_sha256"],
+  "title": "Astra Stage 2 scaffold qualification",
+  "type": "object"
+}
