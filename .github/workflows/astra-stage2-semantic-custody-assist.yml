@@ -13,16 +13,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  source-export:
+  provider-free-semantic-custody:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Checkout exact assist branch without submodule traversal
+      - name: Checkout exact assist head and bind target parent
         id: custody
         shell: bash
         env:
           EXPECTED_HEAD: ${{ github.sha }}
           ASSIST_BRANCH: assist/astra-stage2-semantic-custody-49cd-20260903
+          TARGET_BRANCH: joint/astra-stage2-calibration-impl-20260902
           TARGET_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
         run: |
           set -euo pipefail
@@ -30,47 +31,342 @@ jobs:
           git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
           git config --unset-all remote.origin.fetch || true
           git -c protocol.version=2 fetch --no-tags --depth=64 origin \
-            "+refs/heads/${ASSIST_BRANCH}:refs/assist/candidate"
+            "+refs/heads/${ASSIST_BRANCH}:refs/assist/candidate" \
+            "+refs/heads/${TARGET_BRANCH}:refs/assist/target"
           git checkout --detach refs/assist/candidate
-          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
-          git merge-base --is-ancestor "$TARGET_HEAD" "$EXPECTED_HEAD"
-          test -f astra_stage2/contracts.py
-          test -f astra_stage2/calibration.py
-          test -f tests/test_astra_stage2_calibration.py
+          head_sha="$(git rev-parse HEAD)"
+          target_sha="$(git rev-parse refs/assist/target)"
+          test "$head_sha" = "$EXPECTED_HEAD"
+          test "$target_sha" = "$TARGET_HEAD"
+          git merge-base --is-ancestor "$TARGET_HEAD" "$head_sha"
+          tree_sha="$(git rev-parse 'HEAD^{tree}')"
+          parent_sha="$(git rev-parse HEAD^)"
+          evidence_root="$RUNNER_TEMP/astra-stage2-semantic-custody"
+          mkdir -p "$evidence_root"
+          git diff --name-only -z "${TARGET_HEAD}...${head_sha}" \
+            > "$evidence_root/changed-paths.z"
+          python3 - "$evidence_root/changed-paths.z" <<'PY'
+          from pathlib import Path
+          import sys
 
-      - name: Export exact source inputs and reproducible checkout
+          expected = {
+              ".github/workflows/astra-stage2-semantic-custody-assist.yml",
+              "astra_stage2/calibration.py",
+              "astra_stage2/ci_runner.py",
+              "astra_stage2/cli.py",
+              "astra_stage2/contracts.py",
+              "schemas/astra-stage2-calibration-result.schema.json",
+              "tests/test_astra_stage2_calibration.py",
+          }
+          observed = {
+              item.decode("utf-8")
+              for item in Path(sys.argv[1]).read_bytes().split(b"\0")
+              if item
+          }
+          if observed != expected:
+              raise SystemExit(
+                  f"assist path set mismatch: expected={sorted(expected)}, "
+                  f"observed={sorted(observed)}"
+              )
+          PY
+          printf 'head_sha=%s\n' "$head_sha" >> "$GITHUB_OUTPUT"
+          printf 'tree_sha=%s\n' "$tree_sha" >> "$GITHUB_OUTPUT"
+          printf 'parent_sha=%s\n' "$parent_sha" >> "$GITHUB_OUTPUT"
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+
+      - name: Execute complete provider-free scaffold qualification
         shell: bash
         run: |
           set -euo pipefail
-          root="$RUNNER_TEMP/astra-stage2-semantic-custody-source"
-          mkdir -p "$root/astra_stage2" "$root/tests"
-          cp astra_stage2/contracts.py "$root/astra_stage2/contracts.py"
-          cp astra_stage2/calibration.py "$root/astra_stage2/calibration.py"
-          cp tests/test_astra_stage2_calibration.py "$root/tests/test_astra_stage2_calibration.py"
-          git rev-parse HEAD > "$root/SOURCE_HEAD"
-          git rev-parse 'HEAD^{tree}' > "$root/SOURCE_TREE"
-          git status --porcelain=v1 > "$root/SOURCE_STATUS"
-          tar -czf "$root/tier-bench-checkout.tar.gz" \
-            --exclude='./.git/index.lock' \
-            --exclude='./.git/shallow.lock' \
-            .
-          find "$root" -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          python3 -m py_compile \
+            astra_stage2/*.py \
+            scripts/astra_stage2_calibration.py \
+            tests/test_astra_stage2_calibration.py
+          python3 -m astra_stage2.ci_runner \
+            --repo-root . \
+            --output "${{ steps.custody.outputs.evidence_root }}" \
+            --repository "$GITHUB_REPOSITORY" \
+            --branch assist/astra-stage2-semantic-custody-49cd-20260903 \
+            --source-head "${{ steps.custody.outputs.head_sha }}" \
+            --tree "${{ steps.custody.outputs.tree_sha }}" \
+            --parent "${{ steps.custody.outputs.parent_sha }}" \
+            --changed-paths-z \
+              "${{ steps.custody.outputs.evidence_root }}/changed-paths.z"
 
-      - name: Upload exact source inputs
-        id: source
+      - name: Replay semantic-custody attacks
+        shell: bash
+        env:
+          ASSIST_HEAD: ${{ steps.custody.outputs.head_sha }}
+          ASSIST_TREE: ${{ steps.custody.outputs.tree_sha }}
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+          TARGET_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import copy
+          import json
+          import os
+          from pathlib import Path
+          from typing import Any, Callable
+
+          from astra_stage2 import contracts
+          from astra_stage2.calibration import (
+              derive_calibration_result,
+              validate_calibration_result,
+          )
+          from astra_stage2.canonical import Stage2Error, sha256_object
+          from astra_stage2.contracts import (
+              bind_empirical_control_manifest,
+              validate_generator_manifest,
+          )
+          from astra_stage2.generator import (
+              build_calibration_plan,
+              build_fixture_observations,
+              build_generator_manifest,
+              empirical_control_template,
+          )
+
+          def rehash(value: dict[str, Any], field: str = "payload_sha256") -> None:
+              value[field] = sha256_object(
+                  {key: child for key, child in value.items() if key != field}
+              )
+
+          def ready_template() -> dict[str, Any]:
+              template = empirical_control_template()
+              for control in template["controls"]:
+                  for field in contracts.IDENTITY_DIGEST_FIELDS:
+                      control["identity"][field] = sha256_object(
+                          {"field": field, "role": control["control_id"]}
+                      )
+              return template
+
+          def empirical_dataset() -> tuple[
+              dict[str, Any],
+              dict[str, Any],
+              dict[str, Any],
+              list[dict[str, Any]],
+          ]:
+              generator = build_generator_manifest()
+              bound = bind_empirical_control_manifest(ready_template())
+              plan = build_calibration_plan(generator, bound)
+              identities = {
+                  control["control_id"]: control["identity_sha256"]
+                  for control in bound["controls"]
+              }
+              rows = build_fixture_observations(plan)
+              for row in rows:
+                  row["evidence_class"] = "empirical_local"
+                  row["control_identity_sha256"] = identities[row["control_id"]]
+                  rehash(row, "record_sha256")
+              return generator, bound, plan, rows
+
+          attacks: list[dict[str, Any]] = []
+
+          def require_refusal(label: str, action: Callable[[], Any]) -> None:
+              try:
+                  action()
+              except Stage2Error as exc:
+                  attacks.append(
+                      {
+                          "label": label,
+                          "expected": "REFUSAL",
+                          "observed": "REFUSAL",
+                          "passed": True,
+                          "detail": str(exc),
+                      }
+                  )
+                  return
+              attacks.append(
+                  {
+                      "label": label,
+                      "expected": "REFUSAL",
+                      "observed": "ACCEPTED",
+                      "passed": False,
+                  }
+              )
+
+          generator, bound, plan, rows = empirical_dataset()
+          baseline = derive_calibration_result(
+              rows,
+              plan,
+              bound,
+              generator_manifest=generator,
+              repo_root=Path(".").resolve(),
+          )
+          if baseline["state"] != "EMPIRICAL_CALIBRATION_CANDIDATE":
+              raise SystemExit("attack baseline no longer reaches the candidate boundary")
+
+          changed_version = copy.deepcopy(generator)
+          changed_version["generator_version"] = "astra-stage2-generator-v999"
+          rehash(changed_version)
+          require_refusal(
+              "unfrozen generator-version substitution",
+              lambda: validate_generator_manifest(changed_version),
+          )
+
+          changed_join = ready_template()
+          changed_join["stage1_join_head"] = "f" * 40
+          require_refusal(
+              "unfrozen Stage-1 join substitution",
+              lambda: bind_empirical_control_manifest(changed_join),
+          )
+
+          changed_source = ready_template()
+          changed_source["controls"][0]["identity"]["source_repository"] = (
+              "attacker/substitute-control"
+          )
+          changed_source["controls"][0]["identity"]["source_commit_sha1"] = (
+              "1" * 40
+          )
+          require_refusal(
+              "unfrozen control source repository and commit substitution",
+              lambda: bind_empirical_control_manifest(changed_source),
+          )
+
+          changed_binding = copy.deepcopy(plan)
+          changed_binding["generator_manifest_sha256"] = "0" * 64
+          rehash(changed_binding)
+          require_refusal(
+              "direct derive with rewritten generator-manifest binding",
+              lambda: derive_calibration_result(
+                  copy.deepcopy(rows),
+                  changed_binding,
+                  bound,
+                  generator_manifest=generator,
+                  repo_root=Path(".").resolve(),
+              ),
+          )
+
+          changed_plan = copy.deepcopy(plan)
+          changed_rows = copy.deepcopy(rows)
+          replacement = "s2obs_" + "0" * 24
+          if any(
+              item["observation_id"] == replacement
+              for item in changed_plan["observations"]
+          ):
+              replacement = "s2obs_" + "f" * 24
+          changed_plan["observations"][0]["observation_id"] = replacement
+          rehash(changed_plan)
+          changed_rows[0]["observation_id"] = replacement
+          rehash(changed_rows[0], "record_sha256")
+          require_refusal(
+              "non-derived plan observation-id substitution",
+              lambda: derive_calibration_result(
+                  changed_rows,
+                  changed_plan,
+                  bound,
+                  generator_manifest=generator,
+                  repo_root=Path(".").resolve(),
+              ),
+          )
+
+          fabricated_result = copy.deepcopy(baseline)
+          fabricated_result["candidate_thresholds"] = {"fabricated": 999.0}
+          fabricated_result["separation_checks"] = []
+          fabricated_result["envelopes"] = {}
+          rehash(fabricated_result)
+          require_refusal(
+              "self-consistent fabricated empirical result",
+              lambda: validate_calibration_result(
+                  fabricated_result,
+                  generator_manifest=generator,
+                  control_manifest=bound,
+                  plan=plan,
+                  observations=rows,
+                  repo_root=Path(".").resolve(),
+              ),
+          )
+
+          altered_rows = copy.deepcopy(rows)
+          altered_rows[0]["latency_ms"] += 1.0
+          rehash(altered_rows[0], "record_sha256")
+          require_refusal(
+              "result replay against a different observation set",
+              lambda: validate_calibration_result(
+                  baseline,
+                  generator_manifest=generator,
+                  control_manifest=bound,
+                  plan=plan,
+                  observations=altered_rows,
+                  repo_root=Path(".").resolve(),
+              ),
+          )
+
+          failed = [attack for attack in attacks if not attack["passed"]]
+          receipt: dict[str, Any] = {
+              "schema": "tier-bench/astra-stage2-semantic-custody-assist@1",
+              "target_head": os.environ["TARGET_HEAD"],
+              "assist_head": os.environ["ASSIST_HEAD"],
+              "assist_tree": os.environ["ASSIST_TREE"],
+              "baseline_state": baseline["state"],
+              "baseline_candidate_threshold_count": len(
+                  baseline["candidate_thresholds"]
+              ),
+              "baseline_generator_manifest_sha256": baseline[
+                  "generator_manifest_sha256"
+              ],
+              "baseline_observation_set_sha256": baseline[
+                  "observation_set_sha256"
+              ],
+              "baseline_input_binding_sha256": baseline["input_binding_sha256"],
+              "attacks": attacks,
+              "attack_count": len(attacks),
+              "refused_count": len(attacks) - len(failed),
+              "failed_count": len(failed),
+              "disposition": (
+                  "ASSIST_PROVIDER_FREE_QUALIFIED"
+                  if not failed
+                  else "ASSIST_CHANGES_REQUIRED"
+              ),
+              "authority": {
+                  "target_branch_mutated": False,
+                  "empirical_subject_execution": False,
+                  "provider_or_model_calls": 0,
+                  "live_provider_dispatch": "PROHIBITED",
+                  "callable_astra_identity": "UNBOUND",
+                  "optional_24_call_block": "DISABLED",
+                  "merge_authority": "NONE",
+              },
+          }
+          receipt["payload_sha256"] = sha256_object(receipt)
+          output = Path(os.environ["EVIDENCE_ROOT"]) / "semantic-attack-receipt.json"
+          output.write_text(
+              json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          print(json.dumps(receipt, sort_keys=True, indent=2))
+          if failed:
+              raise SystemExit(
+                  "semantic-custody attacks admitted: "
+                  + ", ".join(attack["label"] for attack in failed)
+              )
+          PY
+
+      - name: Upload assist evidence
+        id: evidence
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: astra-stage2-semantic-custody-source-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ runner.temp }}/astra-stage2-semantic-custody-source
+          name: astra-stage2-semantic-custody-assist-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 90
           compression-level: 9
 
-      - name: Seal source export
+      - name: Seal assist ledger
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${{ steps.source.outputs.artifact-id }}"
-          test -n "${{ steps.source.outputs.artifact-digest }}"
-          echo "artifact_id=${{ steps.source.outputs.artifact-id }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "artifact_digest=${{ steps.source.outputs.artifact-digest }}" >> "$GITHUB_STEP_SUMMARY"
+          test -n "${{ steps.evidence.outputs.artifact-id }}"
+          test -n "${{ steps.evidence.outputs.artifact-digest }}"
+          cat "${{ steps.custody.outputs.evidence_root }}/semantic-attack-receipt.json" \
+            >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo
+            echo "artifact_id=${{ steps.evidence.outputs.artifact-id }}"
+            echo "artifact_digest=${{ steps.evidence.outputs.artifact-digest }}"
+            echo "assist_head=${{ steps.custody.outputs.head_sha }}"
+            echo "assist_tree=${{ steps.custody.outputs.tree_sha }}"
+          } >> "$GITHUB_STEP_SUMMARY"
