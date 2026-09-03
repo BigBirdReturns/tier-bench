@@ -1,0 +1,233 @@
+name: astra-stage2-control-identity-import-root-v4-publication
+
+on:
+  push:
+    branches:
+      - publication/astra-stage2-control-identity-import-root-v4-20260903
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: astra-stage2-control-identity-import-root-v4-publication-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PUBLICATION_BRANCH: publication/astra-stage2-control-identity-import-root-v4-20260903
+  AUDIT_BRANCH: audit/astra-stage2-control-identity-import-root-v2-20260903
+
+jobs:
+  connected-publication:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact publication branch and verify scope
+        id: checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=160 origin \
+            "+refs/heads/${PUBLICATION_BRANCH}:refs/publication/candidate" \
+            "+refs/heads/${AUDIT_BRANCH}:refs/publication/audit"
+          git checkout --detach refs/publication/candidate
+
+          publication_head="$(git rev-parse HEAD)"
+          publication_tree="$(git rev-parse 'HEAD^{tree}')"
+          audit_head="$(git rev-parse refs/publication/audit)"
+          audit_tree="$(git rev-parse 'refs/publication/audit^{tree}')"
+          git merge-base --is-ancestor "$audit_head" "$publication_head"
+
+          git diff --name-only -z "$audit_head...$publication_head" \
+            > "$RUNNER_TEMP/publication-paths.z"
+          python3 - "$RUNNER_TEMP/publication-paths.z" <<'PY'
+          from pathlib import Path
+          import sys
+
+          expected = {
+              ".github/workflows/astra-stage2-control-identity-import-root-v4-publication.yml",
+              "scripts/publish_astra_stage2_control_identity_import_root_v4.py",
+              "scripts/run_publish_astra_stage2_control_identity_import_root_v4.py",
+          }
+          observed = {
+              item.decode("utf-8")
+              for item in Path(sys.argv[1]).read_bytes().split(b"\0")
+              if item
+          }
+          if observed != expected:
+              raise SystemExit(
+                  f"publication path set mismatch: expected={sorted(expected)}, "
+                  f"observed={sorted(observed)}"
+              )
+          PY
+
+          printf 'publication_head=%s\n' "$publication_head" >> "$GITHUB_OUTPUT"
+          printf 'publication_tree=%s\n' "$publication_tree" >> "$GITHUB_OUTPUT"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$audit_tree" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse provider credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+
+          names = [
+              "OPENAI_API_KEY",
+              "ANTHROPIC_API_KEY",
+              "GEMINI_API_KEY",
+              "GOOGLE_API_KEY",
+              "MISTRAL_API_KEY",
+              "COHERE_API_KEY",
+              "XAI_API_KEY",
+              "GROQ_API_KEY",
+              "TOGETHER_API_KEY",
+              "FIREWORKS_API_KEY",
+          ]
+          present = [name for name in names if os.environ.get(name)]
+          if present:
+              raise SystemExit(
+                  "recognized provider credentials present: " + ",".join(present)
+              )
+          PY
+
+      - name: Publish exact remote evidence and read it back
+        id: publish
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PUBLICATION_OUT: ${{ runner.temp }}/astra-import-root-v4-publication/publication-record.json
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$PUBLICATION_OUT")"
+          python3 -m py_compile \
+            scripts/publish_astra_stage2_control_identity_import_root_v4.py \
+            scripts/run_publish_astra_stage2_control_identity_import_root_v4.py
+          python3 scripts/run_publish_astra_stage2_control_identity_import_root_v4.py \
+            2>&1 | tee "$(dirname "$PUBLICATION_OUT")/publication.log"
+          test -s "$PUBLICATION_OUT"
+
+          python3 - "$PUBLICATION_OUT" "$GITHUB_OUTPUT" <<'PY'
+          import json
+          import sys
+
+          value = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert value["schema"] == (
+              "tier-bench/astra-stage2-control-identity-connected-publication@4"
+          )
+          assert value["remote_readback"] == {
+              "release_comment": True,
+              "issue_body": True,
+              "pull_request_body": True,
+          }
+          assert value["release"]["authority"]["provider_or_model_calls"] == 0
+          assert (
+              value["release"]["authority"]["actual_executable_control_identities"]
+              == "UNBOUND"
+          )
+          assert value["release"]["audit"]["failed"] == 0
+          assert (
+              value["release"]["audit"]["refused"]
+              == value["release"]["audit"]["attacks"]
+              == 7
+          )
+          with open(sys.argv[2], "a", encoding="utf-8") as handle:
+              handle.write(
+                  f"release_head={value['release']['source']['head_sha1']}\n"
+              )
+              handle.write(
+                  f"release_tree={value['release']['source']['tree_sha1']}\n"
+              )
+              handle.write(
+                  f"qualification_run={value['release']['qualification']['run_id']}\n"
+              )
+              handle.write(
+                  f"audit_head={value['release']['audit']['head_sha1']}\n"
+              )
+              handle.write(
+                  f"audit_tree={value['release']['audit']['tree_sha1']}\n"
+              )
+              handle.write(
+                  f"audit_run={value['release']['audit']['run_id']}\n"
+              )
+              handle.write(
+                  f"audit_artifact={value['release']['audit']['artifact']['id']}\n"
+              )
+              handle.write(
+                  f"audit_payload={value['release']['audit']['audit_result_payload_sha256']}\n"
+              )
+              handle.write(
+                  f"release_comment={value['release_comment_id']}\n"
+              )
+              handle.write(
+                  f"readback_comment={value['readback_comment_id']}\n"
+              )
+              handle.write(
+                  f"release_payload={value['release_payload_sha256']}\n"
+              )
+              handle.write(f"publication_payload={value['payload_sha256']}\n")
+          PY
+
+      - name: Seal connected publication artifact
+        shell: bash
+        env:
+          PUBLICATION_ROOT: ${{ runner.temp }}/astra-import-root-v4-publication
+        run: |
+          set -euo pipefail
+          cp .github/workflows/astra-stage2-control-identity-import-root-v4-publication.yml \
+            "$PUBLICATION_ROOT/publication-workflow.yml"
+          cp scripts/publish_astra_stage2_control_identity_import_root_v4.py \
+            "$PUBLICATION_ROOT/publication-source.py"
+          cp scripts/run_publish_astra_stage2_control_identity_import_root_v4.py \
+            "$PUBLICATION_ROOT/publication-wrapper.py"
+          (
+            cd "$PUBLICATION_ROOT"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+          )
+          cat "$PUBLICATION_ROOT/publication-record.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload connected publication evidence
+        id: upload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-import-root-v4-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/astra-import-root-v4-publication
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+          overwrite: false
+
+      - name: Publish exact transaction coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.upload.outputs.artifact-id }}"
+          test -n "${{ steps.upload.outputs.artifact-digest }}"
+          {
+            echo
+            echo "publication_head=${{ steps.checkout.outputs.publication_head }}"
+            echo "publication_tree=${{ steps.checkout.outputs.publication_tree }}"
+            echo "release_head=${{ steps.publish.outputs.release_head }}"
+            echo "release_tree=${{ steps.publish.outputs.release_tree }}"
+            echo "qualification_run=${{ steps.publish.outputs.qualification_run }}"
+            echo "audit_head=${{ steps.publish.outputs.audit_head }}"
+            echo "audit_tree=${{ steps.publish.outputs.audit_tree }}"
+            echo "audit_run=${{ steps.publish.outputs.audit_run }}"
+            echo "audit_artifact=${{ steps.publish.outputs.audit_artifact }}"
+            echo "audit_payload=${{ steps.publish.outputs.audit_payload }}"
+            echo "release_comment=${{ steps.publish.outputs.release_comment }}"
+            echo "readback_comment=${{ steps.publish.outputs.readback_comment }}"
+            echo "release_payload=${{ steps.publish.outputs.release_payload }}"
+            echo "publication_payload=${{ steps.publish.outputs.publication_payload }}"
+            echo "publication_artifact=${{ steps.upload.outputs.artifact-id }}"
+            echo "publication_artifact_digest=${{ steps.upload.outputs.artifact-digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"
