@@ -5,10 +5,11 @@ from __future__ import annotations
 import math
 import statistics
 from collections import defaultdict
+from pathlib import Path
 from typing import Any, Iterable
 
 from .canonical import Stage2Error, sha256_object, without_field
-from .contracts import validate_observations
+from .contracts import STAGE1_BLOBS, validate_observations, verify_stage1_blobs
 from .generator import CONTROL_ROLES, EFFORTS, FAMILIES, K_LEVELS, R_LEVELS
 
 RESULT_SCHEMA = "tier-bench/astra-stage2-calibration-result@1"
@@ -21,6 +22,32 @@ FEATURE_NAMES = (
     "token_residual_r_contrast",
     "effort_ttft_elasticity",
     "accuracy_floor",
+)
+
+RESULT_FIELDS = frozenset(
+    {
+        "absolute_timing_transfer",
+        "accuracy_gate",
+        "candidate_thresholds",
+        "control_manifest_sha256",
+        "empirical_candidate_may_self_freeze",
+        "envelopes",
+        "evidence_class",
+        "feature_sample_count",
+        "features",
+        "fixture_may_freeze",
+        "freeze_authority",
+        "next_required_authority",
+        "observation_count",
+        "payload_sha256",
+        "plan_sha256",
+        "schema",
+        "separation_checks",
+        "stage1_custody",
+        "stage2_frozen",
+        "state",
+        "threshold_derivation",
+    }
 )
 
 
@@ -242,15 +269,19 @@ def derive_calibration_result(
     observations: Iterable[Any],
     plan: dict[str, Any],
     control_manifest: dict[str, Any],
+    *,
+    repo_root: Path,
 ) -> dict[str, Any]:
+    stage1_blobs = verify_stage1_blobs(repo_root)
     rows, evidence_class = validate_observations(observations, plan, control_manifest)
     samples = derive_feature_samples(rows)
     envelopes = derive_envelopes(samples)
     checks, candidate_thresholds = derive_candidate_thresholds(envelopes)
-    accuracy_gate = all(
-        float(envelopes[control]["accuracy_floor"]["lower_q10"]) >= 0.95
+    observed_accuracy_floor = min(
+        float(envelopes[control]["accuracy_floor"]["minimum"])
         for control in CONTROL_ROLES
     )
+    accuracy_gate = observed_accuracy_floor == 1.0
     separated = all(check["separated"] for check in checks) and accuracy_gate
 
     if evidence_class == "fixture_synthetic":
@@ -271,13 +302,18 @@ def derive_calibration_result(
         "freeze_authority": "ABSENT_IN_SCAFFOLD",
         "plan_sha256": plan["payload_sha256"],
         "control_manifest_sha256": control_manifest["payload_sha256"],
+        "stage1_custody": {
+            "status": "VERIFIED",
+            "blobs": stage1_blobs,
+        },
         "observation_count": len(rows),
         "feature_sample_count": sum(len(value) for value in samples.values()),
         "features": list(FEATURE_NAMES),
         "envelopes": envelopes,
         "separation_checks": checks,
         "accuracy_gate": {
-            "minimum_lower_q10": 0.95,
+            "required_minimum": 1.0,
+            "observed_minimum": observed_accuracy_floor,
             "passed": accuracy_gate,
         },
         "candidate_thresholds": thresholds,
@@ -295,6 +331,12 @@ def derive_calibration_result(
 def validate_calibration_result(result: Any) -> dict[str, Any]:
     if not isinstance(result, dict) or result.get("schema") != RESULT_SCHEMA:
         raise Stage2Error("unexpected calibration-result schema")
+    missing = sorted(RESULT_FIELDS - set(result))
+    unexpected = sorted(set(result) - RESULT_FIELDS)
+    if missing or unexpected:
+        raise Stage2Error(
+            f"calibration-result property set mismatch: missing={missing}, unexpected={unexpected}"
+        )
     observed_hash = result.get("payload_sha256")
     if observed_hash != sha256_object(without_field(result, "payload_sha256")):
         raise Stage2Error("calibration-result self-hash mismatch")
@@ -302,6 +344,15 @@ def validate_calibration_result(result: Any) -> dict[str, Any]:
         raise Stage2Error("provider-free scaffold may never emit a frozen Stage 2 state")
     if result.get("freeze_authority") != "ABSENT_IN_SCAFFOLD":
         raise Stage2Error("scaffold freeze authority widened")
+    stage1_custody = result.get("stage1_custody")
+    if not isinstance(stage1_custody, dict):
+        raise Stage2Error("calibration result lacks Stage 1 custody")
+    if set(stage1_custody) != {"status", "blobs"}:
+        raise Stage2Error("calibration result Stage 1 custody property set differs")
+    if stage1_custody.get("status") != "VERIFIED":
+        raise Stage2Error("calibration result Stage 1 custody is not verified")
+    if stage1_custody.get("blobs") != STAGE1_BLOBS:
+        raise Stage2Error("calibration result Stage 1 blob set differs from the frozen set")
     state = result.get("state")
     evidence_class = result.get("evidence_class")
     if evidence_class == "fixture_synthetic":
