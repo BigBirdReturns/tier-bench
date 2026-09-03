@@ -1,0 +1,355 @@
+name: build-astra-wrapper-splat-repair
+
+on:
+  push:
+    branches:
+      - repair/astra-stage2-wrapper-splat-builder-20260903
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Build and validate named-wrapper-parameter successor
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_HEAD: 606b61fe56af318a459b7910331082499e432cfb
+          BASE_TREE: e1e4e7938114f74c67d22f7b9ac33ce82992ec7c
+          LAUNCHER_BLOB: a4d3a6c0aaf080d65bba68bb5554aa0ea99283bc
+          RELEASE_TEST_BLOB: 5b3c321b17f5f89fe93b8e3021297f90372949c3
+          OUTPUT_BRANCH: repair/astra-stage2-wrapper-splat-staging-20260903
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=128 origin \
+            "+${BASE_HEAD}:refs/astra-wrapper-splat/base"
+          git checkout --detach refs/astra-wrapper-splat/base
+
+          test "$(git rev-parse HEAD)" = "$BASE_HEAD"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$BASE_TREE"
+          test "$(git rev-parse 'HEAD:scripts/Invoke-AstraStage2ControlIdentityBinding.ps1')" = "$LAUNCHER_BLOB"
+          test "$(git rev-parse 'HEAD:tests/test_astra_stage2_control_identity_release.py')" = "$RELEASE_TEST_BLOB"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          launcher_path = Path(
+              "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          )
+          launcher = launcher_path.read_text(encoding="utf-8")
+
+          replacements = [
+              (
+                  "function Invoke-PinnedBinder {\n"
+                  "    param(\n"
+                  "        [Parameter(Mandatory = $true)][string]$BinderRoot,\n"
+                  "        [Parameter(Mandatory = $true)][string]$Wrapper,\n"
+                  "        [Parameter(Mandatory = $true)][string[]]$Arguments\n"
+                  "    )\n",
+                  "function Invoke-PinnedBinder {\n"
+                  "    param(\n"
+                  "        [Parameter(Mandatory = $true)][string]$BinderRoot,\n"
+                  "        [Parameter(Mandatory = $true)][string]$Wrapper,\n"
+                  "        [Parameter(Mandatory = $true)][hashtable]$Parameters\n"
+                  "    )\n",
+                  "binder function signature",
+                  1,
+              ),
+              (
+                  "        & $Wrapper @Arguments\n"
+                  "        $exitCode = $LASTEXITCODE\n"
+                  "        if ($exitCode -ne 0) {\n"
+                  "            throw (\n"
+                  "                \"Pinned binder command failed ($exitCode) from ${expectedRoot}: \" +\n"
+                  "                ($Arguments -join ' ')\n"
+                  "            )\n"
+                  "        }\n",
+                  "        & $Wrapper @Parameters\n"
+                  "        $exitCode = $LASTEXITCODE\n"
+                  "        if ($exitCode -ne 0) {\n"
+                  "            $command = [string]$Parameters['Command']\n"
+                  "            throw (\n"
+                  "                \"Pinned binder command failed ($exitCode) from ${expectedRoot}: \" +\n"
+                  "                $command\n"
+                  "            )\n"
+                  "        }\n",
+                  "named wrapper splat",
+                  1,
+              ),
+              (
+                  "        Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @('-Command', 'template', '-Out', $smokeTemplate)\n",
+                  "        Invoke-PinnedBinder `\n"
+                  "            -BinderRoot $BinderRoot `\n"
+                  "            -Wrapper $wrapper `\n"
+                  "            -Parameters @{\n"
+                  "                Command = 'template'\n"
+                  "                Out = $smokeTemplate\n"
+                  "            }\n",
+                  "template invocation",
+                  1,
+              ),
+              (
+                  "    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(\n"
+                  "        '-Command', 'probe-hardware',\n"
+                  "        '-Out', $HardwareRoot,\n"
+                  "        '-NvidiaSmi', $gpu.NvidiaSmi,\n"
+                  "        '-DeviceIndices', ([string]$gpu.Device.Index)\n"
+                  "    )\n",
+                  "    Invoke-PinnedBinder `\n"
+                  "        -BinderRoot $BinderRoot `\n"
+                  "        -Wrapper $wrapper `\n"
+                  "        -Parameters @{\n"
+                  "            Command = 'probe-hardware'\n"
+                  "            Out = $HardwareRoot\n"
+                  "            NvidiaSmi = $gpu.NvidiaSmi\n"
+                  "            DeviceIndices = ([string]$gpu.Device.Index)\n"
+                  "        }\n",
+                  "hardware probe invocation",
+                  1,
+              ),
+              (
+                  "    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(\n"
+                  "        '-Command', 'inventory',\n"
+                  "        '-Config', $PrivateConfig,\n"
+                  "        '-Out', $InventoriedConfig\n"
+                  "    )\n",
+                  "    Invoke-PinnedBinder `\n"
+                  "        -BinderRoot $BinderRoot `\n"
+                  "        -Wrapper $wrapper `\n"
+                  "        -Parameters @{\n"
+                  "            Command = 'inventory'\n"
+                  "            Config = $PrivateConfig\n"
+                  "            Out = $InventoriedConfig\n"
+                  "        }\n",
+                  "inventory invocation",
+                  1,
+              ),
+              (
+                  "    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @('-Command', 'validate-config', '-Config', $InventoriedConfig)\n",
+                  "    Invoke-PinnedBinder `\n"
+                  "        -BinderRoot $BinderRoot `\n"
+                  "        -Wrapper $wrapper `\n"
+                  "        -Parameters @{\n"
+                  "            Command = 'validate-config'\n"
+                  "            Config = $InventoriedConfig\n"
+                  "        }\n",
+                  "validation invocation",
+                  1,
+              ),
+              (
+                  "    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(\n"
+                  "        '-Command', 'bind',\n"
+                  "        '-Config', $InventoriedConfig,\n"
+                  "        '-RepoRoot', $BinderRoot,\n"
+                  "        '-Out', $BoundRoot\n"
+                  "    )\n",
+                  "    Invoke-PinnedBinder `\n"
+                  "        -BinderRoot $BinderRoot `\n"
+                  "        -Wrapper $wrapper `\n"
+                  "        -Parameters @{\n"
+                  "            Command = 'bind'\n"
+                  "            Config = $InventoriedConfig\n"
+                  "            RepoRoot = $BinderRoot\n"
+                  "            Out = $BoundRoot\n"
+                  "        }\n",
+                  "bind invocation",
+                  1,
+              ),
+              (
+                  "    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(\n"
+                  "        '-Command', 'verify',\n"
+                  "        '-Config', $InventoriedConfig,\n"
+                  "        '-RepoRoot', $BinderRoot,\n"
+                  "        '-Out', $BoundRoot\n"
+                  "    )\n",
+                  "    Invoke-PinnedBinder `\n"
+                  "        -BinderRoot $BinderRoot `\n"
+                  "        -Wrapper $wrapper `\n"
+                  "        -Parameters @{\n"
+                  "            Command = 'verify'\n"
+                  "            Config = $InventoriedConfig\n"
+                  "            RepoRoot = $BinderRoot\n"
+                  "            Out = $BoundRoot\n"
+                  "        }\n",
+                  "verify invocations",
+                  2,
+              ),
+          ]
+
+          for before, after, label, expected_count in replacements:
+              observed = launcher.count(before)
+              if observed != expected_count:
+                  raise SystemExit(
+                      f"{label} anchor mismatch: expected {expected_count}, observed {observed}"
+                  )
+              launcher = launcher.replace(before, after)
+
+          launcher_path.write_text(
+              launcher,
+              encoding="utf-8",
+              newline="\n",
+          )
+
+          test_path = Path(
+              "tests/test_astra_stage2_control_identity_release.py"
+          )
+          test_text = test_path.read_text(encoding="utf-8")
+          old = (
+              '        self.assertIn("function Invoke-PinnedBinder", self.text)\n'
+              '        self.assertIn("$env:PYTHONPATH = $expectedRoot", self.text)\n'
+          )
+          new = (
+              '        self.assertIn("function Invoke-PinnedBinder", self.text)\n'
+              '        self.assertIn(\n'
+              '            "[Parameter(Mandatory = $true)][hashtable]$Parameters",\n'
+              '            self.text,\n'
+              '        )\n'
+              '        self.assertIn("& $Wrapper @Parameters", self.text)\n'
+              '        self.assertNotIn("& $Wrapper @Arguments", self.text)\n'
+              '        self.assertNotIn("-Arguments @(", self.text)\n'
+              '        self.assertIn("$env:PYTHONPATH = $expectedRoot", self.text)\n'
+          )
+          if test_text.count(old) != 1:
+              raise SystemExit("release test binder assertion anchor mismatch")
+          test_text = test_text.replace(old, new, 1)
+
+          old = (
+              '        self.assertRegex(\n'
+              '            self.text,\n'
+              '            re.compile(\n'
+              '                r"Invoke-PinnedBinder.+?\'-Command\',\\s*\'template\',\\s*\'-Out\',\\s*\\$smokeTemplate",\n'
+              '                re.DOTALL,\n'
+              '            ),\n'
+              '        )\n'
+          )
+          new = (
+              '        self.assertRegex(\n'
+              '            self.text,\n'
+              '            re.compile(\n'
+              '                r"Invoke-PinnedBinder.+?-Parameters\\s+@\\{.+?"\n'
+              '                r"Command\\s*=\\s*\'template\'.+?"\n'
+              '                r"Out\\s*=\\s*\\$smokeTemplate",\n'
+              '                re.DOTALL,\n'
+              '            ),\n'
+              '        )\n'
+          )
+          if test_text.count(old) != 1:
+              raise SystemExit("release test template-regex anchor mismatch")
+          test_text = test_text.replace(old, new, 1)
+
+          old = (
+              '        self.assertGreaterEqual(self.text.count("Invoke-PinnedBinder"), 7)\n'
+          )
+          new = (
+              '        self.assertGreaterEqual(self.text.count("Invoke-PinnedBinder"), 7)\n'
+              '        self.assertGreaterEqual(self.text.count("-Parameters @{"), 7)\n'
+              '        self.assertNotIn("-Arguments @(", self.text)\n'
+          )
+          if test_text.count(old) != 1:
+              raise SystemExit("release test invocation-count anchor mismatch")
+          test_text = test_text.replace(old, new, 1)
+
+          test_path.write_text(
+              test_text,
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+
+          git diff --check
+          git diff --name-only > "$RUNNER_TEMP/changed-paths.txt"
+          test "$(wc -l < "$RUNNER_TEMP/changed-paths.txt")" -eq 2
+          grep -Fxq 'scripts/Invoke-AstraStage2ControlIdentityBinding.ps1' "$RUNNER_TEMP/changed-paths.txt"
+          grep -Fxq 'tests/test_astra_stage2_control_identity_release.py' "$RUNNER_TEMP/changed-paths.txt"
+
+          command -v pwsh >/dev/null
+          ASTRA_RELEASE_LAUNCHER="$PWD/scripts/Invoke-AstraStage2ControlIdentityBinding.ps1" \
+          pwsh -NoProfile -Command \
+            '$ErrorActionPreference = "Stop"; $text = Get-Content -Raw -LiteralPath $env:ASTRA_RELEASE_LAUNCHER; [void][scriptblock]::Create($text); Write-Output "POWERSHELL_PARSE_PASS"'
+
+          python3 -m py_compile \
+            astra_stage2/control_identity.py \
+            scripts/astra_stage2_bind_controls.py \
+            tests/test_astra_stage2_control_identity.py \
+            tests/test_astra_stage2_control_identity_release.py
+          PYTHONPATH=. python3 -m unittest discover \
+            -s tests \
+            -p 'test_astra_stage2_control_identity*.py' \
+            -v 2>&1 | tee "$RUNNER_TEMP/test-wrapper-splat-repair-linux.log"
+          grep -q '^Ran 27 tests in ' "$RUNNER_TEMP/test-wrapper-splat-repair-linux.log"
+          grep -q '^OK$' "$RUNNER_TEMP/test-wrapper-splat-repair-linux.log"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          launcher = Path(
+              "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          ).read_text(encoding="utf-8")
+          required = (
+              "[Parameter(Mandatory = $true)][hashtable]$Parameters",
+              "& $Wrapper @Parameters",
+              "Command = 'template'",
+              "Command = 'probe-hardware'",
+              "Command = 'inventory'",
+              "Command = 'validate-config'",
+              "Command = 'bind'",
+              "Command = 'verify'",
+          )
+          for marker in required:
+              if marker not in launcher:
+                  raise SystemExit(
+                      f"named wrapper marker is absent: {marker}"
+                  )
+          for forbidden in (
+              "& $Wrapper @Arguments",
+              "-Arguments @(",
+              "[string[]]$Arguments",
+          ):
+              if forbidden in launcher:
+                  raise SystemExit(
+                      f"positional wrapper marker remains: {forbidden}"
+                  )
+          PY
+
+          staging_root="staging/astra-stage2-wrapper-splat-repair-20260903"
+          mkdir -p "$staging_root"
+          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \
+            "$staging_root/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          cp tests/test_astra_stage2_control_identity_release.py \
+            "$staging_root/test_astra_stage2_control_identity_release.py"
+          (
+            cd "$staging_root"
+            sha256sum \
+              Invoke-AstraStage2ControlIdentityBinding.ps1 \
+              test_astra_stage2_control_identity_release.py \
+              > SHA256SUMS
+          )
+
+          git restore \
+            scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \
+            tests/test_astra_stage2_control_identity_release.py
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add "$staging_root"
+          test "$(git diff --cached --name-only | wc -l)" -eq 3
+          git commit -m "stage(astra): retain named-wrapper-parameter repair blobs"
+
+          staging_head="$(git rev-parse HEAD)"
+          staging_tree="$(git rev-parse 'HEAD^{tree}')"
+          launcher_blob="$(git rev-parse "HEAD:${staging_root}/Invoke-AstraStage2ControlIdentityBinding.ps1")"
+          test_blob="$(git rev-parse "HEAD:${staging_root}/test_astra_stage2_control_identity_release.py")"
+          git push --force origin "HEAD:refs/heads/${OUTPUT_BRANCH}"
+
+          {
+            echo "staging_head=${staging_head}"
+            echo "staging_tree=${staging_tree}"
+            echo "launcher_blob=${launcher_blob}"
+            echo "release_test_blob=${test_blob}"
+            echo "output_branch=${OUTPUT_BRANCH}"
+          } >> "$GITHUB_STEP_SUMMARY"
