@@ -52,8 +52,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/astra-stage2-closed-object-audit"
-          python3 -m py_compile audits/astra_stage2_closed_objects_audit.py
-          python3 audits/astra_stage2_closed_objects_audit.py \
+          PYTHONPATH=. python3 -m py_compile audits/astra_stage2_closed_objects_audit.py
+          PYTHONPATH=. python3 audits/astra_stage2_closed_objects_audit.py \
             --repo-root . \
             --out "$RUNNER_TEMP/astra-stage2-closed-object-audit/audit-result.json"
           sha256sum "$RUNNER_TEMP/astra-stage2-closed-object-audit/audit-result.json" \
