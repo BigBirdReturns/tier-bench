@@ -6,18 +6,19 @@ on:
       - assist/astra-stage2-semantic-custody-49cd-20260903
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: astra-stage2-semantic-custody-bootstrap-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  apply-qualified-payload:
+  export-qualified-payload:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - name: Check out exact staging head
+        id: custody
         shell: bash
         env:
           ASSIST_BRANCH: assist/astra-stage2-semantic-custody-49cd-20260903
@@ -35,6 +36,8 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_STAGING_HEAD"
           git merge-base --is-ancestor "$TARGET_HEAD" HEAD
           test "$(git rev-parse "${TARGET_HEAD}^{tree}")" = "$TARGET_TREE"
+          printf 'staging_head=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          printf 'staging_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
 
       - name: Reconstruct and validate payload
         shell: bash
@@ -106,10 +109,12 @@ jobs:
               archive.extractall(".", filter="data")
           PY
 
-      - name: Remove transport and validate exact final delta
+      - name: Validate exact final tree
+        id: final
         shell: bash
         env:
           TARGET_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+          TARGET_TREE: dcaee26ad123842c325909f4a083eb9a1d76c7dc
         run: |
           set -euo pipefail
           rm -rf .assist
@@ -129,23 +134,107 @@ jobs:
             'tests/test_astra_stage2_calibration.py' | sort > "$RUNNER_TEMP/expected-final-paths.txt"
           printf '%s\n' "${observed[@]}" > "$RUNNER_TEMP/observed-final-paths.txt"
           diff -u "$RUNNER_TEMP/expected-final-paths.txt" "$RUNNER_TEMP/observed-final-paths.txt"
+          git add -A
+          mapfile -t staged < <(git diff --cached --name-only "$TARGET_HEAD" -- | sort)
+          test "${#staged[@]}" -eq 7
+          printf '%s\n' "${staged[@]}" > "$RUNNER_TEMP/staged-final-paths.txt"
+          diff -u "$RUNNER_TEMP/expected-final-paths.txt" "$RUNNER_TEMP/staged-final-paths.txt"
+          final_tree="$(git write-tree)"
+          printf 'final_tree=%s\n' "$final_tree" >> "$GITHUB_OUTPUT"
 
-      - name: Commit exact assist implementation
+      - name: Package exact final tree
+        id: package
         shell: bash
         env:
-          ASSIST_BRANCH: assist/astra-stage2-semantic-custody-49cd-20260903
           TARGET_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
-          GH_TOKEN: ${{ github.token }}
+          TARGET_TREE: dcaee26ad123842c325909f4a083eb9a1d76c7dc
+          STAGING_HEAD: ${{ steps.custody.outputs.staging_head }}
+          STAGING_TREE: ${{ steps.custody.outputs.staging_tree }}
+          FINAL_TREE: ${{ steps.final.outputs.final_tree }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          mapfile -t final_paths < <(git diff --cached --name-only "$TARGET_HEAD" -- | sort)
-          test "${#final_paths[@]}" -eq 7
-          printf '%s\n' "${final_paths[@]}" > "$RUNNER_TEMP/staged-final-paths.txt"
-          diff -u "$RUNNER_TEMP/expected-final-paths.txt" "$RUNNER_TEMP/staged-final-paths.txt"
-          git commit -m "fix(astra): bind semantic custody through the full result graph" \
-            -m "Closes the seven authority attacks recorded in issue #172 comments 5520024043 and 5520382426 on a separate assist branch. No provider, model, empirical subject, freeze, merge, or verdict authority is introduced."
-          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-            "HEAD:refs/heads/${ASSIST_BRANCH}"
+          export_root="$RUNNER_TEMP/semantic-custody-export"
+          payload_root="$export_root/payload"
+          mkdir -p "$payload_root"
+          while IFS= read -r path
+          do
+            install -D -m 0644 "$path" "$payload_root/$path"
+          done < "$RUNNER_TEMP/expected-final-paths.txt"
+          cp "$RUNNER_TEMP/payload.tar.gz" "$export_root/payload.tar.gz"
+          cp "$RUNNER_TEMP/semantic-custody-tests.log" "$export_root/semantic-custody-tests.log"
+          cp "$RUNNER_TEMP/expected-final-paths.txt" "$export_root/expected-final-paths.txt"
+          cp "$RUNNER_TEMP/observed-final-paths.txt" "$export_root/observed-final-paths.txt"
+          cp "$RUNNER_TEMP/staged-final-paths.txt" "$export_root/staged-final-paths.txt"
+          python3 - "$export_root" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+
+          root = pathlib.Path(sys.argv[1])
+          payload_root = root / "payload"
+          files = {}
+          for path in sorted(p for p in payload_root.rglob("*") if p.is_file()):
+              data = path.read_bytes()
+              files[path.relative_to(payload_root).as_posix()] = {
+                  "bytes": len(data),
+                  "sha256": hashlib.sha256(data).hexdigest(),
+              }
+          manifest = {
+              "record_type": "tier-bench/astra-stage2-semantic-custody-export@1",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "target_head": os.environ["TARGET_HEAD"],
+              "target_tree": os.environ["TARGET_TREE"],
+              "staging_head": os.environ["STAGING_HEAD"],
+              "staging_tree": os.environ["STAGING_TREE"],
+              "final_tree": os.environ["FINAL_TREE"],
+              "payload_tar_sha256": hashlib.sha256((root / "payload.tar.gz").read_bytes()).hexdigest(),
+              "test_log_sha256": hashlib.sha256((root / "semantic-custody-tests.log").read_bytes()).hexdigest(),
+              "path_count": len(files),
+              "files": files,
+              "tests": 27,
+              "provider_or_model_calls": 0,
+              "empirical_execution": False,
+              "merge_authority": "NONE",
+          }
+          canonical = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+          manifest["payload_sha256"] = hashlib.sha256(canonical).hexdigest()
+          (root / "export-manifest.json").write_text(
+              json.dumps(manifest, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+          (
+            cd "$export_root"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+          printf 'export_root=%s\n' "$export_root" >> "$GITHUB_OUTPUT"
+          cat "$export_root/export-manifest.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload exact final tree
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-semantic-custody-export-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.package.outputs.export_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+          include-hidden-files: true
+
+      - name: Seal export coordinate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.artifact.outputs.artifact-id }}"
+          test -n "${{ steps.artifact.outputs.artifact-digest }}"
+          {
+            echo
+            echo "artifact_id=${{ steps.artifact.outputs.artifact-id }}"
+            echo "artifact_digest=${{ steps.artifact.outputs.artifact-digest }}"
+            echo "staging_head=${{ steps.custody.outputs.staging_head }}"
+            echo "staging_tree=${{ steps.custody.outputs.staging_tree }}"
+            echo "final_tree=${{ steps.final.outputs.final_tree }}"
+          } >> "$GITHUB_STEP_SUMMARY"
