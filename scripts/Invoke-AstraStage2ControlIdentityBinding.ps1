@@ -427,7 +427,7 @@ function Invoke-PinnedBinder {
     param(
         [Parameter(Mandatory = $true)][string]$BinderRoot,
         [Parameter(Mandatory = $true)][string]$Wrapper,
-        [Parameter(Mandatory = $true)][string[]]$Arguments
+        [Parameter(Mandatory = $true)][hashtable]$Parameters
     )
 
     if (-not (Test-Path -LiteralPath $Wrapper -PathType Leaf)) {
@@ -452,12 +452,13 @@ function Invoke-PinnedBinder {
             throw "Pinned binder working-directory mismatch: $observedRoot"
         }
 
-        & $Wrapper @Arguments
+        & $Wrapper @Parameters
         $exitCode = $LASTEXITCODE
         if ($exitCode -ne 0) {
+            $command = [string]$Parameters['Command']
             throw (
                 "Pinned binder command failed ($exitCode) from ${expectedRoot}: " +
-                ($Arguments -join ' ')
+                $command
             )
         }
     }
@@ -567,7 +568,13 @@ if ($Mode -eq 'Preflight') {
             throw 'Preflight caller directory unexpectedly equals the binder root'
         }
 
-        Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @('-Command', 'template', '-Out', $smokeTemplate)
+        Invoke-PinnedBinder `
+            -BinderRoot $BinderRoot `
+            -Wrapper $wrapper `
+            -Parameters @{
+                Command = 'template'
+                Out = $smokeTemplate
+            }
 
         $after = Get-NormalizedPath -Path ((Get-Location).Path)
         if (-not $after.Equals(
@@ -644,20 +651,26 @@ if ($Mode -eq 'Prepare') {
     Assert-CheckpointCustody -Root $ModelRoot
 
     $gpu = Select-LargestNvidiaDevice
-    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
-        '-Command', 'probe-hardware',
-        '-Out', $HardwareRoot,
-        '-NvidiaSmi', $gpu.NvidiaSmi,
-        '-DeviceIndices', ([string]$gpu.Device.Index)
-    )
+    Invoke-PinnedBinder `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Parameters @{
+            Command = 'probe-hardware'
+            Out = $HardwareRoot
+            NvidiaSmi = $gpu.NvidiaSmi
+            DeviceIndices = ([string]$gpu.Device.Index)
+        }
 
     Write-PreparedConfig -BinderRoot $BinderRoot -LotusSource $lotusSource -LoopCoderSource $loopCoderSource -Models $ModelRoot -HardwareRoot $HardwareRoot -DeviceIndex $gpu.Device.Index -OutputPath $PrivateConfig
 
-    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
-        '-Command', 'inventory',
-        '-Config', $PrivateConfig,
-        '-Out', $InventoriedConfig
-    )
+    Invoke-PinnedBinder `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Parameters @{
+            Command = 'inventory'
+            Config = $PrivateConfig
+            Out = $InventoriedConfig
+        }
 
     if (-not (Test-Path -LiteralPath $InventoriedConfig -PathType Leaf)) {
         throw 'Checkpoint inventory did not emit the inventoried private configuration'
@@ -718,19 +731,31 @@ if (-not (Test-Path -LiteralPath $InventoriedConfig -PathType Leaf)) {
 
 if ($Mode -eq 'Bind') {
     Assert-BindReady -ConfigPath $InventoriedConfig
-    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @('-Command', 'validate-config', '-Config', $InventoriedConfig)
-    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
-        '-Command', 'bind',
-        '-Config', $InventoriedConfig,
-        '-RepoRoot', $BinderRoot,
-        '-Out', $BoundRoot
-    )
-    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
-        '-Command', 'verify',
-        '-Config', $InventoriedConfig,
-        '-RepoRoot', $BinderRoot,
-        '-Out', $BoundRoot
-    )
+    Invoke-PinnedBinder `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Parameters @{
+            Command = 'validate-config'
+            Config = $InventoriedConfig
+        }
+    Invoke-PinnedBinder `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Parameters @{
+            Command = 'bind'
+            Config = $InventoriedConfig
+            RepoRoot = $BinderRoot
+            Out = $BoundRoot
+        }
+    Invoke-PinnedBinder `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Parameters @{
+            Command = 'verify'
+            Config = $InventoriedConfig
+            RepoRoot = $BinderRoot
+            Out = $BoundRoot
+        }
     Write-Host 'Executable identities bound and verified. No model was executed.'
     exit 0
 }
@@ -740,12 +765,15 @@ if ($Mode -eq 'Verify') {
     if (-not (Test-Path -LiteralPath $BoundRoot -PathType Container)) {
         throw "Bound output is absent: $BoundRoot"
     }
-    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
-        '-Command', 'verify',
-        '-Config', $InventoriedConfig,
-        '-RepoRoot', $BinderRoot,
-        '-Out', $BoundRoot
-    )
+    Invoke-PinnedBinder `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Parameters @{
+            Command = 'verify'
+            Config = $InventoriedConfig
+            RepoRoot = $BinderRoot
+            Out = $BoundRoot
+        }
     Write-Host 'Executable identities verified. No model was executed.'
     exit 0
 }

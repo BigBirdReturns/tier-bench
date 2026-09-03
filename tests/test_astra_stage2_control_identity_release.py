@@ -111,19 +111,30 @@ class ControlIdentityReleaseTests(unittest.TestCase):
             re.compile(r"\b(generate|completion|chat\.completions)\s*\(", re.I),
         )
 
-    def test_26_preflight_proves_import_from_non_binder_cwd(self) -> None:
+    def test_26_preflight_proves_named_wrapper_import_from_non_binder_cwd(
+        self,
+    ) -> None:
         self.assertIn("function Invoke-PinnedBinder", self.text)
-        self.assertIn("$env:PYTHONPATH = $expectedRoot", self.text)
-        self.assertIn("Push-Location -LiteralPath $expectedRoot", self.text)
-        self.assertIn("Remove-Item Env:PYTHONPATH", self.text)
+        binder_block = self.text.split(
+            "function Invoke-PinnedBinder {", 1
+        )[1].split("function Get-LauncherCoordinates", 1)[0]
+        self.assertIn(
+            "[Parameter(Mandatory = $true)][hashtable]$Parameters",
+            binder_block,
+        )
+        self.assertIn("& $Wrapper @Parameters", binder_block)
+        self.assertNotIn("@Arguments", binder_block)
+        self.assertNotIn("[string[]]$Arguments", binder_block)
+        self.assertIn("$env:PYTHONPATH = $expectedRoot", binder_block)
+        self.assertIn("Push-Location -LiteralPath $expectedRoot", binder_block)
+        self.assertIn("Remove-Item Env:PYTHONPATH", binder_block)
         self.assertIn("preflight-binder-import-smoke", self.text)
         self.assertIn("non-binder-cwd", self.text)
-        self.assertRegex(
+        self.assertIn("Command = 'template'", self.text)
+        self.assertIn("Out = $smokeTemplate", self.text)
+        self.assertNotRegex(
             self.text,
-            re.compile(
-                r"Invoke-PinnedBinder.+?'-Command',\s*'template',\s*'-Out',\s*\$smokeTemplate",
-                re.DOTALL,
-            ),
+            re.compile(r"Invoke-PinnedBinder[^\n]*-Arguments"),
         )
         for receipt_field in (
             "binder_import_smoke = 'PASS'",
@@ -135,21 +146,28 @@ class ControlIdentityReleaseTests(unittest.TestCase):
         ):
             self.assertIn(receipt_field, self.text)
 
-    def test_27_bind_refuses_unbound_runtime_and_effort_mapping(self) -> None:
+    def test_27_bind_refuses_unbound_runtime_and_uses_named_wrapper_parameters(
+        self,
+    ) -> None:
         self.assertIn("function Assert-BindReady", self.text)
         self.assertIn("Runtime identity is still unbound", self.text)
         self.assertIn('["--effort","low"]', self.text)
         self.assertIn('["--effort","high"]', self.text)
         self.assertIn("Bind is refused", self.text)
         for command in (
-            "'probe-hardware'",
-            "'inventory'",
-            "'validate-config'",
-            "'bind'",
-            "'verify'",
+            "Command = 'probe-hardware'",
+            "Command = 'inventory'",
+            "Command = 'validate-config'",
+            "Command = 'bind'",
+            "Command = 'verify'",
         ):
             self.assertIn(command, self.text)
         self.assertGreaterEqual(self.text.count("Invoke-PinnedBinder"), 7)
+        self.assertGreaterEqual(self.text.count("-Parameters @{"), 7)
+        self.assertNotRegex(
+            self.text,
+            re.compile(r"Invoke-PinnedBinder[^\n]*-Arguments"),
+        )
 
 
 if __name__ == "__main__":
