@@ -1,0 +1,276 @@
+name: build-astra-successor-ci-scope-repair-v3
+
+on:
+  push:
+    branches:
+      - repair/astra-stage2-successor-ci-scope-builder-20260903
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Materialize exact two-file successor
+        id: build
+        shell: bash
+        env:
+          BASE_HEAD: 125fdc367920960421d1e080900f1806637277f4
+          BASE_TREE: ccab08e1192346f9c386b0f41ffaab77bac73194
+          PREDECESSOR_WORKFLOW_BLOB: 70af029d2c4574038e02d4cdf1e05d59a56bde6f
+          RELEASE_WORKFLOW_BLOB: aa3515ea2e1994f0ccd6f71e8ec6cc55e09b3f0a
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=64 origin \
+            "+${BASE_HEAD}:refs/successor-ci-scope/base"
+          git checkout --detach refs/successor-ci-scope/base
+
+          test "$(git rev-parse HEAD)" = "$BASE_HEAD"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$BASE_TREE"
+          test "$(git rev-parse 'HEAD:.github/workflows/astra-stage2-control-identity.yml')" = \
+            "$PREDECESSOR_WORKFLOW_BLOB"
+          test "$(git rev-parse 'HEAD:.github/workflows/astra-stage2-control-identity-release.yml')" = \
+            "$RELEASE_WORKFLOW_BLOB"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          predecessor_path = Path(
+              ".github/workflows/astra-stage2-control-identity.yml"
+          )
+          predecessor = predecessor_path.read_text(encoding="utf-8")
+          old = "  pull_request:\n    paths:\n"
+          new = (
+              "  pull_request:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-calibration-impl-20260902\n"
+              "    paths:\n"
+          )
+          if predecessor.count(old) != 1:
+              raise SystemExit(
+                  "predecessor pull_request anchor does not occur exactly once"
+              )
+          predecessor_path.write_text(
+              predecessor.replace(old, new, 1),
+              encoding="utf-8",
+              newline="\n",
+          )
+
+          release_path = Path(
+              ".github/workflows/astra-stage2-control-identity-release.yml"
+          )
+          release = release_path.read_text(encoding="utf-8")
+
+          old = (
+              '          expected = {\n'
+              '              ".github/workflows/astra-stage2-control-identity-release.yml",\n'
+          )
+          new = (
+              '          expected = {\n'
+              '              ".github/workflows/astra-stage2-control-identity-release.yml",\n'
+              '              ".github/workflows/astra-stage2-control-identity.yml",\n'
+          )
+          if release.count(old) != 1:
+              raise SystemExit(
+                  "release path-set anchor does not occur exactly once"
+              )
+          release = release.replace(old, new, 1)
+
+          old = (
+              '          if observed != expected:\n'
+              '              raise SystemExit(\n'
+              '                  f"release path set mismatch: expected={sorted(expected)}, "\n'
+              '                  f"observed={sorted(observed)}"\n'
+              '              )\n'
+              '          PY\n'
+          )
+          new = (
+              '          if observed != expected:\n'
+              '              raise SystemExit(\n'
+              '                  f"release path set mismatch: expected={sorted(expected)}, "\n'
+              '                  f"observed={sorted(observed)}"\n'
+              '              )\n'
+              '\n'
+              '          predecessor = Path(\n'
+              '              ".github/workflows/astra-stage2-control-identity.yml"\n'
+              '          ).read_text(encoding="utf-8")\n'
+              '          required_scope = (\n'
+              '              "  pull_request:\\n"\n'
+              '              "    branches:\\n"\n'
+              '              "      - joint/astra-stage2-calibration-impl-20260902\\n"\n'
+              '              "    paths:\\n"\n'
+              '          )\n'
+              '          if required_scope not in predecessor:\n'
+              '              raise SystemExit(\n'
+              '                  "predecessor workflow lacks its exact PR-base scope"\n'
+              '              )\n'
+              '          required_push = (\n'
+              '              "  push:\\n"\n'
+              '              "    branches:\\n"\n'
+              '              "      - joint/astra-stage2-control-identities-20260903\\n"\n'
+              '          )\n'
+              '          if required_push not in predecessor:\n'
+              '              raise SystemExit(\n'
+              '                  "predecessor workflow lost its candidate push lane"\n'
+              '              )\n'
+              '          PY\n'
+          )
+          if release.count(old) != 1:
+              raise SystemExit(
+                  "release scope-verification anchor does not occur exactly once"
+              )
+          release = release.replace(old, new, 1)
+
+          old = (
+              "          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \\\n"
+              '            "$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1"\n'
+          )
+          new = (
+              "          cp .github/workflows/astra-stage2-control-identity.yml \\\n"
+              '            "$EVIDENCE_ROOT/predecessor-control-identity-workflow.yml"\n'
+              "          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \\\n"
+              '            "$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1"\n'
+          )
+          if release.count(old) != 1:
+              raise SystemExit(
+                  "release evidence-copy anchor does not occur exactly once"
+              )
+          release = release.replace(old, new, 1)
+
+          old = (
+              '                  "repository_root_discovery_tested": True,\n'
+              '                  "cross_platform_runtime_fixture": True,\n'
+          )
+          new = (
+              '                  "repository_root_discovery_tested": True,\n'
+              '                  "predecessor_workflow_successor_scope": True,\n'
+              '                  "cross_platform_runtime_fixture": True,\n'
+          )
+          if release.count(old) != 1:
+              raise SystemExit(
+                  "qualification conformance anchor does not occur exactly once"
+              )
+          release = release.replace(old, new, 1)
+
+          old = (
+              '              "pinned_launcher": (\n'
+              '                  "Invoke-AstraStage2ControlIdentityBinding.ps1"\n'
+              "              ),\n"
+              '              "actual_control_identities": "UNBOUND",\n'
+          )
+          new = (
+              '              "pinned_launcher": (\n'
+              '                  "Invoke-AstraStage2ControlIdentityBinding.ps1"\n'
+              "              ),\n"
+              '              "predecessor_workflow_successor_scope": True,\n'
+              '              "actual_control_identities": "UNBOUND",\n'
+          )
+          if release.count(old) != 1:
+              raise SystemExit(
+                  "publication scope anchor does not occur exactly once"
+              )
+          release = release.replace(old, new, 1)
+
+          release_path.write_text(
+              release,
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+
+          git diff --check
+          git diff --name-only > /tmp/changed-paths.txt
+          test "$(wc -l < /tmp/changed-paths.txt)" -eq 2
+          grep -Fxq '.github/workflows/astra-stage2-control-identity.yml' /tmp/changed-paths.txt
+          grep -Fxq '.github/workflows/astra-stage2-control-identity-release.yml' /tmp/changed-paths.txt
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          predecessor = Path(
+              ".github/workflows/astra-stage2-control-identity.yml"
+          ).read_text(encoding="utf-8")
+          release = Path(
+              ".github/workflows/astra-stage2-control-identity-release.yml"
+          ).read_text(encoding="utf-8")
+
+          required_scope = (
+              "  pull_request:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-calibration-impl-20260902\n"
+              "    paths:\n"
+          )
+          if required_scope not in predecessor:
+              raise SystemExit("predecessor workflow scope repair is absent")
+          if (
+              '"predecessor_workflow_successor_scope": True'
+              not in release
+          ):
+              raise SystemExit(
+                  "release receipt does not retain the scope result"
+              )
+          if (
+              "predecessor-control-identity-workflow.yml"
+              not in release
+          ):
+              raise SystemExit(
+                  "release evidence does not retain the predecessor workflow"
+              )
+          PY
+
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add \
+            .github/workflows/astra-stage2-control-identity.yml \
+            .github/workflows/astra-stage2-control-identity-release.yml
+          git commit -m "ci(astra): scope predecessor binder gate to its candidate lane"
+
+          successor_head="$(git rev-parse HEAD)"
+          successor_tree="$(git rev-parse 'HEAD^{tree}')"
+          predecessor_blob="$(git rev-parse 'HEAD:.github/workflows/astra-stage2-control-identity.yml')"
+          release_blob="$(git rev-parse 'HEAD:.github/workflows/astra-stage2-control-identity-release.yml')"
+
+          out="$RUNNER_TEMP/astra-successor-ci-scope-repair"
+          mkdir -p "$out/.github/workflows"
+          cp .github/workflows/astra-stage2-control-identity.yml \
+            "$out/.github/workflows/astra-stage2-control-identity.yml"
+          cp .github/workflows/astra-stage2-control-identity-release.yml \
+            "$out/.github/workflows/astra-stage2-control-identity-release.yml"
+          cat > "$out/coordinates.json" <<EOF
+          {
+            "parent_head": "$BASE_HEAD",
+            "parent_tree": "$BASE_TREE",
+            "successor_head": "$successor_head",
+            "successor_tree": "$successor_tree",
+            "predecessor_workflow_blob": "$predecessor_blob",
+            "release_workflow_blob": "$release_blob"
+          }
+          EOF
+          (
+            cd "$out"
+            find . -type f -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+
+          echo "out=$out" >> "$GITHUB_OUTPUT"
+          echo "successor_head=$successor_head" >> "$GITHUB_OUTPUT"
+          echo "successor_tree=$successor_tree" >> "$GITHUB_OUTPUT"
+          {
+            echo "successor_head=$successor_head"
+            echo "successor_tree=$successor_tree"
+            echo "predecessor_workflow_blob=$predecessor_blob"
+            echo "release_workflow_blob=$release_blob"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload exact successor files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-successor-ci-scope-repair-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.build.outputs.out }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
