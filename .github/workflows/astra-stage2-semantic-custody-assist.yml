@@ -1,0 +1,71 @@
+name: astra-stage2-semantic-custody-assist
+
+on:
+  push:
+    branches:
+      - assist/astra-stage2-semantic-custody-49cd-20260903
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-semantic-custody-assist-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact assist branch without submodule traversal
+        id: custody
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+          ASSIST_BRANCH: assist/astra-stage2-semantic-custody-49cd-20260903
+          TARGET_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=32 origin \
+            "+refs/heads/${ASSIST_BRANCH}:refs/assist/candidate"
+          git checkout --detach refs/assist/candidate
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          git merge-base --is-ancestor "$TARGET_HEAD" "$EXPECTED_HEAD"
+          test -f astra_stage2/contracts.py
+          test -f astra_stage2/calibration.py
+          test -f tests/test_astra_stage2_calibration.py
+
+      - name: Export exact source inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/astra-stage2-semantic-custody-source"
+          mkdir -p "$root/astra_stage2" "$root/tests"
+          cp astra_stage2/contracts.py "$root/astra_stage2/contracts.py"
+          cp astra_stage2/calibration.py "$root/astra_stage2/calibration.py"
+          cp tests/test_astra_stage2_calibration.py "$root/tests/test_astra_stage2_calibration.py"
+          git rev-parse HEAD > "$root/SOURCE_HEAD"
+          git rev-parse 'HEAD^{tree}' > "$root/SOURCE_TREE"
+          find "$root" -type f -print0 | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+
+      - name: Upload exact source inputs
+        id: source
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-semantic-custody-source-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/astra-stage2-semantic-custody-source
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 9
+
+      - name: Seal source export
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.source.outputs.artifact-id }}"
+          test -n "${{ steps.source.outputs.artifact-digest }}"
+          echo "artifact_id=${{ steps.source.outputs.artifact-id }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "artifact_digest=${{ steps.source.outputs.artifact-digest }}" >> "$GITHUB_STEP_SUMMARY"
