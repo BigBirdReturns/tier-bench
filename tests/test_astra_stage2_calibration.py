@@ -64,7 +64,7 @@ class Stage2ScaffoldTests(unittest.TestCase):
         cls.plan = build_calibration_plan(cls.generator, cls.fixture_control)
         cls.observations = build_fixture_observations(cls.plan)
 
-    def _bound_empirical_rows(self):
+    def _empirical_template_with_digests(self):
         template = empirical_control_template()
         for control in template["controls"]:
             identity = control["identity"]
@@ -72,7 +72,10 @@ class Stage2ScaffoldTests(unittest.TestCase):
                 identity[field] = sha256_object(
                     {"field": field, "role": control["control_id"]}
                 )
-        bound = bind_empirical_control_manifest(template)
+        return template
+
+    def _bound_empirical_rows(self):
+        bound = bind_empirical_control_manifest(self._empirical_template_with_digests())
         plan = build_calibration_plan(self.generator, bound)
         identities = {
             control["control_id"]: control["identity_sha256"]
@@ -102,24 +105,51 @@ class Stage2ScaffoldTests(unittest.TestCase):
             self.assertEqual(sha256_object(task), case["task_sha256"])
             self.assertEqual(task["expected_checksum"], case["expected_checksum"])
 
-    def test_04_generator_tamper_refuses(self) -> None:
+    def test_04_generator_tamper_and_unknown_properties_refuse(self) -> None:
         mutated = copy.deepcopy(self.generator)
         mutated["cases"][0]["expected_checksum"] = "0" * 16
         rehash(mutated)
         with self.assertRaises(Stage2Error):
             validate_generator_manifest(mutated)
 
+        unknown_manifest = copy.deepcopy(self.generator)
+        unknown_manifest["notes"] = "PRIVATE_TRANSCRIPT_CANARY"
+        rehash(unknown_manifest)
+        with self.assertRaises(Stage2Error):
+            validate_generator_manifest(unknown_manifest)
+
+        unknown_case = copy.deepcopy(self.generator)
+        unknown_case["cases"][0]["notes"] = "PRIVATE_TRANSCRIPT_CANARY"
+        rehash(unknown_case)
+        with self.assertRaises(Stage2Error):
+            validate_generator_manifest(unknown_case)
+
     def test_05_plan_denominator_is_648(self) -> None:
         self.assertEqual(self.plan["observation_count"], EXPECTED_OBSERVATION_COUNT)
         self.assertEqual(len(self.plan["observations"]), 648)
         validate_plan(self.plan, self.generator, self.fixture_control)
 
-    def test_06_duplicate_plan_cell_refuses(self) -> None:
+    def test_06_plan_duplicate_and_unknown_properties_refuse(self) -> None:
         mutated = copy.deepcopy(self.plan)
         mutated["observations"][1] = copy.deepcopy(mutated["observations"][0])
         rehash(mutated)
         with self.assertRaises(Stage2Error):
             validate_plan(mutated, self.generator, self.fixture_control)
+
+        unknown_plan = copy.deepcopy(self.plan)
+        unknown_plan["notes"] = "PRIVATE_TRANSCRIPT_CANARY"
+        rehash(unknown_plan)
+        with self.assertRaises(Stage2Error):
+            validate_plan(unknown_plan, self.generator, self.fixture_control)
+
+        unknown_row = copy.deepcopy(self.plan)
+        unknown_row["observations"][0]["notes"] = "PRIVATE_TRANSCRIPT_CANARY"
+        rehash(unknown_row)
+        with self.assertRaises(Stage2Error):
+            validate_plan(unknown_row, self.generator, self.fixture_control)
+
+        with self.assertRaises(Stage2Error):
+            validate_observations(self.observations, unknown_row, self.fixture_control)
 
     def test_07_plan_control_binding_refuses(self) -> None:
         mutated = copy.deepcopy(self.plan)
@@ -223,12 +253,43 @@ class Stage2ScaffoldTests(unittest.TestCase):
         with self.assertRaises(Stage2Error):
             validate_observations(rows, self.plan, self.fixture_control)
 
-    def test_20_unbound_empirical_manifest_refuses(self) -> None:
+    def test_20_unbound_and_unknown_control_manifest_properties_refuse(self) -> None:
         template = empirical_control_template()
         with self.assertRaises(Stage2Error):
             validate_control_manifest(template, require_bound_empirical=True)
         with self.assertRaises(Stage2Error):
             bind_empirical_control_manifest(template)
+
+        ready = self._empirical_template_with_digests()
+        variants = []
+
+        unknown_manifest = copy.deepcopy(ready)
+        unknown_manifest["notes"] = "PRIVATE_TRANSCRIPT_CANARY"
+        variants.append(unknown_manifest)
+
+        unknown_control = copy.deepcopy(ready)
+        unknown_control["controls"][0]["notes"] = "PRIVATE_TRANSCRIPT_CANARY"
+        variants.append(unknown_control)
+
+        unknown_identity = copy.deepcopy(ready)
+        unknown_identity["controls"][0]["identity"]["notes"] = (
+            "PRIVATE_TRANSCRIPT_CANARY"
+        )
+        variants.append(unknown_identity)
+
+        for variant in variants:
+            with self.subTest(unexpected_path=True):
+                with self.assertRaises(Stage2Error):
+                    bind_empirical_control_manifest(variant)
+
+        bound = bind_empirical_control_manifest(ready)
+        bound["controls"][0]["identity"]["notes"] = "PRIVATE_TRANSCRIPT_CANARY"
+        bound["controls"][0]["identity_sha256"] = sha256_object(
+            bound["controls"][0]["identity"]
+        )
+        rehash(bound)
+        with self.assertRaises(Stage2Error):
+            validate_control_manifest(bound, require_bound_empirical=True)
 
     def test_21_overlapping_empirical_envelopes_are_inconclusive(self) -> None:
         bound, plan, rows = self._bound_empirical_rows()
