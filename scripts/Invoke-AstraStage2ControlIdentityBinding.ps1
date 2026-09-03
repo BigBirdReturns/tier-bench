@@ -3,7 +3,7 @@ param(
     [ValidateSet('Preflight', 'Prepare', 'Bind', 'Verify')]
     [string]$Mode = 'Prepare',
 
-    [string]$RepoRoot = '',
+    [string]$RepoRoot,
     [string]$CustodyRoot = 'S:\Scratch\Incoming\Tier-Bench\astra-stage2-control-identities-real',
     [string]$Python = 'python',
     [switch]$SkipDownloads
@@ -28,46 +28,110 @@ $CotRevision = '63de1ec1902ed143fe62250b6ddb14cb65f06e1a'
 function Invoke-Checked {
     param(
         [Parameter(Mandatory = $true)][string]$File,
-        [Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments
+        [Parameter(Mandatory = $true)][string[]]$Arguments
     )
+
     & $File @Arguments
-    if ($LASTEXITCODE -ne 0) {
-        throw "Command failed ($LASTEXITCODE): $File $($Arguments -join ' ')"
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "Command failed ($exitCode): $File $($Arguments -join ' ')"
     }
 }
 
-function Resolve-TierBenchRepositoryRoot {
+function Invoke-GitText {
+    param(
+        [Parameter(Mandatory = $true)][string]$Root,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    $output = & git -C $Root @Arguments 2>&1
+    $exitCode = $LASTEXITCODE
+    if ($exitCode -ne 0) {
+        throw "Git command failed ($exitCode) at ${Root}: git $($Arguments -join ' ')"
+    }
+    return (($output -join "`n").Trim())
+}
+
+function Get-NormalizedPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if (Test-Path -LiteralPath $Path) {
+        return (Resolve-Path -LiteralPath $Path).ProviderPath
+    }
+    return [System.IO.Path]::GetFullPath($Path)
+}
+
+function Test-GitWorkTree {
+    param([Parameter(Mandatory = $true)][string]$Candidate)
+
+    if (-not (Test-Path -LiteralPath $Candidate -PathType Container)) {
+        return $false
+    }
+    $null = & git -C $Candidate rev-parse --is-inside-work-tree 2>$null
+    return ($LASTEXITCODE -eq 0)
+}
+
+function Resolve-RepositoryRoot {
     param([string]$RequestedRoot)
 
     $candidates = @()
-    if ($RequestedRoot) {
+    if (-not [string]::IsNullOrWhiteSpace($RequestedRoot)) {
         $candidates += $RequestedRoot
     }
-
-    # The launcher is committed under <repo>\scripts, so its own worktree is
-    # the most reliable default and works for detached Git worktrees.
-    $candidates += (Split-Path -Parent $PSScriptRoot)
-
-    # Estate fallbacks. The first is the current canonical checkout.
+    $candidates += (Join-Path $PSScriptRoot '..')
     $candidates += 'D:\Projects\Measurement\Tier-Bench\main'
     $candidates += 'D:\Projects\Measurement\Tier-Bench'
 
-    foreach ($candidate in ($candidates | Select-Object -Unique)) {
-        if (-not $candidate -or -not (Test-Path -LiteralPath $candidate)) {
+    $seen = @{}
+    foreach ($candidate in $candidates) {
+        if ([string]::IsNullOrWhiteSpace($candidate)) {
             continue
         }
-        $top = & git -C $candidate rev-parse --show-toplevel 2>$null
-        if ($LASTEXITCODE -eq 0 -and $top) {
-            return $top.Trim()
+        try {
+            $normalized = Get-NormalizedPath -Path $candidate
+        }
+        catch {
+            continue
+        }
+        $key = $normalized.ToLowerInvariant()
+        if ($seen.ContainsKey($key)) {
+            continue
+        }
+        $seen[$key] = $true
+        if (Test-GitWorkTree -Candidate $normalized) {
+            return $normalized
         }
     }
 
-    throw 'Unable to discover a Tier-Bench Git checkout. Pass -RepoRoot explicitly.'
+    throw (
+        'Unable to discover the Tier-Bench Git repository. Supply -RepoRoot. ' +
+        'The canonical estate checkout is D:\Projects\Measurement\Tier-Bench\main.'
+    )
 }
 
 function Get-GitHead {
     param([Parameter(Mandatory = $true)][string]$Root)
-    return (& git -C $Root rev-parse HEAD).Trim()
+    return Invoke-GitText -Root $Root -Arguments @('rev-parse', 'HEAD')
+}
+
+function Get-GitTree {
+    param([Parameter(Mandatory = $true)][string]$Root)
+    return Invoke-GitText -Root $Root -Arguments @('rev-parse', 'HEAD^{tree}')
+}
+
+function Assert-CleanWorkTree {
+    param(
+        [Parameter(Mandatory = $true)][string]$Root,
+        [Parameter(Mandatory = $true)][string]$Label
+    )
+
+    $dirty = & git -C $Root status --porcelain
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to inspect ${Label}: $Root"
+    }
+    if ($dirty) {
+        throw "${Label} is dirty: $Root"
+    }
 }
 
 function Ensure-ExactSource {
@@ -79,21 +143,37 @@ function Ensure-ExactSource {
 
     if (-not (Test-Path -LiteralPath (Join-Path $Destination '.git'))) {
         New-Item -ItemType Directory -Force -Path $Destination | Out-Null
-        Invoke-Checked git -C $Destination init
-        Invoke-Checked git -C $Destination remote add origin ("https://github.com/{0}.git" -f $Repository)
-        Invoke-Checked git -C $Destination fetch --no-tags --depth=1 origin $Commit
-        Invoke-Checked git -C $Destination checkout --detach FETCH_HEAD
+        Invoke-Checked -File 'git' -Arguments @('-C', $Destination, 'init')
+        Invoke-Checked -File 'git' -Arguments @(
+            '-C', $Destination, 'remote', 'add', 'origin',
+            ("https://github.com/{0}.git" -f $Repository)
+        )
+        Invoke-Checked -File 'git' -Arguments @(
+            '-C', $Destination, 'fetch', '--no-tags', '--depth=1', 'origin', $Commit
+        )
+        Invoke-Checked -File 'git' -Arguments @(
+            '-C', $Destination, 'checkout', '--detach', 'FETCH_HEAD'
+        )
     }
 
+    Assert-ExactSource -Repository $Repository -Commit $Commit -Destination $Destination
+}
+
+function Assert-ExactSource {
+    param(
+        [Parameter(Mandatory = $true)][string]$Repository,
+        [Parameter(Mandatory = $true)][string]$Commit,
+        [Parameter(Mandatory = $true)][string]$Destination
+    )
+
+    if (-not (Test-Path -LiteralPath (Join-Path $Destination '.git'))) {
+        throw "Exact source checkout is absent for ${Repository}: $Destination"
+    }
     $head = Get-GitHead -Root $Destination
     if ($head -ne $Commit) {
         throw "Source checkout drift for ${Repository}: expected $Commit, observed $head"
     }
-
-    $dirty = (& git -C $Destination status --porcelain)
-    if ($dirty) {
-        throw "Source checkout is dirty: $Destination"
-    }
+    Assert-CleanWorkTree -Root $Destination -Label "Source checkout for $Repository"
 }
 
 function Ensure-BinderWorktree {
@@ -102,15 +182,22 @@ function Ensure-BinderWorktree {
         [Parameter(Mandatory = $true)][string]$Root
     )
 
-    $top = & git -C $RepositoryRoot rev-parse --show-toplevel 2>$null
-    if ($LASTEXITCODE -ne 0 -or -not $top) {
+    if (-not (Test-GitWorkTree -Candidate $RepositoryRoot)) {
         throw "Tier-Bench repository not found at $RepositoryRoot"
     }
 
-    Invoke-Checked git -C $RepositoryRoot fetch --no-tags origin $BinderHead
+    Invoke-Checked -File 'git' -Arguments @(
+        '-C', $RepositoryRoot, 'fetch', '--no-tags', 'origin', $BinderHead
+    )
 
     if (-not (Test-Path -LiteralPath $Root)) {
-        Invoke-Checked git -C $RepositoryRoot worktree add --detach $Root $BinderHead
+        Invoke-Checked -File 'git' -Arguments @(
+            '-C', $RepositoryRoot, 'worktree', 'add', '--detach', $Root, $BinderHead
+        )
+    }
+
+    if (-not (Test-GitWorkTree -Candidate $Root)) {
+        throw "Binder worktree is absent or invalid: $Root"
     }
 
     $head = Get-GitHead -Root $Root
@@ -118,28 +205,46 @@ function Ensure-BinderWorktree {
         throw "Binder worktree must be exact head $BinderHead; observed $head"
     }
 
-    $tree = (& git -C $Root rev-parse 'HEAD^{tree}').Trim()
+    $tree = Get-GitTree -Root $Root
     if ($tree -ne $BinderTree) {
         throw "Binder tree mismatch: expected $BinderTree, observed $tree"
     }
 
-    if ((& git -C $Root rev-parse "HEAD:docs/agents/claims/FRR-ASTRA-STAGE2-1.md").Trim() -ne $LawBlob) {
+    $observedLawBlob = Invoke-GitText -Root $Root -Arguments @(
+        'rev-parse', 'HEAD:docs/agents/claims/FRR-ASTRA-STAGE2-1.md'
+    )
+    if ($observedLawBlob -ne $LawBlob) {
         throw 'Released Sol law blob is not present at the pinned binder head'
     }
 
-    if ((& git -C $Root status --porcelain)) {
-        throw "Binder worktree is dirty: $Root"
-    }
+    Assert-CleanWorkTree -Root $Root -Label 'Binder worktree'
 }
 
 function Ensure-HuggingFaceTools {
     param([Parameter(Mandatory = $true)][string]$VenvRoot)
 
-    $venvPython = Join-Path $VenvRoot 'Scripts\python.exe'
-    if (-not (Test-Path -LiteralPath $venvPython)) {
-        Invoke-Checked $Python -m venv $VenvRoot
+    $windowsPython = Join-Path $VenvRoot 'Scripts\python.exe'
+    $posixPython = Join-Path $VenvRoot 'bin/python'
+
+    if (-not (Test-Path -LiteralPath $windowsPython) -and
+        -not (Test-Path -LiteralPath $posixPython)) {
+        Invoke-Checked -File $Python -Arguments @('-m', 'venv', $VenvRoot)
     }
-    Invoke-Checked $venvPython -m pip install --disable-pip-version-check --quiet 'huggingface_hub==0.34.4'
+
+    if (Test-Path -LiteralPath $windowsPython) {
+        $venvPython = $windowsPython
+    }
+    elseif (Test-Path -LiteralPath $posixPython) {
+        $venvPython = $posixPython
+    }
+    else {
+        throw "Virtual-environment Python was not created under $VenvRoot"
+    }
+
+    Invoke-Checked -File $venvPython -Arguments @(
+        '-m', 'pip', 'install', '--disable-pip-version-check', '--quiet',
+        'huggingface_hub==0.34.4'
+    )
     return $venvPython
 }
 
@@ -171,12 +276,30 @@ for repo_id, revision in items:
         snapshot_download(**kwargs)
     print(f'{repo_id}@{revision} -> {target}')
 '@
+
     [System.IO.File]::WriteAllText(
         $downloadScript,
         $scriptText,
         [System.Text.UTF8Encoding]::new($false)
     )
-    Invoke-Checked $ToolPython $downloadScript $ModelRoot
+    Invoke-Checked -File $ToolPython -Arguments @($downloadScript, $ModelRoot)
+}
+
+function Assert-CheckpointCustody {
+    param([Parameter(Mandatory = $true)][string]$Root)
+
+    foreach ($revision in @($LotusRevision, $LoopCoderRevision, $CotRevision)) {
+        $snapshot = Join-Path $Root $revision
+        if (-not (Test-Path -LiteralPath $snapshot -PathType Container)) {
+            throw "Checkpoint snapshot is absent: $revision"
+        }
+    }
+
+    $incomplete = Get-ChildItem -LiteralPath $Root -Recurse -File -ErrorAction Stop |
+        Where-Object { $_.Name -like '*.incomplete' }
+    if ($incomplete) {
+        throw "Incomplete checkpoint download files remain under $Root"
+    }
 }
 
 function Select-LargestNvidiaDevice {
@@ -188,6 +311,9 @@ function Select-LargestNvidiaDevice {
 
     $parsed = foreach ($line in $rows) {
         $parts = $line -split ',' | ForEach-Object { $_.Trim() }
+        if ($parts.Count -ne 3) {
+            throw "Unexpected nvidia-smi row: $line"
+        }
         [pscustomobject]@{
             Index = [int]$parts[0]
             Name = $parts[1]
@@ -196,7 +322,8 @@ function Select-LargestNvidiaDevice {
     }
 
     $selected = $parsed |
-        Sort-Object @{Expression='MemoryMiB';Descending=$true}, @{Expression='Index';Descending=$false} |
+        Sort-Object @{Expression = 'MemoryMiB'; Descending = $true},
+                    @{Expression = 'Index'; Descending = $false} |
         Select-Object -First 1
 
     return [pscustomobject]@{
@@ -254,6 +381,26 @@ function Write-PreparedConfig {
     )
 }
 
+function Write-JsonFile {
+    param(
+        [Parameter(Mandatory = $true)]$Value,
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    $parent = Split-Path -Parent $Path
+    if ($parent) {
+        New-Item -ItemType Directory -Force -Path $parent | Out-Null
+    }
+    $temporary = $Path + '.tmp'
+    $json = $Value | ConvertTo-Json -Depth 64
+    [System.IO.File]::WriteAllText(
+        $temporary,
+        $json + "`n",
+        [System.Text.UTF8Encoding]::new($false)
+    )
+    Move-Item -Force -LiteralPath $temporary -Destination $Path
+}
+
 function Assert-BindReady {
     param([Parameter(Mandatory = $true)][string]$ConfigPath)
 
@@ -264,17 +411,127 @@ function Assert-BindReady {
 
     $config = $raw | ConvertFrom-Json
     foreach ($control in $config.controls) {
-        $low = ($control.effort_mapping.low.arguments | ConvertTo-Json -Compress)
-        $high = ($control.effort_mapping.high.arguments | ConvertTo-Json -Compress)
-        if ($low -eq '["--effort","low"]' -and $high -eq '["--effort","high"]') {
-            throw "Effort mapping for $($control.role) is still the non-authoritative template. Bind is refused."
+        $low = $control.effort_mapping.low.arguments | ConvertTo-Json -Compress
+        $high = $control.effort_mapping.high.arguments | ConvertTo-Json -Compress
+        if ($low -eq '["--effort","low"]' -and
+            $high -eq '["--effort","high"]') {
+            throw (
+                "Effort mapping for $($control.role) is still the " +
+                'non-authoritative template. Bind is refused.'
+            )
         }
     }
 }
 
-$RepoRoot = Resolve-TierBenchRepositoryRoot -RequestedRoot $RepoRoot
-New-Item -ItemType Directory -Force -Path $CustodyRoot | Out-Null
+function Invoke-PinnedBinder {
+    param(
+        [Parameter(Mandatory = $true)][string]$BinderRoot,
+        [Parameter(Mandatory = $true)][string]$Wrapper,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
 
+    if (-not (Test-Path -LiteralPath $Wrapper -PathType Leaf)) {
+        throw "Pinned binder wrapper is absent: $Wrapper"
+    }
+
+    $expectedRoot = Get-NormalizedPath -Path $BinderRoot
+    $hadPythonPath = Test-Path Env:PYTHONPATH
+    $previousPythonPath = $env:PYTHONPATH
+    $locationPushed = $false
+
+    try {
+        $env:PYTHONPATH = $expectedRoot
+        Push-Location -LiteralPath $expectedRoot
+        $locationPushed = $true
+
+        $observedRoot = Get-NormalizedPath -Path ((Get-Location).Path)
+        if (-not $observedRoot.Equals(
+            $expectedRoot,
+            [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+            throw "Pinned binder working-directory mismatch: $observedRoot"
+        }
+
+        & $Wrapper @Arguments
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            throw (
+                "Pinned binder command failed ($exitCode) from $expectedRoot: " +
+                ($Arguments -join ' ')
+            )
+        }
+    }
+    finally {
+        if ($locationPushed) {
+            Pop-Location
+        }
+        if ($hadPythonPath) {
+            $env:PYTHONPATH = $previousPythonPath
+        }
+        else {
+            Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+        }
+    }
+}
+
+function Get-LauncherCoordinates {
+    param([Parameter(Mandatory = $true)][string]$Root)
+
+    if (-not (Test-GitWorkTree -Candidate $Root)) {
+        throw "Launcher is not executing from a Git worktree: $Root"
+    }
+
+    $head = Get-GitHead -Root $Root
+    $tree = Get-GitTree -Root $Root
+    $null = & git -C $Root merge-base --is-ancestor $BinderHead $head
+    if ($LASTEXITCODE -ne 0) {
+        throw "Launcher head $head is not descended from pinned binder head $BinderHead"
+    }
+    Assert-CleanWorkTree -Root $Root -Label 'Release launcher worktree'
+
+    return [pscustomobject]@{
+        Root = $Root
+        Head = $head
+        Tree = $tree
+    }
+}
+
+function Assert-CurrentPreflight {
+    param(
+        [Parameter(Mandatory = $true)][string]$ReceiptPath,
+        [Parameter(Mandatory = $true)]$LauncherCoordinates
+    )
+
+    if (-not (Test-Path -LiteralPath $ReceiptPath -PathType Leaf)) {
+        throw "Current Preflight receipt is absent: $ReceiptPath"
+    }
+
+    $receipt = Get-Content -Raw -LiteralPath $ReceiptPath | ConvertFrom-Json
+    if ($receipt.state -ne 'PREFLIGHT_PASS') {
+        throw "Preflight did not pass: $($receipt.state)"
+    }
+    if ($receipt.release_head -ne $LauncherCoordinates.Head -or
+        $receipt.release_tree -ne $LauncherCoordinates.Tree) {
+        throw 'Preflight receipt does not bind the current release head and tree'
+    }
+    if ($receipt.binder_import_smoke -ne 'PASS' -or
+        $receipt.binder_execution_cwd -ne 'PINNED_BINDER_ROOT' -or
+        $receipt.binder_pythonpath -ne 'PINNED_BINDER_ROOT') {
+        throw 'Preflight did not prove the pinned binder import root'
+    }
+    if ($receipt.downloads_performed -ne $false -or
+        $receipt.model_calls -ne 0 -or
+        $receipt.provider_calls -ne 0 -or
+        $receipt.actual_executable_control_identities -ne 'UNBOUND') {
+        throw 'Preflight widened authority or performed asset acquisition'
+    }
+}
+
+$RepoRoot = Resolve-RepositoryRoot -RequestedRoot $RepoRoot
+$LauncherRoot = Get-NormalizedPath -Path (Join-Path $PSScriptRoot '..')
+$LauncherCoordinates = Get-LauncherCoordinates -Root $LauncherRoot
+
+New-Item -ItemType Directory -Force -Path $CustodyRoot | Out-Null
 $BinderRoot = Join-Path $CustodyRoot ('tier-bench-binder-' + $BinderHead.Substring(0, 8))
 $SourceRoot = Join-Path $CustodyRoot 'sources'
 $ModelRoot = Join-Path $CustodyRoot 'models'
@@ -282,40 +539,93 @@ $HardwareRoot = Join-Path $CustodyRoot 'hardware'
 $PrivateConfig = Join-Path $CustodyRoot 'astra-stage2-control-identities.private.json'
 $InventoriedConfig = Join-Path $CustodyRoot 'astra-stage2-control-identities.inventoried.private.json'
 $BoundRoot = Join-Path $CustodyRoot 'bound'
-$PrepareReceipt = Join-Path $CustodyRoot 'PREPARE-RECEIPT.json'
 $PreflightReceipt = Join-Path $CustodyRoot 'PREFLIGHT-RECEIPT.json'
+$PrepareReceipt = Join-Path $CustodyRoot 'PREPARE-RECEIPT.json'
 
 Ensure-BinderWorktree -RepositoryRoot $RepoRoot -Root $BinderRoot
 $wrapper = Join-Path $BinderRoot 'scripts\astra_stage2_bind_controls.ps1'
-if (-not (Test-Path -LiteralPath $wrapper)) {
-    throw "Binder wrapper is missing at $wrapper"
-}
 
 if ($Mode -eq 'Preflight') {
+    $smokeRoot = Join-Path $CustodyRoot 'preflight-binder-import-smoke'
+    $callerRoot = Join-Path $smokeRoot 'non-binder-cwd'
+    $smokeTemplate = Join-Path $smokeRoot 'binding-template.json'
+    New-Item -ItemType Directory -Force -Path $callerRoot | Out-Null
+    if (Test-Path -LiteralPath $smokeTemplate) {
+        Remove-Item -Force -LiteralPath $smokeTemplate
+    }
+
+    $callerLocationPushed = $false
+    try {
+        Push-Location -LiteralPath $callerRoot
+        $callerLocationPushed = $true
+        $before = Get-NormalizedPath -Path ((Get-Location).Path)
+        $binderNormalized = Get-NormalizedPath -Path $BinderRoot
+        if ($before.Equals(
+            $binderNormalized,
+            [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+            throw 'Preflight caller directory unexpectedly equals the binder root'
+        }
+
+        Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @('-Command', 'template', '-Out', $smokeTemplate)
+
+        $after = Get-NormalizedPath -Path ((Get-Location).Path)
+        if (-not $after.Equals(
+            $before,
+            [System.StringComparison]::OrdinalIgnoreCase
+        )) {
+            throw 'Pinned binder command did not restore the non-binder caller directory'
+        }
+    }
+    finally {
+        if ($callerLocationPushed) {
+            Pop-Location
+        }
+    }
+
+    if (-not (Test-Path -LiteralPath $smokeTemplate -PathType Leaf)) {
+        throw 'Binder import smoke did not emit its template'
+    }
+    $smoke = Get-Content -Raw -LiteralPath $smokeTemplate | ConvertFrom-Json
+    if ($smoke.controls.Count -ne 3) {
+        throw 'Binder import smoke emitted an unexpected control denominator'
+    }
+
+    $smokeSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $smokeTemplate).Hash.ToLowerInvariant()
+
     $receipt = [ordered]@{
-        schema = 'tier-bench/astra-stage2-control-identity-preflight@1'
+        schema = 'tier-bench/astra-stage2-control-identity-preflight@2'
         state = 'PREFLIGHT_PASS'
-        release_repository_root = $RepoRoot
-        binder_root = $BinderRoot
+        repository_root = $RepoRoot
+        release_root = $LauncherCoordinates.Root
+        release_head = $LauncherCoordinates.Head
+        release_tree = $LauncherCoordinates.Tree
         binder_head = $BinderHead
         binder_tree = $BinderTree
-        law_head = $LawHead
-        law_blob = $LawBlob
-        scaffold_head = $ScaffoldHead
-        stage1_join_head = $Stage1Join
+        binder_root = $BinderRoot
+        binder_import_smoke = 'PASS'
+        binder_execution_cwd = 'PINNED_BINDER_ROOT'
+        binder_pythonpath = 'PINNED_BINDER_ROOT'
+        binder_caller_cwd = 'DELIBERATELY_NON_BINDER'
+        binder_template_sha256 = $smokeSha256
         downloads_performed = $false
+        source_or_checkpoint_bytes_acquired = 0
         model_calls = 0
         provider_calls = 0
         actual_executable_control_identities = 'UNBOUND'
         empirical_calibration = 'NOT_RUN'
         numeric_stage2_freeze = 'NOT_ISSUED'
     }
-    $receipt | ConvertTo-Json -Depth 16 | Set-Content -Encoding utf8 $PreflightReceipt
+    Write-JsonFile -Value $receipt -Path $PreflightReceipt
+
     Write-Host 'PREFLIGHT_PASS'
     Write-Host "Repository root: $RepoRoot"
     Write-Host "Binder worktree: $BinderRoot"
+    Write-Host 'Binder import smoke: PASS from deliberately non-binder caller directory'
     exit 0
 }
+
+Assert-CurrentPreflight -ReceiptPath $PreflightReceipt -LauncherCoordinates $LauncherCoordinates
 
 if ($Mode -eq 'Prepare') {
     New-Item -ItemType Directory -Force -Path $SourceRoot, $ModelRoot, $HardwareRoot | Out-Null
@@ -329,54 +639,55 @@ if ($Mode -eq 'Prepare') {
         Download-ExactSnapshots -ToolPython $toolPython -ModelRoot $ModelRoot
     }
 
-    if (-not (Test-Path -LiteralPath $lotusSource) -or -not (Test-Path -LiteralPath $loopCoderSource)) {
-        throw 'Exact source checkouts are absent. Prepare cannot continue.'
-    }
-
-    foreach ($revision in @($LotusRevision, $LoopCoderRevision, $CotRevision)) {
-        if (-not (Test-Path -LiteralPath (Join-Path $ModelRoot $revision))) {
-            throw "Checkpoint snapshot is absent: $revision"
-        }
-    }
+    Assert-ExactSource -Repository 'yingfan-bot/lotus' -Commit $LotusSourceCommit -Destination $lotusSource
+    Assert-ExactSource -Repository 'CSJianYang/LoopCoder' -Commit $LoopCoderSourceCommit -Destination $loopCoderSource
+    Assert-CheckpointCustody -Root $ModelRoot
 
     $gpu = Select-LargestNvidiaDevice
-    & $wrapper -Command probe-hardware -Out $HardwareRoot -NvidiaSmi $gpu.NvidiaSmi -DeviceIndices ([string]$gpu.Device.Index)
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Hardware probe failed'
+    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
+        '-Command', 'probe-hardware',
+        '-Out', $HardwareRoot,
+        '-NvidiaSmi', $gpu.NvidiaSmi,
+        '-DeviceIndices', ([string]$gpu.Device.Index)
+    )
+
+    Write-PreparedConfig -BinderRoot $BinderRoot -LotusSource $lotusSource -LoopCoderSource $loopCoderSource -Models $ModelRoot -HardwareRoot $HardwareRoot -DeviceIndex $gpu.Device.Index -OutputPath $PrivateConfig
+
+    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
+        '-Command', 'inventory',
+        '-Config', $PrivateConfig,
+        '-Out', $InventoriedConfig
+    )
+
+    if (-not (Test-Path -LiteralPath $InventoriedConfig -PathType Leaf)) {
+        throw 'Checkpoint inventory did not emit the inventoried private configuration'
     }
 
-    Write-PreparedConfig `
-        -BinderRoot $BinderRoot `
-        -LotusSource $lotusSource `
-        -LoopCoderSource $loopCoderSource `
-        -Models $ModelRoot `
-        -HardwareRoot $HardwareRoot `
-        -DeviceIndex $gpu.Device.Index `
-        -OutputPath $PrivateConfig
-
-    & $wrapper -Command inventory -Config $PrivateConfig -Out $InventoriedConfig
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Checkpoint inventory failed'
-    }
+    $preflightSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $PreflightReceipt).Hash.ToLowerInvariant()
 
     $receipt = [ordered]@{
-        schema = 'tier-bench/astra-stage2-control-identity-prepare@1'
+        schema = 'tier-bench/astra-stage2-control-identity-prepare@2'
         state = 'ASSETS_PREPARED_EXECUTABLE_IDENTITIES_UNBOUND'
-        release_repository_root = $RepoRoot
+        release_head = $LauncherCoordinates.Head
+        release_tree = $LauncherCoordinates.Tree
+        preflight_receipt_sha256 = $preflightSha256
         binder_head = $BinderHead
         binder_tree = $BinderTree
         law_head = $LawHead
         law_blob = $LawBlob
         scaffold_head = $ScaffoldHead
         stage1_join_head = $Stage1Join
+        binder_execution_cwd = 'PINNED_BINDER_ROOT'
+        binder_pythonpath = 'PINNED_BINDER_ROOT'
+        download_mode = $(if ($SkipDownloads) { 'REUSE_EXISTING_EXACT_ASSETS' } else { 'ACQUIRE_OR_VERIFY_EXACT_ASSETS' })
         source_roots = [ordered]@{
             lotus = $lotusSource
             loopcoder = $loopCoderSource
         }
         checkpoint_roots = [ordered]@{
-            lotus = (Join-Path $ModelRoot $LotusRevision)
-            loopcoder = (Join-Path $ModelRoot $LoopCoderRevision)
-            conventional = (Join-Path $ModelRoot $CotRevision)
+            lotus = Join-Path $ModelRoot $LotusRevision
+            loopcoder = Join-Path $ModelRoot $LoopCoderRevision
+            conventional = Join-Path $ModelRoot $CotRevision
         }
         selected_gpu = [ordered]@{
             index = $gpu.Device.Index
@@ -392,44 +703,51 @@ if ($Mode -eq 'Prepare') {
         empirical_calibration = 'NOT_RUN'
         numeric_stage2_freeze = 'NOT_ISSUED'
     }
-    $receipt | ConvertTo-Json -Depth 16 | Set-Content -Encoding utf8 $PrepareReceipt
-    Write-Host 'Prepared exact source/checkpoint/hardware custody. Runtime and effort mapping remain UNBOUND.'
-    Write-Host "Edit: $InventoriedConfig"
+    Write-JsonFile -Value $receipt -Path $PrepareReceipt
+
+    Write-Host 'Prepared exact source/checkpoint/hardware custody.'
+    Write-Host 'Runtime identity and effort mapping remain UNBOUND.'
+    Write-Host "Edit only after deriving truthful runtime semantics: $InventoriedConfig"
     Write-Host 'Then rerun with -Mode Bind.'
     exit 0
 }
 
-if (-not (Test-Path -LiteralPath $InventoriedConfig)) {
+if (-not (Test-Path -LiteralPath $InventoriedConfig -PathType Leaf)) {
     throw "Inventoried private config is absent: $InventoriedConfig. Run -Mode Prepare first."
 }
 
 if ($Mode -eq 'Bind') {
     Assert-BindReady -ConfigPath $InventoriedConfig
-    & $wrapper -Command validate-config -Config $InventoriedConfig
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Binding config validation failed'
-    }
-    & $wrapper -Command bind -Config $InventoriedConfig -RepoRoot $BinderRoot -Out $BoundRoot
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Executable identity binding failed'
-    }
-    & $wrapper -Command verify -Config $InventoriedConfig -RepoRoot $BinderRoot -Out $BoundRoot
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Executable identity verification failed'
-    }
+    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @('-Command', 'validate-config', '-Config', $InventoriedConfig)
+    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
+        '-Command', 'bind',
+        '-Config', $InventoriedConfig,
+        '-RepoRoot', $BinderRoot,
+        '-Out', $BoundRoot
+    )
+    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
+        '-Command', 'verify',
+        '-Config', $InventoriedConfig,
+        '-RepoRoot', $BinderRoot,
+        '-Out', $BoundRoot
+    )
     Write-Host 'Executable identities bound and verified. No model was executed.'
     exit 0
 }
 
 if ($Mode -eq 'Verify') {
     Assert-BindReady -ConfigPath $InventoriedConfig
-    if (-not (Test-Path -LiteralPath $BoundRoot)) {
+    if (-not (Test-Path -LiteralPath $BoundRoot -PathType Container)) {
         throw "Bound output is absent: $BoundRoot"
     }
-    & $wrapper -Command verify -Config $InventoriedConfig -RepoRoot $BinderRoot -Out $BoundRoot
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Executable identity verification failed'
-    }
-    Write-Host 'Executable identities reproduce from current local bytes.'
+    Invoke-PinnedBinder -BinderRoot $BinderRoot -Wrapper $wrapper -Arguments @(
+        '-Command', 'verify',
+        '-Config', $InventoriedConfig,
+        '-RepoRoot', $BinderRoot,
+        '-Out', $BoundRoot
+    )
+    Write-Host 'Executable identities verified. No model was executed.'
     exit 0
 }
+
+throw "Unsupported mode: $Mode"
