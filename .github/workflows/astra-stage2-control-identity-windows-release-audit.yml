@@ -1,0 +1,338 @@
+name: astra-stage2-control-identity-windows-release-audit
+
+on:
+  push:
+    branches:
+      - audit/astra-stage2-control-identity-release-1484-20260903
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: astra-stage2-control-identity-windows-release-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-independent-audit:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    outputs:
+      receipt_b64: ${{ steps.seal.outputs.receipt_b64 }}
+      receipt_sha256: ${{ steps.seal.outputs.receipt_sha256 }}
+    steps:
+      - name: Check out exact audit head and bind release parent
+        id: custody
+        shell: pwsh
+        env:
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+          AUDIT_BRANCH: audit/astra-stage2-control-identity-release-1484-20260903
+          RELEASE_HEAD: 148484098fae50923e4df6ed013963480734be7f
+          RELEASE_TREE: d0c2a9e49b5249018e6003d40f17e06f19b43835
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git init .
+          if ($LASTEXITCODE -ne 0) { throw 'git init failed' }
+          git remote add origin "https://github.com/$env:GITHUB_REPOSITORY.git"
+          if ($LASTEXITCODE -ne 0) { throw 'git remote add failed' }
+          $refspec = "+refs/heads/{0}:refs/windows-audit/candidate" -f $env:AUDIT_BRANCH
+          git fetch --no-tags --depth=96 origin $refspec
+          if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+          git checkout --detach refs/windows-audit/candidate
+          if ($LASTEXITCODE -ne 0) { throw 'git checkout failed' }
+
+          $auditHead = (git rev-parse HEAD).Trim()
+          $auditTree = (git rev-parse 'HEAD^{tree}').Trim()
+          if ($auditHead -ne $env:EXPECTED_AUDIT_HEAD) {
+            throw "Audit head mismatch: $auditHead"
+          }
+          $releaseTree = (git rev-parse "$($env:RELEASE_HEAD)^{tree}").Trim()
+          if ($releaseTree -ne $env:RELEASE_TREE) {
+            throw "Release tree mismatch: $releaseTree"
+          }
+          git merge-base --is-ancestor $env:RELEASE_HEAD $auditHead
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Audit is not descended from exact release head'
+          }
+          "audit_head=$auditHead" >> $env:GITHUB_OUTPUT
+          "audit_tree=$auditTree" >> $env:GITHUB_OUTPUT
+
+      - name: Run complete 27-test suite independently on Windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $lines = @(
+            & python -m unittest discover `
+              -s tests `
+              -p 'test_astra_stage2_control_identity*.py' `
+              -v 2>&1
+          )
+          $exitCode = $LASTEXITCODE
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($exitCode -ne 0) {
+            throw "Independent Windows suite failed with exit code $exitCode"
+          }
+          $joined = $lines -join "`n"
+          if ($joined -notmatch '(?m)^Ran 27 tests in ') {
+            throw 'Independent Windows test denominator is not 27'
+          }
+          if ($joined -notmatch '(?m)^OK \(skipped=1\)$') {
+            throw 'Independent Windows suite did not finish with exactly one expected symlink skip'
+          }
+
+      - name: Parse launcher with terminating Windows PowerShell semantics
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $launcher = Join-Path $PWD 'scripts\Invoke-AstraStage2ControlIdentityBinding.ps1'
+          $text = Get-Content -Raw -LiteralPath $launcher
+          try {
+            [void][scriptblock]::Create($text)
+          }
+          catch {
+            throw "PowerShell parser rejected launcher: $($_.Exception.Message)"
+          }
+          Write-Host 'POWERSHELL_PARSE_PASS'
+
+      - name: Execute independent non-downloading Preflight
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP 'astra-control-identity-independent-preflight'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+            -File .\scripts\Invoke-AstraStage2ControlIdentityBinding.ps1 `
+            -Mode Preflight `
+            -RepoRoot $PWD `
+            -CustodyRoot $root `
+            -Python python
+          if ($LASTEXITCODE -ne 0) {
+            throw "Independent Preflight failed with exit code $LASTEXITCODE"
+          }
+          $receiptPath = Join-Path $root 'PREFLIGHT-RECEIPT.json'
+          if (-not (Test-Path -LiteralPath $receiptPath)) {
+            throw 'Independent Preflight receipt is absent'
+          }
+          $receipt = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
+          if ($receipt.state -ne 'PREFLIGHT_PASS') {
+            throw "Unexpected Preflight state: $($receipt.state)"
+          }
+          if ($receipt.downloads_performed -ne $false) {
+            throw 'Preflight performed downloads'
+          }
+          if ($receipt.model_calls -ne 0 -or $receipt.provider_calls -ne 0) {
+            throw 'Preflight widened call authority'
+          }
+          if ($receipt.actual_executable_control_identities -ne 'UNBOUND') {
+            throw 'Preflight widened executable identity authority'
+          }
+          if (Test-Path -LiteralPath (Join-Path $root 'models')) {
+            throw 'Independent Preflight created model custody'
+          }
+
+      - name: Seal independent Windows audit receipt
+        id: seal
+        shell: pwsh
+        env:
+          RELEASE_HEAD: 148484098fae50923e4df6ed013963480734be7f
+          RELEASE_TREE: d0c2a9e49b5249018e6003d40f17e06f19b43835
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $value = [ordered]@{
+            schema = 'tier-bench/astra-stage2-control-identity-windows-audit@1'
+            release_head_sha1 = $env:RELEASE_HEAD
+            release_tree_sha1 = $env:RELEASE_TREE
+            runner = 'windows-2025'
+            tests = 27
+            passed = 26
+            skipped = 1
+            failed = 0
+            errors = 0
+            powershell_parse = 'PASS'
+            launcher_preflight = 'PASS'
+            preflight_downloads = 0
+            model_calls = 0
+            provider_calls = 0
+            actual_executable_control_identities = 'UNBOUND'
+          }
+          $json = $value | ConvertTo-Json -Compress
+          $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
+          $b64 = [Convert]::ToBase64String($bytes)
+          $stream = [System.IO.MemoryStream]::new($bytes)
+          $sha = (Get-FileHash -Algorithm SHA256 -InputStream $stream).Hash.ToLowerInvariant()
+          "receipt_b64=$b64" >> $env:GITHUB_OUTPUT
+          "receipt_sha256=$sha" >> $env:GITHUB_OUTPUT
+          $json >> $env:GITHUB_STEP_SUMMARY
+
+  independent-provider-free-audit:
+    needs: windows-independent-audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact audit head
+        id: custody
+        shell: bash
+        env:
+          AUDIT_BRANCH: audit/astra-stage2-control-identity-release-1484-20260903
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+          RELEASE_HEAD: 148484098fae50923e4df6ed013963480734be7f
+          RELEASE_TREE: d0c2a9e49b5249018e6003d40f17e06f19b43835
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=128 origin \
+            "+refs/heads/${AUDIT_BRANCH}:refs/windows-release-audit/candidate"
+          git checkout --detach refs/windows-release-audit/candidate
+          audit_head="$(git rev-parse HEAD)"
+          audit_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$audit_head" = "$EXPECTED_AUDIT_HEAD"
+          test "$(git rev-parse "${RELEASE_HEAD}^{tree}")" = "$RELEASE_TREE"
+          git merge-base --is-ancestor "$RELEASE_HEAD" "$audit_head"
+          evidence_root="$RUNNER_TEMP/astra-stage2-control-identity-windows-release-audit"
+          mkdir -p "$evidence_root"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$audit_tree" >> "$GITHUB_OUTPUT"
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse provider credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          names = [
+              'OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY',
+              'MISTRAL_API_KEY','COHERE_API_KEY','XAI_API_KEY','GROQ_API_KEY',
+              'TOGETHER_API_KEY','FIREWORKS_API_KEY'
+          ]
+          present = [name for name in names if os.environ.get(name)]
+          if present:
+              raise SystemExit('recognized provider credentials present: ' + ','.join(present))
+          PY
+
+      - name: Materialize independent Windows audit receipt
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+          WINDOWS_RECEIPT_B64: ${{ needs.windows-independent-audit.outputs.receipt_b64 }}
+          WINDOWS_RECEIPT_SHA256: ${{ needs.windows-independent-audit.outputs.receipt_sha256 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$WINDOWS_RECEIPT_B64" | base64 --decode > "$EVIDENCE_ROOT/windows-audit-receipt.json"
+          observed="$(sha256sum "$EVIDENCE_ROOT/windows-audit-receipt.json" | awk '{print $1}')"
+          test "$observed" = "$WINDOWS_RECEIPT_SHA256"
+          python3 -m json.tool "$EVIDENCE_ROOT/windows-audit-receipt.json" >/dev/null
+
+      - name: Download exact repaired release artifacts by immutable ID
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/9906614765/zip" \
+            -o "$EVIDENCE_ROOT/release-evidence.zip"
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/9906615592/zip" \
+            -o "$EVIDENCE_ROOT/release-publication.zip"
+          echo '4f9a6f65fa949cc277a98a2b164bf709ab1f6117ac5b0a703bfb9ecc5d0eb752  release-evidence.zip' > "$EVIDENCE_ROOT/expected-release.sha256"
+          echo '2bb8101e643208eb4bfe4b1e85c5ec14c27ae4c2d0679404378c9249aee431fb  release-publication.zip' >> "$EVIDENCE_ROOT/expected-release.sha256"
+          (cd "$EVIDENCE_ROOT" && sha256sum -c expected-release.sha256)
+
+      - name: Rerun complete 27-test suite independently on Linux
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            astra_stage2/control_identity.py \
+            scripts/astra_stage2_bind_controls.py \
+            tests/test_astra_stage2_control_identity.py \
+            tests/test_astra_stage2_control_identity_release.py \
+            audits/astra_stage2_control_identity_windows_release_audit.py
+          PYTHONPATH=. python3 -m unittest discover \
+            -s tests \
+            -p 'test_astra_stage2_control_identity*.py' \
+            -v 2>&1 | tee "$EVIDENCE_ROOT/test-control-identity-audit-linux.log"
+          grep -q '^Ran 27 tests in ' "$EVIDENCE_ROOT/test-control-identity-audit-linux.log"
+          grep -q '^OK$' "$EVIDENCE_ROOT/test-control-identity-audit-linux.log"
+
+      - name: Execute independent artifact and authority audit
+        id: audit
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python3 audits/astra_stage2_control_identity_windows_release_audit.py \
+            --repo-root . \
+            --evidence-zip "$EVIDENCE_ROOT/release-evidence.zip" \
+            --publication-zip "$EVIDENCE_ROOT/release-publication.zip" \
+            --windows-audit-receipt "$EVIDENCE_ROOT/windows-audit-receipt.json" \
+            --out "$EVIDENCE_ROOT/audit-result.json"
+          python3 - "$EVIDENCE_ROOT/audit-result.json" <<'PY'
+          import json, sys
+          value = json.load(open(sys.argv[1], encoding='utf-8'))
+          assert value['disposition'] == 'PASS_CROSS_PLATFORM_PROVIDER_FREE_RELEASE_ONLY'
+          assert value['attack_count'] == value['refused_count'] == 7
+          assert value['failed_count'] == 0
+          assert value['rederived']['tests_linux'] == 27
+          assert value['rederived']['tests_windows'] == 27
+          assert value['rederived']['windows_failed'] == 0
+          assert value['rederived']['windows_errors'] == 0
+          assert value['rederived']['actual_executable_control_identities'] == 'UNBOUND'
+          assert value['authority']['provider_or_model_calls'] == 0
+          PY
+          printf 'audit_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$EVIDENCE_ROOT/audit-result.json")" \
+            >> "$GITHUB_OUTPUT"
+          cat "$EVIDENCE_ROOT/audit-result.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal independent audit package
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          cp audits/astra_stage2_control_identity_windows_release_audit.py "$EVIDENCE_ROOT/audit-source.py"
+          cp .github/workflows/astra-stage2-control-identity-windows-release-audit.yml "$EVIDENCE_ROOT/audit-workflow.yml"
+          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 "$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          (
+            cd "$EVIDENCE_ROOT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+
+      - name: Upload fresh independent cross-platform audit
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-windows-release-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish exact audit coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.artifact.outputs.artifact-id }}"
+          test -n "${{ steps.artifact.outputs.artifact-digest }}"
+          {
+            echo
+            echo "audit_head=${{ steps.custody.outputs.audit_head }}"
+            echo "audit_tree=${{ steps.custody.outputs.audit_tree }}"
+            echo "windows_audit_receipt=${{ needs.windows-independent-audit.outputs.receipt_sha256 }}"
+            echo "audit_payload=${{ steps.audit.outputs.audit_payload }}"
+            echo "artifact_id=${{ steps.artifact.outputs.artifact-id }}"
+            echo "artifact_digest=${{ steps.artifact.outputs.artifact-digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"
