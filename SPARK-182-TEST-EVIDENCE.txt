@@ -1,0 +1,46 @@
+SPARK-182 full local test denominator
+generated_at: 2026-09-03T03:55:31Z
+platform: Windows
+network_calls: 0
+provider_calls: 0
+physical_A17_execution: false
+thermal_soak_execution: false
+
+The following block is the verbatim stdout from the final denominator run.
+
+===== ANCHOR BUNDLE REPRODUCTION =====
+COMMAND: python -B scripts/verify_anchor_crate_bundle.py --repo .
+{
+  "errors": [],
+  "files": 33,
+  "ok": true
+}
+===== ANCHOR CRATE =====
+COMMAND: python -B tests/test_anchor_crate.py
+ANCHOR CRATE TESTS PASS: 18/18
+===== ANCHOR 4060 PHYSICAL =====
+COMMAND: python -B tests/test_anchor_crate_physical.py
+ANCHOR 4060 PHYSICAL TESTS PASS: 11/11
+===== MENACE EDGE =====
+COMMAND: python -B tests/test_menace_edge.py
+MENACE EDGE TESTS PASS: 13/13
+===== MENACE SEAMS =====
+COMMAND: python -B tests/test_menace_seams.py
+MENACE SEAM TESTS PASS: 12/12
+===== WINDOWS LAUNCHER PARSE =====
+COMMAND: parse scripts/run-anchor-crate-lab.ps1 and scripts/run-anchor-crate-4060-smoke.ps1
+POWERSHELL PARSE PASS: scripts/run-anchor-crate-lab.ps1
+POWERSHELL PARSE PASS: scripts/run-anchor-crate-4060-smoke.ps1
+FULL DENOMINATOR PASS
+
+Counts:
+- executable tests: 54 passed, 0 failed
+- bundle identities: 33 verified, 0 failed
+- PowerShell launchers: 2 parsed, 0 failed
+
+Applicability holds:
+- No HALO3-named source, test, workflow, or command exists in the closed crate or assigned worktree, so no HALO3 result is claimed.
+- No Ubuntu runtime is available in the assigned Windows worktree; the provider-free Python suites were executed on Windows only.
+
+Pre-denominator environment note:
+- One preliminary physical-suite launch inside the managed filesystem sandbox was blocked before test logic by PermissionError/WinError 5 on Python TemporaryDirectory. The same provider-free command was then run with normal local temporary-directory access and passed 11/11, followed by the clean full denominator above.

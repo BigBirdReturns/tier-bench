@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 import platform
 import sys
@@ -19,6 +20,14 @@ ESTATE_OBSERVATION_SCHEMA = "axm-community-lab/estate-observation@1"
 HOST_OBSERVATION_SCHEMA = "axm-community-lab/windows-host-observation@1"
 PROBE_SCHEMA = "tier-bench/anchor-4060-physical-probe@1"
 FUNCTION_CONTRACT_SCHEMA = "axm-community-lab/function-contract@1"
+THERMAL_FAN_CHANNELS = [
+    "Pump Fan control/1",
+    "System Fan #1 control/2",
+    "System Fan #3 control/4",
+]
+FAN_GOVERNANCE = "PawnIO_LibreHardwareMonitor_holder"
+THERMAL_PROFILE_ID = "W01-RTX4060-MENACE-A17-THERMAL-V1"
+THERMAL_GPU_UUID = "GPU-e0b1541d-fc7d-38f5-d4c0-c15a3bd241a0"
 
 PROMPT_TEMPLATE = (
     "You are a bounded decision-packet formatter. Use only the supplied readiness state. "
@@ -149,6 +158,71 @@ def passed_receipt(
     return receipt, validate_artifacts(receipt, receipt_path), receipt_id(receipt)
 
 
+def parse_thermal_power(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    if not isinstance(value, str):
+        return None
+    match = re.search(r"(?P<power>\d+(?:\.\d+)?)", value)
+    if not match:
+        return None
+    try:
+        return float(match.group("power"))
+    except ValueError:
+        return None
+
+
+def passed_thermal_profile(
+    receipt_path: Path,
+    *,
+    expected_profile_id: str,
+    expected_power_limit_watts: float,
+) -> tuple[dict[str, Any], str]:
+    receipt = load_json(receipt_path)
+    require(receipt.get("profile_id") == expected_profile_id, f"thermal profile id mismatch: {receipt_path}")
+    require(receipt.get("terminal") == "PASS", f"thermal profile did not terminal PASS: {receipt_path}")
+    if "pass" in receipt:
+        require(receipt.get("pass") is True, f"thermal profile is not pass=true: {receipt_path}")
+    if "rerun_required" in receipt:
+        require(receipt["rerun_required"] is False, f"thermal profile requires rerun: {receipt_path}")
+    if "provider_calls" in receipt:
+        require(int(receipt["provider_calls"] or 0) == 0, f"thermal profile made provider calls: {receipt_path}")
+
+    if isinstance(receipt.get("pass_criteria_all_met"), Mapping):
+        criteria = receipt["pass_criteria_all_met"]
+        if "holder_continuously_active" in criteria:
+            require(
+                criteria["holder_continuously_active"] is True,
+                f"thermal profile holder is not continuously active: {receipt_path}",
+            )
+        if "every_mapped_case_fan_stable_nonzero_tachometer" in criteria:
+            require(
+                criteria["every_mapped_case_fan_stable_nonzero_tachometer"] is True,
+                f"thermal profile fan tachometer guard is not satisfied: {receipt_path}",
+            )
+
+    sources = []
+    operating_point = receipt.get("operating_point")
+    if isinstance(operating_point, Mapping):
+        sources.append(operating_point.get("power_limit_w"))
+    elif isinstance(operating_point, str):
+        sources.append(operating_point)
+    if isinstance(receipt.get("result"), Mapping):
+        sources.append(receipt["result"].get("requested_power_limit_w"))
+    power_limit = None
+    for source in sources:
+        candidate = parse_thermal_power(source)
+        if candidate is not None:
+            power_limit = candidate
+            break
+    require(power_limit is not None, f"thermal profile power limit is missing: {receipt_path}")
+    require(
+        abs(float(power_limit) - float(expected_power_limit_watts)) < 1e-6,
+        f"thermal profile is not bound to {expected_power_limit_watts}W: {receipt_path}",
+    )
+    return receipt, sha256_file(receipt_path)
+
+
 def find_artifact(artifacts: Mapping[str, Path], suffix: str) -> Path:
     matches = [path for name, path in artifacts.items() if name == suffix or name.endswith("/" + suffix)]
     require(len(matches) == 1, f"expected exactly one receipt artifact ending in {suffix}, found {len(matches)}")
@@ -181,7 +255,7 @@ def select_gpu(observation: Mapping[str, Any], requested_uuid: str | None) -> di
     ]
     require(len(candidates) == 1, f"expected one exact RTX 4060 identity, found {len(candidates)}")
     gpu = candidates[0]
-    for key in ("uuid", "name", "memory_total_mib", "driver_version", "pci_bus_id", "power_limit_watts"):
+    for key in ("uuid", "name", "vbios_version", "memory_total_mib", "driver_version", "pci_bus_id", "power_limit_watts"):
         require(gpu.get(key) not in {None, ""}, f"RTX 4060 identity is missing {key}")
     require(int(gpu["memory_total_mib"]) >= 7000, "RTX 4060 memory envelope is unexpectedly small")
     return gpu
@@ -194,6 +268,8 @@ def validate_probe(
     model: str,
     model_digest: str,
     endpoint: str,
+    thermal_public_sha256: str,
+    thermal_private_sha256: str,
 ) -> tuple[dict[str, Any], str]:
     probe = load_json(probe_path)
     require(probe.get("schema") == PROBE_SCHEMA, "unsupported physical probe schema")
@@ -206,12 +282,50 @@ def validate_probe(
     observed_gpu = probe.get("gpu")
     observed_ollama = probe.get("ollama")
     require(isinstance(observed_gpu, Mapping) and isinstance(observed_ollama, Mapping), "physical probe identity objects missing")
-    for key in ("uuid", "name", "memory_total_mib", "driver_version", "pci_bus_id"):
+    for key in ("uuid", "name", "vbios_version", "memory_total_mib", "driver_version", "pci_bus_id"):
         require(str(observed_gpu.get(key)) == str(gpu.get(key)), f"physical probe GPU {key} differs from census")
     require(observed_ollama.get("model") == model, "physical probe model name differs")
     require(observed_ollama.get("model_digest") == model_digest, "physical probe model digest differs")
     require(isinstance(observed_ollama.get("size_vram"), int) and observed_ollama["size_vram"] >= 2 * 1024**3, "physical probe did not establish accelerator residency")
     require(isinstance(observed_gpu.get("memory_used_mib"), (int, float)) and observed_gpu["memory_used_mib"] >= 1024, "physical probe did not establish GPU memory residency")
+    thermal = probe.get("thermal_profile")
+    require(isinstance(thermal, Mapping), "physical probe thermal profile binding missing")
+    require(thermal.get("profile_id") == THERMAL_PROFILE_ID, "physical probe thermal profile identity differs")
+    require(thermal.get("public_receipt_sha256") == thermal_public_sha256, "physical probe public thermal receipt digest differs")
+    require(thermal.get("private_receipt_sha256") == thermal_private_sha256, "physical probe private thermal receipt digest differs")
+    require(thermal.get("fan_governance") == FAN_GOVERNANCE, "physical probe fan holder governance differs")
+    holder = thermal.get("holder")
+    require(isinstance(holder, Mapping) and holder.get("active") is True, "physical probe holder is not active")
+    require(holder.get("pawnio_identity_verified") is True, "physical probe PawnIO identity is not verified")
+    require(holder.get("lhm_identity_verified") is True, "physical probe LibreHardwareMonitor identity is not verified")
+    require(isinstance(holder.get("policy_sha256"), str) and len(holder["policy_sha256"]) == 64, "physical probe holder policy digest missing")
+    require(isinstance(holder.get("sensor_age_seconds"), (int, float)) and holder["sensor_age_seconds"] <= 12, "physical probe holder sensors are stale")
+    fan_rows = thermal.get("fan_channels")
+    require(isinstance(fan_rows, list) and len(fan_rows) == len(THERMAL_FAN_CHANNELS), "physical probe fan map is incomplete")
+    require(
+        {str(row.get("channel")) for row in fan_rows if isinstance(row, Mapping)} == set(THERMAL_FAN_CHANNELS),
+        "physical probe fan map differs from the thermal profile",
+    )
+    require(
+        all(isinstance(row, Mapping) and isinstance(row.get("tachometer_rpm"), (int, float)) and row["tachometer_rpm"] > 0 for row in fan_rows),
+        "physical probe fan tachometer confirmation is incomplete",
+    )
+    artifacts = thermal.get("coverage_artifacts")
+    require(isinstance(artifacts, list) and len(artifacts) >= 8, "thermal covered-artifact set is incomplete")
+    for row in artifacts:
+        require(isinstance(row, Mapping), "thermal covered-artifact row is invalid")
+        path = Path(str(row.get("path") or ""))
+        digest = str(row.get("sha256") or "")
+        require(path.is_file() and len(digest) == 64, f"thermal covered artifact is unavailable: {path}")
+        require(sha256_file(path) == digest, f"thermal covered-artifact digest drift: {path}")
+    power = probe.get("power_control")
+    require(isinstance(power, Mapping), "physical probe power-control evidence missing")
+    require(float(power.get("default_watts", 0)) == 115.0, "physical probe GPU default power identity differs")
+    require(float(power.get("minimum_watts", 999)) <= 90.0, "90 W is outside the bound card legal range")
+    require(float(power.get("applied_watts", 0)) == 90.0 and power.get("application_result") == "PASS", "physical probe did not prove exact 90 W application")
+    inventory = probe.get("gpu_inventory_before")
+    require(isinstance(inventory, list) and bool(inventory), "physical probe did not enumerate NVIDIA GPUs")
+    require(any(isinstance(row, Mapping) and row.get("uuid") == gpu["uuid"] for row in inventory), "physical probe inventory omits target GPU")
     return probe, sha256_file(probe_path)
 
 
@@ -228,6 +342,9 @@ def build(
     output_dir: Path,
     backend_id: str,
     gpu_uuid: str | None,
+    thermal_profile_public_receipt_path: Path | None = None,
+    thermal_profile_private_receipt_path: Path | None = None,
+    thermal_target_power_limit_watts: float = 90.0,
 ) -> dict[str, Any]:
     estate_receipt, estate_artifacts, estate_receipt_sha = passed_receipt(
         estate_receipt_path,
@@ -238,6 +355,24 @@ def build(
         function_receipt_path,
         experiment_id="freeze-one-function",
         required_support=("function_contract", "qualified"),
+    )
+    require(
+        thermal_profile_public_receipt_path is not None and thermal_profile_private_receipt_path is not None,
+        "both thermal profile receipts are required for physical route construction",
+    )
+    thermal_public, thermal_public_sha = passed_thermal_profile(
+        thermal_profile_public_receipt_path,  # type: ignore[arg-type]
+        expected_profile_id=THERMAL_PROFILE_ID,
+        expected_power_limit_watts=thermal_target_power_limit_watts,
+    )
+    thermal_private, thermal_private_sha = passed_thermal_profile(
+        thermal_profile_private_receipt_path,  # type: ignore[arg-type]
+        expected_profile_id=THERMAL_PROFILE_ID,
+        expected_power_limit_watts=thermal_target_power_limit_watts,
+    )
+    require(
+        thermal_public["profile_id"] == thermal_private["profile_id"],
+        "thermal profile public/private IDs must agree",
     )
 
     estate_observation = load_json(estate_observation_path)
@@ -270,6 +405,7 @@ def build(
     require(models == {model}, "function outputs changed the model identity")
     model_digest = str(next(iter(digests)))
 
+    require(gpu_uuid == THERMAL_GPU_UUID, "physical route requires the exact thermally qualified RTX 4060 UUID")
     gpu = select_gpu(control_observation, gpu_uuid)
     probe, probe_sha = validate_probe(
         physical_probe_path,
@@ -277,6 +413,8 @@ def build(
         model=model,
         model_digest=model_digest,
         endpoint=endpoint,
+        thermal_public_sha256=thermal_public_sha,
+        thermal_private_sha256=thermal_private_sha,
     )
     runtimes = runtime_map(control_observation)
     for name in ("python", "ollama", "nvidia-smi"):
@@ -316,6 +454,8 @@ def build(
         "estate_observation_sha256": sha256_file(estate_observation_path),
         "control_host_observation_sha256": sha256_file(control_host_observation_path),
         "function_contract_sha256": sha256_file(contract_path),
+        "thermal_profile_public_receipt_sha256": thermal_public_sha,
+        "thermal_profile_private_receipt_sha256": thermal_private_sha,
     }
     binding: dict[str, Any] = {
         "schema": BINDING_SCHEMA,
@@ -335,6 +475,7 @@ def build(
             "min_loaded_memory_mib": max(1024, int(math.floor(min_size_vram / 1024**2 * 0.75))),
             "driver_version": str(gpu["driver_version"]),
             "pci_bus_id": str(gpu["pci_bus_id"]),
+            "vbios_version": str(gpu["vbios_version"]),
             "power_limit_watts": float(gpu["power_limit_watts"]),
         },
         "runtime": {
@@ -356,6 +497,7 @@ def build(
         "execution": {
             "executor_path": str(executor_path.resolve()),
             "executor_sha256": executor_sha,
+            "backend_family": "cuda",
             "nvidia_smi_path": str(runtimes["nvidia-smi"]["path"]),
             "nvidia_smi_command": (
                 list(probe.get("nvidia_smi_command"))
@@ -366,6 +508,22 @@ def build(
             ),
             "dedicated_ollama_server": True,
             "cuda_visible_devices": gpu["uuid"],
+            "ollama_vulkan": "0",
+            "power_limit_target_watts": thermal_target_power_limit_watts,
+            "thermal_profile_id": THERMAL_PROFILE_ID,
+            "thermal_profile_receipt_sha256": thermal_private_sha,
+            "thermal_profile_public_receipt_sha256": thermal_public_sha,
+            "thermal_profile_public_receipt_path": str(thermal_profile_public_receipt_path.resolve()),
+            "thermal_profile_private_receipt_path": str(thermal_profile_private_receipt_path.resolve()),
+            "thermal_coverage_artifacts": list(probe["thermal_profile"]["coverage_artifacts"]),
+            "thermal_holder": dict(probe["thermal_profile"]["holder"]),
+            "gpu_inventory_baseline_mib": {
+                str(row["uuid"]): float(row.get("memory_used_mib") or 0)
+                for row in probe["gpu_inventory_before"]
+                if isinstance(row, Mapping)
+            },
+            "fan_channels": THERMAL_FAN_CHANNELS,
+            "fan_governance": FAN_GOVERNANCE,
             "evidence_log": str(evidence_log),
         },
         "lowering": {**lowering, "lowering_sha256": lowering_sha},
@@ -394,6 +552,7 @@ def build(
         "execution_class": "accelerator_driver",
         "architecture": "cuda-sm89",
         "isa": "NVIDIA Ada SM89",
+        "backend_family": "cuda",
         "runtime_id": "ollama-cuda",
         "runtime_version": ollama_version,
         "model_identity": f"ollama:{model}@sha256:{model_digest}",
@@ -403,7 +562,10 @@ def build(
         "memory_mib": int(gpu["memory_total_mib"]),
         "storage_mib": max(512, int(math.ceil(model_size / 1024**2)) + 1024),
         "network": "local_only",
-        "power_limit_w": int(math.ceil(float(gpu["power_limit_watts"]))),
+        "power_limit_w": int(math.ceil(float(thermal_target_power_limit_watts))),
+        "thermal_profile_id": THERMAL_PROFILE_ID,
+        "thermal_profile_receipt_sha256": thermal_private_sha,
+        "fan_governance": FAN_GOVERNANCE,
         "energy_class": 2,
         "preference": 5,
         "telemetry": ["elapsed_ms", "energy_mwh", "memory_peak_mib", "status"],
@@ -490,6 +652,9 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--python", type=Path, default=Path(sys.executable))
     result.add_argument("--output-dir", type=Path, required=True)
     result.add_argument("--backend-id", default="backend.cuda4060-qwen35-physical")
+    result.add_argument("--thermal-profile-public-receipt", type=Path)
+    result.add_argument("--thermal-profile-private-receipt", type=Path)
+    result.add_argument("--thermal-target-power-limit-watts", type=float, default=90.0)
     result.add_argument("--gpu-uuid")
     return result
 
@@ -509,6 +674,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             output_dir=args.output_dir.resolve(),
             backend_id=args.backend_id,
             gpu_uuid=args.gpu_uuid,
+            thermal_profile_public_receipt_path=args.thermal_profile_public_receipt,
+            thermal_profile_private_receipt_path=args.thermal_profile_private_receipt,
+            thermal_target_power_limit_watts=args.thermal_target_power_limit_watts,
         )
     except (BuildError, OSError, ValueError, json.JSONDecodeError) as exc:
         print(f"build-anchor-4060: {exc}", file=sys.stderr)
