@@ -147,6 +147,19 @@ jobs:
           diff -u \
             experiments/astra_kxr/stage2/control_identity/binding-template.json \
             "$RUNNER_TEMP/binding-template.generated.json"
+          git add -N -- \
+            .github/workflows/astra-stage2-control-identity.yml \
+            astra_stage2/control_identity.py \
+            docs/agents/claims/FRR-ASTRA-STAGE2-CONTROL-IDENTITY-1.md \
+            experiments/astra_kxr/stage2/control_identity/README.md \
+            experiments/astra_kxr/stage2/control_identity/binding-template.json \
+            schemas/astra-stage2-control-binding-input.schema.json \
+            schemas/astra-stage2-executable-control-private.schema.json \
+            schemas/astra-stage2-executable-control-public.schema.json \
+            schemas/astra-stage2-executable-control-set.schema.json \
+            scripts/astra_stage2_bind_controls.ps1 \
+            scripts/astra_stage2_bind_controls.py \
+            tests/test_astra_stage2_control_identity.py
           mapfile -t observed < <(git diff --name-only "$JOIN_HEAD" -- | sort)
           cat > "$RUNNER_TEMP/expected-paths.txt" <<'EOF'
           .github/workflows/astra-stage2-control-identity.yml
