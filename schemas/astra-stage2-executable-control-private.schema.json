@@ -1,0 +1,253 @@
+{
+  "$id": "tier-bench/astra-stage2-executable-control-private.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "adapter": {
+      "type": "object"
+    },
+    "binding_status": {
+      "const": "BOUND_EXECUTABLE_IDENTITY"
+    },
+    "checkpoint": {
+      "type": "object"
+    },
+    "class_label": {
+      "enum": [
+        "recurrent_latent",
+        "parallel_latent",
+        "conventional_negative"
+      ]
+    },
+    "component_digests": {
+      "additionalProperties": false,
+      "properties": {
+        "adapter_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "hardware_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "model_revision_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "runtime_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "tokenizer_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "weights_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "model_revision_sha256",
+        "weights_sha256",
+        "tokenizer_sha256",
+        "runtime_sha256",
+        "adapter_sha256",
+        "hardware_sha256"
+      ],
+      "type": "object"
+    },
+    "effort_mapping": {
+      "additionalProperties": false,
+      "properties": {
+        "high": {
+          "additionalProperties": false,
+          "properties": {
+            "arguments": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "configuration": {
+              "type": "object"
+            },
+            "environment": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "arguments",
+            "environment",
+            "configuration"
+          ],
+          "type": "object"
+        },
+        "low": {
+          "additionalProperties": false,
+          "properties": {
+            "arguments": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "configuration": {
+              "type": "object"
+            },
+            "environment": {
+              "additionalProperties": {
+                "type": "string"
+              },
+              "type": "object"
+            }
+          },
+          "required": [
+            "arguments",
+            "environment",
+            "configuration"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "low",
+        "high"
+      ],
+      "type": "object"
+    },
+    "evidence_class": {
+      "const": "empirical_local"
+    },
+    "hardware": {
+      "type": "object"
+    },
+    "local_artifact_set": {
+      "additionalProperties": false,
+      "properties": {
+        "file_count": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "files": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "bytes": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "category": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "category",
+              "name",
+              "bytes",
+              "sha256"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "files_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "total_bytes": {
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "file_count",
+        "total_bytes",
+        "files_sha256",
+        "files"
+      ],
+      "type": "object"
+    },
+    "local_artifact_set_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "model": {
+      "type": "object"
+    },
+    "private_locator": {
+      "type": "object"
+    },
+    "private_locator_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "private_manifest_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "public_source": {
+      "type": "object"
+    },
+    "quantization": {
+      "type": "object"
+    },
+    "role": {
+      "enum": [
+        "lotus_3b_recurrent",
+        "loopcoder_v2_7b_parallel",
+        "conventional_transformer_negative"
+      ]
+    },
+    "runtime": {
+      "type": "object"
+    },
+    "schema": {
+      "const": "tier-bench/astra-stage2-executable-control-private@1"
+    },
+    "source": {
+      "type": "object"
+    },
+    "tokenizer": {
+      "type": "object"
+    },
+    "weights": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema",
+    "evidence_class",
+    "binding_status",
+    "role",
+    "class_label",
+    "public_source",
+    "checkpoint",
+    "source",
+    "model",
+    "tokenizer",
+    "weights",
+    "runtime",
+    "adapter",
+    "quantization",
+    "hardware",
+    "effort_mapping",
+    "private_locator",
+    "private_locator_sha256",
+    "component_digests",
+    "local_artifact_set",
+    "local_artifact_set_sha256",
+    "private_manifest_sha256"
+  ],
+  "type": "object"
+}

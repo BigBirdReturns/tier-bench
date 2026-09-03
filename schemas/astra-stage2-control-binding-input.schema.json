@@ -1,0 +1,1059 @@
+{
+  "$id": "tier-bench/astra-stage2-control-binding-input.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "binding_id": {
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{2,127}$",
+      "type": "string"
+    },
+    "controls": {
+      "items": false,
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "adapter": {
+              "additionalProperties": false,
+              "properties": {
+                "configuration": {
+                  "type": "object"
+                },
+                "identity": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "paths": {
+                  "items": {
+                    "minLength": 1,
+                    "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "root": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "identity",
+                "root",
+                "paths",
+                "configuration"
+              ],
+              "type": "object"
+            },
+            "checkpoint_repository": {
+              "const": "yingfanbot/gsm-lotus-llama3b"
+            },
+            "checkpoint_revision_sha1": {
+              "const": "b392d2cb7aaa73475b93028221523c47f49f66a2"
+            },
+            "class_label": {
+              "const": "recurrent_latent"
+            },
+            "effort_mapping": {
+              "additionalProperties": false,
+              "properties": {
+                "high": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "arguments": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "configuration": {
+                      "type": "object"
+                    },
+                    "environment": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "arguments",
+                    "environment",
+                    "configuration"
+                  ],
+                  "type": "object"
+                },
+                "low": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "arguments": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "configuration": {
+                      "type": "object"
+                    },
+                    "environment": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "arguments",
+                    "environment",
+                    "configuration"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "low",
+                "high"
+              ],
+              "type": "object"
+            },
+            "hardware": {
+              "additionalProperties": false,
+              "properties": {
+                "device_query_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                "evidence_root": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "platform_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                "selected_device_indices": {
+                  "items": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "minItems": 1,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "topology_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "evidence_root",
+                "platform_path",
+                "device_query_path",
+                "topology_path",
+                "selected_device_indices"
+              ],
+              "type": "object"
+            },
+            "model_config_paths": {
+              "items": {
+                "minLength": 1,
+                "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "model_root": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "quantization": {
+              "additionalProperties": false,
+              "properties": {
+                "identity": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "parameters": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "identity",
+                "parameters"
+              ],
+              "type": "object"
+            },
+            "revision_marker_path": {
+              "oneOf": [
+                {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "role": {
+              "const": "lotus_3b_recurrent"
+            },
+            "runtime": {
+              "additionalProperties": false,
+              "properties": {
+                "build": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "configuration": {
+                  "type": "object"
+                },
+                "configuration_paths": {
+                  "items": {
+                    "minLength": 1,
+                    "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "executable_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "probe_args": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "probe_timeout_seconds": {
+                  "maximum": 120,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "required_probe_substrings": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "root": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "version": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "root",
+                "name",
+                "version",
+                "build",
+                "executable_path",
+                "configuration_paths",
+                "configuration",
+                "probe_args",
+                "required_probe_substrings",
+                "probe_timeout_seconds"
+              ],
+              "type": "object"
+            },
+            "source_commit_sha1": {
+              "const": "eb77e2f7909c5006f58ff0ad7cd6629b942caa9e"
+            },
+            "source_repository": {
+              "const": "yingfan-bot/lotus"
+            },
+            "source_root": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "tokenizer_paths": {
+              "items": {
+                "minLength": 1,
+                "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "weight_index_path": {
+              "oneOf": [
+                {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "weight_paths": {
+              "items": {
+                "minLength": 1,
+                "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "role",
+            "class_label",
+            "source_repository",
+            "source_commit_sha1",
+            "source_root",
+            "checkpoint_repository",
+            "checkpoint_revision_sha1",
+            "model_root",
+            "revision_marker_path",
+            "model_config_paths",
+            "tokenizer_paths",
+            "weight_index_path",
+            "weight_paths",
+            "runtime",
+            "adapter",
+            "quantization",
+            "hardware",
+            "effort_mapping"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "adapter": {
+              "additionalProperties": false,
+              "properties": {
+                "configuration": {
+                  "type": "object"
+                },
+                "identity": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "paths": {
+                  "items": {
+                    "minLength": 1,
+                    "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "root": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "identity",
+                "root",
+                "paths",
+                "configuration"
+              ],
+              "type": "object"
+            },
+            "checkpoint_repository": {
+              "const": "Multilingual-Multimodal-NLP/LoopCoder-V2"
+            },
+            "checkpoint_revision_sha1": {
+              "const": "b87cf3aa2186937b0d0362a684d7d30f234543e3"
+            },
+            "class_label": {
+              "const": "parallel_latent"
+            },
+            "effort_mapping": {
+              "additionalProperties": false,
+              "properties": {
+                "high": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "arguments": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "configuration": {
+                      "type": "object"
+                    },
+                    "environment": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "arguments",
+                    "environment",
+                    "configuration"
+                  ],
+                  "type": "object"
+                },
+                "low": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "arguments": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "configuration": {
+                      "type": "object"
+                    },
+                    "environment": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "arguments",
+                    "environment",
+                    "configuration"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "low",
+                "high"
+              ],
+              "type": "object"
+            },
+            "hardware": {
+              "additionalProperties": false,
+              "properties": {
+                "device_query_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                "evidence_root": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "platform_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                "selected_device_indices": {
+                  "items": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "minItems": 1,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "topology_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "evidence_root",
+                "platform_path",
+                "device_query_path",
+                "topology_path",
+                "selected_device_indices"
+              ],
+              "type": "object"
+            },
+            "model_config_paths": {
+              "items": {
+                "minLength": 1,
+                "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "model_root": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "quantization": {
+              "additionalProperties": false,
+              "properties": {
+                "identity": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "parameters": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "identity",
+                "parameters"
+              ],
+              "type": "object"
+            },
+            "revision_marker_path": {
+              "oneOf": [
+                {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "role": {
+              "const": "loopcoder_v2_7b_parallel"
+            },
+            "runtime": {
+              "additionalProperties": false,
+              "properties": {
+                "build": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "configuration": {
+                  "type": "object"
+                },
+                "configuration_paths": {
+                  "items": {
+                    "minLength": 1,
+                    "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "executable_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "probe_args": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "probe_timeout_seconds": {
+                  "maximum": 120,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "required_probe_substrings": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "root": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "version": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "root",
+                "name",
+                "version",
+                "build",
+                "executable_path",
+                "configuration_paths",
+                "configuration",
+                "probe_args",
+                "required_probe_substrings",
+                "probe_timeout_seconds"
+              ],
+              "type": "object"
+            },
+            "source_commit_sha1": {
+              "const": "ab0d92d7cc87c4ed0fd30c1db1f2edd685435c4c"
+            },
+            "source_repository": {
+              "const": "CSJianYang/LoopCoder"
+            },
+            "source_root": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "tokenizer_paths": {
+              "items": {
+                "minLength": 1,
+                "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "weight_index_path": {
+              "oneOf": [
+                {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "weight_paths": {
+              "items": {
+                "minLength": 1,
+                "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "role",
+            "class_label",
+            "source_repository",
+            "source_commit_sha1",
+            "source_root",
+            "checkpoint_repository",
+            "checkpoint_revision_sha1",
+            "model_root",
+            "revision_marker_path",
+            "model_config_paths",
+            "tokenizer_paths",
+            "weight_index_path",
+            "weight_paths",
+            "runtime",
+            "adapter",
+            "quantization",
+            "hardware",
+            "effort_mapping"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "adapter": {
+              "additionalProperties": false,
+              "properties": {
+                "configuration": {
+                  "type": "object"
+                },
+                "identity": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "paths": {
+                  "items": {
+                    "minLength": 1,
+                    "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "root": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "identity",
+                "root",
+                "paths",
+                "configuration"
+              ],
+              "type": "object"
+            },
+            "checkpoint_repository": {
+              "const": "yingfanbot/gsm-cot-llama3b"
+            },
+            "checkpoint_revision_sha1": {
+              "const": "63de1ec1902ed143fe62250b6ddb14cb65f06e1a"
+            },
+            "class_label": {
+              "const": "conventional_negative"
+            },
+            "effort_mapping": {
+              "additionalProperties": false,
+              "properties": {
+                "high": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "arguments": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "configuration": {
+                      "type": "object"
+                    },
+                    "environment": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "arguments",
+                    "environment",
+                    "configuration"
+                  ],
+                  "type": "object"
+                },
+                "low": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "arguments": {
+                      "items": {
+                        "type": "string"
+                      },
+                      "type": "array"
+                    },
+                    "configuration": {
+                      "type": "object"
+                    },
+                    "environment": {
+                      "additionalProperties": {
+                        "type": "string"
+                      },
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "arguments",
+                    "environment",
+                    "configuration"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "low",
+                "high"
+              ],
+              "type": "object"
+            },
+            "hardware": {
+              "additionalProperties": false,
+              "properties": {
+                "device_query_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                "evidence_root": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "platform_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                "selected_device_indices": {
+                  "items": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "minItems": 1,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "topology_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "evidence_root",
+                "platform_path",
+                "device_query_path",
+                "topology_path",
+                "selected_device_indices"
+              ],
+              "type": "object"
+            },
+            "model_config_paths": {
+              "items": {
+                "minLength": 1,
+                "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "model_root": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "quantization": {
+              "additionalProperties": false,
+              "properties": {
+                "identity": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "parameters": {
+                  "type": "object"
+                }
+              },
+              "required": [
+                "identity",
+                "parameters"
+              ],
+              "type": "object"
+            },
+            "revision_marker_path": {
+              "oneOf": [
+                {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "role": {
+              "const": "conventional_transformer_negative"
+            },
+            "runtime": {
+              "additionalProperties": false,
+              "properties": {
+                "build": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "configuration": {
+                  "type": "object"
+                },
+                "configuration_paths": {
+                  "items": {
+                    "minLength": 1,
+                    "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                    "type": "string"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "executable_path": {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                "name": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "probe_args": {
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "probe_timeout_seconds": {
+                  "maximum": 120,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "required_probe_substrings": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "minItems": 1,
+                  "type": "array",
+                  "uniqueItems": true
+                },
+                "root": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "version": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "root",
+                "name",
+                "version",
+                "build",
+                "executable_path",
+                "configuration_paths",
+                "configuration",
+                "probe_args",
+                "required_probe_substrings",
+                "probe_timeout_seconds"
+              ],
+              "type": "object"
+            },
+            "source_commit_sha1": {
+              "const": "eb77e2f7909c5006f58ff0ad7cd6629b942caa9e"
+            },
+            "source_repository": {
+              "const": "yingfan-bot/lotus"
+            },
+            "source_root": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "tokenizer_paths": {
+              "items": {
+                "minLength": 1,
+                "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "weight_index_path": {
+              "oneOf": [
+                {
+                  "minLength": 1,
+                  "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "weight_paths": {
+              "items": {
+                "minLength": 1,
+                "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "role",
+            "class_label",
+            "source_repository",
+            "source_commit_sha1",
+            "source_root",
+            "checkpoint_repository",
+            "checkpoint_revision_sha1",
+            "model_root",
+            "revision_marker_path",
+            "model_config_paths",
+            "tokenizer_paths",
+            "weight_index_path",
+            "weight_paths",
+            "runtime",
+            "adapter",
+            "quantization",
+            "hardware",
+            "effort_mapping"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "array"
+    },
+    "generator_manifest_sha256": {
+      "const": "2050de80cb4688b182cf9e006a97959da422dce24138c6451774f03320517328"
+    },
+    "law": {
+      "additionalProperties": false,
+      "properties": {
+        "blob_sha1": {
+          "const": "77abe4e177fc61e4f52f56ea64494b113f9662fc"
+        },
+        "commit_sha1": {
+          "const": "c36c35bf9b70d879e1e1c9ee2f0296879442df3e"
+        },
+        "tree_sha1": {
+          "const": "87bff3320c680e91eaec66c287d7a1ac3b7fe523"
+        }
+      },
+      "required": [
+        "commit_sha1",
+        "tree_sha1",
+        "blob_sha1"
+      ],
+      "type": "object"
+    },
+    "scaffold": {
+      "additionalProperties": false,
+      "properties": {
+        "head_sha1": {
+          "const": "9babad4631ef517485c56ea4906aab123e30fad7"
+        },
+        "tree_sha1": {
+          "const": "720cbf3f26f2e251613acedc52cff08ef33892dc"
+        }
+      },
+      "required": [
+        "head_sha1",
+        "tree_sha1"
+      ],
+      "type": "object"
+    },
+    "schema": {
+      "const": "tier-bench/astra-stage2-control-binding-input@1"
+    },
+    "stage1_join_head": {
+      "const": "60bca963d63edca267106bc5c7725c2cc1df8dd7"
+    }
+  },
+  "required": [
+    "schema",
+    "binding_id",
+    "law",
+    "scaffold",
+    "stage1_join_head",
+    "generator_manifest_sha256",
+    "controls"
+  ],
+  "title": "Astra Stage 2 executable-control binding input",
+  "type": "object"
+}
