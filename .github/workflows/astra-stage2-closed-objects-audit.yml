@@ -1,0 +1,87 @@
+name: astra-stage2-closed-object-audit
+
+on:
+  push:
+    branches:
+      - audit/astra-stage2-closed-objects-49cd-20260903
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-closed-object-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  independent-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact audit branch without submodule traversal
+        id: custody
+        shell: bash
+        env:
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+          AUDIT_BRANCH: audit/astra-stage2-closed-objects-49cd-20260903
+          TARGET_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+          TARGET_TREE: dcaee26ad123842c325909f4a083eb9a1d76c7dc
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git -c protocol.version=2 fetch --no-tags --depth=32 origin \
+            "+refs/heads/${AUDIT_BRANCH}:refs/remotes/origin/audit"
+          git checkout --detach refs/remotes/origin/audit
+          audit_head="$(git rev-parse HEAD)"
+          test "$audit_head" = "$EXPECTED_AUDIT_HEAD"
+          git merge-base --is-ancestor "$TARGET_HEAD" "$audit_head"
+          test "$(git rev-parse "${TARGET_HEAD}^{tree}")" = "$TARGET_TREE"
+          mapfile -t paths < <(git diff --name-only "${TARGET_HEAD}...${audit_head}")
+          test "${#paths[@]}" -eq 2
+          printf '%s\n' "${paths[@]}" | sort > "$RUNNER_TEMP/audit-paths.txt"
+          printf '%s\n' \
+            ".github/workflows/astra-stage2-closed-objects-audit.yml" \
+            "audits/astra_stage2_closed_objects_audit.py" | sort > "$RUNNER_TEMP/expected-paths.txt"
+          diff -u "$RUNNER_TEMP/expected-paths.txt" "$RUNNER_TEMP/audit-paths.txt"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_OUTPUT"
+
+      - name: Execute adversarial audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/astra-stage2-closed-object-audit"
+          python3 -m py_compile audits/astra_stage2_closed_objects_audit.py
+          python3 audits/astra_stage2_closed_objects_audit.py \
+            --repo-root . \
+            --out "$RUNNER_TEMP/astra-stage2-closed-object-audit/audit-result.json"
+          sha256sum "$RUNNER_TEMP/astra-stage2-closed-object-audit/audit-result.json" \
+            > "$RUNNER_TEMP/astra-stage2-closed-object-audit/SHA256SUMS"
+          cp "$RUNNER_TEMP/audit-paths.txt" \
+            "$RUNNER_TEMP/astra-stage2-closed-object-audit/audit-paths.txt"
+          cat "$RUNNER_TEMP/astra-stage2-closed-object-audit/audit-result.json" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload audit evidence
+        id: evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-closed-object-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/astra-stage2-closed-object-audit
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Seal audit artifact coordinate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.evidence.outputs.artifact-id }}"
+          test -n "${{ steps.evidence.outputs.artifact-digest }}"
+          {
+            echo
+            echo "artifact_id=${{ steps.evidence.outputs.artifact-id }}"
+            echo "artifact_digest=${{ steps.evidence.outputs.artifact-digest }}"
+            echo "audit_head=${{ steps.custody.outputs.audit_head }}"
+            echo "audit_tree=${{ steps.custody.outputs.audit_tree }}"
+          } >> "$GITHUB_STEP_SUMMARY"
