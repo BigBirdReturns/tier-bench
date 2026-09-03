@@ -428,6 +428,7 @@ def build_fixture_observations(plan: dict[str, Any]) -> list[dict[str, Any]]:
             "r": item["r"],
             "replicate": item["replicate"],
             "task_sha256": item["task_sha256"],
+            "expected_checksum": item["expected_checksum"],
             "control_id": item["control_id"],
             "control_class": item["control_class"],
             "control_identity_sha256": item["control_identity_sha256"],
