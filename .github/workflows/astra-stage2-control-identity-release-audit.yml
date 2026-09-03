@@ -1,0 +1,173 @@
+name: astra-stage2-control-identity-release-audit
+
+on:
+  push:
+    branches:
+      - audit/astra-stage2-control-identity-release-b394-20260903
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: astra-stage2-control-identity-release-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  independent-provider-free-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact audit branch
+        id: custody
+        shell: bash
+        env:
+          AUDIT_BRANCH: audit/astra-stage2-control-identity-release-b394-20260903
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+          RELEASE_HEAD: b3948e62a66a13ed6013ea075552c09b9e3f5b1d
+          RELEASE_TREE: 3a3f2919e9151736492da44911c9c3d3952a8585
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=96 origin \
+            "+refs/heads/${AUDIT_BRANCH}:refs/control-release-audit/candidate"
+          git checkout --detach refs/control-release-audit/candidate
+          audit_head="$(git rev-parse HEAD)"
+          audit_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$audit_head" = "$EXPECTED_AUDIT_HEAD"
+          test "$(git rev-parse "${RELEASE_HEAD}^{tree}")" = "$RELEASE_TREE"
+          git merge-base --is-ancestor "$RELEASE_HEAD" "$audit_head"
+          evidence_root="$RUNNER_TEMP/astra-control-release-audit"
+          mkdir -p "$evidence_root"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$audit_tree" >> "$GITHUB_OUTPUT"
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse provider credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          names = ['OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY','MISTRAL_API_KEY','COHERE_API_KEY','XAI_API_KEY','GROQ_API_KEY','TOGETHER_API_KEY','FIREWORKS_API_KEY']
+          present = [name for name in names if os.environ.get(name)]
+          if present:
+              raise SystemExit('recognized provider credentials present: ' + ','.join(present))
+          PY
+
+      - name: Download exact release artifacts by ID
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/9903209622/zip" \
+            -o "$EVIDENCE_ROOT/release-evidence.zip"
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/9903210156/zip" \
+            -o "$EVIDENCE_ROOT/release-publication.zip"
+          echo '7c79a142e4c77df9ef9c961cd57acfdafd5b72ab4fb87f38682fafb4a184e526  release-evidence.zip' > "$EVIDENCE_ROOT/expected.sha256"
+          echo 'a387403acdf1d941ec64657076e80404f50ed5d0b4507c2edd7a1c60d7fa1d1c  release-publication.zip' >> "$EVIDENCE_ROOT/expected.sha256"
+          (cd "$EVIDENCE_ROOT" && sha256sum -c expected.sha256)
+
+      - name: Run complete 27-test suite independently
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            astra_stage2/control_identity.py \
+            scripts/astra_stage2_bind_controls.py \
+            tests/test_astra_stage2_control_identity.py \
+            tests/test_astra_stage2_control_identity_release.py \
+            audits/astra_stage2_control_identity_release_audit.py
+          PYTHONPATH=. python3 -m unittest discover \
+            -s tests \
+            -p 'test_astra_stage2_control_identity*.py' \
+            -v 2>&1 | tee "$EVIDENCE_ROOT/test-control-identity-audit.log"
+          grep -q '^Ran 27 tests in ' "$EVIDENCE_ROOT/test-control-identity-audit.log"
+
+      - name: Parse the Windows launcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v pwsh >/dev/null
+          pwsh -NoProfile -Command \
+            '$text = Get-Content -Raw "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1"; [void][scriptblock]::Create($text); Write-Output "POWERSHELL_PARSE_PASS"'
+
+      - name: Execute independent release audit
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python3 audits/astra_stage2_control_identity_release_audit.py \
+            --repo-root . \
+            --evidence-zip "$EVIDENCE_ROOT/release-evidence.zip" \
+            --publication-zip "$EVIDENCE_ROOT/release-publication.zip" \
+            --out "$EVIDENCE_ROOT/audit-result.json"
+          python3 - "$EVIDENCE_ROOT/audit-result.json" <<'PY'
+          import json, sys
+          value = json.load(open(sys.argv[1], encoding='utf-8'))
+          assert value['disposition'] == 'PASS_PROVIDER_FREE_RELEASE_ONLY'
+          assert value['failed_count'] == 0
+          assert value['refused_count'] == value['attack_count'] == 7
+          assert value['rederived']['tests'] == 27
+          assert value['rederived']['actual_control_identities'] == 'UNBOUND'
+          assert value['authority']['provider_or_model_calls'] == 0
+          PY
+
+      - name: Seal audit evidence
+        id: seal
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          cp audits/astra_stage2_control_identity_release_audit.py "$EVIDENCE_ROOT/audit-source.py"
+          cp .github/workflows/astra-stage2-control-identity-release-audit.yml "$EVIDENCE_ROOT/audit-workflow.yml"
+          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 "$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          (
+            cd "$EVIDENCE_ROOT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+          printf 'audit_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$EVIDENCE_ROOT/audit-result.json")" \
+            >> "$GITHUB_OUTPUT"
+          cat "$EVIDENCE_ROOT/audit-result.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload independent release audit
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-release-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish audit coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.artifact.outputs.artifact-id }}"
+          test -n "${{ steps.artifact.outputs.artifact-digest }}"
+          {
+            echo
+            echo "audit_head=${{ steps.custody.outputs.audit_head }}"
+            echo "audit_tree=${{ steps.custody.outputs.audit_tree }}"
+            echo "audit_payload=${{ steps.seal.outputs.audit_payload }}"
+            echo "artifact_id=${{ steps.artifact.outputs.artifact-id }}"
+            echo "artifact_digest=${{ steps.artifact.outputs.artifact-digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"
