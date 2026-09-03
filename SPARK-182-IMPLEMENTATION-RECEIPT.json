@@ -1,159 +1,272 @@
 {
-  "schema": "tier-bench/spark-implementation-receipt@1",
-  "issue": "BigBirdReturns/tier-bench#182",
-  "pull_request": 183,
-  "repair_packet": "PR183-REPAIR-01",
-  "independent_review": "5097673590",
-  "repaired_head_supplied_by_controller": "63c228e8ef4985fa50d7cca6a771a9b9a170292e",
-  "generated_at": "2026-09-03T04:43:30Z",
-  "disposition": "PHASE_C_REPAIRS_IMPLEMENTED_AND_LOCALLY_QUALIFIED",
-  "files_changed": [
-    {
-      "path": "examples/anchor_crate/ollama_4060_executor.py",
-      "bytes": 42189,
-      "sha256": "9976a8a905dad2212401442061c9c537d26f6bdfef193b7ded7bd10832f73ee7"
-    },
-    {
-      "path": "scripts/build_anchor_4060_manifest.py",
-      "bytes": 44857,
-      "sha256": "63970f27b00a8e71f21016b9c8ce293e18b0cc3ce0ce1a43208746f9fcc279f4"
-    },
-    {
-      "path": "scripts/run-anchor-crate-4060-smoke.ps1",
-      "bytes": 46906,
-      "sha256": "b7f770853cc8b074a58df02181d644d122b13c8a38f1634a9e59d686e29fda75"
-    },
-    {
-      "path": "tests/test_anchor_crate_physical.py",
-      "bytes": 56467,
-      "sha256": "d1c1ae56f427dfe90af44dc95ca5904c7aa48c770725330126a12889eaa1c6d9"
-    },
-    {
-      "path": "tier_runner/anchor_crate_schema.py",
-      "bytes": 31187,
-      "sha256": "c356f944e27095c95c6cf06a2a29fdab2a024f99eec120349e0edcf30dd9c5cb"
-    },
-    {
-      "path": "labs/community-home-lab/anchor-crate/bundle_manifest.json",
-      "bytes": 6449,
-      "sha256": "e452e3b84b6a5066cce68895048056809c651ea65a78c8b011d85b542598e6d7"
-    },
-    {
-      "path": "SPARK-182-IMPLEMENTATION-RECEIPT.json",
-      "sha256": null,
-      "identity_note": "self-referential receipt; intentionally not self-hashed"
-    },
-    {
-      "path": "SPARK-182-TEST-EVIDENCE.txt",
-      "sha256": null,
-      "identity_note": "return artifact written after qualification"
-    }
-  ],
-  "review_repairs": [
-    {
-      "finding": 1,
-      "title": "Python 3.10 fixture syntax",
-      "repair": "The normalized fake nvidia-smi state path is computed before the f-string; all repaired Python files parse with feature_version 3.10.",
-      "enforcement": "tests/test_anchor_crate_physical.py: fake_nvidia_script",
-      "witness": "PYTHON 3.10 GRAMMAR PASS: 4/4"
-    },
-    {
-      "finding": 2,
-      "title": "Externally bound thermal authority",
-      "repair": "A mandatory caller-supplied expected SHA-256 authenticates a private thermal control manifest before parsing. That manifest binds both receipt digests, all covered artifacts, hardware, model, runtime, power, workload, holder, and fan identities. Receipt hashes are checked before PASS or profile fields are read. Bindings and build receipts retain observed and controlling identities.",
-      "enforcement": [
-        "scripts/run-anchor-crate-4060-smoke.ps1: Read-ThermalControl, Ensure-ThermalReceipt, Ensure-ThermalCoverage",
-        "scripts/build_anchor_4060_manifest.py: load_thermal_control, passed_thermal_profile, source_receipts",
-        "examples/anchor_crate/ollama_4060_executor.py: require_bound_files"
-      ],
-      "hostile_tests": [
-        "test_external_thermal_authority_rejects_self_consistent_substitution",
-        "test_physical_manifest_rejects_thermal_drift",
-        "test_thermal_receipt_must_terminal_pass",
-        "test_physical_executor_refuses_binding_and_residency_drift"
-      ]
-    },
-    {
-      "finding": 3,
-      "title": "Dedicated Ollama process-tree join",
-      "repair": "The launched root PID, executable, executable digest, creation time, rooted descendants, and compute PIDs are captured in the probe and propagated into the binding and backend-build receipt. Runtime residency requires a target-GPU compute PID from that exact live tree while retaining non-target exclusion.",
-      "enforcement": [
-        "scripts/run-anchor-crate-4060-smoke.ps1: Get-DedicatedProcessTree, Ensure-OllamaProcessPlacement",
-        "scripts/build_anchor_4060_manifest.py: validate_probe and dedicated_ollama_process receipt field",
-        "examples/anchor_crate/ollama_4060_executor.py: query_process_inventory, require_process_tree, require_process_residency"
-      ],
-      "hostile_tests": [
-        "test_physical_probe_rejects_identity_power_holder_and_coverage_drift",
-        "test_physical_executor_refuses_binding_and_residency_drift",
-        "test_actual_executor_path_runs_reference_cartridge_under_controller"
-      ]
-    },
-    {
-      "finding": 4,
-      "title": "Measured holder and structured fan identities",
-      "repair": "The launcher hashes the running holder executable, LHM assembly, PawnIO driver, and accepted policy against the external control manifest. Each fan observation must carry one channel, control identity, tachometer sensor identity, positive RPM, and fresh timestamp together. No asserted PawnIO/LHM verification booleans remain.",
-      "enforcement": [
-        "scripts/run-anchor-crate-4060-smoke.ps1: Ensure-ThermalHolder",
-        "scripts/build_anchor_4060_manifest.py: validate_probe holder/fan checks",
-        "examples/anchor_crate/ollama_4060_executor.py: require_bound_files holder/fan checks"
-      ],
-      "hostile_tests": [
-        "test_physical_manifest_rejects_sensor_or_holder_failures",
-        "test_physical_probe_rejects_identity_power_holder_and_coverage_drift"
-      ]
-    },
-    {
-      "finding": 5,
-      "title": "Private coordinate removal",
-      "repair": "Thermal receipt and control-manifest coordinates are mandatory launcher parameters; no S:\\Scratch default remains.",
-      "enforcement": "scripts/run-anchor-crate-4060-smoke.ps1 parameter contract",
-      "witness": "PRIVATE COORDINATE SCAN PASS: 0 matches"
-    },
-    {
-      "finding": 6,
-      "title": "Primary and cleanup failure preservation",
-      "repair": "The launcher catches and retains the primary exception, independently accumulates every cleanup failure, writes both into cleanup-result.json, refuses acceptance if either exists, and mints the smoke PASS only afterward.",
-      "enforcement": "scripts/run-anchor-crate-4060-smoke.ps1 catch/finally/post-finally gate",
-      "hostile_test": "test_launcher_is_present_and_requires_prior_census"
-    }
-  ],
-  "qualification": {
-    "commands": [
-      "Python ast.parse feature_version=(3,10) on repaired matrix files",
-      "rg -n -F 'S:\\Scratch' scripts examples tests tier_runner labs launchers",
-      "python -B scripts/verify_anchor_crate_bundle.py --repo .",
-      "python -B tests/test_anchor_crate.py",
-      "python -B tests/test_anchor_crate_physical.py",
-      "python -B tests/test_menace_edge.py",
-      "python -B tests/test_menace_seams.py",
-      "PowerShell AST parse of both Anchor Crate launchers"
-    ],
-    "executable_tests": {"passed": 55, "failed": 0},
-    "bundle_files": {"verified": 33, "failed": 0},
-    "python_310_grammar": {"passed": 4, "failed": 0},
-    "powershell_launchers": {"passed": 2, "failed": 0},
-    "private_coordinate_matches": 0
-  },
-  "prohibitions_observed": {
-    "network_attempted": false,
-    "provider_calls": 0,
-    "agents_spawned": 0,
-    "gpu_executed": false,
-    "thermal_soak_rerun": false,
-    "physical_a17_executed": false,
-    "git_commit_push_or_pr": false,
-    "execution_audit_contacted": false,
-    "downstream_stack_touched": false
-  },
-  "residual_holds": [
-    {
-      "id": "REMOTE_MATRIX_PENDING_CONTROLLER_PUSH",
-      "detail": "Python 3.10/3.12 on Windows/Ubuntu must be proven by remote CI after controller push; no remote result is claimed locally."
-    },
-    {
-      "id": "PHYSICAL_EXECUTION_PROHIBITED",
-      "detail": "Real GPU, thermal, holder-control, and A-17 execution remain intentionally unrun."
-    }
-  ],
-  "claim_boundary": "Local source repair and provider-free qualification only. This is not a benchmark verdict, physical run, commit, push, pull request, or remote matrix result."
+    "schema":  "tier-bench/spark-implementation-receipt@1",
+    "issue":  "BigBirdReturns/tier-bench#182",
+    "pull_request":  183,
+    "repair_packet":  "PR183-REPAIR-01",
+    "independent_review":  "5097673590",
+    "repaired_head_supplied_by_controller":  "63c228e8ef4985fa50d7cca6a771a9b9a170292e",
+    "generated_at":  "2026-09-03T11:15:08Z",
+    "disposition":  "PHASE_C_REPAIR_2_IMPLEMENTED_AND_LOCALLY_QUALIFIED",
+    "files_changed":  [
+                          {
+                              "path":  "examples/anchor_crate/ollama_4060_executor.py",
+                              "bytes":  42189,
+                              "sha256":  "9976a8a905dad2212401442061c9c537d26f6bdfef193b7ded7bd10832f73ee7"
+                          },
+                          {
+                              "path":  "scripts/build_anchor_4060_manifest.py",
+                              "bytes":  44857,
+                              "sha256":  "63970f27b00a8e71f21016b9c8ce293e18b0cc3ce0ce1a43208746f9fcc279f4"
+                          },
+                          {
+                              "path":  "scripts/run-anchor-crate-4060-smoke.ps1",
+                              "bytes":  46906,
+                              "sha256":  "b7f770853cc8b074a58df02181d644d122b13c8a38f1634a9e59d686e29fda75"
+                          },
+                          {
+                              "path":  "tests/test_anchor_crate_physical.py",
+                              "bytes":  56467,
+                              "sha256":  "d1c1ae56f427dfe90af44dc95ca5904c7aa48c770725330126a12889eaa1c6d9"
+                          },
+                          {
+                              "path":  "tier_runner/anchor_crate_schema.py",
+                              "bytes":  31187,
+                              "sha256":  "c356f944e27095c95c6cf06a2a29fdab2a024f99eec120349e0edcf30dd9c5cb"
+                          },
+                          {
+                              "path":  "labs/community-home-lab/anchor-crate/bundle_manifest.json",
+                              "bytes":  6449,
+                              "sha256":  "e452e3b84b6a5066cce68895048056809c651ea65a78c8b011d85b542598e6d7"
+                          },
+                          {
+                              "path":  "SPARK-182-IMPLEMENTATION-RECEIPT.json",
+                              "sha256":  null,
+                              "identity_note":  "self-referential receipt; intentionally not self-hashed"
+                          },
+                          {
+                              "path":  "SPARK-182-TEST-EVIDENCE.txt",
+                              "sha256":  null,
+                              "identity_note":  "return artifact written after qualification"
+                          }
+                      ],
+    "review_repairs":  [
+                           {
+                               "finding":  1,
+                               "title":  "Python 3.10 fixture syntax",
+                               "repair":  "The normalized fake nvidia-smi state path is computed before the f-string; all repaired Python files parse with feature_version 3.10.",
+                               "enforcement":  "tests/test_anchor_crate_physical.py: fake_nvidia_script",
+                               "witness":  "PYTHON 3.10 GRAMMAR PASS: 4/4"
+                           },
+                           {
+                               "finding":  2,
+                               "title":  "Externally bound thermal authority",
+                               "repair":  "A mandatory caller-supplied expected SHA-256 authenticates a private thermal control manifest before parsing. That manifest binds both receipt digests, all covered artifacts, hardware, model, runtime, power, workload, holder, and fan identities. Receipt hashes are checked before PASS or profile fields are read. Bindings and build receipts retain observed and controlling identities.",
+                               "enforcement":  [
+                                                   "scripts/run-anchor-crate-4060-smoke.ps1: Read-ThermalControl, Ensure-ThermalReceipt, Ensure-ThermalCoverage",
+                                                   "scripts/build_anchor_4060_manifest.py: load_thermal_control, passed_thermal_profile, source_receipts",
+                                                   "examples/anchor_crate/ollama_4060_executor.py: require_bound_files"
+                                               ],
+                               "hostile_tests":  [
+                                                     "test_external_thermal_authority_rejects_self_consistent_substitution",
+                                                     "test_physical_manifest_rejects_thermal_drift",
+                                                     "test_thermal_receipt_must_terminal_pass",
+                                                     "test_physical_executor_refuses_binding_and_residency_drift"
+                                                 ]
+                           },
+                           {
+                               "finding":  3,
+                               "title":  "Dedicated Ollama process-tree join",
+                               "repair":  "The launched root PID, executable, executable digest, creation time, rooted descendants, and compute PIDs are captured in the probe and propagated into the binding and backend-build receipt. Runtime residency requires a target-GPU compute PID from that exact live tree while retaining non-target exclusion.",
+                               "enforcement":  [
+                                                   "scripts/run-anchor-crate-4060-smoke.ps1: Get-DedicatedProcessTree, Ensure-OllamaProcessPlacement",
+                                                   "scripts/build_anchor_4060_manifest.py: validate_probe and dedicated_ollama_process receipt field",
+                                                   "examples/anchor_crate/ollama_4060_executor.py: query_process_inventory, require_process_tree, require_process_residency"
+                                               ],
+                               "hostile_tests":  [
+                                                     "test_physical_probe_rejects_identity_power_holder_and_coverage_drift",
+                                                     "test_physical_executor_refuses_binding_and_residency_drift",
+                                                     "test_actual_executor_path_runs_reference_cartridge_under_controller"
+                                                 ]
+                           },
+                           {
+                               "finding":  4,
+                               "title":  "Measured holder and structured fan identities",
+                               "repair":  "The launcher hashes the running holder executable, LHM assembly, PawnIO driver, and accepted policy against the external control manifest. Each fan observation must carry one channel, control identity, tachometer sensor identity, positive RPM, and fresh timestamp together. No asserted PawnIO/LHM verification booleans remain.",
+                               "enforcement":  [
+                                                   "scripts/run-anchor-crate-4060-smoke.ps1: Ensure-ThermalHolder",
+                                                   "scripts/build_anchor_4060_manifest.py: validate_probe holder/fan checks",
+                                                   "examples/anchor_crate/ollama_4060_executor.py: require_bound_files holder/fan checks"
+                                               ],
+                               "hostile_tests":  [
+                                                     "test_physical_manifest_rejects_sensor_or_holder_failures",
+                                                     "test_physical_probe_rejects_identity_power_holder_and_coverage_drift"
+                                                 ]
+                           },
+                           {
+                               "finding":  5,
+                               "title":  "Private coordinate removal",
+                               "repair":  "Thermal receipt and control-manifest coordinates are mandatory launcher parameters; no S:\\Scratch default remains.",
+                               "enforcement":  "scripts/run-anchor-crate-4060-smoke.ps1 parameter contract",
+                               "witness":  "PRIVATE COORDINATE SCAN PASS: 0 matches"
+                           },
+                           {
+                               "finding":  6,
+                               "title":  "Primary and cleanup failure preservation",
+                               "repair":  "The launcher catches and retains the primary exception, independently accumulates every cleanup failure, writes both into cleanup-result.json, refuses acceptance if either exists, and mints the smoke PASS only afterward.",
+                               "enforcement":  "scripts/run-anchor-crate-4060-smoke.ps1 catch/finally/post-finally gate",
+                               "hostile_test":  "test_launcher_is_present_and_requires_prior_census"
+                           }
+                       ],
+    "qualification":  {
+                          "commands":  [
+                                           "Python ast.parse feature_version=(3,10) on repaired matrix files",
+                                           "rg -n -F \u0027S:\\Scratch\u0027 scripts examples tests tier_runner labs launchers",
+                                           "python -B scripts/verify_anchor_crate_bundle.py --repo .",
+                                           "python -B tests/test_anchor_crate.py",
+                                           "python -B tests/test_anchor_crate_physical.py",
+                                           "python -B tests/test_menace_edge.py",
+                                           "python -B tests/test_menace_seams.py",
+                                           "PowerShell AST parse of both Anchor Crate launchers"
+                                       ],
+                          "executable_tests":  {
+                                                   "passed":  57,
+                                                   "failed":  0
+                                               },
+                          "bundle_files":  {
+                                               "verified":  33,
+                                               "failed":  0
+                                           },
+                          "python_310_grammar":  {
+                                                     "passed":  4,
+                                                     "failed":  0
+                                                 },
+                          "powershell_launchers":  {
+                                                       "passed":  2,
+                                                       "failed":  0
+                                                   },
+                          "private_coordinate_matches":  0
+                      },
+    "prohibitions_observed":  {
+                                  "network_attempted":  false,
+                                  "provider_calls":  0,
+                                  "agents_spawned":  0,
+                                  "gpu_executed":  false,
+                                  "thermal_soak_rerun":  false,
+                                  "physical_a17_executed":  false,
+                                  "git_commit_push_or_pr":  false,
+                                  "execution_audit_contacted":  false,
+                                  "downstream_stack_touched":  false
+                              },
+    "residual_holds":  [
+                           {
+                               "id":  "REMOTE_MATRIX_PENDING_CONTROLLER_PUSH",
+                               "detail":  "Python 3.10/3.12 on Windows/Ubuntu must be proven by remote CI after controller push; no remote result is claimed locally."
+                           },
+                           {
+                               "id":  "PHYSICAL_EXECUTION_PROHIBITED",
+                               "detail":  "Real GPU, thermal, holder-control, and A-17 execution remain intentionally unrun."
+                           }
+                       ],
+    "claim_boundary":  "Local source repair and provider-free qualification only. This is not a benchmark verdict, physical run, commit, push, pull request, or remote matrix result.",
+    "repair_2":  {
+                     "repair_packet":  "PR183-REPAIR-02",
+                     "independent_review":  "5097928008",
+                     "exact_starting_head":  "af19450ce295f9966ec2f1ddcadf581b5e239ce9",
+                     "disposition":  "PRE_INFERENCE_CONFINEMENT_AND_EXECUTED_LAUNCHER_WITNESSES_LOCALLY_QUALIFIED",
+                     "changed_paths_before_receipt_update":  [
+                                                                 {
+                                                                     "path":  "examples/anchor_crate/ollama_4060_executor.py",
+                                                                     "bytes":  42358,
+                                                                     "sha256":  "72990f6106693eeb674f84e25f0f683290f0b67ee2a762b887291a22d432ad2e"
+                                                                 },
+                                                                 {
+                                                                     "path":  "scripts/run-anchor-crate-4060-smoke.ps1",
+                                                                     "bytes":  54815,
+                                                                     "sha256":  "c6621792b13d4a251510ddd6e78c426720e0208c9dca8be6a6af94a1f6e9d971"
+                                                                 },
+                                                                 {
+                                                                     "path":  "tests/test_anchor_crate_physical.py",
+                                                                     "bytes":  62635,
+                                                                     "sha256":  "bd9f7e005c64aa6e38e0e6ef07df3bdabe153f6a9c3c863a9f62e362c6815f65"
+                                                                 },
+                                                                 {
+                                                                     "path":  "labs/community-home-lab/anchor-crate/bundle_manifest.json",
+                                                                     "bytes":  6624,
+                                                                     "sha256":  "1ee153158977dd09231af90254d38b1d46437461dd1a025db501b22601691e38"
+                                                                 },
+                                                                 {
+                                                                     "path":  "PR183-BODY-REPAIR2.md",
+                                                                     "bytes":  2734,
+                                                                     "sha256":  "dc7bd184b0946599769513dc260583d246b90c1b8019675118348270a9d839ae"
+                                                                 },
+                                                                 {
+                                                                     "path":  "SPARK-182-TEST-EVIDENCE.txt",
+                                                                     "bytes":  4592,
+                                                                     "sha256":  "7609f66e620e59e063c1266e9cf297a72ed654da17479f05ef3310bed5355957"
+                                                                 }
+                                                             ],
+                     "preflight_before_provider":  {
+                                                       "path":  "examples/anchor_crate/ollama_4060_executor.py",
+                                                       "control_flow":  [
+                                                                            "inspect_runtime(binding, require_loaded=True)",
+                                                                            "GpuSampler context entry",
+                                                                            "http_json(endpoint, /api/generate)"
+                                                                        ],
+                                                       "hostile_generation_counts":  {
+                                                                                         "environment":  0,
+                                                                                         "process_tree":  0,
+                                                                                         "power":  0,
+                                                                                         "placement":  0
+                                                                                     }
+                                                   },
+                     "postflight":  {
+                                        "retained":  true,
+                                        "evidence_fields":  [
+                                                                "preflight_runtime_state",
+                                                                "postflight_runtime_state"
+                                                            ]
+                                    },
+                     "launcher_failure_harness":  {
+                                                      "executed":  true,
+                                                      "provider_free":  true,
+                                                      "scenarios_passed":  4,
+                                                      "scenarios_failed":  0,
+                                                      "scenarios":  [
+                                                                        "power-apply-fails",
+                                                                        "power-restore-fails",
+                                                                        "holder-preflight-fails",
+                                                                        "post-load-primary-cleanup-fails"
+                                                                    ]
+                                                  },
+                     "qualification":  {
+                                           "executable_tests":  {
+                                                                    "passed":  57,
+                                                                    "failed":  0
+                                                                },
+                                           "bundle_files":  {
+                                                                "verified":  33,
+                                                                "failed":  0
+                                                            },
+                                           "python_310_grammar":  {
+                                                                      "passed":  4,
+                                                                      "failed":  0
+                                                                  },
+                                           "powershell_launchers":  {
+                                                                        "passed":  2,
+                                                                        "failed":  0
+                                                                    },
+                                           "launcher_failure_scenarios":  {
+                                                                              "passed":  4,
+                                                                              "failed":  0
+                                                                          },
+                                           "private_coordinate_matches":  0
+                                       },
+                     "controls":  {
+                                      "provider_calls":  0,
+                                      "gpu_execution":  false,
+                                      "physical_a17_execution":  false,
+                                      "thermal_rerun":  false,
+                                      "git_operations":  "none"
+                                  }
+                 }
 }

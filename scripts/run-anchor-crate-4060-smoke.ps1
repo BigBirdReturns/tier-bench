@@ -15,7 +15,9 @@ param(
     [string]$BackendId = "backend.cuda4060-qwen35-physical",
     [string]$GpuUuid = "",
     [int]$TargetPowerLimitW = 90,
-    [string]$KeepAlive = "10m"
+    [string]$KeepAlive = "10m",
+    [ValidateSet("", "power-apply-fails", "power-restore-fails", "holder-preflight-fails", "post-load-primary-cleanup-fails")]
+    [string]$FailureHarnessScenario = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -473,6 +475,225 @@ function Add-Failure {
     $Sink.Add($Message)
 }
 
+function Invoke-VerifiedPowerTransition {
+    [CmdletBinding()]
+    param(
+        [double]$TargetW,
+        [scriptblock]$Apply,
+        [scriptblock]$Observe,
+        [string]$Label
+    )
+    & $Apply $TargetW | Out-Null
+    $observed = [double](& $Observe)
+    if ([math]::Abs($observed - $TargetW) -gt 0.5) {
+        throw "$Label target mismatch: expected $TargetW W, observed $observed W"
+    }
+    return $observed
+}
+
+function Invoke-AnchorCleanup {
+    [CmdletBinding()]
+    param(
+        [scriptblock]$StopProcessTree,
+        [scriptblock]$ProcessTreeStopped,
+        [scriptblock]$EndpointStopped,
+        [scriptblock]$RestoreEnvironment,
+        [scriptblock]$EnvironmentRestored,
+        [Nullable[double]]$PowerRestoreTarget,
+        [scriptblock]$RestorePower,
+        [scriptblock]$ObservePower,
+        [scriptblock]$HolderHealthy
+    )
+    $failures = New-Object System.Collections.Generic.List[string]
+    $processStopped = $false
+    try {
+        & $StopProcessTree | Out-Null
+        $processStopped = [bool](& $ProcessTreeStopped)
+        if (-not $processStopped) { [void]$failures.Add("Ollama process tree remained live") }
+    } catch {
+        [void]$failures.Add("could not stop Ollama process tree: $($_.Exception.Message)")
+    }
+
+    $endpointIsStopped = $false
+    try {
+        $endpointIsStopped = [bool](& $EndpointStopped)
+        if (-not $endpointIsStopped) { [void]$failures.Add("endpoint remained reachable after stop") }
+    } catch {
+        [void]$failures.Add("endpoint stop verification failed: $($_.Exception.Message)")
+    }
+
+    $environmentIsRestored = $false
+    try {
+        & $RestoreEnvironment | Out-Null
+        $environmentIsRestored = [bool](& $EnvironmentRestored)
+        if (-not $environmentIsRestored) { [void]$failures.Add("environment state differs after restore") }
+    } catch {
+        [void]$failures.Add("environment restore failed: $($_.Exception.Message)")
+    }
+
+    $powerRestored = ($null -eq $PowerRestoreTarget)
+    $powerRestoredTo = $null
+    if ($null -ne $PowerRestoreTarget) {
+        try {
+            $powerRestoredTo = Invoke-VerifiedPowerTransition `
+                -TargetW ([double]$PowerRestoreTarget) `
+                -Apply $RestorePower `
+                -Observe $ObservePower `
+                -Label "power-limit restoration"
+            $powerRestored = $true
+        } catch {
+            [void]$failures.Add("power-limit restoration command failed: $($_.Exception.Message)")
+        }
+    }
+
+    $holderReturned = $false
+    try {
+        $holderReturned = [bool](& $HolderHealthy)
+        if (-not $holderReturned) { [void]$failures.Add("accepted thermal holder did not remain in ordinary control") }
+    } catch {
+        [void]$failures.Add("accepted thermal holder is not healthy after cleanup: $($_.Exception.Message)")
+    }
+
+    return [ordered]@{
+        process_tree_stopped = $processStopped
+        endpoint_stopped = $endpointIsStopped
+        environment_restored = $environmentIsRestored
+        power_restored = $powerRestored
+        power_restored_to_watts = $powerRestoredTo
+        holder_returned = $holderReturned
+        failures = @($failures)
+    }
+}
+
+function Assert-AnchorTransactionOutcome {
+    [CmdletBinding()]
+    param([string]$PrimaryFailure, $CleanupResult)
+    $cleanupFailures = @($CleanupResult.failures)
+    if ($PrimaryFailure -or $cleanupFailures.Count -gt 0) {
+        $primaryText = if ($PrimaryFailure) { $PrimaryFailure } else { "none" }
+        $cleanupText = if ($cleanupFailures.Count) { $cleanupFailures -join "; " } else { "none" }
+        throw "transaction refused; primary failure: $primaryText; cleanup failures: $cleanupText"
+    }
+}
+
+function Invoke-AnchorFailureHarnessScenario {
+    [CmdletBinding()]
+    param(
+        [ValidateSet("power-apply-fails", "power-restore-fails", "holder-preflight-fails", "post-load-primary-cleanup-fails")]
+        [string]$Scenario
+    )
+    $priorEnvironment = [ordered]@{
+        OLLAMA_HOST = [ordered]@{ present = $true; value = "prior-host:11434" }
+        CUDA_VISIBLE_DEVICES = [ordered]@{ present = $false; value = $null }
+        OLLAMA_KEEP_ALIVE = [ordered]@{ present = $true; value = "5m" }
+        OLLAMA_VULKAN = [ordered]@{ present = $false; value = $null }
+        OLLAMA_SCHED_SPREAD = [ordered]@{ present = $false; value = $null }
+    }
+    $state = [ordered]@{
+        environment = ($priorEnvironment | ConvertTo-Json -Depth 8 | ConvertFrom-Json)
+        endpoint_live = $false
+        process_tree_live = $false
+        power_watts = 115.0
+        power_application_attempted = $false
+        power_restoration_attempted = $false
+        holder_checked_before_model_load = $false
+        model_load_attempted = $false
+        smoke_pass_emitted = $false
+    }
+    $primaryFailure = $null
+    $powerRestoreTarget = $null
+    try {
+        $state.holder_checked_before_model_load = $true
+        if ($Scenario -eq "holder-preflight-fails") {
+            throw "injected thermal holder absent or sensor stale before model load"
+        }
+
+        $powerRestoreTarget = 115.0
+        $null = Invoke-VerifiedPowerTransition -TargetW 90 -Label "power-limit application" -Apply {
+            param($TargetW)
+            $state.power_application_attempted = $true
+            if ($Scenario -eq "power-apply-fails") { throw "injected 90 W application failure" }
+            $state.power_watts = [double]$TargetW
+        } -Observe { $state.power_watts }
+
+        $state.environment.OLLAMA_HOST.present = $true
+        $state.environment.OLLAMA_HOST.value = "127.0.0.1:11442"
+        $state.environment.CUDA_VISIBLE_DEVICES.present = $true
+        $state.environment.CUDA_VISIBLE_DEVICES.value = "GPU-fixture"
+        $state.environment.OLLAMA_KEEP_ALIVE.present = $true
+        $state.environment.OLLAMA_KEEP_ALIVE.value = "10m"
+        $state.environment.OLLAMA_VULKAN.present = $true
+        $state.environment.OLLAMA_VULKAN.value = "0"
+        $state.process_tree_live = $true
+        $state.endpoint_live = $true
+        $state.model_load_attempted = $true
+        if ($Scenario -eq "post-load-primary-cleanup-fails") {
+            throw "injected post-load primary failure"
+        }
+    } catch {
+        $primaryFailure = $_.Exception.Message
+    } finally {
+        $cleanup = Invoke-AnchorCleanup `
+            -StopProcessTree {
+                $state.process_tree_live = $false
+                $state.endpoint_live = $false
+            } `
+            -ProcessTreeStopped { -not $state.process_tree_live } `
+            -EndpointStopped { -not $state.endpoint_live } `
+            -RestoreEnvironment {
+                $state.environment = ($priorEnvironment | ConvertTo-Json -Depth 8 | ConvertFrom-Json)
+            } `
+            -EnvironmentRestored {
+                (($state.environment | ConvertTo-Json -Depth 8 -Compress) -ceq ($priorEnvironment | ConvertTo-Json -Depth 8 -Compress))
+            } `
+            -PowerRestoreTarget $powerRestoreTarget `
+            -RestorePower {
+                param($TargetW)
+                $state.power_restoration_attempted = $true
+                if ($Scenario -eq "power-restore-fails") { throw "injected 115 W restoration failure" }
+                $state.power_watts = [double]$TargetW
+            } `
+            -ObservePower { $state.power_watts } `
+            -HolderHealthy {
+                if ($Scenario -eq "post-load-primary-cleanup-fails") {
+                    throw "injected holder cleanup verification failure"
+                }
+                return $true
+            }
+    }
+
+    $combinedFailure = $null
+    try {
+        Assert-AnchorTransactionOutcome -PrimaryFailure $primaryFailure -CleanupResult $cleanup
+        $state.smoke_pass_emitted = $true
+    } catch {
+        $combinedFailure = $_.Exception.Message
+    }
+    return [ordered]@{
+        scenario = $Scenario
+        smoke_pass_emitted = $state.smoke_pass_emitted
+        environment_prior = $priorEnvironment
+        environment_after_cleanup = $state.environment
+        environment_restored = $cleanup.environment_restored
+        endpoint_stopped = $cleanup.endpoint_stopped
+        process_tree_stopped = $cleanup.process_tree_stopped
+        power_application_attempted = $state.power_application_attempted
+        power_restoration_attempted = $state.power_restoration_attempted
+        power_restoration_verified = $cleanup.power_restored
+        power_after_cleanup_watts = $state.power_watts
+        holder_checked_before_model_load = $state.holder_checked_before_model_load
+        model_load_attempted = $state.model_load_attempted
+        primary_failure = $primaryFailure
+        cleanup_failures = @($cleanup.failures)
+        combined_failure = $combinedFailure
+    }
+}
+
+if ($FailureHarnessScenario) {
+    Invoke-AnchorFailureHarnessScenario -Scenario $FailureHarnessScenario | ConvertTo-Json -Depth 16
+    return
+}
+
 $TierBenchRoot = Resolve-DirectoryStrict $TierBenchRoot "Tier Bench root"
 $GradientRoot = Resolve-DirectoryStrict $GradientRoot "Home Lab Gradient root"
 $EstateReceipt = Resolve-FileStrict $EstateReceipt "estate receipt"
@@ -568,9 +789,12 @@ try {
     Ensure-PowerLimits -Row $baseGpu -TargetW $TargetPowerLimitW
     $powerLimitRestore = 115
 
-    Set-PowerLimit -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -TargetW $TargetPowerLimitW
-    $powerAfter = (Query-GpuRows -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -Query $gpuQuery)[0].power_limit_watts
-    if ([math]::Abs([double]$powerAfter - 90) -gt 0.5) { throw "power-limit application did not establish exact 90 W" }
+    $powerAfter = Invoke-VerifiedPowerTransition -TargetW $TargetPowerLimitW -Label "power-limit application" -Apply {
+        param($TargetW)
+        Set-PowerLimit -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -TargetW $TargetW
+    } -Observe {
+        (Query-GpuRows -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -Query $gpuQuery)[0].power_limit_watts
+    }
 
     $env:OLLAMA_HOST = $ollamaHost
     $env:CUDA_VISIBLE_DEVICES = $GpuUuid
@@ -778,72 +1002,49 @@ try {
 } catch {
     $primaryFailure = $_
 } finally {
-    $processStopped = $true
-    if ($server -and -not $server.HasExited) {
-        try {
+    $cleanupResult = Invoke-AnchorCleanup `
+        -StopProcessTree {
+            if ($server -and -not $server.HasExited) {
             Stop-OllamaServer -Process $server
             $server.WaitForExit(10000) | Out-Null
-            if (-not $server.HasExited) { $processStopped = $false; Add-Failure -Sink $cleanupFailures -Message "Ollama process tree remained live" }
-        } catch {
-            $processStopped = $false
-            Add-Failure -Sink $cleanupFailures -Message "could not stop Ollama process tree"
-        }
-    }
-    $endpointStopped = Assert-EndpointStopped -BaseUrl $Endpoint
-    if (-not $endpointStopped) { Add-Failure -Sink $cleanupFailures -Message "endpoint remained reachable after stop" }
-    $environmentRestored = $false
-    try {
-        Restore-EnvironmentState -State $originalEnv
-        $environmentRestored = Test-EnvironmentState -State $originalEnv
-        if (-not $environmentRestored) { Add-Failure -Sink $cleanupFailures -Message "environment state differs after restore" }
-    } catch {
-        Add-Failure -Sink $cleanupFailures -Message "environment restore failed"
-    }
-    $powerRestored = ($powerLimitRestore -eq $null)
-    $powerRestoredTo = $null
-    if ($powerLimitRestore -ne $null -and (Test-Path -LiteralPath $nvidiaSmi)) {
-        try {
-            Set-PowerLimit -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -TargetW $powerLimitRestore
-            $powerRestoredTo = (Query-GpuRows -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -Query $gpuQuery)[0].power_limit_watts
-            $powerRestored = [math]::Abs([double]$powerRestoredTo - $powerLimitRestore) -le 0.5
-            if (-not $powerRestored) {
-                Add-Failure -Sink $cleanupFailures -Message "power-limit restoration target mismatch"
             }
-        } catch {
-            Add-Failure -Sink $cleanupFailures -Message "power-limit restoration command failed"
+        } `
+        -ProcessTreeStopped { (-not $server) -or $server.HasExited } `
+        -EndpointStopped { Assert-EndpointStopped -BaseUrl $Endpoint } `
+        -RestoreEnvironment { Restore-EnvironmentState -State $originalEnv } `
+        -EnvironmentRestored { Test-EnvironmentState -State $originalEnv } `
+        -PowerRestoreTarget $powerLimitRestore `
+        -RestorePower {
+            param($TargetW)
+            if (-not (Test-Path -LiteralPath $nvidiaSmi)) { throw "nvidia-smi is unavailable" }
+            Set-PowerLimit -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -TargetW $powerLimitRestore
+        } `
+        -ObservePower { (Query-GpuRows -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -Query $gpuQuery)[0].power_limit_watts } `
+        -HolderHealthy {
+            $holderAfter = Ensure-ThermalHolder $thermalControl
+            return $holderAfter.active -and $holderAfter.pid -eq $thermalHolder.pid
         }
-    }
-    $holderReturned = $false
-    try {
-        $holderAfter = Ensure-ThermalHolder $thermalControl
-        $holderReturned = $holderAfter.active -and $holderAfter.pid -eq $thermalHolder.pid
-        if (-not $holderReturned) { Add-Failure -Sink $cleanupFailures -Message "accepted thermal holder did not remain in ordinary control" }
-    } catch {
-        Add-Failure -Sink $cleanupFailures -Message "accepted thermal holder is not healthy after cleanup"
-    }
-    $cleanupResult = [ordered]@{
+    $cleanupFailures = @($cleanupResult.failures)
+    $cleanupReceipt = [ordered]@{
         schema = "tier-bench/anchor-4060-cleanup-result@1"
         status = if ($cleanupFailures.Count -eq 0 -and $null -eq $primaryFailure) { "PASS" } else { "REFUSED" }
         generated_at = [DateTimeOffset]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
         primary_failure = if ($primaryFailure) {
             [ordered]@{ type = $primaryFailure.Exception.GetType().FullName; message = $primaryFailure.Exception.Message }
         } else { $null }
-        endpoint_stopped = $endpointStopped
-        process_tree_stopped = $processStopped
-        environment_restored = $environmentRestored
-        power_restored = $powerRestored
-        power_restored_to_watts = $powerRestoredTo
-        holder_returned = $holderReturned
+        endpoint_stopped = $cleanupResult.endpoint_stopped
+        process_tree_stopped = $cleanupResult.process_tree_stopped
+        environment_restored = $cleanupResult.environment_restored
+        power_restored = $cleanupResult.power_restored
+        power_restored_to_watts = $cleanupResult.power_restored_to_watts
+        holder_returned = $cleanupResult.holder_returned
         failures = @($cleanupFailures)
     }
-    Write-Utf8NoBomJson (Join-Path $OutRoot "cleanup-result.json") $cleanupResult
+    Write-Utf8NoBomJson (Join-Path $OutRoot "cleanup-result.json") $cleanupReceipt
 }
 
-if ($primaryFailure -or $cleanupFailures.Count -gt 0) {
-    $primaryText = if ($primaryFailure) { $primaryFailure.Exception.Message } else { "none" }
-    $cleanupText = if ($cleanupFailures.Count) { $cleanupFailures -join "; " } else { "none" }
-    throw "transaction refused; primary failure: $primaryText; cleanup failures: $cleanupText"
-}
+$primaryText = if ($primaryFailure) { $primaryFailure.Exception.Message } else { $null }
+Assert-AnchorTransactionOutcome -PrimaryFailure $primaryText -CleanupResult $cleanupResult
 
 $smokeReceipt = [ordered]@{
     schema = "tier-bench/anchor-4060-smoke-receipt@1"

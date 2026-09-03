@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1242,6 +1243,144 @@ def test_actual_executor_path_runs_reference_cartridge_under_controller() -> Non
         assert receipt["backend"]["physical_qualification"] is True
         assert receipt["telemetry"]["memory_peak_mib"] >= 6000
         assert receipt["accepted"] is True
+
+
+def test_execute_refuses_all_live_drift_before_provider_generation() -> None:
+    with tempfile.TemporaryDirectory() as temp, fake_ollama() as endpoint:
+        root = Path(temp)
+        result, evidence = build_backend(root, endpoint)
+        registry = validate_backend_registry(json.loads(Path(result["registry"]).read_text(encoding="utf-8")))
+        backend = next(row for row in registry["backends"] if row["id"] == result["backend_id"])
+        request = {
+            "schema": "tier-bench/anchor-executor-request@1",
+            "request_id": "hostile-execute",
+            "backend_id": backend["id"],
+            "operation": "execute",
+            "payload": {
+                "crate": {"operation": "decision.generate"},
+                "inputs": {"node:derive_availability": {"asset_id": "A-17"}},
+            },
+        }
+        state_path = evidence["nvidia_state"]
+        pristine = json.loads(state_path.read_text(encoding="utf-8"))
+
+        hostile_states: list[tuple[str, dict[str, Any], dict[str, str | None]]] = []
+        hostile_states.append(("environment", pristine, {"OLLAMA_VULKAN": "1"}))
+
+        process_drift = copy.deepcopy(pristine)
+        process_drift["compute_rows"] = [
+            {"gpu_uuid": GPU_UUID, "pid": 9999, "process_name": "ollama", "used_memory_mib": 6500}
+        ]
+        process_drift["process_rows"].append(
+            {
+                "pid": 9999,
+                "parent_pid": 1,
+                "executable_path": str(Path(sys.executable).resolve()),
+                "creation_time": "2026-09-03T00:00:02.0000000Z",
+            }
+        )
+        hostile_states.append(("process-tree", process_drift, {}))
+
+        power_drift = copy.deepcopy(pristine)
+        power_drift["gpu_row"]["power_limit_watts"] = 95.0
+        power_drift["gpu_rows"][0]["power_limit_watts"] = 95.0
+        hostile_states.append(("power", power_drift, {}))
+
+        placement_drift = copy.deepcopy(pristine)
+        placement_drift["compute_rows"] = [
+            {"gpu_uuid": OFFTARGET_UUID, "pid": 4242, "process_name": "ollama", "used_memory_mib": 6500}
+        ]
+        hostile_states.append(("placement", placement_drift, {}))
+
+        for label, hostile, environment in hostile_states:
+            write_json(state_path, hostile)
+            FakeState.generated = 0
+            completed = invoke(backend["driver_command"], request, env_updates=environment)
+            assert completed.returncode != 0, label
+            assert FakeState.generated == 0, label
+
+        write_json(state_path, pristine)
+        completed = invoke(backend["driver_command"], request)
+        assert completed.returncode == 0
+        assert FakeState.generated == 1
+        binding = json.loads(Path(result["binding"]).read_text(encoding="utf-8"))
+        evidence_event = json.loads(Path(binding["execution"]["evidence_log"]).read_text(encoding="utf-8").splitlines()[-1])
+        assert evidence_event["preflight_runtime_state"]["gpu"]["uuid"] == GPU_UUID
+        assert evidence_event["postflight_runtime_state"]["gpu"]["uuid"] == GPU_UUID
+
+
+def test_windows_launcher_executes_provider_free_failure_harness() -> None:
+    powershell = shutil.which("powershell.exe") or shutil.which("pwsh")
+    if powershell is None:
+        assert os.name != "nt"
+        return
+    launcher = ROOT / "scripts" / "run-anchor-crate-4060-smoke.ps1"
+    scenarios = (
+        "power-apply-fails",
+        "power-restore-fails",
+        "holder-preflight-fails",
+        "post-load-primary-cleanup-fails",
+    )
+    for scenario in scenarios:
+        command = [
+            powershell,
+            "-NoProfile",
+            "-ExecutionPolicy",
+            "Bypass",
+            "-File",
+            str(launcher),
+            "-TierBenchRoot",
+            ".",
+            "-GradientRoot",
+            ".",
+            "-EstateReceipt",
+            ".",
+            "-EstateObservation",
+            ".",
+            "-ControlHostObservation",
+            ".",
+            "-ThermalProfilePublicReceipt",
+            ".",
+            "-ThermalProfilePrivateReceipt",
+            ".",
+            "-ThermalControlManifest",
+            ".",
+            "-ExpectedThermalControlManifestSha256",
+            "0" * 64,
+            "-FailureHarnessScenario",
+            scenario,
+        ]
+        completed = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=False)
+        assert completed.returncode == 0, completed.stderr
+        result = json.loads(completed.stdout)
+        assert result["scenario"] == scenario
+        assert result["smoke_pass_emitted"] is False
+        assert result["environment_restored"] is True
+        assert result["environment_after_cleanup"] == result["environment_prior"]
+        assert result["endpoint_stopped"] is True
+        assert result["process_tree_stopped"] is True
+        assert result["combined_failure"]
+
+        if scenario == "power-apply-fails":
+            assert result["power_application_attempted"] is True
+            assert result["power_restoration_attempted"] is True
+            assert result["power_restoration_verified"] is True
+            assert "90 W application failure" in result["primary_failure"]
+        elif scenario == "power-restore-fails":
+            assert result["power_restoration_attempted"] is True
+            assert result["power_restoration_verified"] is False
+            assert "115 W restoration failure" in " ".join(result["cleanup_failures"])
+        elif scenario == "holder-preflight-fails":
+            assert result["holder_checked_before_model_load"] is True
+            assert result["model_load_attempted"] is False
+            assert result["power_restoration_attempted"] is False
+            assert "holder absent or sensor stale" in result["primary_failure"]
+        else:
+            assert result["model_load_attempted"] is True
+            assert result["power_restoration_attempted"] is True
+            assert result["power_restoration_verified"] is True
+            assert "post-load primary failure" in result["combined_failure"]
+            assert "holder cleanup verification failure" in result["combined_failure"]
 
 
 def test_launcher_is_present_and_requires_prior_census() -> None:

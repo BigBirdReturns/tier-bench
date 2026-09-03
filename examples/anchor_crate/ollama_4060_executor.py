@@ -751,6 +751,7 @@ def execute_candidate(binding: Mapping[str, Any], inputs: Mapping[str, Any]) -> 
             "num_ctx": int(runtime.get("context_length", 8192)),
         },
     }
+    preflight_runtime_state = inspect_runtime(binding, require_loaded=True)
     started = time.monotonic_ns()
     with GpuSampler(binding) as sampler:
         provider = http_json(
@@ -767,7 +768,7 @@ def execute_candidate(binding: Mapping[str, Any], inputs: Mapping[str, Any]) -> 
         candidate = validate_candidate(json.loads(text))
     except json.JSONDecodeError as exc:
         raise ExecutorError("Ollama candidate is not valid JSON") from exc
-    runtime_state = inspect_runtime(binding, require_loaded=True)
+    postflight_runtime_state = inspect_runtime(binding, require_loaded=True)
     metrics = sampler.metrics()
     evidence_event = {
         "schema": "tier-bench/anchor-physical-executor-event@1",
@@ -783,7 +784,8 @@ def execute_candidate(binding: Mapping[str, Any], inputs: Mapping[str, Any]) -> 
             "prompt_eval_duration_ns": provider.get("prompt_eval_duration"),
             "eval_duration_ns": provider.get("eval_duration"),
         },
-        "runtime_state": runtime_state,
+        "preflight_runtime_state": preflight_runtime_state,
+        "postflight_runtime_state": postflight_runtime_state,
         "gpu_samples": metrics["samples"],
         "sampler_errors": metrics["errors"],
         "candidate_sha256": hash_json(candidate),

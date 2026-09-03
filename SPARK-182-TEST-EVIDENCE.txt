@@ -1,19 +1,21 @@
-PR #183 Phase C repair local qualification
-generated_at: 2026-09-03T04:43:30Z
+PR #183 Phase C repair-2 local qualification
+generated_at: 2026-09-03T11:15:08Z
+starting_head: af19450ce295f9966ec2f1ddcadf581b5e239ce9
 platform: Windows
 provider_calls: 0
 network_calls: 0
 gpu_execution: false
 thermal_rerun: false
 physical_A17_execution: false
+git_operations: none
 
-The following block is verbatim stdout from the final denominator run.
+The following block is verbatim stdout from the final successful denominator run.
 
 ===== PYTHON 3.10 GRAMMAR =====
 COMMAND: Python ast.parse feature_version=(3,10) on repaired matrix files
 PYTHON 3.10 GRAMMAR PASS: 4/4
 ===== PRIVATE COORDINATE SCAN =====
-COMMAND: rg -n -F 'S:\Scratch' scripts examples tests tier_runner labs launchers
+COMMAND: rg -n -F 'S:\Scratch' scripts examples tests tier_runner labs
 PRIVATE COORDINATE SCAN PASS: 0 matches
 ===== ANCHOR BUNDLE REPRODUCTION =====
 COMMAND: python -B scripts/verify_anchor_crate_bundle.py --repo .
@@ -27,7 +29,7 @@ COMMAND: python -B tests/test_anchor_crate.py
 ANCHOR CRATE TESTS PASS: 18/18
 ===== ANCHOR 4060 PHYSICAL =====
 COMMAND: python -B tests/test_anchor_crate_physical.py
-ANCHOR 4060 PHYSICAL TESTS PASS: 12/12
+ANCHOR 4060 PHYSICAL TESTS PASS: 14/14
 ===== MENACE EDGE =====
 COMMAND: python -B tests/test_menace_edge.py
 MENACE EDGE TESTS PASS: 13/13
@@ -38,17 +40,33 @@ MENACE SEAM TESTS PASS: 12/12
 COMMAND: parse scripts/run-anchor-crate-lab.ps1 and scripts/run-anchor-crate-4060-smoke.ps1
 POWERSHELL PARSE PASS: scripts/run-anchor-crate-lab.ps1
 POWERSHELL PARSE PASS: scripts/run-anchor-crate-4060-smoke.ps1
-FULL PR183 REPAIR DENOMINATOR PASS
+===== EXECUTED WINDOWS LAUNCHER FAILURE HARNESS =====
+COMMAND: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run-anchor-crate-4060-smoke.ps1 <dummy mandatory coordinates> -FailureHarnessScenario <scenario>
+LAUNCHER FAILURE HARNESS PASS: scenario=power-apply-fails smoke_pass_emitted=False environment_restored=True endpoint_stopped=True process_tree_stopped=True power_apply_attempted=True power_restore_attempted=True power_restore_verified=True model_load_attempted=False primary=injected 90 W application failure cleanup=
+LAUNCHER FAILURE HARNESS PASS: scenario=power-restore-fails smoke_pass_emitted=False environment_restored=True endpoint_stopped=True process_tree_stopped=True power_apply_attempted=True power_restore_attempted=True power_restore_verified=False model_load_attempted=True primary= cleanup=power-limit restoration command failed: injected 115 W restoration failure
+LAUNCHER FAILURE HARNESS PASS: scenario=holder-preflight-fails smoke_pass_emitted=False environment_restored=True endpoint_stopped=True process_tree_stopped=True power_apply_attempted=False power_restore_attempted=False power_restore_verified=True model_load_attempted=False primary=injected thermal holder absent or sensor stale before model load cleanup=
+LAUNCHER FAILURE HARNESS PASS: scenario=post-load-primary-cleanup-fails smoke_pass_emitted=False environment_restored=True endpoint_stopped=True process_tree_stopped=True power_apply_attempted=True power_restore_attempted=True power_restore_verified=True model_load_attempted=True primary=injected post-load primary failure cleanup=accepted thermal holder is not healthy after cleanup: injected holder cleanup verification failure
+EXECUTED WINDOWS LAUNCHER FAILURE HARNESS PASS: 4/4
+FULL PR183 REPAIR-2 DENOMINATOR PASS
 
 Final counts:
-- executable tests: 55 passed, 0 failed
+- executable tests: 57 passed, 0 failed
 - bundle identities: 33 verified, 0 failed
 - repaired Python files under 3.10 grammar: 4 passed, 0 failed
-- PowerShell launchers: 2 parsed, 0 failed
+- PowerShell launchers parsed: 2 passed, 0 failed
+- executed launcher failure scenarios: 4 passed, 0 failed
 - committed private-coordinate matches: 0
 
-Development-run note:
-- Three preliminary physical-suite runs exposed and resolved fixture/diagnostic alignment defects before the final clean 12/12 and full denominator above. They do not alter the final qualification counts.
+Zero-generation hostile execute results:
+- environment drift: refused before /api/generate; generation counter 0
+- process-tree drift: refused before /api/generate; generation counter 0
+- power drift: refused before /api/generate; generation counter 0
+- placement drift: refused before /api/generate; generation counter 0
+- successful control: preflight and postflight runtime identities present in executor evidence
+
+Development-run notes:
+- Two preliminary physical-suite attempts were blocked before test execution by sandbox filesystem PermissionError; the required suite then passed 14/14 outside that filesystem restriction.
+- One preliminary denominator command stopped on a stale non-existent `launchers` scan root; the corrected complete denominator above was rerun from the beginning and passed.
 
 Remote-only hold:
-- The Python 3.10/3.12 by Windows/Ubuntu workflow matrix requires controller push and remote CI. Local qualification proves the repaired files parse under Python 3.10 grammar and execute under the available Windows Python runtime; it does not claim the remote matrix result.
+- Repair-2 Python 3.10/3.12 by Windows/Ubuntu and exact-head workflows require controller commit/push and remote CI. Prior-head remote evidence is not represented as repair-2 exact-head evidence.
