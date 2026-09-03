@@ -1,0 +1,80 @@
+name: stage-astra-successor-scope-blobs
+
+on:
+  push:
+    branches:
+      - repair/astra-stage2-successor-ci-scope-builder-20260903
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Publish replacement workflow bytes under non-workflow staging paths
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_HEAD: 125fdc367920960421d1e080900f1806637277f4
+          BASE_TREE: ccab08e1192346f9c386b0f41ffaab77bac73194
+          SOURCE_ARTIFACT_ID: 9910841722
+          SOURCE_ARTIFACT_SHA256: 48b5df165714fb8bcef942f8e0184d2fb4a6910427a15da34055ee72b021ead7
+          OUTPUT_BRANCH: repair/astra-stage2-successor-ci-scope-staging-20260903
+        run: |
+          set -euo pipefail
+
+          artifact_root="$RUNNER_TEMP/astra-successor-scope-source"
+          mkdir -p "$artifact_root"
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}/zip" \
+            -o "$artifact_root/source.zip"
+          test "$(sha256sum "$artifact_root/source.zip" | awk '{print $1}')" = \
+            "$SOURCE_ARTIFACT_SHA256"
+          unzip -q "$artifact_root/source.zip" -d "$artifact_root/files"
+          (
+            cd "$artifact_root/files"
+            sha256sum -c SHA256SUMS
+          )
+
+          git init .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=64 origin \
+            "+${BASE_HEAD}:refs/scope-staging/base"
+          git checkout --detach refs/scope-staging/base
+          test "$(git rev-parse HEAD)" = "$BASE_HEAD"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$BASE_TREE"
+
+          staging_root="staging/astra-stage2-successor-ci-scope-20260903"
+          mkdir -p "$staging_root"
+          cp "$artifact_root/files/astra-stage2-control-identity.yml" \
+            "$staging_root/astra-stage2-control-identity.yml"
+          cp "$artifact_root/files/astra-stage2-control-identity-release.yml" \
+            "$staging_root/astra-stage2-control-identity-release.yml"
+          cp "$artifact_root/files/SHA256SUMS" "$staging_root/SHA256SUMS"
+
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add "$staging_root"
+          test "$(git diff --cached --name-only | wc -l)" -eq 3
+          git commit -m "stage(astra): retain successor workflow blobs for governed promotion"
+
+          staging_head="$(git rev-parse HEAD)"
+          staging_tree="$(git rev-parse 'HEAD^{tree}')"
+          predecessor_blob="$(git rev-parse "HEAD:${staging_root}/astra-stage2-control-identity.yml")"
+          release_blob="$(git rev-parse "HEAD:${staging_root}/astra-stage2-control-identity-release.yml")"
+          git push --force origin "HEAD:refs/heads/${OUTPUT_BRANCH}"
+
+          {
+            echo "staging_head=${staging_head}"
+            echo "staging_tree=${staging_tree}"
+            echo "predecessor_workflow_blob=${predecessor_blob}"
+            echo "release_workflow_blob=${release_blob}"
+            echo "output_branch=${OUTPUT_BRANCH}"
+          } >> "$GITHUB_STEP_SUMMARY"
