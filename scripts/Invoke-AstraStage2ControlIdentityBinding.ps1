@@ -36,6 +36,47 @@ function Invoke-Checked {
     }
 }
 
+function Invoke-BinderCommand {
+    param(
+        [Parameter(Mandatory = $true)][string]$BinderRoot,
+        [Parameter(Mandatory = $true)][string]$Wrapper,
+        [Parameter(Mandatory = $true)][string[]]$Arguments
+    )
+
+    $hadPythonPath = Test-Path Env:PYTHONPATH
+    $previousPythonPath = $env:PYTHONPATH
+    $pathSeparator = [System.IO.Path]::PathSeparator
+    $locationPushed = $false
+
+    try {
+        if ($previousPythonPath) {
+            $env:PYTHONPATH = $BinderRoot + $pathSeparator + $previousPythonPath
+        }
+        else {
+            $env:PYTHONPATH = $BinderRoot
+        }
+
+        Push-Location -LiteralPath $BinderRoot
+        $locationPushed = $true
+        & $Wrapper @Arguments
+        $exitCode = $LASTEXITCODE
+        if ($exitCode -ne 0) {
+            throw "Binder command failed ($exitCode): $($Arguments -join ' ')"
+        }
+    }
+    finally {
+        if ($locationPushed) {
+            Pop-Location
+        }
+        if ($hadPythonPath) {
+            $env:PYTHONPATH = $previousPythonPath
+        }
+        else {
+            Remove-Item Env:PYTHONPATH -ErrorAction SilentlyContinue
+        }
+    }
+}
+
 function Resolve-TierBenchRepositoryRoot {
     param([string]$RequestedRoot)
 
@@ -284,6 +325,7 @@ $InventoriedConfig = Join-Path $CustodyRoot 'astra-stage2-control-identities.inv
 $BoundRoot = Join-Path $CustodyRoot 'bound'
 $PrepareReceipt = Join-Path $CustodyRoot 'PREPARE-RECEIPT.json'
 $PreflightReceipt = Join-Path $CustodyRoot 'PREFLIGHT-RECEIPT.json'
+$PreflightBinderProbe = Join-Path $CustodyRoot 'PREFLIGHT-BINDER-TEMPLATE.json'
 
 Ensure-BinderWorktree -RepositoryRoot $RepoRoot -Root $BinderRoot
 $wrapper = Join-Path $BinderRoot 'scripts\astra_stage2_bind_controls.ps1'
@@ -292,10 +334,48 @@ if (-not (Test-Path -LiteralPath $wrapper)) {
 }
 
 if ($Mode -eq 'Preflight') {
+    $callerWorkingDirectory = (Get-Location).Path
+    if (Test-Path -LiteralPath $PreflightBinderProbe) {
+        Remove-Item -Force -LiteralPath $PreflightBinderProbe
+    }
+
+    Invoke-BinderCommand `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Arguments @(
+            '-Command',
+            'template',
+            '-Out',
+            $PreflightBinderProbe
+        )
+
+    if (-not (Test-Path -LiteralPath $PreflightBinderProbe)) {
+        throw 'Binder import probe did not create its template output.'
+    }
+
+    $probe = Get-Content -Raw -LiteralPath $PreflightBinderProbe | ConvertFrom-Json
+    if ($probe.law.blob_sha1 -ne $LawBlob) {
+        throw 'Binder import probe resolved a package with the wrong law blob.'
+    }
+    if ($probe.scaffold.head_sha1 -ne $ScaffoldHead) {
+        throw 'Binder import probe resolved a package with the wrong scaffold head.'
+    }
+    if ($probe.stage1_join_head -ne $Stage1Join) {
+        throw 'Binder import probe resolved a package with the wrong Stage 1 join.'
+    }
+    if (@($probe.controls).Count -ne 3) {
+        throw 'Binder import probe did not expose exactly three controls.'
+    }
+
+    $probeSha256 = (
+        Get-FileHash -Algorithm SHA256 -LiteralPath $PreflightBinderProbe
+    ).Hash.ToLowerInvariant()
+
     $receipt = [ordered]@{
-        schema = 'tier-bench/astra-stage2-control-identity-preflight@1'
+        schema = 'tier-bench/astra-stage2-control-identity-preflight@2'
         state = 'PREFLIGHT_PASS'
         release_repository_root = $RepoRoot
+        caller_working_directory = $callerWorkingDirectory
         binder_root = $BinderRoot
         binder_head = $BinderHead
         binder_tree = $BinderTree
@@ -303,6 +383,12 @@ if ($Mode -eq 'Preflight') {
         law_blob = $LawBlob
         scaffold_head = $ScaffoldHead
         stage1_join_head = $Stage1Join
+        binder_command_import_probe = 'PASS'
+        binder_command = 'template'
+        binder_command_working_directory = $BinderRoot
+        binder_pythonpath_root = $BinderRoot
+        binder_template_probe = $PreflightBinderProbe
+        binder_template_probe_sha256 = $probeSha256
         downloads_performed = $false
         model_calls = 0
         provider_calls = 0
@@ -314,6 +400,7 @@ if ($Mode -eq 'Preflight') {
     Write-Host 'PREFLIGHT_PASS'
     Write-Host "Repository root: $RepoRoot"
     Write-Host "Binder worktree: $BinderRoot"
+    Write-Host "Binder import probe: $PreflightBinderProbe"
     exit 0
 }
 
@@ -340,10 +427,19 @@ if ($Mode -eq 'Prepare') {
     }
 
     $gpu = Select-LargestNvidiaDevice
-    & $wrapper -Command probe-hardware -Out $HardwareRoot -NvidiaSmi $gpu.NvidiaSmi -DeviceIndices ([string]$gpu.Device.Index)
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Hardware probe failed'
-    }
+    Invoke-BinderCommand `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Arguments @(
+            '-Command',
+            'probe-hardware',
+            '-Out',
+            $HardwareRoot,
+            '-NvidiaSmi',
+            $gpu.NvidiaSmi,
+            '-DeviceIndices',
+            ([string]$gpu.Device.Index)
+        )
 
     Write-PreparedConfig `
         -BinderRoot $BinderRoot `
@@ -354,10 +450,17 @@ if ($Mode -eq 'Prepare') {
         -DeviceIndex $gpu.Device.Index `
         -OutputPath $PrivateConfig
 
-    & $wrapper -Command inventory -Config $PrivateConfig -Out $InventoriedConfig
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Checkpoint inventory failed'
-    }
+    Invoke-BinderCommand `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Arguments @(
+            '-Command',
+            'inventory',
+            '-Config',
+            $PrivateConfig,
+            '-Out',
+            $InventoriedConfig
+        )
 
     $receipt = [ordered]@{
         schema = 'tier-bench/astra-stage2-control-identity-prepare@1'
@@ -405,18 +508,41 @@ if (-not (Test-Path -LiteralPath $InventoriedConfig)) {
 
 if ($Mode -eq 'Bind') {
     Assert-BindReady -ConfigPath $InventoriedConfig
-    & $wrapper -Command validate-config -Config $InventoriedConfig
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Binding config validation failed'
-    }
-    & $wrapper -Command bind -Config $InventoriedConfig -RepoRoot $BinderRoot -Out $BoundRoot
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Executable identity binding failed'
-    }
-    & $wrapper -Command verify -Config $InventoriedConfig -RepoRoot $BinderRoot -Out $BoundRoot
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Executable identity verification failed'
-    }
+    Invoke-BinderCommand `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Arguments @(
+            '-Command',
+            'validate-config',
+            '-Config',
+            $InventoriedConfig
+        )
+    Invoke-BinderCommand `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Arguments @(
+            '-Command',
+            'bind',
+            '-Config',
+            $InventoriedConfig,
+            '-RepoRoot',
+            $BinderRoot,
+            '-Out',
+            $BoundRoot
+        )
+    Invoke-BinderCommand `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Arguments @(
+            '-Command',
+            'verify',
+            '-Config',
+            $InventoriedConfig,
+            '-RepoRoot',
+            $BinderRoot,
+            '-Out',
+            $BoundRoot
+        )
     Write-Host 'Executable identities bound and verified. No model was executed.'
     exit 0
 }
@@ -426,10 +552,19 @@ if ($Mode -eq 'Verify') {
     if (-not (Test-Path -LiteralPath $BoundRoot)) {
         throw "Bound output is absent: $BoundRoot"
     }
-    & $wrapper -Command verify -Config $InventoriedConfig -RepoRoot $BinderRoot -Out $BoundRoot
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Executable identity verification failed'
-    }
+    Invoke-BinderCommand `
+        -BinderRoot $BinderRoot `
+        -Wrapper $wrapper `
+        -Arguments @(
+            '-Command',
+            'verify',
+            '-Config',
+            $InventoriedConfig,
+            '-RepoRoot',
+            $BinderRoot,
+            '-Out',
+            $BoundRoot
+        )
     Write-Host 'Executable identities reproduce from current local bytes.'
     exit 0
 }
