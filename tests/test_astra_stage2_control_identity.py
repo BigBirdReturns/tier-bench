@@ -4,10 +4,10 @@ import copy
 import json
 import os
 import shutil
-import sys
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 from astra_stage2.canonical import Stage2Error, sha256_bytes, sha256_object, strict_json_load
@@ -39,56 +39,47 @@ class ControlIdentityTests(unittest.TestCase):
         self.config["binding_id"] = "astra-stage2-controls-test"
 
         for index, control in enumerate(self.config["controls"]):
+            role = control["role"]
             revision = control["checkpoint_revision_sha1"]
+
             model_root = self.root / "models" / revision
             model_root.mkdir(parents=True)
             (model_root / "config.json").write_text(
-                json.dumps(
-                    {
-                        "role": control["role"],
-                        "private": "PRIVATE_TRANSCRIPT_CANARY",
-                    }
-                ),
+                json.dumps({"role": role, "private": "PRIVATE_TRANSCRIPT_CANARY"}),
                 encoding="utf-8",
             )
             (model_root / "tokenizer.json").write_text(
-                json.dumps({"tokenizer": control["role"]}),
+                json.dumps({"tokenizer": role}),
                 encoding="utf-8",
             )
             (model_root / "model-00001-of-00002.safetensors").write_bytes(
-                f"weights-a-{control['role']}".encode()
+                f"weights-a-{role}".encode()
             )
             (model_root / "model-00002-of-00002.safetensors").write_bytes(
-                f"weights-b-{control['role']}".encode()
+                f"weights-b-{role}".encode()
             )
-            index_value = {
-                "metadata": {"total_size": 2},
-                "weight_map": {
-                    "a": "model-00001-of-00002.safetensors",
-                    "b": "model-00002-of-00002.safetensors",
-                },
-            }
             (model_root / "model.safetensors.index.json").write_text(
-                json.dumps(index_value),
-                encoding="utf-8",
-            )
-
-            hardware_root = self.root / "hardware" / control["role"]
-            hardware_root.mkdir(parents=True)
-            (hardware_root / "platform.json").write_text(
                 json.dumps(
                     {
-                        "system": "Synthetic",
-                        "role": control["role"],
+                        "metadata": {"total_size": 2},
+                        "weight_map": {
+                            "a": "model-00001-of-00002.safetensors",
+                            "b": "model-00002-of-00002.safetensors",
+                        },
                     }
                 ),
                 encoding="utf-8",
             )
+
+            hardware_root = self.root / "hardware" / role
+            hardware_root.mkdir(parents=True)
+            (hardware_root / "platform.json").write_text(
+                json.dumps({"system": "Synthetic", "role": role}),
+                encoding="utf-8",
+            )
             (hardware_root / "nvidia-query.csv").write_text(
-                (
-                    f"{index}, Synthetic GPU {index}, GPU-private-{index}, "
-                    f"0000:0{index}:00.0, 24576, 999.0\n"
-                ),
+                f"{index}, Synthetic GPU {index}, GPU-private-{index}, "
+                f"0000:0{index}:00.0, 24576, 999.0\n",
                 encoding="utf-8",
             )
             (hardware_root / "nvidia-topology.txt").write_text(
@@ -96,10 +87,9 @@ class ControlIdentityTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            control["source_root"] = str(
-                self.root / "source" / control["role"]
-            )
-            Path(control["source_root"]).mkdir(parents=True)
+            source_root = self.root / "source" / role
+            source_root.mkdir(parents=True)
+            control["source_root"] = str(source_root)
             control["model_root"] = str(model_root)
             control["model_config_paths"] = ["config.json"]
             control["tokenizer_paths"] = ["tokenizer.json"]
@@ -109,7 +99,7 @@ class ControlIdentityTests(unittest.TestCase):
                 "model-00002-of-00002.safetensors",
             ]
 
-            runtime_root = self.root / "runtime" / control["role"]
+            runtime_root = self.root / "runtime" / role
             runtime_root.mkdir(parents=True)
             if os.name == "nt":
                 source_executable = Path(
@@ -209,11 +199,19 @@ class ControlIdentityTests(unittest.TestCase):
             "content_manifest_sha256": sha256_object([entry]),
         }
 
+    @staticmethod
+    def _strings(value: Any) -> list[str]:
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, list):
+            return [item for child in value for item in ControlIdentityTests._strings(child)]
+        if isinstance(value, dict):
+            return [item for child in value.values() for item in ControlIdentityTests._strings(child)]
+        return []
+
     def bind(self, config=None, name="bound"):
         output = self.root / name
-        from astra_stage2.generator import (
-            build_generator_manifest as stub_generator,
-        )
+        from astra_stage2.generator import build_generator_manifest as stub_generator
 
         generator = stub_generator()
         generator["payload_sha256"] = GENERATOR_MANIFEST_SHA256
@@ -245,22 +243,10 @@ class ControlIdentityTests(unittest.TestCase):
         self.assertEqual(template["law"]["commit_sha1"], LAW_COMMIT_SHA1)
         self.assertEqual(template["law"]["tree_sha1"], LAW_TREE_SHA1)
         self.assertEqual(template["law"]["blob_sha1"], LAW_BLOB_SHA1)
-        self.assertEqual(
-            template["scaffold"]["head_sha1"],
-            SCAFFOLD_HEAD_SHA1,
-        )
-        self.assertEqual(
-            template["scaffold"]["tree_sha1"],
-            SCAFFOLD_TREE_SHA1,
-        )
-        self.assertEqual(
-            template["stage1_join_head"],
-            STAGE1_JOIN_HEAD_SHA1,
-        )
-        self.assertEqual(
-            template["generator_manifest_sha256"],
-            GENERATOR_MANIFEST_SHA256,
-        )
+        self.assertEqual(template["scaffold"]["head_sha1"], SCAFFOLD_HEAD_SHA1)
+        self.assertEqual(template["scaffold"]["tree_sha1"], SCAFFOLD_TREE_SHA1)
+        self.assertEqual(template["stage1_join_head"], STAGE1_JOIN_HEAD_SHA1)
+        self.assertEqual(template["generator_manifest_sha256"], GENERATOR_MANIFEST_SHA256)
         self.assertEqual(
             [item["role"] for item in template["controls"]],
             list(PUBLIC_CONTROLS),
@@ -275,50 +261,73 @@ class ControlIdentityTests(unittest.TestCase):
             control["weight_paths"] = []
         inventoried = inventory_binding_config(draft)
         for control in inventoried["controls"]:
-            self.assertEqual(
-                control["model_config_paths"],
-                ["config.json"],
-            )
-            self.assertEqual(
-                control["tokenizer_paths"],
-                ["tokenizer.json"],
-            )
-            self.assertEqual(
-                control["weight_index_path"],
-                "model.safetensors.index.json",
-            )
+            self.assertEqual(control["model_config_paths"], ["config.json"])
+            self.assertEqual(control["tokenizer_paths"], ["tokenizer.json"])
+            self.assertEqual(control["weight_index_path"], "model.safetensors.index.json")
             self.assertEqual(len(control["weight_paths"]), 2)
 
     def test_03_binding_emits_three_controls_and_complete_plan(self) -> None:
         receipt, output = self.bind()
-        self.assertEqual(
-            receipt["binding_status"],
-            "BOUND_EXECUTABLE_IDENTITIES",
-        )
+        self.assertEqual(receipt["binding_status"], "BOUND_EXECUTABLE_IDENTITIES")
         self.assertEqual(receipt["control_count"], 3)
         self.assertEqual(receipt["observation_count"], 648)
-        plan = strict_json_load(output / "calibration-plan.json")
-        self.assertEqual(plan["observation_count"], 648)
-        manifest = strict_json_load(output / "control-manifest.json")
+        self.assertEqual(strict_json_load(output / "calibration-plan.json")["observation_count"], 648)
         self.assertEqual(
-            manifest["status"],
+            strict_json_load(output / "control-manifest.json")["status"],
             "BOUND_EMPIRICAL_IDENTITIES",
         )
 
     def test_04_public_receipt_has_no_private_path_or_canary(self) -> None:
         _, output = self.bind(name="path-safe")
-        public_bytes = b"".join(
-            path.read_bytes()
-            for path in sorted((output / "public").glob("*.json"))
-        )
-        self.assertNotIn(str(self.root).encode(), public_bytes)
-        self.assertNotIn(b"PRIVATE_TRANSCRIPT_CANARY", public_bytes)
-        self.assertNotIn(b"GPU-private", public_bytes)
-        private_bytes = b"".join(
-            path.read_bytes()
-            for path in sorted((output / "private").glob("*.json"))
-        )
-        self.assertIn(str(self.root).encode(), private_bytes)
+
+        public_values: list[str] = []
+        for path in sorted((output / "public").glob("*.json")):
+            public_values.extend(self._strings(strict_json_load(path)))
+        public_text = "\n".join(public_values)
+        self.assertNotIn("PRIVATE_TRANSCRIPT_CANARY", public_text)
+        self.assertNotIn("GPU-private", public_text)
+
+        expected_private_roots = {
+            str(Path(control["source_root"]).resolve())
+            for control in self.config["controls"]
+        } | {
+            str(Path(control["model_root"]).resolve())
+            for control in self.config["controls"]
+        } | {
+            str(Path(control["runtime"]["root"]).resolve())
+            for control in self.config["controls"]
+        } | {
+            str(Path(control["hardware"]["evidence_root"]).resolve())
+            for control in self.config["controls"]
+        }
+        for root in expected_private_roots:
+            self.assertNotIn(root, public_values)
+
+        observed_private_roots: set[str] = set()
+        for path in sorted((output / "private").glob("*.json")):
+            value = strict_json_load(path)
+            controls = []
+            if isinstance(value, dict) and isinstance(value.get("controls"), list):
+                controls.extend(value["controls"])
+            elif isinstance(value, dict):
+                controls.append(value)
+            for control in controls:
+                if not isinstance(control, dict):
+                    continue
+                locator = control.get("private_locator")
+                if not isinstance(locator, dict):
+                    continue
+                for key in (
+                    "source_root",
+                    "model_root",
+                    "runtime_root",
+                    "hardware_evidence_root",
+                ):
+                    raw = locator.get(key)
+                    if raw:
+                        observed_private_roots.add(str(Path(raw).resolve()))
+
+        self.assertTrue(expected_private_roots.issubset(observed_private_roots))
 
     def test_05_source_coordinate_substitution_refuses(self) -> None:
         bad = copy.deepcopy(self.config)
@@ -340,29 +349,18 @@ class ControlIdentityTests(unittest.TestCase):
 
     def test_08_weight_index_mismatch_refuses(self) -> None:
         bad = copy.deepcopy(self.config)
-        bad["controls"][0]["weight_paths"] = [
-            "model-00001-of-00002.safetensors"
-        ]
-        with self.assertRaisesRegex(
-            Stage2Error,
-            "weight index shard set mismatch",
-        ):
+        bad["controls"][0]["weight_paths"] = ["model-00001-of-00002.safetensors"]
+        with self.assertRaisesRegex(Stage2Error, "weight index shard set mismatch"):
             self.bind(bad, name="bad-index")
 
     def test_09_missing_weight_refuses(self) -> None:
         bad = copy.deepcopy(self.config)
-        path = (
-            Path(bad["controls"][0]["model_root"])
-            / bad["controls"][0]["weight_paths"][0]
-        )
+        path = Path(bad["controls"][0]["model_root"]) / bad["controls"][0]["weight_paths"][0]
         path.unlink()
         with self.assertRaisesRegex(Stage2Error, "not a regular file"):
             self.bind(bad, name="missing-weight")
 
-    @unittest.skipIf(
-        os.name == "nt",
-        "symlink creation is privilege-dependent on Windows",
-    )
+    @unittest.skipIf(os.name == "nt", "symlink creation is privilege-dependent on Windows")
     def test_10_symlinked_model_file_refuses(self) -> None:
         bad = copy.deepcopy(self.config)
         model_root = Path(bad["controls"][0]["model_root"])
@@ -384,9 +382,7 @@ class ControlIdentityTests(unittest.TestCase):
 
     def test_12_runtime_probe_mismatch_refuses(self) -> None:
         bad = copy.deepcopy(self.config)
-        bad["controls"][0]["runtime"]["required_probe_substrings"] = [
-            "IMPOSSIBLE_CANARY"
-        ]
+        bad["controls"][0]["runtime"]["required_probe_substrings"] = ["IMPOSSIBLE_CANARY"]
         with self.assertRaisesRegex(Stage2Error, "does not contain"):
             self.bind(bad, name="runtime-probe")
 
@@ -411,16 +407,9 @@ class ControlIdentityTests(unittest.TestCase):
     def test_16_verify_detects_local_file_drift(self) -> None:
         _, output = self.bind(name="verify-drift")
         config = copy.deepcopy(self.config)
-        model_config = (
-            Path(config["controls"][0]["model_root"]) / "config.json"
-        )
-        model_config.write_text(
-            '{"changed":true}',
-            encoding="utf-8",
-        )
-        from astra_stage2.generator import (
-            build_generator_manifest as stub_generator,
-        )
+        model_config = Path(config["controls"][0]["model_root"]) / "config.json"
+        model_config.write_text('{"changed":true}', encoding="utf-8")
+        from astra_stage2.generator import build_generator_manifest as stub_generator
 
         generator = stub_generator()
         generator["payload_sha256"] = GENERATOR_MANIFEST_SHA256
@@ -440,15 +429,8 @@ class ControlIdentityTests(unittest.TestCase):
             "astra_stage2.control_identity.validate_plan",
             side_effect=lambda plan, generator_manifest, control_manifest: plan,
         ):
-            with self.assertRaisesRegex(
-                Stage2Error,
-                "does not reproduce",
-            ):
-                verify_control_set(
-                    config,
-                    repo_root=self.repo,
-                    output_dir=output,
-                )
+            with self.assertRaisesRegex(Stage2Error, "does not reproduce"):
+                verify_control_set(config, repo_root=self.repo, output_dir=output)
 
     def test_17_revision_requires_snapshot_name_or_marker(self) -> None:
         bad = copy.deepcopy(self.config)
@@ -459,10 +441,7 @@ class ControlIdentityTests(unittest.TestCase):
             if item.is_file():
                 (copied / item.name).write_bytes(item.read_bytes())
         bad["controls"][0]["model_root"] = str(copied)
-        with self.assertRaisesRegex(
-            Stage2Error,
-            "revision is not evidenced",
-        ):
+        with self.assertRaisesRegex(Stage2Error, "revision is not evidenced"):
             self.bind(bad, name="no-revision")
 
     def test_18_exact_revision_marker_allows_copied_snapshot(self) -> None:
@@ -474,10 +453,7 @@ class ControlIdentityTests(unittest.TestCase):
             if item.is_file():
                 (copied / item.name).write_bytes(item.read_bytes())
         revision = copied_config["controls"][0]["checkpoint_revision_sha1"]
-        (copied / "REVISION").write_text(
-            revision,
-            encoding="utf-8",
-        )
+        (copied / "REVISION").write_text(revision, encoding="utf-8")
         copied_config["controls"][0]["model_root"] = str(copied)
         copied_config["controls"][0]["revision_marker_path"] = "REVISION"
         receipt, _ = self.bind(copied_config, name="marker")
@@ -485,10 +461,7 @@ class ControlIdentityTests(unittest.TestCase):
 
     def test_19_public_safety_rejects_injected_private_root(self) -> None:
         with self.assertRaisesRegex(Stage2Error, "leaks a private root"):
-            _assert_public_safe(
-                {"value": str(self.root / "secret")},
-                [str(self.root)],
-            )
+            _assert_public_safe({"value": str(self.root / "secret")}, [str(self.root)])
 
     def test_20_law_blob_substitution_refuses(self) -> None:
         bad = copy.deepcopy(self.config)
