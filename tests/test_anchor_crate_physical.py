@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from build_anchor_4060_manifest import BuildError, build  # noqa: E402
+from build_anchor_4060_manifest import BuildError, build as build_manifest  # noqa: E402
 from tier_runner.anchor_crate_plan import compile_plan  # noqa: E402
 from tier_runner.anchor_crate_runtime import backend_conformance, run_cartridge  # noqa: E402
 from tier_runner.anchor_crate_schema import validate_backend_registry  # noqa: E402
@@ -52,6 +52,13 @@ def write_json(path: Path, value: Any) -> None:
 
 def file_sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def build(**kwargs: Any) -> dict[str, Any]:
+    control_path = Path(kwargs["physical_probe_path"]).parent / "thermal-control-manifest.json"
+    kwargs["thermal_control_manifest_path"] = control_path
+    kwargs["expected_thermal_control_manifest_sha256"] = file_sha(control_path)
+    return build_manifest(**kwargs)
 
 
 def compact_hash(value: Any) -> str:
@@ -279,6 +286,7 @@ def fake_ollama() -> Iterator[str]:
 def fake_nvidia_script(root: Path) -> Path:
     path = root / "fake_nvidia_smi.py"
     state = root / "fake_nvidia_state.json"
+    normalized_state_path = state.as_posix()
     state.write_text(
         json.dumps(
             {
@@ -328,6 +336,20 @@ def fake_nvidia_script(root: Path) -> Path:
                         "used_memory_mib": 6500,
                     }
                 ],
+                "process_rows": [
+                    {
+                        "pid": 4000,
+                        "parent_pid": 1,
+                        "executable_path": str(Path(sys.executable).resolve()),
+                        "creation_time": "2026-09-03T00:00:00.0000000Z",
+                    },
+                    {
+                        "pid": 4242,
+                        "parent_pid": 4000,
+                        "executable_path": str(Path(sys.executable).resolve()),
+                        "creation_time": "2026-09-03T00:00:01.0000000Z",
+                    },
+                ],
             },
             indent=2,
             sort_keys=True,
@@ -338,9 +360,11 @@ def fake_nvidia_script(root: Path) -> Path:
         "import sys\n"
         "import json\n"
         "from pathlib import Path\n"
-        f"state = json.loads(Path(r\"{state.as_posix().replace('\\\\', '/')}\").read_text(encoding='utf-8'))\n"
+        f"state = json.loads(Path(r\"{normalized_state_path}\").read_text(encoding='utf-8'))\n"
         "args = ' '.join(sys.argv[1:])\n"
-        "if '--query-gpu=' in args:\n"
+        "if '--process-inventory' in args:\n"
+        "    print(json.dumps(state['process_rows']))\n"
+        "elif '--query-gpu=' in args:\n"
         "    rows = [state['gpu_row']] if '-i' in sys.argv else state['gpu_rows']\n"
         "    for row in rows:\n"
         "      print(','.join([\n"
@@ -514,6 +538,66 @@ def evidence_bundle(root: Path, endpoint: str) -> dict[str, Path]:
         artifact.parent.mkdir(parents=True, exist_ok=True)
         artifact.write_text(f"provider-free thermal fixture: {name}\n", encoding="utf-8")
         coverage.append({"path": str(artifact.resolve()), "sha256": file_sha(artifact)})
+    coverage_by_name = {Path(row["path"]).name: row for row in coverage}
+    executable_identity = {
+        "path": str(Path(sys.executable).resolve()),
+        "sha256": file_sha(Path(sys.executable)),
+    }
+    holder = {
+        "executable": executable_identity,
+        "lhm": coverage_by_name["qwen-thermal-qualify.ps1"],
+        "pawnio": coverage_by_name["qwen-pl-set.log"],
+        "policy": coverage_by_name["case-fan-hold.ps1"],
+    }
+    fan_channels = [
+        {
+            "channel": "Pump Fan control/1",
+            "control_identity": "/lpc/nct6686d/control/1",
+            "tachometer_sensor_identity": "/lpc/nct6686d/fan/1",
+        },
+        {
+            "channel": "System Fan #1 control/2",
+            "control_identity": "/lpc/nct6686d/control/2",
+            "tachometer_sensor_identity": "/lpc/nct6686d/fan/2",
+        },
+        {
+            "channel": "System Fan #3 control/4",
+            "control_identity": "/lpc/nct6686d/control/4",
+            "tachometer_sensor_identity": "/lpc/nct6686d/fan/4",
+        },
+    ]
+    thermal_control = root / "thermal-control-manifest.json"
+    write_json(
+        thermal_control,
+        {
+            "schema": "tier-bench/anchor-thermal-control@1",
+            "profile_id": THERMAL_PROFILE_ID,
+            "receipts": {
+                "public_sha256": file_sha(thermal_public),
+                "private_sha256": file_sha(thermal_private),
+            },
+            "artifacts": coverage,
+            "gpu": {
+                "uuid": GPU_UUID,
+                "name": "NVIDIA GeForce RTX 4060",
+                "vbios_version": "95.07.29.00.A9",
+                "driver_version": "580.97",
+                "pci_bus_id": "00000000:01:00.0",
+            },
+            "model": {"name": MODEL, "digest": MODEL_DIGEST},
+            "runtime": {
+                "python": executable_identity,
+                "ollama": executable_identity,
+                "nvidia_smi": {"path": str(nvidia.resolve()), "sha256": file_sha(nvidia)},
+                "ollama_version": "0.11.10-fixture",
+            },
+            "power": {"target_watts": 90, "default_watts": 115, "minimum_watts": 70},
+            "workload": {"workers": 2, "sustained_seconds": 900},
+            "holder": holder,
+            "fan_trace_path": str((root / "thermal" / "qwen-casefan-trace.jsonl").resolve()),
+            "fan_channels": fan_channels,
+        },
+    )
 
     probe = root / "physical-probe.json"
     write_json(
@@ -524,6 +608,7 @@ def evidence_bundle(root: Path, endpoint: str) -> dict[str, Path]:
             "endpoint": endpoint,
             "python_version": sys.version.split()[0],
             "nvidia_smi_command": [sys.executable, str(nvidia)],
+            "process_inventory_command": [sys.executable, str(nvidia), "--process-inventory"],
             "gpu": {
                 "uuid": GPU_UUID,
                 "name": "NVIDIA GeForce RTX 4060",
@@ -533,6 +618,9 @@ def evidence_bundle(root: Path, endpoint: str) -> dict[str, Path]:
                 "driver_version": "580.97",
                 "pci_bus_id": "00000000:01:00.0",
                 "power_limit_watts": 115.0,
+                "compute_processes": [
+                    {"gpu_uuid": GPU_UUID, "pid": 4242, "process_name": "ollama", "used_memory_mib": 6500}
+                ],
             },
             "gpu_inventory_before": [
                 {"uuid": GPU_UUID, "memory_used_mib": 0},
@@ -542,18 +630,18 @@ def evidence_bundle(root: Path, endpoint: str) -> dict[str, Path]:
                 "profile_id": THERMAL_PROFILE_ID,
                 "public_receipt_sha256": file_sha(thermal_public),
                 "private_receipt_sha256": file_sha(thermal_private),
+                "control_manifest_observed_sha256": file_sha(thermal_control),
+                "control_manifest_expected_sha256": file_sha(thermal_control),
                 "fan_governance": FAN_GOVERNANCE,
                 "fan_channels": [
-                    {"channel": "Pump Fan control/1", "tachometer_rpm": 2400},
-                    {"channel": "System Fan #1 control/2", "tachometer_rpm": 1800},
-                    {"channel": "System Fan #3 control/4", "tachometer_rpm": 1750},
+                    {**fan_channels[0], "tachometer_rpm": 2400, "timestamp": "2026-09-03T00:00:04Z"},
+                    {**fan_channels[1], "tachometer_rpm": 1800, "timestamp": "2026-09-03T00:00:04Z"},
+                    {**fan_channels[2], "tachometer_rpm": 1750, "timestamp": "2026-09-03T00:00:04Z"},
                 ],
                 "holder": {
                     "active": True,
                     "pid": 1234,
-                    "policy_sha256": "a" * 64,
-                    "pawnio_identity_verified": True,
-                    "lhm_identity_verified": True,
+                    **holder,
                     "sensor_age_seconds": 4,
                 },
                 "coverage_artifacts": coverage,
@@ -576,6 +664,28 @@ def evidence_bundle(root: Path, endpoint: str) -> dict[str, Path]:
                 "context_length": 8192,
                 "details": {"quantization_level": "Q4_K_M"},
             },
+            "dedicated_server": {
+                "pid": 4000,
+                "executable": str(Path(sys.executable).resolve()),
+                "executable_sha256": file_sha(Path(sys.executable)),
+                "creation_time": "2026-09-03T00:00:00.0000000Z",
+                "process_tree": [
+                    {
+                        "pid": 4000,
+                        "parent_pid": 1,
+                        "executable_path": str(Path(sys.executable).resolve()),
+                        "executable_sha256": file_sha(Path(sys.executable)),
+                        "creation_time": "2026-09-03T00:00:00.0000000Z",
+                    },
+                    {
+                        "pid": 4242,
+                        "parent_pid": 4000,
+                        "executable_path": str(Path(sys.executable).resolve()),
+                        "executable_sha256": file_sha(Path(sys.executable)),
+                        "creation_time": "2026-09-03T00:00:01.0000000Z",
+                    },
+                ],
+            },
             "checks": [{"id": "fixture", "pass": True}],
             "production_claim": False,
             "promotion_authorized": False,
@@ -591,6 +701,7 @@ def evidence_bundle(root: Path, endpoint: str) -> dict[str, Path]:
         "nvidia_state": state_path,
         "thermal_public": thermal_public,
         "thermal_private": thermal_private,
+        "thermal_control": thermal_control,
     }
 
 
@@ -660,6 +771,12 @@ def test_physical_manifest_is_built_only_from_complete_receipts() -> None:
         assert binding["execution"]["cuda_visible_devices"] == GPU_UUID
         assert binding["execution"]["thermal_profile_id"] == THERMAL_PROFILE_ID
         assert binding["execution"]["thermal_profile_receipt_sha256"] == binding["source_receipts"]["thermal_profile_private_receipt_sha256"]
+        assert binding["source_receipts"]["thermal_profile_private_receipt_sha256"] == binding["source_receipts"]["thermal_profile_private_controlling_sha256"]
+        assert binding["source_receipts"]["thermal_control_manifest_observed_sha256"] == binding["source_receipts"]["thermal_control_manifest_expected_sha256"]
+        assert binding["execution"]["ollama_root_pid"] == 4000
+        assert {row["pid"] for row in binding["execution"]["ollama_process_tree"]} == {4000, 4242}
+        build_receipt = json.loads(Path(result["receipt"]).read_text(encoding="utf-8"))
+        assert build_receipt["dedicated_ollama_process"]["root_pid"] == 4000
         assert binding["execution"]["power_limit_target_watts"] == 90.0
         assert binding["execution"]["fan_governance"] == FAN_GOVERNANCE
         assert binding["execution"]["fan_channels"] == THERMAL_FAN_CHANNELS
@@ -744,6 +861,9 @@ def test_physical_manifest_rejects_thermal_drift() -> None:
         public = json.loads(evidence["thermal_public"].read_text(encoding="utf-8"))
         public["profile_id"] = "W01-OTHER"
         write_json(evidence["thermal_public"], public)
+        control = json.loads(evidence["thermal_control"].read_text(encoding="utf-8"))
+        control["receipts"]["public_sha256"] = file_sha(evidence["thermal_public"])
+        write_json(evidence["thermal_control"], control)
         try:
             build(
                 base_registry_path=FIXTURE / "backend_registry.json",
@@ -774,6 +894,9 @@ def test_physical_manifest_rejects_unbound_or_unrestored_power_profile() -> None
         private = json.loads(evidence["thermal_private"].read_text(encoding="utf-8"))
         private["operating_point"]["power_limit_w"] = 95.0
         write_json(evidence["thermal_private"], private)
+        control = json.loads(evidence["thermal_control"].read_text(encoding="utf-8"))
+        control["receipts"]["private_sha256"] = file_sha(evidence["thermal_private"])
+        write_json(evidence["thermal_control"], control)
         try:
             build(
                 base_registry_path=FIXTURE / "backend_registry.json",
@@ -804,6 +927,9 @@ def test_physical_manifest_rejects_sensor_or_holder_failures() -> None:
         private = json.loads(evidence["thermal_private"].read_text(encoding="utf-8"))
         private["pass_criteria_all_met"]["every_mapped_case_fan_stable_nonzero_tachometer"] = False
         write_json(evidence["thermal_private"], private)
+        control = json.loads(evidence["thermal_control"].read_text(encoding="utf-8"))
+        control["receipts"]["private_sha256"] = file_sha(evidence["thermal_private"])
+        write_json(evidence["thermal_control"], control)
         try:
             build(
                 base_registry_path=FIXTURE / "backend_registry.json",
@@ -833,13 +959,15 @@ def test_physical_probe_rejects_identity_power_holder_and_coverage_drift() -> No
         ("driver", ("gpu", "driver_version"), "drifted-driver"),
         ("model", ("ollama", "model"), "drifted-model"),
         ("holder", ("thermal_profile", "holder", "active"), False),
-        ("PawnIO", ("thermal_profile", "holder", "pawnio_identity_verified"), False),
+        ("PawnIO", ("thermal_profile", "holder", "pawnio", "sha256"), "0" * 64),
         ("stale sensors", ("thermal_profile", "holder", "sensor_age_seconds"), 60),
         ("fan map", ("thermal_profile", "fan_channels", 0, "channel"), "wrong fan"),
         ("tachometer", ("thermal_profile", "fan_channels", 0, "tachometer_rpm"), 0),
         ("legal power", ("power_control", "minimum_watts"), 95),
         ("power application", ("power_control", "application_result"), "FAIL"),
         ("covered artifact", ("thermal_profile", "coverage_artifacts", 0, "sha256"), "0" * 64),
+        ("dedicated process", ("gpu", "compute_processes", 0, "pid"), 9999),
+        ("process executable", ("dedicated_server", "process_tree", 1, "executable_sha256"), "0" * 64),
     )
     for index, (label, path, replacement) in enumerate(cases):
         with tempfile.TemporaryDirectory() as temp, fake_ollama() as endpoint:
@@ -882,6 +1010,9 @@ def test_thermal_receipt_must_terminal_pass() -> None:
         receipt["terminal"] = "HOLD"
         receipt["pass"] = False
         write_json(evidence["thermal_public"], receipt)
+        control = json.loads(evidence["thermal_control"].read_text(encoding="utf-8"))
+        control["receipts"]["public_sha256"] = file_sha(evidence["thermal_public"])
+        write_json(evidence["thermal_control"], control)
         try:
             build(
                 base_registry_path=FIXTURE / "backend_registry.json",
@@ -903,6 +1034,39 @@ def test_thermal_receipt_must_terminal_pass() -> None:
             assert "terminal PASS" in str(exc)
         else:
             raise AssertionError("non-PASS thermal receipt must be rejected")
+
+
+def test_external_thermal_authority_rejects_self_consistent_substitution() -> None:
+    with tempfile.TemporaryDirectory() as temp, fake_ollama() as endpoint:
+        root = Path(temp)
+        evidence = evidence_bundle(root, endpoint)
+        expected_control_sha256 = file_sha(evidence["thermal_control"])
+        control = json.loads(evidence["thermal_control"].read_text(encoding="utf-8"))
+        control["profile_id"] = "attacker-selected-profile"
+        write_json(evidence["thermal_control"], control)
+        try:
+            build_manifest(
+                base_registry_path=FIXTURE / "backend_registry.json",
+                estate_receipt_path=evidence["estate_receipt"],
+                estate_observation_path=evidence["estate"],
+                control_host_observation_path=evidence["control"],
+                function_receipt_path=evidence["function_receipt"],
+                physical_probe_path=evidence["probe"],
+                executor_path=EXECUTOR,
+                python_executable=Path(sys.executable).resolve(),
+                output_dir=root / "out",
+                backend_id="backend.cuda4060-substitution",
+                gpu_uuid=GPU_UUID,
+                thermal_profile_public_receipt_path=evidence["thermal_public"],
+                thermal_profile_private_receipt_path=evidence["thermal_private"],
+                thermal_control_manifest_path=evidence["thermal_control"],
+                expected_thermal_control_manifest_sha256=expected_control_sha256,
+                thermal_target_power_limit_watts=90.0,
+            )
+        except BuildError as exc:
+            assert "controlling identity mismatch" in str(exc)
+        else:
+            raise AssertionError("caller-selected thermal control substitution must be rejected")
 
 
 def test_physical_executor_refuses_binding_and_residency_drift() -> None:
@@ -928,6 +1092,36 @@ def test_physical_executor_refuses_binding_and_residency_drift() -> None:
         completed = invoke(backend["driver_command"], request)
         assert completed.returncode == 0
         assert json.loads(completed.stdout)["status"] == "ok"
+        state = json.loads(evidence["nvidia_state"].read_text(encoding="utf-8"))
+        bound_process_rows = copy.deepcopy(state["process_rows"])
+        set_fake_nvidia_state(
+            evidence["nvidia_state"],
+            compute_rows=[{"gpu_uuid": GPU_UUID, "pid": 9999, "process_name": "ollama", "used_memory_mib": 6500}],
+            process_rows=[
+                *bound_process_rows,
+                {
+                    "pid": 9999,
+                    "parent_pid": 1,
+                    "executable_path": str(Path(sys.executable).resolve()),
+                    "creation_time": "2026-09-03T00:00:02.0000000Z",
+                },
+            ],
+        )
+        completed = invoke(backend["driver_command"], request)
+        assert completed.returncode != 0
+        assert "launched Ollama tree" in " ".join(json.loads(completed.stdout)["advisory"])
+        set_fake_nvidia_state(
+            evidence["nvidia_state"],
+            compute_rows=[{"gpu_uuid": GPU_UUID, "pid": 4242, "process_name": "ollama", "used_memory_mib": 6500}],
+            process_rows=bound_process_rows,
+        )
+        creation_drift = copy.deepcopy(bound_process_rows)
+        creation_drift[1]["creation_time"] = "2026-09-03T00:10:00.0000000Z"
+        set_fake_nvidia_state(evidence["nvidia_state"], process_rows=creation_drift)
+        completed = invoke(backend["driver_command"], request)
+        assert completed.returncode != 0
+        assert "creation time changed" in " ".join(json.loads(completed.stdout)["advisory"])
+        set_fake_nvidia_state(evidence["nvidia_state"], process_rows=bound_process_rows)
         for updates, expected in (
             ({"OLLAMA_VULKAN": None}, "OLLAMA_VULKAN"),
             ({"OLLAMA_VULKAN": "1"}, "OLLAMA_VULKAN"),
@@ -1061,11 +1255,16 @@ def test_launcher_is_present_and_requires_prior_census() -> None:
     assert "--thermal-profile-public-receipt" in launcher
     assert "OLLAMA_SCHED_SPREAD" in launcher
     assert "AllowOllamaSchedSpread" not in launcher
-    assert "thermal receipt covered-artifact digest mismatch" in launcher
+    assert "S:\\Scratch" not in launcher
+    assert "ExpectedThermalControlManifestSha256" in launcher
+    assert "controlling identity mismatch" in launcher
+    assert "thermal control artifact digest mismatch" in launcher
     assert "Get-CimInstance Win32_Process" in launcher
     assert "cleanup-result.json" in launcher
     assert launcher.index("    Set-PowerLimit", launcher.index("try {")) < launcher.index("    $server = Start-Process")
     assert launcher.rindex("$smokeReceipt =") > launcher.index("} finally")
+    assert "primary_failure" in launcher
+    assert "primary failure: $primaryText; cleanup failures: $cleanupText" in launcher
     assert "generate_decision_packet=$BackendId" in launcher
     assert "production_claim = $false" in launcher
 

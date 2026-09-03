@@ -5,10 +5,10 @@ param(
     [Parameter(Mandatory = $true)][string]$EstateReceipt,
     [Parameter(Mandatory = $true)][string]$EstateObservation,
     [Parameter(Mandatory = $true)][string]$ControlHostObservation,
-    [string]$ThermalProfilePublicReceipt = "S:\Scratch\EOC007-A17-CLOSEOUT-01\crate\W01-RTX4060-THERMAL-QUALIFICATION-PUBLIC.json",
-    [string]$ThermalProfilePrivateReceipt = "S:\Scratch\EOC007-A17-CLOSEOUT-01\crate\W01-RTX4060-THERMAL-QUALIFICATION-PRIVATE.json",
-    [string]$ThermalCoverageRoot = "S:\Scratch\EOC007-OPERATOR-UNBLOCK-01\thermal",
-    [string]$ThermalProfileCandidate = "S:\Scratch\EOC007-OPERATOR-UNBLOCK-01\receipts\W01-RTX4060-THERMAL-PROFILE-CANDIDATE.json",
+    [Parameter(Mandatory = $true)][string]$ThermalProfilePublicReceipt,
+    [Parameter(Mandatory = $true)][string]$ThermalProfilePrivateReceipt,
+    [Parameter(Mandatory = $true)][string]$ThermalControlManifest,
+    [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{64}$')][string]$ExpectedThermalControlManifestSha256,
     [string]$OutRoot = (Join-Path $env:LOCALAPPDATA "AXM\anchor-crate-4060-smoke"),
     [string]$Model = "qwen3.5:9b-q4_K_M",
     [string]$Endpoint = "http://127.0.0.1:11442",
@@ -197,10 +197,13 @@ function Assert-LoopbackEndpoint {
 function Ensure-ThermalReceipt {
     param(
         [string]$ReceiptPath,
+        [string]$ExpectedSha256,
         [string]$ExpectedProfileId,
         [string]$Label
     )
     $ReceiptPath = Resolve-FileStrict $ReceiptPath $Label
+    $sha = (Get-FileHash -LiteralPath $ReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($sha -cne $ExpectedSha256) { throw "$Label controlling identity mismatch" }
     $obj = Read-JsonStrict $ReceiptPath
     if (($obj.profile_id -ne $ExpectedProfileId)) {
         throw "$Label does not target profile $ExpectedProfileId (got $($obj.profile_id))"
@@ -217,116 +220,123 @@ function Ensure-ThermalReceipt {
     if ($obj.PSObject.Properties.Name -contains "authorizes_a17_smoke" -and -not [bool]$obj.authorizes_a17_smoke) {
         throw "$Label does not authorize the A-17 run"
     }
-    $sha = (Get-FileHash -LiteralPath $ReceiptPath -Algorithm SHA256).Hash.ToLowerInvariant()
-    return @{ path = (Resolve-Path -LiteralPath $ReceiptPath).Path; receipt = $obj; sha256 = $sha }
+    return @{ path = $ReceiptPath; receipt = $obj; observed_sha256 = $sha; controlling_sha256 = $ExpectedSha256 }
+}
+
+function Read-ThermalControl {
+    param([string]$ManifestPath, [string]$ExpectedSha256)
+    $ManifestPath = Resolve-FileStrict $ManifestPath "thermal control manifest"
+    $observed = (Get-FileHash -LiteralPath $ManifestPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($observed -cne $ExpectedSha256) { throw "thermal control manifest controlling identity mismatch" }
+    $control = Read-JsonStrict $ManifestPath
+    if ($control.schema -ne "tier-bench/anchor-thermal-control@1" -or $control.profile_id -ne "W01-RTX4060-MENACE-A17-THERMAL-V1") {
+        throw "thermal control manifest schema or profile identity mismatch"
+    }
+    return @{ path = $ManifestPath; observed_sha256 = $observed; controlling_sha256 = $ExpectedSha256; control = $control }
 }
 
 function Ensure-ThermalCoverage {
-    param([string]$CoverageRoot, [string]$CandidatePath)
-    $CoverageRoot = Resolve-DirectoryStrict $CoverageRoot "thermal coverage root"
-    $CandidatePath = Resolve-FileStrict $CandidatePath "thermal profile candidate"
-    $coordinates = @(
-        (Join-Path $CoverageRoot "qwen-thermal-receipt.json"),
-        (Join-Path $CoverageRoot "qwen-telemetry.csv"),
-        (Join-Path $CoverageRoot "qwen-casefan-trace.jsonl"),
-        (Join-Path $CoverageRoot "case-fan-hold.ps1"),
-        (Join-Path $CoverageRoot "qwen-thermal-qualify.ps1"),
-        (Join-Path $CoverageRoot "qwen-pl-set.log"),
-        (Join-Path $CoverageRoot "qwen-pl-restore.log"),
-        $CandidatePath
-    )
+    param($Control)
     $rows = @()
-    foreach ($coordinate in $coordinates) {
-        $path = Resolve-FileStrict $coordinate "thermal covered artifact"
+    foreach ($artifact in @($Control.artifacts)) {
+        if (-not $artifact.path -or [string]$artifact.sha256 -notmatch '^[0-9a-f]{64}$') { throw "thermal control artifact identity is incomplete" }
+        $path = Resolve-FileStrict ([string]$artifact.path) "thermal covered artifact"
+        $actual = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($actual -cne [string]$artifact.sha256) { throw "thermal control artifact digest mismatch: $path" }
         $rows += [ordered]@{
             path = $path
-            sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+            sha256 = $actual
         }
     }
-    $receipt = Read-JsonStrict $coordinates[0]
-    $candidate = Read-JsonStrict $CandidatePath
-    $identityArtifacts = @()
-    if ($receipt.PSObject.Properties.Name -contains "artifacts") { $identityArtifacts += @($receipt.artifacts) }
-    if ($candidate.PSObject.Properties.Name -contains "artifacts") { $identityArtifacts += @($candidate.artifacts) }
-    if (-not $identityArtifacts.Count) { throw "thermal evidence does not provide covered-artifact digests" }
-    foreach ($artifact in $identityArtifacts) {
-            if (-not $artifact.path -or -not $artifact.sha256) { throw "thermal receipt artifact identity is incomplete" }
-            $artifactRoot = if ($artifact.PSObject.Properties.Name -contains "root" -and $artifact.root) { [string]$artifact.root } else { $CoverageRoot }
-            $coveredPath = Join-Path $artifactRoot ([string]$artifact.path)
-            $coveredPath = Resolve-FileStrict $coveredPath "thermal receipt artifact"
-            $actual = (Get-FileHash -LiteralPath $coveredPath -Algorithm SHA256).Hash.ToLowerInvariant()
-            if ($actual -ne ([string]$artifact.sha256).ToLowerInvariant()) {
-                throw "thermal receipt covered-artifact digest mismatch: $coveredPath"
-            }
-            if (-not ($rows | Where-Object { $_.path -eq $coveredPath })) {
-                $rows += [ordered]@{ path = $coveredPath; sha256 = $actual }
-            }
-    }
+    if ($rows.Count -lt 8) { throw "thermal control manifest covers fewer than eight required artifacts" }
     return $rows
 }
 
 function Ensure-ThermalHolder {
-    param([array]$CoverageArtifacts)
-    $policy = @($CoverageArtifacts | Where-Object { $_.path -like "*case-fan-hold.ps1" })
-    $trace = @($CoverageArtifacts | Where-Object { $_.path -like "*qwen-casefan-trace.jsonl" })
-    if ($policy.Count -ne 1 -or $trace.Count -ne 1) { throw "thermal holder policy or trace identity is ambiguous" }
-    $age = ([DateTimeOffset]::UtcNow - [DateTimeOffset](Get-Item -LiteralPath $trace[0].path).LastWriteTimeUtc).TotalSeconds
-    if ($age -lt 0 -or $age -gt 12) { throw "thermal holder sensors are stale" }
-    $tail = Get-Content -LiteralPath $trace[0].path -Tail 1 -Encoding UTF8
-    if (-not $tail) { throw "thermal holder trace has no current sensor row" }
-    $traceObject = $tail | ConvertFrom-Json
-    $traceText = $traceObject | ConvertTo-Json -Depth 32 -Compress
-    $channels = @("Pump Fan control/1", "System Fan #1 control/2", "System Fan #3 control/4")
-    foreach ($channel in $channels) {
-        $name = ($channel -split " control/")[0]
-        if ($traceText -notmatch [regex]::Escape($name)) { throw "thermal holder trace omits $channel" }
+    param($Control)
+    $accepted = $Control.holder
+    if (-not $accepted) { throw "thermal control holder identities are missing" }
+    $measured = [ordered]@{}
+    foreach ($name in @("executable", "lhm", "pawnio", "policy")) {
+        $identity = $accepted.$name
+        if (-not $identity.path -or [string]$identity.sha256 -notmatch '^[0-9a-f]{64}$') { throw "thermal control $name identity is incomplete" }
+        $path = Resolve-FileStrict ([string]$identity.path) "thermal holder $name"
+        $digest = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($digest -cne [string]$identity.sha256) { throw "thermal holder $name digest mismatch" }
+        $measured[$name] = [ordered]@{ path = $path; sha256 = $digest }
     }
-    $tachValues = [regex]::Matches($traceText, '(?i)(?:tach(?:ometer)?|rpm)[^0-9]{0,20}(?<rpm>[0-9]+(?:\.[0-9]+)?)')
-    if (@($tachValues | Where-Object { [double]$_.Groups['rpm'].Value -gt 0 }).Count -lt 3) {
-        throw "thermal holder trace does not confirm three nonzero tachometers"
-    }
-    $escapedPolicy = [regex]::Escape([string]$policy[0].path)
+    $escapedPolicy = [regex]::Escape([string]$measured.policy.path)
     $holders = @(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and $_.CommandLine -match $escapedPolicy })
     if ($holders.Count -ne 1) { throw "expected one already-running accepted thermal holder, found $($holders.Count)" }
-    $candidateText = Get-Content -LiteralPath $ThermalProfileCandidate -Raw -Encoding UTF8
-    if ($candidateText -notmatch "PawnIO" -or $candidateText -notmatch "LibreHardwareMonitor") {
-        throw "thermal candidate does not bind PawnIO and LibreHardwareMonitor"
+    $holderExecutable = Resolve-FileStrict ([string]$holders[0].ExecutablePath) "running thermal holder executable"
+    $holderDigest = (Get-FileHash -LiteralPath $holderExecutable -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($holderExecutable -cne $measured.executable.path -or $holderDigest -cne $measured.executable.sha256) {
+        throw "running thermal holder executable identity differs from control manifest"
     }
-    $positiveTach = @($tachValues | Where-Object { [double]$_.Groups['rpm'].Value -gt 0 } | ForEach-Object { [double]$_.Groups['rpm'].Value })
+    $tracePath = Resolve-FileStrict ([string]$Control.fan_trace_path) "thermal fan trace"
+    $tail = Get-Content -LiteralPath $tracePath -Tail 1 -Encoding UTF8
+    if (-not $tail) { throw "thermal holder trace has no current sensor row" }
+    $traceObject = $tail | ConvertFrom-Json
+    $acceptedFans = @($Control.fan_channels)
+    $observedFans = @($traceObject.fan_channels)
+    if ($acceptedFans.Count -ne 3 -or $observedFans.Count -ne 3) { throw "thermal fan trace must contain exactly three structured channels" }
     $fanRows = @()
-    for ($index = 0; $index -lt $channels.Count; $index++) {
-        $fanRows += [ordered]@{ channel = $channels[$index]; tachometer_rpm = $positiveTach[$index] }
+    $maxAge = 0.0
+    foreach ($fan in $acceptedFans) {
+        $matches = @($observedFans | Where-Object {
+            $_.channel -eq $fan.channel -and
+            $_.control_identity -eq $fan.control_identity -and
+            $_.tachometer_sensor_identity -eq $fan.tachometer_sensor_identity
+        })
+        if ($matches.Count -ne 1) { throw "thermal fan structured identity mismatch: $($fan.channel)" }
+        $observed = $matches[0]
+        if ([double]$observed.tachometer_rpm -le 0 -or -not $observed.timestamp) { throw "thermal fan tachometer record is incomplete: $($fan.channel)" }
+        $age = ([DateTimeOffset]::UtcNow - [DateTimeOffset]::Parse([string]$observed.timestamp).ToUniversalTime()).TotalSeconds
+        if ($age -lt 0 -or $age -gt 12) { throw "thermal fan sensor is stale: $($fan.channel)" }
+        $maxAge = [math]::Max($maxAge, $age)
+        $fanRows += [ordered]@{
+            channel = [string]$observed.channel
+            control_identity = [string]$observed.control_identity
+            tachometer_sensor_identity = [string]$observed.tachometer_sensor_identity
+            tachometer_rpm = [double]$observed.tachometer_rpm
+            timestamp = [string]$observed.timestamp
+        }
     }
     return [ordered]@{
         active = $true
         pid = [int64]$holders[0].ProcessId
-        executable_path = [string]$holders[0].ExecutablePath
-        policy_path = [string]$policy[0].path
-        policy_sha256 = [string]$policy[0].sha256
-        pawnio_identity_verified = $true
-        lhm_identity_verified = $true
-        sensor_age_seconds = [math]::Round($age, 3)
+        creation_time = ([DateTimeOffset]$holders[0].CreationDate).ToUniversalTime().ToString("o")
+        executable = $measured.executable
+        lhm = $measured.lhm
+        pawnio = $measured.pawnio
+        policy = $measured.policy
+        sensor_age_seconds = [math]::Round($maxAge, 3)
         fan_channels = $fanRows
     }
 }
 
-function Ensure-ThermalCandidateIdentity {
-    param([string]$CandidatePath, [System.Collections.IDictionary]$Gpu, [string]$ModelName)
-    $text = Get-Content -LiteralPath $CandidatePath -Raw -Encoding UTF8
-    foreach ($identity in @(
-        "GPU-e0b1541d-fc7d-38f5-d4c0-c15a3bd241a0",
-        [string]$Gpu.vbios_version,
-        [string]$Gpu.driver_version,
-        $ModelName,
-        "PawnIO",
-        "LibreHardwareMonitor"
-    )) {
-        if (-not $identity -or $text -notmatch [regex]::Escape($identity)) {
-            throw "thermal profile candidate does not bind required identity: $identity"
-        }
+function Ensure-ThermalControlIdentity {
+    param($Control, [System.Collections.IDictionary]$Gpu, [string]$ModelName, [string]$PythonPath, [string]$OllamaPath, [string]$NvidiaSmiPath)
+    foreach ($name in @("uuid", "name", "vbios_version", "driver_version", "pci_bus_id")) {
+        if ([string]$Control.gpu.$name -cne [string]$Gpu.$name) { throw "thermal control GPU $name identity differs" }
     }
-    if ($text -notmatch '(?i)(power.{0,30}90|90.{0,12}W)' -or $text -notmatch '(?i)(worker.{0,12}2|2.{0,12}worker)' -or $text -notmatch '(?i)(900|15.?min)') {
-        throw "thermal profile candidate workload or power identity differs"
+    if ($Control.model.name -cne $ModelName -or [double]$Control.power.target_watts -ne 90 -or [double]$Control.power.default_watts -ne 115) {
+        throw "thermal control model or power identity differs"
+    }
+    if ([int]$Control.workload.workers -ne 2 -or [int]$Control.workload.sustained_seconds -ne 900) {
+        throw "thermal control workload identity differs"
+    }
+    foreach ($runtime in @(
+        @{ name = "python"; path = $PythonPath },
+        @{ name = "ollama"; path = $OllamaPath },
+        @{ name = "nvidia_smi"; path = $NvidiaSmiPath }
+    )) {
+        $accepted = $Control.runtime.($runtime.name)
+        $resolved = Resolve-FileStrict $runtime.path "selected $($runtime.name) runtime"
+        $digest = (Get-FileHash -LiteralPath $resolved -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($resolved -cne [string]$accepted.path -or $digest -cne [string]$accepted.sha256) {
+            throw "thermal control $($runtime.name) runtime identity differs"
+        }
     }
 }
 
@@ -369,8 +379,36 @@ function Query-ComputeRows {
     return $rows
 }
 
+function Get-DedicatedProcessTree {
+    param([int64]$RootPid)
+    $snapshot = @(Get-CimInstance Win32_Process)
+    $selected = New-Object System.Collections.Generic.List[object]
+    $pending = New-Object System.Collections.Generic.Queue[int64]
+    $pending.Enqueue($RootPid)
+    $seen = @{}
+    while ($pending.Count -gt 0) {
+        $pidValue = $pending.Dequeue()
+        if ($seen.ContainsKey($pidValue)) { continue }
+        $seen[$pidValue] = $true
+        $row = @($snapshot | Where-Object { [int64]$_.ProcessId -eq $pidValue })
+        if ($row.Count -ne 1) { throw "dedicated Ollama process $pidValue is absent or ambiguous" }
+        $path = Resolve-FileStrict ([string]$row[0].ExecutablePath) "dedicated Ollama process executable"
+        $selected.Add([ordered]@{
+            pid = [int64]$row[0].ProcessId
+            parent_pid = [int64]$row[0].ParentProcessId
+            executable_path = $path
+            executable_sha256 = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+            creation_time = ([DateTimeOffset]$row[0].CreationDate).ToUniversalTime().ToString("o")
+        })
+        foreach ($child in @($snapshot | Where-Object { [int64]$_.ParentProcessId -eq $pidValue })) {
+            $pending.Enqueue([int64]$child.ProcessId)
+        }
+    }
+    return @($selected)
+}
+
 function Ensure-OllamaProcessPlacement {
-    param([string]$TargetUuid, [array]$ComputeRows, [array]$BeforeInventory, [array]$LiveInventory, [double]$ModelVramMiB)
+    param([string]$TargetUuid, [array]$ComputeRows, [array]$ProcessTree, [array]$BeforeInventory, [array]$LiveInventory, [double]$ModelVramMiB)
     $ollamaRows = @($ComputeRows | Where-Object { $_.process_name -match "ollama" })
     if (-not $ollamaRows.Count) {
         throw "no Ollama compute process is visible to nvidia-smi"
@@ -379,7 +417,9 @@ function Ensure-OllamaProcessPlacement {
     if ($offTarget.Count) {
         throw "Ollama compute process is visible on non-target GPU(s): $($offTarget | ForEach-Object { $_.gpu_uuid } -join ',')"
     }
-    $onTarget = @($ollamaRows | Where-Object { $_.gpu_uuid -eq $TargetUuid })
+    $treePids = @($ProcessTree | ForEach-Object { [int64]$_.pid })
+    $onTarget = @($ComputeRows | Where-Object { $_.gpu_uuid -eq $TargetUuid -and $treePids -contains [int64]$_.pid })
+    if (-not $onTarget.Count) { throw "target GPU compute process is not a member of the launched Ollama tree" }
     if (-not ($onTarget | ForEach-Object { $_.used_memory_mib } | Measure-Object -Sum).Sum) {
         throw "Ollama process is not resident (used memory is zero) on the target"
     }
@@ -444,10 +484,12 @@ New-Item -ItemType Directory -Path $OutRoot -Force | Out-Null
 
 Parse-KeepAlive $KeepAlive
 $profileId = "W01-RTX4060-MENACE-A17-THERMAL-V1"
-$thermalPublic = Ensure-ThermalReceipt $ThermalProfilePublicReceipt $profileId "public thermal profile receipt"
-$thermalPrivate = Ensure-ThermalReceipt $ThermalProfilePrivateReceipt $profileId "private thermal profile receipt"
-$thermalCoverage = Ensure-ThermalCoverage $ThermalCoverageRoot $ThermalProfileCandidate
-$thermalHolder = Ensure-ThermalHolder $thermalCoverage
+$thermalAuthority = Read-ThermalControl $ThermalControlManifest $ExpectedThermalControlManifestSha256
+$thermalControl = $thermalAuthority.control
+$thermalPublic = Ensure-ThermalReceipt $ThermalProfilePublicReceipt ([string]$thermalControl.receipts.public_sha256) $profileId "public thermal profile receipt"
+$thermalPrivate = Ensure-ThermalReceipt $ThermalProfilePrivateReceipt ([string]$thermalControl.receipts.private_sha256) $profileId "private thermal profile receipt"
+$thermalCoverage = Ensure-ThermalCoverage $thermalControl
+$thermalHolder = Ensure-ThermalHolder $thermalControl
 
 $estateReceiptObject = Read-JsonStrict $EstateReceipt
 if ($estateReceiptObject.status -ne "PASS" -or $estateReceiptObject.experiment_id -ne "capture-estate-snapshot") {
@@ -510,6 +552,7 @@ $server = $null
 $powerLimitRestore = $null
 $powerBefore = $null
 $powerAfter = $null
+$primaryFailure = $null
 
 try {
     $gpuQuery = "uuid,name,vbios_version,memory.total,memory.used,driver_version,pci.bus_id,pstate,power.limit,power.draw,utilization.gpu,power.min_limit,power.max_limit,power.default_limit"
@@ -520,7 +563,7 @@ try {
     $baseGpu = Query-GpuRows -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -Query $gpuQuery
     if ($baseGpu.Count -ne 1) { throw "could not locate target GPU in nvidia-smi query" }
     $baseGpu = $baseGpu[0]
-    Ensure-ThermalCandidateIdentity -CandidatePath $ThermalProfileCandidate -Gpu $baseGpu -ModelName $Model
+    Ensure-ThermalControlIdentity -Control $thermalControl -Gpu $baseGpu -ModelName $Model -PythonPath $python -OllamaPath $ollama -NvidiaSmiPath $nvidiaSmi
     $powerBefore = [double]$baseGpu.power_limit_watts
     Ensure-PowerLimits -Row $baseGpu -TargetW $TargetPowerLimitW
     $powerLimitRestore = 115
@@ -538,6 +581,7 @@ try {
     if ($server -eq $null -or $server.HasExited) { throw "failed to start dedicated Ollama server" }
 
     $version = Wait-Ollama -BaseUrl $Endpoint
+    if ([string]$thermalControl.runtime.ollama_version -cne [string]$version.version) { throw "live Ollama version differs from thermal control manifest" }
     $stamp = [DateTimeOffset]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
     $gradientState = Join-Path $OutRoot "gradient-state"
     $functionDir = Join-Path $gradientState "functions\qwen-4060-readiness"
@@ -572,6 +616,7 @@ try {
         throw "function qualification did not retain one exact model digest"
     }
     $modelDigest = [string]$attemptOne.model_digest
+    if ([string]$thermalControl.model.digest -cne $modelDigest) { throw "live model digest differs from thermal control manifest" }
 
     $tags = Invoke-RestMethod -Method Get -Uri ($Endpoint.TrimEnd('/') + "/api/tags") -TimeoutSec 10
     $loaded = Invoke-RestMethod -Method Get -Uri ($Endpoint.TrimEnd('/') + "/api/ps") -TimeoutSec 10
@@ -585,7 +630,8 @@ try {
     $gpuLive = (Query-GpuRows -NvidiaSmi $nvidiaSmi -TargetUuid $GpuUuid -Query $gpuQuery)[0]
     $inventoryLive = Query-AllGpuRows -NvidiaSmi $nvidiaSmi -Query $gpuQuery
     $computeRows = Query-ComputeRows -NvidiaSmi $nvidiaSmi
-    Ensure-OllamaProcessPlacement -TargetUuid $GpuUuid -ComputeRows $computeRows -BeforeInventory $inventoryBefore -LiveInventory $inventoryLive -ModelVramMiB ([double]$loadedModel[0].size_vram / 1MB)
+    $processTree = Get-DedicatedProcessTree -RootPid $server.Id
+    Ensure-OllamaProcessPlacement -TargetUuid $GpuUuid -ComputeRows $computeRows -ProcessTree $processTree -BeforeInventory $inventoryBefore -LiveInventory $inventoryLive -ModelVramMiB ([double]$loadedModel[0].size_vram / 1MB)
 
     $checks = @(
         [ordered]@{ id = "three-host-census-pass"; pass = $true; detail = [string]$estateReceiptObject.receipt_sha256 },
@@ -597,7 +643,7 @@ try {
         [ordered]@{ id = "exact-model-digest"; pass = ($catalogModel.Count -eq 1 -and $loadedModel.Count -eq 1); detail = $modelDigest },
         [ordered]@{ id = "function-replay-pass"; pass = ($qualified.status -eq "PASS"); detail = [string]$functionReceiptObject.receipt_sha256 },
         [ordered]@{ id = "scheduler-spread-refused"; pass = (-not $schedSpread); detail = "OLLAMA_SCHED_SPREAD not present" },
-        [ordered]@{ id = "thermal-profile-bound"; pass = ($thermalPublic.sha256 -and $thermalPrivate.sha256); detail = $profileId },
+        [ordered]@{ id = "thermal-profile-bound"; pass = ($thermalPublic.observed_sha256 -eq $thermalPublic.controlling_sha256 -and $thermalPrivate.observed_sha256 -eq $thermalPrivate.controlling_sha256); detail = $profileId },
         [ordered]@{ id = "thermal-covered-artifacts-verified"; pass = ($thermalCoverage.Count -ge 8); detail = "$($thermalCoverage.Count) artifacts" },
         [ordered]@{ id = "thermal-holder-live"; pass = [bool]$thermalHolder.active; detail = "pid=$($thermalHolder.pid)" },
         [ordered]@{ id = "all-nvidia-gpus-enumerated"; pass = ($inventoryBefore.Count -eq $inventoryLive.Count); detail = ($liveUuids -join ',') },
@@ -619,8 +665,13 @@ try {
             coverage_artifacts = $thermalCoverage
             public_receipt = $thermalPublic.path
             private_receipt = $thermalPrivate.path
-            public_receipt_sha256 = $thermalPublic.sha256
-            private_receipt_sha256 = $thermalPrivate.sha256
+            public_receipt_sha256 = $thermalPublic.observed_sha256
+            private_receipt_sha256 = $thermalPrivate.observed_sha256
+            public_receipt_controlling_sha256 = $thermalPublic.controlling_sha256
+            private_receipt_controlling_sha256 = $thermalPrivate.controlling_sha256
+            control_manifest = $thermalAuthority.path
+            control_manifest_observed_sha256 = $thermalAuthority.observed_sha256
+            control_manifest_expected_sha256 = $thermalAuthority.controlling_sha256
         }
         power_limit_target_watts = $TargetPowerLimitW
         power_before_watts = $powerBefore
@@ -640,6 +691,9 @@ try {
         dedicated_server = [ordered]@{
             pid = $server.Id
             executable = $ollama
+            executable_sha256 = (Get-FileHash -LiteralPath $ollama -Algorithm SHA256).Hash.ToLowerInvariant()
+            creation_time = @($processTree | Where-Object { $_.pid -eq $server.Id })[0].creation_time
+            process_tree = $processTree
             cuda_visible_devices = $GpuUuid
             ollama_host = $ollamaHost
             ollama_vulkan = "0"
@@ -688,6 +742,8 @@ try {
         "--physical-probe", $probePath,
         "--thermal-profile-public-receipt", $thermalPublic.path,
         "--thermal-profile-private-receipt", $thermalPrivate.path,
+        "--thermal-control-manifest", $thermalAuthority.path,
+        "--expected-thermal-control-manifest-sha256", $thermalAuthority.controlling_sha256,
         "--thermal-target-power-limit-watts", "$TargetPowerLimitW",
         "--executor", (Join-Path $TierBenchRoot "examples\anchor_crate\ollama_4060_executor.py"),
         "--python", $python,
@@ -719,6 +775,8 @@ try {
     }
     $acceptedResult = $result
     $physicalBackendReceiptSha = (Read-JsonStrict ([string]$build.receipt)).receipt_sha256
+} catch {
+    $primaryFailure = $_
 } finally {
     $processStopped = $true
     if ($server -and -not $server.HasExited) {
@@ -757,7 +815,7 @@ try {
     }
     $holderReturned = $false
     try {
-        $holderAfter = Ensure-ThermalHolder $thermalCoverage
+        $holderAfter = Ensure-ThermalHolder $thermalControl
         $holderReturned = $holderAfter.active -and $holderAfter.pid -eq $thermalHolder.pid
         if (-not $holderReturned) { Add-Failure -Sink $cleanupFailures -Message "accepted thermal holder did not remain in ordinary control" }
     } catch {
@@ -765,8 +823,11 @@ try {
     }
     $cleanupResult = [ordered]@{
         schema = "tier-bench/anchor-4060-cleanup-result@1"
-        status = if ($cleanupFailures.Count -eq 0) { "PASS" } else { "REFUSED" }
+        status = if ($cleanupFailures.Count -eq 0 -and $null -eq $primaryFailure) { "PASS" } else { "REFUSED" }
         generated_at = [DateTimeOffset]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")
+        primary_failure = if ($primaryFailure) {
+            [ordered]@{ type = $primaryFailure.Exception.GetType().FullName; message = $primaryFailure.Exception.Message }
+        } else { $null }
         endpoint_stopped = $endpointStopped
         process_tree_stopped = $processStopped
         environment_restored = $environmentRestored
@@ -776,9 +837,12 @@ try {
         failures = @($cleanupFailures)
     }
     Write-Utf8NoBomJson (Join-Path $OutRoot "cleanup-result.json") $cleanupResult
-    if ($cleanupFailures.Count -gt 0) {
-        throw ("cleanup incomplete: " + ($cleanupFailures -join "; "))
-    }
+}
+
+if ($primaryFailure -or $cleanupFailures.Count -gt 0) {
+    $primaryText = if ($primaryFailure) { $primaryFailure.Exception.Message } else { "none" }
+    $cleanupText = if ($cleanupFailures.Count) { $cleanupFailures -join "; " } else { "none" }
+    throw "transaction refused; primary failure: $primaryText; cleanup failures: $cleanupText"
 }
 
 $smokeReceipt = [ordered]@{
@@ -795,8 +859,12 @@ $smokeReceipt = [ordered]@{
         estate = $estateReceiptObject.receipt_sha256
         function = $functionReceiptObject.receipt_sha256
         physical_backend = $physicalBackendReceiptSha
-        thermal_profile_public = $thermalPublic.sha256
-        thermal_profile_private = $thermalPrivate.sha256
+        thermal_profile_public_observed = $thermalPublic.observed_sha256
+        thermal_profile_public_controlling = $thermalPublic.controlling_sha256
+        thermal_profile_private_observed = $thermalPrivate.observed_sha256
+        thermal_profile_private_controlling = $thermalPrivate.controlling_sha256
+        thermal_control_manifest_observed = $thermalAuthority.observed_sha256
+        thermal_control_manifest_controlling = $thermalAuthority.controlling_sha256
         thermal_profile_id = $profileId
     }
     thermal_profile = [ordered]@{

@@ -117,9 +117,9 @@
       "sha256": "e1cc19a39b02dbbdb72fe6a8654104eaa95e585a0cb38e79c914334ff6c186b8"
     },
     {
-      "bytes": 30884,
+      "bytes": 31187,
       "path": "tier_runner/anchor_crate_schema.py",
-      "sha256": "8a3604f9925eb36ee12b64f23eaf6410938e71d4345de8f2d4daec1a71f4f24d"
+      "sha256": "c356f944e27095c95c6cf06a2a29fdab2a024f99eec120349e0edcf30dd9c5cb"
     },
     {
       "bytes": 16768,
@@ -142,9 +142,9 @@
       "sha256": "a5fe752eac6741724ecb32dc8498aee46dc262c2f3d44b31b73b53dd199531b4"
     },
     {
-      "bytes": 34943,
+      "bytes": 42189,
       "path": "examples/anchor_crate/ollama_4060_executor.py",
-      "sha256": "c73d8bc7da054567122bd9dbc63570a1249237e3fc4159bcb9e9854f62e0b467"
+      "sha256": "9976a8a905dad2212401442061c9c537d26f6bdfef193b7ded7bd10832f73ee7"
     },
     {
       "bytes": 3854,
@@ -152,19 +152,19 @@
       "sha256": "32ca3b9e1980604a852a52c650624aad03bad1a6b35117605bc524c353df60f7"
     },
     {
-      "bytes": 34396,
+      "bytes": 44857,
       "path": "scripts/build_anchor_4060_manifest.py",
-      "sha256": "fcb42eae898ed7ab50fb9bc8138fc9537a4a80b36eb1d184507011fbe10c2f95"
+      "sha256": "63970f27b00a8e71f21016b9c8ce293e18b0cc3ce0ce1a43208746f9fcc279f4"
     },
     {
-      "bytes": 42330,
+      "bytes": 46906,
       "path": "scripts/run-anchor-crate-4060-smoke.ps1",
-      "sha256": "d4ae34118f846be351937d656a31361fe0c031d1b4b7972ea2ddb46b0ef3c5ab"
+      "sha256": "b7f770853cc8b074a58df02181d644d122b13c8a38f1634a9e59d686e29fda75"
     },
     {
-      "bytes": 46137,
+      "bytes": 56467,
       "path": "tests/test_anchor_crate_physical.py",
-      "sha256": "46a06de9508d4071033bd105fe6c870b0f499769f9b7dc8c3b3f5558986d40a4"
+      "sha256": "d1c1ae56f427dfe90af44dc95ca5904c7aa48c770725330126a12889eaa1c6d9"
     }
   ],
   "id": "community-home-lab.anchor-crate-bundle-v1",

@@ -621,6 +621,7 @@ def _backend(raw: Any, index: int) -> dict[str, Any]:
             "thermal_profile_id",
             "thermal_profile_receipt_sha256",
             "thermal_profile_public_receipt_sha256",
+            "thermal_control_manifest_sha256",
             "fan_governance",
             "power_limit_target_watts",
             "fan_channels",
@@ -736,6 +737,11 @@ def _backend(raw: Any, index: int) -> dict[str, Any]:
         result["thermal_profile_public_receipt_sha256"] = need_digest(
             row["thermal_profile_public_receipt_sha256"],
             f"backends[{index}].thermal_profile_public_receipt_sha256",
+        )
+    if row.get("thermal_control_manifest_sha256") is not None:
+        result["thermal_control_manifest_sha256"] = need_digest(
+            row["thermal_control_manifest_sha256"],
+            f"backends[{index}].thermal_control_manifest_sha256",
         )
     if row.get("fan_governance") is not None:
         result["fan_governance"] = need_text(

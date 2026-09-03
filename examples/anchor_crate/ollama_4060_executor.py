@@ -324,6 +324,7 @@ def require_process_residency(binding: Mapping[str, Any], *, require_loaded: boo
     execution = binding["execution"]
     target_uuid = require_text(execution.get("cuda_visible_devices"), "execution.cuda_visible_devices")
     rows = query_compute_rows(binding)
+    bound_pids = require_process_tree(binding)
     ollama_rows = [row for row in rows if "ollama" in str(row.get("process_name", "")).lower()]
     if not ollama_rows:
         raise ExecutorError("no Ollama compute process is visible to nvidia-smi")
@@ -333,13 +334,83 @@ def require_process_residency(binding: Mapping[str, Any], *, require_loaded: boo
             "Ollama process is not target-specific and is visible on non-target GPU(s): "
             + ",".join(str(row.get("gpu_uuid")) for row in off_target)
         )
-    on_target = [row for row in ollama_rows if str(row.get("gpu_uuid")) == target_uuid]
+    on_target = [
+        row
+        for row in rows
+        if str(row.get("gpu_uuid")) == target_uuid and int(row.get("pid") or -1) in bound_pids
+    ]
     if require_loaded and not on_target:
-        raise ExecutorError("Ollama process is not resident on target GPU")
+        raise ExecutorError("target GPU compute process is not a member of the launched Ollama tree")
     total_on_target = sum(float(row.get("used_memory_mib") or 0.0) for row in on_target)
     if total_on_target <= 0:
         raise ExecutorError("Ollama process is not resident on target GPU (residency below required threshold)")
     return rows
+
+
+def query_process_inventory(binding: Mapping[str, Any]) -> list[dict[str, Any]]:
+    execution = binding["execution"]
+    command = execution.get("process_inventory_command")
+    if not command:
+        script = (
+            "$rows=Get-CimInstance Win32_Process|ForEach-Object{[ordered]@{"
+            "pid=[int]$_.ProcessId;parent_pid=[int]$_.ParentProcessId;"
+            "executable_path=[string]$_.ExecutablePath;"
+            "creation_time=$_.CreationDate.ToUniversalTime().ToString('o')}};"
+            "@($rows)|ConvertTo-Json -Compress"
+        )
+        command = ["powershell.exe", "-NoProfile", "-Command", script]
+    if not isinstance(command, list) or not command or not all(isinstance(item, str) and item for item in command):
+        raise ExecutorError("execution.process_inventory_command must be a string array")
+    try:
+        completed = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+            shell=False,
+            timeout=15,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ExecutorError(f"process inventory query failed: {exc}") from exc
+    if completed.returncode != 0:
+        raise ExecutorError("process inventory query failed")
+    try:
+        value = json.loads(completed.stdout.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ExecutorError("process inventory query returned invalid JSON") from exc
+    rows = value if isinstance(value, list) else [value]
+    if not all(isinstance(row, Mapping) for row in rows):
+        raise ExecutorError("process inventory rows must be objects")
+    return [dict(row) for row in rows]
+
+
+def require_process_tree(binding: Mapping[str, Any]) -> set[int]:
+    execution = binding["execution"]
+    bound = execution.get("ollama_process_tree")
+    root_pid = execution.get("ollama_root_pid")
+    if not isinstance(bound, list) or not bound or not isinstance(root_pid, int):
+        raise ExecutorError("dedicated Ollama process-tree binding is incomplete")
+    current = {int(row.get("pid") or -1): row for row in query_process_inventory(binding)}
+    bound_pids: set[int] = set()
+    for index, row in enumerate(bound):
+        if not isinstance(row, Mapping) or not isinstance(row.get("pid"), int):
+            raise ExecutorError(f"bound process-tree row {index} is invalid")
+        pid = int(row["pid"])
+        live = current.get(pid)
+        if live is None:
+            raise ExecutorError(f"bound Ollama process {pid} is no longer running")
+        expected_path = Path(require_text(row.get("executable_path"), f"process {pid}.executable_path"))
+        live_path = Path(require_text(live.get("executable_path"), f"live process {pid}.executable_path"))
+        if os.path.normcase(str(expected_path.resolve())) != os.path.normcase(str(live_path.resolve())):
+            raise ExecutorError(f"bound Ollama process {pid} executable changed")
+        if live.get("creation_time") != row.get("creation_time"):
+            raise ExecutorError(f"bound Ollama process {pid} creation time changed")
+        if sha256_file(live_path) != require_text(row.get("executable_sha256"), f"process {pid}.executable_sha256"):
+            raise ExecutorError(f"bound Ollama process {pid} executable digest changed")
+        bound_pids.add(pid)
+    if root_pid not in bound_pids:
+        raise ExecutorError("dedicated Ollama root PID is not in its bound tree")
+    return bound_pids
 
 
 def require_environment(binding: Mapping[str, Any]) -> None:
@@ -362,6 +433,23 @@ def require_environment(binding: Mapping[str, Any]) -> None:
 def require_bound_files(binding: Mapping[str, Any]) -> None:
     execution = binding["execution"]
     source_receipts = binding["source_receipts"]
+    control_path = Path(require_text(execution.get("thermal_control_manifest_path"), "execution.thermal_control_manifest_path"))
+    controlling_control = require_text(
+        execution.get("thermal_control_manifest_expected_sha256"),
+        "execution.thermal_control_manifest_expected_sha256",
+    )
+    observed_control = sha256_file(control_path)
+    if observed_control != controlling_control:
+        raise ExecutorError("thermal control manifest controlling identity drift")
+    if source_receipts.get("thermal_control_manifest_observed_sha256") != observed_control:
+        raise ExecutorError("thermal control manifest observed identity differs")
+    try:
+        control = json.loads(control_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ExecutorError("bound thermal control manifest is unreadable") from exc
+    control_receipts = control.get("receipts") if isinstance(control, Mapping) else None
+    if not isinstance(control_receipts, Mapping):
+        raise ExecutorError("bound thermal control receipt identities are missing")
     for path_key, digest_key in (
         ("thermal_profile_public_receipt_path", "thermal_profile_public_receipt_sha256"),
         ("thermal_profile_private_receipt_path", "thermal_profile_private_receipt_sha256"),
@@ -370,9 +458,48 @@ def require_bound_files(binding: Mapping[str, Any]) -> None:
         expected = require_text(source_receipts.get(digest_key), f"source_receipts.{digest_key}")
         if sha256_file(path) != expected:
             raise ExecutorError(f"bound thermal receipt digest drift: {path}")
+    if source_receipts.get("thermal_profile_public_receipt_sha256") != control_receipts.get("public_sha256"):
+        raise ExecutorError("public thermal receipt differs from controlling identity")
+    if source_receipts.get("thermal_profile_private_receipt_sha256") != control_receipts.get("private_sha256"):
+        raise ExecutorError("private thermal receipt differs from controlling identity")
     artifacts = execution.get("thermal_coverage_artifacts")
     if not isinstance(artifacts, list) or not artifacts:
         raise ExecutorError("execution.thermal_coverage_artifacts must be a non-empty array")
+    if artifacts != control.get("artifacts"):
+        raise ExecutorError("thermal coverage differs from controlling manifest")
+    measured_holder = execution.get("thermal_holder")
+    accepted_holder = control.get("holder")
+    if not isinstance(measured_holder, Mapping) or not isinstance(accepted_holder, Mapping):
+        raise ExecutorError("thermal holder identity binding is incomplete")
+    for name in ("executable", "lhm", "pawnio", "policy"):
+        measured = measured_holder.get(name)
+        accepted = accepted_holder.get(name)
+        if not isinstance(measured, Mapping) or measured != accepted:
+            raise ExecutorError(f"thermal holder {name} identity differs from controlling manifest")
+        path = Path(require_text(measured.get("path"), f"thermal holder {name}.path"))
+        if sha256_file(path) != require_text(measured.get("sha256"), f"thermal holder {name}.sha256"):
+            raise ExecutorError(f"thermal holder {name} digest drift")
+    accepted_fans = control.get("fan_channels")
+    measured_fans = execution.get("thermal_fan_channels")
+    if not isinstance(accepted_fans, list) or not isinstance(measured_fans, list):
+        raise ExecutorError("thermal fan identity binding is incomplete")
+    for accepted in accepted_fans:
+        if not isinstance(accepted, Mapping):
+            raise ExecutorError("thermal control fan identity is invalid")
+        matches = [
+            row
+            for row in measured_fans
+            if isinstance(row, Mapping)
+            and row.get("channel") == accepted.get("channel")
+            and row.get("control_identity") == accepted.get("control_identity")
+            and row.get("tachometer_sensor_identity") == accepted.get("tachometer_sensor_identity")
+            and isinstance(row.get("tachometer_rpm"), (int, float))
+            and float(row["tachometer_rpm"]) > 0
+            and isinstance(row.get("timestamp"), str)
+            and bool(row["timestamp"])
+        ]
+        if len(matches) != 1:
+            raise ExecutorError(f"thermal fan evidence differs for {accepted.get('channel')}")
     for index, artifact in enumerate(artifacts):
         if not isinstance(artifact, Mapping):
             raise ExecutorError(f"thermal coverage artifact {index} must be an object")
