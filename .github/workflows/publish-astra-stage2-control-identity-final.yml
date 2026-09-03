@@ -1,0 +1,83 @@
+name: publish-astra-stage2-control-identity-final
+
+on:
+  push:
+    branches:
+      - publish/astra-stage2-control-identity-final-4684-20260903
+
+permissions:
+  actions: read
+  checks: read
+  contents: read
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: publish-astra-stage2-control-identity-final-4684-20260903
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact publication branch
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+          PUBLICATION_BRANCH: publish/astra-stage2-control-identity-final-4684-20260903
+          RELEASE_HEAD: 46840d9ce0e3732b84cd4ad40e828c42326bcc05
+          RELEASE_TREE: ea4e5ececd37bf440af5c01bfe416cd5df8304a5
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=192 origin \
+            "+refs/heads/${PUBLICATION_BRANCH}:refs/astra-final-publication/candidate"
+          git checkout --detach refs/astra-final-publication/candidate
+
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git rev-parse "${RELEASE_HEAD}^{tree}")" = "$RELEASE_TREE"
+          git merge-base --is-ancestor "$RELEASE_HEAD" "$EXPECTED_HEAD"
+          test "$(git status --porcelain)" = ""
+
+      - name: Publish audit, release, readback, PR, and coordination ledger
+        id: publish
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          PUBLICATION_ROOT: ${{ runner.temp }}/astra-stage2-control-identity-final-publication
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python3 automation/publish_astra_stage2_control_identity_final.py
+
+      - name: Upload connected publication evidence
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-final-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.publish.outputs.publication_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Seal publication coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.artifact.outputs.artifact-id }}"
+          test -n "${{ steps.artifact.outputs.artifact-digest }}"
+          {
+            echo
+            echo "release_head=46840d9ce0e3732b84cd4ad40e828c42326bcc05"
+            echo "release_tree=ea4e5ececd37bf440af5c01bfe416cd5df8304a5"
+            echo "audit_comment_id=${{ steps.publish.outputs.audit_comment_id }}"
+            echo "audit_payload=${{ steps.publish.outputs.audit_payload }}"
+            echo "release_comment_id=${{ steps.publish.outputs.release_comment_id }}"
+            echo "release_payload=${{ steps.publish.outputs.release_payload }}"
+            echo "readback_comment_id=${{ steps.publish.outputs.readback_comment_id }}"
+            echo "readback_payload=${{ steps.publish.outputs.readback_payload }}"
+            echo "publication_artifact_id=${{ steps.artifact.outputs.artifact-id }}"
+            echo "publication_artifact_digest=${{ steps.artifact.outputs.artifact-digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"
