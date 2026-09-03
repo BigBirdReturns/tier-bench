@@ -41,6 +41,17 @@ jobs:
         run: |
           set -euo pipefail
           test "$(find .assist -maxdepth 1 -type f -name 'payload-part-*' | wc -l)" -eq 8
+          cat > "$RUNNER_TEMP/expected-parts.sha256" <<'EOF'
+          7bd76e317ffccc0f63d6bccbf1c3e3e3a73513eceef01fff9988d00b8d28277b  .assist/payload-part-00
+          950178e5895896d8d37251aca8bbd4cb807d7a1acd8ff7ac573c2a15e161aef3  .assist/payload-part-01
+          84e64d7ae6f156b4378fca71e3182d0e10944597523874284ea9a1035de7558c  .assist/payload-part-02
+          4dc944895948208dca3b8b7463c37db604e18a6480e713ea330ee86a7e8377af  .assist/payload-part-03
+          2cc94b4d66cc776fb4aaad2e23988da8ac23bde36522ab6a37a12a5cbf8beb14  .assist/payload-part-04
+          d574a80a8b928fcce3f9c6ef80b8e08700f86cad2d702f64fdfbd2e4d281de0d  .assist/payload-part-05
+          f1a7dc54756400a446a505dd446cd4dc9596669e2067bc4987a675b6f26eaabe  .assist/payload-part-06
+          cac12dd59c85847d60d51908041cc60538993c2fe8a8af15512c4fe4cffa9be1  .assist/payload-part-07
+          EOF
+          sha256sum -c "$RUNNER_TEMP/expected-parts.sha256"
           cat .assist/payload-part-* > "$RUNNER_TEMP/payload.b64"
           echo "8c8369de2640287eda98fefed3f6f0154f82e5f1b7ae1f49088d07172097586d  $RUNNER_TEMP/payload.b64" | sha256sum -c -
           base64 --decode "$RUNNER_TEMP/payload.b64" > "$RUNNER_TEMP/payload.tar.gz"
