@@ -1,0 +1,235 @@
+name: NEVER MERGE PR183 HALO3 propagation plan
+
+on:
+  push:
+    branches:
+      - control/pr183-halo3-propagation-plan-20260903
+    paths:
+      - .github/workflows/pr183-halo3-propagation-plan.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.12"]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      PR183: 43aaa07f38d02c5b7eaca8faa753fcba3113b4eb
+      PR155: 77e688e86eb01a629ea2e6fbdca3f8fbf6a78ac3
+      PR156: 952564798a73d8a33c89697db77bf831998a3910
+      PR157: 8865c3096d1c04a7ce17a4a92c9ce73f53310058
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Fetch and verify exact input objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin \
+            "$PR183" "$PR155" "$PR156" "$PR157"
+          for object in "$PR183" "$PR155" "$PR156" "$PR157"; do
+            test "$(git cat-file -t "$object")" = commit
+            test "$(git rev-parse "$object^{commit}")" = "$object"
+          done
+          git merge-base --is-ancestor "$PR155" "$PR183"
+          git merge-base --is-ancestor "$PR155" "$PR156"
+          git merge-base --is-ancestor "$PR156" "$PR157"
+
+      - name: Construct deterministic non-authoritative propagation fixtures
+        id: construct
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/pr183-propagation"
+          mkdir -p "$ROOT"
+
+          git diff --binary --full-index "$PR155" "$PR156" > "$ROOT/pr156-before.patch"
+          git diff --binary --full-index "$PR156" "$PR157" > "$ROOT/pr157-before.patch"
+
+          tree156="$(git merge-tree --write-tree "$PR156" "$PR183")"
+          case "$tree156" in
+            [0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;;
+            *) echo "invalid PR156 merge-tree output: $tree156" >&2; exit 2 ;;
+          esac
+          test "${#tree156}" -eq 40
+
+          export GIT_AUTHOR_NAME="EOC007 propagation fixture"
+          export GIT_AUTHOR_EMAIL="fixture@invalid"
+          export GIT_AUTHOR_DATE="2000-01-01T00:00:00Z"
+          export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+          export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+          export GIT_COMMITTER_DATE="$GIT_AUTHOR_DATE"
+          commit156="$(printf '%s\n' 'FIXTURE ONLY: propagate PR183 into PR156' | git commit-tree "$tree156" -p "$PR156" -p "$PR183")"
+
+          tree157="$(git merge-tree --write-tree "$PR157" "$commit156")"
+          case "$tree157" in
+            [0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;;
+            *) echo "invalid PR157 merge-tree output: $tree157" >&2; exit 2 ;;
+          esac
+          test "${#tree157}" -eq 40
+          commit157="$(printf '%s\n' 'FIXTURE ONLY: propagate repaired PR156 into PR157' | git commit-tree "$tree157" -p "$PR157" -p "$commit156")"
+
+          git diff --binary --full-index "$PR183" "$commit156" > "$ROOT/pr156-after.patch"
+          git diff --binary --full-index "$commit156" "$commit157" > "$ROOT/pr157-after.patch"
+
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"]) / "pr183-propagation"
+          pairs = [
+              ("pr156-before.patch", "pr156-after.patch"),
+              ("pr157-before.patch", "pr157-after.patch"),
+          ]
+          for before_name, after_name in pairs:
+              before = (root / before_name).read_bytes()
+              after = (root / after_name).read_bytes()
+              if before != after:
+                  raise SystemExit(f"child-owned patch drift: {before_name} != {after_name}")
+              (root / f"{before_name}.sha256").write_text(hashlib.sha256(before).hexdigest() + "\n", encoding="utf-8")
+          PY
+
+          {
+            echo "tree156=$tree156"
+            echo "commit156=$commit156"
+            echo "tree157=$tree157"
+            echo "commit157=$commit157"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Qualify the synthetic PR156 propagation tree
+        shell: bash
+        env:
+          SYNTHETIC_PR156: ${{ steps.construct.outputs.commit156 }}
+        run: |
+          set -euo pipefail
+          git checkout --detach "$SYNTHETIC_PR156"
+          test "$(git rev-parse HEAD^{tree})" = "${{ steps.construct.outputs.tree156 }}"
+          python -m py_compile \
+            tier_runner/anchor_crate.py \
+            tier_runner/anchor_crate_runtime.py \
+            tier_runner/halo3_cell_zero.py
+          python tests/test_anchor_crate.py
+          python tests/test_anchor_crate_physical.py
+          python tests/test_menace_edge.py
+          python tests/test_menace_seams.py
+          python tests/test_halo3_cell_zero.py
+          python scripts/verify_anchor_crate_bundle.py --repo .
+          git diff --check "$PR156" "$SYNTHETIC_PR156"
+
+      - name: Qualify the synthetic PR157 propagation tree
+        shell: bash
+        env:
+          SYNTHETIC_PR157: ${{ steps.construct.outputs.commit157 }}
+        run: |
+          set -euo pipefail
+          git checkout --detach "$SYNTHETIC_PR157"
+          test "$(git rev-parse HEAD^{tree})" = "${{ steps.construct.outputs.tree157 }}"
+          python -m py_compile \
+            tier_runner/anchor_crate.py \
+            tier_runner/anchor_crate_runtime.py \
+            tier_runner/halo3_cell_zero.py \
+            tier_runner/halo3_cell_observation.py
+          python tests/test_anchor_crate.py
+          python tests/test_anchor_crate_physical.py
+          python tests/test_menace_edge.py
+          python tests/test_menace_seams.py
+          python tests/test_halo3_cell_zero.py
+          python tests/test_halo3_cell_observation.py
+          python scripts/verify_anchor_crate_bundle.py --repo .
+          git diff --check "$PR157" "$SYNTHETIC_PR157"
+
+      - name: Retain the propagation plan and exact test evidence
+        shell: bash
+        env:
+          TREE156: ${{ steps.construct.outputs.tree156 }}
+          COMMIT156: ${{ steps.construct.outputs.commit156 }}
+          TREE157: ${{ steps.construct.outputs.tree157 }}
+          COMMIT157: ${{ steps.construct.outputs.commit157 }}
+          MATRIX_OS: ${{ matrix.os }}
+          MATRIX_PYTHON: ${{ matrix.python }}
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/pr183-propagation"
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          import platform
+          from pathlib import Path
+
+          root = Path(os.environ["RUNNER_TEMP"]) / "pr183-propagation"
+          before156 = (root / "pr156-before.patch").read_bytes()
+          before157 = (root / "pr157-before.patch").read_bytes()
+          receipt = {
+              "schema": "tier-bench/pr183-halo3-propagation-plan@1",
+              "status": "PASS_DRY_RUN_ONLY",
+              "inputs": {
+                  "pr183": os.environ["PR183"],
+                  "pr155": os.environ["PR155"],
+                  "pr156": os.environ["PR156"],
+                  "pr157": os.environ["PR157"],
+              },
+              "steps": [
+                  {
+                      "branch": "feature/community-home-lab-anchor-crate-v0.2.0",
+                      "transition": "fast-forward",
+                      "from": os.environ["PR155"],
+                      "to": os.environ["PR183"],
+                  },
+                  {
+                      "branch": "feature/halo3-cell-zero-v0.1.0",
+                      "transition": "two-parent-merge",
+                      "first_parent": os.environ["PR156"],
+                      "second_parent": os.environ["PR183"],
+                      "fixture_commit": os.environ["COMMIT156"],
+                      "result_tree": os.environ["TREE156"],
+                      "child_patch_sha256": hashlib.sha256(before156).hexdigest(),
+                  },
+                  {
+                      "branch": "feature/halo3-cell-zero-observation-floor-v0.2.0",
+                      "transition": "two-parent-merge",
+                      "first_parent": os.environ["PR157"],
+                      "second_parent_fixture": os.environ["COMMIT156"],
+                      "fixture_commit": os.environ["COMMIT157"],
+                      "result_tree": os.environ["TREE157"],
+                      "child_patch_sha256": hashlib.sha256(before157).hexdigest(),
+                  },
+              ],
+              "child_patch_identity_preserved": True,
+              "runner": os.environ["MATRIX_OS"],
+              "python_requested": os.environ["MATRIX_PYTHON"],
+              "python_observed": platform.python_version(),
+              "provider_calls": 0,
+              "model_calls": 0,
+              "physical_execution": False,
+              "product_branch_mutation": False,
+              "merge_authority": "none",
+              "claim_boundary": "Synthetic merge commits are non-authoritative fixtures. Only result tree identities, parent order, preserved child patches, and test results may inform a later operator-authorized propagation transaction.",
+          }
+          (root / "PR183-HALO3-PROPAGATION-PLAN.json").write_bytes((json.dumps(receipt, indent=2, sort_keys=True) + "\n").encode("utf-8"))
+          rows = []
+          for path in sorted(item for item in root.iterdir() if item.is_file() and item.name != "SHA256SUMS"):
+              rows.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}")
+          (root / "SHA256SUMS").write_bytes(("\n".join(rows) + "\n").encode("utf-8"))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pr183-halo3-propagation-plan-${{ matrix.os }}-python-${{ matrix.python }}
+          path: ${{ runner.temp }}/pr183-propagation
+          if-no-files-found: error
+          retention-days: 30
