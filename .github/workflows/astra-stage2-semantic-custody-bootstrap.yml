@@ -1,0 +1,114 @@
+name: astra-stage2-semantic-custody-bootstrap
+
+on:
+  push:
+    branches:
+      - assist/astra-stage2-semantic-custody-49cd-20260903
+
+permissions:
+  contents: write
+
+concurrency:
+  group: astra-stage2-semantic-custody-bootstrap-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  apply-qualified-payload:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact staging head
+        shell: bash
+        env:
+          ASSIST_BRANCH: assist/astra-stage2-semantic-custody-49cd-20260903
+          EXPECTED_STAGING_HEAD: ${{ github.sha }}
+          TARGET_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+          TARGET_TREE: dcaee26ad123842c325909f4a083eb9a1d76c7dc
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=96 origin \
+            "+refs/heads/${ASSIST_BRANCH}:refs/bootstrap/candidate"
+          git checkout --detach refs/bootstrap/candidate
+          test "$(git rev-parse HEAD)" = "$EXPECTED_STAGING_HEAD"
+          git merge-base --is-ancestor "$TARGET_HEAD" HEAD
+          test "$(git rev-parse "${TARGET_HEAD}^{tree}")" = "$TARGET_TREE"
+
+      - name: Reconstruct and validate payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find .assist -maxdepth 1 -type f -name 'payload-part-*' | wc -l)" -eq 8
+          cat .assist/payload-part-* > "$RUNNER_TEMP/payload.b64"
+          echo "8c8369de2640287eda98fefed3f6f0154f82e5f1b7ae1f49088d07172097586d  $RUNNER_TEMP/payload.b64" | sha256sum -c -
+          base64 --decode "$RUNNER_TEMP/payload.b64" > "$RUNNER_TEMP/payload.tar.gz"
+          echo "1ae61c10d8b6b5c46aa0e404a4f5174b7bb4aea459233c35b02213594b2a5000  $RUNNER_TEMP/payload.tar.gz" | sha256sum -c -
+          python3 - "$RUNNER_TEMP/payload.tar.gz" <<'PY'
+          import pathlib
+          import sys
+          import tarfile
+
+          expected = {
+              ".github/workflows/astra-stage2-semantic-custody-assist.yml",
+              "astra_stage2/calibration.py",
+              "astra_stage2/ci_runner.py",
+              "astra_stage2/cli.py",
+              "astra_stage2/contracts.py",
+              "schemas/astra-stage2-calibration-result.schema.json",
+              "tests/test_astra_stage2_calibration.py",
+          }
+          archive_path = pathlib.Path(sys.argv[1])
+          with tarfile.open(archive_path, "r:gz") as archive:
+              members = archive.getmembers()
+              names = {member.name for member in members}
+              if names != expected:
+                  raise SystemExit(f"payload path set mismatch: {sorted(names)}")
+              for member in members:
+                  path = pathlib.PurePosixPath(member.name)
+                  if path.is_absolute() or ".." in path.parts or not member.isfile():
+                      raise SystemExit(f"unsafe payload member: {member.name}")
+              archive.extractall(".", filter="data")
+          PY
+
+      - name: Remove transport and validate exact final delta
+        shell: bash
+        env:
+          TARGET_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+        run: |
+          set -euo pipefail
+          rm -rf .assist
+          rm -f .github/workflows/astra-stage2-semantic-custody-bootstrap.yml
+          git diff --check "$TARGET_HEAD" --
+          python3 -m py_compile astra_stage2/*.py tests/test_astra_stage2_calibration.py
+          PYTHONPATH=. python3 -m unittest discover -s tests -p 'test_astra_stage2_calibration.py' -v 2>&1 | tee "$RUNNER_TEMP/semantic-custody-tests.log"
+          grep -q '^Ran 27 tests in ' "$RUNNER_TEMP/semantic-custody-tests.log"
+          mapfile -t observed < <(git diff --name-only "$TARGET_HEAD" -- | sort)
+          printf '%s\n' \
+            '.github/workflows/astra-stage2-semantic-custody-assist.yml' \
+            'astra_stage2/calibration.py' \
+            'astra_stage2/ci_runner.py' \
+            'astra_stage2/cli.py' \
+            'astra_stage2/contracts.py' \
+            'schemas/astra-stage2-calibration-result.schema.json' \
+            'tests/test_astra_stage2_calibration.py' | sort > "$RUNNER_TEMP/expected-final-paths.txt"
+          printf '%s\n' "${observed[@]}" > "$RUNNER_TEMP/observed-final-paths.txt"
+          diff -u "$RUNNER_TEMP/expected-final-paths.txt" "$RUNNER_TEMP/observed-final-paths.txt"
+
+      - name: Commit exact assist implementation
+        shell: bash
+        env:
+          ASSIST_BRANCH: assist/astra-stage2-semantic-custody-49cd-20260903
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          mapfile -t staged < <(git diff --cached --name-only | sort)
+          test "${#staged[@]}" -eq 7
+          git commit -m "fix(astra): bind semantic custody through the full result graph" \
+            -m "Closes the seven authority attacks recorded in issue #172 comments 5520024043 and 5520382426 on a separate assist branch. No provider, model, empirical subject, freeze, merge, or verdict authority is introduced."
+          git push "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "HEAD:refs/heads/${ASSIST_BRANCH}"
