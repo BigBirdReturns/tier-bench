@@ -16,9 +16,14 @@ from .generator import (
     EXPECTED_CASE_COUNT,
     EXPECTED_OBSERVATION_COUNT,
     FAMILIES,
+    GENERATOR_VERSION,
     K_LEVELS,
     R_LEVELS,
     REPLICATES,
+    build_calibration_plan,
+    build_generator_manifest,
+    empirical_control_template,
+    fixture_control_manifest,
     reconstruct_task,
 )
 
@@ -34,6 +39,9 @@ STAGE1_BLOBS = {
     "experiments/astra_kxr/KNOWN-LIMITATIONS.md": "438ccc2b6a44ed4de9c8639cb541d068e3bb11fc",
     "experiments/astra_kxr/PREREGISTRATION.md": "4f9eeebb0f5f7d263b1d576afba13914739acf4a",
 }
+
+STAGE1_JOIN_HEAD = "60bca963d63edca267106bc5c7725c2cc1df8dd7"
+
 
 FORBIDDEN_RETAINED_KEYS = {
     "prompt",
@@ -307,6 +315,18 @@ def _require_clean_git_path(repo_root: Path, relative: str) -> None:
 def verify_stage1_blobs(repo_root: Path) -> dict[str, str]:
     requested_root = repo_root.resolve()
     repository_root = Path(_git_output(requested_root, "rev-parse", "--show-toplevel")).resolve()
+    ancestry = _run_git(
+        repository_root,
+        "merge-base",
+        "--is-ancestor",
+        STAGE1_JOIN_HEAD,
+        "HEAD",
+    )
+    if ancestry.returncode == 1:
+        raise Stage2Error("frozen Stage 1 join is not an ancestor of the current checkout")
+    if ancestry.returncode != 0:
+        detail = ancestry.stderr.strip() or ancestry.stdout.strip() or f"exit {ancestry.returncode}"
+        raise Stage2Error(f"Stage 1 ancestry verification failed: {detail}")
     observed: dict[str, str] = {}
     for relative, expected in STAGE1_BLOBS.items():
         path = repository_root / relative
@@ -362,8 +382,10 @@ def validate_generator_manifest(manifest: Any) -> dict[str, Any]:
         _require_exact_keys(case, GENERATOR_CASE_FIELDS, f"cases[{index}]")
     _walk_forbidden(manifest)
     _verify_self_hash(manifest, "payload_sha256", "generator manifest")
-    if not isinstance(manifest.get("generator_version"), str) or not manifest["generator_version"]:
-        raise Stage2Error("generator_version must be a non-empty string")
+    if manifest.get("generator_version") != GENERATOR_VERSION:
+        raise Stage2Error(
+            f"generator_version must equal the frozen value {GENERATOR_VERSION!r}"
+        )
     if manifest.get("families") != list(FAMILIES):
         raise Stage2Error("generator families differ from frozen order")
     if manifest.get("k_levels") != list(K_LEVELS):
@@ -409,6 +431,9 @@ def validate_generator_manifest(manifest: Any) -> dict[str, Any]:
     }
     if coordinates != expected_coordinates:
         raise Stage2Error("generator coordinate set is incomplete or widened")
+    canonical_manifest = build_generator_manifest()
+    if manifest != canonical_manifest:
+        raise Stage2Error("generator manifest differs from the canonical frozen generator")
     return manifest
 
 
@@ -431,6 +456,8 @@ def validate_control_manifest(
     if manifest.get("schema") != "tier-bench/astra-stage2-control-manifest@1":
         raise Stage2Error("unexpected control-manifest schema")
     _require_sha1(manifest.get("stage1_join_head"), "stage1_join_head")
+    if manifest.get("stage1_join_head") != STAGE1_JOIN_HEAD:
+        raise Stage2Error("control manifest Stage 1 join head differs from the frozen join")
 
     status = manifest.get("status") if evidence_class == "empirical_local" else None
     if evidence_class == "empirical_local" and status not in {
@@ -463,7 +490,20 @@ def validate_control_manifest(
         repository = identity.get("source_repository")
         if not isinstance(repository, str) or not repository:
             raise Stage2Error("source_repository is required")
-        _require_sha1(identity.get("source_commit_sha1"), "source_commit_sha1")
+        source_commit = _require_sha1(identity.get("source_commit_sha1"), "source_commit_sha1")
+        expected_template = (
+            fixture_control_manifest()
+            if evidence_class == "fixture_synthetic"
+            else empirical_control_template()
+        )
+        expected_control = {
+            item["control_id"]: item for item in expected_template["controls"]
+        }[control["control_id"]]
+        expected_identity = expected_control["identity"]
+        if repository != expected_identity["source_repository"]:
+            raise Stage2Error("control source repository differs from the preregistered source")
+        if source_commit != expected_identity["source_commit_sha1"]:
+            raise Stage2Error("control source commit differs from the preregistered source")
 
         if evidence_class == "fixture_synthetic" or bound_empirical:
             for field in IDENTITY_DIGEST_FIELDS:
@@ -483,6 +523,8 @@ def validate_control_manifest(
         _verify_self_hash(manifest, "payload_sha256", "control manifest")
     elif manifest.get("payload_sha256") is not None:
         raise Stage2Error("unbound empirical control manifest must not carry payload_sha256")
+    if evidence_class == "fixture_synthetic" and manifest != fixture_control_manifest():
+        raise Stage2Error("fixture control manifest differs from the canonical frozen fixture")
     return manifest
 
 
@@ -550,10 +592,24 @@ def validate_plan(
             raise Stage2Error("plan control-class mismatch")
         if row.get("control_identity_sha256") != control.get("identity_sha256"):
             raise Stage2Error("plan control-identity mismatch")
+        expected_observation_id = "s2obs_" + sha256_object(
+            {
+                "case_id": case["case_id"],
+                "control_id": control["control_id"],
+                "effort": row["effort"],
+                "generator_manifest_sha256": generator_manifest["payload_sha256"],
+                "control_manifest_sha256": control_manifest["payload_sha256"],
+            }
+        )[:24]
+        if observation_id != expected_observation_id:
+            raise Stage2Error("plan observation id is not derived from the frozen coordinate")
         cell = (row["case_id"], row["control_id"], row["effort"])
         if cell in observed_cells:
             raise Stage2Error(f"duplicate plan cell: {cell}")
         observed_cells.add(cell)
+    canonical_plan = build_calibration_plan(generator_manifest, control_manifest)
+    if plan != canonical_plan:
+        raise Stage2Error("calibration plan differs from the canonical frozen plan")
     return plan
 
 
@@ -579,6 +635,7 @@ def validate_observations(
             f"observation denominator incomplete: expected {EXPECTED_OBSERVATION_COUNT}, observed {len(rows)}"
         )
     expected = {item["observation_id"]: item for item in plan["observations"]}
+    rows_by_id: dict[str, dict[str, Any]] = {}
     seen: set[str] = set()
     evidence_classes: set[str] = set()
     route_bindings: dict[tuple[str, str], str] = {}
@@ -595,6 +652,7 @@ def validate_observations(
         if observation_id in seen:
             raise Stage2Error(f"duplicate observation: {observation_id}")
         seen.add(observation_id)
+        rows_by_id[observation_id] = row
         expected_row = expected[observation_id]
         for field in (
             "case_id",
@@ -651,4 +709,5 @@ def validate_observations(
     evidence_class = next(iter(evidence_classes))
     if evidence_class != control_manifest.get("evidence_class"):
         raise Stage2Error("observation and control-manifest evidence classes differ")
-    return rows, evidence_class
+    canonical_rows = [rows_by_id[item["observation_id"]] for item in plan["observations"]]
+    return canonical_rows, evidence_class

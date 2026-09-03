@@ -132,6 +132,7 @@ def execute(args: argparse.Namespace) -> dict:
         observations,
         plan,
         controls,
+        generator_manifest=generator,
         repo_root=repo_root,
     )
     if (
@@ -177,6 +178,7 @@ def execute(args: argparse.Namespace) -> dict:
             generator_manifest=generator_path,
             control_manifest=controls_path,
             plan=plan_path,
+            fixture_observations=observations_path,
             fixture_result=result_path,
         )
     )

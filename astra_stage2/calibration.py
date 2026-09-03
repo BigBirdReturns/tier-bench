@@ -9,7 +9,13 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from .canonical import Stage2Error, sha256_object, without_field
-from .contracts import STAGE1_BLOBS, validate_observations, verify_stage1_blobs
+from .contracts import (
+    STAGE1_BLOBS,
+    STAGE1_JOIN_HEAD,
+    validate_observations,
+    validate_plan,
+    verify_stage1_blobs,
+)
 from .generator import CONTROL_ROLES, EFFORTS, FAMILIES, K_LEVELS, R_LEVELS
 
 RESULT_SCHEMA = "tier-bench/astra-stage2-calibration-result@1"
@@ -31,23 +37,57 @@ RESULT_FIELDS = frozenset(
         "candidate_thresholds",
         "control_manifest_sha256",
         "empirical_candidate_may_self_freeze",
+        "generator_manifest_sha256",
         "envelopes",
         "evidence_class",
         "feature_sample_count",
         "features",
         "fixture_may_freeze",
         "freeze_authority",
+        "input_binding_sha256",
         "next_required_authority",
         "observation_count",
+        "observation_set_sha256",
         "payload_sha256",
         "plan_sha256",
         "schema",
         "separation_checks",
         "stage1_custody",
+        "stage1_join_head",
         "stage2_frozen",
         "state",
         "threshold_derivation",
     }
+)
+
+ENVELOPE_STAT_FIELDS = frozenset(
+    {
+        "lower_q10",
+        "median",
+        "upper_q90",
+        "minimum",
+        "maximum",
+        "sample_count",
+    }
+)
+SEPARATION_CHECK_FIELDS = frozenset(
+    {
+        "feature",
+        "higher_class",
+        "lower_class",
+        "higher_lower_q10",
+        "lower_upper_q90",
+        "margin",
+        "separated",
+        "derived_midpoint",
+    }
+)
+ACCURACY_GATE_FIELDS = frozenset({"required_minimum", "observed_minimum", "passed"})
+THRESHOLD_DERIVATION = (
+    "midpoint between non-overlapping q10/q90 control envelopes"
+)
+NEXT_REQUIRED_AUTHORITY = (
+    "exact released Sol calibration-law blob plus a separately qualified runtime successor"
 )
 
 
@@ -265,15 +305,39 @@ def derive_candidate_thresholds(envelopes: dict[str, Any]) -> tuple[list[dict[st
     return checks, thresholds
 
 
-def derive_calibration_result(
-    observations: Iterable[Any],
-    plan: dict[str, Any],
-    control_manifest: dict[str, Any],
+def _observation_set_sha256(rows: list[dict[str, Any]]) -> str:
+    return sha256_object([row["record_sha256"] for row in rows])
+
+
+def _input_binding_sha256(
     *,
-    repo_root: Path,
+    generator_manifest: dict[str, Any],
+    control_manifest: dict[str, Any],
+    plan: dict[str, Any],
+    rows: list[dict[str, Any]],
+    stage1_blobs: dict[str, str],
+) -> str:
+    return sha256_object(
+        {
+            "generator_manifest_sha256": generator_manifest["payload_sha256"],
+            "control_manifest_sha256": control_manifest["payload_sha256"],
+            "plan_sha256": plan["payload_sha256"],
+            "observation_set_sha256": _observation_set_sha256(rows),
+            "stage1_join_head": control_manifest["stage1_join_head"],
+            "stage1_blobs": stage1_blobs,
+        }
+    )
+
+
+def _build_calibration_result(
+    *,
+    rows: list[dict[str, Any]],
+    evidence_class: str,
+    generator_manifest: dict[str, Any],
+    control_manifest: dict[str, Any],
+    plan: dict[str, Any],
+    stage1_blobs: dict[str, str],
 ) -> dict[str, Any]:
-    stage1_blobs = verify_stage1_blobs(repo_root)
-    rows, evidence_class = validate_observations(observations, plan, control_manifest)
     samples = derive_feature_samples(rows)
     envelopes = derive_envelopes(samples)
     checks, candidate_thresholds = derive_candidate_thresholds(envelopes)
@@ -300,8 +364,18 @@ def derive_calibration_result(
         "evidence_class": evidence_class,
         "stage2_frozen": False,
         "freeze_authority": "ABSENT_IN_SCAFFOLD",
+        "generator_manifest_sha256": generator_manifest["payload_sha256"],
         "plan_sha256": plan["payload_sha256"],
         "control_manifest_sha256": control_manifest["payload_sha256"],
+        "observation_set_sha256": _observation_set_sha256(rows),
+        "input_binding_sha256": _input_binding_sha256(
+            generator_manifest=generator_manifest,
+            control_manifest=control_manifest,
+            plan=plan,
+            rows=rows,
+            stage1_blobs=stage1_blobs,
+        ),
+        "stage1_join_head": control_manifest["stage1_join_head"],
         "stage1_custody": {
             "status": "VERIFIED",
             "blobs": stage1_blobs,
@@ -317,44 +391,88 @@ def derive_calibration_result(
             "passed": accuracy_gate,
         },
         "candidate_thresholds": thresholds,
-        "threshold_derivation": "midpoint between non-overlapping q10/q90 control envelopes",
+        "threshold_derivation": THRESHOLD_DERIVATION,
         "absolute_timing_transfer": "PROHIBITED",
         "fixture_may_freeze": False,
         "empirical_candidate_may_self_freeze": False,
-        "next_required_authority": "exact released Sol calibration-law blob plus a separately qualified runtime successor",
+        "next_required_authority": NEXT_REQUIRED_AUTHORITY,
     }
     result["payload_sha256"] = sha256_object(result)
-    validate_calibration_result(result)
     return result
 
 
-def validate_calibration_result(result: Any) -> dict[str, Any]:
-    if not isinstance(result, dict) or result.get("schema") != RESULT_SCHEMA:
-        raise Stage2Error("unexpected calibration-result schema")
-    missing = sorted(RESULT_FIELDS - set(result))
-    unexpected = sorted(set(result) - RESULT_FIELDS)
+def _require_result_keys(
+    value: Any, expected: frozenset[str], label: str
+) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise Stage2Error(f"{label} must be an object")
+    missing = sorted(expected - set(value))
+    unexpected = sorted(set(value) - expected)
     if missing or unexpected:
         raise Stage2Error(
-            f"calibration-result property set mismatch: missing={missing}, unexpected={unexpected}"
+            f"{label} property set mismatch: missing={missing}, unexpected={unexpected}"
         )
+    return value
+
+
+def _require_result_sha256(value: Any, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise Stage2Error(f"{label} must be a lowercase SHA-256")
+    return value
+
+
+def _validate_result_shape(result: Any) -> dict[str, Any]:
+    if not isinstance(result, dict) or result.get("schema") != RESULT_SCHEMA:
+        raise Stage2Error("unexpected calibration-result schema")
+    result = _require_result_keys(result, RESULT_FIELDS, "calibration result")
     observed_hash = result.get("payload_sha256")
     if observed_hash != sha256_object(without_field(result, "payload_sha256")):
         raise Stage2Error("calibration-result self-hash mismatch")
+    for field in (
+        "generator_manifest_sha256",
+        "plan_sha256",
+        "control_manifest_sha256",
+        "observation_set_sha256",
+        "input_binding_sha256",
+    ):
+        _require_result_sha256(result.get(field), f"calibration result {field}")
+    if result.get("stage1_join_head") != STAGE1_JOIN_HEAD:
+        raise Stage2Error("calibration result Stage 1 join differs from the frozen join")
+    if result.get("observation_count") != 648:
+        raise Stage2Error("calibration result observation denominator must equal 648")
+    if result.get("feature_sample_count") != 36:
+        raise Stage2Error("calibration result feature-sample denominator must equal 36")
+    if result.get("features") != list(FEATURE_NAMES):
+        raise Stage2Error("calibration result feature order differs from the frozen set")
+    if result.get("threshold_derivation") != THRESHOLD_DERIVATION:
+        raise Stage2Error("calibration result threshold derivation differs")
+    if result.get("absolute_timing_transfer") != "PROHIBITED":
+        raise Stage2Error("absolute timing transfer is prohibited")
+    if result.get("fixture_may_freeze") is not False:
+        raise Stage2Error("fixture freeze authority widened")
+    if result.get("empirical_candidate_may_self_freeze") is not False:
+        raise Stage2Error("empirical candidate self-freeze authority widened")
+    if result.get("next_required_authority") != NEXT_REQUIRED_AUTHORITY:
+        raise Stage2Error("calibration result next authority differs")
     if result.get("stage2_frozen") is not False:
         raise Stage2Error("provider-free scaffold may never emit a frozen Stage 2 state")
     if result.get("freeze_authority") != "ABSENT_IN_SCAFFOLD":
         raise Stage2Error("scaffold freeze authority widened")
-    stage1_custody = result.get("stage1_custody")
-    if not isinstance(stage1_custody, dict):
-        raise Stage2Error("calibration result lacks Stage 1 custody")
-    if set(stage1_custody) != {"status", "blobs"}:
-        raise Stage2Error("calibration result Stage 1 custody property set differs")
+    stage1_custody = _require_result_keys(
+        result.get("stage1_custody"),
+        frozenset({"status", "blobs"}),
+        "calibration result Stage 1 custody",
+    )
     if stage1_custody.get("status") != "VERIFIED":
         raise Stage2Error("calibration result Stage 1 custody is not verified")
     if stage1_custody.get("blobs") != STAGE1_BLOBS:
         raise Stage2Error("calibration result Stage 1 blob set differs from the frozen set")
-    state = result.get("state")
     evidence_class = result.get("evidence_class")
+    state = result.get("state")
     if evidence_class == "fixture_synthetic":
         if state != "FIXTURE_CONFORMANCE_ONLY" or result.get("candidate_thresholds") != {}:
             raise Stage2Error("fixture evidence attempted to carry threshold or freeze authority")
@@ -363,4 +481,90 @@ def validate_calibration_result(result: Any) -> dict[str, Any]:
             raise Stage2Error("invalid empirical calibration state")
     else:
         raise Stage2Error("invalid calibration-result evidence class")
+    return result
+
+
+def derive_calibration_result(
+    observations: Iterable[Any],
+    plan: dict[str, Any],
+    control_manifest: dict[str, Any],
+    *,
+    generator_manifest: dict[str, Any],
+    repo_root: Path,
+) -> dict[str, Any]:
+    stage1_blobs = verify_stage1_blobs(repo_root)
+    plan = validate_plan(plan, generator_manifest, control_manifest)
+    rows, evidence_class = validate_observations(observations, plan, control_manifest)
+    result = _build_calibration_result(
+        rows=rows,
+        evidence_class=evidence_class,
+        generator_manifest=generator_manifest,
+        control_manifest=control_manifest,
+        plan=plan,
+        stage1_blobs=stage1_blobs,
+    )
+    validate_calibration_result(
+        result,
+        generator_manifest=generator_manifest,
+        control_manifest=control_manifest,
+        plan=plan,
+        observations=rows,
+        repo_root=repo_root,
+    )
+    return result
+
+
+def validate_calibration_result(
+    result: Any,
+    *,
+    generator_manifest: dict[str, Any] | None = None,
+    control_manifest: dict[str, Any] | None = None,
+    plan: dict[str, Any] | None = None,
+    observations: Iterable[Any] | None = None,
+    repo_root: Path | None = None,
+) -> dict[str, Any]:
+    result = _validate_result_shape(result)
+    missing_inputs = [
+        name
+        for name, value in (
+            ("generator_manifest", generator_manifest),
+            ("control_manifest", control_manifest),
+            ("plan", plan),
+            ("observations", observations),
+            ("repo_root", repo_root),
+        )
+        if value is None
+    ]
+    if missing_inputs:
+        raise Stage2Error(
+            "calibration-result verification requires the complete input graph: "
+            + ", ".join(missing_inputs)
+        )
+    assert generator_manifest is not None
+    assert control_manifest is not None
+    assert plan is not None
+    assert observations is not None
+    assert repo_root is not None
+
+    stage1_blobs = verify_stage1_blobs(repo_root)
+    validated_plan = validate_plan(plan, generator_manifest, control_manifest)
+    rows, evidence_class = validate_observations(
+        observations, validated_plan, control_manifest
+    )
+    expected = _build_calibration_result(
+        rows=rows,
+        evidence_class=evidence_class,
+        generator_manifest=generator_manifest,
+        control_manifest=control_manifest,
+        plan=validated_plan,
+        stage1_blobs=stage1_blobs,
+    )
+    if result != expected:
+        differing = sorted(
+            field for field in RESULT_FIELDS if result.get(field) != expected.get(field)
+        )
+        raise Stage2Error(
+            "calibration result is not rederived from the exact input graph; "
+            f"differing_fields={differing}"
+        )
     return result
