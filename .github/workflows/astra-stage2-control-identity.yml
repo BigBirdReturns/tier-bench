@@ -1,0 +1,372 @@
+name: astra-stage2-control-identity
+
+on:
+  push:
+    branches:
+      - joint/astra-stage2-control-identities-20260903
+  pull_request:
+    paths:
+      - 'docs/agents/claims/FRR-ASTRA-STAGE2-CONTROL-IDENTITY-1.md'
+      - 'astra_stage2/control_identity.py'
+      - 'scripts/astra_stage2_bind_controls.py'
+      - 'scripts/astra_stage2_bind_controls.ps1'
+      - 'tests/test_astra_stage2_control_identity.py'
+      - 'schemas/astra-stage2-control-binding-input.schema.json'
+      - 'schemas/astra-stage2-executable-control-private.schema.json'
+      - 'schemas/astra-stage2-executable-control-public.schema.json'
+      - 'schemas/astra-stage2-executable-control-set.schema.json'
+      - 'experiments/astra_kxr/stage2/control_identity/**'
+      - '.github/workflows/astra-stage2-control-identity.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-control-identity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  provider-free-identity-binder:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact candidate and bind both parents
+        id: custody
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+          CANDIDATE_BRANCH: joint/astra-stage2-control-identities-20260903
+          JOIN_HEAD: f6b24be2a2c411444f0d4005aed3bd61769733a5
+          SCAFFOLD_HEAD: 9babad4631ef517485c56ea4906aab123e30fad7
+          SCAFFOLD_TREE: 720cbf3f26f2e251613acedc52cff08ef33892dc
+          LAW_HEAD: c36c35bf9b70d879e1e1c9ee2f0296879442df3e
+          LAW_TREE: 87bff3320c680e91eaec66c287d7a1ac3b7fe523
+          LAW_BLOB: 77abe4e177fc61e4f52f56ea64494b113f9662fc
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            git -c protocol.version=2 fetch --no-tags --depth=192 origin \
+              "+refs/heads/${CANDIDATE_BRANCH}:refs/control-id/candidate"
+          else
+            git -c protocol.version=2 fetch --no-tags --depth=192 origin \
+              "+${GITHUB_SHA}:refs/control-id/candidate"
+          fi
+          git checkout --detach refs/control-id/candidate
+          head_sha="$(git rev-parse HEAD)"
+          tree_sha="$(git rev-parse 'HEAD^{tree}')"
+          test "$head_sha" = "$EXPECTED_HEAD"
+          test "$(git rev-list --parents -n 1 "$JOIN_HEAD")" = \
+            "$JOIN_HEAD $SCAFFOLD_HEAD $LAW_HEAD"
+          test "$(git rev-parse "${SCAFFOLD_HEAD}^{tree}")" = "$SCAFFOLD_TREE"
+          test "$(git rev-parse "${LAW_HEAD}^{tree}")" = "$LAW_TREE"
+          test "$(git rev-parse 'HEAD:docs/agents/claims/FRR-ASTRA-STAGE2-1.md')" = "$LAW_BLOB"
+          git merge-base --is-ancestor "$JOIN_HEAD" "$head_sha"
+          git merge-base --is-ancestor "$SCAFFOLD_HEAD" "$head_sha"
+          git merge-base --is-ancestor "$LAW_HEAD" "$head_sha"
+
+          evidence_root="$RUNNER_TEMP/astra-stage2-control-identity"
+          mkdir -p "$evidence_root"
+          git diff --name-only -z "${JOIN_HEAD}...${head_sha}" > "$evidence_root/changed-paths.z"
+          python3 - "$evidence_root/changed-paths.z" <<'PY'
+          from pathlib import Path
+          import sys
+
+          expected = {
+              ".github/workflows/astra-stage2-control-identity.yml",
+              "astra_stage2/control_identity.py",
+              "docs/agents/claims/FRR-ASTRA-STAGE2-CONTROL-IDENTITY-1.md",
+              "experiments/astra_kxr/stage2/control_identity/README.md",
+              "experiments/astra_kxr/stage2/control_identity/binding-template.json",
+              "schemas/astra-stage2-control-binding-input.schema.json",
+              "schemas/astra-stage2-executable-control-private.schema.json",
+              "schemas/astra-stage2-executable-control-public.schema.json",
+              "schemas/astra-stage2-executable-control-set.schema.json",
+              "scripts/astra_stage2_bind_controls.ps1",
+              "scripts/astra_stage2_bind_controls.py",
+              "tests/test_astra_stage2_control_identity.py",
+          }
+          observed = {
+              item.decode("utf-8")
+              for item in Path(sys.argv[1]).read_bytes().split(b"\0")
+              if item
+          }
+          if observed != expected:
+              raise SystemExit(
+                  f"control-identity path set mismatch: expected={sorted(expected)}, "
+                  f"observed={sorted(observed)}"
+              )
+          PY
+          printf 'head_sha=%s\n' "$head_sha" >> "$GITHUB_OUTPUT"
+          printf 'tree_sha=%s\n' "$tree_sha" >> "$GITHUB_OUTPUT"
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+
+      - name: Validate source, schemas, template, and repository coordinates
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            astra_stage2/control_identity.py \
+            scripts/astra_stage2_bind_controls.py \
+            tests/test_astra_stage2_control_identity.py
+          for schema in \
+            schemas/astra-stage2-control-binding-input.schema.json \
+            schemas/astra-stage2-executable-control-private.schema.json \
+            schemas/astra-stage2-executable-control-public.schema.json \
+            schemas/astra-stage2-executable-control-set.schema.json
+          do
+            python3 -m json.tool "$schema" >/dev/null
+          done
+          PYTHONPATH=. python3 scripts/astra_stage2_bind_controls.py template \
+            --out "$EVIDENCE_ROOT/binding-template.generated.json"
+          diff -u \
+            experiments/astra_kxr/stage2/control_identity/binding-template.json \
+            "$EVIDENCE_ROOT/binding-template.generated.json"
+          PYTHONPATH=. python3 scripts/astra_stage2_bind_controls.py --help \
+            > "$EVIDENCE_ROOT/astra-stage2-bind-controls-help.txt"
+          python3 - "$EVIDENCE_ROOT/repository-coordinates.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          from astra_stage2.control_identity import verify_repository_coordinates
+
+          coordinates = verify_repository_coordinates(Path("."))
+          coordinates.pop("repository_root", None)
+          Path(sys.argv[1]).write_text(
+              json.dumps(coordinates, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+
+      - name: Run provider-free hostile tests
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python3 -m unittest discover \
+            -s tests \
+            -p 'test_astra_stage2_control_identity.py' \
+            -v 2>&1 | tee "$EVIDENCE_ROOT/test-control-identity.log"
+          grep -q '^Ran 20 tests in ' "$EVIDENCE_ROOT/test-control-identity.log"
+
+      - name: Build provider-free qualification receipt
+        id: receipt
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+          SOURCE_HEAD: ${{ steps.custody.outputs.head_sha }}
+          SOURCE_TREE: ${{ steps.custody.outputs.tree_sha }}
+        run: |
+          set -euo pipefail
+          cp experiments/astra_kxr/stage2/control_identity/README.md \
+            "$EVIDENCE_ROOT/README.md"
+          cp experiments/astra_kxr/stage2/control_identity/binding-template.json \
+            "$EVIDENCE_ROOT/binding-template.json"
+          cp scripts/astra_stage2_bind_controls.py \
+            "$EVIDENCE_ROOT/astra_stage2_bind_controls.py"
+          cp scripts/astra_stage2_bind_controls.ps1 \
+            "$EVIDENCE_ROOT/astra_stage2_bind_controls.ps1"
+          python3 - "$EVIDENCE_ROOT" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import sys
+
+          from astra_stage2.canonical import sha256_object
+          from astra_stage2.control_identity import (
+              GENERATOR_MANIFEST_SHA256,
+              LAW_BLOB_SHA1,
+              LAW_COMMIT_SHA1,
+              LAW_TREE_SHA1,
+              SCAFFOLD_HEAD_SHA1,
+              SCAFFOLD_TREE_SHA1,
+              STAGE1_JOIN_HEAD_SHA1,
+              binding_template,
+          )
+          from astra_stage2.generator import build_generator_manifest, fixture_control_manifest, build_calibration_plan
+
+          root = pathlib.Path(sys.argv[1])
+          log = (root / "test-control-identity.log").read_text(encoding="utf-8")
+          match = re.findall(r"^Ran\s+(\d+)\s+tests?\s+in\s+", log, flags=re.MULTILINE)
+          if match != ["20"]:
+              raise SystemExit(f"test denominator mismatch: {match}")
+          generator = build_generator_manifest()
+          if generator["payload_sha256"] != GENERATOR_MANIFEST_SHA256:
+              raise SystemExit("generator digest mismatch")
+          fixture_plan = build_calibration_plan(generator, fixture_control_manifest())
+          template = binding_template()
+          if len(template["controls"]) != 3 or fixture_plan["observation_count"] != 648:
+              raise SystemExit("frozen denominator mismatch")
+
+          files = {}
+          for path in sorted(item for item in root.rglob("*") if item.is_file()):
+              if path.name in {"qualification-receipt.json", "SHA256SUMS"}:
+                  continue
+              data = path.read_bytes()
+              files[path.relative_to(root).as_posix()] = {
+                  "bytes": len(data),
+                  "sha256": hashlib.sha256(data).hexdigest(),
+              }
+          receipt = {
+              "schema": "tier-bench/astra-stage2-control-identity-qualification@1",
+              "classification": "PROVIDER_FREE_IDENTITY_BINDER_QUALIFIED_ACTUAL_IDENTITIES_UNBOUND",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "source": {
+                  "branch": "joint/astra-stage2-control-identities-20260903",
+                  "head_sha1": os.environ["SOURCE_HEAD"],
+                  "tree_sha1": os.environ["SOURCE_TREE"],
+                  "join_head_sha1": "f6b24be2a2c411444f0d4005aed3bd61769733a5",
+                  "scaffold_head_sha1": SCAFFOLD_HEAD_SHA1,
+                  "scaffold_tree_sha1": SCAFFOLD_TREE_SHA1,
+                  "law_commit_sha1": LAW_COMMIT_SHA1,
+                  "law_tree_sha1": LAW_TREE_SHA1,
+                  "law_blob_sha1": LAW_BLOB_SHA1,
+                  "stage1_join_head_sha1": STAGE1_JOIN_HEAD_SHA1,
+              },
+              "conformance": {
+                  "tests": int(match[0]),
+                  "control_roles": len(template["controls"]),
+                  "generator_cases": generator["case_count"],
+                  "expected_empirical_observations": fixture_plan["observation_count"],
+                  "template_reproduces": True,
+                  "exact_repository_coordinates_verified": True,
+                  "private_path_and_canary_refusal_tested": True,
+                  "local_byte_drift_refusal_tested": True,
+              },
+              "actual_binding": {
+                  "state": "UNBOUND",
+                  "bound_controls": 0,
+                  "empirical_observations": 0,
+                  "local_model_bytes_seen": 0,
+                  "local_runtime_bytes_seen": 0,
+                  "local_hardware_receipts_seen": 0,
+              },
+              "authority": {
+                  "provider_or_model_calls": 0,
+                  "empirical_subject_execution": False,
+                  "numeric_stage2_freeze": "NOT_ISSUED",
+                  "callable_astra_identity": "UNBOUND",
+                  "live_provider_dispatch": "PROHIBITED",
+                  "optional_24_call_block": "DISABLED",
+                  "benchmark_verdict_authority": "NONE",
+                  "merge_authority": "NONE",
+              },
+              "files": files,
+          }
+          receipt["payload_sha256"] = sha256_object(receipt)
+          (root / "qualification-receipt.json").write_text(
+              json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+          (
+            cd "$EVIDENCE_ROOT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | \
+              xargs -0 sha256sum > SHA256SUMS
+          )
+          printf 'qualification_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$EVIDENCE_ROOT/qualification-receipt.json")" \
+            >> "$GITHUB_OUTPUT"
+          cat "$EVIDENCE_ROOT/qualification-receipt.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload provider-free binder evidence
+        id: evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Build publication index
+        id: publication
+        shell: bash
+        env:
+          SOURCE_HEAD: ${{ steps.custody.outputs.head_sha }}
+          SOURCE_TREE: ${{ steps.custody.outputs.tree_sha }}
+          QUALIFICATION_PAYLOAD: ${{ steps.receipt.outputs.qualification_payload }}
+          EVIDENCE_ARTIFACT_ID: ${{ steps.evidence.outputs.artifact-id }}
+          EVIDENCE_ARTIFACT_DIGEST: ${{ steps.evidence.outputs.artifact-digest }}
+        run: |
+          set -euo pipefail
+          publication_root="$RUNNER_TEMP/astra-stage2-control-identity-publication"
+          mkdir -p "$publication_root"
+          python3 - "$publication_root/publication-index.json" <<'PY'
+          import json
+          import os
+          import pathlib
+          from astra_stage2.canonical import sha256_object
+
+          value = {
+              "schema": "tier-bench/astra-stage2-control-identity-publication@1",
+              "classification": "PROVIDER_FREE_IDENTITY_BINDER_QUALIFIED_ACTUAL_IDENTITIES_UNBOUND",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "workflow_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "source_head_sha1": os.environ["SOURCE_HEAD"],
+              "source_tree_sha1": os.environ["SOURCE_TREE"],
+              "qualification_payload_sha256": os.environ["QUALIFICATION_PAYLOAD"],
+              "evidence_artifact": {
+                  "id": int(os.environ["EVIDENCE_ARTIFACT_ID"]),
+                  "sha256": os.environ["EVIDENCE_ARTIFACT_DIGEST"],
+              },
+              "actual_control_identities": "UNBOUND",
+              "empirical_calibration": "NOT_RUN",
+              "provider_or_model_calls": 0,
+              "numeric_stage2_freeze": "NOT_ISSUED",
+              "live_provider_dispatch": "PROHIBITED",
+              "merge_authority": "NONE",
+          }
+          value["payload_sha256"] = sha256_object(value)
+          pathlib.Path(__import__('sys').argv[1]).write_text(
+              json.dumps(value, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+          printf 'publication_root=%s\n' "$publication_root" >> "$GITHUB_OUTPUT"
+          printf 'publication_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$publication_root/publication-index.json")" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Upload publication index
+        id: publication_artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.publication.outputs.publication_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Seal exact-head artifact coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.evidence.outputs.artifact-id }}"
+          test -n "${{ steps.evidence.outputs.artifact-digest }}"
+          test -n "${{ steps.publication_artifact.outputs.artifact-id }}"
+          test -n "${{ steps.publication_artifact.outputs.artifact-digest }}"
+          {
+            echo
+            echo "source_head=${{ steps.custody.outputs.head_sha }}"
+            echo "source_tree=${{ steps.custody.outputs.tree_sha }}"
+            echo "qualification_payload=${{ steps.receipt.outputs.qualification_payload }}"
+            echo "evidence_artifact_id=${{ steps.evidence.outputs.artifact-id }}"
+            echo "evidence_artifact_digest=${{ steps.evidence.outputs.artifact-digest }}"
+            echo "publication_payload=${{ steps.publication.outputs.publication_payload }}"
+            echo "publication_artifact_id=${{ steps.publication_artifact.outputs.artifact-id }}"
+            echo "publication_artifact_digest=${{ steps.publication_artifact.outputs.artifact-digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"
