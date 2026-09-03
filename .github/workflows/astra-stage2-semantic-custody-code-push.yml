@@ -115,7 +115,7 @@ jobs:
             astra_stage2/contracts.py \
             schemas/astra-stage2-calibration-result.schema.json \
             tests/test_astra_stage2_calibration.py
-          mapfile -t staged < <(git diff --cached --name-only "$TARGET_HEAD" -- | sort)
+          mapfile -t staged < <(git diff --cached --name-only HEAD -- | sort)
           printf '%s\n' "${staged[@]}" > "$RUNNER_TEMP/staged-paths.txt"
           cat > "$RUNNER_TEMP/expected-staged-paths.txt" <<'EOF'
           .assist/payload-part-00
