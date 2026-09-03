@@ -116,10 +116,12 @@ def _qualification(args: argparse.Namespace) -> dict[str, Any]:
     if fixture_result["observation_count"] != EXPECTED_OBSERVATION_COUNT:
         raise Stage2Error("fixture result denominator mismatch")
     stage1_blobs = verify_stage1_blobs(args.repo_root)
+    if fixture_result.get("stage1_custody", {}).get("blobs") != stage1_blobs:
+        raise Stage2Error("fixture result is not bound to the qualified Stage 1 blob set")
     changed_paths = _read_changed_paths(args.changed_paths_z)
     tests = _test_count(args.test_log)
-    if tests != 22:
-        raise Stage2Error(f"expected 22 adversarial tests, observed {tests}")
+    if tests != 27:
+        raise Stage2Error(f"expected 27 adversarial tests, observed {tests}")
     _scan_public_files(
         [
             args.generator_manifest,
@@ -165,6 +167,11 @@ def _qualification(args: argparse.Namespace) -> dict[str, Any]:
             "generator_manifest_sha256": generator["payload_sha256"],
             "control_manifest_sha256": control["payload_sha256"],
             "calibration_plan_sha256": plan["payload_sha256"],
+            "incorrect_deterministic_answer_refusal": True,
+            "unknown_observation_property_refusal": True,
+            "stage1_git_object_verification": True,
+            "stage1_crlf_portability_witness": True,
+            "derive_stage1_custody_binding": True,
         },
         "authority": {
             "sol_calibration_law_blob": "UNBOUND_PENDING_ACTIVE_CLAIM_5516294861",
@@ -235,6 +242,7 @@ def build_parser() -> argparse.ArgumentParser:
     command.add_argument("--out", type=Path, required=True)
 
     command = subparsers.add_parser("derive")
+    command.add_argument("--repo-root", type=Path, required=True)
     command.add_argument("--generator-manifest", type=Path, required=True)
     command.add_argument("--control-manifest", type=Path, required=True)
     command.add_argument("--plan", type=Path, required=True)
@@ -298,13 +306,22 @@ def main(argv: list[str] | None = None) -> int:
             write_jsonl_atomic(args.out, build_fixture_observations(plan))
         elif args.command == "derive":
             generator = _load_generator(args.generator_manifest)
-            control = _load_control(
-                args.control_manifest,
-                empirical_bound=strict_json_load(args.control_manifest).get("evidence_class") == "empirical_local",
+            raw_control = strict_json_load(args.control_manifest)
+            control = validate_control_manifest(
+                raw_control,
+                require_bound_empirical=raw_control.get("evidence_class") == "empirical_local",
             )
             plan = _load_plan(args.plan, generator, control)
             observations = strict_jsonl_load(args.observations)
-            write_json_atomic(args.out, derive_calibration_result(observations, plan, control))
+            write_json_atomic(
+                args.out,
+                derive_calibration_result(
+                    observations,
+                    plan,
+                    control,
+                    repo_root=args.repo_root,
+                ),
+            )
         elif args.command == "verify-stage1":
             result = {
                 "schema": "tier-bench/astra-stage2-stage1-blob-verification@1",
