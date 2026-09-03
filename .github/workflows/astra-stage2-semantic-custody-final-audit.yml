@@ -1,0 +1,195 @@
+name: astra-stage2-semantic-custody-final-audit
+
+on:
+  push:
+    branches:
+      - audit/astra-stage2-semantic-custody-5663-20260903
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-semantic-custody-final-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  independent-provider-free-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact audit head and bind both predecessors
+        id: custody
+        shell: bash
+        env:
+          AUDIT_BRANCH: audit/astra-stage2-semantic-custody-5663-20260903
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+          ASSIST_HEAD: 5663e3eb15c92cbb55d708c5fd365c893748e035
+          ASSIST_TREE: 720cbf3f26f2e251613acedc52cff08ef33892dc
+          PARENT_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+          PARENT_TREE: dcaee26ad123842c325909f4a083eb9a1d76c7dc
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=128 origin \
+            "+refs/heads/${AUDIT_BRANCH}:refs/audit/candidate"
+          git checkout --detach refs/audit/candidate
+          audit_head="$(git rev-parse HEAD)"
+          audit_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$audit_head" = "$EXPECTED_AUDIT_HEAD"
+          test "$(git rev-parse "${ASSIST_HEAD}^{tree}")" = "$ASSIST_TREE"
+          test "$(git rev-parse "${PARENT_HEAD}^{tree}")" = "$PARENT_TREE"
+          git merge-base --is-ancestor "$PARENT_HEAD" "$ASSIST_HEAD"
+          git merge-base --is-ancestor "$ASSIST_HEAD" "$audit_head"
+          evidence_root="$RUNNER_TEMP/astra-stage2-semantic-custody-final-audit"
+          mkdir -p "$evidence_root"
+          git diff --name-only -z "${PARENT_HEAD}...${ASSIST_HEAD}" \
+            > "$evidence_root/assist-changed-paths.z"
+          git diff --name-only -z "${ASSIST_HEAD}...${audit_head}" \
+            > "$evidence_root/audit-changed-paths.z"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$audit_tree" >> "$GITHUB_OUTPUT"
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+
+      - name: Run committed adversarial suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            astra_stage2/*.py \
+            scripts/astra_stage2_calibration.py \
+            tests/test_astra_stage2_calibration.py \
+            audits/astra_stage2_semantic_custody_final_audit.py
+          PYTHONPATH=. python3 -m unittest discover \
+            -s tests \
+            -p 'test_astra_stage2_calibration.py' \
+            -v 2>&1 | tee \
+              "${{ steps.custody.outputs.evidence_root }}/test-astra-stage2.log"
+          grep -q '^Ran 27 tests in ' \
+            "${{ steps.custody.outputs.evidence_root }}/test-astra-stage2.log"
+
+      - name: Execute independent authority attacks
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python3 \
+            audits/astra_stage2_semantic_custody_final_audit.py \
+            --repo-root . \
+            --out \
+              "${{ steps.custody.outputs.evidence_root }}/audit-result.json"
+          python3 - \
+            "${{ steps.custody.outputs.evidence_root }}/audit-result.json" <<'PY'
+          import json
+          import sys
+
+          result = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert result["disposition"] == "PASS_PROVIDER_FREE_ASSIST_ONLY"
+          assert result["failed_count"] == 0
+          assert result["attack_count"] == result["refused_count"]
+          assert result["rederived"]["generator_cases"] == 108
+          assert result["rederived"]["plan_rows"] == 648
+          assert result["rederived"]["fixture_rows"] == 648
+          assert result["rederived"]["feature_samples"] == 36
+          assert result["rederived"]["fixture_state"] == "FIXTURE_CONFORMANCE_ONLY"
+          assert result["rederived"]["fixture_stage2_frozen"] is False
+          assert result["rederived"]["fixture_candidate_thresholds"] == {}
+          assert result["authority"]["provider_or_model_calls"] == 0
+          assert result["authority"]["empirical_subject_execution"] is False
+          PY
+
+      - name: Seal audit ledger
+        id: seal
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+          AUDIT_HEAD: ${{ steps.custody.outputs.audit_head }}
+          AUDIT_TREE: ${{ steps.custody.outputs.audit_tree }}
+          ASSIST_HEAD: 5663e3eb15c92cbb55d708c5fd365c893748e035
+          ASSIST_TREE: 720cbf3f26f2e251613acedc52cff08ef33892dc
+          PARENT_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+          PARENT_TREE: dcaee26ad123842c325909f4a083eb9a1d76c7dc
+        run: |
+          set -euo pipefail
+          cp audits/astra_stage2_semantic_custody_final_audit.py \
+            "$EVIDENCE_ROOT/audit-source.py"
+          cp .github/workflows/astra-stage2-semantic-custody-final-audit.yml \
+            "$EVIDENCE_ROOT/audit-workflow.yml"
+          python3 - "$EVIDENCE_ROOT" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+
+          root = pathlib.Path(sys.argv[1])
+          audit_result = json.loads((root / "audit-result.json").read_text(encoding="utf-8"))
+          ledger = {
+              "schema": "tier-bench/astra-stage2-semantic-custody-audit-ledger@1",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "parent_head": os.environ["PARENT_HEAD"],
+              "parent_tree": os.environ["PARENT_TREE"],
+              "assist_head": os.environ["ASSIST_HEAD"],
+              "assist_tree": os.environ["ASSIST_TREE"],
+              "audit_head": os.environ["AUDIT_HEAD"],
+              "audit_tree": os.environ["AUDIT_TREE"],
+              "audit_result_payload_sha256": audit_result["payload_sha256"],
+              "test_log_sha256": hashlib.sha256(
+                  (root / "test-astra-stage2.log").read_bytes()
+              ).hexdigest(),
+              "disposition": audit_result["disposition"],
+              "attack_count": audit_result["attack_count"],
+              "failed_count": audit_result["failed_count"],
+              "provider_or_model_calls": 0,
+              "empirical_subject_execution": False,
+              "merge_authority": "NONE",
+          }
+          canonical = json.dumps(ledger, sort_keys=True, separators=(",", ":")).encode()
+          ledger["payload_sha256"] = hashlib.sha256(canonical).hexdigest()
+          (root / "audit-ledger.json").write_text(
+              json.dumps(ledger, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+          (
+            cd "$EVIDENCE_ROOT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | \
+              xargs -0 sha256sum > SHA256SUMS
+          )
+          cat "$EVIDENCE_ROOT/audit-result.json" >> "$GITHUB_STEP_SUMMARY"
+          cat "$EVIDENCE_ROOT/audit-ledger.json" >> "$GITHUB_STEP_SUMMARY"
+          printf 'audit_result_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$EVIDENCE_ROOT/audit-result.json")" \
+            >> "$GITHUB_OUTPUT"
+          printf 'ledger_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$EVIDENCE_ROOT/audit-ledger.json")" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Upload independent audit evidence
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-semantic-custody-final-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish exact audit coordinates to the run summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.artifact.outputs.artifact-id }}"
+          test -n "${{ steps.artifact.outputs.artifact-digest }}"
+          {
+            echo
+            echo "audit_head=${{ steps.custody.outputs.audit_head }}"
+            echo "audit_tree=${{ steps.custody.outputs.audit_tree }}"
+            echo "audit_result_payload=${{ steps.seal.outputs.audit_result_payload }}"
+            echo "audit_ledger_payload=${{ steps.seal.outputs.ledger_payload }}"
+            echo "artifact_id=${{ steps.artifact.outputs.artifact-id }}"
+            echo "artifact_digest=${{ steps.artifact.outputs.artifact-digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"
