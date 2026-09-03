@@ -1,0 +1,212 @@
+name: astra-stage2-parent-admission-audit
+
+on:
+  push:
+    branches:
+      - audit/astra-stage2-parent-9babad-20260903
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-parent-admission-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  independent-parent-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact audit head and bind live parent ref
+        id: custody
+        shell: bash
+        env:
+          AUDIT_BRANCH: audit/astra-stage2-parent-9babad-20260903
+          TARGET_BRANCH: joint/astra-stage2-calibration-impl-20260902
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+          TARGET_HEAD: 9babad4631ef517485c56ea4906aab123e30fad7
+          TARGET_TREE: 720cbf3f26f2e251613acedc52cff08ef33892dc
+          PRE_ADMISSION_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+          PRE_ADMISSION_TREE: dcaee26ad123842c325909f4a083eb9a1d76c7dc
+          ADMITTED_ASSIST_HEAD: 5663e3eb15c92cbb55d708c5fd365c893748e035
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=192 origin \
+            "+refs/heads/${AUDIT_BRANCH}:refs/audit/candidate" \
+            "+refs/heads/${TARGET_BRANCH}:refs/audit/target"
+          git checkout --detach refs/audit/candidate
+          audit_head="$(git rev-parse HEAD)"
+          audit_tree="$(git rev-parse 'HEAD^{tree}')"
+          target_head="$(git rev-parse refs/audit/target)"
+          test "$audit_head" = "$EXPECTED_AUDIT_HEAD"
+          test "$target_head" = "$TARGET_HEAD"
+          test "$(git rev-parse "${TARGET_HEAD}^{tree}")" = "$TARGET_TREE"
+          test "$(git rev-parse "${PRE_ADMISSION_HEAD}^{tree}")" = "$PRE_ADMISSION_TREE"
+          test "$(git rev-parse "${ADMITTED_ASSIST_HEAD}^{tree}")" = "$TARGET_TREE"
+          test "$(git rev-list --parents -n 1 "$TARGET_HEAD")" = \
+            "$TARGET_HEAD $PRE_ADMISSION_HEAD $ADMITTED_ASSIST_HEAD"
+          git merge-base --is-ancestor "$PRE_ADMISSION_HEAD" "$TARGET_HEAD"
+          git merge-base --is-ancestor "$ADMITTED_ASSIST_HEAD" "$TARGET_HEAD"
+          git merge-base --is-ancestor "$TARGET_HEAD" "$audit_head"
+          evidence_root="$RUNNER_TEMP/astra-stage2-parent-admission-audit"
+          mkdir -p "$evidence_root"
+          git diff --name-only -z "${PRE_ADMISSION_HEAD}...${TARGET_HEAD}" \
+            > "$evidence_root/parent-admission-paths.z"
+          git diff --name-only -z "${TARGET_HEAD}...${audit_head}" \
+            > "$evidence_root/audit-paths.z"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$audit_tree" >> "$GITHUB_OUTPUT"
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+
+      - name: Run committed provider-free suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            astra_stage2/*.py \
+            scripts/astra_stage2_calibration.py \
+            tests/test_astra_stage2_calibration.py \
+            audits/astra_stage2_parent_admission_audit.py
+          PYTHONPATH=. python3 -m unittest discover \
+            -s tests \
+            -p 'test_astra_stage2_calibration.py' \
+            -v 2>&1 | tee \
+              "${{ steps.custody.outputs.evidence_root }}/test-astra-stage2.log"
+          grep -q '^Ran 27 tests in ' \
+            "${{ steps.custody.outputs.evidence_root }}/test-astra-stage2.log"
+
+      - name: Execute independent parent authority attacks
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=. python3 \
+            audits/astra_stage2_parent_admission_audit.py \
+            --repo-root . \
+            --out "${{ steps.custody.outputs.evidence_root }}/audit-result.json"
+          python3 - \
+            "${{ steps.custody.outputs.evidence_root }}/audit-result.json" <<'PY'
+          import json
+          import sys
+
+          result = json.load(open(sys.argv[1], encoding="utf-8"))
+          assert result["disposition"] == "PASS_PARENT_ADMISSION_PROVIDER_FREE"
+          assert result["failed_count"] == 0
+          assert result["attack_count"] == 14
+          assert result["refused_count"] == 14
+          assert result["rederived"]["generator_cases"] == 108
+          assert result["rederived"]["plan_rows"] == 648
+          assert result["rederived"]["fixture_rows"] == 648
+          assert result["rederived"]["feature_samples"] == 36
+          assert result["rederived"]["fixture_state"] == "FIXTURE_CONFORMANCE_ONLY"
+          assert result["rederived"]["fixture_stage2_frozen"] is False
+          assert result["rederived"]["fixture_candidate_thresholds"] == {}
+          assert result["authority"]["provider_or_model_calls"] == 0
+          assert result["authority"]["empirical_subject_execution"] is False
+          PY
+
+      - name: Seal parent audit ledger
+        id: seal
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+          AUDIT_HEAD: ${{ steps.custody.outputs.audit_head }}
+          AUDIT_TREE: ${{ steps.custody.outputs.audit_tree }}
+          TARGET_HEAD: 9babad4631ef517485c56ea4906aab123e30fad7
+          TARGET_TREE: 720cbf3f26f2e251613acedc52cff08ef33892dc
+          PRE_ADMISSION_HEAD: 49cd5999437c4eb797073357cc1c17685e4a1895
+          ADMITTED_ASSIST_HEAD: 5663e3eb15c92cbb55d708c5fd365c893748e035
+        run: |
+          set -euo pipefail
+          cp audits/astra_stage2_parent_admission_audit.py \
+            "$EVIDENCE_ROOT/audit-source.py"
+          cp .github/workflows/astra-stage2-parent-admission-audit.yml \
+            "$EVIDENCE_ROOT/audit-workflow.yml"
+          python3 - "$EVIDENCE_ROOT" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import sys
+
+          root = pathlib.Path(sys.argv[1])
+          audit_result = json.loads((root / "audit-result.json").read_text(encoding="utf-8"))
+          ledger = {
+              "schema": "tier-bench/astra-stage2-parent-admission-audit-ledger@1",
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "pre_admission_head": os.environ["PRE_ADMISSION_HEAD"],
+              "admitted_assist_head": os.environ["ADMITTED_ASSIST_HEAD"],
+              "target_head": os.environ["TARGET_HEAD"],
+              "target_tree": os.environ["TARGET_TREE"],
+              "audit_head": os.environ["AUDIT_HEAD"],
+              "audit_tree": os.environ["AUDIT_TREE"],
+              "parent_qualification_run": 33750438656,
+              "parent_evidence_artifact": 9891308966,
+              "parent_publication_artifact": 9891309670,
+              "parent_release_comment": 5525119247,
+              "parent_readback_comment": 5525126019,
+              "audit_result_payload_sha256": audit_result["payload_sha256"],
+              "test_log_sha256": hashlib.sha256(
+                  (root / "test-astra-stage2.log").read_bytes()
+              ).hexdigest(),
+              "disposition": audit_result["disposition"],
+              "attack_count": audit_result["attack_count"],
+              "refused_count": audit_result["refused_count"],
+              "failed_count": audit_result["failed_count"],
+              "provider_or_model_calls": 0,
+              "empirical_subject_execution": False,
+              "merge_authority": "NONE",
+          }
+          canonical = json.dumps(ledger, sort_keys=True, separators=(",", ":")).encode()
+          ledger["payload_sha256"] = hashlib.sha256(canonical).hexdigest()
+          (root / "audit-ledger.json").write_text(
+              json.dumps(ledger, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+          (
+            cd "$EVIDENCE_ROOT"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | \
+              xargs -0 sha256sum > SHA256SUMS
+          )
+          cat "$EVIDENCE_ROOT/audit-result.json" >> "$GITHUB_STEP_SUMMARY"
+          cat "$EVIDENCE_ROOT/audit-ledger.json" >> "$GITHUB_STEP_SUMMARY"
+          printf 'audit_result_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$EVIDENCE_ROOT/audit-result.json")" \
+            >> "$GITHUB_OUTPUT"
+          printf 'ledger_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$EVIDENCE_ROOT/audit-ledger.json")" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Upload independent parent audit evidence
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-parent-admission-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish exact parent audit coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.artifact.outputs.artifact-id }}"
+          test -n "${{ steps.artifact.outputs.artifact-digest }}"
+          {
+            echo
+            echo "target_head=9babad4631ef517485c56ea4906aab123e30fad7"
+            echo "target_tree=720cbf3f26f2e251613acedc52cff08ef33892dc"
+            echo "audit_head=${{ steps.custody.outputs.audit_head }}"
+            echo "audit_tree=${{ steps.custody.outputs.audit_tree }}"
+            echo "audit_result_payload=${{ steps.seal.outputs.audit_result_payload }}"
+            echo "audit_ledger_payload=${{ steps.seal.outputs.ledger_payload }}"
+            echo "artifact_id=${{ steps.artifact.outputs.artifact-id }}"
+            echo "artifact_digest=${{ steps.artifact.outputs.artifact-digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"
