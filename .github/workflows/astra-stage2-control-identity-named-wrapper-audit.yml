@@ -1,0 +1,458 @@
+name: astra-stage2-control-identity-named-wrapper-audit
+
+on:
+  push:
+    branches:
+      - audit/astra-stage2-control-identity-named-wrapper-b353-20260903
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: astra-stage2-control-identity-named-wrapper-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-independent-audit:
+    runs-on: windows-2025
+    timeout-minutes: 20
+    outputs:
+      receipt_b64: ${{ steps.seal.outputs.receipt_b64 }}
+      receipt_sha256: ${{ steps.seal.outputs.receipt_sha256 }}
+    steps:
+      - name: Check out exact audit head and exact release worktree
+        id: custody
+        shell: pwsh
+        env:
+          AUDIT_BRANCH: audit/astra-stage2-control-identity-named-wrapper-b353-20260903
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+          RELEASE_HEAD: b3534c9703723ac35343af0209edc34c7587173c
+          RELEASE_TREE: 15f64f02f5dfc6b1e5e59634205dc7d157d9c125
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git init .
+          if ($LASTEXITCODE -ne 0) { throw 'git init failed' }
+          git remote add origin "https://github.com/$env:GITHUB_REPOSITORY.git"
+          if ($LASTEXITCODE -ne 0) { throw 'git remote add failed' }
+          $refspec = "+refs/heads/{0}:refs/named-wrapper-audit/candidate" -f $env:AUDIT_BRANCH
+          git fetch --no-tags --depth=192 origin $refspec
+          if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+          git checkout --detach refs/named-wrapper-audit/candidate
+          if ($LASTEXITCODE -ne 0) { throw 'git checkout failed' }
+
+          $auditHead = (git rev-parse HEAD).Trim()
+          $auditTree = (git rev-parse 'HEAD^{tree}').Trim()
+          if ($auditHead -ne $env:EXPECTED_AUDIT_HEAD) {
+            throw "Audit head mismatch: $auditHead"
+          }
+          if ((git rev-parse "$($env:RELEASE_HEAD)^{tree}").Trim() -ne $env:RELEASE_TREE) {
+            throw 'Release tree mismatch'
+          }
+          git merge-base --is-ancestor $env:RELEASE_HEAD $auditHead
+          if ($LASTEXITCODE -ne 0) { throw 'Audit is not descended from exact release' }
+
+          $releaseRoot = Join-Path $env:RUNNER_TEMP 'astra-named-wrapper-release'
+          git worktree add --detach $releaseRoot $env:RELEASE_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'release worktree creation failed' }
+          if ((git -C $releaseRoot rev-parse HEAD).Trim() -ne $env:RELEASE_HEAD) {
+            throw 'Release worktree head mismatch'
+          }
+          if ((git -C $releaseRoot rev-parse 'HEAD^{tree}').Trim() -ne $env:RELEASE_TREE) {
+            throw 'Release worktree tree mismatch'
+          }
+          if (git -C $releaseRoot status --porcelain) {
+            throw 'Release worktree is dirty'
+          }
+
+          "audit_head=$auditHead" >> $env:GITHUB_OUTPUT
+          "audit_tree=$auditTree" >> $env:GITHUB_OUTPUT
+          "release_root=$releaseRoot" >> $env:GITHUB_OUTPUT
+
+      - name: Refuse provider credentials on Windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $names = @(
+            'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY',
+            'GOOGLE_API_KEY', 'MISTRAL_API_KEY', 'COHERE_API_KEY',
+            'XAI_API_KEY', 'GROQ_API_KEY', 'TOGETHER_API_KEY',
+            'FIREWORKS_API_KEY'
+          )
+          $present = @($names | Where-Object { [string]::IsNullOrEmpty([Environment]::GetEnvironmentVariable($_)) -eq $false })
+          if ($present.Count -ne 0) {
+            throw "Provider credentials are present: $($present -join ',')"
+          }
+
+      - name: Run complete 27-test suite from exact release on Windows
+        id: tests
+        shell: pwsh
+        env:
+          RELEASE_ROOT: ${{ steps.custody.outputs.release_root }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Push-Location -LiteralPath $env:RELEASE_ROOT
+          try {
+            $env:PYTHONPYCACHEPREFIX = Join-Path $env:RUNNER_TEMP 'astra-named-wrapper-pycache'
+            python --version
+            if ($LASTEXITCODE -ne 0) { throw 'python unavailable' }
+            $lines = @(
+              & python -m unittest discover `
+                -s tests `
+                -p 'test_astra_stage2_control_identity*.py' `
+                -v 2>&1
+            )
+            $exitCode = $LASTEXITCODE
+          }
+          finally {
+            Pop-Location
+          }
+          $log = Join-Path $env:RUNNER_TEMP 'named-wrapper-audit-windows-tests.log'
+          $lines | Set-Content -Encoding utf8 $log
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($exitCode -ne 0) { throw "Windows suite failed: $exitCode" }
+          $joined = $lines -join "`n"
+          if ($joined -notmatch '(?m)^Ran 27 tests in ') {
+            throw 'Windows test denominator is not 27'
+          }
+          if ($joined -notmatch '(?m)^OK \(skipped=1\)$') {
+            throw 'Windows suite lacks exactly one expected skip'
+          }
+          "log=$log" >> $env:GITHUB_OUTPUT
+
+      - name: Parse exact release launcher and verify named wrapper boundary
+        shell: pwsh
+        env:
+          RELEASE_ROOT: ${{ steps.custody.outputs.release_root }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $launcher = Join-Path $env:RELEASE_ROOT 'scripts\Invoke-AstraStage2ControlIdentityBinding.ps1'
+          $text = Get-Content -Raw -LiteralPath $launcher
+          [void][scriptblock]::Create($text)
+          $parts = $text -split 'function Invoke-PinnedBinder \{', 2
+          if ($parts.Count -ne 2) { throw 'Named-wrapper function is absent' }
+          $binder = ($parts[1] -split 'function Get-LauncherCoordinates', 2)[0]
+          foreach ($marker in @(
+            '[Parameter(Mandatory = $true)][hashtable]$Parameters',
+            '& $Wrapper @Parameters',
+            '$env:PYTHONPATH = $expectedRoot',
+            'Push-Location -LiteralPath $expectedRoot'
+          )) {
+            if (-not $binder.Contains($marker)) { throw "Named-wrapper marker absent: $marker" }
+          }
+          if ($binder.Contains('@Arguments') -or $binder.Contains('[string[]]$Arguments')) {
+            throw 'Positional wrapper boundary remains'
+          }
+          if ($text -match 'Invoke-PinnedBinder[^\r\n]*-Arguments') {
+            throw 'Positional wrapper call remains'
+          }
+          if ([regex]::Matches($text, '-Parameters @\{').Count -lt 7) {
+            throw 'Named-wrapper denominator below seven'
+          }
+          Write-Host 'NAMED_WRAPPER_PARAMETERS_PASS'
+
+      - name: Verify predecessor workflow successor scope
+        shell: pwsh
+        env:
+          RELEASE_ROOT: ${{ steps.custody.outputs.release_root }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $path = Join-Path $env:RELEASE_ROOT '.github\workflows\astra-stage2-control-identity.yml'
+          $text = Get-Content -Raw -LiteralPath $path
+          if ($text -notmatch '(?ms)^  pull_request:\r?\n    branches:\r?\n      - joint/astra-stage2-calibration-impl-20260902\r?\n    paths:') {
+            throw 'Predecessor PR-base scope absent'
+          }
+          if ($text -notmatch '(?ms)^  push:\r?\n    branches:\r?\n      - joint/astra-stage2-control-identities-20260903') {
+            throw 'Predecessor push lane absent'
+          }
+          Write-Host 'PREDECESSOR_WORKFLOW_SUCCESSOR_SCOPE_PASS'
+
+      - name: Execute exact release Preflight from empty non-repository caller
+        id: preflight
+        shell: pwsh
+        env:
+          RELEASE_ROOT: ${{ steps.custody.outputs.release_root }}
+          RELEASE_HEAD: b3534c9703723ac35343af0209edc34c7587173c
+          RELEASE_TREE: 15f64f02f5dfc6b1e5e59634205dc7d157d9c125
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $launcher = Join-Path $env:RELEASE_ROOT 'scripts\Invoke-AstraStage2ControlIdentityBinding.ps1'
+          $caller = Join-Path $env:RUNNER_TEMP 'astra-named-wrapper-non-repository-caller'
+          $custody = Join-Path $env:RUNNER_TEMP 'astra-named-wrapper-independent-preflight'
+          New-Item -ItemType Directory -Force -Path $caller | Out-Null
+          $callerTop = & git -C $caller rev-parse --show-toplevel 2>$null
+          if ($LASTEXITCODE -eq 0 -and $callerTop) {
+            throw 'Preflight caller unexpectedly belongs to a Git worktree'
+          }
+
+          Push-Location -LiteralPath $caller
+          try {
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+              -File $launcher `
+              -Mode Preflight `
+              -RepoRoot $env:RELEASE_ROOT `
+              -CustodyRoot $custody `
+              -Python python
+            if ($LASTEXITCODE -ne 0) { throw "Preflight failed: $LASTEXITCODE" }
+          }
+          finally {
+            Pop-Location
+          }
+
+          $receiptPath = Join-Path $custody 'PREFLIGHT-RECEIPT.json'
+          $templatePath = Join-Path $custody 'preflight-binder-import-smoke\binding-template.json'
+          if (-not (Test-Path -LiteralPath $receiptPath -PathType Leaf)) { throw 'Preflight receipt absent' }
+          if (-not (Test-Path -LiteralPath $templatePath -PathType Leaf)) { throw 'Binder template absent' }
+          $receipt = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
+          $checks = [ordered]@{
+            schema = 'tier-bench/astra-stage2-control-identity-preflight@2'
+            state = 'PREFLIGHT_PASS'
+            release_head = $env:RELEASE_HEAD
+            release_tree = $env:RELEASE_TREE
+            binder_import_smoke = 'PASS'
+            binder_execution_cwd = 'PINNED_BINDER_ROOT'
+            binder_pythonpath = 'PINNED_BINDER_ROOT'
+            binder_caller_cwd = 'DELIBERATELY_NON_BINDER'
+            actual_executable_control_identities = 'UNBOUND'
+            model_calls = 0
+            provider_calls = 0
+          }
+          foreach ($key in $checks.Keys) {
+            if ($receipt.$key -ne $checks[$key]) { throw "Preflight field mismatch: $key" }
+          }
+          if ($receipt.downloads_performed -ne $false) { throw 'Preflight performed downloads' }
+          $templateSha = (Get-FileHash -Algorithm SHA256 -LiteralPath $templatePath).Hash.ToLowerInvariant()
+          if ($templateSha -ne '0292bf17538352f2c27799254bf951418fa517c1ff81f26223c736ea5e89900d') {
+            throw 'Binder template digest mismatch'
+          }
+          "receipt=$receiptPath" >> $env:GITHUB_OUTPUT
+          "template=$templatePath" >> $env:GITHUB_OUTPUT
+
+      - name: Seal independent Windows named-wrapper receipt
+        id: seal
+        shell: pwsh
+        env:
+          TEST_LOG: ${{ steps.tests.outputs.log }}
+          PREFLIGHT_RECEIPT: ${{ steps.preflight.outputs.receipt }}
+          BINDER_TEMPLATE: ${{ steps.preflight.outputs.template }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $preflight = Get-Content -Raw -LiteralPath $env:PREFLIGHT_RECEIPT | ConvertFrom-Json
+          $value = [ordered]@{
+            schema = 'tier-bench/astra-stage2-control-identity-named-wrapper-windows-audit@1'
+            release_head_sha1 = 'b3534c9703723ac35343af0209edc34c7587173c'
+            release_tree_sha1 = '15f64f02f5dfc6b1e5e59634205dc7d157d9c125'
+            runner = 'windows-2025'
+            tests = 27
+            passed = 26
+            skipped = 1
+            failed = 0
+            errors = 0
+            powershell_parse = 'PASS'
+            launcher_preflight = 'PASS'
+            preflight_schema = [string]$preflight.schema
+            preflight_release_head_sha1 = [string]$preflight.release_head
+            preflight_release_tree_sha1 = [string]$preflight.release_tree
+            binder_import_smoke = [string]$preflight.binder_import_smoke
+            binder_execution_cwd = [string]$preflight.binder_execution_cwd
+            binder_pythonpath = [string]$preflight.binder_pythonpath
+            binder_caller_cwd = [string]$preflight.binder_caller_cwd
+            named_wrapper_parameters = 'PASS'
+            predecessor_workflow_successor_scope = 'PASS'
+            preflight_downloads = 0
+            model_calls = 0
+            provider_calls = 0
+            actual_executable_control_identities = 'UNBOUND'
+            test_log_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:TEST_LOG).Hash.ToLowerInvariant()
+            preflight_receipt_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:PREFLIGHT_RECEIPT).Hash.ToLowerInvariant()
+            binder_template_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:BINDER_TEMPLATE).Hash.ToLowerInvariant()
+          }
+          $json = $value | ConvertTo-Json -Compress
+          $bytes = [Text.Encoding]::UTF8.GetBytes($json)
+          $stream = [IO.MemoryStream]::new($bytes)
+          $sha = (Get-FileHash -Algorithm SHA256 -InputStream $stream).Hash.ToLowerInvariant()
+          "receipt_b64=$([Convert]::ToBase64String($bytes))" >> $env:GITHUB_OUTPUT
+          "receipt_sha256=$sha" >> $env:GITHUB_OUTPUT
+          $json >> $env:GITHUB_STEP_SUMMARY
+
+  independent-provider-free-audit:
+    needs: windows-independent-audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact audit head and exact release worktree
+        id: custody
+        shell: bash
+        env:
+          AUDIT_BRANCH: audit/astra-stage2-control-identity-named-wrapper-b353-20260903
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+          RELEASE_HEAD: b3534c9703723ac35343af0209edc34c7587173c
+          RELEASE_TREE: 15f64f02f5dfc6b1e5e59634205dc7d157d9c125
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=192 origin \
+            "+refs/heads/${AUDIT_BRANCH}:refs/named-wrapper-audit/candidate"
+          git checkout --detach refs/named-wrapper-audit/candidate
+          audit_head="$(git rev-parse HEAD)"
+          audit_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$audit_head" = "$EXPECTED_AUDIT_HEAD"
+          test "$(git rev-parse "${RELEASE_HEAD}^{tree}")" = "$RELEASE_TREE"
+          git merge-base --is-ancestor "$RELEASE_HEAD" "$audit_head"
+
+          release_root="$RUNNER_TEMP/astra-named-wrapper-release"
+          git worktree add --detach "$release_root" "$RELEASE_HEAD"
+          test "$(git -C "$release_root" rev-parse HEAD)" = "$RELEASE_HEAD"
+          test "$(git -C "$release_root" rev-parse 'HEAD^{tree}')" = "$RELEASE_TREE"
+          test -z "$(git -C "$release_root" status --porcelain)"
+
+          evidence_root="$RUNNER_TEMP/astra-named-wrapper-audit"
+          mkdir -p "$evidence_root"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$audit_tree" >> "$GITHUB_OUTPUT"
+          printf 'release_root=%s\n' "$release_root" >> "$GITHUB_OUTPUT"
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse provider credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          names = {
+              'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY',
+              'GOOGLE_API_KEY', 'MISTRAL_API_KEY', 'COHERE_API_KEY',
+              'XAI_API_KEY', 'GROQ_API_KEY', 'TOGETHER_API_KEY',
+              'FIREWORKS_API_KEY',
+          }
+          present = sorted(name for name in names if os.environ.get(name))
+          if present:
+              raise SystemExit('provider credentials present: ' + ','.join(present))
+          PY
+
+      - name: Materialize independent Windows receipt
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+          RECEIPT_B64: ${{ needs.windows-independent-audit.outputs.receipt_b64 }}
+          RECEIPT_SHA: ${{ needs.windows-independent-audit.outputs.receipt_sha256 }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$RECEIPT_B64" | base64 --decode > "$EVIDENCE_ROOT/windows-audit-receipt.json"
+          test "$(sha256sum "$EVIDENCE_ROOT/windows-audit-receipt.json" | awk '{print $1}')" = "$RECEIPT_SHA"
+          python3 -m json.tool "$EVIDENCE_ROOT/windows-audit-receipt.json" >/dev/null
+
+      - name: Download final release artifacts by immutable ID
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          for pair in \
+            '9913884841 release-evidence.zip' \
+            '9913885509 release-publication.zip'; do
+            set -- $pair
+            curl --fail --silent --show-error --location \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/$1/zip" \
+              -o "$EVIDENCE_ROOT/$2"
+          done
+          test "$(sha256sum "$EVIDENCE_ROOT/release-evidence.zip" | awk '{print $1}')" = \
+            'b204099127a49c91445ae206aa462ea18cbb8e666ad0662a487a23701d364949'
+          test "$(sha256sum "$EVIDENCE_ROOT/release-publication.zip" | awk '{print $1}')" = \
+            'ee526047e3b06617ac74c3a862d68c8d79f644aa387538faa7de25a978dd8afd'
+
+      - name: Rerun complete 27-test suite from exact release on Linux
+        shell: bash
+        env:
+          RELEASE_ROOT: ${{ steps.custody.outputs.release_root }}
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          export PYTHONPYCACHEPREFIX="$RUNNER_TEMP/astra-named-wrapper-pycache"
+          cd "$RELEASE_ROOT"
+          PYTHONPATH=. python3 -m unittest discover \
+            -s tests \
+            -p 'test_astra_stage2_control_identity*.py' \
+            -v 2>&1 | tee "$EVIDENCE_ROOT/linux-tests.log"
+          grep -q '^Ran 27 tests in ' "$EVIDENCE_ROOT/linux-tests.log"
+          grep -q '^OK$' "$EVIDENCE_ROOT/linux-tests.log"
+
+      - name: Execute independent artifact and authority audit
+        id: audit
+        shell: bash
+        env:
+          RELEASE_ROOT: ${{ steps.custody.outputs.release_root }}
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          set -euo pipefail
+          PYTHONPATH="$RELEASE_ROOT" python3 \
+            audits/astra_stage2_control_identity_named_wrapper_release_audit.py \
+            --repo-root . \
+            --release-root "$RELEASE_ROOT" \
+            --evidence-zip "$EVIDENCE_ROOT/release-evidence.zip" \
+            --publication-zip "$EVIDENCE_ROOT/release-publication.zip" \
+            --windows-audit-receipt "$EVIDENCE_ROOT/windows-audit-receipt.json" \
+            --out "$EVIDENCE_ROOT/audit-result.json"
+          python3 - "$EVIDENCE_ROOT/audit-result.json" <<'PY'
+          import json, sys
+          value = json.load(open(sys.argv[1], encoding='utf-8'))
+          assert value['disposition'] == 'PASS_NAMED_WRAPPER_BINDER_IMPORT_PROVIDER_FREE_RELEASE_ONLY'
+          assert value['attack_count'] == value['refused_count'] == 7
+          assert value['failed_count'] == 0
+          assert value['rederived']['tests_linux'] == 27
+          assert value['rederived']['tests_windows'] == 27
+          assert value['rederived']['preflight_release_head_sha1'] == 'b3534c9703723ac35343af0209edc34c7587173c'
+          assert value['rederived']['named_wrapper_parameters'] == 'PASS'
+          assert value['rederived']['actual_executable_control_identities'] == 'UNBOUND'
+          assert value['authority']['provider_or_model_calls'] == 0
+          PY
+          printf 'audit_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$EVIDENCE_ROOT/audit-result.json")" \
+            >> "$GITHUB_OUTPUT"
+          cat "$EVIDENCE_ROOT/audit-result.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Seal independent audit package
+        shell: bash
+        env:
+          RELEASE_ROOT: ${{ steps.custody.outputs.release_root }}
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          cp audits/astra_stage2_control_identity_named_wrapper_release_audit.py "$EVIDENCE_ROOT/audit-source.py"
+          cp .github/workflows/astra-stage2-control-identity-named-wrapper-audit.yml "$EVIDENCE_ROOT/audit-workflow.yml"
+          cp "$RELEASE_ROOT/scripts/Invoke-AstraStage2ControlIdentityBinding.ps1" "$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          cp "$RELEASE_ROOT/.github/workflows/astra-stage2-control-identity.yml" "$EVIDENCE_ROOT/predecessor-control-identity-workflow.yml"
+          (cd "$EVIDENCE_ROOT" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+
+      - name: Upload fresh independent named-wrapper audit
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-named-wrapper-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Publish exact audit coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.artifact.outputs.artifact-id }}"
+          test -n "${{ steps.artifact.outputs.artifact-digest }}"
+          {
+            echo "audit_head=${{ steps.custody.outputs.audit_head }}"
+            echo "audit_tree=${{ steps.custody.outputs.audit_tree }}"
+            echo "audit_payload=${{ steps.audit.outputs.audit_payload }}"
+            echo "artifact_id=${{ steps.artifact.outputs.artifact-id }}"
+            echo "artifact_digest=${{ steps.artifact.outputs.artifact-digest }}"
+            echo "release_head=b3534c9703723ac35343af0209edc34c7587173c"
+            echo "release_tree=15f64f02f5dfc6b1e5e59634205dc7d157d9c125"
+          } >> "$GITHUB_STEP_SUMMARY"
