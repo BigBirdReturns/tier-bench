@@ -142,7 +142,7 @@ jobs:
             -p 'test_astra_stage2_control_identity.py' \
             -v 2>&1 | tee "$RUNNER_TEMP/control-id-bootstrap-tests.log"
           grep -q '^Ran 20 tests in ' "$RUNNER_TEMP/control-id-bootstrap-tests.log"
-          python3 scripts/astra_stage2_bind_controls.py template \
+          PYTHONPATH=. python3 scripts/astra_stage2_bind_controls.py template \
             --out "$RUNNER_TEMP/binding-template.generated.json"
           diff -u \
             experiments/astra_kxr/stage2/control_identity/binding-template.json \
