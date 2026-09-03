@@ -29,9 +29,10 @@ jobs:
           set -euo pipefail
           git init .
           git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
           git -c protocol.version=2 fetch --no-tags --depth=32 origin \
-            "+refs/heads/${AUDIT_BRANCH}:refs/remotes/origin/audit"
-          git checkout --detach refs/remotes/origin/audit
+            "+refs/heads/${AUDIT_BRANCH}:refs/audit/candidate"
+          git checkout --detach refs/audit/candidate
           audit_head="$(git rev-parse HEAD)"
           test "$audit_head" = "$EXPECTED_AUDIT_HEAD"
           git merge-base --is-ancestor "$TARGET_HEAD" "$audit_head"
