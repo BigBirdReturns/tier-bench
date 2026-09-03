@@ -157,9 +157,9 @@
       "sha256": "63970f27b00a8e71f21016b9c8ce293e18b0cc3ce0ce1a43208746f9fcc279f4"
     },
     {
-      "bytes": 54815,
+      "bytes": 55014,
       "path": "scripts/run-anchor-crate-4060-smoke.ps1",
-      "sha256": "c6621792b13d4a251510ddd6e78c426720e0208c9dca8be6a6af94a1f6e9d971"
+      "sha256": "c1d2b36066c8b37ffcb95cc20a22d5ba835927dd62a99a49b1c600e117bcbe3a"
     },
     {
       "bytes": 62635,

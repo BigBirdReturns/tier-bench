@@ -1,6 +1,6 @@
-PR #183 Phase C repair-2 local qualification
-generated_at: 2026-09-03T11:15:08Z
-starting_head: af19450ce295f9966ec2f1ddcadf581b5e239ce9
+PR #183 Phase C repair-3 local implementation evidence
+generated_at: 2026-09-03T11:53:16Z
+starting_head: 81f4fbef8383073efdecf22cd177d7369e6c3bab
 platform: Windows
 provider_calls: 0
 network_calls: 0
@@ -8,6 +8,7 @@ gpu_execution: false
 thermal_rerun: false
 physical_A17_execution: false
 git_operations: none
+certification: not performed; controller validation and independent review remain pending
 
 The following block is verbatim stdout from the final successful denominator run.
 
@@ -17,6 +18,9 @@ PYTHON 3.10 GRAMMAR PASS: 4/4
 ===== PRIVATE COORDINATE SCAN =====
 COMMAND: rg -n -F 'S:\Scratch' scripts examples tests tier_runner labs
 PRIVATE COORDINATE SCAN PASS: 0 matches
+===== OUTROOT FALLBACK SCAN =====
+COMMAND: rg -n GetTempPath|RUNNER_TEMP|XDG|\$env:HOME scripts/run-anchor-crate-4060-smoke.ps1
+OUTROOT FALLBACK SCAN PASS: 0 matches
 ===== ANCHOR BUNDLE REPRODUCTION =====
 COMMAND: python -B scripts/verify_anchor_crate_bundle.py --repo .
 {
@@ -36,37 +40,42 @@ MENACE EDGE TESTS PASS: 13/13
 ===== MENACE SEAMS =====
 COMMAND: python -B tests/test_menace_seams.py
 MENACE SEAM TESTS PASS: 12/12
-===== WINDOWS LAUNCHER PARSE =====
-COMMAND: parse scripts/run-anchor-crate-lab.ps1 and scripts/run-anchor-crate-4060-smoke.ps1
-POWERSHELL PARSE PASS: scripts/run-anchor-crate-lab.ps1
-POWERSHELL PARSE PASS: scripts/run-anchor-crate-4060-smoke.ps1
-===== EXECUTED WINDOWS LAUNCHER FAILURE HARNESS =====
-COMMAND: powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/run-anchor-crate-4060-smoke.ps1 <dummy mandatory coordinates> -FailureHarnessScenario <scenario>
-LAUNCHER FAILURE HARNESS PASS: scenario=power-apply-fails smoke_pass_emitted=False environment_restored=True endpoint_stopped=True process_tree_stopped=True power_apply_attempted=True power_restore_attempted=True power_restore_verified=True model_load_attempted=False primary=injected 90 W application failure cleanup=
-LAUNCHER FAILURE HARNESS PASS: scenario=power-restore-fails smoke_pass_emitted=False environment_restored=True endpoint_stopped=True process_tree_stopped=True power_apply_attempted=True power_restore_attempted=True power_restore_verified=False model_load_attempted=True primary= cleanup=power-limit restoration command failed: injected 115 W restoration failure
-LAUNCHER FAILURE HARNESS PASS: scenario=holder-preflight-fails smoke_pass_emitted=False environment_restored=True endpoint_stopped=True process_tree_stopped=True power_apply_attempted=False power_restore_attempted=False power_restore_verified=True model_load_attempted=False primary=injected thermal holder absent or sensor stale before model load cleanup=
-LAUNCHER FAILURE HARNESS PASS: scenario=post-load-primary-cleanup-fails smoke_pass_emitted=False environment_restored=True endpoint_stopped=True process_tree_stopped=True power_apply_attempted=True power_restore_attempted=True power_restore_verified=True model_load_attempted=True primary=injected post-load primary failure cleanup=accepted thermal holder is not healthy after cleanup: injected holder cleanup verification failure
-EXECUTED WINDOWS LAUNCHER FAILURE HARNESS PASS: 4/4
-FULL PR183 REPAIR-2 DENOMINATOR PASS
+===== POWERSHELL PARSE =====
+POWERSHELL PARSE PASS: shell=powershell.exe path=scripts/run-anchor-crate-lab.ps1
+POWERSHELL PARSE PASS: shell=powershell.exe path=scripts/run-anchor-crate-4060-smoke.ps1
+POWERSHELL PARSE STATUS: shell=pwsh unavailable locally at PATH and standard install locations
+===== LAZY OUTROOT PORTABILITY CONTROLS =====
+NO-LOCALAPPDATA HARNESS PASS: scenario=power-apply-fails smoke_pass_emitted=False coordinate_resolution=not_reached
+NO-LOCALAPPDATA HARNESS PASS: scenario=power-restore-fails smoke_pass_emitted=False coordinate_resolution=not_reached
+NO-LOCALAPPDATA HARNESS PASS: scenario=holder-preflight-fails smoke_pass_emitted=False coordinate_resolution=not_reached
+NO-LOCALAPPDATA HARNESS PASS: scenario=post-load-primary-cleanup-fails smoke_pass_emitted=False coordinate_resolution=not_reached
+NO-LOCALAPPDATA HARNESS PASS: 4/4
+NO-LOCALAPPDATA PRODUCTION REFUSAL PASS: OutRoot is required when LOCALAPPDATA is unavailable
+EXPLICIT OUTROOT PASS: normalized before next ordinary precondition; no fallback invented
+LOCALAPPDATA DEFAULT PASS: <LOCALAPPDATA>/AXM/anchor-crate-4060-smoke unchanged
+LAZY OUTROOT PORTABILITY CONTROLS PASS: 7/7
+FULL PR183 REPAIR-3 LOCAL DENOMINATOR PASS
 
 Final counts:
 - executable tests: 57 passed, 0 failed
 - bundle identities: 33 verified, 0 failed
-- repaired Python files under 3.10 grammar: 4 passed, 0 failed
-- PowerShell launchers parsed: 2 passed, 0 failed
-- executed launcher failure scenarios: 4 passed, 0 failed
-- committed private-coordinate matches: 0
+- Python 3.10 grammar files: 4 passed, 0 failed
+- Windows PowerShell launcher parses: 2 passed, 0 failed
+- no-LOCALAPPDATA harness scenarios: 4 passed, 0 failed
+- lazy OutRoot portability controls: 7 passed, 0 failed
+- forbidden fallback matches: 0
+- private-coordinate matches: 0
 
-Zero-generation hostile execute results:
-- environment drift: refused before /api/generate; generation counter 0
-- process-tree drift: refused before /api/generate; generation counter 0
-- power drift: refused before /api/generate; generation counter 0
-- placement drift: refused before /api/generate; generation counter 0
-- successful control: preflight and postflight runtime identities present in executor evidence
+Control-flow evidence:
+1. Parameter binding assigns OutRoot the inert empty string.
+2. FailureHarnessScenario invokes the existing four-scenario state machine and returns.
+3. Only production mode resolves empty OutRoot from LOCALAPPDATA or throws the typed refusal.
+4. The selected OutRoot is normalized with GetFullPath.
+5. TierBenchRoot and every other ordinary production coordinate resolve afterward.
+
+Local runtime limitation:
+- pwsh was unavailable at PATH and standard PowerShell 7 install locations, so no local pwsh parse or execution is claimed. The principal cross-platform Python harness test was retained unchanged for controller-owned Ubuntu matrix execution.
 
 Development-run notes:
-- Two preliminary physical-suite attempts were blocked before test execution by sandbox filesystem PermissionError; the required suite then passed 14/14 outside that filesystem restriction.
-- One preliminary denominator command stopped on a stale non-existent `launchers` scan root; the corrected complete denominator above was rerun from the beginning and passed.
-
-Remote-only hold:
-- Repair-2 Python 3.10/3.12 by Windows/Ubuntu and exact-head workflows require controller commit/push and remote CI. Prior-head remote evidence is not represented as repair-2 exact-head evidence.
+- The first portability command stopped before execution when it required an unavailable local pwsh runtime.
+- The first Windows portability probe passed harness and typed-refusal controls, then stopped because its expected next-precondition text differed from the launcher's existing diagnostic. The corrected complete controls and final denominator above passed without source changes from that diagnostic adjustment.

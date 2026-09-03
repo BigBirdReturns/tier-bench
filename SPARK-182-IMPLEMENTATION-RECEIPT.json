@@ -5,8 +5,8 @@
     "repair_packet":  "PR183-REPAIR-01",
     "independent_review":  "5097673590",
     "repaired_head_supplied_by_controller":  "63c228e8ef4985fa50d7cca6a771a9b9a170292e",
-    "generated_at":  "2026-09-03T11:15:08Z",
-    "disposition":  "PHASE_C_REPAIR_2_IMPLEMENTED_AND_LOCALLY_QUALIFIED",
+    "generated_at":  "2026-09-03T11:53:16Z",
+    "disposition":  "PHASE_C_REPAIR_3_IMPLEMENTED_AWAITING_CONTROLLER_VALIDATION",
     "files_changed":  [
                           {
                               "path":  "examples/anchor_crate/ollama_4060_executor.py",
@@ -267,6 +267,101 @@
                                       "physical_a17_execution":  false,
                                       "thermal_rerun":  false,
                                       "git_operations":  "none"
+                                  }
+                 },
+    "repair_3":  {
+                     "repair_packet":  "PR183-REPAIR-03",
+                     "governing_dispatch":  "PR183-REPAIR-03-DISPATCH",
+                     "exact_starting_head":  "81f4fbef8383073efdecf22cd177d7369e6c3bab",
+                     "substantive_phase_c_findings_at_starting_head":  "closed; not reopened by this portability repair",
+                     "disposition":  "BOUNDED_PORTABILITY_REPAIR_IMPLEMENTED_AND_LOCALLY_WITNESSED_NOT_CERTIFIED",
+                     "changed_paths_before_receipt_update":  [
+                                                                 {
+                                                                     "path":  "scripts/run-anchor-crate-4060-smoke.ps1",
+                                                                     "bytes":  55014,
+                                                                     "sha256":  "c1d2b36066c8b37ffcb95cc20a22d5ba835927dd62a99a49b1c600e117bcbe3a"
+                                                                 },
+                                                                 {
+                                                                     "path":  "labs/community-home-lab/anchor-crate/bundle_manifest.json",
+                                                                     "bytes":  6624,
+                                                                     "sha256":  "004478a91266aa8d893959b98df0efd7b002ddf28e205863ed2c39e5bde6c8d7"
+                                                                 },
+                                                                 {
+                                                                     "path":  "PR183-BODY-REPAIR3.md",
+                                                                     "bytes":  3099,
+                                                                     "sha256":  "cfde6cde20016b2f59e7dbd3dad03dc1a1048d03f6f550b10a8be282fd4b316c"
+                                                                 },
+                                                                 {
+                                                                     "path":  "SPARK-182-TEST-EVIDENCE.txt",
+                                                                     "bytes":  4206,
+                                                                     "sha256":  "94bd94fa263d403d186430fe04de1299465d028173f72a0505aa47fdaec98d6a"
+                                                                 }
+                                                             ],
+                     "lazy_outroot_control_flow":  [
+                                                       "[string]$OutRoot = \"\"",
+                                                       "FailureHarnessScenario invocation and return",
+                                                       "LOCALAPPDATA default or exact typed refusal",
+                                                       "[IO.Path]::GetFullPath($OutRoot)",
+                                                       "ordinary coordinate resolution begins"
+                                                   ],
+                     "harness_before_coordinate_resolution":  {
+                                                                  "proven":  true,
+                                                                  "localappdata_present":  false,
+                                                                  "coordinates":  "intentionally unresolvable",
+                                                                  "scenarios_passed":  4,
+                                                                  "scenarios_failed":  0
+                                                              },
+                     "no_localappdata_production":  {
+                                                        "exit":  "refused",
+                                                        "exact_message":  "OutRoot is required when LOCALAPPDATA is unavailable",
+                                                        "later_operations_started":  false
+                                                    },
+                     "explicit_outroot":  {
+                                              "accepted":  true,
+                                              "normalized":  true,
+                                              "invented_fallback":  false,
+                                              "next_precondition":  "thermal control manifest identity"
+                                          },
+                     "localappdata_default":  {
+                                                  "preserved":  true,
+                                                  "relative_path":  "AXM/anchor-crate-4060-smoke"
+                                              },
+                     "qualification":  {
+                                           "executable_tests":  {
+                                                                    "passed":  57,
+                                                                    "failed":  0
+                                                                },
+                                           "bundle_files":  {
+                                                                "verified":  33,
+                                                                "failed":  0
+                                                            },
+                                           "python_310_grammar":  {
+                                                                      "passed":  4,
+                                                                      "failed":  0
+                                                                  },
+                                           "windows_powershell_parses":  {
+                                                                             "passed":  2,
+                                                                             "failed":  0
+                                                                         },
+                                           "pwsh_local_status":  "unavailable",
+                                           "no_localappdata_harness":  {
+                                                                           "passed":  4,
+                                                                           "failed":  0
+                                                                       },
+                                           "outroot_controls":  {
+                                                                    "passed":  7,
+                                                                    "failed":  0
+                                                                },
+                                           "forbidden_fallback_matches":  0,
+                                           "private_coordinate_matches":  0
+                                       },
+                     "controls":  {
+                                      "provider_calls":  0,
+                                      "gpu_execution":  false,
+                                      "physical_a17_execution":  false,
+                                      "thermal_rerun":  false,
+                                      "git_operations":  "none",
+                                      "certification_performed":  false
                                   }
                  }
 }

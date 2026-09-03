@@ -9,7 +9,7 @@ param(
     [Parameter(Mandatory = $true)][string]$ThermalProfilePrivateReceipt,
     [Parameter(Mandatory = $true)][string]$ThermalControlManifest,
     [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{64}$')][string]$ExpectedThermalControlManifestSha256,
-    [string]$OutRoot = (Join-Path $env:LOCALAPPDATA "AXM\anchor-crate-4060-smoke"),
+    [string]$OutRoot = "",
     [string]$Model = "qwen3.5:9b-q4_K_M",
     [string]$Endpoint = "http://127.0.0.1:11442",
     [string]$BackendId = "backend.cuda4060-qwen35-physical",
@@ -694,12 +694,19 @@ if ($FailureHarnessScenario) {
     return
 }
 
+if ([string]::IsNullOrWhiteSpace($OutRoot)) {
+    if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+        throw "OutRoot is required when LOCALAPPDATA is unavailable"
+    }
+    $OutRoot = Join-Path $env:LOCALAPPDATA "AXM\anchor-crate-4060-smoke"
+}
+$OutRoot = [IO.Path]::GetFullPath($OutRoot)
+
 $TierBenchRoot = Resolve-DirectoryStrict $TierBenchRoot "Tier Bench root"
 $GradientRoot = Resolve-DirectoryStrict $GradientRoot "Home Lab Gradient root"
 $EstateReceipt = Resolve-FileStrict $EstateReceipt "estate receipt"
 $EstateObservation = Resolve-FileStrict $EstateObservation "estate observation"
 $ControlHostObservation = Resolve-FileStrict $ControlHostObservation "control-host observation"
-$OutRoot = [IO.Path]::GetFullPath($OutRoot)
 if (Test-Path -LiteralPath $OutRoot) { throw "output root already exists: $OutRoot" }
 New-Item -ItemType Directory -Path $OutRoot -Force | Out-Null
 
