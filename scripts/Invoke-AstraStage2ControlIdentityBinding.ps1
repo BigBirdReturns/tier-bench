@@ -456,7 +456,7 @@ function Invoke-PinnedBinder {
         $exitCode = $LASTEXITCODE
         if ($exitCode -ne 0) {
             throw (
-                "Pinned binder command failed ($exitCode) from $expectedRoot: " +
+                "Pinned binder command failed ($exitCode) from ${expectedRoot}: " +
                 ($Arguments -join ' ')
             )
         }

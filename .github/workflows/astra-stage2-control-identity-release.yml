@@ -225,6 +225,7 @@ jobs:
 
           expected = {
               ".github/workflows/astra-stage2-control-identity-release.yml",
+              ".github/workflows/astra-stage2-control-identity.yml",
               "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1",
               "tests/test_astra_stage2_control_identity.py",
               "tests/test_astra_stage2_control_identity_release.py",
@@ -238,6 +239,29 @@ jobs:
               raise SystemExit(
                   f"release path set mismatch: expected={sorted(expected)}, "
                   f"observed={sorted(observed)}"
+              )
+
+          predecessor = Path(
+              ".github/workflows/astra-stage2-control-identity.yml"
+          ).read_text(encoding="utf-8")
+          required_scope = (
+              "  pull_request:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-calibration-impl-20260902\n"
+              "    paths:\n"
+          )
+          if required_scope not in predecessor:
+              raise SystemExit(
+                  "predecessor workflow lacks its exact PR-base scope"
+              )
+          required_push = (
+              "  push:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-control-identities-20260903\n"
+          )
+          if required_push not in predecessor:
+              raise SystemExit(
+                  "predecessor workflow lost its candidate push lane"
               )
           PY
 
@@ -311,6 +335,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          cp .github/workflows/astra-stage2-control-identity.yml \
+            "$EVIDENCE_ROOT/predecessor-control-identity-workflow.yml"
           cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \
             "$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1"
           cp scripts/astra_stage2_bind_controls.py \
@@ -437,6 +463,7 @@ jobs:
                   "powershell_parse_windows": True,
                   "windows_preflight_executed": True,
                   "repository_root_discovery_tested": True,
+                  "predecessor_workflow_successor_scope": True,
                   "cross_platform_runtime_fixture": True,
               },
               "actual_binding": {
@@ -543,6 +570,7 @@ jobs:
               "pinned_launcher": (
                   "Invoke-AstraStage2ControlIdentityBinding.ps1"
               ),
+              "predecessor_workflow_successor_scope": True,
               "actual_control_identities": "UNBOUND",
               "empirical_calibration": "NOT_RUN",
               "provider_or_model_calls": 0,

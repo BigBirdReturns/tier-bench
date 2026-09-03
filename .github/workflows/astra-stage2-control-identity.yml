@@ -5,6 +5,8 @@ on:
     branches:
       - joint/astra-stage2-control-identities-20260903
   pull_request:
+    branches:
+      - joint/astra-stage2-calibration-impl-20260902
     paths:
       - 'docs/agents/claims/FRR-ASTRA-STAGE2-CONTROL-IDENTITY-1.md'
       - 'astra_stage2/control_identity.py'
