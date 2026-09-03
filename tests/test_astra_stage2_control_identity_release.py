@@ -105,12 +105,22 @@ class ControlIdentityReleaseTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden.lower(), self.text.lower())
 
-    def test_26_preflight_is_non_downloading_and_non_authoritative(self) -> None:
+    def test_26_preflight_exercises_pinned_binder_import_boundary(self) -> None:
         self.assertIn(
             "[ValidateSet('Preflight', 'Prepare', 'Bind', 'Verify')]",
             self.text,
         )
+        self.assertIn("function Invoke-BinderCommand", self.text)
+        self.assertIn("Push-Location -LiteralPath $BinderRoot", self.text)
+        self.assertIn("$env:PYTHONPATH = $BinderRoot", self.text)
+        self.assertIn("'template'", self.text)
+        self.assertIn(
+            "schema = 'tier-bench/astra-stage2-control-identity-preflight@2'",
+            self.text,
+        )
         self.assertIn("state = 'PREFLIGHT_PASS'", self.text)
+        self.assertIn("binder_command_import_probe = 'PASS'", self.text)
+        self.assertIn("binder_template_probe_sha256", self.text)
         self.assertIn("downloads_performed = $false", self.text)
         self.assertIn("model_calls = 0", self.text)
         self.assertIn("provider_calls = 0", self.text)
@@ -118,6 +128,7 @@ class ControlIdentityReleaseTests(unittest.TestCase):
             "actual_executable_control_identities = 'UNBOUND'",
             self.text,
         )
+        self.assertNotIn("& $wrapper -Command", self.text)
 
     def test_27_bind_refuses_placeholder_runtime_and_effort_mapping(self) -> None:
         self.assertRegex(
@@ -126,9 +137,13 @@ class ControlIdentityReleaseTests(unittest.TestCase):
         )
         self.assertIn("non-authoritative template", self.text)
         self.assertIn("Bind is refused", self.text)
-        self.assertIn("-Command validate-config", self.text)
-        self.assertIn("-Command bind", self.text)
-        self.assertIn("-Command verify", self.text)
+        for command in (
+            "'validate-config'",
+            "'bind'",
+            "'verify'",
+        ):
+            self.assertIn(command, self.text)
+        self.assertNotIn("& $wrapper -Command", self.text)
 
 
 if __name__ == "__main__":
