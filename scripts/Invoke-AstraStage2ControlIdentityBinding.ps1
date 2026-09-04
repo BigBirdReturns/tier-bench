@@ -12,10 +12,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$BinderHead = 'af03cef494a509ab7ba5df29fa4b4ccba423f1f8'
-$BinderTree = '519ea2f8f448a464e817a024ad8ed1ac64493931'
-$LawHead = 'c36c35bf9b70d879e1e1c9ee2f0296879442df3e'
-$LawBlob = '77abe4e177fc61e4f52f56ea64494b113f9662fc'
+$BinderHead = 'c8f914073cb11da29925ccd5d2167f661816e1fd'
+$BinderTree = 'e0f5e6e72e5ba3666957d9d5ad1a7a230839f6a5'
+$LawHead = '66699d317be4146847485828819f8ffb76277eb7'
+$LawBlob = 'a7dc64135af76ca5e081d30737d0ba08a38a57b1'
 $ScaffoldHead = '9babad4631ef517485c56ea4906aab123e30fad7'
 $Stage1Join = '60bca963d63edca267106bc5c7725c2cc1df8dd7'
 
