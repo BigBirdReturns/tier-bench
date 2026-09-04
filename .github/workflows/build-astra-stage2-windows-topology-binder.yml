@@ -1,0 +1,426 @@
+name: build-astra-stage2-windows-topology-binder
+
+on:
+  push:
+    branches:
+      - builder/astra-stage2-windows-topology-binder-final-20260903
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Build exact binder successor
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_HEAD: af03cef494a509ab7ba5df29fa4b4ccba423f1f8
+          BASE_TREE: 519ea2f8f448a464e817a024ad8ed1ac64493931
+          OUTPUT_BRANCH: repair/astra-stage2-control-identity-windows-topology-binder-20260903
+        run: |
+          set -euo pipefail
+          git init work
+          cd work
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=96 origin \
+            "+${BASE_HEAD}:refs/astra-topology/base"
+          git checkout --detach refs/astra-topology/base
+          test "$(git rev-parse HEAD)" = "$BASE_HEAD"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$BASE_TREE"
+
+          cat > astra_stage2/nvidia_topology.py <<'PY'
+          from __future__ import annotations
+
+          import os
+          import sys
+          from pathlib import Path
+
+          WINDOWS_TOPOLOGY_METHOD = "WINDOWS_NVIDIA_SMI_QUERY_GPU_PCI_INVENTORY"
+          POSIX_TOPOLOGY_METHOD = "NVIDIA_SMI_TOPO_M"
+          WINDOWS_PEER_LINK_AUTHORITY = "UNAVAILABLE_NOT_ASSERTED"
+          WINDOWS_QUERY_FIELDS = (
+              "index,uuid,name,pci.bus_id,memory.total,driver_version"
+          )
+
+          _PROBE_RUNNER = r'''
+          import json
+          import subprocess
+          import sys
+
+          method = sys.argv[1]
+          peer_authority = sys.argv[2]
+          command = sys.argv[3:]
+          print("tier_bench_topology_method=" + method)
+          print("tier_bench_peer_link_authority=" + peer_authority)
+          print(
+              "tier_bench_topology_command="
+              + json.dumps(command, separators=(",", ":"))
+          )
+          completed = subprocess.run(
+              command,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.PIPE,
+              text=True,
+              encoding="utf-8",
+              errors="replace",
+              check=False,
+          )
+          print("tier_bench_topology_exit_status=" + str(completed.returncode))
+          print("tier_bench_topology_stdout_begin")
+          if completed.stdout:
+              print(
+                  completed.stdout,
+                  end="" if completed.stdout.endswith("\n") else "\n",
+              )
+          print("tier_bench_topology_stdout_end")
+          print("tier_bench_topology_stderr_begin")
+          if completed.stderr:
+              print(
+                  completed.stderr,
+                  end="" if completed.stderr.endswith("\n") else "\n",
+              )
+          print("tier_bench_topology_stderr_end")
+          raise SystemExit(completed.returncode)
+          '''
+
+
+          def build_nvidia_topology_probe_command(
+              nvidia_smi: str | Path,
+              *,
+              platform_name: str | None = None,
+          ) -> list[str]:
+              """Return a method-labelled, fail-closed NVIDIA topology command.
+
+              Windows NVIDIA drivers do not expose ``nvidia-smi topo -m``.
+              On Windows this records only the PCI inventory NVIDIA actually
+              exposes and explicitly declines peer-link claims. On POSIX the
+              canonical ``topo -m`` matrix remains the selected observation.
+              """
+
+              platform = os.name if platform_name is None else platform_name
+              executable = str(nvidia_smi)
+              if platform == "nt":
+                  method = WINDOWS_TOPOLOGY_METHOD
+                  peer_authority = WINDOWS_PEER_LINK_AUTHORITY
+                  command = [
+                      executable,
+                      f"--query-gpu={WINDOWS_QUERY_FIELDS}",
+                      "--format=csv",
+                  ]
+              else:
+                  method = POSIX_TOPOLOGY_METHOD
+                  peer_authority = "NVIDIA_SMI_TOPO_M_OBSERVED"
+                  command = [executable, "topo", "-m"]
+
+              return [
+                  sys.executable,
+                  "-c",
+                  _PROBE_RUNNER,
+                  method,
+                  peer_authority,
+                  *command,
+              ]
+          PY
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("astra_stage2/control_identity.py")
+          text = path.read_text(encoding="utf-8")
+          import_line = (
+              "from astra_stage2.nvidia_topology import "
+              "build_nvidia_topology_probe_command\n"
+          )
+          if import_line not in text:
+              future = "from __future__ import annotations\n"
+              if future not in text:
+                  raise SystemExit("future import anchor missing")
+              text = text.replace(future, future + "\n" + import_line, 1)
+
+          pattern = re.compile(
+              r"\[\s*(?P<exe>[^,\]\n]+)\s*,\s*['\"]topo['\"]\s*,\s*['\"]-m['\"]\s*\]"
+          )
+          matches = list(pattern.finditer(text))
+          if len(matches) != 1:
+              contexts = []
+              for index, line in enumerate(text.splitlines(), 1):
+                  if "topo" in line.lower():
+                      contexts.append(f"{index}: {line}")
+              raise SystemExit(
+                  "expected exactly one topo -m list; observed "
+                  + str(len(matches))
+                  + "\n"
+                  + "\n".join(contexts)
+              )
+          match = matches[0]
+          executable = match.group("exe").strip()
+          text = (
+              text[: match.start()]
+              + f"build_nvidia_topology_probe_command({executable})"
+              + text[match.end() :]
+          )
+          path.write_text(text, encoding="utf-8", newline="\n")
+          PY
+
+          cat > tests/test_astra_stage2_control_identity_topology.py <<'PY'
+          from __future__ import annotations
+
+          import unittest
+
+          from astra_stage2.nvidia_topology import (
+              POSIX_TOPOLOGY_METHOD,
+              WINDOWS_PEER_LINK_AUTHORITY,
+              WINDOWS_QUERY_FIELDS,
+              WINDOWS_TOPOLOGY_METHOD,
+              build_nvidia_topology_probe_command,
+          )
+
+
+          class NvidiaTopologyProbeTests(unittest.TestCase):
+              def test_21_windows_uses_truthful_pci_inventory(self) -> None:
+                  command = build_nvidia_topology_probe_command(
+                      r"C:\\Windows\\System32\\nvidia-smi.exe",
+                      platform_name="nt",
+                  )
+                  joined = " ".join(command)
+                  self.assertIn(WINDOWS_TOPOLOGY_METHOD, command)
+                  self.assertIn(WINDOWS_PEER_LINK_AUTHORITY, command)
+                  self.assertIn(f"--query-gpu={WINDOWS_QUERY_FIELDS}", command)
+                  self.assertIn("--format=csv", command)
+                  self.assertNotIn(" topo -m", joined)
+
+              def test_22_posix_retains_nvidia_topology_matrix(self) -> None:
+                  command = build_nvidia_topology_probe_command(
+                      "/usr/bin/nvidia-smi",
+                      platform_name="posix",
+                  )
+                  self.assertIn(POSIX_TOPOLOGY_METHOD, command)
+                  self.assertEqual(command[-3:], ["/usr/bin/nvidia-smi", "topo", "-m"])
+
+              def test_23_probe_records_method_command_status_and_raw_streams(self) -> None:
+                  command = build_nvidia_topology_probe_command(
+                      "nvidia-smi",
+                      platform_name="nt",
+                  )
+                  runner = command[2]
+                  for marker in (
+                      "tier_bench_topology_method=",
+                      "tier_bench_peer_link_authority=",
+                      "tier_bench_topology_command=",
+                      "tier_bench_topology_exit_status=",
+                      "tier_bench_topology_stdout_begin",
+                      "tier_bench_topology_stderr_begin",
+                  ):
+                      self.assertIn(marker, runner)
+
+              def test_24_windows_declines_unavailable_peer_link_claims(self) -> None:
+                  self.assertEqual(
+                      WINDOWS_PEER_LINK_AUTHORITY,
+                      "UNAVAILABLE_NOT_ASSERTED",
+                  )
+
+
+          if __name__ == "__main__":
+              unittest.main()
+          PY
+
+          cat > .github/workflows/astra-stage2-control-identity-windows-topology.yml <<'YAML'
+          name: astra-stage2-control-identity-windows-topology
+
+          on:
+            push:
+              branches:
+                - repair/astra-stage2-control-identity-windows-topology-binder-20260903
+
+          permissions:
+            contents: read
+
+          concurrency:
+            group: astra-stage2-control-identity-windows-topology-${{ github.ref }}
+            cancel-in-progress: true
+
+          jobs:
+            windows:
+              runs-on: windows-2025
+              timeout-minutes: 15
+              steps:
+                - name: Checkout exact candidate
+                  shell: pwsh
+                  env:
+                    CANDIDATE_BRANCH: repair/astra-stage2-control-identity-windows-topology-binder-20260903
+                    EXPECTED_HEAD: ${{ github.sha }}
+                    BASE_HEAD: af03cef494a509ab7ba5df29fa4b4ccba423f1f8
+                    BASE_TREE: 519ea2f8f448a464e817a024ad8ed1ac64493931
+                  run: |
+                    $ErrorActionPreference = 'Stop'
+                    git init .
+                    git remote add origin "https://github.com/$env:GITHUB_REPOSITORY.git"
+                    $refspec = "+refs/heads/{0}:refs/topology/candidate" -f $env:CANDIDATE_BRANCH
+                    git fetch --no-tags --depth=96 origin $refspec
+                    if ($LASTEXITCODE -ne 0) { throw 'fetch failed' }
+                    git checkout --detach refs/topology/candidate
+                    if ($LASTEXITCODE -ne 0) { throw 'checkout failed' }
+                    if ((git rev-parse HEAD).Trim() -ne $env:EXPECTED_HEAD) { throw 'head mismatch' }
+                    if ((git rev-parse "$($env:BASE_HEAD)^{tree}").Trim() -ne $env:BASE_TREE) { throw 'base tree mismatch' }
+                    git merge-base --is-ancestor $env:BASE_HEAD HEAD
+                    if ($LASTEXITCODE -ne 0) { throw 'ancestry mismatch' }
+
+                - name: Run 24-test binder suite
+                  shell: pwsh
+                  run: |
+                    $ErrorActionPreference = 'Stop'
+                    $lines = @(& python -m unittest discover -s tests -p 'test_astra_stage2_control_identity*.py' -v 2>&1)
+                    $code = $LASTEXITCODE
+                    $lines | ForEach-Object { Write-Host $_ }
+                    if ($code -ne 0) { throw "tests failed: $code" }
+                    if (($lines -join "`n") -notmatch '(?m)^Ran 24 tests in ') { throw 'test denominator mismatch' }
+
+                - name: Exercise truthful Windows NVIDIA topology probe
+                  shell: pwsh
+                  run: |
+                    $ErrorActionPreference = 'Stop'
+                    $fakeRoot = Join-Path $env:RUNNER_TEMP 'fake-nvidia-smi'
+                    New-Item -ItemType Directory -Force -Path $fakeRoot | Out-Null
+                    $fakeExe = Join-Path $fakeRoot 'nvidia-smi.exe'
+                    $logPath = Join-Path $fakeRoot 'arguments.log'
+                    $source = @'
+                    using System;
+                    using System.IO;
+                    public static class Program {
+                      public static int Main(string[] args) {
+                        var log = Environment.GetEnvironmentVariable("TIER_BENCH_FAKE_NVIDIA_LOG");
+                        File.AppendAllText(log, String.Join(" ", args) + Environment.NewLine);
+                        foreach (var arg in args) {
+                          if (arg == "topo" || arg == "-m") return 75;
+                        }
+                        Console.WriteLine("index, uuid, name, pci.bus_id, memory.total [MiB], driver_version");
+                        Console.WriteLine("0, GPU-FAKE, Fake RTX, 00000000:01:00.0, 24576, 999.0");
+                        return 0;
+                      }
+                    }
+                    '@
+                    Add-Type -TypeDefinition $source -Language CSharp -OutputAssembly $fakeExe -OutputType ConsoleApplication
+                    $env:TIER_BENCH_FAKE_NVIDIA_LOG = $logPath
+                    $out = Join-Path $fakeRoot 'receipt'
+                    $env:PYTHONPATH = (Get-Location).Path
+                    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/astra_stage2_bind_controls.ps1 -Command probe-hardware -Out $out -NvidiaSmi $fakeExe -DeviceIndices '0'
+                    if ($LASTEXITCODE -ne 0) { throw "probe failed: $LASTEXITCODE" }
+                    $invocations = Get-Content -Raw -LiteralPath $logPath
+                    if ($invocations -match '(?m)(^|\s)topo(\s|$)' -or $invocations -match '(?m)(^|\s)-m(\s|$)') { throw 'Windows probe invoked unsupported topo -m' }
+                    $topology = Get-Content -Raw -LiteralPath (Join-Path $out 'nvidia-topology.txt')
+                    if ($topology -notmatch 'tier_bench_topology_method=WINDOWS_NVIDIA_SMI_QUERY_GPU_PCI_INVENTORY') { throw 'Windows method marker absent' }
+                    if ($topology -notmatch 'tier_bench_peer_link_authority=UNAVAILABLE_NOT_ASSERTED') { throw 'Windows peer-link refusal absent' }
+                    if ($topology -notmatch 'tier_bench_topology_exit_status=0') { throw 'Windows topology exit status absent' }
+                    if ($topology -notmatch '00000000:01:00.0') { throw 'Windows PCI inventory absent' }
+
+                - name: Upload Windows topology evidence
+                  uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+                  with:
+                    name: astra-stage2-windows-topology-${{ github.run_id }}-${{ github.run_attempt }}
+                    path: ${{ runner.temp }}/fake-nvidia-smi
+                    if-no-files-found: error
+                    retention-days: 90
+
+            linux:
+              runs-on: ubuntu-24.04
+              timeout-minutes: 15
+              steps:
+                - name: Checkout exact candidate
+                  shell: bash
+                  env:
+                    CANDIDATE_BRANCH: repair/astra-stage2-control-identity-windows-topology-binder-20260903
+                    EXPECTED_HEAD: ${{ github.sha }}
+                    BASE_HEAD: af03cef494a509ab7ba5df29fa4b4ccba423f1f8
+                    BASE_TREE: 519ea2f8f448a464e817a024ad8ed1ac64493931
+                  run: |
+                    set -euo pipefail
+                    git init .
+                    git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+                    git config --unset-all remote.origin.fetch || true
+                    git fetch --no-tags --depth=96 origin "+refs/heads/${CANDIDATE_BRANCH}:refs/topology/candidate"
+                    git checkout --detach refs/topology/candidate
+                    test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+                    test "$(git rev-parse "${BASE_HEAD}^{tree}")" = "$BASE_TREE"
+                    git merge-base --is-ancestor "$BASE_HEAD" HEAD
+
+                - name: Run 24-test binder suite
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    PYTHONPATH=. python3 -m unittest discover -s tests -p 'test_astra_stage2_control_identity*.py' -v 2>&1 | tee "$RUNNER_TEMP/tests.log"
+                    grep -q '^Ran 24 tests in ' "$RUNNER_TEMP/tests.log"
+                    grep -q '^OK$' "$RUNNER_TEMP/tests.log"
+
+                - name: Exercise canonical POSIX NVIDIA topology probe
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    fake_root="$RUNNER_TEMP/fake-nvidia-smi"
+                    mkdir -p "$fake_root"
+                    cat > "$fake_root/nvidia-smi" <<'SH'
+                    #!/usr/bin/env bash
+                    set -euo pipefail
+                    printf '%s\n' "$*" >> "$TIER_BENCH_FAKE_NVIDIA_LOG"
+                    if [[ "${1:-}" == --query-gpu=* ]]; then
+                      printf 'index, uuid, name, pci.bus_id, memory.total [MiB], driver_version\n'
+                      printf '0, GPU-FAKE, Fake RTX, 00000000:01:00.0, 24576, 999.0\n'
+                      exit 0
+                    fi
+                    if [[ "${1:-}" == topo && "${2:-}" == -m ]]; then
+                      printf '        GPU0\nGPU0     X\n'
+                      exit 0
+                    fi
+                    exit 76
+                    SH
+                    chmod +x "$fake_root/nvidia-smi"
+                    export TIER_BENCH_FAKE_NVIDIA_LOG="$fake_root/arguments.log"
+                    out="$fake_root/receipt"
+                    PYTHONPATH=. python3 scripts/astra_stage2_bind_controls.py probe-hardware --out "$out" --nvidia-smi "$fake_root/nvidia-smi" --device-indices 0
+                    grep -Fxq 'topo -m' "$TIER_BENCH_FAKE_NVIDIA_LOG"
+                    grep -q 'tier_bench_topology_method=NVIDIA_SMI_TOPO_M' "$out/nvidia-topology.txt"
+                    grep -q 'tier_bench_peer_link_authority=NVIDIA_SMI_TOPO_M_OBSERVED' "$out/nvidia-topology.txt"
+                    grep -q 'tier_bench_topology_exit_status=0' "$out/nvidia-topology.txt"
+
+                - name: Upload Linux topology evidence
+                  uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+                  with:
+                    name: astra-stage2-linux-topology-${{ github.run_id }}-${{ github.run_attempt }}
+                    path: ${{ runner.temp }}/fake-nvidia-smi
+                    if-no-files-found: error
+                    retention-days: 90
+          YAML
+
+          git diff --check
+          python3 -m py_compile astra_stage2/control_identity.py astra_stage2/nvidia_topology.py tests/test_astra_stage2_control_identity_topology.py
+          PYTHONPATH=. python3 -m unittest discover -s tests -p 'test_astra_stage2_control_identity*.py' -v 2>&1 | tee /tmp/tests.log
+          grep -q '^Ran 24 tests in ' /tmp/tests.log
+          grep -q '^OK$' /tmp/tests.log
+
+          mapfile -t changed < <(git status --short | awk '{print $2}' | sort)
+          printf '%s\n' "${changed[@]}"
+          test "${#changed[@]}" -eq 4
+          printf '%s\n' \
+            '.github/workflows/astra-stage2-control-identity-windows-topology.yml' \
+            'astra_stage2/control_identity.py' \
+            'astra_stage2/nvidia_topology.py' \
+            'tests/test_astra_stage2_control_identity_topology.py' | sort > /tmp/expected.txt
+          printf '%s\n' "${changed[@]}" > /tmp/observed.txt
+          diff -u /tmp/expected.txt /tmp/observed.txt
+
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add -A
+          git commit -m "fix(astra): record truthful cross-platform NVIDIA topology"
+          product_head="$(git rev-parse HEAD)"
+          product_tree="$(git rev-parse 'HEAD^{tree}')"
+          git push --force origin "HEAD:refs/heads/${OUTPUT_BRANCH}"
+          {
+            echo "product_head=${product_head}"
+            echo "product_tree=${product_tree}"
+            echo "output_branch=${OUTPUT_BRANCH}"
+          } >> "$GITHUB_STEP_SUMMARY"
