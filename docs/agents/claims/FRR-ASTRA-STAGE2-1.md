@@ -4,7 +4,7 @@
 id: FRR-ASTRA-STAGE2-1
 owner: sol
 lane: driver
-state: LAW_RELEASE_CANDIDATE
+state: LAW_WINDOWS_TOPOLOGY_AMENDMENT_CANDIDATE
 claim_id: FRR-ASTRA-STAGE2-2-LAW
 claim_comment: 5516294861
 branch: sol/astra-stage2-law-20260902
@@ -99,6 +99,52 @@ evidence classes, and bounded conclusions only.
 
 At this release boundary all three controls are executable-identity `UNBOUND`.
 No local empirical atlas receipt has been supplied or admitted.
+
+### 2.2 Platform-dispatched hardware evidence
+
+Hardware evidence must describe the platform that actually executes the
+control. A collector may not require a command supplied only by another
+platform, reshape unrelated native output into that command's format, infer
+that an accelerator is absent from an unsupported subcommand, or change the
+execution venue to obtain a preferred evidence shape.
+
+On Linux, the NVIDIA evidence contract continues to require a successful
+device inventory query and the exact successful output of `nvidia-smi topo
+-m`. A failed or unavailable topology matrix is a hard refusal on Linux.
+
+On native Windows, the evidence bundle must contain all of the following:
+
+- a successful NVIDIA inventory query binding index, product name, UUID, PCI
+  bus identity, memory, and driver;
+- a successful NVIDIA PCI link query binding index, PCI bus identity,
+  negotiated link generation, and negotiated link width;
+- the attempted `nvidia-smi topo -m` command, exit status, stdout, and stderr;
+- present Windows display-class PnP devices with instance identity, class,
+  product name, status, bus number, address, location information, location
+  paths, and a bounded parent chain; and
+- present Thunderbolt or USB4 candidates and their observable PnP identities
+  and parent relationships.
+
+The primary NVIDIA inventory and PCI link query must resolve the same selected
+indices and PCI bus identities exactly. Each selected device must resolve to
+one present, healthy Windows display-class PnP device whose bus number and
+address agree with its NVIDIA PCI coordinate. A failed supported NVIDIA query,
+missing required native evidence, ambiguous resolution, or contradictory
+device identity is a hard refusal.
+
+Native Windows may record `NVIDIA_TOPO_MATRIX=UNSUPPORTED_ON_PLATFORM` only
+when the attempted topology command returns the recognized native-Windows
+unsupported-command response. The raw failure remains evidence. Collection
+then continues from the mandatory native bundle. If that bundle proves an
+admitted complete root-path or transport relationship, the receipt may record
+that proved class. Otherwise it must record `TOPOLOGY_CLASS=UNKNOWN`. An
+honest `UNKNOWN` is sufficient for provider-free Prepare, but it is not a
+positive topology claim and does not by itself bind an executable identity for
+empirical calibration.
+
+Hardware probing, including the Windows fallback, performs zero model calls,
+zero provider calls, zero binding, and no empirical calibration. Prepare must
+preserve those stop walls.
 
 ## 3. Frozen generator and reconstruction identity
 
