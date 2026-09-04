@@ -1,0 +1,159 @@
+name: build-astra-stage2-stageb-rebind-v2
+
+on:
+  push:
+    branches:
+      - builder/astra-stage2-stageb-rebind-20260903
+
+permissions:
+  contents: write
+
+jobs:
+  build-stage-b:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Merge qualified topology binder and rebind release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: release/astra-stage2-control-identity-v1-20260903
+          RELEASE_PREDECESSOR: b3534c9703723ac35343af0209edc34c7587173c
+          BINDER_HEAD: 3079883f1b4a1486e5859b97eb2ff2a7e3c6fb07
+          BINDER_TREE: 097f958ad5eafdadeb0f5ca79ea05437dad0bd26
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=160 origin \
+            "+refs/heads/${RELEASE_BRANCH}:refs/stageb/release" \
+            "+${BINDER_HEAD}:refs/stageb/binder"
+          git checkout -B stageb refs/stageb/release
+          test "$(git rev-parse HEAD)" = "$RELEASE_PREDECESSOR"
+          test "$(git rev-parse 'refs/stageb/binder^{tree}')" = "$BINDER_TREE"
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+
+          set +e
+          git merge --no-ff --no-commit refs/stageb/binder
+          merge_rc=$?
+          set -e
+          if [ "$merge_rc" -ne 0 ]; then
+            mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+            printf 'conflicts: %s\n' "${conflicts[*]}"
+            for path in "${conflicts[@]}"; do
+              case "$path" in
+                tests/test_astra_stage2_control_identity.py|.github/workflows/astra-stage2-control-identity.yml)
+                  git checkout --theirs -- "$path"
+                  git add "$path"
+                  ;;
+                *)
+                  echo "unexpected merge conflict: $path" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+          fi
+          test -z "$(git diff --name-only --diff-filter=U)"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          old_head = "af03cef494a509ab7ba5df29fa4b4ccba423f1f8"
+          old_tree = "519ea2f8f448a464e817a024ad8ed1ac64493931"
+          new_head = "3079883f1b4a1486e5859b97eb2ff2a7e3c6fb07"
+          new_tree = "097f958ad5eafdadeb0f5ca79ea05437dad0bd26"
+
+          launcher_path = Path("scripts/Invoke-AstraStage2ControlIdentityBinding.ps1")
+          launcher = launcher_path.read_text(encoding="utf-8")
+          if old_head not in launcher or old_tree not in launcher:
+              raise SystemExit("launcher old binder coordinate is absent")
+          launcher = launcher.replace(old_head, new_head).replace(old_tree, new_tree)
+          if "topology_path = 'nvidia-topology.txt'" not in launcher:
+              raise SystemExit("launcher old topology field is absent")
+          launcher = launcher.replace(
+              "topology_path = 'nvidia-topology.txt'",
+              "topology_evidence_path = 'nvidia-topology.json'",
+          )
+          launcher_path.write_text(launcher, encoding="utf-8", newline="\n")
+
+          release_test_path = Path("tests/test_astra_stage2_control_identity_release.py")
+          release_test = release_test_path.read_text(encoding="utf-8")
+          if old_head not in release_test or old_tree not in release_test:
+              raise SystemExit("release tests old binder coordinate is absent")
+          release_test = release_test.replace(old_head, new_head).replace(old_tree, new_tree)
+          release_test_path.write_text(release_test, encoding="utf-8", newline="\n")
+
+          predecessor_path = Path(".github/workflows/astra-stage2-control-identity.yml")
+          predecessor = predecessor_path.read_text(encoding="utf-8")
+          required_scope = (
+              "  pull_request:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-calibration-impl-20260902\n"
+              "    paths:\n"
+          )
+          if required_scope not in predecessor:
+              anchor = "  pull_request:\n    paths:\n"
+              if predecessor.count(anchor) != 1:
+                  raise SystemExit("predecessor PR trigger anchor mismatch")
+              predecessor = predecessor.replace(anchor, required_scope, 1)
+          predecessor_path.write_text(predecessor, encoding="utf-8", newline="\n")
+
+          workflow_path = Path(".github/workflows/astra-stage2-control-identity-release.yml")
+          workflow = workflow_path.read_text(encoding="utf-8")
+          if old_head not in workflow or old_tree not in workflow:
+              raise SystemExit("release workflow old binder coordinate is absent")
+          workflow = workflow.replace(old_head, new_head).replace(old_tree, new_tree)
+          replacements = [
+              ("Run complete 27-test suite on Windows", "Run complete 41-test suite on Windows"),
+              ("^Ran 27 tests in ", "^Ran 41 tests in "),
+              ("Windows test denominator is not 27", "Windows test denominator is not 41"),
+              ("tests = 27", "tests = 41"),
+              ("passed = 26", "passed = 40"),
+              ('"tests": 27', '"tests": 41'),
+              ('"binder_tests": 20', '"binder_tests": 34'),
+              ("Run complete 27-test suite on Linux", "Run complete 41-test suite on Linux"),
+              ("tests=27", "tests=41"),
+              ("tests: 27", "tests: 41"),
+          ]
+          for before, after in replacements:
+              workflow = workflow.replace(before, after)
+
+          workflow = workflow.replace(
+              '              "tests/test_astra_stage2_control_identity.py",\n',
+              "",
+          )
+          stageb_path = '              ".github/workflows/astra-stage2-control-identity-stageb.yml",\n'
+          release_anchor = '              ".github/workflows/astra-stage2-control-identity-release.yml",\n'
+          if stageb_path not in workflow:
+              if release_anchor not in workflow:
+                  raise SystemExit("release expected-path anchor is absent")
+              workflow = workflow.replace(release_anchor, release_anchor + stageb_path, 1)
+          workflow_path.write_text(workflow, encoding="utf-8", newline="\n")
+          PY
+
+          git diff --check
+          python3 -m py_compile astra_stage2/control_identity.py tests/test_astra_stage2_control_identity.py tests/test_astra_stage2_control_identity_release.py
+          PYTHONPATH=. python3 -m unittest discover -s tests -p 'test_astra_stage2_control_identity*.py' -v 2>&1 | tee /tmp/stageb-tests.log
+          grep -q '^Ran 41 tests in ' /tmp/stageb-tests.log
+          grep -q '^OK$' /tmp/stageb-tests.log
+
+          git add -A
+          git commit -m 'feat(astra): rebind release to qualified Windows topology binder'
+          head="$(git rev-parse HEAD)"
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          parents="$(git rev-list --parents -n 1 HEAD)"
+          echo "$parents"
+          echo "$parents" | grep -Fq "$RELEASE_PREDECESSOR"
+          echo "$parents" | grep -Fq "$BINDER_HEAD"
+          git push origin "HEAD:refs/heads/${RELEASE_BRANCH}"
+
+          {
+            echo "stageb_head=${head}"
+            echo "stageb_tree=${tree}"
+            echo "parents=${parents}"
+            echo "binder_head=${BINDER_HEAD}"
+            echo "tests=41"
+            echo "provider_or_model_calls=0"
+          } >> "$GITHUB_STEP_SUMMARY"
