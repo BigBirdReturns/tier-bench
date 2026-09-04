@@ -138,9 +138,9 @@ unsupported-command response. The raw failure remains evidence. Collection
 then continues from the mandatory native bundle. If that bundle proves an
 admitted complete root-path or transport relationship, the receipt may record
 that proved class. Otherwise it must record `TOPOLOGY_CLASS=UNKNOWN`. An
-honest `UNKNOWN` is sufficient for provider-free Prepare, but it is not a
-positive topology claim and does not by itself bind an executable identity for
-empirical calibration.
+honest `UNKNOWN` is sufficient for provider-free Prepare and may be
+content-bound only as `UNKNOWN` in a later executable identity; it is never a
+positive topology claim.
 
 Hardware probing, including the Windows fallback, performs zero model calls,
 zero provider calls, zero binding, and no empirical calibration. Prepare must
