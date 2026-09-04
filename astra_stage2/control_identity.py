@@ -1346,13 +1346,6 @@ def verify_control_set(
     return observed
 
 
-def _run_nvidia_command(command: Sequence[str]) -> subprocess.CompletedProcess[bytes]:
-    try:
-        return subprocess.run(command, capture_output=True, check=False)
-    except OSError as exc:
-        raise Stage2Error(f"unable to execute nvidia-smi command: {exc}") from exc
-
-
 def probe_hardware(
     *,
     output_dir: Path,
@@ -1380,7 +1373,7 @@ def probe_hardware(
         "--query-gpu=index,name,uuid,pci.bus_id,memory.total,driver_version",
         "--format=csv,noheader,nounits",
     ]
-    query = _run_nvidia_command(query_command)
+    query = subprocess.run(query_command, capture_output=True, check=False)
     if query.returncode != 0:
         raise Stage2Error(f"nvidia-smi device query failed with exit {query.returncode}")
     query_rows = _parse_hardware_query_bytes(query.stdout)
@@ -1398,7 +1391,7 @@ def probe_hardware(
 
     if system == "Linux":
         topology_command = [executable, "topo", "-m"]
-        topology = _run_nvidia_command(topology_command)
+        topology = subprocess.run(topology_command, capture_output=True, check=False)
         if topology.returncode != 0:
             raise Stage2Error(f"nvidia-smi topology query failed with exit {topology.returncode}")
         if not topology.stdout.strip():

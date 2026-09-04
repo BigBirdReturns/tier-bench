@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import copy
 import json
 import os
@@ -9,7 +10,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from astra_stage2.canonical import Stage2Error, sha256_bytes, sha256_object, strict_json_load
 from astra_stage2.control_identity import (
@@ -425,27 +426,70 @@ class ControlIdentityTests(unittest.TestCase):
     def completed(stdout: bytes = b"", returncode: int = 0) -> subprocess.CompletedProcess:
         return subprocess.CompletedProcess([], returncode, stdout=stdout, stderr=b"")
 
+    @staticmethod
+    def deterministic_platform(system: str):
+        return patch.multiple(
+            "astra_stage2.control_identity.platform",
+            system=lambda: system,
+            release=lambda: "Synthetic release",
+            version=lambda: "Synthetic version",
+            machine=lambda: "Synthetic machine",
+            processor=lambda: "Synthetic processor",
+            python_implementation=lambda: "CPython",
+            python_version=lambda: "3.13.0",
+        )
+
     def test_21_linux_success_retains_exact_topology_bytes(self) -> None:
         query = b"0, Linux GPU, GPU-linux, 0000:01:00.0, 24576, 999.0\n"
         matrix = b"\tGPU0\nGPU0\tX\n"
         out = self.root / "probe-linux"
-        with patch("astra_stage2.control_identity.platform.system", return_value="Linux"), patch(
-            "astra_stage2.control_identity._run_nvidia_command",
+        query_command = [
+            sys.executable,
+            "-i",
+            "0",
+            "--query-gpu=index,name,uuid,pci.bus_id,memory.total,driver_version",
+            "--format=csv,noheader,nounits",
+        ]
+        selected_row = {
+            "index": 0,
+            "name": "Linux GPU",
+            "uuid": "GPU-linux",
+            "pci_bus_id": "0000:01:00.0",
+            "memory_mib": 24576,
+            "driver": "999.0",
+        }
+        with self.deterministic_platform("Linux"), patch(
+            "astra_stage2.control_identity.subprocess.run",
             side_effect=[self.completed(query), self.completed(matrix)],
         ) as run:
             receipt = probe_hardware(
                 output_dir=out, nvidia_smi=sys.executable, device_indices=[0]
             )
-        self.assertEqual(run.call_args_list[1].args[0], [sys.executable, "topo", "-m"])
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(
+            run.call_args_list,
+            [
+                call(query_command, capture_output=True, check=False),
+                call([sys.executable, "topo", "-m"], capture_output=True, check=False),
+            ],
+        )
         topology = strict_json_load(out / "nvidia-topology.json")
         self.assertEqual(topology["method"], "NVIDIA_SMI_TOPO_MATRIX")
+        self.assertEqual(topology["selected_device_indices"], [0])
+        self.assertEqual(
+            topology["selected_device_query_rows_sha256"], sha256_object([selected_row])
+        )
+        self.assertEqual(
+            topology["matrix_stdout_base64"], base64.b64encode(matrix).decode("ascii")
+        )
+        self.assertEqual(base64.b64decode(topology["matrix_stdout_base64"]), matrix)
         self.assertEqual(topology["matrix_stdout_sha256"], sha256_bytes(matrix))
         self.assertEqual(receipt["schema"], SCHEMA_HARDWARE_PROBE)
 
     def test_22_linux_nonzero_topology_refuses(self) -> None:
         query = b"0, Linux GPU, GPU-linux, 0000:01:00.0, 24576, 999.0\n"
-        with patch("astra_stage2.control_identity.platform.system", return_value="Linux"), patch(
-            "astra_stage2.control_identity._run_nvidia_command",
+        with self.deterministic_platform("Linux"), patch(
+            "astra_stage2.control_identity.subprocess.run",
             side_effect=[self.completed(query), self.completed(returncode=9)],
         ):
             with self.assertRaisesRegex(Stage2Error, "topology query failed with exit 9"):
@@ -457,8 +501,8 @@ class ControlIdentityTests(unittest.TestCase):
 
     def test_23_linux_empty_topology_refuses(self) -> None:
         query = b"0, Linux GPU, GPU-linux, 0000:01:00.0, 24576, 999.0\n"
-        with patch("astra_stage2.control_identity.platform.system", return_value="Linux"), patch(
-            "astra_stage2.control_identity._run_nvidia_command",
+        with self.deterministic_platform("Linux"), patch(
+            "astra_stage2.control_identity.subprocess.run",
             side_effect=[self.completed(query), self.completed(b" \r\n")],
         ):
             with self.assertRaisesRegex(Stage2Error, "empty stdout"):
@@ -471,16 +515,37 @@ class ControlIdentityTests(unittest.TestCase):
     def test_24_windows_single_device_never_invokes_topology_command(self) -> None:
         query = b"3, Windows GPU, GPU-win, 0000:03:00.0, 24576, 999.0\r\n"
         out = self.root / "probe-windows"
-        with patch("astra_stage2.control_identity.platform.system", return_value="Windows"), patch(
-            "astra_stage2.control_identity._run_nvidia_command",
+        query_command = [
+            sys.executable,
+            "-i",
+            "3",
+            "--query-gpu=index,name,uuid,pci.bus_id,memory.total,driver_version",
+            "--format=csv,noheader,nounits",
+        ]
+        selected_row = {
+            "index": 3,
+            "name": "Windows GPU",
+            "uuid": "GPU-win",
+            "pci_bus_id": "0000:03:00.0",
+            "memory_mib": 24576,
+            "driver": "999.0",
+        }
+        with self.deterministic_platform("Windows"), patch(
+            "astra_stage2.control_identity.subprocess.run",
             return_value=self.completed(query),
         ) as run:
             probe_hardware(output_dir=out, nvidia_smi=sys.executable, device_indices=[3])
         self.assertEqual(run.call_count, 1)
-        self.assertNotIn("topo", run.call_args.args[0])
+        self.assertEqual(
+            run.call_args_list, [call(query_command, capture_output=True, check=False)]
+        )
         topology = strict_json_load(out / "nvidia-topology.json")
         self.assertEqual(topology["state"], "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE")
+        self.assertEqual(topology["method"], "PLATFORM_LIMITATION_SINGLE_DEVICE")
         self.assertEqual(topology["selected_device_index"], 3)
+        self.assertEqual(
+            topology["selected_device_query_row_sha256"], sha256_object(selected_row)
+        )
         self.assertFalse(topology["inter_device_topology_claimed"])
         self.assertFalse(topology["implicit_pooling_claimed"])
 
@@ -489,8 +554,8 @@ class ControlIdentityTests(unittest.TestCase):
             b"0, GPU 0, GPU-win-0, 0000:01:00.0, 24576, 999.0\r\n"
             b"1, GPU 1, GPU-win-1, 0000:02:00.0, 24576, 999.0\r\n"
         )
-        with patch("astra_stage2.control_identity.platform.system", return_value="Windows"), patch(
-            "astra_stage2.control_identity._run_nvidia_command",
+        with self.deterministic_platform("Windows"), patch(
+            "astra_stage2.control_identity.subprocess.run",
             return_value=self.completed(query),
         ) as run:
             with self.assertRaisesRegex(Stage2Error, "independently qualified topology source"):
@@ -515,8 +580,8 @@ class ControlIdentityTests(unittest.TestCase):
 
     def test_27_selected_index_mismatch_refuses(self) -> None:
         query = b"1, Wrong GPU, GPU-wrong, 0000:02:00.0, 24576, 999.0\n"
-        with patch("astra_stage2.control_identity.platform.system", return_value="Windows"), patch(
-            "astra_stage2.control_identity._run_nvidia_command",
+        with self.deterministic_platform("Windows"), patch(
+            "astra_stage2.control_identity.subprocess.run",
             return_value=self.completed(query),
         ):
             with self.assertRaisesRegex(Stage2Error, "do not exactly match"):
@@ -573,7 +638,7 @@ class ControlIdentityTests(unittest.TestCase):
             b"0, GPU 0 duplicate, GPU-b, 0000:02:00.0, 24576, 999.0\n"
         )
         with patch(
-            "astra_stage2.control_identity._run_nvidia_command", return_value=self.completed(query)
+            "astra_stage2.control_identity.subprocess.run", return_value=self.completed(query)
         ):
             with self.assertRaisesRegex(Stage2Error, "duplicate indices"):
                 probe_hardware(
@@ -584,8 +649,8 @@ class ControlIdentityTests(unittest.TestCase):
 
     def test_33_unknown_platform_refuses_after_mandatory_query(self) -> None:
         query = b"0, GPU 0, GPU-a, 0000:01:00.0, 24576, 999.0\n"
-        with patch("astra_stage2.control_identity.platform.system", return_value="Darwin"), patch(
-            "astra_stage2.control_identity._run_nvidia_command",
+        with self.deterministic_platform("Darwin"), patch(
+            "astra_stage2.control_identity.subprocess.run",
             return_value=self.completed(query),
         ) as run:
             with self.assertRaisesRegex(Stage2Error, "unsupported hardware platform"):
@@ -597,7 +662,7 @@ class ControlIdentityTests(unittest.TestCase):
         self.assertEqual(run.call_count, 1)
 
     def test_34_missing_selected_device_refuses_before_command(self) -> None:
-        with patch("astra_stage2.control_identity._run_nvidia_command") as run:
+        with patch("astra_stage2.control_identity.subprocess.run") as run:
             with self.assertRaisesRegex(Stage2Error, "at least one selected"):
                 probe_hardware(
                     output_dir=self.root / "probe-no-selection",
