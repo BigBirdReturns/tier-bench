@@ -1,0 +1,982 @@
+name: astra-stage2-windows-prepare-portability-successor-qualification
+
+on:
+  push:
+    branches:
+      - audit/astra-stage2-windows-prepare-portability-successor-0e790fe-v2-20260904
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-windows-prepare-portability-successor-0e790fe-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARRIER_BRANCH: audit/astra-stage2-windows-prepare-portability-successor-0e790fe-v2-20260904
+  SUBJECT_BRANCH: candidate/astra-stage2-windows-prepare-portability-successor-20260904
+  SUBJECT_HEAD: 0e790fea09668e5f537bdd00fcb2bdb3364855c3
+  SUBJECT_TREE: 5a95423cc5dee0fa7ffc893fb3f41634ef735b3f
+  SUBJECT_PARENT: 5ddfaffc5ece55ac17db47622cba7ee22f0018c9
+  SUBJECT_CHANGED_PATH: tests/test_astra_stage2_control_identity.py
+  SUBJECT_PARENT_TEST_BLOB: 687c8c2fa733cfc2707dbce9594aec7f907b0676
+  SUBJECT_TEST_BLOB: 8be9f76dcd53dd44565a3503caee6e4e4da7dcfe
+  PRODUCTION_BLOB: c8b6b236252f97edc2ecfe7f63fefb4a3ef3cc2d
+  BINDER_HEAD: 697bd2dc75ef74c675373b6be99e1e82f58b26b8
+  LAW_HEAD: 208557ba708a970b5dd7a7417e2099c93f5efeb9
+  LAUNCHER_SHA256: 6ceb4e9758cc20cae027849337c456ef2871345518f633e601bcab55db9dc728
+  WORKFLOW_PATH: .github/workflows/astra-stage2-windows-prepare-portability-successor-qualification-v2.yml
+
+jobs:
+  carrier-guard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      carrier_head: ${{ steps.guard.outputs.carrier_head }}
+      carrier_tree: ${{ steps.guard.outputs.carrier_tree }}
+    steps:
+      - name: Prove one-commit carrier and immutable portability subject
+        id: guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF_NAME" = "$CARRIER_BRANCH"
+
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --no-tags origin \
+            "+refs/heads/${CARRIER_BRANCH}:refs/remotes/origin/carrier" \
+            "+refs/heads/${SUBJECT_BRANCH}:refs/remotes/origin/subject"
+
+          carrier_head="$(git rev-parse refs/remotes/origin/carrier)"
+          test "$carrier_head" = "$GITHUB_SHA"
+          read -r -a carrier_parents <<< "$(git rev-list --parents -n 1 "$carrier_head")"
+          test "${#carrier_parents[@]}" -eq 2
+          test "${carrier_parents[1]}" = "$SUBJECT_HEAD"
+
+          git diff-tree --no-commit-id --name-only -r -z \
+            "$SUBJECT_HEAD" "$carrier_head" > "$RUNNER_TEMP/carrier-paths.z"
+          python3 - "$RUNNER_TEMP/carrier-paths.z" "$WORKFLOW_PATH" <<'PY'
+          from pathlib import Path
+          import sys
+
+          observed = [
+              item.decode("utf-8")
+              for item in Path(sys.argv[1]).read_bytes().split(b"\0")
+              if item
+          ]
+          if observed != [sys.argv[2]]:
+              raise SystemExit(f"carrier path mismatch: {observed!r}")
+          PY
+
+          test "$(git rev-parse refs/remotes/origin/subject)" = "$SUBJECT_HEAD"
+          test "$(git rev-parse "${SUBJECT_HEAD}^{tree}")" = "$SUBJECT_TREE"
+          read -r -a subject_parents <<< "$(git rev-list --parents -n 1 "$SUBJECT_HEAD")"
+          test "${#subject_parents[@]}" -eq 2
+          test "${subject_parents[1]}" = "$SUBJECT_PARENT"
+
+          git diff-tree --no-commit-id --name-only -r -z \
+            "$SUBJECT_PARENT" "$SUBJECT_HEAD" > "$RUNNER_TEMP/subject-paths.z"
+          python3 - "$RUNNER_TEMP/subject-paths.z" "$SUBJECT_CHANGED_PATH" <<'PY'
+          from pathlib import Path
+          import sys
+
+          observed = [
+              item.decode("utf-8")
+              for item in Path(sys.argv[1]).read_bytes().split(b"\0")
+              if item
+          ]
+          if observed != [sys.argv[2]]:
+              raise SystemExit(f"subject path mismatch: {observed!r}")
+          PY
+
+          test "$(git rev-parse "${SUBJECT_PARENT}:${SUBJECT_CHANGED_PATH}")" = "$SUBJECT_PARENT_TEST_BLOB"
+          test "$(git rev-parse "${SUBJECT_HEAD}:${SUBJECT_CHANGED_PATH}")" = "$SUBJECT_TEST_BLOB"
+          test "$(git rev-parse "${SUBJECT_HEAD}:astra_stage2/control_identity.py")" = "$PRODUCTION_BLOB"
+          test "$(git rev-parse "${SUBJECT_PARENT}:astra_stage2/control_identity.py")" = "$PRODUCTION_BLOB"
+          git merge-base --is-ancestor "$BINDER_HEAD" "$SUBJECT_HEAD"
+          git merge-base --is-ancestor "$LAW_HEAD" "$SUBJECT_HEAD"
+
+          git show "${SUBJECT_HEAD}:scripts/Invoke-AstraStage2ControlIdentityBinding.ps1" \
+            > "$RUNNER_TEMP/launcher.ps1"
+          test "$(sha256sum "$RUNNER_TEMP/launcher.ps1" | awk '{print $1}')" = "$LAUNCHER_SHA256"
+
+          carrier_tree="$(git rev-parse "${carrier_head}^{tree}")"
+          printf 'carrier_head=%s\n' "$carrier_head" >> "$GITHUB_OUTPUT"
+          printf 'carrier_tree=%s\n' "$carrier_tree" >> "$GITHUB_OUTPUT"
+
+  hosted-platform:
+    needs: carrier-guard
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-2025
+            runner: windows-2025
+            python: python
+          - platform: ubuntu-24.04
+            runner: ubuntu-24.04
+            python: python3
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - name: Run bounded qualification and seal platform receipt
+        id: qualify
+        shell: pwsh
+        env:
+          EXPECTED_CARRIER_HEAD: ${{ needs.carrier-guard.outputs.carrier_head }}
+          EXPECTED_CARRIER_TREE: ${{ needs.carrier-guard.outputs.carrier_tree }}
+          PLATFORM: ${{ matrix.platform }}
+          PYTHON_COMMAND: ${{ matrix.python }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          function Write-Utf8Lf {
+            param(
+              [Parameter(Mandatory = $true)][string]$Path,
+              [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Text
+            )
+            $normalised = $Text.Replace("`r`n", "`n").Replace("`r", "`n")
+            [IO.File]::WriteAllText(
+              $Path,
+              $normalised,
+              [Text.UTF8Encoding]::new($false)
+            )
+          }
+
+          function Get-OptionalSha256 {
+            param([string]$Path)
+            if ($Path -and (Test-Path -LiteralPath $Path -PathType Leaf)) {
+              return (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLowerInvariant()
+            }
+            return $null
+          }
+
+          $repoUrl = "https://github.com/$env:GITHUB_REPOSITORY.git"
+          $evidenceRoot = Join-Path $env:RUNNER_TEMP "astra-hosted-$($env:PLATFORM)"
+          New-Item -ItemType Directory -Path $evidenceRoot -Force | Out-Null
+
+          $qualificationResult = 'FAIL'
+          $failureType = $null
+          $failureMessage = $null
+          $carrierHead = $env:EXPECTED_CARRIER_HEAD
+          $carrierTree = $env:EXPECTED_CARRIER_TREE
+          $subjectVerified = $false
+          $pythonVersion = $null
+          $gitVersion = $null
+          $pwshVersion = $PSVersionTable.PSVersion.ToString()
+          $launcherDigest = $null
+          $powershellParseStatus = 'NOT_RUN'
+          $testSuiteStatus = 'NOT_RUN'
+          $topologyContractStatus = 'NOT_RUN'
+          $digestMatchStatus = 'NOT_RUN'
+          $digestMismatchStatus = 'NOT_RUN'
+          $lfMaterializationStatus = 'NOT_RUN'
+          $expectedSkips = $null
+          $actualSkips = $null
+          $actualTests = $null
+          $actualPassed = $null
+          $testExit = $null
+          $test10Result = 'NOT_OBSERVED'
+          $testStdout = Join-Path $evidenceRoot 'unittest.stdout.txt'
+          $testStderr = Join-Path $evidenceRoot 'unittest.stderr.txt'
+          $digestMatchLog = Join-Path $evidenceRoot 'digest-match.txt'
+          $digestMismatchLog = Join-Path $evidenceRoot 'digest-mismatch.txt'
+          $symlinkReceipt = Join-Path $evidenceRoot 'symlink-capability.json'
+          $symlink = [pscustomobject]@{
+            can_create_symlink = $false
+            error_type = $null
+            error_message = $null
+            errno = $null
+            winerror = $null
+          }
+          $materialized = @{}
+
+          try {
+            git init .
+            if ($LASTEXITCODE -ne 0) { throw 'git init failed' }
+            git remote add origin $repoUrl
+            if ($LASTEXITCODE -ne 0) { throw 'git remote add failed' }
+            git fetch --no-tags origin `
+              "+refs/heads/$($env:CARRIER_BRANCH):refs/remotes/origin/carrier" `
+              "+refs/heads/$($env:SUBJECT_BRANCH):refs/remotes/origin/subject"
+            if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+            git checkout --detach refs/remotes/origin/carrier
+            if ($LASTEXITCODE -ne 0) { throw 'carrier checkout failed' }
+
+            $carrierHead = (git rev-parse refs/remotes/origin/carrier).Trim()
+            $carrierTree = (git rev-parse "$carrierHead`^{tree}").Trim()
+            if ($carrierHead -ne $env:EXPECTED_CARRIER_HEAD -or $carrierHead -ne $env:GITHUB_SHA) {
+              throw "carrier head mismatch: $carrierHead"
+            }
+            if ($carrierTree -ne $env:EXPECTED_CARRIER_TREE) {
+              throw "carrier tree mismatch: $carrierTree"
+            }
+            $carrierParents = ((git rev-list --parents -n 1 $carrierHead).Trim() -split '\s+')
+            if ($carrierParents.Count -ne 2 -or $carrierParents[1] -ne $env:SUBJECT_HEAD) {
+              throw "carrier parent mismatch: $($carrierParents -join ' ')"
+            }
+            $carrierChanged = @(git diff-tree --no-commit-id --name-only -r $env:SUBJECT_HEAD $carrierHead)
+            if ($carrierChanged.Count -ne 1 -or $carrierChanged[0] -ne $env:WORKFLOW_PATH) {
+              throw "carrier changed-path mismatch: $($carrierChanged -join ',')"
+            }
+
+            if ((git rev-parse refs/remotes/origin/subject).Trim() -ne $env:SUBJECT_HEAD) {
+              throw 'remote portability subject branch moved'
+            }
+            if ((git rev-parse "$($env:SUBJECT_HEAD)`^{tree}").Trim() -ne $env:SUBJECT_TREE) {
+              throw 'subject tree mismatch'
+            }
+            $subjectParents = ((git rev-list --parents -n 1 $env:SUBJECT_HEAD).Trim() -split '\s+')
+            if ($subjectParents.Count -ne 2 -or $subjectParents[1] -ne $env:SUBJECT_PARENT) {
+              throw "subject parent mismatch: $($subjectParents -join ' ')"
+            }
+            $subjectChanged = @(git diff-tree --no-commit-id --name-only -r $env:SUBJECT_PARENT $env:SUBJECT_HEAD)
+            if ($subjectChanged.Count -ne 1 -or $subjectChanged[0] -ne $env:SUBJECT_CHANGED_PATH) {
+              throw "subject changed-path mismatch: $($subjectChanged -join ',')"
+            }
+            if ((git rev-parse "$($env:SUBJECT_PARENT):$($env:SUBJECT_CHANGED_PATH)").Trim() -ne $env:SUBJECT_PARENT_TEST_BLOB) {
+              throw 'subject parent test blob mismatch'
+            }
+            if ((git rev-parse "$($env:SUBJECT_HEAD):$($env:SUBJECT_CHANGED_PATH)").Trim() -ne $env:SUBJECT_TEST_BLOB) {
+              throw 'subject test blob mismatch'
+            }
+            if ((git rev-parse "$($env:SUBJECT_HEAD):astra_stage2/control_identity.py").Trim() -ne $env:PRODUCTION_BLOB) {
+              throw 'production blob mismatch'
+            }
+            git merge-base --is-ancestor $env:BINDER_HEAD $env:SUBJECT_HEAD
+            if ($LASTEXITCODE -ne 0) { throw 'binder ancestry absent' }
+            git merge-base --is-ancestor $env:LAW_HEAD $env:SUBJECT_HEAD
+            if ($LASTEXITCODE -ne 0) { throw 'law ancestry absent' }
+
+            $subjectRoot = Join-Path $env:RUNNER_TEMP 'astra-qualified-subject'
+            git worktree add --detach $subjectRoot $env:SUBJECT_HEAD
+            if ($LASTEXITCODE -ne 0) { throw 'detached subject worktree creation failed' }
+            if (git -C $subjectRoot status --porcelain) { throw 'detached subject is dirty' }
+            if ((git -C $subjectRoot rev-parse HEAD).Trim() -ne $env:SUBJECT_HEAD) {
+              throw 'detached subject head mismatch'
+            }
+            $subjectVerified = $true
+
+            $providerNames = @(
+              'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'GEMINI_API_KEY',
+              'GOOGLE_API_KEY', 'MISTRAL_API_KEY', 'COHERE_API_KEY',
+              'XAI_API_KEY', 'GROQ_API_KEY', 'TOGETHER_API_KEY',
+              'FIREWORKS_API_KEY'
+            )
+            $present = @($providerNames | Where-Object {
+              [Environment]::GetEnvironmentVariable($_)
+            })
+            if ($present.Count -ne 0) {
+              throw "recognized provider credentials present: $($present -join ',')"
+            }
+
+            $python = $env:PYTHON_COMMAND
+            $pythonVersion = (& $python --version 2>&1) -join "`n"
+            if ($LASTEXITCODE -ne 0) { throw 'python is unavailable' }
+            $gitVersion = (git --version) -join "`n"
+            if ($LASTEXITCODE -ne 0) { throw 'git is unavailable' }
+
+            $launcher = Join-Path $subjectRoot 'scripts/Invoke-AstraStage2ControlIdentityBinding.ps1'
+            $retry = Join-Path $subjectRoot 'scripts/Invoke-AstraStage2CheckpointRetry.ps1'
+            $launcherDigest = (Get-FileHash -Algorithm SHA256 -LiteralPath $launcher).Hash.ToLowerInvariant()
+            if ($launcherDigest -ne $env:LAUNCHER_SHA256) {
+              throw "launcher digest mismatch: $launcherDigest"
+            }
+            [void][scriptblock]::Create((Get-Content -Raw -LiteralPath $launcher))
+            $powershellParseStatus = 'PASS'
+
+            $symlinkProbe = Join-Path $env:RUNNER_TEMP 'probe_symlink.py'
+          @'
+          import json
+          import os
+          import pathlib
+          import sys
+
+          root = pathlib.Path(sys.argv[1])
+          root.mkdir(parents=True, exist_ok=True)
+          target = root / "target"
+          link = root / "link"
+          target.write_text("target\n", encoding="utf-8")
+          result = {
+              "can_create_symlink": False,
+              "error_type": None,
+              "error_message": None,
+              "errno": None,
+              "winerror": None,
+          }
+          try:
+              os.symlink(target, link)
+              result["can_create_symlink"] = link.is_symlink()
+          except OSError as exc:
+              result["error_type"] = type(exc).__name__
+              result["error_message"] = str(exc)
+              result["errno"] = exc.errno
+              result["winerror"] = getattr(exc, "winerror", None)
+          pathlib.Path(sys.argv[2]).write_text(
+              json.dumps(result, sort_keys=True) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          '@ | Set-Content -Encoding utf8NoBOM -LiteralPath $symlinkProbe
+
+            & $python $symlinkProbe (Join-Path $env:RUNNER_TEMP 'symlink-probe') $symlinkReceipt
+            if ($LASTEXITCODE -ne 0) { throw 'symlink capability probe failed' }
+            $symlink = Get-Content -Raw -LiteralPath $symlinkReceipt | ConvertFrom-Json
+
+            if ($env:PLATFORM -eq 'windows-2025') {
+              if ($symlink.can_create_symlink) {
+                $expectedSkips = 0
+              }
+              elseif ($symlink.winerror -eq 1314) {
+                $expectedSkips = 1
+              }
+              else {
+                throw "Windows symlink failure is not privilege error 1314: $($symlink | ConvertTo-Json -Compress)"
+              }
+            }
+            elseif ($env:PLATFORM -eq 'ubuntu-24.04') {
+              if (-not $symlink.can_create_symlink) {
+                throw "Ubuntu runner cannot create symlinks: $($symlink | ConvertTo-Json -Compress)"
+              }
+              $expectedSkips = 0
+            }
+            else {
+              throw "unexpected matrix platform: $($env:PLATFORM)"
+            }
+
+            Push-Location -LiteralPath $subjectRoot
+            try {
+              & $python -m py_compile `
+                astra_stage2/control_identity.py `
+                scripts/astra_stage2_bind_controls.py `
+                tests/test_astra_stage2_control_identity.py `
+                tests/test_astra_stage2_control_identity_release.py
+              if ($LASTEXITCODE -ne 0) { throw 'py_compile failed' }
+            }
+            finally {
+              Pop-Location
+            }
+
+            $testRunner = Join-Path $env:RUNNER_TEMP 'run_unittest_capture.py'
+          @'
+          import os
+          import pathlib
+          import subprocess
+          import sys
+
+          subject, stdout_path, stderr_path = map(pathlib.Path, sys.argv[1:4])
+          environment = dict(os.environ)
+          environment["PYTHONPATH"] = str(subject)
+          command = [
+              sys.executable,
+              "-m",
+              "unittest",
+              "discover",
+              "-s",
+              "tests",
+              "-p",
+              "test_astra_stage2_control_identity*.py",
+              "-v",
+          ]
+          result = subprocess.run(
+              command,
+              cwd=subject,
+              env=environment,
+              stdout=subprocess.PIPE,
+              stderr=subprocess.PIPE,
+              check=False,
+          )
+          stdout_path.write_bytes(result.stdout)
+          stderr_path.write_bytes(result.stderr)
+          sys.stdout.buffer.write(result.stdout)
+          sys.stderr.buffer.write(result.stderr)
+          raise SystemExit(result.returncode)
+          '@ | Set-Content -Encoding utf8NoBOM -LiteralPath $testRunner
+
+            & $python $testRunner $subjectRoot $testStdout $testStderr
+            $testExit = $LASTEXITCODE
+            $testText = (
+              [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($testStdout)) +
+              [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($testStderr))
+            )
+
+            if ($testText -match '(?m)^Ran ([0-9]+) tests in ') {
+              $actualTests = [int]$Matches[1]
+            }
+            if ($testText -match '(?m)^OK \(skipped=([0-9]+)\)\r?$') {
+              $actualSkips = [int]$Matches[1]
+            }
+            elseif ($testText -match '(?m)^OK\r?$') {
+              $actualSkips = 0
+            }
+
+            if ($testExit -ne 0) { throw '36-test suite failed' }
+            if ($actualTests -ne 36) { throw "test denominator is not 36: $actualTests" }
+            if ($actualSkips -ne $expectedSkips) {
+              throw "skip count mismatch: expected $expectedSkips, observed $actualSkips"
+            }
+            $actualPassed = 36 - $actualSkips
+            $testSuiteStatus = 'PASS'
+
+            foreach ($requiredTest in @(
+              'test_21_windows_unsupported_matrix_emits_honest_unknown',
+              'test_25_linux_continues_to_require_topology_matrix',
+              'test_26_linux_success_records_exact_matrix',
+              'test_28_retry_digest_match_and_mismatch_paths',
+              'test_29_astra_powershell_bytes_ignore_autocrlf'
+            )) {
+              if ($testText -notmatch "(?m)^$requiredTest .* \.\.\. ok\r?$") {
+                throw "required committed test did not pass: $requiredTest"
+              }
+            }
+
+            if ($symlink.can_create_symlink) {
+              if ($testText -notmatch '(?m)^test_10_symlinked_model_file_refuses .* \.\.\. ok\r?$') {
+                throw 'test 10 did not execute and pass despite available symlink capability'
+              }
+              $test10Result = 'PASS'
+            }
+            else {
+              if ($testText -notmatch "test_10_symlinked_model_file_refuses .* \.\.\. skipped 'symlink creation is privilege-dependent on Windows'") {
+                throw 'test 10 was not the exact privilege-dependent Windows skip'
+              }
+              $test10Result = 'SKIP_WINDOWS_PRIVILEGE_1314'
+            }
+            $topologyContractStatus = 'PASS'
+
+            $digestPayload = Join-Path $env:RUNNER_TEMP 'digest-payload.bin'
+            [IO.File]::WriteAllBytes(
+              $digestPayload,
+              [Text.Encoding]::UTF8.GetBytes("exact execution bytes`n")
+            )
+            $expectedPayloadDigest = (
+              Get-FileHash -Algorithm SHA256 -LiteralPath $digestPayload
+            ).Hash.ToLowerInvariant()
+
+            $matchLines = @(
+              & pwsh -NoProfile -ExecutionPolicy Bypass -File $retry `
+                -Command CheckDigest `
+                -Path $digestPayload `
+                -ExpectedSha256 $expectedPayloadDigest 2>&1
+            )
+            if ($LASTEXITCODE -ne 0 -or ($matchLines -join "`n") -notmatch 'DIGEST_MATCH') {
+              throw 'digest match path failed'
+            }
+            Write-Utf8Lf -Path $digestMatchLog -Text (($matchLines -join "`n") + "`n")
+            $digestMatchStatus = 'PASS'
+
+            $mismatchLines = @(
+              & pwsh -NoProfile -ExecutionPolicy Bypass -File $retry `
+                -Command CheckDigest `
+                -Path $digestPayload `
+                -ExpectedSha256 ('0' * 64) 2>&1
+            )
+            $mismatchExit = $LASTEXITCODE
+            Write-Utf8Lf -Path $digestMismatchLog -Text (($mismatchLines -join "`n") + "`n")
+            if ($mismatchExit -eq 0 -or ($mismatchLines -join "`n") -notmatch 'Digest mismatch') {
+              throw 'digest mismatch path did not refuse'
+            }
+            $digestMismatchStatus = 'PASS'
+
+            foreach ($setting in @('true', 'false')) {
+              $checkout = Join-Path $env:RUNNER_TEMP "autocrlf-$setting"
+              New-Item -ItemType Directory -Path $checkout -Force | Out-Null
+              git -C $checkout init
+              if ($LASTEXITCODE -ne 0) { throw "git init failed for autocrlf=$setting" }
+              git -C $checkout config core.autocrlf $setting
+              git -C $checkout remote add origin $repoUrl
+              git -C $checkout fetch --no-tags origin `
+                "+refs/heads/$($env:SUBJECT_BRANCH):refs/remotes/origin/subject"
+              if ($LASTEXITCODE -ne 0) { throw "git fetch failed for autocrlf=$setting" }
+              git -C $checkout checkout --detach refs/remotes/origin/subject
+              if ($LASTEXITCODE -ne 0) { throw "git checkout failed for autocrlf=$setting" }
+              if ((git -C $checkout rev-parse HEAD).Trim() -ne $env:SUBJECT_HEAD) {
+                throw "autocrlf=$setting head mismatch"
+              }
+              if (git -C $checkout status --porcelain) {
+                throw "autocrlf=$setting checkout is dirty"
+              }
+              $materializedLauncher = Join-Path $checkout 'scripts/Invoke-AstraStage2ControlIdentityBinding.ps1'
+              $bytes = [IO.File]::ReadAllBytes($materializedLauncher)
+              $text = [Text.Encoding]::UTF8.GetString($bytes)
+              if ($text.Contains("`r`n")) {
+                throw "autocrlf=$setting produced CRLF launcher bytes"
+              }
+              $digest = (
+                Get-FileHash -Algorithm SHA256 -LiteralPath $materializedLauncher
+              ).Hash.ToLowerInvariant()
+              if ($digest -ne $env:LAUNCHER_SHA256) {
+                throw "autocrlf=$setting launcher digest mismatch: $digest"
+              }
+              $materialized[$setting] = $digest
+            }
+            if ($materialized['true'] -ne $materialized['false']) {
+              throw 'autocrlf materializations differ'
+            }
+            $lfMaterializationStatus = 'PASS'
+
+            $qualificationResult = 'PASS'
+          }
+          catch {
+            $failureType = $_.Exception.GetType().FullName
+            $failureMessage = $_.Exception.Message
+            Write-Host "QUALIFICATION_FAIL_CLOSED: $failureMessage"
+          }
+          finally {
+            if ($actualTests -eq $null -and (Test-Path -LiteralPath $testStderr)) {
+              $summaryText = [Text.Encoding]::UTF8.GetString(
+                [IO.File]::ReadAllBytes($testStderr)
+              )
+              if ($summaryText -match '(?m)^Ran ([0-9]+) tests in ') {
+                $actualTests = [int]$Matches[1]
+              }
+            }
+
+            $receiptPath = Join-Path $evidenceRoot 'platform-receipt.json'
+            $classification = if ($qualificationResult -eq 'PASS') {
+              'HOSTED_PROVIDER_FREE_CANDIDATE_QUALIFICATION_PASS'
+            }
+            else {
+              'HOSTED_PROVIDER_FREE_CANDIDATE_QUALIFICATION_FAIL_CLOSED'
+            }
+
+            $receipt = [ordered]@{
+              schema = 'tier-bench/astra-stage2-windows-prepare-portability-successor-hosted-platform@1'
+              classification = $classification
+              qualification_result = $qualificationResult
+              failure = if ($qualificationResult -eq 'PASS') {
+                $null
+              }
+              else {
+                [ordered]@{
+                  type = $failureType
+                  message = $failureMessage
+                }
+              }
+              repository = $env:GITHUB_REPOSITORY
+              workflow_run_id = [long]$env:GITHUB_RUN_ID
+              workflow_run_attempt = [int]$env:GITHUB_RUN_ATTEMPT
+              workflow_carrier_branch = $env:CARRIER_BRANCH
+              workflow_carrier_head = $carrierHead
+              workflow_carrier_tree = $carrierTree
+              workflow_carrier_parent = $env:SUBJECT_HEAD
+              workflow_carrier_changed_paths = @($env:WORKFLOW_PATH)
+              qualified_subject_branch = $env:SUBJECT_BRANCH
+              qualified_subject_head = $env:SUBJECT_HEAD
+              qualified_subject_tree = $env:SUBJECT_TREE
+              qualified_subject_parent = $env:SUBJECT_PARENT
+              qualified_subject_changed_paths = @($env:SUBJECT_CHANGED_PATH)
+              qualified_subject_parent_test_blob = $env:SUBJECT_PARENT_TEST_BLOB
+              qualified_subject_test_blob = $env:SUBJECT_TEST_BLOB
+              qualified_subject_production_blob = $env:PRODUCTION_BLOB
+              subject_coordinates_verified = $subjectVerified
+              binder_ancestor = $env:BINDER_HEAD
+              law_ancestor = $env:LAW_HEAD
+              platform = $env:PLATFORM
+              operating_system = [Runtime.InteropServices.RuntimeInformation]::OSDescription
+              python_version = $pythonVersion
+              git_version = $gitVersion
+              powershell_version = $pwshVersion
+              commands = [ordered]@{
+                compile = "$($env:PYTHON_COMMAND) -m py_compile astra_stage2/control_identity.py scripts/astra_stage2_bind_controls.py tests/test_astra_stage2_control_identity.py tests/test_astra_stage2_control_identity_release.py"
+                tests = "$($env:PYTHON_COMMAND) -m unittest discover -s tests -p test_astra_stage2_control_identity*.py -v"
+                digest_match = 'Invoke-AstraStage2CheckpointRetry.ps1 -Command CheckDigest with exact digest'
+                digest_mismatch = 'Invoke-AstraStage2CheckpointRetry.ps1 -Command CheckDigest with 64 zeroes'
+                topology_windows = 'committed test_21 bounded diagnostic fixture; physical hardware not claimed'
+                topology_linux = 'committed tests 25 and 26; physical nvidia-smi reserved for native Ubuntu NUC'
+              }
+              tests = [ordered]@{
+                expected_total = 36
+                observed_total = $actualTests
+                exit_code = $testExit
+                expected_skips = $expectedSkips
+                observed_skips = $actualSkips
+                observed_passed = $actualPassed
+                test_10_result = $test10Result
+              }
+              symlink_capability = [ordered]@{
+                can_create_symlink = [bool]$symlink.can_create_symlink
+                error_type = $symlink.error_type
+                error_message = $symlink.error_message
+                errno = $symlink.errno
+                winerror = $symlink.winerror
+                admissibility_rule = 'pass when available; sole skip only for Windows winerror 1314'
+              }
+              launcher_sha256 = $launcherDigest
+              powershell_parse = $powershellParseStatus
+              test_suite = $testSuiteStatus
+              digest_match = $digestMatchStatus
+              digest_mismatch_refusal = $digestMismatchStatus
+              autocrlf_true_launcher_sha256 = $materialized['true']
+              autocrlf_false_launcher_sha256 = $materialized['false']
+              lf_only_materialization = $lfMaterializationStatus
+              windows_topology_fixture = [ordered]@{
+                test = 'test_21_windows_unsupported_matrix_emits_honest_unknown'
+                command_exit_code = 255
+                nvidia_topo_matrix = 'UNSUPPORTED_ON_PLATFORM'
+                topology_class = 'UNKNOWN'
+                result = $topologyContractStatus
+                physical_observation = $false
+              }
+              linux_topology_contract = [ordered]@{
+                refusal_test = 'test_25_linux_continues_to_require_topology_matrix'
+                success_test = 'test_26_linux_success_records_exact_matrix'
+                command = 'nvidia-smi topo -m'
+                result = $topologyContractStatus
+                physical_observation = $false
+              }
+              logs = [ordered]@{
+                unittest_stdout_sha256 = (Get-OptionalSha256 -Path $testStdout)
+                unittest_stderr_sha256 = (Get-OptionalSha256 -Path $testStderr)
+                digest_match_log_sha256 = (Get-OptionalSha256 -Path $digestMatchLog)
+                digest_mismatch_log_sha256 = (Get-OptionalSha256 -Path $digestMismatchLog)
+                symlink_capability_sha256 = (Get-OptionalSha256 -Path $symlinkReceipt)
+              }
+              authority = [ordered]@{
+                preflight = 'NOT_RUN'
+                prepare = 'NOT_RUN'
+                binding = 'NOT_RUN'
+                model_calls = 0
+                provider_calls = 0
+                empirical_calibration = 'NOT_RUN'
+                numeric_freeze = 'NOT_ISSUED'
+                callable_astra_identity = 'UNBOUND'
+                physical_model_custody_seen = $false
+              }
+            }
+
+            Write-Utf8Lf `
+              -Path $receiptPath `
+              -Text (($receipt | ConvertTo-Json -Depth 20) + "`n")
+
+            $sumLines = @()
+            foreach ($file in Get-ChildItem -LiteralPath $evidenceRoot -File | Sort-Object Name) {
+              if ($file.Name -eq 'SHA256SUMS') { continue }
+              $digest = (
+                Get-FileHash -Algorithm SHA256 -LiteralPath $file.FullName
+              ).Hash.ToLowerInvariant()
+              $sumLines += "$digest  $($file.Name)"
+            }
+            $sumsPath = Join-Path $evidenceRoot 'SHA256SUMS'
+            Write-Utf8Lf -Path $sumsPath -Text (($sumLines -join "`n") + "`n")
+
+            $receiptDigest = (
+              Get-FileHash -Algorithm SHA256 -LiteralPath $receiptPath
+            ).Hash.ToLowerInvariant()
+            "evidence_root=$evidenceRoot" >> $env:GITHUB_OUTPUT
+            "receipt_sha256=$receiptDigest" >> $env:GITHUB_OUTPUT
+            "qualification_result=$qualificationResult" >> $env:GITHUB_OUTPUT
+            Get-Content -Raw -LiteralPath $receiptPath >> $env:GITHUB_STEP_SUMMARY
+          }
+
+      - name: Upload content-addressed platform receipt
+        id: platform_artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-windows-prepare-portability-platform-${{ matrix.platform }}-${{ steps.qualify.outputs.receipt_sha256 }}
+          path: ${{ steps.qualify.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Seal platform artifact coordinates
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not '${{ steps.platform_artifact.outputs.artifact-id }}') {
+            throw 'platform artifact id absent'
+          }
+          if (-not '${{ steps.platform_artifact.outputs.artifact-digest }}') {
+            throw 'platform artifact digest absent'
+          }
+          @"
+
+          platform=${{ matrix.platform }}
+          qualification_result=${{ steps.qualify.outputs.qualification_result }}
+          receipt_sha256=${{ steps.qualify.outputs.receipt_sha256 }}
+          artifact_id=${{ steps.platform_artifact.outputs.artifact-id }}
+          artifact_digest=${{ steps.platform_artifact.outputs.artifact-digest }}
+          "@ >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Enforce qualification after evidence retention
+        shell: pwsh
+        run: |
+          if ('${{ steps.qualify.outputs.qualification_result }}' -ne 'PASS') {
+            throw 'platform qualification failed closed after receipt upload'
+          }
+
+  qualification-index:
+    needs:
+      - carrier-guard
+      - hosted-platform
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download both content-addressed platform receipts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: astra-stage2-windows-prepare-portability-platform-*
+          path: ${{ runner.temp }}/astra-platform-downloads
+          merge-multiple: false
+
+      - name: Verify platform receipts and build qualification index
+        id: index
+        shell: bash
+        env:
+          EXPECTED_CARRIER_HEAD: ${{ needs.carrier-guard.outputs.carrier_head }}
+          EXPECTED_CARRIER_TREE: ${{ needs.carrier-guard.outputs.carrier_tree }}
+        run: |
+          set -euo pipefail
+          download_root="$RUNNER_TEMP/astra-platform-downloads"
+          combined_root="$RUNNER_TEMP/astra-hosted-qualification-index"
+
+          mapfile -t sums < <(find "$download_root" -name SHA256SUMS -type f | sort)
+          test "${#sums[@]}" -eq 2
+          for sums_file in "${sums[@]}"; do
+            (cd "$(dirname "$sums_file")" && sha256sum -c SHA256SUMS)
+          done
+
+          python3 - "$download_root" "$combined_root" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import shutil
+          import sys
+
+          download_root = pathlib.Path(sys.argv[1])
+          combined_root = pathlib.Path(sys.argv[2])
+          receipt_paths = sorted(download_root.rglob("platform-receipt.json"))
+          if len(receipt_paths) != 2:
+              raise SystemExit(
+                  f"expected two platform receipts, found {len(receipt_paths)}"
+              )
+
+          expected_platforms = {"windows-2025", "ubuntu-24.04"}
+          expected_authority = {
+              "preflight": "NOT_RUN",
+              "prepare": "NOT_RUN",
+              "binding": "NOT_RUN",
+              "model_calls": 0,
+              "provider_calls": 0,
+              "empirical_calibration": "NOT_RUN",
+              "numeric_freeze": "NOT_ISSUED",
+              "callable_astra_identity": "UNBOUND",
+              "physical_model_custody_seen": False,
+          }
+          fixed = {
+              "workflow_carrier_head": os.environ["EXPECTED_CARRIER_HEAD"],
+              "workflow_carrier_tree": os.environ["EXPECTED_CARRIER_TREE"],
+              "workflow_carrier_parent": os.environ["SUBJECT_HEAD"],
+              "qualified_subject_head": os.environ["SUBJECT_HEAD"],
+              "qualified_subject_tree": os.environ["SUBJECT_TREE"],
+              "qualified_subject_parent": os.environ["SUBJECT_PARENT"],
+              "qualified_subject_parent_test_blob": os.environ[
+                  "SUBJECT_PARENT_TEST_BLOB"
+              ],
+              "qualified_subject_test_blob": os.environ["SUBJECT_TEST_BLOB"],
+              "qualified_subject_production_blob": os.environ["PRODUCTION_BLOB"],
+              "launcher_sha256": os.environ["LAUNCHER_SHA256"],
+          }
+
+          seen = set()
+          entries = []
+          combined_root.mkdir(parents=True, exist_ok=False)
+          receipt_dir = combined_root / "platform-receipts"
+          receipt_dir.mkdir()
+
+          for receipt_path in receipt_paths:
+              data = receipt_path.read_bytes()
+              digest = hashlib.sha256(data).hexdigest()
+              artifact_name = receipt_path.parent.name
+              if not artifact_name.endswith(digest):
+                  raise SystemExit(
+                      f"artifact name is not content-addressed: "
+                      f"{artifact_name} / {digest}"
+                  )
+              receipt = json.loads(data)
+              platform = receipt["platform"]
+              if platform in seen:
+                  raise SystemExit(f"duplicate platform receipt: {platform}")
+              seen.add(platform)
+
+              if (
+                  receipt.get("classification")
+                  != "HOSTED_PROVIDER_FREE_CANDIDATE_QUALIFICATION_PASS"
+                  or receipt.get("qualification_result") != "PASS"
+              ):
+                  raise SystemExit(f"platform did not pass: {platform}")
+
+              for key, expected in fixed.items():
+                  if receipt.get(key) != expected:
+                      raise SystemExit(
+                          f"{platform} {key} mismatch: "
+                          f"{receipt.get(key)!r} != {expected!r}"
+                      )
+
+              if receipt.get("workflow_carrier_changed_paths") != [
+                  os.environ["WORKFLOW_PATH"]
+              ]:
+                  raise SystemExit(f"{platform} carrier path mismatch")
+              if receipt.get("qualified_subject_changed_paths") != [
+                  os.environ["SUBJECT_CHANGED_PATH"]
+              ]:
+                  raise SystemExit(f"{platform} subject path mismatch")
+              if receipt.get("subject_coordinates_verified") is not True:
+                  raise SystemExit(f"{platform} subject was not verified")
+              if receipt.get("binder_ancestor") != os.environ["BINDER_HEAD"]:
+                  raise SystemExit(f"{platform} binder mismatch")
+              if receipt.get("law_ancestor") != os.environ["LAW_HEAD"]:
+                  raise SystemExit(f"{platform} law mismatch")
+              if receipt.get("authority") != expected_authority:
+                  raise SystemExit(f"{platform} authority ledger mismatch")
+
+              tests = receipt.get("tests", {})
+              if tests.get("expected_total") != 36:
+                  raise SystemExit(f"{platform} expected denominator mismatch")
+              if tests.get("observed_total") != 36:
+                  raise SystemExit(f"{platform} observed denominator mismatch")
+              if tests.get("exit_code") != 0:
+                  raise SystemExit(f"{platform} test exit mismatch")
+
+              symlink = receipt.get("symlink_capability", {})
+              if platform == "ubuntu-24.04":
+                  if symlink.get("can_create_symlink") is not True:
+                      raise SystemExit("Ubuntu symlink capability absent")
+                  if tests.get("observed_skips") != 0:
+                      raise SystemExit("Ubuntu carried a skip")
+                  if tests.get("test_10_result") != "PASS":
+                      raise SystemExit("Ubuntu test 10 did not pass")
+              elif platform == "windows-2025":
+                  if symlink.get("can_create_symlink") is True:
+                      if tests.get("observed_skips") != 0:
+                          raise SystemExit("capable Windows runner carried a skip")
+                      if tests.get("test_10_result") != "PASS":
+                          raise SystemExit("capable Windows test 10 did not pass")
+                  else:
+                      if symlink.get("winerror") != 1314:
+                          raise SystemExit(
+                              "incapable Windows runner did not record error 1314"
+                          )
+                      if tests.get("observed_skips") != 1:
+                          raise SystemExit(
+                              "Windows privilege absence did not yield one skip"
+                          )
+                      if (
+                          tests.get("test_10_result")
+                          != "SKIP_WINDOWS_PRIVILEGE_1314"
+                      ):
+                          raise SystemExit(
+                              "Windows test 10 skip classification mismatch"
+                          )
+              else:
+                  raise SystemExit(f"unexpected platform: {platform}")
+
+              destination = receipt_dir / f"{platform}.json"
+              destination.write_bytes(data)
+              entries.append(
+                  {
+                      "platform": platform,
+                      "receipt_sha256": digest,
+                      "artifact_name": artifact_name,
+                      "tests": tests,
+                      "symlink_capability": symlink,
+                  }
+              )
+
+          if seen != expected_platforms:
+              raise SystemExit(
+                  f"platform set mismatch: {seen!r} != {expected_platforms!r}"
+              )
+
+          index = {
+              "schema": (
+                  "tier-bench/astra-stage2-windows-prepare-"
+                  "portability-successor-hosted-qualification@1"
+              ),
+              "classification": (
+                  "HOSTED_PROVIDER_FREE_PORTABILITY_SUCCESSOR_QUALIFIED"
+              ),
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "workflow_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "workflow_run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "workflow_carrier_branch": os.environ["CARRIER_BRANCH"],
+              "workflow_carrier_head": os.environ["EXPECTED_CARRIER_HEAD"],
+              "workflow_carrier_tree": os.environ["EXPECTED_CARRIER_TREE"],
+              "qualified_subject_branch": os.environ["SUBJECT_BRANCH"],
+              "qualified_subject_head": os.environ["SUBJECT_HEAD"],
+              "qualified_subject_tree": os.environ["SUBJECT_TREE"],
+              "qualified_subject_parent": os.environ["SUBJECT_PARENT"],
+              "qualified_subject_changed_paths": [
+                  os.environ["SUBJECT_CHANGED_PATH"]
+              ],
+              "qualified_subject_test_blob": os.environ["SUBJECT_TEST_BLOB"],
+              "qualified_subject_production_blob": os.environ[
+                  "PRODUCTION_BLOB"
+              ],
+              "launcher_sha256": os.environ["LAUNCHER_SHA256"],
+              "platforms": sorted(entries, key=lambda item: item["platform"]),
+              "authority": expected_authority,
+              "next_authority": (
+                  "BOUNDED_NATIVE_UBUNTU_NUC_QUALIFICATION_ONLY"
+              ),
+          }
+          canonical = json.dumps(
+              index,
+              sort_keys=True,
+              separators=(",", ":"),
+              ensure_ascii=False,
+          ).encode("utf-8")
+          index["payload_sha256"] = hashlib.sha256(canonical).hexdigest()
+          index_path = combined_root / "qualification-index.json"
+          index_path.write_text(
+              json.dumps(index, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+
+          sums = []
+          for path in sorted(
+              item for item in combined_root.rglob("*") if item.is_file()
+          ):
+              relative = path.relative_to(combined_root).as_posix()
+              sums.append(
+                  f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {relative}"
+              )
+          (combined_root / "SHA256SUMS").write_text(
+              "\n".join(sums) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+
+          index_digest="$(sha256sum "$combined_root/qualification-index.json" | awk '{print $1}')"
+          printf 'combined_root=%s\n' "$combined_root" >> "$GITHUB_OUTPUT"
+          printf 'index_sha256=%s\n' "$index_digest" >> "$GITHUB_OUTPUT"
+          cat "$combined_root/qualification-index.json" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload content-addressed qualification index
+        id: index_artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-windows-prepare-portability-qualification-${{ steps.index.outputs.index_sha256 }}
+          path: ${{ steps.index.outputs.combined_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Seal qualification artifact coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n '${{ steps.index_artifact.outputs.artifact-id }}'
+          test -n '${{ steps.index_artifact.outputs.artifact-digest }}'
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+
+          qualification_index_sha256=${{ steps.index.outputs.index_sha256 }}
+          artifact_id=${{ steps.index_artifact.outputs.artifact-id }}
+          artifact_digest=${{ steps.index_artifact.outputs.artifact-digest }}
+          EOF
