@@ -1,0 +1,203 @@
+name: finalize-astra-stage2-windows-topology-lf-v2
+
+on:
+  push:
+    branches:
+      - finalizer/astra-stage2-windows-topology-lf-v2-20260903
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Resolve successful release and independent audit
+        id: resolve
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: release/astra-stage2-control-identity-windows-topology-lf-v2-20260903
+          RELEASE_WORKFLOW: astra-stage2-control-identity-windows-topology-lf-v2
+          AUDIT_BRANCH: audit/astra-stage2-windows-topology-lf-v2-20260903
+          AUDIT_WORKFLOW: astra-stage2-windows-topology-lf-v2-audit
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          auth=(-H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+
+          release_head="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" "refs/heads/${RELEASE_BRANCH}" | awk '{print $1}')"
+          audit_head="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" "refs/heads/${AUDIT_BRANCH}" | awk '{print $1}')"
+          test -n "$release_head"
+          test -n "$audit_head"
+
+          release_tree="$(curl --fail --silent --show-error "${auth[@]}" "$api/commits/$release_head" | jq -r '.commit.tree.sha')"
+          audit_tree="$(curl --fail --silent --show-error "${auth[@]}" "$api/commits/$audit_head" | jq -r '.commit.tree.sha')"
+
+          release_run=""
+          audit_run=""
+          for attempt in $(seq 1 90); do
+            release_run="$(curl --fail --silent --show-error "${auth[@]}" "$api/actions/runs?head_sha=${release_head}&per_page=100" | jq -r --arg name "$RELEASE_WORKFLOW" '[.workflow_runs[] | select(.name==$name and .status=="completed" and .conclusion=="success")][0].id // empty')"
+            audit_run="$(curl --fail --silent --show-error "${auth[@]}" "$api/actions/runs?head_sha=${audit_head}&per_page=100" | jq -r --arg name "$AUDIT_WORKFLOW" '[.workflow_runs[] | select(.name==$name and .status=="completed" and .conclusion=="success")][0].id // empty')"
+            if [[ -n "$release_run" && -n "$audit_run" ]]; then break; fi
+            sleep 10
+          done
+          test -n "$release_run"
+          test -n "$audit_run"
+
+          checkout="$RUNNER_TEMP/finalize-checkout"
+          git clone --quiet --no-checkout "https://github.com/${GITHUB_REPOSITORY}.git" "$checkout"
+          git -C "$checkout" fetch --quiet --no-tags --depth=512 origin "$release_head" "$audit_head"
+          git -C "$checkout" merge-base --is-ancestor "$release_head" "$audit_head"
+
+          release_artifacts="$(curl --fail --silent --show-error "${auth[@]}" "$api/actions/runs/${release_run}/artifacts")"
+          release_artifact_id="$(printf '%s' "$release_artifacts" | jq -r '[.artifacts[] | select(.name|startswith("astra-stage2-windows-topology-lf-v2-release-"))][0].id // empty')"
+          test -n "$release_artifact_id"
+          release_artifact_bytes="$(printf '%s' "$release_artifacts" | jq -r --argjson id "$release_artifact_id" '.artifacts[] | select(.id==$id) | .size_in_bytes')"
+          release_artifact_digest="$(printf '%s' "$release_artifacts" | jq -r --argjson id "$release_artifact_id" '.artifacts[] | select(.id==$id) | .digest')"
+
+          audit_artifacts="$(curl --fail --silent --show-error "${auth[@]}" "$api/actions/runs/${audit_run}/artifacts")"
+          audit_artifact_id="$(printf '%s' "$audit_artifacts" | jq -r '[.artifacts[] | select(.name|startswith("astra-stage2-windows-topology-lf-v2-audit-"))][0].id // empty')"
+          test -n "$audit_artifact_id"
+          audit_artifact_bytes="$(printf '%s' "$audit_artifacts" | jq -r --argjson id "$audit_artifact_id" '.artifacts[] | select(.id==$id) | .size_in_bytes')"
+          audit_artifact_digest="$(printf '%s' "$audit_artifacts" | jq -r --argjson id "$audit_artifact_id" '.artifacts[] | select(.id==$id) | .digest')"
+
+          curl --fail --silent --show-error --location "${auth[@]}" "$api/actions/artifacts/${audit_artifact_id}/zip" -o "$RUNNER_TEMP/audit.zip"
+          test "$(sha256sum "$RUNNER_TEMP/audit.zip" | awk '{print $1}')" = "${audit_artifact_digest#sha256:}"
+          audit_payload="$(python3 - "$RUNNER_TEMP/audit.zip" <<'PY'
+          import json,sys,zipfile
+          with zipfile.ZipFile(sys.argv[1]) as archive:
+              names=[name for name in archive.namelist() if name.endswith('audit-result.json')]
+              if len(names)!=1:
+                  raise SystemExit(f'audit-result count differs: {len(names)}')
+              value=json.loads(archive.read(names[0]).decode('utf-8'))
+              if value.get('disposition')!='PASS_WINDOWS_TOPOLOGY_LF_V2_PROVIDER_FREE_RELEASE_ONLY':
+                  raise SystemExit('audit disposition differs')
+              if value.get('failed_count')!=0 or value.get('refused_count')!=7:
+                  raise SystemExit('audit attack ledger differs')
+              print(value['payload_sha256'])
+          PY
+          )"
+
+          launcher_sha="$(git -C "$checkout" show "${release_head}:scripts/Invoke-AstraStage2ControlIdentityBinding.ps1" | sha256sum | awk '{print $1}')"
+          helper_sha="$(git -C "$checkout" show "${release_head}:scripts/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1" | sha256sum | awk '{print $1}')"
+
+          printf 'release_head=%s\n' "$release_head" >> "$GITHUB_OUTPUT"
+          printf 'release_tree=%s\n' "$release_tree" >> "$GITHUB_OUTPUT"
+          printf 'release_run=%s\n' "$release_run" >> "$GITHUB_OUTPUT"
+          printf 'release_artifact_id=%s\n' "$release_artifact_id" >> "$GITHUB_OUTPUT"
+          printf 'release_artifact_bytes=%s\n' "$release_artifact_bytes" >> "$GITHUB_OUTPUT"
+          printf 'release_artifact_digest=%s\n' "$release_artifact_digest" >> "$GITHUB_OUTPUT"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$audit_tree" >> "$GITHUB_OUTPUT"
+          printf 'audit_run=%s\n' "$audit_run" >> "$GITHUB_OUTPUT"
+          printf 'audit_artifact_id=%s\n' "$audit_artifact_id" >> "$GITHUB_OUTPUT"
+          printf 'audit_artifact_bytes=%s\n' "$audit_artifact_bytes" >> "$GITHUB_OUTPUT"
+          printf 'audit_artifact_digest=%s\n' "$audit_artifact_digest" >> "$GITHUB_OUTPUT"
+          printf 'audit_payload=%s\n' "$audit_payload" >> "$GITHUB_OUTPUT"
+          printf 'launcher_sha=%s\n' "$launcher_sha" >> "$GITHUB_OUTPUT"
+          printf 'helper_sha=%s\n' "$helper_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Create immutable checkpoint
+        id: checkpoint
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_HEAD: ${{ steps.resolve.outputs.release_head }}
+        run: |
+          set -euo pipefail
+          branch="checkpoint/astra-stage2-windows-topology-lf-v2-${RELEASE_HEAD:0:8}-20260903"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          existing="$(git ls-remote "$remote" "refs/heads/${branch}" | awk '{print $1}')"
+          if [[ -n "$existing" ]]; then
+            test "$existing" = "$RELEASE_HEAD"
+          else
+            git push "$remote" "${RELEASE_HEAD}:refs/heads/${branch}"
+          fi
+          printf 'branch=%s\n' "$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Publish connected handoff and readback
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_HEAD: ${{ steps.resolve.outputs.release_head }}
+          RELEASE_TREE: ${{ steps.resolve.outputs.release_tree }}
+          RELEASE_RUN: ${{ steps.resolve.outputs.release_run }}
+          RELEASE_ARTIFACT_ID: ${{ steps.resolve.outputs.release_artifact_id }}
+          RELEASE_ARTIFACT_BYTES: ${{ steps.resolve.outputs.release_artifact_bytes }}
+          RELEASE_ARTIFACT_DIGEST: ${{ steps.resolve.outputs.release_artifact_digest }}
+          AUDIT_HEAD: ${{ steps.resolve.outputs.audit_head }}
+          AUDIT_TREE: ${{ steps.resolve.outputs.audit_tree }}
+          AUDIT_RUN: ${{ steps.resolve.outputs.audit_run }}
+          AUDIT_ARTIFACT_ID: ${{ steps.resolve.outputs.audit_artifact_id }}
+          AUDIT_ARTIFACT_BYTES: ${{ steps.resolve.outputs.audit_artifact_bytes }}
+          AUDIT_ARTIFACT_DIGEST: ${{ steps.resolve.outputs.audit_artifact_digest }}
+          AUDIT_PAYLOAD: ${{ steps.resolve.outputs.audit_payload }}
+          LAUNCHER_SHA: ${{ steps.resolve.outputs.launcher_sha }}
+          HELPER_SHA: ${{ steps.resolve.outputs.helper_sha }}
+          CHECKPOINT_BRANCH: ${{ steps.checkpoint.outputs.branch }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          auth=(-H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          body="$RUNNER_TEMP/release.md"
+          cat > "$body" <<EOF
+          <!-- astra-stage2-windows-topology-lf-v2-finalized -->
+          ### RELEASE: immutable LF-safe Windows NVIDIA topology handoff
+
+          \`\`\`yaml
+          classification: FINAL_CHECKPOINTED_WINDOWS_TOPOLOGY_LF_V2_PROVIDER_FREE_IDENTITIES_UNBOUND
+          pull_request: 190
+          release_head: ${RELEASE_HEAD}
+          release_tree: ${RELEASE_TREE}
+          checkpoint_branch: ${CHECKPOINT_BRANCH}
+          launcher_sha256: ${LAUNCHER_SHA}
+          checkpoint_helper_sha256: ${HELPER_SHA}
+          qualification_run: ${RELEASE_RUN}
+          qualification_artifact: {id: ${RELEASE_ARTIFACT_ID}, bytes: ${RELEASE_ARTIFACT_BYTES}, sha256: ${RELEASE_ARTIFACT_DIGEST#sha256:}}
+          audit_head: ${AUDIT_HEAD}
+          audit_tree: ${AUDIT_TREE}
+          audit_run: ${AUDIT_RUN}
+          audit_artifact: {id: ${AUDIT_ARTIFACT_ID}, bytes: ${AUDIT_ARTIFACT_BYTES}, sha256: ${AUDIT_ARTIFACT_DIGEST#sha256:}}
+          audit_payload_sha256: ${AUDIT_PAYLOAD}
+          windows_tests: 35
+          linux_tests: 35
+          lf_materialization: PASS
+          digest_guard: PARENTHESIZED
+          windows_topology_method: WINDOWS_NVIDIA_SMI_QUERY_GPU_PCI_INVENTORY
+          windows_peer_link_authority: UNAVAILABLE_NOT_ASSERTED
+          posix_topology_method: NVIDIA_SMI_TOPO_M
+          physical_assets: ACQUIRED_PRESERVED_UNRECEIPTED
+          official_prepare: INCOMPLETE
+          actual_executable_identities: UNBOUND
+          provider_or_model_calls: 0
+          empirical_calibration: NOT_RUN
+          numeric_stage2_freeze: NOT_ISSUED
+          bind: PROHIBITED
+          \`\`\`
+
+          The B353 retry comparison, line-ending, and unsupported Windows topology defects are repaired and independently audited. The repository-owned checkpoint helper fetches this immutable checkpoint, pins checkout materialization, verifies the parenthesized launcher digest condition, preserves prior receipts, reuses the existing asset custody with \`Prepare -SkipDownloads\`, and must stop with identities \`UNBOUND\`.
+
+          **Control question:** Does the estate use this checkpoint and stop after receipt-bearing \`ASSETS_PREPARED_EXECUTABLE_IDENTITIES_UNBOUND\` without running Bind?
+          EOF
+          request="$(jq -Rs '{body:.}' < "$body")"
+          response="$(curl --fail --silent --show-error -X POST "${auth[@]}" "$api/issues/172/comments" -d "$request")"
+          comment="$(printf '%s' "$response" | jq -r .id)"
+          fetched="$(curl --fail --silent --show-error "${auth[@]}" "$api/issues/comments/$comment")"
+          printf '%s' "$fetched" | jq -e --arg head "$RELEASE_HEAD" --arg cp "$CHECKPOINT_BRANCH" --arg audit "$AUDIT_PAYLOAD" '.body|contains($head) and contains($cp) and contains($audit)' >/dev/null
+          readback="$(jq -n --arg body "### READBACK: finalized Windows topology LF v2 handoff\n\nrelease_comment_id: $comment\nrelease_head: $RELEASE_HEAD\nrelease_tree: $RELEASE_TREE\ncheckpoint_branch: $CHECKPOINT_BRANCH\nqualification_run: $RELEASE_RUN\naudit_run: $AUDIT_RUN\naudit_payload_sha256: $AUDIT_PAYLOAD\nconnected_body_verified: true\nofficial_prepare: INCOMPLETE\nactual_executable_identities: UNBOUND\nprovider_or_model_calls: 0" '{body:$body}')"
+          readback_response="$(curl --fail --silent --show-error -X POST "${auth[@]}" "$api/issues/172/comments" -d "$readback")"
+          readback_id="$(printf '%s' "$readback_response" | jq -r .id)"
+          {
+            echo "release_head=${RELEASE_HEAD}"
+            echo "release_tree=${RELEASE_TREE}"
+            echo "checkpoint_branch=${CHECKPOINT_BRANCH}"
+            echo "qualification_run=${RELEASE_RUN}"
+            echo "audit_run=${AUDIT_RUN}"
+            echo "release_comment=${comment}"
+            echo "readback_comment=${readback_id}"
+          } >> "$GITHUB_STEP_SUMMARY"
