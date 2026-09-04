@@ -34,6 +34,11 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_BUILDER_HEAD"
           cp .github/scripts/build_astra_windows_topology_repair.py \
             "$RUNNER_TEMP/build_astra_windows_topology_repair.py"
+          cp .github/scripts/correct_astra_windows_topology_materializer.py \
+            "$RUNNER_TEMP/correct_astra_windows_topology_materializer.py"
+          python3 "$RUNNER_TEMP/correct_astra_windows_topology_materializer.py" \
+            "$RUNNER_TEMP/build_astra_windows_topology_repair.py"
+          python3 -m py_compile "$RUNNER_TEMP/build_astra_windows_topology_repair.py"
 
           git checkout --detach refs/astra-topology/base
           git clean -ffd
