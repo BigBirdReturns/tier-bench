@@ -57,10 +57,10 @@ class ControlIdentityReleaseTests(unittest.TestCase):
 
     def test_22_launcher_pins_exact_qualified_binder_and_law(self) -> None:
         for coordinate in (
-            "c8f914073cb11da29925ccd5d2167f661816e1fd",
-            "e0f5e6e72e5ba3666957d9d5ad1a7a230839f6a5",
-            "66699d317be4146847485828819f8ffb76277eb7",
-            "a7dc64135af76ca5e081d30737d0ba08a38a57b1",
+            "697bd2dc75ef74c675373b6be99e1e82f58b26b8",
+            "e6fa04295d0c7f42fe28c9043585738f8fc09ff3",
+            "208557ba708a970b5dd7a7417e2099c93f5efeb9",
+            "ad50945676dd7a89052f281a23037ab95368b6b8",
             "9babad4631ef517485c56ea4906aab123e30fad7",
             "60bca963d63edca267106bc5c7725c2cc1df8dd7",
         ):
