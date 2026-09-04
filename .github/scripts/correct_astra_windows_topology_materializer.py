@@ -13,7 +13,7 @@ text = text.replace(
 
 start = text.index("new_probe = r'''def probe_hardware(")
 end = text.index("'''\nmodule = module[:start] + new_probe + module[end:]", start)
-new_probe = r'''new_probe = r'''def probe_hardware(
+probe_source = '''def probe_hardware(
     *,
     output_dir: Path,
     nvidia_smi: str | None = None,
@@ -134,8 +134,8 @@ new_probe = r'''new_probe = r'''def probe_hardware(
     write_json_atomic(output_dir / "probe-receipt.json", receipt)
     return receipt
 '''
-'''
-text = text[:start] + new_probe + text[end + 3 :]
+replacement = "new_probe = r'''" + probe_source + "'''\n"
+text = text[:start] + replacement + text[end + 4 :]
 
 text = text.replace(
     "receipt = probe_hardware(\n                output,\n                nvidia_smi=executable,\n                selected_device_indices=[0],\n            )",
