@@ -1,0 +1,503 @@
+name: build-astra-stage2-windows-topology-release
+
+on:
+  push:
+    branches:
+      - builder/astra-stage2-windows-topology-release-20260903
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Wait for and bind the qualified topology binder
+        id: binder
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BINDER_BRANCH: repair/astra-stage2-control-identity-windows-topology-binder-20260903
+          BINDER_WORKFLOW: astra-stage2-control-identity-windows-topology
+        run: |
+          set -euo pipefail
+          binder_head="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" "refs/heads/${BINDER_BRANCH}" | awk '{print $1}')"
+          test -n "$binder_head"
+          binder_tree="$(curl --fail --silent --show-error \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${binder_head}" \
+            | python3 -c 'import json,sys; print(json.load(sys.stdin)["commit"]["tree"]["sha"])')"
+
+          success_run=""
+          for attempt in $(seq 1 30); do
+            success_run="$(curl --fail --silent --show-error \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${binder_head}&per_page=100" \
+              | python3 -c '
+          import json,sys
+          target=sys.argv[1]
+          runs=json.load(sys.stdin).get("workflow_runs",[])
+          passed=[r for r in runs if r.get("name")==target and r.get("status")=="completed" and r.get("conclusion")=="success"]
+          print(passed[0]["id"] if passed else "")
+          ' "$BINDER_WORKFLOW")"
+            if [[ -n "$success_run" ]]; then break; fi
+            sleep 10
+          done
+          test -n "$success_run"
+          printf 'binder_head=%s\n' "$binder_head" >> "$GITHUB_OUTPUT"
+          printf 'binder_tree=%s\n' "$binder_tree" >> "$GITHUB_OUTPUT"
+          printf 'binder_run=%s\n' "$success_run" >> "$GITHUB_OUTPUT"
+          {
+            echo "binder_head=${binder_head}"
+            echo "binder_tree=${binder_tree}"
+            echo "binder_qualification_run=${success_run}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Build and publish the release successor
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: release/astra-stage2-control-identity-v1-20260903
+          RELEASE_BASE: b3534c9703723ac35343af0209edc34c7587173c
+          RELEASE_BASE_TREE: 15f64f02f5dfc6b1e5e59634205dc7d157d9c125
+          BINDER_HEAD: ${{ steps.binder.outputs.binder_head }}
+          BINDER_TREE: ${{ steps.binder.outputs.binder_tree }}
+          BINDER_RUN: ${{ steps.binder.outputs.binder_run }}
+        run: |
+          set -euo pipefail
+          git init work
+          cd work
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=192 origin \
+            "+refs/heads/${RELEASE_BRANCH}:refs/astra-release/current" \
+            "+${BINDER_HEAD}:refs/astra-release/binder"
+          test "$(git rev-parse refs/astra-release/current)" = "$RELEASE_BASE"
+          test "$(git rev-parse "${RELEASE_BASE}^{tree}")" = "$RELEASE_BASE_TREE"
+          test "$(git rev-parse refs/astra-release/binder)" = "$BINDER_HEAD"
+          test "$(git rev-parse "${BINDER_HEAD}^{tree}")" = "$BINDER_TREE"
+
+          git checkout --detach "$RELEASE_BASE"
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git merge --no-ff --no-edit "$BINDER_HEAD"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          binder_head = os.environ["BINDER_HEAD"]
+          binder_tree = os.environ["BINDER_TREE"]
+          binder_run = os.environ["BINDER_RUN"]
+
+          attributes = Path(".gitattributes")
+          text = attributes.read_text(encoding="utf-8") if attributes.exists() else ""
+          required = [
+              "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 text eol=lf",
+              "scripts/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1 text eol=lf",
+              "scripts/astra_stage2_bind_controls.ps1 text eol=lf",
+          ]
+          lines = text.splitlines()
+          for line in required:
+              if line not in lines:
+                  lines.append(line)
+          attributes.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8", newline="\n")
+
+          launcher = Path("scripts/Invoke-AstraStage2ControlIdentityBinding.ps1")
+          text = launcher.read_text(encoding="utf-8")
+          old_head = "$BinderHead = 'af03cef494a509ab7ba5df29fa4b4ccba423f1f8'"
+          old_tree = "$BinderTree = '519ea2f8f448a464e817a024ad8ed1ac64493931'"
+          if text.count(old_head) != 1 or text.count(old_tree) != 1:
+              raise SystemExit("launcher binder-coordinate anchor mismatch")
+          text = text.replace(old_head, f"$BinderHead = '{binder_head}'", 1)
+          text = text.replace(old_tree, f"$BinderTree = '{binder_tree}'", 1)
+          launcher.write_text(text, encoding="utf-8", newline="\n")
+
+          helper = Path("scripts/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1")
+          helper.write_text(r'''[CmdletBinding()]
+          param(
+              [Parameter(Mandatory = $true)][string]$CheckpointBranch,
+              [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{40}$')][string]$ExpectedHead,
+              [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{40}$')][string]$ExpectedTree,
+              [Parameter(Mandatory = $true)][ValidatePattern('^[0-9a-f]{64}$')][string]$ExpectedLauncherSha256,
+              [string]$RepoRoot = 'D:\Projects\Measurement\Tier-Bench\main',
+              [string]$Worktree = 'S:\Scratch\Worktrees\Tier-Bench\astra-stage2-control-identity-release-current',
+              [string]$CustodyRoot = 'S:\Scratch\Incoming\Tier-Bench\astra-stage2-control-identities-real',
+              [string]$Python = 'python'
+          )
+
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+
+          function Get-Sha256 {
+              param([Parameter(Mandatory = $true)][string]$Path)
+              return (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLowerInvariant()
+          }
+
+          function Invoke-Git {
+              param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
+              & git @Arguments
+              if ($LASTEXITCODE -ne 0) {
+                  throw "git failed ($LASTEXITCODE): $($Arguments -join ' ')"
+              }
+          }
+
+          $checkpointRef = 'refs/astra-control-identity/checkpoint'
+          $refspec = '+refs/heads/{0}:{1}' -f $CheckpointBranch, $checkpointRef
+          Invoke-Git -C $RepoRoot -c core.autocrlf=false fetch --no-tags origin $refspec
+          $fetchedHead = (& git -C $RepoRoot rev-parse $checkpointRef).Trim()
+          if ($fetchedHead -ne $ExpectedHead) {
+              throw "Checkpoint drift: expected $ExpectedHead, observed $fetchedHead"
+          }
+          $fetchedTree = (& git -C $RepoRoot rev-parse "$ExpectedHead`^{tree}").Trim()
+          if ($fetchedTree -ne $ExpectedTree) {
+              throw "Checkpoint tree mismatch: expected $ExpectedTree, observed $fetchedTree"
+          }
+
+          if (-not (Test-Path -LiteralPath $Worktree)) {
+              New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Worktree) | Out-Null
+              Invoke-Git -C $RepoRoot -c core.autocrlf=false worktree add --detach $Worktree $ExpectedHead
+          }
+          else {
+              if (& git -C $Worktree status --porcelain) {
+                  throw "Retained worktree is dirty: $Worktree"
+              }
+              Invoke-Git -C $Worktree -c core.autocrlf=false checkout --detach $ExpectedHead
+          }
+
+          if ((& git -C $Worktree rev-parse HEAD).Trim() -ne $ExpectedHead) {
+              throw 'Worktree head mismatch'
+          }
+          if ((& git -C $Worktree rev-parse 'HEAD^{tree}').Trim() -ne $ExpectedTree) {
+              throw 'Worktree tree mismatch'
+          }
+
+          $launcher = Join-Path $Worktree 'scripts\Invoke-AstraStage2ControlIdentityBinding.ps1'
+          if ((Get-Sha256 $launcher) -ne $ExpectedLauncherSha256) {
+              throw "Launcher digest mismatch: $(Get-Sha256 $launcher)"
+          }
+
+          $history = Join-Path $CustodyRoot ('history\before-checkpoint-' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+          New-Item -ItemType Directory -Force -Path $history | Out-Null
+          foreach ($name in @(
+              'PREFLIGHT-RECEIPT.json',
+              'PREPARE-RECEIPT.json',
+              'astra-stage2-control-identities.private.json',
+              'astra-stage2-control-identities.inventoried.private.json'
+          )) {
+              $source = Join-Path $CustodyRoot $name
+              if (Test-Path -LiteralPath $source -PathType Leaf) {
+                  Copy-Item -LiteralPath $source -Destination (Join-Path $history $name)
+              }
+          }
+
+          $caller = Join-Path $env:TEMP ('astra-checkpoint-preflight-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Force -Path $caller | Out-Null
+          Push-Location -LiteralPath $caller
+          try {
+              & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher -Mode Preflight -RepoRoot $RepoRoot -CustodyRoot $CustodyRoot -Python $Python
+              if ($LASTEXITCODE -ne 0) { throw "Preflight failed: $LASTEXITCODE" }
+          }
+          finally {
+              Pop-Location
+          }
+
+          $preflightPath = Join-Path $CustodyRoot 'PREFLIGHT-RECEIPT.json'
+          $preflight = Get-Content -Raw -LiteralPath $preflightPath | ConvertFrom-Json
+          if ($preflight.state -ne 'PREFLIGHT_PASS') { throw 'Preflight did not pass' }
+          if ($preflight.model_calls -ne 0 -or $preflight.provider_calls -ne 0 -or $preflight.actual_executable_control_identities -ne 'UNBOUND') {
+              throw 'Preflight widened authority'
+          }
+
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher -Mode Prepare -RepoRoot $RepoRoot -CustodyRoot $CustodyRoot -Python $Python -SkipDownloads
+          if ($LASTEXITCODE -ne 0) { throw "Prepare -SkipDownloads failed: $LASTEXITCODE" }
+
+          $preparePath = Join-Path $CustodyRoot 'PREPARE-RECEIPT.json'
+          $prepare = Get-Content -Raw -LiteralPath $preparePath | ConvertFrom-Json
+          if ($prepare.state -ne 'ASSETS_PREPARED_EXECUTABLE_IDENTITIES_UNBOUND') {
+              throw "Unexpected Prepare state: $($prepare.state)"
+          }
+          if ($prepare.model_calls -ne 0 -or $prepare.provider_calls -ne 0 -or $prepare.runtime_identity -ne 'UNBOUND' -or $prepare.effort_mapping -ne 'UNBOUND') {
+              throw 'Prepare widened authority'
+          }
+          Write-Host 'PREPARE_COMPLETE_UNBOUND'
+          Write-Host "History archive: $history"
+          Write-Host 'STOP. Do not run Bind.'
+          ''', encoding="utf-8", newline="\n")
+
+          test = Path("tests/test_astra_stage2_control_identity_handoff.py")
+          test.write_text(r'''from __future__ import annotations
+
+          import unittest
+          from pathlib import Path
+
+
+          class ControlIdentityHandoffTests(unittest.TestCase):
+              @classmethod
+              def setUpClass(cls) -> None:
+                  cls.repo = Path(__file__).resolve().parents[1]
+                  cls.attributes = (cls.repo / ".gitattributes").read_text(encoding="utf-8")
+                  cls.helper = (cls.repo / "scripts" / "Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1").read_text(encoding="utf-8")
+
+              def test_25_guarded_powershell_paths_are_lf_pinned(self) -> None:
+                  for line in (
+                      "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 text eol=lf",
+                      "scripts/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1 text eol=lf",
+                      "scripts/astra_stage2_bind_controls.ps1 text eol=lf",
+                  ):
+                      self.assertIn(line, self.attributes)
+
+              def test_26_digest_comparison_is_parenthesized(self) -> None:
+                  self.assertIn(
+                      "if ((Get-Sha256 $launcher) -ne $ExpectedLauncherSha256)",
+                      self.helper,
+                  )
+
+              def test_27_helper_fetches_checkpoint_not_movable_release(self) -> None:
+                  self.assertIn("$CheckpointBranch", self.helper)
+                  self.assertIn("core.autocrlf=false", self.helper)
+                  self.assertNotIn("release/astra-stage2-control-identity-v1-20260903", self.helper)
+
+              def test_28_helper_preserves_history_and_stops_unbound(self) -> None:
+                  self.assertIn("history\\before-checkpoint-", self.helper)
+                  self.assertIn("-SkipDownloads", self.helper)
+                  self.assertIn("ASSETS_PREPARED_EXECUTABLE_IDENTITIES_UNBOUND", self.helper)
+                  self.assertIn("STOP. Do not run Bind.", self.helper)
+
+
+          if __name__ == "__main__":
+              unittest.main()
+          ''', encoding="utf-8", newline="\n")
+
+          workflow = Path(".github/workflows/astra-stage2-control-identity-release.yml")
+          text = workflow.read_text(encoding="utf-8")
+          text = text.replace(
+              "          BINDER_HEAD: af03cef494a509ab7ba5df29fa4b4ccba423f1f8",
+              f"          BINDER_HEAD: {binder_head}",
+          ).replace(
+              "          BINDER_TREE: 519ea2f8f448a464e817a024ad8ed1ac64493931",
+              f"          BINDER_TREE: {binder_tree}",
+          )
+          text = text.replace("Ran 27 tests in ", "Ran 35 tests in ")
+          text = text.replace("tests = 27", "tests = 35")
+          text = text.replace('"tests": 27', '"tests": 35')
+          text = text.replace('"binder_tests": 20', '"binder_tests": 24')
+          text = text.replace(
+              '"release_tests": 7,',
+              '"release_tests": 7,\n                  "handoff_tests": 4,\n                  "topology_tests": 4,',
+          )
+
+          expected_pattern = re.compile(
+              r"(?P<indent>\s*)expected = \{\n(?P<body>(?:\s+\"[^\"]+\",\n)+)(?P=indent)\}"
+          )
+          candidates = []
+          for match in expected_pattern.finditer(text):
+              body = match.group("body")
+              if "astra-stage2-control-identity-release.yml" in body and "Invoke-AstraStage2ControlIdentityBinding.ps1" in body:
+                  candidates.append(match)
+          if len(candidates) != 1:
+              raise SystemExit(f"expected release path set anchor count differs: {len(candidates)}")
+          match = candidates[0]
+          indent = match.group("indent")
+          paths = [
+              ".gitattributes",
+              ".github/workflows/astra-stage2-control-identity-release.yml",
+              ".github/workflows/astra-stage2-control-identity.yml",
+              "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1",
+              "scripts/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1",
+              "tests/test_astra_stage2_control_identity.py",
+              "tests/test_astra_stage2_control_identity_handoff.py",
+              "tests/test_astra_stage2_control_identity_release.py",
+          ]
+          replacement = indent + "expected = {\n" + "".join(
+              f'{indent}    "{path}",\n' for path in paths
+          ) + indent + "}"
+          text = text[:match.start()] + replacement + text[match.end():]
+
+          checkout_marker = "                    git checkout --detach refs/control-release/candidate\n"
+          checkout_insert = checkout_marker + "                    git check-attr eol -- scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 scripts/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1 scripts/astra_stage2_bind_controls.ps1\n"
+          if text.count(checkout_marker) < 1:
+              raise SystemExit("Windows checkout marker absent")
+          text = text.replace(checkout_marker, checkout_insert, 1)
+
+          windows_test_marker = "              - name: Run complete 27-test suite on Windows\n"
+          if windows_test_marker not in text:
+              windows_test_marker = "              - name: Run complete 35-test suite on Windows\n"
+          windows_steps = r'''              - name: Verify LF materialization under Windows autocrlf
+                shell: pwsh
+                run: |
+                  $ErrorActionPreference = 'Stop'
+                  $paths = @(
+                    'scripts/Invoke-AstraStage2ControlIdentityBinding.ps1',
+                    'scripts/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1',
+                    'scripts/astra_stage2_bind_controls.ps1'
+                  )
+                  foreach ($path in $paths) {
+                    $attribute = git check-attr eol -- $path
+                    if ($attribute -notmatch 'eol: lf$') { throw "LF attribute absent for $path: $attribute" }
+                    $working = [System.IO.File]::ReadAllBytes((Join-Path $PWD $path))
+                    if ([System.Text.Encoding]::UTF8.GetString($working).Contains("`r`n")) { throw "CRLF materialized in $path" }
+                    $blob = Join-Path $env:RUNNER_TEMP ((Split-Path -Leaf $path) + '.blob')
+                    cmd.exe /d /c "git cat-file blob HEAD:$path > `"$blob`""
+                    if ($LASTEXITCODE -ne 0) { throw "Unable to materialize blob for $path" }
+                    if ((Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash -ne (Get-FileHash -Algorithm SHA256 -LiteralPath $blob).Hash) { throw "Working-tree bytes differ from Git blob for $path" }
+                  }
+                  Write-Host 'LF_MATERIALIZATION_PASS'
+
+              - name: Exercise truthful Windows NVIDIA topology probe
+                id: windows_topology
+                shell: pwsh
+                run: |
+                  $ErrorActionPreference = 'Stop'
+                  $fakeRoot = Join-Path $env:RUNNER_TEMP 'release-fake-nvidia-smi'
+                  New-Item -ItemType Directory -Force -Path $fakeRoot | Out-Null
+                  $fakeExe = Join-Path $fakeRoot 'nvidia-smi.exe'
+                  $logPath = Join-Path $fakeRoot 'arguments.log'
+                  $source = @'
+                  using System;
+                  using System.IO;
+                  public static class Program {
+                    public static int Main(string[] args) {
+                      File.AppendAllText(Environment.GetEnvironmentVariable("TIER_BENCH_FAKE_NVIDIA_LOG"), String.Join(" ", args) + Environment.NewLine);
+                      foreach (var arg in args) if (arg == "topo" || arg == "-m") return 75;
+                      Console.WriteLine("index, uuid, name, pci.bus_id, memory.total [MiB], driver_version");
+                      Console.WriteLine("0, GPU-FAKE, Fake RTX, 00000000:01:00.0, 24576, 999.0");
+                      return 0;
+                    }
+                  }
+                  '@
+                  Add-Type -TypeDefinition $source -Language CSharp -OutputAssembly $fakeExe -OutputType ConsoleApplication
+                  $env:TIER_BENCH_FAKE_NVIDIA_LOG = $logPath
+                  $out = Join-Path $fakeRoot 'receipt'
+                  $env:PYTHONPATH = (Get-Location).Path
+                  & powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/astra_stage2_bind_controls.ps1 -Command probe-hardware -Out $out -NvidiaSmi $fakeExe -DeviceIndices '0'
+                  if ($LASTEXITCODE -ne 0) { throw "Windows topology probe failed: $LASTEXITCODE" }
+                  $invocations = Get-Content -Raw -LiteralPath $logPath
+                  if ($invocations -match '(?m)(^|\s)topo(\s|$)' -or $invocations -match '(?m)(^|\s)-m(\s|$)') { throw 'Windows probe invoked unsupported topo -m' }
+                  $topology = Get-Content -Raw -LiteralPath (Join-Path $out 'nvidia-topology.txt')
+                  if ($topology -notmatch 'tier_bench_topology_method=WINDOWS_NVIDIA_SMI_QUERY_GPU_PCI_INVENTORY') { throw 'Windows topology method absent' }
+                  if ($topology -notmatch 'tier_bench_peer_link_authority=UNAVAILABLE_NOT_ASSERTED') { throw 'Windows peer-link refusal absent' }
+                  if ($topology -notmatch 'tier_bench_topology_exit_status=0') { throw 'Windows topology status absent' }
+                  "topology_root=$fakeRoot" >> $env:GITHUB_OUTPUT
+
+'''
+          if text.count(windows_test_marker) != 1:
+              raise SystemExit("Windows test step anchor differs")
+          text = text.replace(windows_test_marker, windows_steps + windows_test_marker, 1)
+
+          linux_test_marker = "          - name: Run complete 27-test suite on Linux\n"
+          if linux_test_marker not in text:
+              linux_test_marker = "          - name: Run complete 35-test suite on Linux\n"
+          linux_steps = r'''          - name: Exercise canonical POSIX NVIDIA topology probe
+            shell: bash
+            env:
+              EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+            run: |
+              set -euo pipefail
+              fake_root="$RUNNER_TEMP/release-fake-nvidia-smi"
+              mkdir -p "$fake_root"
+              cat > "$fake_root/nvidia-smi" <<'SH'
+              #!/usr/bin/env bash
+              set -euo pipefail
+              printf '%s\n' "$*" >> "$TIER_BENCH_FAKE_NVIDIA_LOG"
+              if [[ "${1:-}" == --query-gpu=* ]]; then
+                printf 'index, uuid, name, pci.bus_id, memory.total [MiB], driver_version\n'
+                printf '0, GPU-FAKE, Fake RTX, 00000000:01:00.0, 24576, 999.0\n'
+                exit 0
+              fi
+              if [[ "${1:-}" == topo && "${2:-}" == -m ]]; then
+                printf '        GPU0\nGPU0     X\n'
+                exit 0
+              fi
+              exit 76
+              SH
+              chmod +x "$fake_root/nvidia-smi"
+              export TIER_BENCH_FAKE_NVIDIA_LOG="$fake_root/arguments.log"
+              out="$fake_root/receipt"
+              PYTHONPATH=. python3 scripts/astra_stage2_bind_controls.py probe-hardware --out "$out" --nvidia-smi "$fake_root/nvidia-smi" --device-indices 0
+              grep -Fxq 'topo -m' "$TIER_BENCH_FAKE_NVIDIA_LOG"
+              grep -q 'tier_bench_topology_method=NVIDIA_SMI_TOPO_M' "$out/nvidia-topology.txt"
+              grep -q 'tier_bench_peer_link_authority=NVIDIA_SMI_TOPO_M_OBSERVED' "$out/nvidia-topology.txt"
+              grep -q 'tier_bench_topology_exit_status=0' "$out/nvidia-topology.txt"
+              cp -R "$fake_root" "$EVIDENCE_ROOT/linux-topology-probe"
+
+'''
+          if text.count(linux_test_marker) != 1:
+              raise SystemExit("Linux test step anchor differs")
+          text = text.replace(linux_test_marker, linux_steps + linux_test_marker, 1)
+
+          parse_marker = "                    $launcher = Join-Path $PWD 'scripts\\Invoke-AstraStage2ControlIdentityBinding.ps1'\n"
+          if text.count(parse_marker) >= 1:
+              text = text.replace(
+                  parse_marker,
+                  parse_marker + "                    $checkpointHelper = Join-Path $PWD 'scripts\\Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1'\n",
+                  1,
+              )
+              text = text.replace(
+                  "                    $text = Get-Content -Raw -LiteralPath $launcher\n",
+                  "                    $text = Get-Content -Raw -LiteralPath $launcher\n                    $checkpointText = Get-Content -Raw -LiteralPath $checkpointHelper\n",
+                  1,
+              )
+              text = text.replace(
+                  "                      [void][scriptblock]::Create($text)\n",
+                  "                      [void][scriptblock]::Create($text)\n                      [void][scriptblock]::Create($checkpointText)\n",
+                  1,
+              )
+
+          copy_marker = "          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \\\n            \"$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1\"\n"
+          if text.count(copy_marker) != 1:
+              raise SystemExit("evidence copy marker differs")
+          text = text.replace(
+              copy_marker,
+              copy_marker + "          cp scripts/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1 \\\n            \"$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1\"\n          cp .gitattributes \"$EVIDENCE_ROOT/gitattributes.txt\"\n",
+              1,
+          )
+
+          source_marker = '                  "binder_tree_sha1": os.environ["BINDER_TREE"],\n'
+          if text.count(source_marker) != 1:
+              raise SystemExit("qualification binder source marker differs")
+          text = text.replace(
+              source_marker,
+              source_marker + f'                  "binder_topology_qualification_run": {binder_run},\n',
+              1,
+          )
+
+          conformance_marker = '                  "repository_root_discovery_tested": True,\n'
+          if text.count(conformance_marker) != 1:
+              raise SystemExit("conformance marker differs")
+          text = text.replace(
+              conformance_marker,
+              conformance_marker + '                  "lf_materialization_windows": True,\n                  "windows_topology_method": "WINDOWS_NVIDIA_SMI_QUERY_GPU_PCI_INVENTORY",\n                  "windows_peer_link_authority": "UNAVAILABLE_NOT_ASSERTED",\n                  "posix_topology_method": "NVIDIA_SMI_TOPO_M",\n                  "checkpoint_retry_helper_present": True,\n',
+              1,
+          )
+
+          workflow.write_text(text, encoding="utf-8", newline="\n")
+          PY
+
+          git diff --check
+          python3 -m py_compile tests/test_astra_stage2_control_identity_handoff.py
+          PYTHONPATH=. python3 -m unittest discover -s tests -p 'test_astra_stage2_control_identity*.py' -v 2>&1 | tee /tmp/release-tests.log
+          grep -q '^Ran 35 tests in ' /tmp/release-tests.log
+          grep -q '^OK$' /tmp/release-tests.log
+
+          git add -A
+          git commit -m "release(astra): pin LF and truthful Windows NVIDIA topology"
+          successor_head="$(git rev-parse HEAD)"
+          successor_tree="$(git rev-parse 'HEAD^{tree}')"
+
+          current_remote="$(git ls-remote origin "refs/heads/${RELEASE_BRANCH}" | awk '{print $1}')"
+          test "$current_remote" = "$RELEASE_BASE"
+          git push origin "HEAD:refs/heads/${RELEASE_BRANCH}"
+          {
+            echo "successor_head=${successor_head}"
+            echo "successor_tree=${successor_tree}"
+            echo "binder_head=${BINDER_HEAD}"
+            echo "binder_tree=${BINDER_TREE}"
+          } >> "$GITHUB_STEP_SUMMARY"
