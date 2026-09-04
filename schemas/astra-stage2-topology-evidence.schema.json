@@ -1,0 +1,78 @@
+{
+  "$id": "tier-bench/astra-stage2-topology-evidence.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "additionalProperties": false,
+      "properties": {
+        "device_query_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "implicit_pooling_claimed": {"const": false},
+        "inter_device_topology_claimed": {"type": "boolean"},
+        "matrix_stdout_base64": {"minLength": 1, "type": "string"},
+        "matrix_stdout_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "method": {"const": "NVIDIA_SMI_TOPO_MATRIX"},
+        "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "platform": {"const": "Linux"},
+        "schema": {"const": "tier-bench/astra-stage2-topology-evidence@1"},
+        "selected_device_indices": {
+          "items": {"minimum": 0, "type": "integer"},
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "selected_device_query_rows_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "state": {"const": "OBSERVED"}
+      },
+      "required": [
+        "schema",
+        "state",
+        "platform",
+        "method",
+        "selected_device_indices",
+        "selected_device_query_rows_sha256",
+        "device_query_sha256",
+        "matrix_stdout_base64",
+        "matrix_stdout_sha256",
+        "inter_device_topology_claimed",
+        "implicit_pooling_claimed",
+        "payload_sha256"
+      ],
+      "type": "object"
+    },
+    {
+      "additionalProperties": false,
+      "properties": {
+        "device_query_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "implicit_pooling_claimed": {"const": false},
+        "inter_device_topology_claimed": {"const": false},
+        "method": {"const": "PLATFORM_LIMITATION_SINGLE_DEVICE"},
+        "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "platform": {"const": "Windows"},
+        "schema": {"const": "tier-bench/astra-stage2-topology-evidence@1"},
+        "selected_device_index": {"minimum": 0, "type": "integer"},
+        "selected_device_query_row_sha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "state": {"const": "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE"}
+      },
+      "required": [
+        "schema",
+        "state",
+        "platform",
+        "method",
+        "selected_device_index",
+        "selected_device_query_row_sha256",
+        "device_query_sha256",
+        "inter_device_topology_claimed",
+        "implicit_pooling_claimed",
+        "payload_sha256"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "Astra Stage 2 platform-specific topology evidence"
+}
