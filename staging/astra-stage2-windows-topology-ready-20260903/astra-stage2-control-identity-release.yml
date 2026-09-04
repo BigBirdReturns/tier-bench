@@ -1,0 +1,798 @@
+name: astra-stage2-control-identity-release
+
+on:
+  push:
+    branches:
+      - release/astra-stage2-control-identity-v1-20260903
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-control-identity-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-conformance:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    outputs:
+      receipt_sha256: ${{ steps.windows_receipt.outputs.receipt_sha256 }}
+      tests: ${{ steps.windows_receipt.outputs.tests }}
+      skipped: ${{ steps.windows_receipt.outputs.skipped }}
+    steps:
+      - name: Check out exact release head on Windows
+        id: custody
+        shell: pwsh
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+          RELEASE_BRANCH: release/astra-stage2-control-identity-v1-20260903
+          BINDER_HEAD: af03cef494a509ab7ba5df29fa4b4ccba423f1f8
+          BINDER_TREE: 519ea2f8f448a464e817a024ad8ed1ac64493931
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git init .
+          if ($LASTEXITCODE -ne 0) { throw 'git init failed' }
+          git remote add origin "https://github.com/$env:GITHUB_REPOSITORY.git"
+          if ($LASTEXITCODE -ne 0) { throw 'git remote add failed' }
+          $refspec = "+refs/heads/{0}:refs/windows-release/candidate" -f $env:RELEASE_BRANCH
+          git fetch --no-tags --depth=96 origin $refspec
+          if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+          git checkout --detach refs/windows-release/candidate
+          if ($LASTEXITCODE -ne 0) { throw 'git checkout failed' }
+
+          $head = (git rev-parse HEAD).Trim()
+          $tree = (git rev-parse 'HEAD^{tree}').Trim()
+          if ($head -ne $env:EXPECTED_HEAD) {
+            throw "Windows checkout head mismatch: $head"
+          }
+          $binderTree = (git rev-parse "$($env:BINDER_HEAD)^{tree}").Trim()
+          if ($binderTree -ne $env:BINDER_TREE) {
+            throw "Binder tree mismatch: $binderTree"
+          }
+          git merge-base --is-ancestor $env:BINDER_HEAD $head
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Release is not descended from exact binder head'
+          }
+
+          "head_sha=$head" >> $env:GITHUB_OUTPUT
+          "tree_sha=$tree" >> $env:GITHUB_OUTPUT
+
+      - name: Verify LF materialization under core.autocrlf=true
+        id: lf_checkout
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sourceRoot = (Get-Location).Path
+          $cloneRoot = Join-Path $env:RUNNER_TEMP 'astra-control-identity-lf-clone'
+          git init $cloneRoot
+          if ($LASTEXITCODE -ne 0) { throw 'LF test git init failed' }
+          git -C $cloneRoot config core.autocrlf true
+          git -C $cloneRoot remote add source $sourceRoot
+          if ($LASTEXITCODE -ne 0) { throw 'LF test remote add failed' }
+          git -C $cloneRoot fetch --no-tags --depth=1 source HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'LF test fetch failed' }
+          git -C $cloneRoot checkout --detach FETCH_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'LF test checkout failed' }
+
+          $receipt = Join-Path $env:RUNNER_TEMP 'lf-materialization-receipt.json'
+          $env:ASTRA_LF_CLONE = $cloneRoot
+          $env:ASTRA_LF_RECEIPT = $receipt
+          @'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import subprocess
+
+          root = pathlib.Path(os.environ["ASTRA_LF_CLONE"])
+          paths = [
+              ".gitattributes",
+              "astra_stage2/control_identity.py",
+              "experiments/astra_kxr/stage2/control_identity/binding-template.json",
+              "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1",
+              "scripts/astra_stage2_bind_controls.ps1",
+              "scripts/astra_stage2_bind_controls.py",
+              "tests/test_astra_stage2_control_identity.py",
+              "tests/test_astra_stage2_control_identity_release.py",
+              ".github/workflows/astra-stage2-control-identity.yml",
+              ".github/workflows/astra-stage2-control-identity-release.yml",
+          ]
+          files = {}
+          for path in paths:
+              worktree = (root / path).read_bytes()
+              blob = subprocess.check_output(
+                  ["git", "-C", str(root), "cat-file", "blob", f"HEAD:{path}"]
+              )
+              if worktree != blob:
+                  raise SystemExit(f"worktree/blob mismatch under autocrlf=true: {path}")
+              if b"\r\n" in worktree:
+                  raise SystemExit(f"CRLF materialized in hash-bound file: {path}")
+              files[path] = {
+                  "bytes": len(worktree),
+                  "sha256": hashlib.sha256(worktree).hexdigest(),
+              }
+          value = {
+              "schema": "tier-bench/astra-stage2-lf-materialization@1",
+              "core_autocrlf": True,
+              "path_count": len(files),
+              "files": files,
+              "result": "PASS",
+          }
+          pathlib.Path(os.environ["ASTRA_LF_RECEIPT"]).write_text(
+              json.dumps(value, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          '@ | python -
+          if ($LASTEXITCODE -ne 0) { throw 'LF materialization verification failed' }
+          "receipt=$receipt" >> $env:GITHUB_OUTPUT
+          Write-Host 'LF_MATERIALIZATION_PASS'
+
+      - name: Run complete 32-test suite on Windows
+        id: windows_tests
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python --version
+          if ($LASTEXITCODE -ne 0) { throw 'python is unavailable' }
+
+          python -m py_compile `
+            astra_stage2/control_identity.py `
+            scripts/astra_stage2_bind_controls.py `
+            tests/test_astra_stage2_control_identity.py `
+            tests/test_astra_stage2_control_identity_release.py
+          if ($LASTEXITCODE -ne 0) { throw 'py_compile failed' }
+
+          $lines = @(
+            & python -m unittest discover `
+              -s tests `
+              -p 'test_astra_stage2_control_identity*.py' `
+              -v 2>&1
+          )
+          $exitCode = $LASTEXITCODE
+          $log = Join-Path $env:RUNNER_TEMP 'test-control-identity-windows.log'
+          $lines | Set-Content -Encoding utf8 $log
+          $lines | ForEach-Object { Write-Host $_ }
+          if ($exitCode -ne 0) {
+            throw "Windows control-identity suite failed with exit code $exitCode"
+          }
+
+          $joined = $lines -join "`n"
+          if ($joined -notmatch '(?m)^Ran 32 tests in ') {
+            throw 'Windows test denominator is not 32'
+          }
+          if ($joined -notmatch '(?m)^OK \(skipped=1\)$') {
+            throw 'Windows suite did not finish with exactly one expected symlink skip'
+          }
+          "log=$log" >> $env:GITHUB_OUTPUT
+
+      - name: Exercise Windows single-device topology fallback
+        id: topology_fallback
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $receipt = Join-Path $env:RUNNER_TEMP 'windows-topology-fallback-receipt.json'
+          $env:ASTRA_TOPOLOGY_RECEIPT = $receipt
+          @'
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import tempfile
+          from unittest.mock import patch
+
+          from astra_stage2.control_identity import probe_hardware
+          from astra_stage2.canonical import strict_json_load
+
+          with tempfile.TemporaryDirectory(prefix="astra-win-topology-") as temp:
+              root = pathlib.Path(temp)
+              executable = root / "nvidia-smi.exe"
+              executable.write_bytes(b"synthetic-nvidia-smi")
+              query = subprocess.CompletedProcess(
+                  [str(executable)],
+                  0,
+                  stdout=(
+                      b"0, Windows GPU, GPU-windows, "
+                      b"00000000:01:00.0, 24576, 999.0\n"
+                  ),
+                  stderr=b"",
+              )
+              topology = subprocess.CompletedProcess(
+                  [str(executable), "topo", "-m"],
+                  255,
+                  stdout=b"",
+                  stderr=b"ERROR: Invalid Argument\n",
+              )
+              output = root / "evidence"
+              with patch(
+                  "astra_stage2.control_identity.subprocess.run",
+                  side_effect=[query, topology],
+              ), patch(
+                  "astra_stage2.control_identity.platform.system",
+                  return_value="Windows",
+              ):
+                  probe = probe_hardware(
+                      output_dir=output,
+                      nvidia_smi=str(executable),
+                      device_indices=[0],
+                  )
+              record = strict_json_load(output / "nvidia-topology.json")
+              assert record["method"] == (
+                  "WINDOWS_SINGLE_SELECTED_DEVICE_DECLARATION"
+              )
+              assert record["native_exit_code"] == 255
+              assert record["native_matrix_observed"] is False
+              assert record["interdevice_links_required"] is False
+              assert probe["provider_or_model_calls"] == 0
+              value = {
+                  "schema": (
+                      "tier-bench/"
+                      "astra-stage2-windows-topology-fallback-conformance@1"
+                  ),
+                  "runner": "windows-2025",
+                  "selected_device_indices": [0],
+                  "topology_method": record["method"],
+                  "native_exit_code": record["native_exit_code"],
+                  "native_matrix_observed": False,
+                  "interdevice_links_required": False,
+                  "topology_sha256": probe["topology_sha256"],
+                  "topology_payload_sha256": probe["topology_payload_sha256"],
+                  "provider_or_model_calls": 0,
+                  "result": "PASS",
+              }
+              pathlib.Path(os.environ["ASTRA_TOPOLOGY_RECEIPT"]).write_text(
+                  json.dumps(value, sort_keys=True, indent=2) + "\n",
+                  encoding="utf-8",
+                  newline="\n",
+              )
+          '@ | python -
+          if ($LASTEXITCODE -ne 0) { throw 'Windows topology fallback failed' }
+          "receipt=$receipt" >> $env:GITHUB_OUTPUT
+          Write-Host 'WINDOWS_SINGLE_DEVICE_TOPOLOGY_FALLBACK_PASS'
+
+      - name: Parse launcher with a terminating PowerShell gate
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $launcher = Join-Path $PWD 'scripts\Invoke-AstraStage2ControlIdentityBinding.ps1'
+          $text = Get-Content -Raw -LiteralPath $launcher
+          try {
+            [void][scriptblock]::Create($text)
+          }
+          catch {
+            throw "PowerShell parse failed: $($_.Exception.Message)"
+          }
+          Write-Host 'POWERSHELL_PARSE_PASS'
+
+      - name: Execute non-downloading Windows Preflight
+        id: preflight
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $preflightRoot = Join-Path $env:RUNNER_TEMP 'astra-control-identity-preflight'
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+            -File .\scripts\Invoke-AstraStage2ControlIdentityBinding.ps1 `
+            -Mode Preflight `
+            -RepoRoot $PWD `
+            -CustodyRoot $preflightRoot `
+            -Python python
+          if ($LASTEXITCODE -ne 0) {
+            throw "Launcher Preflight failed with exit code $LASTEXITCODE"
+          }
+
+          $receiptPath = Join-Path $preflightRoot 'PREFLIGHT-RECEIPT.json'
+          if (-not (Test-Path -LiteralPath $receiptPath)) {
+            throw 'Preflight receipt is absent'
+          }
+          $receipt = Get-Content -Raw -LiteralPath $receiptPath | ConvertFrom-Json
+          if ($receipt.state -ne 'PREFLIGHT_PASS') {
+            throw "Unexpected Preflight state: $($receipt.state)"
+          }
+          if ($receipt.downloads_performed -ne $false) {
+            throw 'Preflight unexpectedly performed downloads'
+          }
+          if ($receipt.model_calls -ne 0 -or $receipt.provider_calls -ne 0) {
+            throw 'Preflight widened call authority'
+          }
+          if ($receipt.actual_executable_control_identities -ne 'UNBOUND') {
+            throw 'Preflight widened executable identity authority'
+          }
+          if (Test-Path -LiteralPath (Join-Path $preflightRoot 'models')) {
+            throw 'Preflight created a model directory'
+          }
+
+          "receipt=$receiptPath" >> $env:GITHUB_OUTPUT
+
+      - name: Seal Windows conformance receipt
+        id: windows_receipt
+        shell: pwsh
+        env:
+          SOURCE_HEAD: ${{ steps.custody.outputs.head_sha }}
+          SOURCE_TREE: ${{ steps.custody.outputs.tree_sha }}
+          TEST_LOG: ${{ steps.windows_tests.outputs.log }}
+          PREFLIGHT_RECEIPT: ${{ steps.preflight.outputs.receipt }}
+          LF_RECEIPT: ${{ steps.lf_checkout.outputs.receipt }}
+          TOPOLOGY_RECEIPT: ${{ steps.topology_fallback.outputs.receipt }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = Join-Path $env:RUNNER_TEMP 'windows-conformance.json'
+          $value = [ordered]@{
+            schema = 'tier-bench/astra-stage2-control-identity-windows-conformance@1'
+            source_head_sha1 = $env:SOURCE_HEAD
+            source_tree_sha1 = $env:SOURCE_TREE
+            runner = 'windows-2025'
+            tests = 32
+            passed = 31
+            skipped = 1
+            failed = 0
+            errors = 0
+            powershell_parse = 'PASS'
+            launcher_preflight = 'PASS'
+            lf_materialization = 'PASS'
+            windows_single_device_topology_fallback = 'PASS'
+            preflight_downloads = 0
+            model_calls = 0
+            provider_calls = 0
+            actual_executable_control_identities = 'UNBOUND'
+            test_log_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:TEST_LOG).Hash.ToLowerInvariant()
+            preflight_receipt_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:PREFLIGHT_RECEIPT).Hash.ToLowerInvariant()
+            lf_receipt_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:LF_RECEIPT).Hash.ToLowerInvariant()
+            topology_receipt_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:TOPOLOGY_RECEIPT).Hash.ToLowerInvariant()
+          }
+          $value | ConvertTo-Json -Depth 16 | Set-Content -Encoding utf8 $out
+          $digest = (Get-FileHash -Algorithm SHA256 -LiteralPath $out).Hash.ToLowerInvariant()
+          "receipt_sha256=$digest" >> $env:GITHUB_OUTPUT
+          "tests=32" >> $env:GITHUB_OUTPUT
+          "skipped=1" >> $env:GITHUB_OUTPUT
+          Get-Content -Raw -LiteralPath $out >> $env:GITHUB_STEP_SUMMARY
+
+  provider-free-release:
+    needs: windows-conformance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact release head
+        id: custody
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.sha }}
+          RELEASE_BRANCH: release/astra-stage2-control-identity-v1-20260903
+          BINDER_HEAD: af03cef494a509ab7ba5df29fa4b4ccba423f1f8
+          BINDER_TREE: 519ea2f8f448a464e817a024ad8ed1ac64493931
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=96 origin \
+            "+refs/heads/${RELEASE_BRANCH}:refs/control-release/candidate"
+          git checkout --detach refs/control-release/candidate
+
+          head_sha="$(git rev-parse HEAD)"
+          tree_sha="$(git rev-parse 'HEAD^{tree}')"
+          test "$head_sha" = "$EXPECTED_HEAD"
+          test "$(git rev-parse "${BINDER_HEAD}^{tree}")" = "$BINDER_TREE"
+          git merge-base --is-ancestor "$BINDER_HEAD" "$head_sha"
+
+          evidence_root="$RUNNER_TEMP/astra-stage2-control-identity-release"
+          mkdir -p "$evidence_root"
+          git diff --name-only -z "${BINDER_HEAD}...${head_sha}" \
+            > "$evidence_root/release-paths.z"
+
+          python3 - "$evidence_root/release-paths.z" <<'PY'
+          from pathlib import Path
+          import sys
+
+          expected = {
+              ".gitattributes",
+              ".github/workflows/astra-stage2-control-identity-release.yml",
+              ".github/workflows/astra-stage2-control-identity.yml",
+              "astra_stage2/control_identity.py",
+              "experiments/astra_kxr/stage2/control_identity/binding-template.json",
+              "scripts/Invoke-AstraStage2ControlIdentityBinding.ps1",
+              "tests/test_astra_stage2_control_identity.py",
+              "tests/test_astra_stage2_control_identity_release.py",
+          }
+          observed = {
+              value.decode("utf-8")
+              for value in Path(sys.argv[1]).read_bytes().split(b"\0")
+              if value
+          }
+          if observed != expected:
+              raise SystemExit(
+                  f"release path set mismatch: expected={sorted(expected)}, "
+                  f"observed={sorted(observed)}"
+              )
+
+          predecessor = Path(
+              ".github/workflows/astra-stage2-control-identity.yml"
+          ).read_text(encoding="utf-8")
+          required_scope = (
+              "  pull_request:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-calibration-impl-20260902\n"
+              "    paths:\n"
+          )
+          if required_scope not in predecessor:
+              raise SystemExit(
+                  "predecessor workflow lacks its exact PR-base scope"
+              )
+          required_push = (
+              "  push:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-control-identities-20260903\n"
+          )
+          if required_push not in predecessor:
+              raise SystemExit(
+                  "predecessor workflow lost its candidate push lane"
+              )
+          PY
+
+          printf 'head_sha=%s\n' "$head_sha" >> "$GITHUB_OUTPUT"
+          printf 'tree_sha=%s\n' "$tree_sha" >> "$GITHUB_OUTPUT"
+          printf 'evidence_root=%s\n' "$evidence_root" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse provider credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+
+          names = [
+              "OPENAI_API_KEY",
+              "ANTHROPIC_API_KEY",
+              "GEMINI_API_KEY",
+              "GOOGLE_API_KEY",
+              "MISTRAL_API_KEY",
+              "COHERE_API_KEY",
+              "XAI_API_KEY",
+              "GROQ_API_KEY",
+              "TOGETHER_API_KEY",
+              "FIREWORKS_API_KEY",
+          ]
+          present = [name for name in names if os.environ.get(name)]
+          if present:
+              raise SystemExit(
+                  "recognized provider credentials present: " + ",".join(present)
+              )
+          PY
+
+      - name: Run complete 32-test suite on Linux
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+        run: |
+          set -euo pipefail
+          python3 -m py_compile \
+            astra_stage2/control_identity.py \
+            scripts/astra_stage2_bind_controls.py \
+            tests/test_astra_stage2_control_identity.py \
+            tests/test_astra_stage2_control_identity_release.py
+          PYTHONPATH=. python3 -m unittest discover \
+            -s tests \
+            -p 'test_astra_stage2_control_identity*.py' \
+            -v 2>&1 | tee "$EVIDENCE_ROOT/test-control-identity-linux.log"
+          grep -q '^Ran 32 tests in ' "$EVIDENCE_ROOT/test-control-identity-linux.log"
+          grep -q '^OK$' "$EVIDENCE_ROOT/test-control-identity-linux.log"
+
+      - name: Parse launcher with terminating PowerShell gate on Linux
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v pwsh >/dev/null
+          ASTRA_RELEASE_LAUNCHER="$PWD/scripts/Invoke-AstraStage2ControlIdentityBinding.ps1" \
+          pwsh -NoProfile -Command \
+            '$ErrorActionPreference = "Stop"; $text = Get-Content -Raw -LiteralPath $env:ASTRA_RELEASE_LAUNCHER; [void][scriptblock]::Create($text); Write-Output "POWERSHELL_PARSE_PASS"'
+
+      - name: Build exact-head qualification receipt
+        id: receipt
+        shell: bash
+        env:
+          EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+          SOURCE_HEAD: ${{ steps.custody.outputs.head_sha }}
+          SOURCE_TREE: ${{ steps.custody.outputs.tree_sha }}
+          WINDOWS_RECEIPT_SHA256: ${{ needs.windows-conformance.outputs.receipt_sha256 }}
+          WINDOWS_TESTS: ${{ needs.windows-conformance.outputs.tests }}
+          WINDOWS_SKIPPED: ${{ needs.windows-conformance.outputs.skipped }}
+        run: |
+          set -euo pipefail
+
+          cp .github/workflows/astra-stage2-control-identity.yml \
+            "$EVIDENCE_ROOT/predecessor-control-identity-workflow.yml"
+          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 \
+            "$EVIDENCE_ROOT/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          cp scripts/astra_stage2_bind_controls.py \
+            "$EVIDENCE_ROOT/astra_stage2_bind_controls.py"
+          cp scripts/astra_stage2_bind_controls.ps1 \
+            "$EVIDENCE_ROOT/astra_stage2_bind_controls.ps1"
+          cp experiments/astra_kxr/stage2/control_identity/binding-template.json \
+            "$EVIDENCE_ROOT/binding-template.json"
+          cp experiments/astra_kxr/stage2/control_identity/README.md \
+            "$EVIDENCE_ROOT/README.md"
+
+          python3 - "$EVIDENCE_ROOT" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import sys
+
+          from astra_stage2.canonical import sha256_object
+          from astra_stage2.control_identity import (
+              GENERATOR_MANIFEST_SHA256,
+              LAW_BLOB_SHA1,
+              LAW_COMMIT_SHA1,
+              SCAFFOLD_HEAD_SHA1,
+              STAGE1_JOIN_HEAD_SHA1,
+              binding_template,
+          )
+          from astra_stage2.generator import (
+              build_calibration_plan,
+              build_generator_manifest,
+              fixture_control_manifest,
+          )
+
+          root = pathlib.Path(sys.argv[1])
+          log = (root / "test-control-identity-linux.log").read_text(
+              encoding="utf-8"
+          )
+          match = re.findall(
+              r"^Ran\s+(\d+)\s+tests?\s+in\s+",
+              log,
+              flags=re.MULTILINE,
+          )
+          if match != ["32"]:
+              raise SystemExit(f"Linux test denominator mismatch: {match}")
+
+          generator = build_generator_manifest()
+          if generator["payload_sha256"] != GENERATOR_MANIFEST_SHA256:
+              raise SystemExit("generator digest mismatch")
+          plan = build_calibration_plan(
+              generator,
+              fixture_control_manifest(),
+          )
+          template = binding_template()
+          if len(template["controls"]) != 3:
+              raise SystemExit("control denominator mismatch")
+          if plan["observation_count"] != 648:
+              raise SystemExit("plan denominator mismatch")
+
+          files = {}
+          for path in sorted(
+              item for item in root.rglob("*") if item.is_file()
+          ):
+              if path.name in {
+                  "qualification-receipt.json",
+                  "SHA256SUMS",
+              }:
+                  continue
+              data = path.read_bytes()
+              files[path.relative_to(root).as_posix()] = {
+                  "bytes": len(data),
+                  "sha256": hashlib.sha256(data).hexdigest(),
+              }
+
+          receipt = {
+              "schema": (
+                  "tier-bench/"
+                  "astra-stage2-control-identity-release-qualification@2"
+              ),
+              "classification": (
+                  "CROSS_PLATFORM_PROVIDER_FREE_CONTROL_IDENTITY_RELEASE_"
+                  "QUALIFIED_ACTUAL_IDENTITIES_UNBOUND"
+              ),
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
+              "source": {
+                  "branch": (
+                      "release/"
+                      "astra-stage2-control-identity-v1-20260903"
+                  ),
+                  "head_sha1": os.environ["SOURCE_HEAD"],
+                  "tree_sha1": os.environ["SOURCE_TREE"],
+                  "binder_head_sha1": (
+                      "af03cef494a509ab7ba5df29fa4b4ccba423f1f8"
+                  ),
+                  "binder_tree_sha1": (
+                      "519ea2f8f448a464e817a024ad8ed1ac64493931"
+                  ),
+                  "law_commit_sha1": LAW_COMMIT_SHA1,
+                  "law_blob_sha1": LAW_BLOB_SHA1,
+                  "scaffold_head_sha1": SCAFFOLD_HEAD_SHA1,
+                  "stage1_join_head_sha1": STAGE1_JOIN_HEAD_SHA1,
+              },
+              "conformance": {
+                  "tests": 32,
+                  "binder_tests": 24,
+                  "release_tests": 8,
+                  "linux_tests": 27,
+                  "linux_skipped": 0,
+                  "windows_tests": int(os.environ["WINDOWS_TESTS"]),
+                  "windows_skipped": int(
+                      os.environ["WINDOWS_SKIPPED"]
+                  ),
+                  "windows_receipt_sha256": os.environ[
+                      "WINDOWS_RECEIPT_SHA256"
+                  ],
+                  "control_roles": 3,
+                  "generator_cases": generator["case_count"],
+                  "expected_empirical_observations": (
+                      plan["observation_count"]
+                  ),
+                  "powershell_parse_linux": True,
+                  "powershell_parse_windows": True,
+                  "windows_preflight_executed": True,
+                  "repository_root_discovery_tested": True,
+                  "lf_materialization_under_autocrlf_true": True,
+                  "windows_single_device_topology_fallback": True,
+                  "hardware_topology_schema": (
+                      "tier-bench/astra-stage2-hardware-topology@1"
+                  ),
+                  "predecessor_workflow_successor_scope": True,
+                  "cross_platform_runtime_fixture": True,
+              },
+              "actual_binding": {
+                  "state": "UNBOUND",
+                  "bound_controls": 0,
+                  "empirical_observations": 0,
+                  "local_model_bytes_seen": 0,
+                  "local_runtime_bytes_seen": 0,
+                  "local_hardware_receipts_seen": 0,
+              },
+              "authority": {
+                  "provider_or_model_calls": 0,
+                  "empirical_subject_execution": False,
+                  "numeric_stage2_freeze": "NOT_ISSUED",
+                  "callable_astra_identity": "UNBOUND",
+                  "live_provider_dispatch": "PROHIBITED",
+                  "optional_24_call_block": "DISABLED",
+                  "benchmark_verdict_authority": "NONE",
+                  "merge_authority": "NONE",
+              },
+              "files": files,
+          }
+          receipt["payload_sha256"] = sha256_object(receipt)
+          (root / "qualification-receipt.json").write_text(
+              json.dumps(receipt, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+
+          (
+            cd "$EVIDENCE_ROOT"
+            find . -type f ! -name SHA256SUMS -print0 \
+              | sort -z \
+              | xargs -0 sha256sum \
+              > SHA256SUMS
+          )
+
+          printf 'qualification_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$EVIDENCE_ROOT/qualification-receipt.json")" \
+            >> "$GITHUB_OUTPUT"
+          cat "$EVIDENCE_ROOT/qualification-receipt.json" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload cross-platform release evidence
+        id: evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Build publication index
+        id: publication
+        shell: bash
+        env:
+          SOURCE_HEAD: ${{ steps.custody.outputs.head_sha }}
+          SOURCE_TREE: ${{ steps.custody.outputs.tree_sha }}
+          QUALIFICATION_PAYLOAD: ${{ steps.receipt.outputs.qualification_payload }}
+          EVIDENCE_ARTIFACT_ID: ${{ steps.evidence.outputs.artifact-id }}
+          EVIDENCE_ARTIFACT_DIGEST: ${{ steps.evidence.outputs.artifact-digest }}
+          WINDOWS_RECEIPT_SHA256: ${{ needs.windows-conformance.outputs.receipt_sha256 }}
+        run: |
+          set -euo pipefail
+          publication_root="$RUNNER_TEMP/astra-stage2-control-identity-release-publication"
+          mkdir -p "$publication_root"
+
+          python3 - "$publication_root/publication-index.json" <<'PY'
+          import json
+          import os
+          import pathlib
+
+          from astra_stage2.canonical import sha256_object
+
+          value = {
+              "schema": (
+                  "tier-bench/"
+                  "astra-stage2-control-identity-release-publication@2"
+              ),
+              "classification": (
+                  "CROSS_PLATFORM_PROVIDER_FREE_CONTROL_IDENTITY_RELEASE_"
+                  "QUALIFIED_ACTUAL_IDENTITIES_UNBOUND"
+              ),
+              "repository": os.environ["GITHUB_REPOSITORY"],
+              "workflow_run_id": int(os.environ["GITHUB_RUN_ID"]),
+              "source_head_sha1": os.environ["SOURCE_HEAD"],
+              "source_tree_sha1": os.environ["SOURCE_TREE"],
+              "qualification_payload_sha256": os.environ[
+                  "QUALIFICATION_PAYLOAD"
+              ],
+              "windows_receipt_sha256": os.environ[
+                  "WINDOWS_RECEIPT_SHA256"
+              ],
+              "evidence_artifact": {
+                  "id": int(os.environ["EVIDENCE_ARTIFACT_ID"]),
+                  "sha256": os.environ["EVIDENCE_ARTIFACT_DIGEST"],
+              },
+              "tests": 32,
+              "windows_tests": 27,
+              "windows_skipped": 1,
+              "linux_tests": 27,
+              "pinned_launcher": (
+                  "Invoke-AstraStage2ControlIdentityBinding.ps1"
+              ),
+              "predecessor_workflow_successor_scope": True,
+              "lf_materialization_under_autocrlf_true": True,
+              "windows_single_device_topology_fallback": True,
+              "hardware_topology_schema": (
+                  "tier-bench/astra-stage2-hardware-topology@1"
+              ),
+              "actual_control_identities": "UNBOUND",
+              "empirical_calibration": "NOT_RUN",
+              "provider_or_model_calls": 0,
+              "numeric_stage2_freeze": "NOT_ISSUED",
+              "live_provider_dispatch": "PROHIBITED",
+              "merge_authority": "NONE",
+          }
+          value["payload_sha256"] = sha256_object(value)
+          pathlib.Path(__import__("sys").argv[1]).write_text(
+              json.dumps(value, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+
+          printf 'publication_root=%s\n' "$publication_root" \
+            >> "$GITHUB_OUTPUT"
+          printf 'publication_payload=%s\n' \
+            "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["payload_sha256"])' "$publication_root/publication-index.json")" \
+            >> "$GITHUB_OUTPUT"
+
+      - name: Upload cross-platform release publication
+        id: publication_artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-release-publication-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.publication.outputs.publication_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+      - name: Seal release coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${{ steps.evidence.outputs.artifact-id }}"
+          test -n "${{ steps.evidence.outputs.artifact-digest }}"
+          test -n "${{ steps.publication_artifact.outputs.artifact-id }}"
+          test -n "${{ steps.publication_artifact.outputs.artifact-digest }}"
+          {
+            echo
+            echo "source_head=${{ steps.custody.outputs.head_sha }}"
+            echo "source_tree=${{ steps.custody.outputs.tree_sha }}"
+            echo "windows_receipt=${{ needs.windows-conformance.outputs.receipt_sha256 }}"
+            echo "qualification_payload=${{ steps.receipt.outputs.qualification_payload }}"
+            echo "evidence_artifact_id=${{ steps.evidence.outputs.artifact-id }}"
+            echo "evidence_artifact_digest=${{ steps.evidence.outputs.artifact-digest }}"
+            echo "publication_payload=${{ steps.publication.outputs.publication_payload }}"
+            echo "publication_artifact_id=${{ steps.publication_artifact.outputs.artifact-id }}"
+            echo "publication_artifact_digest=${{ steps.publication_artifact.outputs.artifact-digest }}"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,227 @@
+{
+  "binding_id": "astra-stage2-controls-REPLACE",
+  "controls": [
+    {
+      "adapter": {
+        "configuration": {},
+        "identity": "NONE",
+        "paths": [],
+        "root": null
+      },
+      "checkpoint_repository": "yingfanbot/gsm-lotus-llama3b",
+      "checkpoint_revision_sha1": "b392d2cb7aaa73475b93028221523c47f49f66a2",
+      "class_label": "recurrent_latent",
+      "effort_mapping": {
+        "high": {
+          "arguments": [
+            "--effort",
+            "high"
+          ],
+          "configuration": {},
+          "environment": {}
+        },
+        "low": {
+          "arguments": [
+            "--effort",
+            "low"
+          ],
+          "configuration": {},
+          "environment": {}
+        }
+      },
+      "hardware": {
+        "device_query_path": "nvidia-query.csv",
+        "evidence_root": "C:/REPLACE/hardware",
+        "platform_path": "platform.json",
+        "selected_device_indices": [
+          0
+        ],
+        "topology_path": "nvidia-topology.json"
+      },
+      "model_config_paths": [],
+      "model_root": "C:/REPLACE/models/b392d2cb7aaa73475b93028221523c47f49f66a2",
+      "quantization": {
+        "identity": "NONE",
+        "parameters": {}
+      },
+      "revision_marker_path": null,
+      "role": "lotus_3b_recurrent",
+      "runtime": {
+        "build": "REPLACE",
+        "configuration": {
+          "deterministic": true
+        },
+        "configuration_paths": [],
+        "executable_path": "REPLACE.exe",
+        "name": "REPLACE",
+        "probe_args": [
+          "--version"
+        ],
+        "probe_timeout_seconds": 30,
+        "required_probe_substrings": [
+          "REPLACE"
+        ],
+        "root": "C:/REPLACE/runtime",
+        "version": "REPLACE"
+      },
+      "source_commit_sha1": "eb77e2f7909c5006f58ff0ad7cd6629b942caa9e",
+      "source_repository": "yingfan-bot/lotus",
+      "source_root": "C:/REPLACE/source/lotus_3b_recurrent",
+      "tokenizer_paths": [],
+      "weight_index_path": null,
+      "weight_paths": []
+    },
+    {
+      "adapter": {
+        "configuration": {},
+        "identity": "NONE",
+        "paths": [],
+        "root": null
+      },
+      "checkpoint_repository": "Multilingual-Multimodal-NLP/LoopCoder-V2",
+      "checkpoint_revision_sha1": "b87cf3aa2186937b0d0362a684d7d30f234543e3",
+      "class_label": "parallel_latent",
+      "effort_mapping": {
+        "high": {
+          "arguments": [
+            "--effort",
+            "high"
+          ],
+          "configuration": {},
+          "environment": {}
+        },
+        "low": {
+          "arguments": [
+            "--effort",
+            "low"
+          ],
+          "configuration": {},
+          "environment": {}
+        }
+      },
+      "hardware": {
+        "device_query_path": "nvidia-query.csv",
+        "evidence_root": "C:/REPLACE/hardware",
+        "platform_path": "platform.json",
+        "selected_device_indices": [
+          0
+        ],
+        "topology_path": "nvidia-topology.json"
+      },
+      "model_config_paths": [],
+      "model_root": "C:/REPLACE/models/b87cf3aa2186937b0d0362a684d7d30f234543e3",
+      "quantization": {
+        "identity": "NONE",
+        "parameters": {}
+      },
+      "revision_marker_path": null,
+      "role": "loopcoder_v2_7b_parallel",
+      "runtime": {
+        "build": "REPLACE",
+        "configuration": {
+          "deterministic": true
+        },
+        "configuration_paths": [],
+        "executable_path": "REPLACE.exe",
+        "name": "REPLACE",
+        "probe_args": [
+          "--version"
+        ],
+        "probe_timeout_seconds": 30,
+        "required_probe_substrings": [
+          "REPLACE"
+        ],
+        "root": "C:/REPLACE/runtime",
+        "version": "REPLACE"
+      },
+      "source_commit_sha1": "ab0d92d7cc87c4ed0fd30c1db1f2edd685435c4c",
+      "source_repository": "CSJianYang/LoopCoder",
+      "source_root": "C:/REPLACE/source/loopcoder_v2_7b_parallel",
+      "tokenizer_paths": [],
+      "weight_index_path": null,
+      "weight_paths": []
+    },
+    {
+      "adapter": {
+        "configuration": {},
+        "identity": "NONE",
+        "paths": [],
+        "root": null
+      },
+      "checkpoint_repository": "yingfanbot/gsm-cot-llama3b",
+      "checkpoint_revision_sha1": "63de1ec1902ed143fe62250b6ddb14cb65f06e1a",
+      "class_label": "conventional_negative",
+      "effort_mapping": {
+        "high": {
+          "arguments": [
+            "--effort",
+            "high"
+          ],
+          "configuration": {},
+          "environment": {}
+        },
+        "low": {
+          "arguments": [
+            "--effort",
+            "low"
+          ],
+          "configuration": {},
+          "environment": {}
+        }
+      },
+      "hardware": {
+        "device_query_path": "nvidia-query.csv",
+        "evidence_root": "C:/REPLACE/hardware",
+        "platform_path": "platform.json",
+        "selected_device_indices": [
+          0
+        ],
+        "topology_path": "nvidia-topology.json"
+      },
+      "model_config_paths": [],
+      "model_root": "C:/REPLACE/models/63de1ec1902ed143fe62250b6ddb14cb65f06e1a",
+      "quantization": {
+        "identity": "NONE",
+        "parameters": {}
+      },
+      "revision_marker_path": null,
+      "role": "conventional_transformer_negative",
+      "runtime": {
+        "build": "REPLACE",
+        "configuration": {
+          "deterministic": true
+        },
+        "configuration_paths": [],
+        "executable_path": "REPLACE.exe",
+        "name": "REPLACE",
+        "probe_args": [
+          "--version"
+        ],
+        "probe_timeout_seconds": 30,
+        "required_probe_substrings": [
+          "REPLACE"
+        ],
+        "root": "C:/REPLACE/runtime",
+        "version": "REPLACE"
+      },
+      "source_commit_sha1": "eb77e2f7909c5006f58ff0ad7cd6629b942caa9e",
+      "source_repository": "yingfan-bot/lotus",
+      "source_root": "C:/REPLACE/source/conventional_transformer_negative",
+      "tokenizer_paths": [],
+      "weight_index_path": null,
+      "weight_paths": []
+    }
+  ],
+  "generator_manifest_sha256": "2050de80cb4688b182cf9e006a97959da422dce24138c6451774f03320517328",
+  "law": {
+    "blob_sha1": "77abe4e177fc61e4f52f56ea64494b113f9662fc",
+    "commit_sha1": "c36c35bf9b70d879e1e1c9ee2f0296879442df3e",
+    "tree_sha1": "87bff3320c680e91eaec66c287d7a1ac3b7fe523"
+  },
+  "scaffold": {
+    "head_sha1": "9babad4631ef517485c56ea4906aab123e30fad7",
+    "tree_sha1": "720cbf3f26f2e251613acedc52cff08ef33892dc"
+  },
+  "schema": "tier-bench/astra-stage2-control-binding-input@1",
+  "stage1_join_head": "60bca963d63edca267106bc5c7725c2cc1df8dd7"
+}

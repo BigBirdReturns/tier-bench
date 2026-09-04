@@ -1,0 +1,8 @@
+{
+  "parent_head": "b3534c9703723ac35343af0209edc34c7587173c",
+  "parent_tree": "15f64f02f5dfc6b1e5e59634205dc7d157d9c125",
+  "ready_head": "b6175422b239dc8585dcf06ed3f095a637eeb9f4",
+  "ready_tree": "7cc4e79a6d132662330ecf99fcff9f27e6435c0a",
+  "tests": 32,
+  "provider_or_model_calls": 0
+}
