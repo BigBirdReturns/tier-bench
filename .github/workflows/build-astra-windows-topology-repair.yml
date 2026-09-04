@@ -17,22 +17,26 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          EXPECTED_BUILDER_HEAD: ${{ github.sha }}
+          BUILDER_BRANCH: repair/astra-stage2-windows-topology-builder-20260903
           BASE_HEAD: b3534c9703723ac35343af0209edc34c7587173c
           BASE_TREE: 15f64f02f5dfc6b1e5e59634205dc7d157d9c125
           OUTPUT_BRANCH: repair/astra-stage2-windows-topology-ready-20260903
         run: |
           set -euo pipefail
-          script_source="$PWD/.github/scripts/build_astra_windows_topology_repair.py"
-          test -f "$script_source"
-          cp "$script_source" "$RUNNER_TEMP/build_astra_windows_topology_repair.py"
-
-          rm -rf .git .github scripts astra_stage2 experiments tests .gitattributes || true
           git init .
           git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git config --unset-all remote.origin.fetch || true
           git -c protocol.version=2 fetch --no-tags --depth=128 origin \
+            "+refs/heads/${BUILDER_BRANCH}:refs/astra-topology/builder" \
             "+${BASE_HEAD}:refs/astra-topology/base"
+          git checkout --detach refs/astra-topology/builder
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BUILDER_HEAD"
+          cp .github/scripts/build_astra_windows_topology_repair.py \
+            "$RUNNER_TEMP/build_astra_windows_topology_repair.py"
+
           git checkout --detach refs/astra-topology/base
+          git clean -ffd
           test "$(git rev-parse HEAD)" = "$BASE_HEAD"
           test "$(git rev-parse 'HEAD^{tree}')" = "$BASE_TREE"
 
