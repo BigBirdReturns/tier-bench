@@ -36,8 +36,7 @@
         "selected_device_indices": [
           0
         ],
-        "topology_path": "nvidia-topology.txt",
-        "topology_status_path": "topology-status.json"
+        "topology_evidence_path": "nvidia-topology.json"
       },
       "model_config_paths": [],
       "model_root": "C:/REPLACE/models/b392d2cb7aaa73475b93028221523c47f49f66a2",
@@ -107,8 +106,7 @@
         "selected_device_indices": [
           0
         ],
-        "topology_path": "nvidia-topology.txt",
-        "topology_status_path": "topology-status.json"
+        "topology_evidence_path": "nvidia-topology.json"
       },
       "model_config_paths": [],
       "model_root": "C:/REPLACE/models/b87cf3aa2186937b0d0362a684d7d30f234543e3",
@@ -178,8 +176,7 @@
         "selected_device_indices": [
           0
         ],
-        "topology_path": "nvidia-topology.txt",
-        "topology_status_path": "topology-status.json"
+        "topology_evidence_path": "nvidia-topology.json"
       },
       "model_config_paths": [],
       "model_root": "C:/REPLACE/models/63de1ec1902ed143fe62250b6ddb14cb65f06e1a",
@@ -217,9 +214,9 @@
   ],
   "generator_manifest_sha256": "2050de80cb4688b182cf9e006a97959da422dce24138c6451774f03320517328",
   "law": {
-    "blob_sha1": "ad50945676dd7a89052f281a23037ab95368b6b8",
-    "commit_sha1": "208557ba708a970b5dd7a7417e2099c93f5efeb9",
-    "tree_sha1": "f9b565d4bd3d2f2c31a0d8d586514ba7faac3652"
+    "blob_sha1": "77abe4e177fc61e4f52f56ea64494b113f9662fc",
+    "commit_sha1": "c36c35bf9b70d879e1e1c9ee2f0296879442df3e",
+    "tree_sha1": "87bff3320c680e91eaec66c287d7a1ac3b7fe523"
   },
   "scaffold": {
     "head_sha1": "9babad4631ef517485c56ea4906aab123e30fad7",

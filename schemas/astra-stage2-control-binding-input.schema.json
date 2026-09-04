@@ -146,7 +146,7 @@
                   "type": "array",
                   "uniqueItems": true
                 },
-                "topology_path": {
+                "topology_evidence_path": {
                   "minLength": 1,
                   "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
                   "type": "string"
@@ -156,7 +156,7 @@
                 "evidence_root",
                 "platform_path",
                 "device_query_path",
-                "topology_path",
+                "topology_evidence_path",
                 "selected_device_indices"
               ],
               "type": "object"
@@ -474,7 +474,7 @@
                   "type": "array",
                   "uniqueItems": true
                 },
-                "topology_path": {
+                "topology_evidence_path": {
                   "minLength": 1,
                   "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
                   "type": "string"
@@ -484,7 +484,7 @@
                 "evidence_root",
                 "platform_path",
                 "device_query_path",
-                "topology_path",
+                "topology_evidence_path",
                 "selected_device_indices"
               ],
               "type": "object"
@@ -802,7 +802,7 @@
                   "type": "array",
                   "uniqueItems": true
                 },
-                "topology_path": {
+                "topology_evidence_path": {
                   "minLength": 1,
                   "pattern": "^(?![A-Za-z]:[\\\\/])(?![\\\\/])(?!.*(?:^|[\\\\/])\\.\\.(?:[\\\\/]|$)).+$",
                   "type": "string"
@@ -812,7 +812,7 @@
                 "evidence_root",
                 "platform_path",
                 "device_query_path",
-                "topology_path",
+                "topology_evidence_path",
                 "selected_device_indices"
               ],
               "type": "object"
@@ -1039,7 +1039,7 @@
       "type": "object"
     },
     "schema": {
-      "const": "tier-bench/astra-stage2-control-binding-input@1"
+      "const": "tier-bench/astra-stage2-control-binding-input@2"
     },
     "stage1_join_head": {
       "const": "60bca963d63edca267106bc5c7725c2cc1df8dd7"

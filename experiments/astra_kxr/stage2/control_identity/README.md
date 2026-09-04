@@ -28,6 +28,16 @@ powershell -ExecutionPolicy Bypass -File `
   -DeviceIndices 0
 ```
 
+The probe always executes the selected-device CSV query. On Linux it also
+executes exact `nvidia-smi topo -m`, requires nonempty successful stdout, and
+stores those exact bytes plus their digest inside private
+`nvidia-topology.json`. On Windows, `topo -m` is never invoked: exactly one
+selected device produces the explicit
+`NOT_APPLICABLE_SINGLE_SELECTED_DEVICE` limitation record, while two or more
+selected devices refuse until a separately implemented and independently
+qualified Windows topology source exists. The limitation record never claims
+inter-device topology or implicit pooling.
+
 Populate the three source roots, immutable checkpoint snapshot roots, dedicated
 runtime roots, adapter and quantization declarations, selected hardware evidence,
 and truthful low/high effort mappings. Then inventory, bind, and verify:
@@ -54,7 +64,10 @@ powershell -ExecutionPolicy Bypass -File `
   -Out S:\Scratch\Incoming\Tier-Bench\astra-stage2-control-identities\bound
 ```
 
-`bound/private/` contains path-bearing evidence and must remain private.
+`bound/private/` contains path-bearing evidence, selected device rows, and the
+full versioned topology-evidence record and must remain private. The binder
+semantically verifies the platform, selected scope, query-row and file digests,
+matrix bytes where applicable, and both authority-claim flags before hashing.
 `bound/public/` contains the shareable receipts. `control-manifest.json` and
 `calibration-plan.json` are admissible only while verification reproduces them
 from the retained private evidence. The binder performs no model or provider

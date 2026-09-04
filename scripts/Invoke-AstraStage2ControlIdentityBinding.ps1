@@ -12,10 +12,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$BinderHead = '697bd2dc75ef74c675373b6be99e1e82f58b26b8'
-$BinderTree = 'e6fa04295d0c7f42fe28c9043585738f8fc09ff3'
-$LawHead = '208557ba708a970b5dd7a7417e2099c93f5efeb9'
-$LawBlob = 'ad50945676dd7a89052f281a23037ab95368b6b8'
+$BinderHead = 'dbb44b7efca1b04f2ed2d8c127af653b278909e4'
+$BinderTree = '2671247337030d9c8e281393103104f7436d2800'
+$LawHead = 'c36c35bf9b70d879e1e1c9ee2f0296879442df3e'
+$LawBlob = '77abe4e177fc61e4f52f56ea64494b113f9662fc'
 $ScaffoldHead = '9babad4631ef517485c56ea4906aab123e30fad7'
 $Stage1Join = '60bca963d63edca267106bc5c7725c2cc1df8dd7'
 
@@ -369,8 +369,7 @@ function Write-PreparedConfig {
         $control.hardware.evidence_root = $HardwareRoot
         $control.hardware.platform_path = 'platform.json'
         $control.hardware.device_query_path = 'nvidia-query.csv'
-        $control.hardware.topology_path = 'nvidia-topology.txt'
-        $control.hardware.topology_status_path = 'topology-status.json'
+        $control.hardware.topology_evidence_path = 'nvidia-topology.json'
         $control.hardware.selected_device_indices = @($DeviceIndex)
     }
 
@@ -400,6 +399,52 @@ function Write-JsonFile {
         [System.Text.UTF8Encoding]::new($false)
     )
     Move-Item -Force -LiteralPath $temporary -Destination $Path
+}
+
+function Get-CanonicalPayloadSha256 {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+
+    $program = @'
+import hashlib
+import json
+import pathlib
+import sys
+
+path = pathlib.Path(sys.argv[1])
+value = json.loads(path.read_text(encoding="utf-8"))
+value.pop("payload_sha256", None)
+payload = json.dumps(
+    value,
+    sort_keys=True,
+    separators=(",", ":"),
+    ensure_ascii=False,
+    allow_nan=False,
+).encode("utf-8")
+print(hashlib.sha256(payload).hexdigest())
+'@
+    $digest = (& $Python -c $program $Path)
+    if ($LASTEXITCODE -ne 0) {
+        throw "Canonical payload hashing failed for $Path"
+    }
+    return ([string]$digest).Trim().ToLowerInvariant()
+}
+
+function Assert-FileSha256 {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][string]$Expected,
+        [Parameter(Mandatory = $true)][string]$Label
+    )
+
+    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
+        throw "$Label is absent: $Path"
+    }
+    $observed = (Get-FileHash -Algorithm SHA256 -LiteralPath $Path).Hash.ToLowerInvariant()
+    if ($observed -ne $Expected.ToLowerInvariant()) {
+        throw "$Label digest mismatch: expected $Expected, observed $observed"
+    }
 }
 
 function Assert-BindReady {
@@ -667,17 +712,70 @@ if ($Mode -eq 'Prepare') {
         throw 'Hardware probe receipt is absent'
     }
     $hardwareProbe = Get-Content -Raw -LiteralPath $hardwareProbeReceiptPath | ConvertFrom-Json
+    $selectedDeviceIndices = @($hardwareProbe.selected_device_indices)
     if ($hardwareProbe.schema -ne 'tier-bench/astra-stage2-hardware-probe@2' -or
-        @($hardwareProbe.selected_device_indices) -notcontains [int]$gpu.Device.Index -or
-        $hardwareProbe.nvidia_topo_matrix -notin @('SUPPORTED', 'UNSUPPORTED_ON_PLATFORM') -or
-        [string]::IsNullOrWhiteSpace([string]$hardwareProbe.topology_class)) {
-        throw 'Hardware probe receipt does not bind the selected native device'
+        $selectedDeviceIndices.Count -ne 1 -or
+        [int]$selectedDeviceIndices[0] -ne [int]$gpu.Device.Index) {
+        throw 'Hardware probe receipt does not bind the exact selected native device singleton'
     }
-    if ($hardwareProbe.model_calls -ne 0 -or
-        $hardwareProbe.provider_calls -ne 0 -or
-        $hardwareProbe.binding -ne 'NOT_RUN' -or
-        $hardwareProbe.empirical_calibration -ne 'NOT_RUN') {
-        throw 'Hardware probe widened authority'
+
+    $platformPath = Join-Path $HardwareRoot 'platform.json'
+    $deviceQueryPath = Join-Path $HardwareRoot 'nvidia-query.csv'
+    $topologyEvidencePath = Join-Path $HardwareRoot 'nvidia-topology.json'
+    Assert-FileSha256 -Path $platformPath -Expected $hardwareProbe.platform_sha256 -Label 'Hardware platform evidence'
+    Assert-FileSha256 -Path $deviceQueryPath -Expected $hardwareProbe.device_query_sha256 -Label 'Hardware device query'
+    Assert-FileSha256 -Path $topologyEvidencePath -Expected $hardwareProbe.topology_evidence_sha256 -Label 'Hardware topology evidence'
+
+    $probePayloadSha256 = Get-CanonicalPayloadSha256 -Path $hardwareProbeReceiptPath
+    if ($hardwareProbe.payload_sha256 -ne $probePayloadSha256) {
+        throw 'Hardware probe receipt payload digest mismatch'
+    }
+
+    $platformEvidence = Get-Content -Raw -LiteralPath $platformPath | ConvertFrom-Json
+    $platformSelected = @($platformEvidence.selected_device_indices)
+    if ($platformEvidence.schema -ne 'tier-bench/astra-stage2-hardware-platform@1' -or
+        $platformSelected.Count -ne 1 -or
+        [int]$platformSelected[0] -ne [int]$gpu.Device.Index) {
+        throw 'Hardware platform evidence does not bind the exact selected device singleton'
+    }
+    $platformPayloadSha256 = Get-CanonicalPayloadSha256 -Path $platformPath
+    if ($platformEvidence.payload_sha256 -ne $platformPayloadSha256) {
+        throw 'Hardware platform evidence payload digest mismatch'
+    }
+
+    $topologyEvidence = Get-Content -Raw -LiteralPath $topologyEvidencePath | ConvertFrom-Json
+    if ($topologyEvidence.schema -ne 'tier-bench/astra-stage2-topology-evidence@1' -or
+        $topologyEvidence.platform -ne $platformEvidence.system -or
+        $topologyEvidence.device_query_sha256 -ne $hardwareProbe.device_query_sha256 -or
+        $topologyEvidence.implicit_pooling_claimed -ne $false) {
+        throw 'Hardware topology evidence failed its common contract'
+    }
+    $topologyPayloadSha256 = Get-CanonicalPayloadSha256 -Path $topologyEvidencePath
+    if ($topologyEvidence.payload_sha256 -ne $topologyPayloadSha256) {
+        throw 'Hardware topology evidence payload digest mismatch'
+    }
+
+    switch ($topologyEvidence.platform) {
+        'Windows' {
+            if ($topologyEvidence.state -ne 'NOT_APPLICABLE_SINGLE_SELECTED_DEVICE' -or
+                $topologyEvidence.method -ne 'PLATFORM_LIMITATION_SINGLE_DEVICE' -or
+                [int]$topologyEvidence.selected_device_index -ne [int]$gpu.Device.Index -or
+                $topologyEvidence.inter_device_topology_claimed -ne $false) {
+                throw 'Windows topology evidence exceeds single-device platform authority'
+            }
+        }
+        'Linux' {
+            $topologySelected = @($topologyEvidence.selected_device_indices)
+            if ($topologyEvidence.state -ne 'OBSERVED' -or
+                $topologyEvidence.method -ne 'NVIDIA_SMI_TOPO_MATRIX' -or
+                $topologySelected.Count -ne 1 -or
+                [int]$topologySelected[0] -ne [int]$gpu.Device.Index) {
+                throw 'Linux topology evidence is not the observed selected-device matrix'
+            }
+        }
+        default {
+            throw "Unsupported topology evidence platform: $($topologyEvidence.platform)"
+        }
     }
     $hardwareProbeSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $hardwareProbeReceiptPath).Hash.ToLowerInvariant()
 
@@ -705,8 +803,11 @@ if ($Mode -eq 'Prepare') {
         release_tree = $LauncherCoordinates.Tree
         preflight_receipt_sha256 = $preflightSha256
         hardware_probe_receipt_sha256 = $hardwareProbeSha256
-        nvidia_topo_matrix = $hardwareProbe.nvidia_topo_matrix
-        topology_class = $hardwareProbe.topology_class
+        topology_evidence_sha256 = $hardwareProbe.topology_evidence_sha256
+        topology_platform = $topologyEvidence.platform
+        topology_state = $topologyEvidence.state
+        topology_method = $topologyEvidence.method
+        selected_device_indices = @([int]$gpu.Device.Index)
         binder_head = $BinderHead
         binder_tree = $BinderTree
         law_head = $LawHead

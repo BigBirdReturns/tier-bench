@@ -57,10 +57,10 @@ class ControlIdentityReleaseTests(unittest.TestCase):
 
     def test_22_launcher_pins_exact_qualified_binder_and_law(self) -> None:
         for coordinate in (
-            "697bd2dc75ef74c675373b6be99e1e82f58b26b8",
-            "e6fa04295d0c7f42fe28c9043585738f8fc09ff3",
-            "208557ba708a970b5dd7a7417e2099c93f5efeb9",
-            "ad50945676dd7a89052f281a23037ab95368b6b8",
+            "dbb44b7efca1b04f2ed2d8c127af653b278909e4",
+            "2671247337030d9c8e281393103104f7436d2800",
+            "c36c35bf9b70d879e1e1c9ee2f0296879442df3e",
+            "77abe4e177fc61e4f52f56ea64494b113f9662fc",
             "9babad4631ef517485c56ea4906aab123e30fad7",
             "60bca963d63edca267106bc5c7725c2cc1df8dd7",
         ):
@@ -116,8 +116,21 @@ class ControlIdentityReleaseTests(unittest.TestCase):
         self.assertIn("provider_calls = 0", self.text)
         self.assertIn("tier-bench/astra-stage2-hardware-probe@2", self.text)
         self.assertIn("hardware_probe_receipt_sha256", self.text)
-        self.assertIn("nvidia_topo_matrix", self.text)
-        self.assertIn("topology_class", self.text)
+        self.assertIn("topology_evidence_sha256", self.text)
+        self.assertIn("topology_platform", self.text)
+        self.assertIn("topology_state", self.text)
+        self.assertIn("topology_method", self.text)
+        self.assertIn("selected_device_indices", self.text)
+        self.assertIn("platform_sha256", self.text)
+        self.assertIn("device_query_sha256", self.text)
+        self.assertIn("payload_sha256", self.text)
+        self.assertIn("NOT_APPLICABLE_SINGLE_SELECTED_DEVICE", self.text)
+        self.assertIn("PLATFORM_LIMITATION_SINGLE_DEVICE", self.text)
+        self.assertIn("NVIDIA_SMI_TOPO_MATRIX", self.text)
+        self.assertNotIn("nvidia_topo_matrix", self.text)
+        self.assertNotIn("topology_class", self.text)
+        self.assertNotIn("topology_path", self.text)
+        self.assertNotIn("topology_status_path", self.text)
         self.assertNotRegex(
             self.text,
             re.compile(r"\b(generate|completion|chat\.completions)\s*\(", re.I),

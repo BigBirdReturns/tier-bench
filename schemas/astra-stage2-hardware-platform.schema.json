@@ -1,0 +1,38 @@
+{
+  "$id": "tier-bench/astra-stage2-hardware-platform.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "machine": {"type": "string"},
+    "nvidia_smi_executable_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "processor": {"type": "string"},
+    "python_implementation": {"minLength": 1, "type": "string"},
+    "python_version": {"minLength": 1, "type": "string"},
+    "release": {"type": "string"},
+    "schema": {"const": "tier-bench/astra-stage2-hardware-platform@1"},
+    "selected_device_indices": {
+      "items": {"minimum": 0, "type": "integer"},
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "system": {"enum": ["Linux", "Windows"]},
+    "version": {"type": "string"}
+  },
+  "required": [
+    "schema",
+    "system",
+    "release",
+    "version",
+    "machine",
+    "processor",
+    "python_implementation",
+    "python_version",
+    "selected_device_indices",
+    "nvidia_smi_executable_sha256",
+    "payload_sha256"
+  ],
+  "title": "Astra Stage 2 hardware platform record",
+  "type": "object"
+}
