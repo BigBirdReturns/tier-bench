@@ -1,0 +1,83 @@
+name: stage-astra-windows-topology-ready
+
+on:
+  push:
+    branches:
+      - repair/astra-stage2-windows-topology-builder-20260903
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Stage exact tested repair bytes under non-workflow paths
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_ARTIFACT_ID: 9918193473
+          SOURCE_ARTIFACT_SHA256: a71710b3fbe9561060ab3989f920c07da3499488545b53414b8b49366f24ff66
+          BASE_HEAD: b3534c9703723ac35343af0209edc34c7587173c
+          BASE_TREE: 15f64f02f5dfc6b1e5e59634205dc7d157d9c125
+          OUTPUT_BRANCH: repair/astra-stage2-windows-topology-staging-20260903
+        run: |
+          set -euo pipefail
+          source_root="$RUNNER_TEMP/astra-topology-source"
+          mkdir -p "$source_root"
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer ${GH_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/artifacts/${SOURCE_ARTIFACT_ID}/zip" \
+            -o "$source_root/source.zip"
+          test "$(sha256sum "$source_root/source.zip" | awk '{print $1}')" = \
+            "$SOURCE_ARTIFACT_SHA256"
+          unzip -q "$source_root/source.zip" -d "$source_root/files"
+          (
+            cd "$source_root/files"
+            sha256sum -c SHA256SUMS
+          )
+
+          git init .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=64 origin \
+            "+${BASE_HEAD}:refs/astra-topology-staging/base"
+          git checkout --detach refs/astra-topology-staging/base
+          test "$(git rev-parse HEAD)" = "$BASE_HEAD"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$BASE_TREE"
+
+          staging_root="staging/astra-stage2-windows-topology-ready-20260903"
+          mkdir -p "$staging_root"
+          cp "$source_root/files/.gitattributes" "$staging_root/gitattributes"
+          cp "$source_root/files/.github/workflows/astra-stage2-control-identity-release.yml" \
+            "$staging_root/astra-stage2-control-identity-release.yml"
+          cp "$source_root/files/astra_stage2/control_identity.py" \
+            "$staging_root/control_identity.py"
+          cp "$source_root/files/experiments/astra_kxr/stage2/control_identity/binding-template.json" \
+            "$staging_root/binding-template.json"
+          cp "$source_root/files/scripts/Invoke-AstraStage2ControlIdentityBinding.ps1" \
+            "$staging_root/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          cp "$source_root/files/tests/test_astra_stage2_control_identity.py" \
+            "$staging_root/test_astra_stage2_control_identity.py"
+          cp "$source_root/files/tests/test_astra_stage2_control_identity_release.py" \
+            "$staging_root/test_astra_stage2_control_identity_release.py"
+          cp "$source_root/files/coordinates.json" "$staging_root/coordinates.json"
+          cp "$source_root/files/SHA256SUMS" "$staging_root/SHA256SUMS"
+
+          git config user.name "BigBirdReturns"
+          git config user.email "bigbirdreturns@proton.me"
+          git add "$staging_root"
+          test "$(git diff --cached --name-only | wc -l)" -eq 9
+          git commit -m "stage(astra): retain tested Windows topology repair blobs"
+          git push --force origin "HEAD:refs/heads/${OUTPUT_BRANCH}"
+
+          {
+            echo "staging_branch=${OUTPUT_BRANCH}"
+            echo "staging_head=$(git rev-parse HEAD)"
+            echo "staging_tree=$(git rev-parse 'HEAD^{tree}')"
+            echo "source_artifact=${SOURCE_ARTIFACT_ID}"
+          } >> "$GITHUB_STEP_SUMMARY"
