@@ -1,0 +1,91 @@
+name: build-astra-stage2-topology-test-isolation
+
+on:
+  push:
+    branches:
+      - repair/astra-stage2-topology-test-isolation-builder-20260903
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Patch exact PR #186 head and push one repair commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_BRANCH: joint/astra-stage2-control-identities-20260903
+          TARGET_HEAD: e76178521f49fb1adb759483780b8f00ee8999ef
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=64 origin \
+            "+refs/heads/${TARGET_BRANCH}:refs/topology-repair/target"
+          git checkout --detach refs/topology-repair/target
+          test "$(git rev-parse HEAD)" = "$TARGET_HEAD"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          production_path = Path("astra_stage2/control_identity.py")
+          production = production_path.read_text(encoding="utf-8")
+
+          anchor = '''\ndef probe_hardware(\n    *,\n    output_dir: Path,\n'''
+          helper = '''\ndef _run_nvidia_command(command: Sequence[str]) -> subprocess.CompletedProcess[bytes]:\n    try:\n        return subprocess.run(command, capture_output=True, check=False)\n    except OSError as exc:\n        raise Stage2Error(f"unable to execute nvidia-smi command: {exc}") from exc\n\n\ndef probe_hardware(\n    *,\n    output_dir: Path,\n'''
+          if production.count(anchor) != 1:
+              raise SystemExit("probe_hardware insertion anchor mismatch")
+          production = production.replace(anchor, helper, 1)
+
+          query_old = "    query = subprocess.run(query_command, capture_output=True, check=False)\n"
+          query_new = "    query = _run_nvidia_command(query_command)\n"
+          if production.count(query_old) != 1:
+              raise SystemExit("query subprocess anchor mismatch")
+          production = production.replace(query_old, query_new, 1)
+
+          topo_old = "        topology = subprocess.run(topology_command, capture_output=True, check=False)\n"
+          topo_new = "        topology = _run_nvidia_command(topology_command)\n"
+          if production.count(topo_old) != 1:
+              raise SystemExit("topology subprocess anchor mismatch")
+          production = production.replace(topo_old, topo_new, 1)
+
+          production_path.write_text(production, encoding="utf-8", newline="\n")
+
+          test_path = Path("tests/test_astra_stage2_control_identity.py")
+          tests = test_path.read_text(encoding="utf-8")
+          old = 'astra_stage2.control_identity.subprocess.run'
+          new = 'astra_stage2.control_identity._run_nvidia_command'
+          count = tests.count(old)
+          if count != 9:
+              raise SystemExit(f"expected 9 NVIDIA subprocess patches, observed {count}")
+          tests = tests.replace(old, new)
+          test_path.write_text(tests, encoding="utf-8", newline="\n")
+          PY
+
+          git diff --check
+          python3 -m py_compile astra_stage2/control_identity.py tests/test_astra_stage2_control_identity.py
+          PYTHONPATH=. python3 -m unittest discover -s tests -p 'test_astra_stage2_control_identity.py' -v 2>&1 | tee /tmp/topology-tests.log
+          grep -q '^Ran 34 tests in ' /tmp/topology-tests.log
+          grep -q '^OK$' /tmp/topology-tests.log
+
+          test "$(git diff --name-only | wc -l)" -eq 2
+          git diff --name-only | grep -Fxq 'astra_stage2/control_identity.py'
+          git diff --name-only | grep -Fxq 'tests/test_astra_stage2_control_identity.py'
+
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+          git add astra_stage2/control_identity.py tests/test_astra_stage2_control_identity.py
+          git commit -m 'fix(astra): isolate NVIDIA command execution in topology tests'
+          successor="$(git rev-parse HEAD)"
+          git push origin "HEAD:refs/heads/${TARGET_BRANCH}"
+
+          {
+            echo "predecessor=${TARGET_HEAD}"
+            echo "successor=${successor}"
+            echo "tests=34"
+            echo "provider_or_model_calls=0"
+          } >> "$GITHUB_STEP_SUMMARY"
