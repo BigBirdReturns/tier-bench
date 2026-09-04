@@ -1,0 +1,573 @@
+name: astra-stage2-pr187-convergence-candidate-qualification
+
+# Audit-only carrier for the PR #187 convergence candidate.
+#
+# This workflow qualifies the convergence subject e3367f9e. It never invokes
+# launcher Preflight, Prepare, Bind, or the checkpoint Retry script, never calls
+# a model or a provider, and never touches physical custody.
+
+on:
+  push:
+    branches:
+      - audit/astra-stage2-pr187-convergence-dbb44b7-0e790fea-20260904
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-pr187-convergence-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  SUBJECT_BRANCH: candidate/astra-stage2-pr187-convergence-dbb44b7-0e790fea-20260904
+  SUBJECT_COMMIT: e3367f9e5de48a099a585077a58ce9cff1051cab
+  SUBJECT_TREE: 8e0aaaf84bd0487c25c531c768cf35c611469f42
+  PARENT1: 0e790fea09668e5f537bdd00fcb2bdb3364855c3
+  PARENT2: dbb44b7efca1b04f2ed2d8c127af653b278909e4
+  MERGE_BASE: af03cef494a509ab7ba5df29fa4b4ccba423f1f8
+  BINDER_TREE: '2671247337030d9c8e281393103104f7436d2800'
+  LAW_HEAD: c36c35bf9b70d879e1e1c9ee2f0296879442df3e
+  LAW_BLOB: 77abe4e177fc61e4f52f56ea64494b113f9662fc
+  CARRIER_PATH: .github/workflows/astra-stage2-pr187-convergence-candidate-qualification.yml
+
+jobs:
+  structure:
+    name: subject structure and manifests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Subject branch resolves to the exact convergence commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin "+refs/heads/${SUBJECT_BRANCH}:refs/remotes/origin/${SUBJECT_BRANCH}"
+          observed="$(git rev-parse "refs/remotes/origin/${SUBJECT_BRANCH}")"
+          echo "subject branch head: ${observed}"
+          [ "${observed}" = "${SUBJECT_COMMIT}" ] || { echo "SUBJECT_BRANCH_DRIFT"; exit 1; }
+          echo "SUBJECT_BRANCH_EXACT"
+
+      - name: Subject tree and ordered two-parent vector
+        shell: bash
+        run: |
+          set -euo pipefail
+          tree="$(git rev-parse "${SUBJECT_COMMIT}^{tree}")"
+          [ "${tree}" = "${SUBJECT_TREE}" ] || { echo "SUBJECT_TREE_DRIFT ${tree}"; exit 1; }
+          parents="$(git rev-list --parents -n 1 "${SUBJECT_COMMIT}" | cut -d' ' -f2-)"
+          echo "parents: ${parents}"
+          [ "${parents}" = "${PARENT1} ${PARENT2}" ] || { echo "PARENT_VECTOR_WRONG"; exit 1; }
+          n="$(git cat-file -p "${SUBJECT_COMMIT}" | grep -c '^parent ')"
+          [ "${n}" = "2" ] || { echo "PARENT_COUNT_${n}"; exit 1; }
+          git merge-base --is-ancestor "${PARENT2}" "${SUBJECT_COMMIT}" || { echo "DBB44B7_NOT_ANCESTOR"; exit 1; }
+          git merge-base --is-ancestor "${PARENT1}" "${SUBJECT_COMMIT}" || { echo "0E790FEA_NOT_ANCESTOR"; exit 1; }
+          base="$(git merge-base "${PARENT1}" "${PARENT2}")"
+          [ "${base}" = "${MERGE_BASE}" ] || { echo "MERGE_BASE_DRIFT ${base}"; exit 1; }
+          echo "STRUCTURE_EXACT"
+
+      - name: Carrier is exactly one commit over the subject, sole path is this workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          carrier="${GITHUB_SHA}"
+          cp="$(git rev-list --parents -n 1 "${carrier}" | cut -d' ' -f2-)"
+          [ "${cp}" = "${SUBJECT_COMMIT}" ] || { echo "CARRIER_PARENT_WRONG ${cp}"; exit 1; }
+          changed="$(git diff --name-only "${SUBJECT_COMMIT}" "${carrier}")"
+          [ "${changed}" = "${CARRIER_PATH}" ] || { echo "CARRIER_DELTA_WRONG"; printf '%s\n' "${changed}"; exit 1; }
+          echo "CARRIER_SHAPE_EXACT"
+
+      - name: First-parent 19-path manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/want19 <<'EOF'
+          .github/workflows/astra-stage2-control-identity-release.yml
+          .github/workflows/astra-stage2-control-identity.yml
+          astra_stage2/control_identity.py
+          docs/agents/QUEUE.md
+          docs/agents/claims/FRR-ASTRA-STAGE2-1.md
+          docs/agents/claims/FRR-ASTRA-STAGE2-CONTROL-IDENTITY-1.md
+          docs/agents/claims/FRR-ASTRA-STAGE2-WINDOWS-PREPARE-SUCCESSOR.md
+          experiments/astra_kxr/stage2/control_identity/README.md
+          experiments/astra_kxr/stage2/control_identity/binding-template.json
+          schemas/astra-stage2-control-binding-input.schema.json
+          schemas/astra-stage2-executable-control-private.schema.json
+          schemas/astra-stage2-executable-control-public.schema.json
+          schemas/astra-stage2-executable-control-set.schema.json
+          schemas/astra-stage2-hardware-platform.schema.json
+          schemas/astra-stage2-hardware-probe.schema.json
+          schemas/astra-stage2-topology-evidence.schema.json
+          scripts/Invoke-AstraStage2ControlIdentityBinding.ps1
+          tests/test_astra_stage2_control_identity.py
+          tests/test_astra_stage2_control_identity_release.py
+          EOF
+          git diff --name-only "${PARENT1}" "${SUBJECT_COMMIT}" | sort > /tmp/got19
+          sort -o /tmp/want19 /tmp/want19
+          diff -u /tmp/want19 /tmp/got19 || { echo "FIRST_PARENT_MANIFEST_MISMATCH"; exit 1; }
+          [ "$(wc -l < /tmp/got19)" = "19" ] || { echo "FIRST_PARENT_COUNT_WRONG"; exit 1; }
+          echo "FIRST_PARENT_MANIFEST_EXACT_19"
+
+      - name: Nine-path release delta against dbb44b7
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/want9 <<'EOF'
+          .gitattributes
+          .github/workflows/astra-stage2-control-identity-release.yml
+          .github/workflows/astra-stage2-control-identity.yml
+          docs/agents/claims/FRR-ASTRA-STAGE2-B353-EXECUTION-RECORD.md
+          docs/agents/claims/FRR-ASTRA-STAGE2-WINDOWS-PREPARE-SUCCESSOR.md
+          scripts/Invoke-AstraStage2CheckpointRetry.ps1
+          scripts/Invoke-AstraStage2ControlIdentityBinding.ps1
+          tests/test_astra_stage2_control_identity.py
+          tests/test_astra_stage2_control_identity_release.py
+          EOF
+          git diff --name-only "${PARENT2}" "${SUBJECT_COMMIT}" | sort > /tmp/got9
+          sort -o /tmp/want9 /tmp/want9
+          diff -u /tmp/want9 /tmp/got9 || { echo "RELEASE_DELTA_MISMATCH"; exit 1; }
+          [ "$(wc -l < /tmp/got9)" = "9" ] || { echo "RELEASE_DELTA_COUNT_WRONG"; exit 1; }
+          echo "RELEASE_DELTA_EXACT_9"
+
+      - name: Qualified binder paths byte-equal to dbb44b7, law blob exact
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          for p in \
+            astra_stage2/control_identity.py \
+            docs/agents/claims/FRR-ASTRA-STAGE2-CONTROL-IDENTITY-1.md \
+            experiments/astra_kxr/stage2/control_identity/README.md \
+            experiments/astra_kxr/stage2/control_identity/binding-template.json \
+            schemas/astra-stage2-control-binding-input.schema.json \
+            schemas/astra-stage2-executable-control-private.schema.json \
+            schemas/astra-stage2-executable-control-public.schema.json \
+            schemas/astra-stage2-executable-control-set.schema.json \
+            schemas/astra-stage2-hardware-platform.schema.json \
+            schemas/astra-stage2-hardware-probe.schema.json \
+            schemas/astra-stage2-topology-evidence.schema.json \
+            docs/agents/QUEUE.md
+          do
+            a="$(git rev-parse "${PARENT2}:${p}")"
+            b="$(git rev-parse "${SUBJECT_COMMIT}:${p}")"
+            if [ "${a}" != "${b}" ]; then echo "BINDER_DRIFT ${p} ${a} ${b}"; fail=1; else echo "binder ok ${p} ${b}"; fi
+          done
+          law="$(git rev-parse "${SUBJECT_COMMIT}:docs/agents/claims/FRR-ASTRA-STAGE2-1.md")"
+          [ "${law}" = "${LAW_BLOB}" ] || { echo "LAW_BLOB_DRIFT ${law}"; fail=1; }
+          lawsrc="$(git rev-parse "${LAW_HEAD}:docs/agents/claims/FRR-ASTRA-STAGE2-1.md")"
+          [ "${lawsrc}" = "${LAW_BLOB}" ] || { echo "LAW_SOURCE_DRIFT ${lawsrc}"; fail=1; }
+          for p in .gitattributes docs/agents/claims/FRR-ASTRA-STAGE2-B353-EXECUTION-RECORD.md scripts/Invoke-AstraStage2CheckpointRetry.ps1
+          do
+            a="$(git rev-parse "${PARENT1}:${p}")"
+            b="$(git rev-parse "${SUBJECT_COMMIT}:${p}")"
+            if [ "${a}" != "${b}" ]; then echo "RETAINED_DRIFT ${p}"; fail=1; else echo "retained ok ${p} ${b}"; fi
+          done
+          [ "${fail}" = "0" ] || exit 1
+          echo "BINDER_LAW_RETAINED_EXACT"
+
+      - name: Predecessor workflow differs from dbb44b7 only by PR base scope
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$(git diff "${PARENT2}" "${SUBJECT_COMMIT}" -- .github/workflows/astra-stage2-control-identity.yml)"
+          printf '%s\n' "${d}"
+          add="$(printf '%s\n' "${d}" | grep -c '^+' || true)"
+          rem="$(printf '%s\n' "${d}" | grep -c '^-' || true)"
+          # one +++ header and two real additions; one --- header and no real removals
+          [ "${add}" = "3" ] || { echo "WORKFLOW_ADDITIONS_${add}"; exit 1; }
+          [ "${rem}" = "1" ] || { echo "WORKFLOW_REMOVALS_${rem}"; exit 1; }
+          printf '%s\n' "${d}" | grep -q 'joint/astra-stage2-calibration-impl-20260902' || { echo "BASE_SCOPE_MISSING"; exit 1; }
+          echo "PREDECESSOR_WORKFLOW_BASE_SCOPE_ONLY"
+
+      - name: Core witness differs from dbb44b7 only by the WinError-1314 repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          d="$(git diff "${PARENT2}" "${SUBJECT_COMMIT}" -- tests/test_astra_stage2_control_identity.py)"
+          printf '%s\n' "${d}"
+          add="$(printf '%s\n' "${d}" | grep -c '^+' || true)"
+          rem="$(printf '%s\n' "${d}" | grep -c '^-' || true)"
+          [ "${add}" = "7" ] || { echo "CORETEST_ADDITIONS_${add}"; exit 1; }
+          [ "${rem}" = "3" ] || { echo "CORETEST_REMOVALS_${rem}"; exit 1; }
+          printf '%s\n' "${d}" | grep -q 'winerror' || { echo "WINERROR_GUARD_MISSING"; exit 1; }
+          printf '%s\n' "${d}" | grep -q '1314' || { echo "CODE_1314_MISSING"; exit 1; }
+          printf '%s\n' "${d}" | grep -q '^-.*skipIf(os.name == "nt"' || { echo "UNCONDITIONAL_SKIP_NOT_REMOVED"; exit 1; }
+          echo "CORE_WITNESS_1314_REPAIR_ONLY"
+
+      - name: Launcher binds dbb44b7 and the topology-evidence contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "${SUBJECT_COMMIT}" >/dev/null 2>&1
+          L=scripts/Invoke-AstraStage2ControlIdentityBinding.ps1
+          for k in "${PARENT2}" "${BINDER_TREE}" "${LAW_HEAD}" "${LAW_BLOB}" \
+                   topology_evidence_path platform_path device_query_path \
+                   selected_device_indices 'astra-stage2-hardware-probe@2'
+          do
+            grep -qF -- "${k}" "${L}" || { echo "LAUNCHER_MISSING ${k}"; exit 1; }
+            echo "launcher binds ${k}"
+          done
+          for k in topology_path topology_status_path nvidia_topo_matrix topology_class
+          do
+            if grep -qF -- "${k}" "${L}"; then echo "LAUNCHER_SUPERSEDED_FIELD ${k}"; exit 1; fi
+            echo "launcher clear of ${k}"
+          done
+          echo "LAUNCHER_CONTRACT_EXACT"
+
+      - name: Release workflow declares no executable Preflight, Prepare, Bind, or Retry
+        shell: bash
+        run: |
+          set -euo pipefail
+          W=.github/workflows/astra-stage2-control-identity-release.yml
+          for pat in "-Mode Preflight" "-Mode Prepare" "-Mode Bind" "-Mode Retry" \
+                     "& ./scripts/Invoke-AstraStage2CheckpointRetry.ps1" \
+                     "pwsh -File scripts/Invoke-AstraStage2CheckpointRetry.ps1" \
+                     "pwsh -File scripts/Invoke-AstraStage2ControlIdentityBinding.ps1"
+          do
+            if grep -qF -- "${pat}" "${W}"; then echo "RELEASE_WORKFLOW_EXECUTES ${pat}"; exit 1; fi
+          done
+          for stale in "Ran 27" "27 tests" "Ran 36" "36 tests" 208557ba 697bd2dc af03cef
+          do
+            if grep -qF -- "${stale}" "${W}"; then echo "RELEASE_WORKFLOW_STALE ${stale}"; exit 1; fi
+          done
+          grep -qF -- "Ran 43 tests" "${W}" || { echo "DENOMINATOR_MISSING"; exit 1; }
+          grep -qF -- "1314" "${W}" || { echo "SYMLINK_LAW_MISSING"; exit 1; }
+          grep -qF -- "test_10_symlinked_model_file_refuses" "${W}" || { echo "SKIP_PIN_MISSING"; exit 1; }
+          grep -qF -- "windows-2025" "${W}" || { echo "WINDOWS_RUNNER_MISSING"; exit 1; }
+          grep -qF -- "ubuntu-24.04" "${W}" || { echo "UBUNTU_RUNNER_MISSING"; exit 1; }
+          echo "RELEASE_WORKFLOW_NO_EXECUTION_AUTHORITY"
+
+      - name: Emit structure receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p receipts
+          python3 - <<'PY'
+          import hashlib, json, os
+          body = {
+            "schema": "tier-bench/astra-stage2-pr187-convergence-structure@1",
+            "subject_commit": os.environ["SUBJECT_COMMIT"],
+            "subject_tree": os.environ["SUBJECT_TREE"],
+            "parents": [os.environ["PARENT1"], os.environ["PARENT2"]],
+            "merge_base": os.environ["MERGE_BASE"],
+            "first_parent_manifest_paths": 19,
+            "release_delta_paths": 9,
+            "binder_paths_byte_equal": True,
+            "law_blob": os.environ["LAW_BLOB"],
+            "predecessor_workflow": "base_scope_only",
+            "core_witness": "winerror_1314_repair_only",
+            "launcher_contract": "dbb44b7_topology_evidence",
+            "release_workflow_execution_authority": "none",
+            "model_calls": 0,
+            "provider_calls": 0,
+          }
+          payload = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+          body["payload_sha256"] = hashlib.sha256(payload).hexdigest()
+          with open("receipts/structure.json", "w", encoding="utf-8") as fh:
+              json.dump(body, fh, sort_keys=True, indent=2)
+          print(body["payload_sha256"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: receipt-structure
+          path: receipts/structure.json
+
+  conformance:
+    name: ${{ matrix.os }} conformance
+    needs: structure
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2025
+            py: python
+          - os: ubuntu-24.04
+            py: python3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out the exact subject tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git checkout --detach "${SUBJECT_COMMIT}"
+          [ "$(git rev-parse HEAD)" = "${SUBJECT_COMMIT}" ] || exit 1
+          [ "$(git rev-parse 'HEAD^{tree}')" = "${SUBJECT_TREE}" ] || exit 1
+          echo "SUBJECT_TREE_CHECKED_OUT"
+
+      - name: Probe symlink capability
+        id: probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.py }} - <<'PY' > probe.txt 2>&1 || true
+          import os, pathlib, tempfile
+          d = pathlib.Path(tempfile.mkdtemp())
+          real = d / "real.txt"; real.write_text("{}", encoding="utf-8")
+          link = d / "link.txt"
+          try:
+              link.symlink_to(real)
+              print("SYMLINK_CAPABLE")
+          except OSError as exc:
+              if os.name == "nt" and getattr(exc, "winerror", None) == 1314:
+                  print("SYMLINK_PRIVILEGE_ABSENT_1314")
+              else:
+                  print(f"SYMLINK_PROBE_OTHER_ERROR {type(exc).__name__} {getattr(exc,'winerror',None)}")
+          PY
+          cat probe.txt
+          state="$(head -n1 probe.txt)"
+          case "${state}" in
+            SYMLINK_CAPABLE|SYMLINK_PRIVILEGE_ABSENT_1314) : ;;
+            *) echo "PROBE_INDETERMINATE"; exit 1 ;;
+          esac
+          echo "state=${state}" >> "${GITHUB_OUTPUT}"
+
+      - name: Run the 43-test denominator and enforce the exact skip-set law
+        id: tests
+        shell: bash
+        env:
+          SYMLINK_STATE: ${{ steps.probe.outputs.state }}
+        run: |
+          set -uo pipefail
+          PYTHONPATH=. ${{ matrix.py }} -m unittest discover -s tests \
+            -p "test_astra_stage2_control_identity*.py" -v > suite.txt 2>&1
+          code=$?
+          cat suite.txt
+          set -e
+          ${{ matrix.py }} - <<'PY'
+          import os, re, sys
+          text = open("suite.txt", encoding="utf-8", errors="replace").read()
+          state = os.environ["SYMLINK_STATE"]
+          m = re.search(r"^Ran (\d+) tests?", text, re.M)
+          if not m or m.group(1) != "43":
+              print("DENOMINATOR_WRONG", m.group(1) if m else "none"); sys.exit(1)
+          ok = len(re.findall(r"\.\.\. ok\b", text))
+          skipped = re.findall(r"^(\S+) \([^)]*\) \.\.\. skipped", text, re.M)
+          bad = len(re.findall(r"\.\.\. (FAIL|ERROR)", text))
+          if bad:
+              print("FAILURES_PRESENT", bad); sys.exit(1)
+          if state == "SYMLINK_CAPABLE":
+              if ok != 43 or skipped:
+                  print("CAPABLE_LAW_VIOLATED ok=%d skipped=%s" % (ok, skipped)); sys.exit(1)
+              if not re.search(r"^test_10_symlinked_model_file_refuses \([^)]*\) \.\.\. ok", text, re.M):
+                  print("TEST_10_NOT_EXECUTED"); sys.exit(1)
+              print("SYMLINK_CAPABLE_LAW_PASS ok=43 skipped=0 test_10=executed")
+          else:
+              if len(skipped) != 1 or skipped[0] != "test_10_symlinked_model_file_refuses":
+                  print("SKIP_SET_LAW_VIOLATED", skipped); sys.exit(1)
+              if ok != 42:
+                  print("PRIVILEGE_ABSENT_LAW_VIOLATED ok=%d" % ok); sys.exit(1)
+              print("SYMLINK_1314_LAW_PASS ok=42 skipped=1 sole=test_10")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write("passed=%d\n" % ok)
+              fh.write("skipped=%d\n" % len(skipped))
+          PY
+          [ "${code}" = "0" ] || { echo "SUITE_EXIT_${code}"; exit "${code}"; }
+
+      - name: Ubuntu must always execute and pass test_10
+        if: matrix.os == 'ubuntu-24.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          [ "${{ steps.probe.outputs.state }}" = "SYMLINK_CAPABLE" ] || { echo "UBUNTU_MUST_BE_CAPABLE"; exit 1; }
+          grep -qE '^test_10_symlinked_model_file_refuses \([^)]*\) \.\.\. ok' suite.txt || { echo "UBUNTU_TEST_10_NOT_PASSED"; exit 1; }
+          echo "UBUNTU_TEST_10_EXECUTED_AND_PASSED"
+
+      - name: Four core mutation witnesses remain effective
+        id: mutation
+        shell: bash
+        run: |
+          set -euo pipefail
+          ${{ matrix.py }} - <<'PY'
+          import os, pathlib, subprocess, sys
+          # Byte-exact I/O throughout: text mode would rewrite LF as CRLF on
+          # Windows and silently corrupt the product during restore.
+          src = pathlib.Path("astra_stage2/control_identity.py")
+          original = src.read_bytes()
+          cases = [
+            ("test_26_platform_substitution_refuses",
+             b'    if record.get("platform") != system:',
+             b'    if False:'),
+            ("test_27_selected_index_mismatch_refuses",
+             b'    if set(by_index) != set(indices) or len(query_rows) != len(indices):',
+             b'    if False:'),
+            ("test_28_device_query_digest_drift_refuses",
+             b'    if record.get("device_query_sha256") != query_entry["sha256"]:',
+             b'    if False:'),
+            ("test_29_topology_record_tamper_refuses",
+             b'    if observed != expected:',
+             b'    if False:'),
+          ]
+          # Witness 29's guard text is not unique on its own; pin it to the one
+          # occurrence followed by its unique refusal message.
+          pair = (b'    if observed != expected:\n'
+                  b'        raise Stage2Error(f"{label} payload hash mismatch")')
+          pair_crlf = pair.replace(b'\n', b'\r\n')
+          killed = 0
+          env = {**os.environ, "PYTHONPATH": "."}
+          try:
+              for test, anchor, repl in cases:
+                  if test.startswith("test_29"):
+                      target = pair if original.count(pair) == 1 else pair_crlf
+                      if original.count(target) != 1:
+                          print("ANCHOR_NOT_UNIQUE test_29"); sys.exit(1)
+                      mutated = original.replace(target, target.replace(anchor, repl, 1), 1)
+                  else:
+                      n = original.count(anchor)
+                      if n != 1:
+                          print(f"ANCHOR_NOT_UNIQUE {test} count={n}"); sys.exit(1)
+                      mutated = original.replace(anchor, repl, 1)
+                  if mutated == original:
+                      print(f"MUTATION_NOOP {test}"); sys.exit(1)
+                  src.write_bytes(mutated)
+                  r = subprocess.run(
+                      [sys.executable, "-m", "unittest", "discover", "-s", "tests",
+                       "-p", "test_astra_stage2_control_identity.py", "-k", test],
+                      capture_output=True, text=True, env=env)
+                  src.write_bytes(original)
+                  if r.returncode == 0:
+                      print(f"MUTANT_SURVIVED {test}")
+                      print(r.stderr[-2000:]); sys.exit(1)
+                  killed += 1
+                  print(f"MUTANT_KILLED {test}")
+          finally:
+              src.write_bytes(original)
+          if killed != 4:
+              print(f"MUTATION_INCOMPLETE {killed}"); sys.exit(1)
+          print("MUTATION_RECEIPT killed=4 survivors=0")
+          PY
+          git diff --quiet -- astra_stage2/control_identity.py || { echo "PRODUCT_NOT_RESTORED"; exit 1; }
+          echo "PRODUCT_RESTORED_CLEAN"
+
+      - name: Both PowerShell surfaces parse, parser only
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($relative in @(
+            'scripts/Invoke-AstraStage2ControlIdentityBinding.ps1',
+            'scripts/Invoke-AstraStage2CheckpointRetry.ps1'
+          )) {
+            $errs = $null; $toks = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Join-Path $PWD $relative), [ref]$toks, [ref]$errs)
+            if ($errs -and $errs.Count -gt 0) {
+              Write-Output "POWERSHELL_PARSE_FAIL $relative"
+              $errs | ForEach-Object { Write-Output $_.Message }
+              exit 1
+            }
+            Write-Output "POWERSHELL_PARSE_PASS $relative"
+          }
+
+      - name: No provider or model call occurred
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE 'api\.openai\.com|api\.anthropic\.com|huggingface\.co/api|generativelanguage' \
+               .github/workflows tests astra_stage2 scripts 2>/dev/null; then
+            echo "PROVIDER_ENDPOINT_PRESENT"; exit 1
+          fi
+          echo "MODEL_CALLS=0 PROVIDER_CALLS=0"
+
+      - name: Emit platform receipt
+        shell: bash
+        env:
+          SYMLINK_STATE: ${{ steps.probe.outputs.state }}
+          PASSED: ${{ steps.tests.outputs.passed }}
+          SKIPPED: ${{ steps.tests.outputs.skipped }}
+        run: |
+          set -euo pipefail
+          mkdir -p receipts
+          ${{ matrix.py }} - <<'PY'
+          import hashlib, json, os, platform, re
+          suite = open("suite.txt", encoding="utf-8", errors="replace").read()
+          skipped = re.findall(r"^(\S+) \([^)]*\) \.\.\. skipped", suite, re.M)
+          body = {
+            "schema": "tier-bench/astra-stage2-pr187-convergence-platform@1",
+            "subject_commit": os.environ["SUBJECT_COMMIT"],
+            "subject_tree": os.environ["SUBJECT_TREE"],
+            "platform": platform.system(),
+            "runner": os.environ.get("RUNNER_OS", ""),
+            "symlink_state": os.environ["SYMLINK_STATE"],
+            "tests_ran": 43,
+            "tests_passed": int(os.environ["PASSED"]),
+            "tests_skipped": int(os.environ["SKIPPED"]),
+            "skipped_set": sorted(skipped),
+            "mutation_witnesses_killed": 4,
+            "mutation_survivors": 0,
+            "powershell_surfaces_parsed": 2,
+            "model_calls": 0,
+            "provider_calls": 0,
+            "preflight": "NOT_RUN",
+            "prepare": "NOT_RUN",
+            "bind": "NOT_RUN",
+            "checkpoint_retry": "NOT_RUN",
+          }
+          payload = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+          body["payload_sha256"] = hashlib.sha256(payload).hexdigest()
+          name = "receipts/platform-%s.json" % os.environ["RUNNER_OS"].lower()
+          with open(name, "w", encoding="utf-8") as fh:
+              json.dump(body, fh, sort_keys=True, indent=2)
+          print(name, body["payload_sha256"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: receipt-${{ matrix.os }}
+          path: receipts/platform-*.json
+
+  seal:
+    name: recompute receipts and seal the qualification index
+    needs: [structure, conformance]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: incoming
+
+      - name: Recompute every receipt and build the combined index
+        shell: bash
+        run: |
+          set -euo pipefail
+          find incoming -name '*.json' | sort
+          python3 - <<'PY'
+          import hashlib, json, pathlib, sys
+          files = sorted(pathlib.Path("incoming").rglob("*.json"))
+          if len(files) != 3:
+              print("RECEIPT_COUNT_WRONG", len(files)); sys.exit(1)
+          index = {"schema": "tier-bench/astra-stage2-pr187-convergence-index@1", "receipts": []}
+          for f in files:
+              body = json.loads(f.read_text(encoding="utf-8"))
+              claimed = body.pop("payload_sha256")
+              payload = json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+              actual = hashlib.sha256(payload).hexdigest()
+              if actual != claimed:
+                  print("RECEIPT_DOES_NOT_RECOMPUTE", f.name, claimed, actual); sys.exit(1)
+              print("RECEIPT_RECOMPUTES", f.name, actual)
+              if body.get("model_calls", 0) != 0 or body.get("provider_calls", 0) != 0:
+                  print("NONZERO_CALLS", f.name); sys.exit(1)
+              index["receipts"].append({"file": f.name, "payload_sha256": actual})
+          platforms = [json.loads(f.read_text(encoding="utf-8")) for f in files if "platform-" in f.name]
+          if len(platforms) != 2:
+              print("PLATFORM_RECEIPT_COUNT_WRONG", len(platforms)); sys.exit(1)
+          for p in platforms:
+              if p["tests_ran"] != 43 or p["mutation_witnesses_killed"] != 4:
+                  print("PLATFORM_LAW_VIOLATED", p["platform"]); sys.exit(1)
+          payload = json.dumps(index, sort_keys=True, separators=(",", ":")).encode()
+          index["combined_sha256"] = hashlib.sha256(payload).hexdigest()
+          pathlib.Path("qualification-index.json").write_text(
+              json.dumps(index, sort_keys=True, indent=2), encoding="utf-8")
+          print("COMBINED_SHA256", index["combined_sha256"])
+          print("CONVERGENCE_CANDIDATE_QUALIFIED")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qualification-index
+          path: qualification-index.json
