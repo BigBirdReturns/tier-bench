@@ -1,0 +1,305 @@
+name: astra-stage2-control-identity-topology-audit
+
+on:
+  push:
+    branches:
+      - audit/astra-stage2-control-identity-topology-3079-20260903
+
+permissions:
+  contents: read
+
+concurrency:
+  group: astra-stage2-control-identity-topology-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET_HEAD: 3079883f1b4a1486e5859b97eb2ff2a7e3c6fb07
+  TARGET_TREE: 097f958ad5eafdadeb0f5ca79ea05437dad0bd26
+  PREDECESSOR_HEAD: e76178521f49fb1adb759483780b8f00ee8999ef
+
+jobs:
+  windows-topology-audit:
+    runs-on: windows-2025
+    timeout-minutes: 15
+    steps:
+      - name: Check out audit head and exact target parent
+        id: custody
+        shell: pwsh
+        env:
+          AUDIT_BRANCH: audit/astra-stage2-control-identity-topology-3079-20260903
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          git init .
+          if ($LASTEXITCODE -ne 0) { throw 'git init failed' }
+          git remote add origin "https://github.com/$env:GITHUB_REPOSITORY.git"
+          if ($LASTEXITCODE -ne 0) { throw 'git remote add failed' }
+          $refspec = "+refs/heads/{0}:refs/topology-audit/candidate" -f $env:AUDIT_BRANCH
+          git fetch --no-tags --depth=96 origin $refspec
+          if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+          git checkout --detach refs/topology-audit/candidate
+          if ($LASTEXITCODE -ne 0) { throw 'git checkout failed' }
+
+          $auditHead = (git rev-parse HEAD).Trim()
+          $auditTree = (git rev-parse 'HEAD^{tree}').Trim()
+          if ($auditHead -ne $env:EXPECTED_AUDIT_HEAD) { throw "audit head mismatch: $auditHead" }
+          $parent = (git rev-parse 'HEAD^').Trim()
+          if ($parent -ne $env:TARGET_HEAD) { throw "audit parent mismatch: $parent" }
+          $targetTree = (git rev-parse "$($env:TARGET_HEAD)^{tree}").Trim()
+          if ($targetTree -ne $env:TARGET_TREE) { throw "target tree mismatch: $targetTree" }
+          $paths = @(git diff --name-only "$($env:TARGET_HEAD)...$auditHead")
+          if ($paths.Count -ne 1 -or $paths[0] -ne '.github/workflows/astra-stage2-control-identity-topology-audit.yml') {
+            throw "audit path set mismatch: $($paths -join ',')"
+          }
+
+          $targetRoot = Join-Path $env:RUNNER_TEMP 'astra-stage2-topology-target'
+          git worktree add --detach $targetRoot $env:TARGET_HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'target worktree creation failed' }
+          if ((git -C $targetRoot rev-parse HEAD).Trim() -ne $env:TARGET_HEAD) { throw 'target worktree head mismatch' }
+          if ((git -C $targetRoot rev-parse 'HEAD^{tree}').Trim() -ne $env:TARGET_TREE) { throw 'target worktree tree mismatch' }
+          if (git -C $targetRoot status --porcelain) { throw 'target worktree is dirty' }
+
+          "target_root=$targetRoot" >> $env:GITHUB_OUTPUT
+          "audit_head=$auditHead" >> $env:GITHUB_OUTPUT
+          "audit_tree=$auditTree" >> $env:GITHUB_OUTPUT
+
+      - name: Refuse provider credentials
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $names = @('OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY','MISTRAL_API_KEY','COHERE_API_KEY','XAI_API_KEY','GROQ_API_KEY','TOGETHER_API_KEY','FIREWORKS_API_KEY')
+          $present = @($names | Where-Object { [Environment]::GetEnvironmentVariable($_) })
+          if ($present.Count -ne 0) { throw "provider credentials present: $($present -join ',')" }
+
+      - name: Run exact 34-test topology suite on Windows
+        id: tests
+        shell: pwsh
+        env:
+          TARGET_ROOT: ${{ steps.custody.outputs.target_root }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Push-Location -LiteralPath $env:TARGET_ROOT
+          try {
+            python -m py_compile astra_stage2/control_identity.py tests/test_astra_stage2_control_identity.py
+            if ($LASTEXITCODE -ne 0) { throw 'py_compile failed' }
+            $lines = @(& python -m unittest discover -s tests -p 'test_astra_stage2_control_identity.py' -v 2>&1)
+            $code = $LASTEXITCODE
+            $log = Join-Path $env:RUNNER_TEMP 'topology-audit-windows.log'
+            $lines | Set-Content -Encoding utf8 $log
+            $lines | ForEach-Object { Write-Host $_ }
+            if ($code -ne 0) { throw "Windows topology tests failed: $code" }
+            $joined = $lines -join "`n"
+            if ($joined -notmatch '(?m)^Ran 34 tests in ') { throw 'Windows denominator is not 34' }
+            if ($joined -notmatch '(?m)^OK \(skipped=1\)$') { throw 'Windows suite did not finish with one expected skip' }
+            "log=$log" >> $env:GITHUB_OUTPUT
+          }
+          finally { Pop-Location }
+
+      - name: Verify Windows and Linux topology law in exact source
+        shell: pwsh
+        env:
+          TARGET_ROOT: ${{ steps.custody.outputs.target_root }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = Get-Content -Raw -LiteralPath (Join-Path $env:TARGET_ROOT 'astra_stage2\control_identity.py')
+          foreach ($required in @(
+            'def _run_nvidia_command',
+            'topology_command = [executable, "topo", "-m"]',
+            'topology = _run_nvidia_command(topology_command)',
+            'if system == "Windows" and len(indices) != 1:',
+            '"state": "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE"',
+            '"method": "PLATFORM_LIMITATION_SINGLE_DEVICE"',
+            '"inter_device_topology_claimed": False',
+            '"implicit_pooling_claimed": False'
+          )) {
+            if (-not $source.Contains($required)) { throw "missing topology-law marker: $required" }
+          }
+          $tests = Get-Content -Raw -LiteralPath (Join-Path $env:TARGET_ROOT 'tests\test_astra_stage2_control_identity.py')
+          foreach ($marker in @(
+            'test_21_linux_success_retains_exact_topology_bytes',
+            'test_24_windows_single_device_never_invokes_topology_command',
+            'test_25_windows_multi_device_refuses_without_topology_source',
+            'test_26_platform_substitution_refuses',
+            'test_29_topology_record_tamper_refuses',
+            'test_30_windows_inter_device_authority_widening_refuses',
+            'test_31_implicit_pooling_authority_widening_refuses',
+            'test_32_duplicate_device_query_index_refuses',
+            'test_33_unknown_platform_refuses_after_mandatory_query',
+            'test_34_missing_selected_device_refuses_before_command'
+          )) {
+            if (-not $tests.Contains($marker)) { throw "missing hostile test: $marker" }
+          }
+
+      - name: Seal Windows audit receipt
+        id: receipt
+        shell: pwsh
+        env:
+          TARGET_ROOT: ${{ steps.custody.outputs.target_root }}
+          TEST_LOG: ${{ steps.tests.outputs.log }}
+          AUDIT_HEAD: ${{ steps.custody.outputs.audit_head }}
+          AUDIT_TREE: ${{ steps.custody.outputs.audit_tree }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = Join-Path $env:RUNNER_TEMP 'astra-stage2-topology-audit-windows'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          Copy-Item -LiteralPath $env:TEST_LOG -Destination (Join-Path $out 'test.log')
+          $value = [ordered]@{
+            schema = 'tier-bench/astra-stage2-control-identity-topology-audit@1'
+            platform = 'Windows'
+            target_head_sha1 = $env:TARGET_HEAD
+            target_tree_sha1 = $env:TARGET_TREE
+            predecessor_head_sha1 = $env:PREDECESSOR_HEAD
+            audit_head_sha1 = $env:AUDIT_HEAD
+            audit_tree_sha1 = $env:AUDIT_TREE
+            tests = 34
+            passed = 33
+            skipped = 1
+            failed = 0
+            errors = 0
+            windows_single_device_topology_command_calls = 0
+            windows_single_device_state = 'NOT_APPLICABLE_SINGLE_SELECTED_DEVICE'
+            windows_multi_device_without_source = 'REFUSED'
+            linux_command_contract = 'nvidia-smi topo -m'
+            provider_or_model_calls = 0
+            empirical_calibration = 'NOT_RUN'
+            numeric_stage2_freeze = 'NOT_ISSUED'
+            disposition = 'PASS_STAGE_A_WINDOWS'
+          }
+          $value | ConvertTo-Json -Depth 16 | Set-Content -Encoding utf8 (Join-Path $out 'audit-receipt.json')
+          "out=$out" >> $env:GITHUB_OUTPUT
+
+      - name: Upload Windows topology audit
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-topology-audit-windows-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.receipt.outputs.out }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+  linux-topology-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out audit head and exact target parent
+        id: custody
+        shell: bash
+        env:
+          AUDIT_BRANCH: audit/astra-stage2-control-identity-topology-3079-20260903
+          EXPECTED_AUDIT_HEAD: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=96 origin \
+            "+refs/heads/${AUDIT_BRANCH}:refs/topology-audit/candidate"
+          git checkout --detach refs/topology-audit/candidate
+          audit_head="$(git rev-parse HEAD)"
+          audit_tree="$(git rev-parse 'HEAD^{tree}')"
+          test "$audit_head" = "$EXPECTED_AUDIT_HEAD"
+          test "$(git rev-parse 'HEAD^')" = "$TARGET_HEAD"
+          test "$(git rev-parse "${TARGET_HEAD}^{tree}")" = "$TARGET_TREE"
+          mapfile -t paths < <(git diff --name-only "${TARGET_HEAD}...${audit_head}")
+          test "${#paths[@]}" -eq 1
+          test "${paths[0]}" = '.github/workflows/astra-stage2-control-identity-topology-audit.yml'
+          target_root="$RUNNER_TEMP/astra-stage2-topology-target"
+          git worktree add --detach "$target_root" "$TARGET_HEAD"
+          test "$(git -C "$target_root" rev-parse HEAD)" = "$TARGET_HEAD"
+          test "$(git -C "$target_root" rev-parse 'HEAD^{tree}')" = "$TARGET_TREE"
+          test -z "$(git -C "$target_root" status --porcelain)"
+          printf 'target_root=%s\n' "$target_root" >> "$GITHUB_OUTPUT"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$audit_tree" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse provider credentials
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          names = ['OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY','MISTRAL_API_KEY','COHERE_API_KEY','XAI_API_KEY','GROQ_API_KEY','TOGETHER_API_KEY','FIREWORKS_API_KEY']
+          present = [name for name in names if os.environ.get(name)]
+          if present:
+              raise SystemExit('provider credentials present: ' + ','.join(present))
+          PY
+
+      - name: Run exact 34-test topology suite on Linux
+        id: tests
+        shell: bash
+        env:
+          TARGET_ROOT: ${{ steps.custody.outputs.target_root }}
+        run: |
+          set -euo pipefail
+          cd "$TARGET_ROOT"
+          python3 -m py_compile astra_stage2/control_identity.py tests/test_astra_stage2_control_identity.py
+          PYTHONPATH=. python3 -m unittest discover -s tests -p 'test_astra_stage2_control_identity.py' -v 2>&1 | tee "$RUNNER_TEMP/topology-audit-linux.log"
+          grep -q '^Ran 34 tests in ' "$RUNNER_TEMP/topology-audit-linux.log"
+          grep -q '^OK$' "$RUNNER_TEMP/topology-audit-linux.log"
+          printf 'log=%s\n' "$RUNNER_TEMP/topology-audit-linux.log" >> "$GITHUB_OUTPUT"
+
+      - name: Verify exact command and sentinel contract
+        shell: bash
+        env:
+          TARGET_ROOT: ${{ steps.custody.outputs.target_root }}
+        run: |
+          set -euo pipefail
+          cd "$TARGET_ROOT"
+          grep -Fq 'topology_command = [executable, "topo", "-m"]' astra_stage2/control_identity.py
+          grep -Fq 'topology = _run_nvidia_command(topology_command)' astra_stage2/control_identity.py
+          grep -Fq '"state": "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE"' astra_stage2/control_identity.py
+          grep -Fq '"method": "PLATFORM_LIMITATION_SINGLE_DEVICE"' astra_stage2/control_identity.py
+          grep -Fq 'test_24_windows_single_device_never_invokes_topology_command' tests/test_astra_stage2_control_identity.py
+          grep -Fq 'test_25_windows_multi_device_refuses_without_topology_source' tests/test_astra_stage2_control_identity.py
+
+      - name: Seal Linux audit receipt
+        id: receipt
+        shell: bash
+        env:
+          TARGET_ROOT: ${{ steps.custody.outputs.target_root }}
+          TEST_LOG: ${{ steps.tests.outputs.log }}
+          AUDIT_HEAD: ${{ steps.custody.outputs.audit_head }}
+          AUDIT_TREE: ${{ steps.custody.outputs.audit_tree }}
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/astra-stage2-topology-audit-linux"
+          mkdir -p "$out"
+          cp "$TEST_LOG" "$out/test.log"
+          python3 - "$out/audit-receipt.json" <<'PY'
+          import json, os, pathlib, sys
+          value = {
+              'schema': 'tier-bench/astra-stage2-control-identity-topology-audit@1',
+              'platform': 'Linux',
+              'target_head_sha1': os.environ['TARGET_HEAD'],
+              'target_tree_sha1': os.environ['TARGET_TREE'],
+              'predecessor_head_sha1': os.environ['PREDECESSOR_HEAD'],
+              'audit_head_sha1': os.environ['AUDIT_HEAD'],
+              'audit_tree_sha1': os.environ['AUDIT_TREE'],
+              'tests': 34,
+              'passed': 34,
+              'skipped': 0,
+              'failed': 0,
+              'errors': 0,
+              'linux_topology_command': ['nvidia-smi', 'topo', '-m'],
+              'linux_topology_nonzero': 'REFUSED',
+              'linux_topology_empty': 'REFUSED',
+              'windows_single_device_topology_command_calls': 0,
+              'provider_or_model_calls': 0,
+              'empirical_calibration': 'NOT_RUN',
+              'numeric_stage2_freeze': 'NOT_ISSUED',
+              'disposition': 'PASS_STAGE_A_LINUX',
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(value, sort_keys=True, indent=2) + '\n', encoding='utf-8')
+          PY
+          printf 'out=%s\n' "$out" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Linux topology audit
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-stage2-control-identity-topology-audit-linux-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.receipt.outputs.out }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
