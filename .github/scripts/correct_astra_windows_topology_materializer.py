@@ -47,7 +47,9 @@ probe_source = '''def probe_hardware(
         "release": platform_text(platform.release()),
         "version": platform_text(platform.version()),
         "machine": platform_text(platform.machine()),
-        "processor": platform_text(platform.processor()),
+        "processor": platform_text(
+            os.environ.get("PROCESSOR_IDENTIFIER", platform.machine())
+        ),
         "python_implementation": platform_text(platform.python_implementation()),
         "python_version": platform_text(platform.python_version()),
         "selected_device_indices": requested,
@@ -143,11 +145,9 @@ replacement = "new_probe = r'''" + probe_source + "'''\n"
 text = text[:start] + replacement + text[end + 4 :]
 
 write_anchor = 'module_path.write_text(module, encoding="utf-8", newline="\\n")'
-write_replacement = '''module = replace_once(
-    module,
-    '                    "topology_path": "nvidia-topology.txt",\\n',
-    '                    "topology_path": "nvidia-topology.json",\\n',
-    "Python binding-template topology path",
+write_replacement = '''module = module.replace(
+    '"topology_path": "nvidia-topology.txt"',
+    '"topology_path": "nvidia-topology.json"',
 )
 module_path.write_text(module, encoding="utf-8", newline="\\n")'''
 if text.count(write_anchor) != 1:
@@ -155,6 +155,36 @@ if text.count(write_anchor) != 1:
         f"module write anchor count differs: {text.count(write_anchor)}"
     )
 text = text.replace(write_anchor, write_replacement, 1)
+
+fixture_anchor = '''            control["hardware"] = {
+                "evidence_root": str(hardware_root),
+                "platform_path": "platform.json",
+                "device_query_path": "nvidia-query.csv",
+                "topology_path": "nvidia-topology.txt",
+                "selected_device_indices": [index],
+            }
+'''
+fixture_replacement = '''            control["hardware"] = {
+                "evidence_root": str(hardware_root),
+                "platform_path": "platform.json",
+                "device_query_path": "nvidia-query.csv",
+                "topology_path": "nvidia-topology.json",
+                "selected_device_indices": [index],
+            }
+'''
+fixture_insert_anchor = 'test_path.write_text(tests, encoding="utf-8", newline="\\n")'
+fixture_insert = '''tests = replace_once(
+    tests,
+    ''' + repr(fixture_anchor) + ''',
+    ''' + repr(fixture_replacement) + ''',
+    "test hardware topology path",
+)
+test_path.write_text(tests, encoding="utf-8", newline="\\n")'''
+if text.count(fixture_insert_anchor) != 1:
+    raise SystemExit(
+        f"test write anchor count differs: {text.count(fixture_insert_anchor)}"
+    )
+text = text.replace(fixture_insert_anchor, fixture_insert, 1)
 
 text = text.replace(
     "receipt = probe_hardware(\n                output,\n                nvidia_smi=executable,\n                selected_device_indices=[0],\n            )",
