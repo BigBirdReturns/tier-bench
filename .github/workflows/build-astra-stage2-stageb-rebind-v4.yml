@@ -1,0 +1,414 @@
+name: build-astra-stage2-stageb-rebind-v4
+
+on:
+  push:
+    branches:
+      - builder/astra-stage2-stageb-rebind-20260903
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-stage-b:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Build, test, and stage exact final overlays
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: release/astra-stage2-control-identity-v1-20260903
+          RELEASE_PREDECESSOR: b3534c9703723ac35343af0209edc34c7587173c
+          BINDER_HEAD: 3079883f1b4a1486e5859b97eb2ff2a7e3c6fb07
+          BINDER_TREE: 097f958ad5eafdadeb0f5ca79ea05437dad0bd26
+          STAGING_BRANCH: staging/astra-stage2-stageb-rebind-20260903
+        run: |
+          set -euo pipefail
+          git init .
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git config --unset-all remote.origin.fetch || true
+          git -c protocol.version=2 fetch --no-tags --depth=192 origin \
+            "+refs/heads/${RELEASE_BRANCH}:refs/stageb/release" \
+            "+${BINDER_HEAD}:refs/stageb/binder"
+          git checkout -B stageb refs/stageb/release
+          test "$(git rev-parse HEAD)" = "$RELEASE_PREDECESSOR"
+          test "$(git rev-parse 'refs/stageb/binder^{tree}')" = "$BINDER_TREE"
+          git config user.name 'BigBirdReturns'
+          git config user.email 'bigbirdreturns@proton.me'
+
+          set +e
+          git merge --no-ff --no-commit refs/stageb/binder
+          merge_rc=$?
+          set -e
+          if [ "$merge_rc" -ne 0 ]; then
+            mapfile -t conflicts < <(git diff --name-only --diff-filter=U)
+            printf 'conflicts: %s\n' "${conflicts[*]}"
+            for path in "${conflicts[@]}"; do
+              case "$path" in
+                tests/test_astra_stage2_control_identity.py|.github/workflows/astra-stage2-control-identity.yml)
+                  git checkout --theirs -- "$path"
+                  git add "$path"
+                  ;;
+                *)
+                  echo "unexpected merge conflict: $path" >&2
+                  exit 1
+                  ;;
+              esac
+            done
+          fi
+          test -z "$(git diff --name-only --diff-filter=U)"
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          old_head = "af03cef494a509ab7ba5df29fa4b4ccba423f1f8"
+          old_tree = "519ea2f8f448a464e817a024ad8ed1ac64493931"
+          new_head = "3079883f1b4a1486e5859b97eb2ff2a7e3c6fb07"
+          new_tree = "097f958ad5eafdadeb0f5ca79ea05437dad0bd26"
+
+          launcher_path = Path("scripts/Invoke-AstraStage2ControlIdentityBinding.ps1")
+          launcher = launcher_path.read_text(encoding="utf-8")
+          if old_head not in launcher or old_tree not in launcher:
+              raise SystemExit("launcher predecessor binder coordinate missing")
+          launcher = launcher.replace(old_head, new_head).replace(old_tree, new_tree)
+          old_topology = "topology_path = 'nvidia-topology.txt'"
+          if old_topology not in launcher:
+              raise SystemExit("launcher predecessor topology field missing")
+          launcher = launcher.replace(
+              old_topology,
+              "topology_evidence_path = 'nvidia-topology.json'",
+          )
+          launcher_path.write_text(launcher, encoding="utf-8", newline="\n")
+
+          release_test_path = Path("tests/test_astra_stage2_control_identity_release.py")
+          release_test = release_test_path.read_text(encoding="utf-8")
+          if old_head not in release_test or old_tree not in release_test:
+              raise SystemExit("release-test predecessor binder coordinate missing")
+          release_test = release_test.replace(old_head, new_head).replace(old_tree, new_tree)
+          release_test_path.write_text(release_test, encoding="utf-8", newline="\n")
+
+          predecessor_path = Path(".github/workflows/astra-stage2-control-identity.yml")
+          predecessor = predecessor_path.read_text(encoding="utf-8")
+          required_scope = (
+              "  pull_request:\n"
+              "    branches:\n"
+              "      - joint/astra-stage2-calibration-impl-20260902\n"
+              "    paths:\n"
+          )
+          if required_scope not in predecessor:
+              anchor = "  pull_request:\n    paths:\n"
+              if predecessor.count(anchor) != 1:
+                  raise SystemExit("predecessor PR trigger anchor mismatch")
+              predecessor = predecessor.replace(anchor, required_scope, 1)
+          predecessor_path.write_text(predecessor, encoding="utf-8", newline="\n")
+
+          workflow_path = Path(".github/workflows/astra-stage2-control-identity-release.yml")
+          workflow = workflow_path.read_text(encoding="utf-8")
+          if old_head not in workflow or old_tree not in workflow:
+              raise SystemExit("release-workflow predecessor binder coordinate missing")
+          workflow = workflow.replace(old_head, new_head).replace(old_tree, new_tree)
+          replacements = [
+              ("Run complete 27-test suite on Windows", "Run complete 41-test suite on Windows"),
+              ("^Ran 27 tests in ", "^Ran 41 tests in "),
+              ("Windows test denominator is not 27", "Windows test denominator is not 41"),
+              ("tests = 27", "tests = 41"),
+              ("passed = 26", "passed = 40"),
+              ('"tests": 27', '"tests": 41'),
+              ('"binder_tests": 20', '"binder_tests": 34'),
+              ("Run complete 27-test suite on Linux", "Run complete 41-test suite on Linux"),
+              ("tests=27", "tests=41"),
+              ("tests: 27", "tests: 41"),
+          ]
+          for before, after in replacements:
+              workflow = workflow.replace(before, after)
+          workflow = workflow.replace(
+              '              "tests/test_astra_stage2_control_identity.py",\n',
+              "",
+          )
+          release_anchor = '              ".github/workflows/astra-stage2-control-identity-release.yml",\n'
+          stageb_path = '              ".github/workflows/astra-stage2-control-identity-stageb.yml",\n'
+          if stageb_path not in workflow:
+              if release_anchor not in workflow:
+                  raise SystemExit("release expected-path anchor absent")
+              workflow = workflow.replace(release_anchor, release_anchor + stageb_path, 1)
+          workflow_path.write_text(workflow, encoding="utf-8", newline="\n")
+          PY
+
+          cat > .github/workflows/astra-stage2-control-identity-stageb.yml <<'YAML'
+          name: astra-stage2-control-identity-stageb
+
+          on:
+            push:
+              branches:
+                - release/astra-stage2-control-identity-v1-20260903
+
+          permissions:
+            contents: read
+
+          env:
+            BINDER_HEAD: 3079883f1b4a1486e5859b97eb2ff2a7e3c6fb07
+            BINDER_TREE: 097f958ad5eafdadeb0f5ca79ea05437dad0bd26
+
+          jobs:
+            windows-prepare-fixture:
+              runs-on: windows-2025
+              timeout-minutes: 20
+              steps:
+                - name: Checkout exact release
+                  id: custody
+                  shell: pwsh
+                  env:
+                    RELEASE_BRANCH: release/astra-stage2-control-identity-v1-20260903
+                    EXPECTED_HEAD: ${{ github.sha }}
+                  run: |
+                    $ErrorActionPreference = 'Stop'
+                    git init .
+                    if ($LASTEXITCODE -ne 0) { throw 'git init failed' }
+                    git remote add origin "https://github.com/$env:GITHUB_REPOSITORY.git"
+                    if ($LASTEXITCODE -ne 0) { throw 'git remote add failed' }
+                    $refspec = "+refs/heads/{0}:refs/stageb/candidate" -f $env:RELEASE_BRANCH
+                    git fetch --no-tags --depth=192 origin $refspec
+                    if ($LASTEXITCODE -ne 0) { throw 'git fetch failed' }
+                    git checkout --detach refs/stageb/candidate
+                    if ($LASTEXITCODE -ne 0) { throw 'git checkout failed' }
+                    $head = (git rev-parse HEAD).Trim()
+                    $tree = (git rev-parse 'HEAD^{tree}').Trim()
+                    if ($head -ne $env:EXPECTED_HEAD) { throw "head mismatch: $head" }
+                    if ((git rev-parse "$($env:BINDER_HEAD)^{tree}").Trim() -ne $env:BINDER_TREE) { throw 'binder tree mismatch' }
+                    git merge-base --is-ancestor $env:BINDER_HEAD $head
+                    if ($LASTEXITCODE -ne 0) { throw 'release lacks qualified binder ancestry' }
+                    "head=$head" >> $env:GITHUB_OUTPUT
+                    "tree=$tree" >> $env:GITHUB_OUTPUT
+
+                - name: Refuse provider credentials
+                  shell: pwsh
+                  run: |
+                    $names = @('OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY','MISTRAL_API_KEY','COHERE_API_KEY','XAI_API_KEY','GROQ_API_KEY','TOGETHER_API_KEY','FIREWORKS_API_KEY')
+                    $present = @($names | Where-Object { [Environment]::GetEnvironmentVariable($_) })
+                    if ($present) { throw "provider credentials present: $($present -join ',')" }
+
+                - name: Build exact source and synthetic checkpoint fixture
+                  id: fixture
+                  shell: pwsh
+                  run: |
+                    $ErrorActionPreference = 'Stop'
+                    $root = Join-Path $env:RUNNER_TEMP 'astra-stage2-stageb-windows-fixture'
+                    $sources = Join-Path $root 'sources'
+                    $models = Join-Path $root 'models'
+                    New-Item -ItemType Directory -Force -Path $sources,$models | Out-Null
+                    $items = @(
+                      @{ Repo='yingfan-bot/lotus'; Commit='eb77e2f7909c5006f58ff0ad7cd6629b942caa9e'; Name='lotus-eb77e2f7909c5006f58ff0ad7cd6629b942caa9e' },
+                      @{ Repo='CSJianYang/LoopCoder'; Commit='ab0d92d7cc87c4ed0fd30c1db1f2edd685435c4c'; Name='loopcoder-ab0d92d7cc87c4ed0fd30c1db1f2edd685435c4c' }
+                    )
+                    foreach ($item in $items) {
+                      $dest = Join-Path $sources $item.Name
+                      New-Item -ItemType Directory -Force -Path $dest | Out-Null
+                      git -C $dest init | Out-Null
+                      git -C $dest remote add origin ("https://github.com/{0}.git" -f $item.Repo)
+                      git -C $dest fetch --no-tags --depth=1 origin $item.Commit | Out-Null
+                      if ($LASTEXITCODE -ne 0) { throw "source fetch failed: $($item.Repo)" }
+                      git -C $dest checkout --detach FETCH_HEAD | Out-Null
+                      if ((git -C $dest rev-parse HEAD).Trim() -ne $item.Commit) { throw "source head mismatch: $($item.Repo)" }
+                    }
+                    foreach ($revision in @('b392d2cb7aaa73475b93028221523c47f49f66a2','b87cf3aa2186937b0d0362a684d7d30f234543e3','63de1ec1902ed143fe62250b6ddb14cb65f06e1a')) {
+                      $dest = Join-Path $models $revision
+                      New-Item -ItemType Directory -Force -Path $dest | Out-Null
+                      [IO.File]::WriteAllText((Join-Path $dest 'config.json'), '{"model_type":"stageb-fixture"}', [Text.UTF8Encoding]::new($false))
+                      [IO.File]::WriteAllText((Join-Path $dest 'tokenizer.json'), '{"tokenizer_class":"StageBFixture"}', [Text.UTF8Encoding]::new($false))
+                      [IO.File]::WriteAllBytes((Join-Path $dest 'model.safetensors'), [Text.Encoding]::UTF8.GetBytes('STAGEB_FIXTURE_WEIGHT'))
+                    }
+                    $fakeRoot = Join-Path $root 'fake-nvidia'
+                    New-Item -ItemType Directory -Force -Path $fakeRoot | Out-Null
+                    $fakeExe = Join-Path $fakeRoot 'nvidia-smi.exe'
+                    $source = @'
+          using System;
+          using System.IO;
+          public static class Program {
+            public static int Main(string[] args) {
+              var joined = string.Join(" ", args);
+              var log = Environment.GetEnvironmentVariable("ASTRA_STAGEB_NVIDIA_LOG");
+              if (!string.IsNullOrEmpty(log)) File.AppendAllText(log, joined + Environment.NewLine);
+              if (joined.Contains("topo") && joined.Contains("-m")) return 77;
+              if (joined.Contains("--query-gpu=index,name,memory.total")) {
+                Console.WriteLine("0, StageB Synthetic GPU, 24576"); return 0;
+              }
+              if (joined.Contains("--query-gpu=index,name,uuid,pci.bus_id,memory.total,driver_version")) {
+                Console.WriteLine("0, StageB Synthetic GPU, GPU-stageb, 0000:01:00.0, 24576, 999.0"); return 0;
+              }
+              return 78;
+            }
+          }
+          '@
+                    Add-Type -TypeDefinition $source -OutputAssembly $fakeExe -OutputType ConsoleApplication
+                    $log = Join-Path $root 'nvidia-calls.log'
+                    $env:ASTRA_STAGEB_NVIDIA_LOG = $log
+                    $env:PATH = $fakeRoot + ';' + $env:PATH
+                    "root=$root" >> $env:GITHUB_OUTPUT
+                    "log=$log" >> $env:GITHUB_OUTPUT
+
+                - name: Execute real Windows Preflight and Prepare SkipDownloads fixture
+                  id: prepare
+                  shell: pwsh
+                  env:
+                    FIXTURE_ROOT: ${{ steps.fixture.outputs.root }}
+                    NVIDIA_LOG: ${{ steps.fixture.outputs.log }}
+                  run: |
+                    $ErrorActionPreference = 'Stop'
+                    $releaseRoot = (Get-Location).Path
+                    $launcher = Join-Path $releaseRoot 'scripts\Invoke-AstraStage2ControlIdentityBinding.ps1'
+                    $caller = Join-Path $env:RUNNER_TEMP 'stageb-non-repository-caller'
+                    New-Item -ItemType Directory -Force -Path $caller | Out-Null
+                    Push-Location $caller
+                    try {
+                      & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher -Mode Preflight -RepoRoot $releaseRoot -CustodyRoot $env:FIXTURE_ROOT -Python python
+                      if ($LASTEXITCODE -ne 0) { throw 'Preflight failed' }
+                      & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $launcher -Mode Prepare -RepoRoot $releaseRoot -CustodyRoot $env:FIXTURE_ROOT -Python python -SkipDownloads
+                      if ($LASTEXITCODE -ne 0) { throw 'Prepare fixture failed' }
+                    } finally { Pop-Location }
+                    $receipt = Get-Content -Raw (Join-Path $env:FIXTURE_ROOT 'PREPARE-RECEIPT.json') | ConvertFrom-Json
+                    if ($receipt.state -ne 'ASSETS_PREPARED_EXECUTABLE_IDENTITIES_UNBOUND') { throw "bad prepare state: $($receipt.state)" }
+                    if ($receipt.model_calls -ne 0 -or $receipt.provider_calls -ne 0) { throw 'call authority widened' }
+                    if ($receipt.runtime_identity -ne 'UNBOUND' -or $receipt.effort_mapping -ne 'UNBOUND') { throw 'identity unexpectedly bound' }
+                    $topology = Get-Content -Raw (Join-Path $env:FIXTURE_ROOT 'hardware\nvidia-topology.json') | ConvertFrom-Json
+                    if ($topology.state -ne 'NOT_APPLICABLE_SINGLE_SELECTED_DEVICE') { throw "bad Windows topology state: $($topology.state)" }
+                    if ($topology.method -ne 'PLATFORM_LIMITATION_SINGLE_DEVICE') { throw "bad Windows topology method: $($topology.method)" }
+                    if ($topology.inter_device_topology_claimed -ne $false -or $topology.implicit_pooling_claimed -ne $false) { throw 'Windows topology authority widened' }
+                    $calls = Get-Content -Raw $env:NVIDIA_LOG
+                    if ($calls -match '(?i)topo\s+-m') { throw 'Windows fixture invoked unsupported topo -m' }
+                    if (-not (Test-Path (Join-Path $env:FIXTURE_ROOT 'astra-stage2-control-identities.private.json'))) { throw 'private config absent' }
+                    if (-not (Test-Path (Join-Path $env:FIXTURE_ROOT 'astra-stage2-control-identities.inventoried.private.json'))) { throw 'inventoried config absent' }
+                    if (Test-Path (Join-Path $env:FIXTURE_ROOT 'bound')) { throw 'bound output exists' }
+                    $out = Join-Path $env:RUNNER_TEMP 'stageb-windows-receipt.json'
+                    $value = [ordered]@{ schema='tier-bench/astra-stage2-stageb-windows-prepare@1'; source_head='${{ steps.custody.outputs.head }}'; source_tree='${{ steps.custody.outputs.tree }}'; prepare='PASS'; topology_state=$topology.state; topology_method=$topology.method; topo_command_calls=0; model_calls=0; provider_calls=0; identities='UNBOUND' }
+                    $value | ConvertTo-Json | Set-Content -Encoding utf8 $out
+                    "receipt=$out" >> $env:GITHUB_OUTPUT
+
+                - name: Upload Windows Stage B fixture receipt
+                  uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+                  with:
+                    name: astra-stage2-stageb-windows-${{ github.run_id }}-${{ github.run_attempt }}
+                    path: ${{ steps.prepare.outputs.receipt }}
+                    if-no-files-found: error
+                    retention-days: 90
+
+            linux-topology-fixture:
+              runs-on: ubuntu-24.04
+              timeout-minutes: 15
+              steps:
+                - name: Checkout exact release
+                  shell: bash
+                  env:
+                    RELEASE_BRANCH: release/astra-stage2-control-identity-v1-20260903
+                    EXPECTED_HEAD: ${{ github.sha }}
+                  run: |
+                    set -euo pipefail
+                    git init .
+                    git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+                    git config --unset-all remote.origin.fetch || true
+                    git -c protocol.version=2 fetch --no-tags --depth=192 origin "+refs/heads/${RELEASE_BRANCH}:refs/stageb/candidate"
+                    git checkout --detach refs/stageb/candidate
+                    test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+                    test "$(git rev-parse "${BINDER_HEAD}^{tree}")" = "$BINDER_TREE"
+                    git merge-base --is-ancestor "$BINDER_HEAD" HEAD
+
+                - name: Refuse provider credentials
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    python3 - <<'PY'
+                    import os
+                    names=['OPENAI_API_KEY','ANTHROPIC_API_KEY','GEMINI_API_KEY','GOOGLE_API_KEY','MISTRAL_API_KEY','COHERE_API_KEY','XAI_API_KEY','GROQ_API_KEY','TOGETHER_API_KEY','FIREWORKS_API_KEY']
+                    present=[n for n in names if os.environ.get(n)]
+                    if present: raise SystemExit('provider credentials present: '+','.join(present))
+                    PY
+
+                - name: Execute production Linux topology matrix fixture
+                  id: probe
+                  shell: bash
+                  run: |
+                    set -euo pipefail
+                    fake="$RUNNER_TEMP/nvidia-smi"
+                    log="$RUNNER_TEMP/nvidia-calls.log"
+                    cat > "$fake" <<'SH'
+                    #!/usr/bin/env bash
+                    set -euo pipefail
+                    printf '%s\n' "$*" >> "${ASTRA_STAGEB_NVIDIA_LOG}"
+                    if [[ "$*" == *"--query-gpu=index,name,uuid,pci.bus_id,memory.total,driver_version"* ]]; then
+                      printf '0, StageB GPU 0, GPU-stageb-0, 0000:01:00.0, 24576, 999.0\n'
+                      printf '1, StageB GPU 1, GPU-stageb-1, 0000:02:00.0, 24576, 999.0\n'
+                      exit 0
+                    fi
+                    if [[ "$*" == "topo -m" ]]; then
+                      printf '        GPU0    GPU1\nGPU0     X       PIX\nGPU1     PIX     X\n'
+                      exit 0
+                    fi
+                    exit 78
+                    SH
+                    chmod +x "$fake"
+                    export ASTRA_STAGEB_NVIDIA_LOG="$log"
+                    out="$RUNNER_TEMP/linux-hardware"
+                    PYTHONPATH=. python3 - "$fake" "$out" <<'PY'
+                    import json, sys
+                    from pathlib import Path
+                    from astra_stage2.control_identity import probe_hardware
+                    fake, out = sys.argv[1], Path(sys.argv[2])
+                    probe_hardware(output_dir=out, nvidia_smi=fake, device_indices=[0,1])
+                    value=json.loads((out/'nvidia-topology.json').read_text())
+                    assert value['state']=='OBSERVED'
+                    assert value['method']=='NVIDIA_SMI_TOPO_MATRIX'
+                    assert value['selected_device_indices']==[0,1]
+                    assert value['inter_device_topology_claimed'] is True
+                    assert value['implicit_pooling_claimed'] is False
+                    print(json.dumps(value,sort_keys=True))
+                    PY
+                    grep -Fxq 'topo -m' "$log"
+                    test "$(grep -Fxc 'topo -m' "$log")" -eq 1
+                    cp "$out/nvidia-topology.json" "$RUNNER_TEMP/stageb-linux-topology.json"
+                    printf 'receipt=%s\n' "$RUNNER_TEMP/stageb-linux-topology.json" >> "$GITHUB_OUTPUT"
+
+                - name: Upload Linux Stage B topology receipt
+                  uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+                  with:
+                    name: astra-stage2-stageb-linux-${{ github.run_id }}-${{ github.run_attempt }}
+                    path: ${{ steps.probe.outputs.receipt }}
+                    if-no-files-found: error
+                    retention-days: 90
+          YAML
+
+          git diff --check
+          python3 -m py_compile astra_stage2/control_identity.py tests/test_astra_stage2_control_identity.py tests/test_astra_stage2_control_identity_release.py
+          PYTHONPATH=. python3 -m unittest discover -s tests -p 'test_astra_stage2_control_identity*.py' -v 2>&1 | tee /tmp/stageb-tests.log
+          grep -q '^Ran 41 tests in ' /tmp/stageb-tests.log
+          grep -q '^OK$' /tmp/stageb-tests.log
+
+          saved="$RUNNER_TEMP/stageb-final-files"
+          rm -rf "$saved"
+          mkdir -p "$saved"
+          cp .github/workflows/astra-stage2-control-identity.yml "$saved/predecessor-workflow.yml"
+          cp .github/workflows/astra-stage2-control-identity-release.yml "$saved/release-workflow.yml"
+          cp .github/workflows/astra-stage2-control-identity-stageb.yml "$saved/stageb-workflow.yml"
+          cp scripts/Invoke-AstraStage2ControlIdentityBinding.ps1 "$saved/launcher.ps1"
+          cp tests/test_astra_stage2_control_identity_release.py "$saved/release-tests.py"
+          (
+            cd "$saved"
+            sha256sum predecessor-workflow.yml release-workflow.yml stageb-workflow.yml launcher.ps1 release-tests.py > SHA256SUMS
+          )
+
+          git merge --abort || true
+          git reset --hard "$RELEASE_PREDECESSOR"
+          stage_root="staging/astra-stage2-stageb-rebind-20260903"
+          rm -rf "$stage_root"
+          mkdir -p "$stage_root"
+          cp "$saved"/* "$stage_root/"
+          git add "$stage_root"
+          git commit -m 'stage(astra): retain exact Stage B release overlays'
+          staging_head="$(git rev-parse HEAD)"
+          staging_tree="$(git rev-parse 'HEAD^{tree}')"
+          git push --force origin "HEAD:refs/heads/${STAGING_BRANCH}"
+          {
+            echo "staging_head=${staging_head}"
+            echo "staging_tree=${staging_tree}"
+            echo "stage_a_binder=${BINDER_HEAD}"
+            echo "release_predecessor=${RELEASE_PREDECESSOR}"
+            echo "tests=41"
+          } >> "$GITHUB_STEP_SUMMARY"
