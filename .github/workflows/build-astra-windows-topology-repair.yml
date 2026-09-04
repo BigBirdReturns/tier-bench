@@ -6,7 +6,7 @@ on:
       - repair/astra-stage2-windows-topology-builder-20260903
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
@@ -14,18 +14,17 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Build and test exact repair from B353
+        id: build
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
           EXPECTED_BUILDER_HEAD: ${{ github.sha }}
           BUILDER_BRANCH: repair/astra-stage2-windows-topology-builder-20260903
           BASE_HEAD: b3534c9703723ac35343af0209edc34c7587173c
           BASE_TREE: 15f64f02f5dfc6b1e5e59634205dc7d157d9c125
-          OUTPUT_BRANCH: repair/astra-stage2-windows-topology-ready-20260903
         run: |
           set -euo pipefail
           git init .
-          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
           git config --unset-all remote.origin.fetch || true
           git -c protocol.version=2 fetch --no-tags --depth=128 origin \
             "+refs/heads/${BUILDER_BRANCH}:refs/astra-topology/builder" \
@@ -82,13 +81,43 @@ jobs:
             pwsh -NoProfile -Command \
             '$ErrorActionPreference = "Stop"; $text = Get-Content -Raw -LiteralPath $env:ASTRA_RELEASE_LAUNCHER; [void][scriptblock]::Create($text); Write-Output "POWERSHELL_PARSE_PASS"'
 
-          head="$(git rev-parse HEAD)"
-          tree="$(git rev-parse 'HEAD^{tree}')"
-          git push --force origin "HEAD:refs/heads/${OUTPUT_BRANCH}"
+          ready_head="$(git rev-parse HEAD)"
+          ready_tree="$(git rev-parse 'HEAD^{tree}')"
+          export_root="$RUNNER_TEMP/astra-windows-topology-ready"
+          mkdir -p "$export_root"
+          while IFS= read -r path
+          do
+            install -D -m 0644 "$path" "$export_root/$path"
+          done < "$RUNNER_TEMP/expected-paths.txt"
+          cp "$RUNNER_TEMP/astra-topology-tests.log" "$export_root/test-astra-topology-linux.log"
+          cat > "$export_root/coordinates.json" <<EOF
           {
-            echo "ready_branch=${OUTPUT_BRANCH}"
-            echo "ready_head=${head}"
-            echo "ready_tree=${tree}"
+            "parent_head": "${BASE_HEAD}",
+            "parent_tree": "${BASE_TREE}",
+            "ready_head": "${ready_head}",
+            "ready_tree": "${ready_tree}",
+            "tests": 32,
+            "provider_or_model_calls": 0
+          }
+          EOF
+          (
+            cd "$export_root"
+            find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          )
+          printf 'export_root=%s\n' "$export_root" >> "$GITHUB_OUTPUT"
+          {
+            echo "ready_head=${ready_head}"
+            echo "ready_tree=${ready_tree}"
             echo "tests=32"
             echo "provider_or_model_calls=0"
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload tested repair bytes
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-windows-topology-ready-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.build.outputs.export_root }}
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 9
+          include-hidden-files: true
