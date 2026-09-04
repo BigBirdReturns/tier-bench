@@ -35,16 +35,21 @@ probe_source = '''def probe_hardware(
         raise Stage2Error("device indices must be unique nonnegative integers")
     selector = [] if not requested else ["-i", ",".join(str(index) for index in requested)]
 
-    platform_system = platform.system()
+    def platform_text(value: Any) -> str:
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="replace")
+        return str(value)
+
+    platform_system = platform_text(platform.system())
     platform_record = {
         "schema": SCHEMA_HARDWARE_PROBE,
         "system": platform_system,
-        "release": platform.release(),
-        "version": platform.version(),
-        "machine": platform.machine(),
-        "processor": platform.processor(),
-        "python_implementation": platform.python_implementation(),
-        "python_version": platform.python_version(),
+        "release": platform_text(platform.release()),
+        "version": platform_text(platform.version()),
+        "machine": platform_text(platform.machine()),
+        "processor": platform_text(platform.processor()),
+        "python_implementation": platform_text(platform.python_implementation()),
+        "python_version": platform_text(platform.python_version()),
         "selected_device_indices": requested,
         "nvidia_smi_executable_sha256": sha256_file(executable),
     }
@@ -136,6 +141,20 @@ probe_source = '''def probe_hardware(
 '''
 replacement = "new_probe = r'''" + probe_source + "'''\n"
 text = text[:start] + replacement + text[end + 4 :]
+
+write_anchor = 'module_path.write_text(module, encoding="utf-8", newline="\\n")'
+write_replacement = '''module = replace_once(
+    module,
+    '                    "topology_path": "nvidia-topology.txt",\\n',
+    '                    "topology_path": "nvidia-topology.json",\\n',
+    "Python binding-template topology path",
+)
+module_path.write_text(module, encoding="utf-8", newline="\\n")'''
+if text.count(write_anchor) != 1:
+    raise SystemExit(
+        f"module write anchor count differs: {text.count(write_anchor)}"
+    )
+text = text.replace(write_anchor, write_replacement, 1)
 
 text = text.replace(
     "receipt = probe_hardware(\n                output,\n                nvidia_smi=executable,\n                selected_device_indices=[0],\n            )",
