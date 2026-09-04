@@ -217,9 +217,9 @@
   ],
   "generator_manifest_sha256": "2050de80cb4688b182cf9e006a97959da422dce24138c6451774f03320517328",
   "law": {
-    "blob_sha1": "a7dc64135af76ca5e081d30737d0ba08a38a57b1",
-    "commit_sha1": "66699d317be4146847485828819f8ffb76277eb7",
-    "tree_sha1": "1ef85cd5829a73dabda071d7812ebc12507770f6"
+    "blob_sha1": "ad50945676dd7a89052f281a23037ab95368b6b8",
+    "commit_sha1": "208557ba708a970b5dd7a7417e2099c93f5efeb9",
+    "tree_sha1": "f9b565d4bd3d2f2c31a0d8d586514ba7faac3652"
   },
   "scaffold": {
     "head_sha1": "9babad4631ef517485c56ea4906aab123e30fad7",

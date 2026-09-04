@@ -41,10 +41,10 @@ SCHEMA_CONTROL_SET = "tier-bench/astra-stage2-executable-control-set@1"
 SCHEMA_PRIVATE_SET = "tier-bench/astra-stage2-executable-control-private-set@1"
 SCHEMA_HARDWARE_PROBE = "tier-bench/astra-stage2-hardware-probe@2"
 
-LAW_COMMIT_SHA1 = "66699d317be4146847485828819f8ffb76277eb7"
-LAW_TREE_SHA1 = "1ef85cd5829a73dabda071d7812ebc12507770f6"
+LAW_COMMIT_SHA1 = "208557ba708a970b5dd7a7417e2099c93f5efeb9"
+LAW_TREE_SHA1 = "f9b565d4bd3d2f2c31a0d8d586514ba7faac3652"
 LAW_PATH = "docs/agents/claims/FRR-ASTRA-STAGE2-1.md"
-LAW_BLOB_SHA1 = "a7dc64135af76ca5e081d30737d0ba08a38a57b1"
+LAW_BLOB_SHA1 = "ad50945676dd7a89052f281a23037ab95368b6b8"
 SCAFFOLD_HEAD_SHA1 = "9babad4631ef517485c56ea4906aab123e30fad7"
 SCAFFOLD_TREE_SHA1 = "720cbf3f26f2e251613acedc52cff08ef33892dc"
 STAGE1_JOIN_HEAD_SHA1 = "60bca963d63edca267106bc5c7725c2cc1df8dd7"
@@ -697,8 +697,6 @@ def _hardware_manifest(hardware: Any) -> tuple[dict[str, Any], Path]:
     if matrix_status not in {"SUPPORTED", "UNSUPPORTED_ON_PLATFORM"}:
         raise Stage2Error("hardware topology status has an invalid NVIDIA matrix state")
     topology_class = topology_status.get("topology_class")
-    if topology_class == "UNKNOWN":
-        raise Stage2Error("UNKNOWN hardware topology cannot bind an executable identity")
     _require_string(topology_class, "hardware topology class")
     evidence_inventory = _inventory_tree(root, "hardware evidence")
     manifest = {

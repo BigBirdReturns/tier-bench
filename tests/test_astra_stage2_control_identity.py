@@ -715,7 +715,7 @@ class ControlIdentityTests(unittest.TestCase):
         self.assertEqual(receipt["topology_class"], "NVIDIA_MATRIX_CAPTURED")
         self.assertEqual((output / "nvidia-topology.txt").read_bytes(), matrix)
 
-    def test_27_unknown_topology_cannot_bind_executable_identity(self) -> None:
+    def test_27_unknown_topology_is_content_bound_as_unknown(self) -> None:
         status_path = (
             Path(self.config["controls"][0]["hardware"]["evidence_root"])
             / "topology-status.json"
@@ -723,8 +723,11 @@ class ControlIdentityTests(unittest.TestCase):
         status = strict_json_load(status_path)
         status["topology_class"] = "UNKNOWN"
         status_path.write_text(json.dumps(status), encoding="utf-8")
-        with self.assertRaisesRegex(Stage2Error, "UNKNOWN hardware topology"):
-            self.bind(name="unknown-topology")
+        _, output = self.bind(name="unknown-topology")
+        private = strict_json_load(
+            output / "private" / "lotus_3b_recurrent.json"
+        )
+        self.assertEqual(private["hardware"]["topology_class"], "UNKNOWN")
 
 
 if __name__ == "__main__":
