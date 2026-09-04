@@ -34,17 +34,17 @@ from .canonical import (
 from .contracts import bind_empirical_control_manifest, validate_generator_manifest, validate_plan
 from .generator import build_calibration_plan, build_generator_manifest, empirical_control_template
 
-SCHEMA_BINDING_INPUT = "tier-bench/astra-stage2-control-binding-input@1"
+SCHEMA_BINDING_INPUT = "tier-bench/astra-stage2-control-binding-input@2"
 SCHEMA_PRIVATE_CONTROL = "tier-bench/astra-stage2-executable-control-private@1"
 SCHEMA_PUBLIC_CONTROL = "tier-bench/astra-stage2-executable-control-public@1"
 SCHEMA_CONTROL_SET = "tier-bench/astra-stage2-executable-control-set@1"
 SCHEMA_PRIVATE_SET = "tier-bench/astra-stage2-executable-control-private-set@1"
-SCHEMA_HARDWARE_PROBE = "tier-bench/astra-stage2-hardware-probe@1"
+SCHEMA_HARDWARE_PROBE = "tier-bench/astra-stage2-hardware-probe@2"
 
-LAW_COMMIT_SHA1 = "c36c35bf9b70d879e1e1c9ee2f0296879442df3e"
-LAW_TREE_SHA1 = "87bff3320c680e91eaec66c287d7a1ac3b7fe523"
+LAW_COMMIT_SHA1 = "66699d317be4146847485828819f8ffb76277eb7"
+LAW_TREE_SHA1 = "1ef85cd5829a73dabda071d7812ebc12507770f6"
 LAW_PATH = "docs/agents/claims/FRR-ASTRA-STAGE2-1.md"
-LAW_BLOB_SHA1 = "77abe4e177fc61e4f52f56ea64494b113f9662fc"
+LAW_BLOB_SHA1 = "a7dc64135af76ca5e081d30737d0ba08a38a57b1"
 SCAFFOLD_HEAD_SHA1 = "9babad4631ef517485c56ea4906aab123e30fad7"
 SCAFFOLD_TREE_SHA1 = "720cbf3f26f2e251613acedc52cff08ef33892dc"
 STAGE1_JOIN_HEAD_SHA1 = "60bca963d63edca267106bc5c7725c2cc1df8dd7"
@@ -146,6 +146,7 @@ HARDWARE_FIELDS = frozenset(
         "platform_path",
         "device_query_path",
         "topology_path",
+        "topology_status_path",
         "selected_device_indices",
     }
 )
@@ -664,9 +665,20 @@ def _hardware_manifest(hardware: Any) -> tuple[dict[str, Any], Path]:
     platform_name = _relative_name(hardware["platform_path"], "hardware.platform_path")
     query_name = _relative_name(hardware["device_query_path"], "hardware.device_query_path")
     topology_name = _relative_name(hardware["topology_path"], "hardware.topology_path")
+    topology_status_name = _relative_name(
+        hardware["topology_status_path"], "hardware.topology_status_path"
+    )
     platform_entry = _file_entry(root, platform_name, "hardware platform evidence")
     query_entry = _file_entry(root, query_name, "hardware device query")
     topology_entry = _file_entry(root, topology_name, "hardware topology evidence")
+    topology_status_entry = _file_entry(
+        root, topology_status_name, "hardware topology status"
+    )
+    topology_status = strict_json_load(
+        _resolve_regular_file(root, topology_status_name, "hardware topology status")
+    )
+    if not isinstance(topology_status, dict) or topology_status.get("schema") != SCHEMA_HARDWARE_PROBE:
+        raise Stage2Error("hardware topology status has an unexpected schema")
     query_rows = _parse_hardware_query(_resolve_regular_file(root, query_name, "hardware device query"))
     selected_raw = _require_list(hardware["selected_device_indices"], "hardware.selected_device_indices")
     selected = [
@@ -679,11 +691,22 @@ def _hardware_manifest(hardware: Any) -> tuple[dict[str, Any], Path]:
     if any(index not in by_index for index in selected):
         raise Stage2Error("selected hardware index is absent from the captured query")
     selected_rows = [by_index[index] for index in selected]
+    if topology_status.get("selected_device_indices") != selected:
+        raise Stage2Error("hardware topology status selected-device set differs")
+    matrix_status = topology_status.get("nvidia_topo_matrix")
+    if matrix_status not in {"SUPPORTED", "UNSUPPORTED_ON_PLATFORM"}:
+        raise Stage2Error("hardware topology status has an invalid NVIDIA matrix state")
+    topology_class = topology_status.get("topology_class")
+    if topology_class == "UNKNOWN":
+        raise Stage2Error("UNKNOWN hardware topology cannot bind an executable identity")
+    _require_string(topology_class, "hardware topology class")
     evidence_inventory = _inventory_tree(root, "hardware evidence")
     manifest = {
         "platform": platform_entry,
         "device_query": query_entry,
         "topology": topology_entry,
+        "topology_status": topology_status_entry,
+        "topology_class": topology_class,
         "evidence_inventory": evidence_inventory,
         "selected_device_indices": selected,
         "device_count": len(selected_rows),
@@ -1160,6 +1183,309 @@ def verify_control_set(
     return observed
 
 
+WINDOWS_NATIVE_TOPOLOGY_SCHEMA = "tier-bench/astra-stage2-windows-native-topology@1"
+WINDOWS_NATIVE_TOPOLOGY_SCRIPT = r"""
+$ErrorActionPreference = 'Stop'
+
+function Read-DeviceProperty {
+    param(
+        [Parameter(Mandatory = $true)][string]$InstanceId,
+        [Parameter(Mandatory = $true)][string]$KeyName
+    )
+    try {
+        return (Get-PnpDeviceProperty -InstanceId $InstanceId -KeyName $KeyName -ErrorAction Stop).Data
+    }
+    catch {
+        return $null
+    }
+}
+
+function Get-DeviceRecord {
+    param([Parameter(Mandatory = $true)]$Device)
+
+    $parents = @()
+    $cursor = [string]$Device.InstanceId
+    for ($depth = 0; $depth -lt 16 -and $cursor; $depth++) {
+        $parent = Read-DeviceProperty -InstanceId $cursor -KeyName 'DEVPKEY_Device_Parent'
+        if ([string]::IsNullOrWhiteSpace([string]$parent)) {
+            break
+        }
+        $parents += [string]$parent
+        $cursor = [string]$parent
+    }
+
+    return [ordered]@{
+        instance_id = [string]$Device.InstanceId
+        class_name = [string]$Device.Class
+        friendly_name = [string]$Device.FriendlyName
+        status = [string]$Device.Status
+        bus_number = Read-DeviceProperty -InstanceId $Device.InstanceId -KeyName 'DEVPKEY_Device_BusNumber'
+        address = Read-DeviceProperty -InstanceId $Device.InstanceId -KeyName 'DEVPKEY_Device_Address'
+        location_info = Read-DeviceProperty -InstanceId $Device.InstanceId -KeyName 'DEVPKEY_Device_LocationInfo'
+        location_paths = @(Read-DeviceProperty -InstanceId $Device.InstanceId -KeyName 'DEVPKEY_Device_LocationPaths')
+        ancestor_instance_ids = @($parents)
+    }
+}
+
+$displayDevices = @(
+    Get-PnpDevice -Class Display -PresentOnly -ErrorAction Stop |
+        ForEach-Object { Get-DeviceRecord -Device $_ }
+)
+$transportCandidates = @(
+    Get-PnpDevice -PresentOnly -ErrorAction Stop |
+        Where-Object {
+            [string]$_.FriendlyName -match '(?i)Thunderbolt|USB4' -or
+            [string]$_.InstanceId -match '(?i)Thunderbolt|USB4'
+        } |
+        ForEach-Object { Get-DeviceRecord -Device $_ }
+)
+
+[ordered]@{
+    schema = 'tier-bench/astra-stage2-windows-native-topology@1'
+    display_devices = @($displayDevices)
+    transport_candidates = @($transportCandidates)
+} | ConvertTo-Json -Compress -Depth 10
+"""
+
+
+def _decode_probe_bytes(data: bytes, label: str) -> str:
+    try:
+        return data.decode("utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise Stage2Error(f"{label} is not UTF-8 text") from exc
+
+
+def _parse_probe_csv(
+    data: bytes,
+    *,
+    columns: Sequence[str],
+    label: str,
+) -> list[dict[str, str]]:
+    text = _decode_probe_bytes(data, label)
+    rows: list[dict[str, str]] = []
+    for line_number, row in enumerate(csv.reader(text.splitlines()), 1):
+        if not row or all(not item.strip() for item in row):
+            continue
+        if len(row) != len(columns):
+            raise Stage2Error(
+                f"{label} line {line_number} must have {len(columns)} CSV columns"
+            )
+        rows.append(dict(zip(columns, (item.strip() for item in row))))
+    if not rows:
+        raise Stage2Error(f"{label} contains no devices")
+    return rows
+
+
+def _probe_inventory_rows(data: bytes) -> list[dict[str, Any]]:
+    raw_rows = _parse_probe_csv(
+        data,
+        columns=("index", "name", "uuid", "pci_bus_id", "memory_mib", "driver"),
+        label="NVIDIA device query",
+    )
+    rows: list[dict[str, Any]] = []
+    for row in raw_rows:
+        try:
+            index = int(row["index"])
+            memory_mib = int(row["memory_mib"])
+        except ValueError as exc:
+            raise Stage2Error("NVIDIA device query contains an invalid numeric field") from exc
+        if index < 0 or memory_mib <= 0:
+            raise Stage2Error("NVIDIA device query contains an out-of-domain numeric field")
+        rows.append(
+            {
+                **row,
+                "index": index,
+                "memory_mib": memory_mib,
+            }
+        )
+    if len({row["index"] for row in rows}) != len(rows):
+        raise Stage2Error("NVIDIA device query contains duplicate indices")
+    return rows
+
+
+def _probe_link_rows(data: bytes) -> list[dict[str, Any]]:
+    raw_rows = _parse_probe_csv(
+        data,
+        columns=("index", "pci_bus_id", "link_generation", "link_width"),
+        label="NVIDIA PCI link query",
+    )
+    rows: list[dict[str, Any]] = []
+    for row in raw_rows:
+        try:
+            index = int(row["index"])
+            generation = int(row["link_generation"])
+            width = int(row["link_width"])
+        except ValueError as exc:
+            raise Stage2Error("NVIDIA PCI link query contains an invalid numeric field") from exc
+        if index < 0 or generation <= 0 or width <= 0:
+            raise Stage2Error("NVIDIA PCI link query contains an out-of-domain numeric field")
+        rows.append(
+            {
+                **row,
+                "index": index,
+                "link_generation": generation,
+                "link_width": width,
+            }
+        )
+    if len({row["index"] for row in rows}) != len(rows):
+        raise Stage2Error("NVIDIA PCI link query contains duplicate indices")
+    return rows
+
+
+def _collect_windows_native_topology() -> dict[str, Any]:
+    powershell = shutil.which("powershell") or shutil.which("pwsh")
+    if not powershell:
+        raise Stage2Error("native Windows PnP collection requires PowerShell")
+    process = subprocess.run(
+        [
+            powershell,
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            WINDOWS_NATIVE_TOPOLOGY_SCRIPT,
+        ],
+        capture_output=True,
+        check=False,
+    )
+    if process.returncode != 0:
+        raise Stage2Error(
+            f"native Windows PnP collection failed with exit {process.returncode}"
+        )
+    try:
+        value = json.loads(_decode_probe_bytes(process.stdout, "Windows PnP evidence"))
+    except json.JSONDecodeError as exc:
+        raise Stage2Error("native Windows PnP collection returned invalid JSON") from exc
+    if not isinstance(value, dict) or value.get("schema") != WINDOWS_NATIVE_TOPOLOGY_SCHEMA:
+        raise Stage2Error("native Windows PnP evidence has an unexpected schema")
+    if not isinstance(value.get("display_devices"), list):
+        raise Stage2Error("native Windows PnP evidence lacks display devices")
+    if not isinstance(value.get("transport_candidates"), list):
+        raise Stage2Error("native Windows PnP evidence lacks transport candidates")
+    return value
+
+
+def _pci_coordinate(value: str) -> tuple[int, int, int]:
+    match = re.fullmatch(
+        r"(?:[0-9A-Fa-f]{4,8}:)?([0-9A-Fa-f]{2}):([0-9A-Fa-f]{2})\.([0-7])",
+        value.strip(),
+    )
+    if match is None:
+        raise Stage2Error(f"invalid NVIDIA PCI bus identity: {value!r}")
+    return tuple(int(part, 16) for part in match.groups())
+
+
+def _required_int(value: Any, label: str) -> int:
+    if isinstance(value, bool):
+        raise Stage2Error(f"{label} must be an integer")
+    try:
+        return int(value)
+    except (TypeError, ValueError) as exc:
+        raise Stage2Error(f"{label} must be an integer") from exc
+
+
+def _validate_windows_native_topology(
+    *,
+    inventory_rows: Sequence[dict[str, Any]],
+    link_rows: Sequence[dict[str, Any]],
+    native: dict[str, Any],
+    selected_indices: Sequence[int],
+) -> tuple[list[dict[str, Any]], str]:
+    display_rows = native.get("display_devices")
+    transport_rows = native.get("transport_candidates")
+    if not isinstance(display_rows, list) or not display_rows:
+        raise Stage2Error("native Windows PnP evidence contains no display devices")
+    if not isinstance(transport_rows, list):
+        raise Stage2Error("native Windows PnP evidence lacks transport candidates")
+
+    inventory_by_index = {row["index"]: row for row in inventory_rows}
+    link_by_index = {row["index"]: row for row in link_rows}
+    if set(link_by_index) != set(selected_indices):
+        raise Stage2Error("NVIDIA PCI link query selected-device set differs")
+    transport_ids = {
+        str(row.get("instance_id", "")).upper()
+        for row in transport_rows
+        if isinstance(row, dict) and str(row.get("instance_id", "")).strip()
+    }
+
+    mappings: list[dict[str, Any]] = []
+    for index in selected_indices:
+        inventory = inventory_by_index.get(index)
+        link = link_by_index.get(index)
+        if inventory is None or link is None:
+            raise Stage2Error("selected NVIDIA device is absent from mandatory native evidence")
+        if inventory["pci_bus_id"].upper() != link["pci_bus_id"].upper():
+            raise Stage2Error("NVIDIA inventory and PCI link identities contradict")
+        bus, device, function = _pci_coordinate(inventory["pci_bus_id"])
+
+        matches: list[dict[str, Any]] = []
+        for candidate in display_rows:
+            if not isinstance(candidate, dict):
+                raise Stage2Error("native Windows display evidence contains a non-object")
+            if _required_int(candidate.get("bus_number"), "PnP bus number") != bus:
+                continue
+            address = _required_int(candidate.get("address"), "PnP address")
+            if ((address >> 16) & 0xFFFF) == device and (address & 0xFFFF) == function:
+                matches.append(candidate)
+        if len(matches) != 1:
+            raise Stage2Error(
+                "selected NVIDIA PCI identity did not resolve to exactly one Windows display device"
+            )
+        display = matches[0]
+        if str(display.get("status", "")).upper() != "OK":
+            raise Stage2Error("selected Windows display device is not healthy")
+        if str(display.get("class_name", "")).lower() != "display":
+            raise Stage2Error("selected Windows PnP device is not display class")
+        if str(display.get("friendly_name", "")).casefold() != inventory["name"].casefold():
+            raise Stage2Error("NVIDIA and Windows PnP product identities contradict")
+        instance_id = str(display.get("instance_id", "")).strip()
+        if not instance_id:
+            raise Stage2Error("selected Windows display device lacks an instance identity")
+        ancestors = display.get("ancestor_instance_ids")
+        location_paths = display.get("location_paths")
+        if not isinstance(ancestors, list) or not isinstance(location_paths, list):
+            raise Stage2Error("selected Windows display device lacks native path evidence")
+        observed_transport = sorted(
+            {
+                str(parent)
+                for parent in ancestors
+                if str(parent).upper() in transport_ids
+            }
+        )
+        mappings.append(
+            {
+                "index": index,
+                "uuid": inventory["uuid"],
+                "pci_bus_id": inventory["pci_bus_id"],
+                "pnp_instance_id": instance_id,
+                "link_generation": link["link_generation"],
+                "link_width": link["link_width"],
+                "transport_ancestors": observed_transport,
+            }
+        )
+
+    topology_class = (
+        "WINDOWS_PNP_TRANSPORT_ANCESTRY_OBSERVED"
+        if mappings and all(item["transport_ancestors"] for item in mappings)
+        else "UNKNOWN"
+    )
+    return mappings, topology_class
+
+
+def _windows_topology_is_unsupported(process: subprocess.CompletedProcess[bytes]) -> bool:
+    combined = _decode_probe_bytes(
+        process.stdout + b"\n" + process.stderr,
+        "nvidia-smi topology failure",
+    ).casefold()
+    markers = (
+        "option -m is missing its value",
+        'option "topo" is not valid',
+        "option topo is not valid",
+        'option "topo" is not recognized',
+        "option topo is not recognized",
+    )
+    return any(marker in combined for marker in markers)
+
+
 def probe_hardware(
     *,
     output_dir: Path,
@@ -1173,44 +1499,152 @@ def probe_hardware(
     executable = nvidia_smi or shutil.which("nvidia-smi")
     if not executable:
         raise Stage2Error("nvidia-smi was not found; pass --nvidia-smi explicitly")
-    indices = list(device_indices or [])
-    if len(set(indices)) != len(indices) or any(index < 0 for index in indices):
+    executable_path = Path(executable).resolve()
+    if not executable_path.is_file():
+        raise Stage2Error("nvidia-smi executable is not a regular file")
+
+    requested_indices = list(device_indices or [])
+    if len(set(requested_indices)) != len(requested_indices) or any(
+        index < 0 for index in requested_indices
+    ):
         raise Stage2Error("device indices must be unique nonnegative integers")
-    selector = [] if not indices else ["-i", ",".join(str(index) for index in indices)]
+    selector = (
+        []
+        if not requested_indices
+        else ["-i", ",".join(str(index) for index in requested_indices)]
+    )
     query_command = [
-        executable,
+        str(executable_path),
         *selector,
         "--query-gpu=index,name,uuid,pci.bus_id,memory.total,driver_version",
         "--format=csv,noheader,nounits",
     ]
-    topology_command = [executable, "topo", "-m"]
+    topology_command = [str(executable_path), "topo", "-m"]
     query = subprocess.run(query_command, capture_output=True, check=False)
     topology = subprocess.run(topology_command, capture_output=True, check=False)
     if query.returncode != 0:
         raise Stage2Error(f"nvidia-smi device query failed with exit {query.returncode}")
-    if topology.returncode != 0:
-        raise Stage2Error(f"nvidia-smi topology query failed with exit {topology.returncode}")
+    inventory_rows = _probe_inventory_rows(query.stdout)
+    selected_indices = (
+        requested_indices
+        if requested_indices
+        else sorted(row["index"] for row in inventory_rows)
+    )
+    if any(
+        index not in {row["index"] for row in inventory_rows}
+        for index in selected_indices
+    ):
+        raise Stage2Error("selected NVIDIA device is absent from the device query")
+
+    system_name = platform.system()
+    if system_name not in {"Linux", "Windows"}:
+        raise Stage2Error(f"unsupported hardware-probe platform: {system_name}")
+
+    link: subprocess.CompletedProcess[bytes] | None = None
+    native: dict[str, Any] | None = None
+    mappings: list[dict[str, Any]] = []
+    if system_name == "Linux":
+        if topology.returncode != 0:
+            raise Stage2Error(
+                f"nvidia-smi topology query failed with exit {topology.returncode}"
+            )
+        matrix_status = "SUPPORTED"
+        topology_class = "NVIDIA_MATRIX_CAPTURED"
+    else:
+        if topology.returncode == 0:
+            matrix_status = "SUPPORTED"
+        elif _windows_topology_is_unsupported(topology):
+            matrix_status = "UNSUPPORTED_ON_PLATFORM"
+        else:
+            raise Stage2Error(
+                f"nvidia-smi topology query failed with exit {topology.returncode}"
+            )
+        link_command = [
+            str(executable_path),
+            *selector,
+            "--query-gpu=index,pci.bus_id,pcie.link.gen.current,pcie.link.width.current",
+            "--format=csv,noheader,nounits",
+        ]
+        link = subprocess.run(link_command, capture_output=True, check=False)
+        if link.returncode != 0:
+            raise Stage2Error(
+                f"nvidia-smi PCI link query failed with exit {link.returncode}"
+            )
+        link_rows = _probe_link_rows(link.stdout)
+        native = _collect_windows_native_topology()
+        mappings, native_topology_class = _validate_windows_native_topology(
+            inventory_rows=inventory_rows,
+            link_rows=link_rows,
+            native=native,
+            selected_indices=selected_indices,
+        )
+        topology_class = (
+            "NVIDIA_MATRIX_CAPTURED"
+            if matrix_status == "SUPPORTED"
+            else native_topology_class
+        )
+
     platform_record = {
         "schema": SCHEMA_HARDWARE_PROBE,
-        "system": platform.system(),
+        "system": system_name,
         "release": platform.release(),
         "version": platform.version(),
         "machine": platform.machine(),
         "processor": platform.processor(),
         "python_implementation": platform.python_implementation(),
         "python_version": platform.python_version(),
-        "selected_device_indices": indices,
-        "nvidia_smi_executable_sha256": sha256_file(Path(executable).resolve()),
+        "selected_device_indices": selected_indices,
+        "nvidia_smi_executable_sha256": sha256_file(executable_path),
     }
+    topology_status = {
+        "schema": SCHEMA_HARDWARE_PROBE,
+        "system": system_name,
+        "nvidia_topo_matrix": matrix_status,
+        "topology_command_exit_code": topology.returncode,
+        "topology_class": topology_class,
+        "selected_device_indices": selected_indices,
+        "selected_device_mappings": mappings,
+        "model_calls": 0,
+        "provider_calls": 0,
+        "binding": "NOT_RUN",
+        "empirical_calibration": "NOT_RUN",
+    }
+
     write_json_atomic(output_dir / "platform.json", platform_record)
     (output_dir / "nvidia-query.csv").write_bytes(query.stdout)
     (output_dir / "nvidia-topology.txt").write_bytes(topology.stdout)
+    (output_dir / "nvidia-topology.stderr.txt").write_bytes(topology.stderr)
+    write_json_atomic(output_dir / "topology-status.json", topology_status)
+    if link is not None and native is not None:
+        (output_dir / "nvidia-link-query.csv").write_bytes(link.stdout)
+        write_json_atomic(output_dir / "windows-native-topology.json", native)
+
     receipt = {
         "schema": SCHEMA_HARDWARE_PROBE,
         "platform_sha256": sha256_file(output_dir / "platform.json"),
         "device_query_sha256": sha256_file(output_dir / "nvidia-query.csv"),
         "topology_sha256": sha256_file(output_dir / "nvidia-topology.txt"),
-        "selected_device_indices": indices,
+        "topology_stderr_sha256": sha256_file(
+            output_dir / "nvidia-topology.stderr.txt"
+        ),
+        "topology_status_sha256": sha256_file(output_dir / "topology-status.json"),
+        "nvidia_link_query_sha256": (
+            sha256_file(output_dir / "nvidia-link-query.csv")
+            if link is not None
+            else None
+        ),
+        "windows_native_topology_sha256": (
+            sha256_file(output_dir / "windows-native-topology.json")
+            if native is not None
+            else None
+        ),
+        "nvidia_topo_matrix": matrix_status,
+        "topology_class": topology_class,
+        "selected_device_indices": selected_indices,
+        "model_calls": 0,
+        "provider_calls": 0,
+        "binding": "NOT_RUN",
+        "empirical_calibration": "NOT_RUN",
     }
     receipt["payload_sha256"] = sha256_object(receipt)
     write_json_atomic(output_dir / "probe-receipt.json", receipt)
@@ -1260,6 +1694,7 @@ def binding_template() -> dict[str, Any]:
                     "platform_path": "platform.json",
                     "device_query_path": "nvidia-query.csv",
                     "topology_path": "nvidia-topology.txt",
+                    "topology_status_path": "topology-status.json",
                     "selected_device_indices": [0],
                 },
                 "effort_mapping": {

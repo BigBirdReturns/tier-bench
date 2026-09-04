@@ -4,6 +4,7 @@ import copy
 import json
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -17,6 +18,7 @@ from astra_stage2.control_identity import (
     LAW_COMMIT_SHA1,
     LAW_TREE_SHA1,
     PUBLIC_CONTROLS,
+    SCHEMA_HARDWARE_PROBE,
     SCAFFOLD_HEAD_SHA1,
     SCAFFOLD_TREE_SHA1,
     STAGE1_JOIN_HEAD_SHA1,
@@ -24,6 +26,7 @@ from astra_stage2.control_identity import (
     bind_control_set,
     binding_template,
     inventory_binding_config,
+    probe_hardware,
     validate_binding_config,
     verify_control_set,
 )
@@ -84,6 +87,18 @@ class ControlIdentityTests(unittest.TestCase):
             )
             (hardware_root / "nvidia-topology.txt").write_text(
                 f"GPU{index} X\n",
+                encoding="utf-8",
+            )
+            (hardware_root / "topology-status.json").write_text(
+                json.dumps(
+                    {
+                        "schema": SCHEMA_HARDWARE_PROBE,
+                        "system": "Synthetic",
+                        "nvidia_topo_matrix": "SUPPORTED",
+                        "topology_class": "SYNTHETIC_TOPOLOGY",
+                        "selected_device_indices": [index],
+                    }
+                ),
                 encoding="utf-8",
             )
 
@@ -148,6 +163,7 @@ class ControlIdentityTests(unittest.TestCase):
                 "platform_path": "platform.json",
                 "device_query_path": "nvidia-query.csv",
                 "topology_path": "nvidia-topology.txt",
+                "topology_status_path": "topology-status.json",
                 "selected_device_indices": [index],
             }
             control["effort_mapping"] = {
@@ -468,6 +484,247 @@ class ControlIdentityTests(unittest.TestCase):
         bad["law"]["blob_sha1"] = "0" * 40
         with self.assertRaisesRegex(Stage2Error, "law blob"):
             validate_binding_config(bad)
+
+
+    @staticmethod
+    def _process(
+        returncode: int,
+        *,
+        stdout: bytes = b"",
+        stderr: bytes = b"",
+    ) -> subprocess.CompletedProcess[bytes]:
+        return subprocess.CompletedProcess(
+            args=["nvidia-smi"],
+            returncode=returncode,
+            stdout=stdout,
+            stderr=stderr,
+        )
+
+    @staticmethod
+    def _windows_native(
+        *,
+        friendly_name: str = "Synthetic GPU 0",
+        display_devices: bool = True,
+        ancestors: list[str] | None = None,
+        transports: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        displays = []
+        if display_devices:
+            displays.append(
+                {
+                    "instance_id": r"PCI\VEN_10DE&DEV_TEST",
+                    "class_name": "Display",
+                    "friendly_name": friendly_name,
+                    "status": "OK",
+                    "bus_number": 1,
+                    "address": 0,
+                    "location_info": "PCI bus 1, device 0, function 0",
+                    "location_paths": ["PCIROOT(0)#PCI(0100)"],
+                    "ancestor_instance_ids": ancestors or [],
+                }
+            )
+        return {
+            "schema": "tier-bench/astra-stage2-windows-native-topology@1",
+            "display_devices": displays,
+            "transport_candidates": transports or [],
+        }
+
+    def _probe_executable(self) -> Path:
+        executable = self.root / "nvidia-smi.exe"
+        executable.write_bytes(b"synthetic nvidia-smi\n")
+        return executable
+
+    def test_21_windows_unsupported_matrix_emits_honest_unknown(self) -> None:
+        inventory = (
+            b"0, Synthetic GPU 0, GPU-private-0, "
+            b"00000000:01:00.0, 24576, 999.0\n"
+        )
+        link = b"0, 00000000:01:00.0, 4, 16\n"
+        processes = [
+            self._process(0, stdout=inventory),
+            self._process(255, stderr=b"Option -m is missing its value"),
+            self._process(0, stdout=link),
+        ]
+        output = self.root / "probe-windows-unknown"
+        with patch(
+            "astra_stage2.control_identity.subprocess.run",
+            side_effect=processes,
+        ), patch(
+            "astra_stage2.control_identity.platform.system",
+            return_value="Windows",
+        ), patch(
+            "astra_stage2.control_identity._collect_windows_native_topology",
+            return_value=self._windows_native(),
+        ):
+            receipt = probe_hardware(
+                output_dir=output,
+                nvidia_smi=str(self._probe_executable()),
+                device_indices=[0],
+            )
+        self.assertEqual(receipt["nvidia_topo_matrix"], "UNSUPPORTED_ON_PLATFORM")
+        self.assertEqual(receipt["topology_class"], "UNKNOWN")
+        self.assertEqual(receipt["model_calls"], 0)
+        self.assertEqual(receipt["provider_calls"], 0)
+        self.assertEqual(receipt["binding"], "NOT_RUN")
+        self.assertEqual(
+            (output / "nvidia-topology.stderr.txt").read_bytes(),
+            b"Option -m is missing its value",
+        )
+        status = strict_json_load(output / "topology-status.json")
+        self.assertEqual(status["topology_command_exit_code"], 255)
+        self.assertEqual(status["topology_class"], "UNKNOWN")
+
+    def test_22_windows_contradictory_pnp_identity_refuses(self) -> None:
+        processes = [
+            self._process(
+                0,
+                stdout=(
+                    b"0, Synthetic GPU 0, GPU-private-0, "
+                    b"00000000:01:00.0, 24576, 999.0\n"
+                ),
+            ),
+            self._process(255, stderr=b"Option -m is missing its value"),
+            self._process(0, stdout=b"0, 00000000:01:00.0, 4, 16\n"),
+        ]
+        with patch(
+            "astra_stage2.control_identity.subprocess.run",
+            side_effect=processes,
+        ), patch(
+            "astra_stage2.control_identity.platform.system",
+            return_value="Windows",
+        ), patch(
+            "astra_stage2.control_identity._collect_windows_native_topology",
+            return_value=self._windows_native(friendly_name="Contradictory GPU"),
+        ):
+            with self.assertRaisesRegex(Stage2Error, "product identities contradict"):
+                probe_hardware(
+                    output_dir=self.root / "probe-windows-contradiction",
+                    nvidia_smi=str(self._probe_executable()),
+                    device_indices=[0],
+                )
+
+    def test_23_windows_missing_mandatory_native_evidence_refuses(self) -> None:
+        processes = [
+            self._process(
+                0,
+                stdout=(
+                    b"0, Synthetic GPU 0, GPU-private-0, "
+                    b"00000000:01:00.0, 24576, 999.0\n"
+                ),
+            ),
+            self._process(255, stderr=b"Option -m is missing its value"),
+            self._process(0, stdout=b"0, 00000000:01:00.0, 4, 16\n"),
+        ]
+        with patch(
+            "astra_stage2.control_identity.subprocess.run",
+            side_effect=processes,
+        ), patch(
+            "astra_stage2.control_identity.platform.system",
+            return_value="Windows",
+        ), patch(
+            "astra_stage2.control_identity._collect_windows_native_topology",
+            return_value=self._windows_native(display_devices=False),
+        ):
+            with self.assertRaisesRegex(Stage2Error, "contains no display devices"):
+                probe_hardware(
+                    output_dir=self.root / "probe-windows-missing",
+                    nvidia_smi=str(self._probe_executable()),
+                    device_indices=[0],
+                )
+
+    def test_24_windows_link_identity_mismatch_refuses(self) -> None:
+        processes = [
+            self._process(
+                0,
+                stdout=(
+                    b"0, Synthetic GPU 0, GPU-private-0, "
+                    b"00000000:01:00.0, 24576, 999.0\n"
+                ),
+            ),
+            self._process(255, stderr=b"Option -m is missing its value"),
+            self._process(0, stdout=b"0, 00000000:02:00.0, 4, 16\n"),
+        ]
+        with patch(
+            "astra_stage2.control_identity.subprocess.run",
+            side_effect=processes,
+        ), patch(
+            "astra_stage2.control_identity.platform.system",
+            return_value="Windows",
+        ), patch(
+            "astra_stage2.control_identity._collect_windows_native_topology",
+            return_value=self._windows_native(),
+        ):
+            with self.assertRaisesRegex(Stage2Error, "identities contradict"):
+                probe_hardware(
+                    output_dir=self.root / "probe-windows-link-mismatch",
+                    nvidia_smi=str(self._probe_executable()),
+                    device_indices=[0],
+                )
+
+    def test_25_linux_continues_to_require_topology_matrix(self) -> None:
+        processes = [
+            self._process(
+                0,
+                stdout=(
+                    b"0, Synthetic GPU 0, GPU-private-0, "
+                    b"00000000:01:00.0, 24576, 999.0\n"
+                ),
+            ),
+            self._process(1, stderr=b"topology unavailable"),
+        ]
+        with patch(
+            "astra_stage2.control_identity.subprocess.run",
+            side_effect=processes,
+        ), patch(
+            "astra_stage2.control_identity.platform.system",
+            return_value="Linux",
+        ):
+            with self.assertRaisesRegex(Stage2Error, "topology query failed"):
+                probe_hardware(
+                    output_dir=self.root / "probe-linux-refuse",
+                    nvidia_smi=str(self._probe_executable()),
+                    device_indices=[0],
+                )
+
+    def test_26_linux_success_records_exact_matrix(self) -> None:
+        matrix = b"GPU0\tX\n"
+        processes = [
+            self._process(
+                0,
+                stdout=(
+                    b"0, Synthetic GPU 0, GPU-private-0, "
+                    b"00000000:01:00.0, 24576, 999.0\n"
+                ),
+            ),
+            self._process(0, stdout=matrix),
+        ]
+        output = self.root / "probe-linux-pass"
+        with patch(
+            "astra_stage2.control_identity.subprocess.run",
+            side_effect=processes,
+        ), patch(
+            "astra_stage2.control_identity.platform.system",
+            return_value="Linux",
+        ):
+            receipt = probe_hardware(
+                output_dir=output,
+                nvidia_smi=str(self._probe_executable()),
+                device_indices=[0],
+            )
+        self.assertEqual(receipt["nvidia_topo_matrix"], "SUPPORTED")
+        self.assertEqual(receipt["topology_class"], "NVIDIA_MATRIX_CAPTURED")
+        self.assertEqual((output / "nvidia-topology.txt").read_bytes(), matrix)
+
+    def test_27_unknown_topology_cannot_bind_executable_identity(self) -> None:
+        status_path = (
+            Path(self.config["controls"][0]["hardware"]["evidence_root"])
+            / "topology-status.json"
+        )
+        status = strict_json_load(status_path)
+        status["topology_class"] = "UNKNOWN"
+        status_path.write_text(json.dumps(status), encoding="utf-8")
+        with self.assertRaisesRegex(Stage2Error, "UNKNOWN hardware topology"):
+            self.bind(name="unknown-topology")
 
 
 if __name__ == "__main__":

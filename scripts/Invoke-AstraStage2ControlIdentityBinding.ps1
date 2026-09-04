@@ -370,6 +370,7 @@ function Write-PreparedConfig {
         $control.hardware.platform_path = 'platform.json'
         $control.hardware.device_query_path = 'nvidia-query.csv'
         $control.hardware.topology_path = 'nvidia-topology.txt'
+        $control.hardware.topology_status_path = 'topology-status.json'
         $control.hardware.selected_device_indices = @($DeviceIndex)
     }
 
@@ -661,6 +662,25 @@ if ($Mode -eq 'Prepare') {
             DeviceIndices = ([string]$gpu.Device.Index)
         }
 
+    $hardwareProbeReceiptPath = Join-Path $HardwareRoot 'probe-receipt.json'
+    if (-not (Test-Path -LiteralPath $hardwareProbeReceiptPath -PathType Leaf)) {
+        throw 'Hardware probe receipt is absent'
+    }
+    $hardwareProbe = Get-Content -Raw -LiteralPath $hardwareProbeReceiptPath | ConvertFrom-Json
+    if ($hardwareProbe.schema -ne 'tier-bench/astra-stage2-hardware-probe@2' -or
+        @($hardwareProbe.selected_device_indices) -notcontains [int]$gpu.Device.Index -or
+        $hardwareProbe.nvidia_topo_matrix -notin @('SUPPORTED', 'UNSUPPORTED_ON_PLATFORM') -or
+        [string]::IsNullOrWhiteSpace([string]$hardwareProbe.topology_class)) {
+        throw 'Hardware probe receipt does not bind the selected native device'
+    }
+    if ($hardwareProbe.model_calls -ne 0 -or
+        $hardwareProbe.provider_calls -ne 0 -or
+        $hardwareProbe.binding -ne 'NOT_RUN' -or
+        $hardwareProbe.empirical_calibration -ne 'NOT_RUN') {
+        throw 'Hardware probe widened authority'
+    }
+    $hardwareProbeSha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $hardwareProbeReceiptPath).Hash.ToLowerInvariant()
+
     Write-PreparedConfig -BinderRoot $BinderRoot -LotusSource $lotusSource -LoopCoderSource $loopCoderSource -Models $ModelRoot -HardwareRoot $HardwareRoot -DeviceIndex $gpu.Device.Index -OutputPath $PrivateConfig
 
     Invoke-PinnedBinder `
@@ -684,6 +704,9 @@ if ($Mode -eq 'Prepare') {
         release_head = $LauncherCoordinates.Head
         release_tree = $LauncherCoordinates.Tree
         preflight_receipt_sha256 = $preflightSha256
+        hardware_probe_receipt_sha256 = $hardwareProbeSha256
+        nvidia_topo_matrix = $hardwareProbe.nvidia_topo_matrix
+        topology_class = $hardwareProbe.topology_class
         binder_head = $BinderHead
         binder_tree = $BinderTree
         law_head = $LawHead

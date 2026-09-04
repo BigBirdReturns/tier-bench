@@ -36,3 +36,8 @@ tier_runner/pilot_manifest.py text eol=lf
 tier_runner/core.py text eol=lf
 tier_runner/manifest.py text eol=lf
 tier_runner/events.py text eol=lf
+
+# Astra Stage 2 PowerShell payloads are hashed as the bytes that execute.
+# Their worktree materialization must not depend on ambient core.autocrlf.
+scripts/Invoke-AstraStage2*.ps1 text eol=lf
+scripts/astra_stage2_bind_controls.ps1 text eol=lf

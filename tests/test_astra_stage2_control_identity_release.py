@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 import shutil
 import subprocess
 import unittest
+import tempfile
 from pathlib import Path
 
 
@@ -17,6 +19,12 @@ class ControlIdentityReleaseTests(unittest.TestCase):
             / "scripts"
             / "Invoke-AstraStage2ControlIdentityBinding.ps1"
         )
+        cls.retry = (
+            cls.repo
+            / "scripts"
+            / "Invoke-AstraStage2CheckpointRetry.ps1"
+        )
+        cls.retry_text = cls.retry.read_text(encoding="utf-8")
         cls.text = cls.launcher.read_text(encoding="utf-8")
 
     def test_21_launcher_parses_with_terminating_powershell_gate(self) -> None:
@@ -106,6 +114,10 @@ class ControlIdentityReleaseTests(unittest.TestCase):
         )
         self.assertIn("model_calls = 0", self.text)
         self.assertIn("provider_calls = 0", self.text)
+        self.assertIn("tier-bench/astra-stage2-hardware-probe@2", self.text)
+        self.assertIn("hardware_probe_receipt_sha256", self.text)
+        self.assertIn("nvidia_topo_matrix", self.text)
+        self.assertIn("topology_class", self.text)
         self.assertNotRegex(
             self.text,
             re.compile(r"\b(generate|completion|chat\.completions)\s*\(", re.I),
@@ -168,6 +180,134 @@ class ControlIdentityReleaseTests(unittest.TestCase):
             self.text,
             re.compile(r"Invoke-PinnedBinder[^\n]*-Arguments"),
         )
+
+
+    def test_28_retry_digest_match_and_mismatch_paths(self) -> None:
+        shell = shutil.which("pwsh") or shutil.which("powershell")
+        self.assertIsNotNone(shell, "PowerShell is required for release qualification")
+        with tempfile.TemporaryDirectory(prefix="astra-digest-test-") as temporary:
+            target = Path(temporary) / "payload.bin"
+            target.write_bytes(b"exact execution bytes\n")
+            expected = hashlib.sha256(target.read_bytes()).hexdigest()
+            common = [
+                str(shell),
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                str(self.retry),
+                "-Command",
+                "CheckDigest",
+                "-Path",
+                str(target),
+                "-ExpectedSha256",
+            ]
+            matched = subprocess.run(
+                [*common, expected],
+                cwd=self.repo,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+            self.assertEqual(
+                matched.returncode,
+                0,
+                msg=matched.stdout + "\n" + matched.stderr,
+            )
+            self.assertIn("DIGEST_MATCH", matched.stdout)
+
+            mismatched = subprocess.run(
+                [*common, "0" * 64],
+                cwd=self.repo,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+            self.assertNotEqual(mismatched.returncode, 0)
+            self.assertIn(
+                "Digest mismatch",
+                mismatched.stdout + "\n" + mismatched.stderr,
+            )
+        self.assertIn("if (($observed) -ne $Expected.ToLowerInvariant())", self.retry_text)
+        self.assertNotIn(
+            "if (Get-Sha256 $launcher -ne $ExpectedLauncherSha256)",
+            self.retry_text,
+        )
+
+    def test_29_astra_powershell_bytes_ignore_autocrlf(self) -> None:
+        payloads = (
+            Path("scripts/Invoke-AstraStage2ControlIdentityBinding.ps1"),
+            Path("scripts/Invoke-AstraStage2CheckpointRetry.ps1"),
+            Path("scripts/astra_stage2_bind_controls.ps1"),
+        )
+
+        def run_git(*arguments: str, cwd: Path) -> subprocess.CompletedProcess[str]:
+            process = subprocess.run(
+                ["git", *arguments],
+                cwd=cwd,
+                capture_output=True,
+                text=True,
+                timeout=60,
+                check=False,
+            )
+            self.assertEqual(
+                process.returncode,
+                0,
+                msg=process.stdout + "\n" + process.stderr,
+            )
+            return process
+
+        with tempfile.TemporaryDirectory(prefix="astra-autocrlf-test-") as temporary:
+            root = Path(temporary)
+            source = root / "source"
+            source.mkdir()
+            shutil.copy2(self.repo / ".gitattributes", source / ".gitattributes")
+            (source / "scripts").mkdir()
+            for relative in payloads:
+                shutil.copy2(self.repo / relative, source / relative)
+
+            run_git("init", cwd=source)
+            run_git("config", "user.name", "Astra Qualification", cwd=source)
+            run_git(
+                "config",
+                "user.email",
+                "astra-qualification.invalid",
+                cwd=source,
+            )
+            run_git("config", "commit.gpgsign", "false", cwd=source)
+            run_git("add", "--", ".gitattributes", "scripts", cwd=source)
+            run_git("commit", "-m", "fixture", cwd=source)
+
+            checkouts: dict[str, Path] = {}
+            for setting in ("true", "false"):
+                destination = root / f"autocrlf-{setting}"
+                destination.mkdir()
+                run_git("init", cwd=destination)
+                run_git("config", "core.autocrlf", setting, cwd=destination)
+                run_git("remote", "add", "origin", str(source), cwd=destination)
+                run_git("fetch", "--no-tags", "origin", "HEAD", cwd=destination)
+                run_git("checkout", "--detach", "FETCH_HEAD", cwd=destination)
+                self.assertEqual(
+                    run_git("status", "--porcelain", cwd=destination).stdout,
+                    "",
+                )
+                checkouts[setting] = destination
+
+            for relative in payloads:
+                true_bytes = (checkouts["true"] / relative).read_bytes()
+                false_bytes = (checkouts["false"] / relative).read_bytes()
+                self.assertEqual(
+                    hashlib.sha256(true_bytes).hexdigest(),
+                    hashlib.sha256(false_bytes).hexdigest(),
+                    msg=f"autocrlf changed {relative}",
+                )
+                self.assertNotIn(
+                    b"\r\n",
+                    true_bytes,
+                    msg=f"LF rule did not control {relative}",
+                )
 
 
 if __name__ == "__main__":
