@@ -156,36 +156,6 @@ if text.count(write_anchor) != 1:
     )
 text = text.replace(write_anchor, write_replacement, 1)
 
-fixture_anchor = '''            control["hardware"] = {
-                "evidence_root": str(hardware_root),
-                "platform_path": "platform.json",
-                "device_query_path": "nvidia-query.csv",
-                "topology_path": "nvidia-topology.txt",
-                "selected_device_indices": [index],
-            }
-'''
-fixture_replacement = '''            control["hardware"] = {
-                "evidence_root": str(hardware_root),
-                "platform_path": "platform.json",
-                "device_query_path": "nvidia-query.csv",
-                "topology_path": "nvidia-topology.json",
-                "selected_device_indices": [index],
-            }
-'''
-fixture_insert_anchor = 'test_path.write_text(tests, encoding="utf-8", newline="\\n")'
-fixture_insert = '''tests = replace_once(
-    tests,
-    ''' + repr(fixture_anchor) + ''',
-    ''' + repr(fixture_replacement) + ''',
-    "test hardware topology path",
-)
-test_path.write_text(tests, encoding="utf-8", newline="\\n")'''
-if text.count(fixture_insert_anchor) != 1:
-    raise SystemExit(
-        f"test write anchor count differs: {text.count(fixture_insert_anchor)}"
-    )
-text = text.replace(fixture_insert_anchor, fixture_insert, 1)
-
 text = text.replace(
     "receipt = probe_hardware(\n                output,\n                nvidia_smi=executable,\n                selected_device_indices=[0],\n            )",
     "receipt = probe_hardware(\n                output_dir=output,\n                nvidia_smi=str(executable),\n                device_indices=[0],\n            )",
@@ -202,4 +172,42 @@ text = text.replace(
     "probe = probe_hardware(\n                      output,\n                      nvidia_smi=executable,\n                      selected_device_indices=[0],\n                  )",
     "probe = probe_hardware(\n                      output_dir=output,\n                      nvidia_smi=str(executable),\n                      device_indices=[0],\n                  )",
 )
+
+cleanup_anchor = 'print("materialized Windows topology and LF repair")'
+cleanup = '''# Final generated-file cleanup keeps fixtures and mocks aligned with the
+# production topology contract regardless of earlier textual insertion order.
+_generated_tests_path = Path("tests/test_astra_stage2_control_identity.py")
+_generated_tests = _generated_tests_path.read_text(encoding="utf-8")
+_generated_tests = _generated_tests.replace(
+    '"topology_path": "nvidia-topology.txt"',
+    '"topology_path": "nvidia-topology.json"',
+)
+_generated_tests = _generated_tests.replace(
+    "side_effect=[query, topology],",
+    "side_effect=lambda args, **kwargs: topology if 'topo' in args else query,",
+)
+_generated_tests_path.write_text(
+    _generated_tests,
+    encoding="utf-8",
+    newline="\\n",
+)
+
+_generated_module_path = Path("astra_stage2/control_identity.py")
+_generated_module = _generated_module_path.read_text(encoding="utf-8")
+_generated_module = _generated_module.replace(
+    '"topology_path": "nvidia-topology.txt"',
+    '"topology_path": "nvidia-topology.json"',
+)
+_generated_module_path.write_text(
+    _generated_module,
+    encoding="utf-8",
+    newline="\\n",
+)
+
+'''
+if text.count(cleanup_anchor) != 1:
+    raise SystemExit(
+        f"cleanup anchor count differs: {text.count(cleanup_anchor)}"
+    )
+text = text.replace(cleanup_anchor, cleanup + cleanup_anchor, 1)
 path.write_text(text, encoding="utf-8", newline="\n")
