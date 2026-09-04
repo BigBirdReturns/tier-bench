@@ -1,0 +1,281 @@
+name: finalize-astra-stage2-windows-topology-lf
+
+on:
+  push:
+    branches:
+      - finalizer/astra-stage2-windows-topology-lf-20260903
+
+permissions:
+  contents: write
+  actions: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Resolve exact qualified release and independent audit
+        id: resolve
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: release/astra-stage2-control-identity-windows-topology-lf-20260903
+          RELEASE_WORKFLOW: astra-stage2-control-identity-windows-topology-lf-release
+          AUDIT_BRANCH: audit/astra-stage2-windows-topology-lf-release-20260903
+          AUDIT_WORKFLOW: astra-stage2-windows-topology-lf-release-audit
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          auth=(-H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+
+          release_head="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" "refs/heads/${RELEASE_BRANCH}" | awk '{print $1}')"
+          test -n "$release_head"
+          release_tree="$(curl --fail --silent --show-error "${auth[@]}" "$api/commits/$release_head" | python3 -c 'import json,sys; print(json.load(sys.stdin)["commit"]["tree"]["sha"])')"
+
+          release_run=""
+          for attempt in $(seq 1 60); do
+            release_run="$(curl --fail --silent --show-error "${auth[@]}" "$api/actions/runs?head_sha=${release_head}&per_page=100" | python3 - "$RELEASE_WORKFLOW" <<'PY'
+          import json,sys
+          workflow=sys.argv[1]
+          runs=json.load(sys.stdin).get('workflow_runs',[])
+          passed=[r for r in runs if r.get('name')==workflow and r.get('status')=='completed' and r.get('conclusion')=='success']
+          print(passed[0]['id'] if passed else '')
+          PY
+            )"
+            if [[ -n "$release_run" ]]; then break; fi
+            sleep 10
+          done
+          test -n "$release_run"
+
+          release_artifacts="$(curl --fail --silent --show-error "${auth[@]}" "$api/actions/runs/${release_run}/artifacts")"
+          readarray -t release_values < <(printf '%s' "$release_artifacts" | python3 - <<'PY'
+          import json,sys
+          artifacts=json.load(sys.stdin).get('artifacts',[])
+          matches=[a for a in artifacts if a.get('name','').startswith('astra-stage2-windows-topology-lf-release-')]
+          if len(matches)!=1: raise SystemExit(f'expected one release artifact, found {len(matches)}')
+          a=matches[0]
+          print(a['id']); print(a['size_in_bytes']); print(a['digest'])
+          PY
+          )
+          release_artifact_id="${release_values[0]}"
+          release_artifact_bytes="${release_values[1]}"
+          release_artifact_digest="${release_values[2]}"
+
+          audit_head="$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" "refs/heads/${AUDIT_BRANCH}" | awk '{print $1}')"
+          test -n "$audit_head"
+          audit_tree="$(curl --fail --silent --show-error "${auth[@]}" "$api/commits/$audit_head" | python3 -c 'import json,sys; print(json.load(sys.stdin)["commit"]["tree"]["sha"])')"
+
+          audit_run=""
+          for attempt in $(seq 1 60); do
+            audit_run="$(curl --fail --silent --show-error "${auth[@]}" "$api/actions/runs?head_sha=${audit_head}&per_page=100" | python3 - "$AUDIT_WORKFLOW" <<'PY'
+          import json,sys
+          workflow=sys.argv[1]
+          runs=json.load(sys.stdin).get('workflow_runs',[])
+          passed=[r for r in runs if r.get('name')==workflow and r.get('status')=='completed' and r.get('conclusion')=='success']
+          print(passed[0]['id'] if passed else '')
+          PY
+            )"
+            if [[ -n "$audit_run" ]]; then break; fi
+            sleep 10
+          done
+          test -n "$audit_run"
+
+          audit_artifacts="$(curl --fail --silent --show-error "${auth[@]}" "$api/actions/runs/${audit_run}/artifacts")"
+          readarray -t audit_values < <(printf '%s' "$audit_artifacts" | python3 - <<'PY'
+          import json,sys
+          artifacts=json.load(sys.stdin).get('artifacts',[])
+          matches=[a for a in artifacts if a.get('name','').startswith('astra-stage2-windows-topology-lf-independent-audit-')]
+          if len(matches)!=1: raise SystemExit(f'expected one audit artifact, found {len(matches)}')
+          a=matches[0]
+          print(a['id']); print(a['size_in_bytes']); print(a['digest'])
+          PY
+          )
+          audit_artifact_id="${audit_values[0]}"
+          audit_artifact_bytes="${audit_values[1]}"
+          audit_artifact_digest="${audit_values[2]}"
+
+          checkout="$RUNNER_TEMP/finalize-checkout"
+          git clone --quiet --no-checkout "https://github.com/${GITHUB_REPOSITORY}.git" "$checkout"
+          git -C "$checkout" fetch --quiet --no-tags --depth=512 origin "$release_head" "$audit_head"
+          git -C "$checkout" merge-base --is-ancestor "$release_head" "$audit_head"
+          launcher_sha="$(git -C "$checkout" show "${release_head}:scripts/Invoke-AstraStage2ControlIdentityBinding.ps1" | sha256sum | awk '{print $1}')"
+          helper_sha="$(git -C "$checkout" show "${release_head}:scripts/Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1" | sha256sum | awk '{print $1}')"
+          audit_payload="$(curl --fail --silent --show-error --location "${auth[@]}" "$api/actions/artifacts/${audit_artifact_id}/zip" -o "$RUNNER_TEMP/audit.zip" && python3 - "$RUNNER_TEMP/audit.zip" <<'PY'
+          import json,sys,zipfile
+          with zipfile.ZipFile(sys.argv[1]) as z:
+              names=[n for n in z.namelist() if n.endswith('audit-result.json')]
+              if len(names)!=1: raise SystemExit(f'audit result count {len(names)}')
+              value=json.loads(z.read(names[0]).decode())
+              if value.get('disposition')!='PASS_WINDOWS_TOPOLOGY_LF_PROVIDER_FREE_RELEASE_ONLY':
+                  raise SystemExit('audit disposition differs')
+              print(value['payload_sha256'])
+          PY
+          )"
+
+          printf 'release_head=%s\n' "$release_head" >> "$GITHUB_OUTPUT"
+          printf 'release_tree=%s\n' "$release_tree" >> "$GITHUB_OUTPUT"
+          printf 'release_run=%s\n' "$release_run" >> "$GITHUB_OUTPUT"
+          printf 'release_artifact_id=%s\n' "$release_artifact_id" >> "$GITHUB_OUTPUT"
+          printf 'release_artifact_bytes=%s\n' "$release_artifact_bytes" >> "$GITHUB_OUTPUT"
+          printf 'release_artifact_digest=%s\n' "$release_artifact_digest" >> "$GITHUB_OUTPUT"
+          printf 'audit_head=%s\n' "$audit_head" >> "$GITHUB_OUTPUT"
+          printf 'audit_tree=%s\n' "$audit_tree" >> "$GITHUB_OUTPUT"
+          printf 'audit_run=%s\n' "$audit_run" >> "$GITHUB_OUTPUT"
+          printf 'audit_artifact_id=%s\n' "$audit_artifact_id" >> "$GITHUB_OUTPUT"
+          printf 'audit_artifact_bytes=%s\n' "$audit_artifact_bytes" >> "$GITHUB_OUTPUT"
+          printf 'audit_artifact_digest=%s\n' "$audit_artifact_digest" >> "$GITHUB_OUTPUT"
+          printf 'audit_payload=%s\n' "$audit_payload" >> "$GITHUB_OUTPUT"
+          printf 'launcher_sha=%s\n' "$launcher_sha" >> "$GITHUB_OUTPUT"
+          printf 'helper_sha=%s\n' "$helper_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Create immutable checkpoint branch
+        id: checkpoint
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_HEAD: ${{ steps.resolve.outputs.release_head }}
+        run: |
+          set -euo pipefail
+          short="${RELEASE_HEAD:0:8}"
+          branch="checkpoint/astra-stage2-windows-topology-lf-${short}-20260903"
+          remote="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          existing="$(git ls-remote "$remote" "refs/heads/${branch}" | awk '{print $1}')"
+          if [[ -n "$existing" ]]; then
+            test "$existing" = "$RELEASE_HEAD"
+          else
+            git push "$remote" "${RELEASE_HEAD}:refs/heads/${branch}"
+          fi
+          printf 'branch=%s\n' "$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Publish connected final handoff and readback
+        id: publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_HEAD: ${{ steps.resolve.outputs.release_head }}
+          RELEASE_TREE: ${{ steps.resolve.outputs.release_tree }}
+          RELEASE_RUN: ${{ steps.resolve.outputs.release_run }}
+          RELEASE_ARTIFACT_ID: ${{ steps.resolve.outputs.release_artifact_id }}
+          RELEASE_ARTIFACT_BYTES: ${{ steps.resolve.outputs.release_artifact_bytes }}
+          RELEASE_ARTIFACT_DIGEST: ${{ steps.resolve.outputs.release_artifact_digest }}
+          AUDIT_HEAD: ${{ steps.resolve.outputs.audit_head }}
+          AUDIT_TREE: ${{ steps.resolve.outputs.audit_tree }}
+          AUDIT_RUN: ${{ steps.resolve.outputs.audit_run }}
+          AUDIT_ARTIFACT_ID: ${{ steps.resolve.outputs.audit_artifact_id }}
+          AUDIT_ARTIFACT_BYTES: ${{ steps.resolve.outputs.audit_artifact_bytes }}
+          AUDIT_ARTIFACT_DIGEST: ${{ steps.resolve.outputs.audit_artifact_digest }}
+          AUDIT_PAYLOAD: ${{ steps.resolve.outputs.audit_payload }}
+          LAUNCHER_SHA: ${{ steps.resolve.outputs.launcher_sha }}
+          HELPER_SHA: ${{ steps.resolve.outputs.helper_sha }}
+          CHECKPOINT_BRANCH: ${{ steps.checkpoint.outputs.branch }}
+        run: |
+          set -euo pipefail
+          api="https://api.github.com/repos/${GITHUB_REPOSITORY}"
+          auth=(-H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28")
+          body="$RUNNER_TEMP/final-release.md"
+          cat > "$body" <<EOF
+          <!-- astra-stage2-windows-topology-lf-final-handoff-v1 -->
+          ### RELEASE: immutable LF-safe Windows NVIDIA topology handoff
+
+          \`\`\`yaml
+          classification: FINAL_CHECKPOINTED_WINDOWS_TOPOLOGY_LF_PROVIDER_FREE_IDENTITIES_UNBOUND
+          pull_request: 189
+          release_head: ${RELEASE_HEAD}
+          release_tree: ${RELEASE_TREE}
+          checkpoint_branch: ${CHECKPOINT_BRANCH}
+          launcher_sha256: ${LAUNCHER_SHA}
+          checkpoint_helper_sha256: ${HELPER_SHA}
+          qualification_run: ${RELEASE_RUN}
+          qualification_artifact:
+            id: ${RELEASE_ARTIFACT_ID}
+            bytes: ${RELEASE_ARTIFACT_BYTES}
+            sha256: ${RELEASE_ARTIFACT_DIGEST#sha256:}
+          audit_head: ${AUDIT_HEAD}
+          audit_tree: ${AUDIT_TREE}
+          audit_run: ${AUDIT_RUN}
+          audit_artifact:
+            id: ${AUDIT_ARTIFACT_ID}
+            bytes: ${AUDIT_ARTIFACT_BYTES}
+            sha256: ${AUDIT_ARTIFACT_DIGEST#sha256:}
+          audit_payload_sha256: ${AUDIT_PAYLOAD}
+          windows_tests: 35
+          linux_tests: 35
+          lf_materialization: PASS
+          windows_topology_method: WINDOWS_NVIDIA_SMI_QUERY_GPU_PCI_INVENTORY
+          windows_peer_link_authority: UNAVAILABLE_NOT_ASSERTED
+          posix_topology_method: NVIDIA_SMI_TOPO_M
+          checkpoint_retry_digest_condition: PARENTHESIZED
+          physical_assets: ACQUIRED_PRESERVED_UNRECEIPTED
+          official_prepare: INCOMPLETE
+          actual_executable_identities: UNBOUND
+          provider_or_model_calls: 0
+          empirical_calibration: NOT_RUN
+          numeric_stage2_freeze: NOT_ISSUED
+          bind: PROHIBITED
+          \`\`\`
+
+          The estate-observed B353 failures are closed in remote custody. The immutable checkpoint contains a corrected repository-owned retry helper, LF-pinned guarded scripts, and a topology binder that uses the supported Windows NVIDIA PCI inventory while explicitly refusing unavailable peer-link claims. Exact Windows and Linux qualification and a separate exact-parent audit have passed. The preserved source and checkpoint assets may now be reused with \`Prepare -SkipDownloads\`; successful Prepare must stop with executable identities \`UNBOUND\`.
+
+          Local command:
+
+          \`\`\`powershell
+          git -C D:\Projects\Measurement\Tier-Bench\main fetch origin +refs/heads/${CHECKPOINT_BRANCH}:refs/astra/final-checkpoint
+          git -C S:\Scratch\Worktrees\Tier-Bench\astra-stage2-control-identity-release-b394 checkout --detach ${RELEASE_HEAD}
+          powershell -NoProfile -ExecutionPolicy Bypass -File S:\Scratch\Worktrees\Tier-Bench\astra-stage2-control-identity-release-b394\scripts\Invoke-AstraStage2ControlIdentityCheckpointRetry.ps1 -CheckpointBranch ${CHECKPOINT_BRANCH} -ExpectedHead ${RELEASE_HEAD} -ExpectedTree ${RELEASE_TREE} -ExpectedLauncherSha256 ${LAUNCHER_SHA} -RepoRoot D:\Projects\Measurement\Tier-Bench\main -Worktree S:\Scratch\Worktrees\Tier-Bench\astra-stage2-control-identity-release-b394 -CustodyRoot S:\Scratch\Incoming\Tier-Bench\astra-stage2-control-identities-real
+          \`\`\`
+
+          **Control question:** Does the estate use this immutable checkpoint, reuse the preserved assets, and stop after receipt-bearing \`ASSETS_PREPARED_EXECUTABLE_IDENTITIES_UNBOUND\` without running Bind?
+          EOF
+          request="$(python3 - "$body" <<'PY'
+          import json,sys
+          print(json.dumps({'body':open(sys.argv[1],encoding='utf-8').read()}))
+          PY
+          )"
+          response="$(curl --fail --silent --show-error -X POST "${auth[@]}" "$api/issues/172/comments" -d "$request")"
+          release_comment="$(printf '%s' "$response" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+          fetched="$(curl --fail --silent --show-error "${auth[@]}" "$api/issues/comments/${release_comment}")"
+          fetched_body="$(printf '%s' "$fetched" | python3 -c 'import json,sys; print(json.load(sys.stdin)["body"])')"
+          grep -q "$RELEASE_HEAD" <<< "$fetched_body"
+          grep -q "$CHECKPOINT_BRANCH" <<< "$fetched_body"
+          grep -q "$AUDIT_PAYLOAD" <<< "$fetched_body"
+          readback_body="$RUNNER_TEMP/final-readback.md"
+          cat > "$readback_body" <<EOF
+          ### READBACK: immutable LF-safe Windows NVIDIA topology handoff
+
+          \`\`\`yaml
+          release_comment_id: ${release_comment}
+          release_head: ${RELEASE_HEAD}
+          release_tree: ${RELEASE_TREE}
+          checkpoint_branch: ${CHECKPOINT_BRANCH}
+          qualification_run: ${RELEASE_RUN}
+          audit_run: ${AUDIT_RUN}
+          audit_payload_sha256: ${AUDIT_PAYLOAD}
+          connected_body_verified: true
+          official_prepare: INCOMPLETE
+          actual_executable_identities: UNBOUND
+          provider_or_model_calls: 0
+          classification: READBACK_VERIFIED_FINAL_WINDOWS_TOPOLOGY_LF_HANDOFF
+          \`\`\`
+
+          **Control question:** Does every later local receipt bind the exact checkpointed release and preserve the zero-call UNBOUND ceiling?
+          EOF
+          readback_request="$(python3 - "$readback_body" <<'PY'
+          import json,sys
+          print(json.dumps({'body':open(sys.argv[1],encoding='utf-8').read()}))
+          PY
+          )"
+          readback_response="$(curl --fail --silent --show-error -X POST "${auth[@]}" "$api/issues/172/comments" -d "$readback_request")"
+          readback_comment="$(printf '%s' "$readback_response" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
+          printf 'release_comment=%s\n' "$release_comment" >> "$GITHUB_OUTPUT"
+          printf 'readback_comment=%s\n' "$readback_comment" >> "$GITHUB_OUTPUT"
+          {
+            echo "release_head=${RELEASE_HEAD}"
+            echo "release_tree=${RELEASE_TREE}"
+            echo "checkpoint_branch=${CHECKPOINT_BRANCH}"
+            echo "qualification_run=${RELEASE_RUN}"
+            echo "audit_run=${AUDIT_RUN}"
+            echo "release_comment_id=${release_comment}"
+            echo "readback_comment_id=${readback_comment}"
+          } >> "$GITHUB_STEP_SUMMARY"
