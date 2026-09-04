@@ -376,7 +376,6 @@ class ControlIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(Stage2Error, "not a regular file"):
             self.bind(bad, name="missing-weight")
 
-    @unittest.skipIf(os.name == "nt", "symlink creation is privilege-dependent on Windows")
     def test_10_symlinked_model_file_refuses(self) -> None:
         bad = copy.deepcopy(self.config)
         model_root = Path(bad["controls"][0]["model_root"])
@@ -384,7 +383,12 @@ class ControlIdentityTests(unittest.TestCase):
         real.write_text("{}", encoding="utf-8")
         link = model_root / "config.json"
         link.unlink()
-        link.symlink_to(real)
+        try:
+            link.symlink_to(real)
+        except OSError as exc:
+            if os.name == "nt" and getattr(exc, "winerror", None) == 1314:
+                self.skipTest("symlink creation is privilege-dependent on Windows")
+            raise
         with self.assertRaisesRegex(Stage2Error, "symbolic link"):
             self.bind(bad, name="symlink")
 
@@ -553,6 +557,9 @@ class ControlIdentityTests(unittest.TestCase):
             "astra_stage2.control_identity.platform.system",
             return_value="Windows",
         ), patch(
+            "astra_stage2.control_identity.platform.processor",
+            return_value="Synthetic Processor",
+        ), patch(
             "astra_stage2.control_identity._collect_windows_native_topology",
             return_value=self._windows_native(),
         ):
@@ -705,6 +712,9 @@ class ControlIdentityTests(unittest.TestCase):
         ), patch(
             "astra_stage2.control_identity.platform.system",
             return_value="Linux",
+        ), patch(
+            "astra_stage2.control_identity.platform.processor",
+            return_value="Synthetic Processor",
         ):
             receipt = probe_hardware(
                 output_dir=output,
