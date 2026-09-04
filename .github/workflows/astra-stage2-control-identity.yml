@@ -12,6 +12,9 @@ on:
       - 'scripts/astra_stage2_bind_controls.ps1'
       - 'tests/test_astra_stage2_control_identity.py'
       - 'schemas/astra-stage2-control-binding-input.schema.json'
+      - 'schemas/astra-stage2-hardware-probe.schema.json'
+      - 'schemas/astra-stage2-hardware-platform.schema.json'
+      - 'schemas/astra-stage2-topology-evidence.schema.json'
       - 'schemas/astra-stage2-executable-control-private.schema.json'
       - 'schemas/astra-stage2-executable-control-public.schema.json'
       - 'schemas/astra-stage2-executable-control-set.schema.json'
@@ -81,6 +84,9 @@ jobs:
               "experiments/astra_kxr/stage2/control_identity/README.md",
               "experiments/astra_kxr/stage2/control_identity/binding-template.json",
               "schemas/astra-stage2-control-binding-input.schema.json",
+              "schemas/astra-stage2-hardware-probe.schema.json",
+              "schemas/astra-stage2-hardware-platform.schema.json",
+              "schemas/astra-stage2-topology-evidence.schema.json",
               "schemas/astra-stage2-executable-control-private.schema.json",
               "schemas/astra-stage2-executable-control-public.schema.json",
               "schemas/astra-stage2-executable-control-set.schema.json",
@@ -115,6 +121,9 @@ jobs:
             tests/test_astra_stage2_control_identity.py
           for schema in \
             schemas/astra-stage2-control-binding-input.schema.json \
+            schemas/astra-stage2-hardware-probe.schema.json \
+            schemas/astra-stage2-hardware-platform.schema.json \
+            schemas/astra-stage2-topology-evidence.schema.json \
             schemas/astra-stage2-executable-control-private.schema.json \
             schemas/astra-stage2-executable-control-public.schema.json \
             schemas/astra-stage2-executable-control-set.schema.json
@@ -154,7 +163,7 @@ jobs:
             -s tests \
             -p 'test_astra_stage2_control_identity.py' \
             -v 2>&1 | tee "$EVIDENCE_ROOT/test-control-identity.log"
-          grep -q '^Ran 20 tests in ' "$EVIDENCE_ROOT/test-control-identity.log"
+          grep -q '^Ran 34 tests in ' "$EVIDENCE_ROOT/test-control-identity.log"
 
       - name: Build provider-free qualification receipt
         id: receipt
@@ -197,7 +206,7 @@ jobs:
           root = pathlib.Path(sys.argv[1])
           log = (root / "test-control-identity.log").read_text(encoding="utf-8")
           match = re.findall(r"^Ran\s+(\d+)\s+tests?\s+in\s+", log, flags=re.MULTILINE)
-          if match != ["20"]:
+          if match != ["34"]:
               raise SystemExit(f"test denominator mismatch: {match}")
           generator = build_generator_manifest()
           if generator["payload_sha256"] != GENERATOR_MANIFEST_SHA256:

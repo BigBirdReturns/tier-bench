@@ -1,6 +1,42 @@
 {
   "$id": "tier-bench/astra-stage2-executable-control-private.schema.json",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "deviceRow": {
+      "additionalProperties": false,
+      "properties": {
+        "driver": {"minLength": 1, "type": "string"},
+        "index": {"minimum": 0, "type": "integer"},
+        "memory_mib": {"minimum": 1, "type": "integer"},
+        "name": {"minLength": 1, "type": "string"},
+        "pci_bus_id": {"minLength": 1, "type": "string"},
+        "uuid": {"minLength": 1, "type": "string"}
+      },
+      "required": ["index", "name", "uuid", "pci_bus_id", "memory_mib", "driver"],
+      "type": "object"
+    },
+    "fileEntry": {
+      "additionalProperties": false,
+      "properties": {
+        "bytes": {"minimum": 0, "type": "integer"},
+        "name": {"minLength": 1, "type": "string"},
+        "sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"}
+      },
+      "required": ["name", "bytes", "sha256"],
+      "type": "object"
+    },
+    "inventory": {
+      "additionalProperties": false,
+      "properties": {
+        "content_manifest_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+        "file_count": {"minimum": 1, "type": "integer"},
+        "files": {"items": {"$ref": "#/$defs/fileEntry"}, "minItems": 1, "type": "array"},
+        "total_bytes": {"minimum": 1, "type": "integer"}
+      },
+      "required": ["file_count", "total_bytes", "files", "content_manifest_sha256"],
+      "type": "object"
+    }
+  },
   "additionalProperties": false,
   "properties": {
     "adapter": {
@@ -123,6 +159,50 @@
       "const": "empirical_local"
     },
     "hardware": {
+      "additionalProperties": false,
+      "properties": {
+        "device_count": {"minimum": 1, "type": "integer"},
+        "device_names": {"items": {"minLength": 1, "type": "string"}, "minItems": 1, "type": "array"},
+        "device_query": {"$ref": "#/$defs/fileEntry"},
+        "drivers": {"items": {"minLength": 1, "type": "string"}, "minItems": 1, "type": "array", "uniqueItems": true},
+        "evidence_inventory": {"$ref": "#/$defs/inventory"},
+        "memory_mib": {"items": {"minimum": 1, "type": "integer"}, "minItems": 1, "type": "array"},
+        "platform": {"$ref": "#/$defs/fileEntry"},
+        "private_device_rows": {"items": {"$ref": "#/$defs/deviceRow"}, "minItems": 1, "type": "array"},
+        "selected_device_indices": {
+          "items": {"minimum": 0, "type": "integer"},
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "topology_evidence": {
+          "additionalProperties": true,
+          "properties": {
+            "implicit_pooling_claimed": {"const": false},
+            "inter_device_topology_claimed": {"type": "boolean"},
+            "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+            "platform": {"enum": ["Linux", "Windows"]},
+            "schema": {"const": "tier-bench/astra-stage2-topology-evidence@1"},
+            "state": {"enum": ["OBSERVED", "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE"]}
+          },
+          "required": ["schema", "state", "platform", "inter_device_topology_claimed", "implicit_pooling_claimed", "payload_sha256"],
+          "type": "object"
+        },
+        "topology_evidence_file": {"$ref": "#/$defs/fileEntry"}
+      },
+      "required": [
+        "platform",
+        "device_query",
+        "topology_evidence_file",
+        "topology_evidence",
+        "evidence_inventory",
+        "selected_device_indices",
+        "device_count",
+        "device_names",
+        "memory_mib",
+        "drivers",
+        "private_device_rows"
+      ],
       "type": "object"
     },
     "local_artifact_set": {
@@ -213,7 +293,7 @@
       "type": "object"
     },
     "schema": {
-      "const": "tier-bench/astra-stage2-executable-control-private@1"
+      "const": "tier-bench/astra-stage2-executable-control-private@2"
     },
     "source": {
       "type": "object"

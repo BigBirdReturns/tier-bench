@@ -92,6 +92,53 @@
             "minimum": 1,
             "type": "integer"
           },
+          "hardware_topology": {
+            "additionalProperties": false,
+            "oneOf": [
+              {
+                "properties": {
+                  "method": {"const": "NVIDIA_SMI_TOPO_MATRIX"},
+                  "platform": {"const": "Linux"},
+                  "state": {"const": "OBSERVED"}
+                }
+              },
+              {
+                "properties": {
+                  "inter_device_topology_claimed": {"const": false},
+                  "method": {"const": "PLATFORM_LIMITATION_SINGLE_DEVICE"},
+                  "platform": {"const": "Windows"},
+                  "selected_device_count": {"const": 1},
+                  "state": {"const": "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE"}
+                }
+              }
+            ],
+            "properties": {
+              "implicit_pooling_claimed": {"const": false},
+              "inter_device_topology_claimed": {"type": "boolean"},
+              "method": {
+                "enum": ["NVIDIA_SMI_TOPO_MATRIX", "PLATFORM_LIMITATION_SINGLE_DEVICE"]
+              },
+              "platform": {"enum": ["Linux", "Windows"]},
+              "schema": {"const": "tier-bench/astra-stage2-topology-evidence@1"},
+              "selected_device_count": {"minimum": 1, "type": "integer"},
+              "state": {"enum": ["OBSERVED", "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE"]},
+              "topology_evidence_sha256": {
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "schema",
+              "state",
+              "platform",
+              "method",
+              "selected_device_count",
+              "inter_device_topology_claimed",
+              "implicit_pooling_claimed",
+              "topology_evidence_sha256"
+            ],
+            "type": "object"
+          },
           "local_artifact_set_sha256": {
             "pattern": "^[0-9a-f]{64}$",
             "type": "string"
@@ -116,7 +163,7 @@
             ]
           },
           "schema": {
-            "const": "tier-bench/astra-stage2-executable-control-public@1"
+            "const": "tier-bench/astra-stage2-executable-control-public@2"
           },
           "source_commit_sha1": {
             "pattern": "^[0-9a-f]{40}$",
@@ -142,6 +189,7 @@
           "checkpoint_repository",
           "checkpoint_revision_sha1",
           "component_digests",
+          "hardware_topology",
           "local_artifact_set_sha256",
           "private_manifest_sha256",
           "private_locator_sha256",
@@ -208,7 +256,7 @@
       "const": "720cbf3f26f2e251613acedc52cff08ef33892dc"
     },
     "schema": {
-      "const": "tier-bench/astra-stage2-executable-control-set@1"
+      "const": "tier-bench/astra-stage2-executable-control-set@2"
     },
     "stage1_join_head_sha1": {
       "const": "60bca963d63edca267106bc5c7725c2cc1df8dd7"

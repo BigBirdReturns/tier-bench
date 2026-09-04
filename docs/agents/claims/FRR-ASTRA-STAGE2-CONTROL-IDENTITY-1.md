@@ -32,17 +32,23 @@ path-free receipt set. The private graph includes the clean exact source checkou
 checkpoint revision evidence, every file under the checkpoint root, selected
 model and tokenizer configuration, weight index and every ordered shard, the
 complete runtime root, runtime version probe, adapter or explicit `NONE`,
-quantization or explicit `NONE`, hardware and topology evidence, and the distinct
-low/high effort mappings. It then derives the six digest fields consumed by the
-existing empirical control manifest, reconstructs the complete 648-row plan, and
+quantization or explicit `NONE`, platform-specific versioned hardware topology
+evidence, and the distinct low/high effort mappings. It then derives the six
+digest fields consumed by the existing empirical control manifest, reconstructs
+the complete 648-row plan, and
 binds both to the exact law, Stage 1, scaffold, and generator coordinates.
 
 The implementation refuses mutable or substituted public coordinates, dirty
 source repositories, missing or duplicate files, mismatched weight indexes,
 revision claims without local evidence, symbolic links, root escapes, incomplete
 runtime probes, identical effort mappings, absent selected devices, unknown
-properties, public path leakage, local byte drift, and a result that cannot be
-reproduced from retained private evidence.
+properties, public path leakage, local byte drift, platform or selected-device
+substitution, topology-record or query-digest drift, empty or failed Linux
+topology queries, Windows multi-device selection without an independently
+qualified topology source, authority-widening inter-device or pooling claims,
+and a result that cannot be reproduced from retained private evidence. Linux
+retains exact successful `nvidia-smi topo -m` stdout; Windows single-device
+evidence records only the platform limitation and never invokes that command.
 
 Provider-free CI uses only synthetic temporary artifact trees. Passing CI means
 the binder and refusal controls are qualified. It does not mean LOTUS 3B,

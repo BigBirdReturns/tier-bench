@@ -11,6 +11,7 @@ from __future__ import annotations
 import base64
 import copy
 import csv
+import io
 import json
 import math
 import os
@@ -34,12 +35,14 @@ from .canonical import (
 from .contracts import bind_empirical_control_manifest, validate_generator_manifest, validate_plan
 from .generator import build_calibration_plan, build_generator_manifest, empirical_control_template
 
-SCHEMA_BINDING_INPUT = "tier-bench/astra-stage2-control-binding-input@1"
-SCHEMA_PRIVATE_CONTROL = "tier-bench/astra-stage2-executable-control-private@1"
-SCHEMA_PUBLIC_CONTROL = "tier-bench/astra-stage2-executable-control-public@1"
-SCHEMA_CONTROL_SET = "tier-bench/astra-stage2-executable-control-set@1"
+SCHEMA_BINDING_INPUT = "tier-bench/astra-stage2-control-binding-input@2"
+SCHEMA_PRIVATE_CONTROL = "tier-bench/astra-stage2-executable-control-private@2"
+SCHEMA_PUBLIC_CONTROL = "tier-bench/astra-stage2-executable-control-public@2"
+SCHEMA_CONTROL_SET = "tier-bench/astra-stage2-executable-control-set@2"
 SCHEMA_PRIVATE_SET = "tier-bench/astra-stage2-executable-control-private-set@1"
-SCHEMA_HARDWARE_PROBE = "tier-bench/astra-stage2-hardware-probe@1"
+SCHEMA_HARDWARE_PROBE = "tier-bench/astra-stage2-hardware-probe@2"
+SCHEMA_HARDWARE_PLATFORM = "tier-bench/astra-stage2-hardware-platform@1"
+SCHEMA_TOPOLOGY_EVIDENCE = "tier-bench/astra-stage2-topology-evidence@1"
 
 LAW_COMMIT_SHA1 = "c36c35bf9b70d879e1e1c9ee2f0296879442df3e"
 LAW_TREE_SHA1 = "87bff3320c680e91eaec66c287d7a1ac3b7fe523"
@@ -145,8 +148,53 @@ HARDWARE_FIELDS = frozenset(
         "evidence_root",
         "platform_path",
         "device_query_path",
-        "topology_path",
+        "topology_evidence_path",
         "selected_device_indices",
+    }
+)
+PLATFORM_RECORD_FIELDS = frozenset(
+    {
+        "schema",
+        "system",
+        "release",
+        "version",
+        "machine",
+        "processor",
+        "python_implementation",
+        "python_version",
+        "selected_device_indices",
+        "nvidia_smi_executable_sha256",
+        "payload_sha256",
+    }
+)
+LINUX_TOPOLOGY_FIELDS = frozenset(
+    {
+        "schema",
+        "state",
+        "platform",
+        "method",
+        "selected_device_indices",
+        "selected_device_query_rows_sha256",
+        "device_query_sha256",
+        "matrix_stdout_base64",
+        "matrix_stdout_sha256",
+        "inter_device_topology_claimed",
+        "implicit_pooling_claimed",
+        "payload_sha256",
+    }
+)
+WINDOWS_TOPOLOGY_FIELDS = frozenset(
+    {
+        "schema",
+        "state",
+        "platform",
+        "method",
+        "selected_device_index",
+        "selected_device_query_row_sha256",
+        "device_query_sha256",
+        "inter_device_topology_claimed",
+        "implicit_pooling_claimed",
+        "payload_sha256",
     }
 )
 EFFORT_MAPPING_FIELDS = frozenset({"low", "high"})
@@ -233,6 +281,12 @@ def _require_int(value: Any, label: str, *, minimum: int | None = None) -> int:
         raise Stage2Error(f"{label} must be an integer")
     if minimum is not None and value < minimum:
         raise Stage2Error(f"{label} must be >= {minimum}")
+    return value
+
+
+def _require_bool(value: Any, label: str) -> bool:
+    if not isinstance(value, bool):
+        raise Stage2Error(f"{label} must be a boolean")
     return value
 
 
@@ -622,39 +676,141 @@ def _quantization_manifest(value: Any) -> dict[str, Any]:
     return {"identity": identity, "parameters": parameters}
 
 
-def _parse_hardware_query(path: Path) -> list[dict[str, Any]]:
+def _parse_hardware_query_bytes(data: bytes) -> list[dict[str, Any]]:
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise Stage2Error("hardware device query must be UTF-8") from exc
     rows: list[dict[str, Any]] = []
-    with path.open("r", encoding="utf-8", newline="") as handle:
-        for line_number, raw in enumerate(csv.reader(handle), 1):
-            if not raw or all(not item.strip() for item in raw):
-                continue
-            if len(raw) != 6:
-                raise Stage2Error(
-                    f"hardware device query line {line_number} must have six CSV columns"
-                )
-            index_text, name, uuid, pci_bus_id, memory_text, driver = [item.strip() for item in raw]
-            try:
-                index = int(index_text)
-                memory_mib = int(memory_text)
-            except ValueError as exc:
-                raise Stage2Error(f"invalid numeric hardware field on line {line_number}") from exc
-            if index < 0 or memory_mib <= 0:
-                raise Stage2Error("hardware index and memory must be positive-domain values")
-            rows.append(
-                {
-                    "index": index,
-                    "name": _require_string(name, "hardware name"),
-                    "uuid": _require_string(uuid, "hardware uuid"),
-                    "pci_bus_id": _require_string(pci_bus_id, "hardware PCI bus id"),
-                    "memory_mib": memory_mib,
-                    "driver": _require_string(driver, "hardware driver"),
-                }
+    for line_number, raw in enumerate(csv.reader(io.StringIO(text, newline="")), 1):
+        if not raw or all(not item.strip() for item in raw):
+            continue
+        if len(raw) != 6:
+            raise Stage2Error(
+                f"hardware device query line {line_number} must have six CSV columns"
             )
+        index_text, name, uuid, pci_bus_id, memory_text, driver = [item.strip() for item in raw]
+        try:
+            index = int(index_text)
+            memory_mib = int(memory_text)
+        except ValueError as exc:
+            raise Stage2Error(f"invalid numeric hardware field on line {line_number}") from exc
+        if index < 0 or memory_mib <= 0:
+            raise Stage2Error("hardware index and memory must be positive-domain values")
+        rows.append(
+            {
+                "index": index,
+                "name": _require_string(name, "hardware name"),
+                "uuid": _require_string(uuid, "hardware uuid"),
+                "pci_bus_id": _require_string(pci_bus_id, "hardware PCI bus id"),
+                "memory_mib": memory_mib,
+                "driver": _require_string(driver, "hardware driver"),
+            }
+        )
     if not rows:
         raise Stage2Error("hardware device query contains no devices")
     if len({row["index"] for row in rows}) != len(rows):
         raise Stage2Error("hardware device query contains duplicate indices")
     return rows
+
+
+def _parse_hardware_query(path: Path) -> list[dict[str, Any]]:
+    return _parse_hardware_query_bytes(path.read_bytes())
+
+
+def _verify_payload_hash(value: dict[str, Any], label: str) -> None:
+    observed = _require_sha256(value.get("payload_sha256"), f"{label}.payload_sha256")
+    expected = sha256_object(
+        {key: child for key, child in value.items() if key != "payload_sha256"}
+    )
+    if observed != expected:
+        raise Stage2Error(f"{label} payload hash mismatch")
+
+
+def _validate_platform_record(value: Any, selected: list[int]) -> dict[str, Any]:
+    record = _require_mapping(value, "hardware platform record")
+    _require_exact_keys(record, PLATFORM_RECORD_FIELDS, "hardware platform record")
+    if record.get("schema") != SCHEMA_HARDWARE_PLATFORM:
+        raise Stage2Error("unexpected hardware platform schema")
+    if record.get("system") not in {"Linux", "Windows"}:
+        raise Stage2Error("hardware platform must be exactly Linux or Windows")
+    if record.get("selected_device_indices") != selected:
+        raise Stage2Error("hardware platform selected indices mismatch")
+    _require_sha256(
+        record.get("nvidia_smi_executable_sha256"),
+        "hardware platform nvidia_smi_executable_sha256",
+    )
+    _verify_payload_hash(record, "hardware platform record")
+    return record
+
+
+def _validate_topology_evidence(
+    value: Any,
+    *,
+    platform_record: dict[str, Any],
+    query_entry: dict[str, Any],
+    selected: list[int],
+    selected_rows: list[dict[str, Any]],
+) -> dict[str, Any]:
+    record = _require_mapping(value, "hardware topology evidence")
+    if record.get("schema") != SCHEMA_TOPOLOGY_EVIDENCE:
+        raise Stage2Error("unexpected topology-evidence schema")
+    system = platform_record["system"]
+    if record.get("platform") != system:
+        raise Stage2Error("topology-evidence platform does not match platform record")
+    if record.get("device_query_sha256") != query_entry["sha256"]:
+        raise Stage2Error("topology-evidence device-query digest mismatch")
+    _require_bool(
+        record.get("inter_device_topology_claimed"),
+        "topology-evidence inter_device_topology_claimed",
+    )
+    if _require_bool(
+        record.get("implicit_pooling_claimed"),
+        "topology-evidence implicit_pooling_claimed",
+    ):
+        raise Stage2Error("topology evidence may not claim implicit pooling")
+    _verify_payload_hash(record, "hardware topology evidence")
+
+    if system == "Windows":
+        _require_exact_keys(record, WINDOWS_TOPOLOGY_FIELDS, "Windows topology evidence")
+        if len(selected) != 1:
+            raise Stage2Error("Windows topology sentinel requires exactly one selected device")
+        if record.get("state") != "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE":
+            raise Stage2Error("unexpected Windows topology-evidence state")
+        if record.get("method") != "PLATFORM_LIMITATION_SINGLE_DEVICE":
+            raise Stage2Error("unexpected Windows topology-evidence method")
+        if record.get("selected_device_index") != selected[0]:
+            raise Stage2Error("Windows topology-evidence selected index mismatch")
+        if record.get("selected_device_query_row_sha256") != sha256_object(selected_rows[0]):
+            raise Stage2Error("Windows selected device-query row digest mismatch")
+        if record["inter_device_topology_claimed"]:
+            raise Stage2Error("Windows single-device sentinel cannot claim inter-device topology")
+        return record
+
+    if system == "Linux":
+        _require_exact_keys(record, LINUX_TOPOLOGY_FIELDS, "Linux topology evidence")
+        if record.get("state") != "OBSERVED":
+            raise Stage2Error("unexpected Linux topology-evidence state")
+        if record.get("method") != "NVIDIA_SMI_TOPO_MATRIX":
+            raise Stage2Error("unexpected Linux topology-evidence method")
+        if record.get("selected_device_indices") != selected:
+            raise Stage2Error("Linux topology-evidence selected indices mismatch")
+        if record.get("selected_device_query_rows_sha256") != sha256_object(selected_rows):
+            raise Stage2Error("Linux selected device-query rows digest mismatch")
+        encoded = _require_string(record.get("matrix_stdout_base64"), "Linux matrix stdout")
+        try:
+            matrix = base64.b64decode(encoded, validate=True)
+        except (ValueError, TypeError) as exc:
+            raise Stage2Error("Linux matrix stdout is not valid base64") from exc
+        if not matrix.strip():
+            raise Stage2Error("Linux topology matrix stdout must be nonempty")
+        if record.get("matrix_stdout_sha256") != sha256_bytes(matrix):
+            raise Stage2Error("Linux topology matrix stdout digest mismatch")
+        if record["inter_device_topology_claimed"] != (len(selected) > 1):
+            raise Stage2Error("Linux inter-device topology claim does not match selected scope")
+        return record
+
+    raise Stage2Error("unknown hardware platform")
 
 
 def _hardware_manifest(hardware: Any) -> tuple[dict[str, Any], Path]:
@@ -663,7 +819,9 @@ def _hardware_manifest(hardware: Any) -> tuple[dict[str, Any], Path]:
     root = Path(_require_string(hardware["evidence_root"], "hardware.evidence_root")).expanduser().resolve()
     platform_name = _relative_name(hardware["platform_path"], "hardware.platform_path")
     query_name = _relative_name(hardware["device_query_path"], "hardware.device_query_path")
-    topology_name = _relative_name(hardware["topology_path"], "hardware.topology_path")
+    topology_name = _relative_name(
+        hardware["topology_evidence_path"], "hardware.topology_evidence_path"
+    )
     platform_entry = _file_entry(root, platform_name, "hardware platform evidence")
     query_entry = _file_entry(root, query_name, "hardware device query")
     topology_entry = _file_entry(root, topology_name, "hardware topology evidence")
@@ -678,12 +836,26 @@ def _hardware_manifest(hardware: Any) -> tuple[dict[str, Any], Path]:
     by_index = {row["index"]: row for row in query_rows}
     if any(index not in by_index for index in selected):
         raise Stage2Error("selected hardware index is absent from the captured query")
+    if set(by_index) != set(selected) or len(query_rows) != len(selected):
+        raise Stage2Error("selected hardware indices do not exactly match the captured query")
     selected_rows = [by_index[index] for index in selected]
+    platform_record = _validate_platform_record(
+        strict_json_load(_resolve_regular_file(root, platform_name, "hardware platform evidence")),
+        selected,
+    )
+    topology_evidence = _validate_topology_evidence(
+        strict_json_load(_resolve_regular_file(root, topology_name, "hardware topology evidence")),
+        platform_record=platform_record,
+        query_entry=query_entry,
+        selected=selected,
+        selected_rows=selected_rows,
+    )
     evidence_inventory = _inventory_tree(root, "hardware evidence")
     manifest = {
         "platform": platform_entry,
         "device_query": query_entry,
-        "topology": topology_entry,
+        "topology_evidence_file": topology_entry,
+        "topology_evidence": topology_evidence,
         "evidence_inventory": evidence_inventory,
         "selected_device_indices": selected,
         "device_count": len(selected_rows),
@@ -1003,6 +1175,20 @@ def _bind_one(control: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any], 
         "checkpoint_repository": expected["checkpoint_repository"],
         "checkpoint_revision_sha1": expected["checkpoint_revision_sha1"],
         "component_digests": copy.deepcopy(private_control["component_digests"]),
+        "hardware_topology": {
+            "schema": SCHEMA_TOPOLOGY_EVIDENCE,
+            "state": hardware["topology_evidence"]["state"],
+            "platform": hardware["topology_evidence"]["platform"],
+            "method": hardware["topology_evidence"]["method"],
+            "selected_device_count": hardware["device_count"],
+            "inter_device_topology_claimed": hardware["topology_evidence"][
+                "inter_device_topology_claimed"
+            ],
+            "implicit_pooling_claimed": hardware["topology_evidence"][
+                "implicit_pooling_claimed"
+            ],
+            "topology_evidence_sha256": hardware["topology_evidence_file"]["sha256"],
+        },
         "local_artifact_set_sha256": private_control["local_artifact_set_sha256"],
         "private_manifest_sha256": private_control["private_manifest_sha256"],
         "private_locator_sha256": locator_sha256,
@@ -1174,25 +1360,71 @@ def probe_hardware(
     if not executable:
         raise Stage2Error("nvidia-smi was not found; pass --nvidia-smi explicitly")
     indices = list(device_indices or [])
-    if len(set(indices)) != len(indices) or any(index < 0 for index in indices):
+    if not indices:
+        raise Stage2Error("at least one selected device index is required")
+    if any(
+        isinstance(index, bool) or not isinstance(index, int) or index < 0 for index in indices
+    ) or len(set(indices)) != len(indices):
         raise Stage2Error("device indices must be unique nonnegative integers")
-    selector = [] if not indices else ["-i", ",".join(str(index) for index in indices)]
+    selector = ["-i", ",".join(str(index) for index in indices)]
     query_command = [
         executable,
         *selector,
         "--query-gpu=index,name,uuid,pci.bus_id,memory.total,driver_version",
         "--format=csv,noheader,nounits",
     ]
-    topology_command = [executable, "topo", "-m"]
     query = subprocess.run(query_command, capture_output=True, check=False)
-    topology = subprocess.run(topology_command, capture_output=True, check=False)
     if query.returncode != 0:
         raise Stage2Error(f"nvidia-smi device query failed with exit {query.returncode}")
-    if topology.returncode != 0:
-        raise Stage2Error(f"nvidia-smi topology query failed with exit {topology.returncode}")
+    query_rows = _parse_hardware_query_bytes(query.stdout)
+    by_index = {row["index"]: row for row in query_rows}
+    if set(by_index) != set(indices) or len(query_rows) != len(indices):
+        raise Stage2Error("selected device indices do not exactly match the device query")
+    selected_rows = [by_index[index] for index in indices]
+    system = platform.system()
+    if system not in {"Linux", "Windows"}:
+        raise Stage2Error(f"unsupported hardware platform: {system!r}")
+    if system == "Windows" and len(indices) != 1:
+        raise Stage2Error(
+            "Windows multi-device binding requires an independently qualified topology source"
+        )
+
+    if system == "Linux":
+        topology_command = [executable, "topo", "-m"]
+        topology = subprocess.run(topology_command, capture_output=True, check=False)
+        if topology.returncode != 0:
+            raise Stage2Error(f"nvidia-smi topology query failed with exit {topology.returncode}")
+        if not topology.stdout.strip():
+            raise Stage2Error("nvidia-smi topology query returned empty stdout")
+        topology_record: dict[str, Any] = {
+            "schema": SCHEMA_TOPOLOGY_EVIDENCE,
+            "state": "OBSERVED",
+            "platform": "Linux",
+            "method": "NVIDIA_SMI_TOPO_MATRIX",
+            "selected_device_indices": indices,
+            "selected_device_query_rows_sha256": sha256_object(selected_rows),
+            "device_query_sha256": sha256_bytes(query.stdout),
+            "matrix_stdout_base64": base64.b64encode(topology.stdout).decode("ascii"),
+            "matrix_stdout_sha256": sha256_bytes(topology.stdout),
+            "inter_device_topology_claimed": len(indices) > 1,
+            "implicit_pooling_claimed": False,
+        }
+    else:
+        topology_record = {
+            "schema": SCHEMA_TOPOLOGY_EVIDENCE,
+            "state": "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE",
+            "platform": "Windows",
+            "method": "PLATFORM_LIMITATION_SINGLE_DEVICE",
+            "selected_device_index": indices[0],
+            "selected_device_query_row_sha256": sha256_object(selected_rows[0]),
+            "device_query_sha256": sha256_bytes(query.stdout),
+            "inter_device_topology_claimed": False,
+            "implicit_pooling_claimed": False,
+        }
+    topology_record["payload_sha256"] = sha256_object(topology_record)
     platform_record = {
-        "schema": SCHEMA_HARDWARE_PROBE,
-        "system": platform.system(),
+        "schema": SCHEMA_HARDWARE_PLATFORM,
+        "system": system,
         "release": platform.release(),
         "version": platform.version(),
         "machine": platform.machine(),
@@ -1202,14 +1434,15 @@ def probe_hardware(
         "selected_device_indices": indices,
         "nvidia_smi_executable_sha256": sha256_file(Path(executable).resolve()),
     }
+    platform_record["payload_sha256"] = sha256_object(platform_record)
     write_json_atomic(output_dir / "platform.json", platform_record)
     (output_dir / "nvidia-query.csv").write_bytes(query.stdout)
-    (output_dir / "nvidia-topology.txt").write_bytes(topology.stdout)
+    write_json_atomic(output_dir / "nvidia-topology.json", topology_record)
     receipt = {
         "schema": SCHEMA_HARDWARE_PROBE,
         "platform_sha256": sha256_file(output_dir / "platform.json"),
         "device_query_sha256": sha256_file(output_dir / "nvidia-query.csv"),
-        "topology_sha256": sha256_file(output_dir / "nvidia-topology.txt"),
+        "topology_evidence_sha256": sha256_file(output_dir / "nvidia-topology.json"),
         "selected_device_indices": indices,
     }
     receipt["payload_sha256"] = sha256_object(receipt)
@@ -1259,7 +1492,7 @@ def binding_template() -> dict[str, Any]:
                     "evidence_root": "C:/REPLACE/hardware",
                     "platform_path": "platform.json",
                     "device_query_path": "nvidia-query.csv",
-                    "topology_path": "nvidia-topology.txt",
+                    "topology_evidence_path": "nvidia-topology.json",
                     "selected_device_indices": [0],
                 },
                 "effort_mapping": {

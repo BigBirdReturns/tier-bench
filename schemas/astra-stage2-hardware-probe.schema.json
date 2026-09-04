@@ -1,0 +1,28 @@
+{
+  "$id": "tier-bench/astra-stage2-hardware-probe.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "device_query_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "payload_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "platform_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
+    "schema": {"const": "tier-bench/astra-stage2-hardware-probe@2"},
+    "selected_device_indices": {
+      "items": {"minimum": 0, "type": "integer"},
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "topology_evidence_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"}
+  },
+  "required": [
+    "schema",
+    "platform_sha256",
+    "device_query_sha256",
+    "topology_evidence_sha256",
+    "selected_device_indices",
+    "payload_sha256"
+  ],
+  "title": "Astra Stage 2 hardware probe receipt",
+  "type": "object"
+}

@@ -3,6 +3,8 @@ from __future__ import annotations
 import copy
 import json
 import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -16,6 +18,9 @@ from astra_stage2.control_identity import (
     LAW_COMMIT_SHA1,
     LAW_TREE_SHA1,
     PUBLIC_CONTROLS,
+    SCHEMA_HARDWARE_PLATFORM,
+    SCHEMA_HARDWARE_PROBE,
+    SCHEMA_TOPOLOGY_EVIDENCE,
     SCAFFOLD_HEAD_SHA1,
     SCAFFOLD_TREE_SHA1,
     STAGE1_JOIN_HEAD_SHA1,
@@ -23,6 +28,7 @@ from astra_stage2.control_identity import (
     bind_control_set,
     binding_template,
     inventory_binding_config,
+    probe_hardware,
     validate_binding_config,
     verify_control_set,
 )
@@ -30,7 +36,9 @@ from astra_stage2.control_identity import (
 
 class ControlIdentityTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.temp = tempfile.TemporaryDirectory(prefix="astra-control-id-test-")
+        self.temp = tempfile.TemporaryDirectory(
+            prefix=".astra-control-id-test-", dir=Path.cwd()
+        )
         self.root = Path(self.temp.name)
         self.repo = self.root / "repo"
         self.repo.mkdir()
@@ -65,16 +73,50 @@ class ControlIdentityTests(unittest.TestCase):
             )
             hardware_root = self.root / "hardware" / control["role"]
             hardware_root.mkdir(parents=True)
+            query_path = hardware_root / "nvidia-query.csv"
+            query_path.write_text(
+                f"{index}, Synthetic GPU {index}, GPU-private-{index}, "
+                f"0000:0{index}:00.0, 24576, 999.0\n",
+                encoding="utf-8",
+            )
+            platform_record = {
+                "schema": SCHEMA_HARDWARE_PLATFORM,
+                "system": "Windows",
+                "release": "Synthetic",
+                "version": "Synthetic",
+                "machine": "AMD64",
+                "processor": "Synthetic",
+                "python_implementation": "CPython",
+                "python_version": "3.13.0",
+                "selected_device_indices": [index],
+                "nvidia_smi_executable_sha256": "a" * 64,
+            }
+            platform_record["payload_sha256"] = sha256_object(platform_record)
             (hardware_root / "platform.json").write_text(
-                json.dumps({"system": "Synthetic", "role": control["role"]}),
-                encoding="utf-8",
+                json.dumps(platform_record), encoding="utf-8"
             )
-            (hardware_root / "nvidia-query.csv").write_text(
-                f"{index}, Synthetic GPU {index}, GPU-private-{index}, 0000:0{index}:00.0, 24576, 999.0\n",
-                encoding="utf-8",
-            )
-            (hardware_root / "nvidia-topology.txt").write_text(
-                f"GPU{index} X\n", encoding="utf-8"
+            selected_row = {
+                "index": index,
+                "name": f"Synthetic GPU {index}",
+                "uuid": f"GPU-private-{index}",
+                "pci_bus_id": f"0000:0{index}:00.0",
+                "memory_mib": 24576,
+                "driver": "999.0",
+            }
+            topology_record = {
+                "schema": SCHEMA_TOPOLOGY_EVIDENCE,
+                "state": "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE",
+                "platform": "Windows",
+                "method": "PLATFORM_LIMITATION_SINGLE_DEVICE",
+                "selected_device_index": index,
+                "selected_device_query_row_sha256": sha256_object(selected_row),
+                "device_query_sha256": sha256_bytes(query_path.read_bytes()),
+                "inter_device_topology_claimed": False,
+                "implicit_pooling_claimed": False,
+            }
+            topology_record["payload_sha256"] = sha256_object(topology_record)
+            (hardware_root / "nvidia-topology.json").write_text(
+                json.dumps(topology_record), encoding="utf-8"
             )
             control["source_root"] = str(self.root / "source" / control["role"])
             Path(control["source_root"]).mkdir(parents=True)
@@ -97,15 +139,21 @@ class ControlIdentityTests(unittest.TestCase):
             (runtime_root / "runtime.json").write_text(
                 json.dumps({"mode": "deterministic"}), encoding="utf-8"
             )
+            probe_args = []
+            executable_name = "runtime-probe.py"
+            if os.name == "nt":
+                executable_name = Path(sys.executable).name
+                shutil.copy2(sys.executable, runtime_root / executable_name)
+                probe_args = ["runtime-probe.py"]
             control["runtime"] = {
                 "root": str(runtime_root),
                 "name": "SyntheticRuntime",
                 "version": "1.0",
                 "build": "test-build",
-                "executable_path": "runtime-probe.py",
+                "executable_path": executable_name,
                 "configuration_paths": ["runtime.json"],
                 "configuration": {"mode": "deterministic"},
-                "probe_args": [],
+                "probe_args": probe_args,
                 "required_probe_substrings": ["SyntheticRuntime", "1.0", "test-build"],
                 "probe_timeout_seconds": 30,
             }
@@ -113,7 +161,7 @@ class ControlIdentityTests(unittest.TestCase):
                 "evidence_root": str(hardware_root),
                 "platform_path": "platform.json",
                 "device_query_path": "nvidia-query.csv",
-                "topology_path": "nvidia-topology.txt",
+                "topology_evidence_path": "nvidia-topology.json",
                 "selected_device_indices": [index],
             }
             control["effort_mapping"] = {
@@ -230,7 +278,8 @@ class ControlIdentityTests(unittest.TestCase):
         self.assertNotIn(b"PRIVATE_TRANSCRIPT_CANARY", public_bytes)
         self.assertNotIn(b"GPU-private", public_bytes)
         private_bytes = b"".join(path.read_bytes() for path in sorted((output / "private").glob("*.json")))
-        self.assertIn(str(self.root).encode(), private_bytes)
+        encoded_private_root = json.dumps(str(self.root))[1:-1].encode()
+        self.assertIn(encoded_private_root, private_bytes)
 
     def test_05_source_coordinate_substitution_refuses(self) -> None:
         bad = copy.deepcopy(self.config)
@@ -371,6 +420,191 @@ class ControlIdentityTests(unittest.TestCase):
         bad["law"]["blob_sha1"] = "0" * 40
         with self.assertRaisesRegex(Stage2Error, "law blob"):
             validate_binding_config(bad)
+
+    @staticmethod
+    def completed(stdout: bytes = b"", returncode: int = 0) -> subprocess.CompletedProcess:
+        return subprocess.CompletedProcess([], returncode, stdout=stdout, stderr=b"")
+
+    def test_21_linux_success_retains_exact_topology_bytes(self) -> None:
+        query = b"0, Linux GPU, GPU-linux, 0000:01:00.0, 24576, 999.0\n"
+        matrix = b"\tGPU0\nGPU0\tX\n"
+        out = self.root / "probe-linux"
+        with patch("astra_stage2.control_identity.platform.system", return_value="Linux"), patch(
+            "astra_stage2.control_identity.subprocess.run",
+            side_effect=[self.completed(query), self.completed(matrix)],
+        ) as run:
+            receipt = probe_hardware(
+                output_dir=out, nvidia_smi=sys.executable, device_indices=[0]
+            )
+        self.assertEqual(run.call_args_list[1].args[0], [sys.executable, "topo", "-m"])
+        topology = strict_json_load(out / "nvidia-topology.json")
+        self.assertEqual(topology["method"], "NVIDIA_SMI_TOPO_MATRIX")
+        self.assertEqual(topology["matrix_stdout_sha256"], sha256_bytes(matrix))
+        self.assertEqual(receipt["schema"], SCHEMA_HARDWARE_PROBE)
+
+    def test_22_linux_nonzero_topology_refuses(self) -> None:
+        query = b"0, Linux GPU, GPU-linux, 0000:01:00.0, 24576, 999.0\n"
+        with patch("astra_stage2.control_identity.platform.system", return_value="Linux"), patch(
+            "astra_stage2.control_identity.subprocess.run",
+            side_effect=[self.completed(query), self.completed(returncode=9)],
+        ):
+            with self.assertRaisesRegex(Stage2Error, "topology query failed with exit 9"):
+                probe_hardware(
+                    output_dir=self.root / "probe-linux-nonzero",
+                    nvidia_smi=sys.executable,
+                    device_indices=[0],
+                )
+
+    def test_23_linux_empty_topology_refuses(self) -> None:
+        query = b"0, Linux GPU, GPU-linux, 0000:01:00.0, 24576, 999.0\n"
+        with patch("astra_stage2.control_identity.platform.system", return_value="Linux"), patch(
+            "astra_stage2.control_identity.subprocess.run",
+            side_effect=[self.completed(query), self.completed(b" \r\n")],
+        ):
+            with self.assertRaisesRegex(Stage2Error, "empty stdout"):
+                probe_hardware(
+                    output_dir=self.root / "probe-linux-empty",
+                    nvidia_smi=sys.executable,
+                    device_indices=[0],
+                )
+
+    def test_24_windows_single_device_never_invokes_topology_command(self) -> None:
+        query = b"3, Windows GPU, GPU-win, 0000:03:00.0, 24576, 999.0\r\n"
+        out = self.root / "probe-windows"
+        with patch("astra_stage2.control_identity.platform.system", return_value="Windows"), patch(
+            "astra_stage2.control_identity.subprocess.run",
+            return_value=self.completed(query),
+        ) as run:
+            probe_hardware(output_dir=out, nvidia_smi=sys.executable, device_indices=[3])
+        self.assertEqual(run.call_count, 1)
+        self.assertNotIn("topo", run.call_args.args[0])
+        topology = strict_json_load(out / "nvidia-topology.json")
+        self.assertEqual(topology["state"], "NOT_APPLICABLE_SINGLE_SELECTED_DEVICE")
+        self.assertEqual(topology["selected_device_index"], 3)
+        self.assertFalse(topology["inter_device_topology_claimed"])
+        self.assertFalse(topology["implicit_pooling_claimed"])
+
+    def test_25_windows_multi_device_refuses_without_topology_source(self) -> None:
+        query = (
+            b"0, GPU 0, GPU-win-0, 0000:01:00.0, 24576, 999.0\r\n"
+            b"1, GPU 1, GPU-win-1, 0000:02:00.0, 24576, 999.0\r\n"
+        )
+        with patch("astra_stage2.control_identity.platform.system", return_value="Windows"), patch(
+            "astra_stage2.control_identity.subprocess.run",
+            return_value=self.completed(query),
+        ) as run:
+            with self.assertRaisesRegex(Stage2Error, "independently qualified topology source"):
+                probe_hardware(
+                    output_dir=self.root / "probe-windows-multi",
+                    nvidia_smi=sys.executable,
+                    device_indices=[0, 1],
+                )
+        self.assertEqual(run.call_count, 1)
+
+    def test_26_platform_substitution_refuses(self) -> None:
+        bad = copy.deepcopy(self.config)
+        root = Path(bad["controls"][0]["hardware"]["evidence_root"])
+        topology = strict_json_load(root / "nvidia-topology.json")
+        topology["platform"] = "Linux"
+        topology["payload_sha256"] = sha256_object(
+            {key: value for key, value in topology.items() if key != "payload_sha256"}
+        )
+        (root / "nvidia-topology.json").write_text(json.dumps(topology), encoding="utf-8")
+        with self.assertRaisesRegex(Stage2Error, "platform does not match"):
+            self.bind(bad, name="platform-substitution")
+
+    def test_27_selected_index_mismatch_refuses(self) -> None:
+        query = b"1, Wrong GPU, GPU-wrong, 0000:02:00.0, 24576, 999.0\n"
+        with patch("astra_stage2.control_identity.platform.system", return_value="Windows"), patch(
+            "astra_stage2.control_identity.subprocess.run",
+            return_value=self.completed(query),
+        ):
+            with self.assertRaisesRegex(Stage2Error, "do not exactly match"):
+                probe_hardware(
+                    output_dir=self.root / "probe-index-mismatch",
+                    nvidia_smi=sys.executable,
+                    device_indices=[0],
+                )
+
+    def test_28_device_query_digest_drift_refuses(self) -> None:
+        bad = copy.deepcopy(self.config)
+        root = Path(bad["controls"][0]["hardware"]["evidence_root"])
+        with (root / "nvidia-query.csv").open("ab") as handle:
+            handle.write(b"\n")
+        with self.assertRaisesRegex(Stage2Error, "device-query digest mismatch"):
+            self.bind(bad, name="query-digest-drift")
+
+    def test_29_topology_record_tamper_refuses(self) -> None:
+        bad = copy.deepcopy(self.config)
+        root = Path(bad["controls"][0]["hardware"]["evidence_root"])
+        topology = strict_json_load(root / "nvidia-topology.json")
+        topology["state"] = "OBSERVED"
+        (root / "nvidia-topology.json").write_text(json.dumps(topology), encoding="utf-8")
+        with self.assertRaisesRegex(Stage2Error, "payload hash mismatch"):
+            self.bind(bad, name="topology-tamper")
+
+    def test_30_windows_inter_device_authority_widening_refuses(self) -> None:
+        bad = copy.deepcopy(self.config)
+        root = Path(bad["controls"][0]["hardware"]["evidence_root"])
+        topology = strict_json_load(root / "nvidia-topology.json")
+        topology["inter_device_topology_claimed"] = True
+        topology["payload_sha256"] = sha256_object(
+            {key: value for key, value in topology.items() if key != "payload_sha256"}
+        )
+        (root / "nvidia-topology.json").write_text(json.dumps(topology), encoding="utf-8")
+        with self.assertRaisesRegex(Stage2Error, "cannot claim inter-device topology"):
+            self.bind(bad, name="topology-authority")
+
+    def test_31_implicit_pooling_authority_widening_refuses(self) -> None:
+        bad = copy.deepcopy(self.config)
+        root = Path(bad["controls"][0]["hardware"]["evidence_root"])
+        topology = strict_json_load(root / "nvidia-topology.json")
+        topology["implicit_pooling_claimed"] = True
+        topology["payload_sha256"] = sha256_object(
+            {key: value for key, value in topology.items() if key != "payload_sha256"}
+        )
+        (root / "nvidia-topology.json").write_text(json.dumps(topology), encoding="utf-8")
+        with self.assertRaisesRegex(Stage2Error, "may not claim implicit pooling"):
+            self.bind(bad, name="pooling-authority")
+
+    def test_32_duplicate_device_query_index_refuses(self) -> None:
+        query = (
+            b"0, GPU 0, GPU-a, 0000:01:00.0, 24576, 999.0\n"
+            b"0, GPU 0 duplicate, GPU-b, 0000:02:00.0, 24576, 999.0\n"
+        )
+        with patch(
+            "astra_stage2.control_identity.subprocess.run", return_value=self.completed(query)
+        ):
+            with self.assertRaisesRegex(Stage2Error, "duplicate indices"):
+                probe_hardware(
+                    output_dir=self.root / "probe-duplicate",
+                    nvidia_smi=sys.executable,
+                    device_indices=[0],
+                )
+
+    def test_33_unknown_platform_refuses_after_mandatory_query(self) -> None:
+        query = b"0, GPU 0, GPU-a, 0000:01:00.0, 24576, 999.0\n"
+        with patch("astra_stage2.control_identity.platform.system", return_value="Darwin"), patch(
+            "astra_stage2.control_identity.subprocess.run",
+            return_value=self.completed(query),
+        ) as run:
+            with self.assertRaisesRegex(Stage2Error, "unsupported hardware platform"):
+                probe_hardware(
+                    output_dir=self.root / "probe-platform",
+                    nvidia_smi=sys.executable,
+                    device_indices=[0],
+                )
+        self.assertEqual(run.call_count, 1)
+
+    def test_34_missing_selected_device_refuses_before_command(self) -> None:
+        with patch("astra_stage2.control_identity.subprocess.run") as run:
+            with self.assertRaisesRegex(Stage2Error, "at least one selected"):
+                probe_hardware(
+                    output_dir=self.root / "probe-no-selection",
+                    nvidia_smi=sys.executable,
+                    device_indices=[],
+                )
+        run.assert_not_called()
 
 
 if __name__ == "__main__":
