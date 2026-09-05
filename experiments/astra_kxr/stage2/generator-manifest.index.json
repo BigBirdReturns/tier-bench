@@ -1,19 +1,19 @@
 {
   "case_count": 108,
-  "cases_sha256": "adcd8ea6a8a622445f4ac6db6933e50097fa5b5187088f4ce38e1e1d2f66f170",
+  "cases_sha256": "4182f84393b0eb9d3e3b9ad988aeeb1331c673bff7d06974ee87362d2cb8c4f2",
   "families": [
     "pointer_chase",
     "coupled_ring",
     "branch_reconcile"
   ],
-  "generator_manifest_payload_sha256": "2050de80cb4688b182cf9e006a97959da422dce24138c6451774f03320517328",
-  "generator_version": "astra-stage2-generator-v1",
+  "generator_manifest_payload_sha256": "a79e538a73d9e79a034c03fea21f91fa1194e10ce3b551167d5723330679451c",
+  "generator_version": "astra-stage2-generator-v2",
   "k_levels": [
     1,
     8,
     32
   ],
-  "payload_sha256": "1f9bacbbcfe57f99faf419808f7555b15796bdde324f8fadd3dee90ad4d4130e",
+  "payload_sha256": "dc7101b41cfcac2637474f7c5e8e90677da4789f844caab23c313a379d552bc7",
   "r_levels": [
     1,
     4,

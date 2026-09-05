@@ -6,6 +6,8 @@ This directory turns the Stage 1 two-stage-freeze rule into a provider-free, fai
 
 The generator creates three fixed-envelope task families across `K ∈ {1,8,32}`, `R ∈ {1,4,16}`, and four deterministic replicates. That produces 108 content-addressed cases. Every case is assigned to exactly three calibration controls at two effort levels, producing a complete 648-observation plan.
 
+The pre-observation v2 execution contract preserves the v1 seed domain but freezes an answer-hidden 2,982-byte ASCII request for every case, a model-computable 16-hex checksum, request SHA-256/byte-count bindings, and deterministic nine-cell blocked order. No empirical observation predates this correction.
+
 The controls are role-bound rather than name-only:
 
 ```text

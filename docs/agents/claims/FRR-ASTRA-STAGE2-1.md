@@ -4,10 +4,12 @@
 id: FRR-ASTRA-STAGE2-1
 owner: sol
 lane: driver
-state: LAW_RELEASE_CANDIDATE
-claim_id: FRR-ASTRA-STAGE2-2-LAW
+state: EXECUTION_CONTRACT_AMENDMENT_CANDIDATE
+claim_id: FRR-ASTRA-STAGE2-3-EXECUTION-CONTRACT
 claim_comment: 5516294861
 branch: sol/astra-stage2-law-20260902
+law_predecessor_blob: 77abe4e177fc61e4f52f56ea64494b113f9662fc
+execution_contract_parent_head: 5c4d5b42b412232b4764cd5ebf1adc0c634e3126
 law_parent_head: 60bca963d63edca267106bc5c7725c2cc1df8dd7
 law_parent_tree: 1ffaf5b1edc7a1a6ae63ffd8ecd2b43b1a87ff8a
 qualified_scaffold_head: 9babad4631ef517485c56ea4906aab123e30fad7
@@ -102,25 +104,29 @@ No local empirical atlas receipt has been supplied or admitted.
 
 ## 3. Frozen generator and reconstruction identity
 
-The generator is frozen to the admitted, exact-head scaffold at
+The original seed domain remains frozen to the admitted scaffold at
 `9babad4631ef517485c56ea4906aab123e30fad7`, tree
-`720cbf3f26f2e251613acedc52cff08ef33892dc`. The implementation identities are:
+`720cbf3f26f2e251613acedc52cff08ef33892dc`. Before any empirical observation,
+the executable request/output contract advances to v2 while reusing that v1
+seed domain unchanged. The amended implementation identities are:
 
 | component | Git blob |
 |---|---|
-| `astra_stage2/generator.py` | `45f23fe0c2f7062dccfa9de8b267036a59f53726` |
+| `astra_stage2/generator.py` | `6b698cf10ed094f54e9406f22237a3daeb0d80ff` |
 | `astra_stage2/canonical.py` | `96f1e61bfe01daba44507a66d5ed231f4c45b9fb` |
-| `astra_stage2/contracts.py` | `ba7516b293d7c16230f8170a9e7932c65892876c` |
+| `astra_stage2/contracts.py` | `c7e00719bb920706b4aab97204f1c2bd99dec470` |
 | `astra_stage2/calibration.py` | `fcbdb8bcf3199bde33dea9342c3feff79f464d3d` |
-| `experiments/astra_kxr/stage2/generator-manifest.index.json` | `a7b79543c1c03d43aeaa53471d4f865a809aa4fd` |
-| `experiments/astra_kxr/stage2/calibration-plan.fixture.index.json` | `782f3cb888eb99626575c2c7d82e793fe7c6b21f` |
+| `experiments/astra_kxr/stage2/generator-manifest.index.json` | `2b57698c36f38a0553818596d6f4f457d1f49de1` |
+| `experiments/astra_kxr/stage2/calibration-plan.fixture.index.json` | `cb2bdaf65c087f1b526deed4f6e38ccdfa4021ac` |
+| `docs/agents/claims/FRR-ASTRA-STAGE2-EXECUTION-CONTRACT-1.md` | `c91592464db9fe86a591771beecb36b0ecf28af2` |
 
 The frozen generator coordinate is:
 
 ```text
-schema                    tier-bench/astra-stage2-generator-manifest@1
-generator_version         astra-stage2-generator-v1
-payload_sha256            2050de80cb4688b182cf9e006a97959da422dce24138c6451774f03320517328
+schema                    tier-bench/astra-stage2-generator-manifest@2
+generator_version         astra-stage2-generator-v2
+seed_domain               astra-stage2-generator-v1
+payload_sha256            a79e538a73d9e79a034c03fea21f91fa1194e10ce3b551167d5723330679451c
 families                  pointer_chase, coupled_ring, branch_reconcile
 K                         1, 8, 32
 R                         1, 4, 16
@@ -128,14 +134,20 @@ effort                    low, high
 replicates                0, 1, 2, 3
 lane_count                32
 table_size                16
+request_bytes             2982 for every case
+request_encoding          ASCII, answer hidden
+response                  exactly 16 lowercase hexadecimal characters
+execution blocks          72 blocks × 9 K/R cells
 cases                     108
 control roles             3
 planned observations      648
 feature samples           36
 ```
 
-The verifier must regenerate every task and expected checksum from the frozen
-implementation and compare the complete 108-case manifest. It must reconstruct
+The verifier must regenerate every task, answer-hidden request, request SHA-256
+and byte count, and expected checksum from the frozen implementation and compare
+the complete 108-case manifest. The expected checksum is the documented
+model-computable 16-nibble reduction, not a cryptographic hash. It must reconstruct
 every observation identifier from the frozen case, control, effort,
 generator-manifest, and control-manifest coordinates. Derivation and result
 validation require the complete generator, control, plan, observation, and

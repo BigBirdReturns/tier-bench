@@ -11,6 +11,7 @@ from typing import Any, Iterable
 
 from .canonical import Stage2Error, sha256_object, without_field
 from .generator import (
+    CHECKSUM_HEX_LENGTH,
     CONTROL_ROLES,
     EFFORTS,
     EXPECTED_CASE_COUNT,
@@ -20,6 +21,9 @@ from .generator import (
     K_LEVELS,
     R_LEVELS,
     REPLICATES,
+    SCHEMA_GENERATOR_MANIFEST,
+    SCHEMA_OBSERVATION,
+    SCHEMA_PLAN,
     build_calibration_plan,
     build_generator_manifest,
     empirical_control_template,
@@ -86,6 +90,8 @@ GENERATOR_CASE_FIELDS = frozenset(
         "task_sha256",
         "task_bytes",
         "expected_checksum",
+        "request_sha256",
+        "request_bytes",
     }
 )
 
@@ -141,48 +147,26 @@ PLAN_FIELDS = frozenset(
 
 PLAN_OBSERVATION_FIELDS = frozenset(
     {
-        "observation_id",
-        "case_id",
-        "family",
-        "k",
-        "r",
-        "replicate",
-        "task_sha256",
-        "expected_checksum",
-        "control_id",
-        "control_class",
-        "control_identity_sha256",
-        "effort",
+        "observation_id", "case_id", "family", "k", "r", "replicate",
+        "task_sha256", "expected_checksum", "request_sha256", "request_bytes",
+        "control_id", "control_class", "control_identity_sha256", "effort",
+        "block_id", "order_index",
     }
 )
 
 OBSERVATION_FIELDS = frozenset(
     {
-        "accepted",
-        "api_contract_sha256",
-        "cached_input_tokens",
-        "case_id",
-        "control_class",
-        "control_id",
-        "control_identity_sha256",
-        "effort",
-        "evidence_class",
-        "expected_checksum",
-        "family",
-        "input_tokens",
-        "k",
-        "latency_ms",
-        "observation_id",
-        "observed_checksum",
-        "output_tokens",
-        "provider_error",
-        "r",
-        "reasoning_tokens",
-        "record_sha256",
-        "replicate",
-        "route_identity_sha256",
-        "schema",
-        "task_sha256",
+        "accepted", "api_contract_sha256", "backend_fingerprint_sha256",
+        "block_id", "cached_input_tokens", "case_id", "control_class",
+        "control_id", "control_identity_sha256", "effort", "evidence_class",
+        "expected_checksum", "family", "final_token_ns", "first_event_ns",
+        "first_response_header_ns", "first_visible_token_ns", "input_tokens",
+        "inter_event_times_sha256", "k", "latency_ms", "observation_id",
+        "observed_checksum", "order_index", "output_tokens", "provider_error",
+        "r", "raw_evidence_sha256", "reasoning_tokens", "record_sha256",
+        "replicate", "request_bytes", "request_id_sha256", "request_sha256",
+        "request_start_ns", "response_model_sha256", "route_identity_sha256",
+        "schema", "selected_headers_sha256", "stop_state", "task_sha256",
         "ttft_ms",
     }
 )
@@ -345,7 +329,7 @@ def verify_stage1_blobs(repo_root: Path) -> dict[str, str]:
 def _validate_plan_closed_shape(plan: Any) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     plan = _require_mapping(plan, "calibration plan")
     _require_exact_keys(plan, PLAN_FIELDS, "calibration plan")
-    if plan.get("schema") != "tier-bench/astra-stage2-calibration-plan@1":
+    if plan.get("schema") != SCHEMA_PLAN:
         raise Stage2Error("unexpected calibration-plan schema")
     _require_sha1(plan.get("stage1_join_head"), "stage1_join_head")
     _require_sha256(plan.get("generator_manifest_sha256"), "generator_manifest_sha256")
@@ -365,7 +349,20 @@ def _validate_plan_closed_shape(plan: Any) -> tuple[dict[str, Any], list[dict[st
     for index, raw_row in enumerate(raw_rows):
         row = _require_mapping(raw_row, f"observations[{index}]")
         _require_exact_keys(row, PLAN_OBSERVATION_FIELDS, f"observations[{index}]")
+        _require_sha256(row.get("request_sha256"), f"observations[{index}].request_sha256")
+        _require_int(row.get("request_bytes"), f"observations[{index}].request_bytes", minimum=1)
+        block_id = row.get("block_id")
+        if not isinstance(block_id, str) or not re.fullmatch(r"s2block_[0-9a-f]{16}", block_id):
+            raise Stage2Error("invalid block id")
+        _require_int(row.get("order_index"), f"observations[{index}].order_index", minimum=0)
         rows.append(row)
+    block_orders: dict[str, set[int]] = {}
+    for row in rows:
+        block_orders.setdefault(row["block_id"], set()).add(row["order_index"])
+    if any(order != set(range(9)) for order in block_orders.values()):
+        raise Stage2Error("each blocked replicate must contain exactly order indices 0..8")
+    if len(block_orders) != len(CONTROL_ROLES) * len(EFFORTS) * len(FAMILIES) * len(REPLICATES):
+        raise Stage2Error("blocked replicate denominator mismatch")
     _walk_forbidden(plan)
     _verify_self_hash(plan, "payload_sha256", "calibration plan")
     return plan, rows
@@ -374,7 +371,7 @@ def _validate_plan_closed_shape(plan: Any) -> tuple[dict[str, Any], list[dict[st
 def validate_generator_manifest(manifest: Any) -> dict[str, Any]:
     manifest = _require_mapping(manifest, "generator manifest")
     _require_exact_keys(manifest, GENERATOR_MANIFEST_FIELDS, "generator manifest")
-    if manifest.get("schema") != "tier-bench/astra-stage2-generator-manifest@1":
+    if manifest.get("schema") != SCHEMA_GENERATOR_MANIFEST:
         raise Stage2Error("unexpected generator-manifest schema")
     cases = _require_list(manifest.get("cases"), "cases")
     for index, raw_case in enumerate(cases):
@@ -419,8 +416,10 @@ def validate_generator_manifest(manifest: Any) -> dict[str, Any]:
         _require_sha256(case.get("task_sha256"), f"cases[{index}].task_sha256")
         _require_int(case.get("task_bytes"), f"cases[{index}].task_bytes", minimum=1)
         checksum = case.get("expected_checksum")
-        if not isinstance(checksum, str) or not re.fullmatch(r"[0-9a-f]{16}", checksum):
+        if not isinstance(checksum, str) or not re.fullmatch(rf"[0-9a-f]{{{CHECKSUM_HEX_LENGTH}}}", checksum):
             raise Stage2Error("invalid expected checksum")
+        _require_sha256(case.get("request_sha256"), f"cases[{index}].request_sha256")
+        _require_int(case.get("request_bytes"), f"cases[{index}].request_bytes", minimum=1)
         reconstruct_task(case)
     expected_coordinates = {
         (family, k, r, replicate)
@@ -585,7 +584,7 @@ def validate_plan(
         control = expected_controls.get(row.get("control_id"))
         if case is None or control is None or row.get("effort") not in EFFORTS:
             raise Stage2Error("plan references an unregistered case, control, or effort")
-        for field in ("family", "k", "r", "replicate", "task_sha256", "expected_checksum"):
+        for field in ("family", "k", "r", "replicate", "task_sha256", "expected_checksum", "request_sha256", "request_bytes"):
             if row.get(field) != case.get(field):
                 raise Stage2Error(f"plan case projection mismatch for {field}")
         if row.get("control_class") != control.get("class_label"):
@@ -640,10 +639,13 @@ def validate_observations(
     evidence_classes: set[str] = set()
     route_bindings: dict[tuple[str, str], str] = {}
     contract_bindings: dict[tuple[str, str], str] = {}
+    response_model_bindings: dict[str, str] = {}
+    backend_bindings: dict[str, str] = {}
+    request_ids: set[str] = set()
     for index, row in enumerate(rows):
         _require_exact_keys(row, OBSERVATION_FIELDS, f"observations[{index}]")
         _walk_forbidden(row)
-        if row.get("schema") != "tier-bench/astra-stage2-observation@1":
+        if row.get("schema") != SCHEMA_OBSERVATION:
             raise Stage2Error("unexpected observation schema")
         _verify_self_hash(row, "record_sha256", "observation")
         observation_id = row.get("observation_id")
@@ -662,6 +664,10 @@ def validate_observations(
             "replicate",
             "task_sha256",
             "expected_checksum",
+            "request_sha256",
+            "request_bytes",
+            "block_id",
+            "order_index",
             "control_id",
             "control_class",
             "control_identity_sha256",
@@ -676,6 +682,10 @@ def validate_observations(
         if row.get("provider_error") is not False:
             raise Stage2Error("provider or runtime errors invalidate the calibration cell")
         checksum = row.get("observed_checksum")
+        if not isinstance(checksum, str) or not re.fullmatch(
+            rf"[0-9a-f]{{{CHECKSUM_HEX_LENGTH}}}", checksum
+        ):
+            raise Stage2Error("invalid observed checksum")
         accepted = row.get("accepted")
         reconstructed_acceptance = checksum == expected_row["expected_checksum"]
         if not isinstance(accepted, bool) or accepted != reconstructed_acceptance:
@@ -693,6 +703,26 @@ def validate_observations(
             _require_number(row.get(field), field, minimum=0.0)
         if row["cached_input_tokens"] > row["input_tokens"]:
             raise Stage2Error("cached input tokens exceed input tokens")
+        for field in (
+            "request_sha256", "raw_evidence_sha256", "selected_headers_sha256",
+            "inter_event_times_sha256", "request_id_sha256", "response_model_sha256",
+            "backend_fingerprint_sha256",
+        ):
+            _require_sha256(row.get(field), field)
+        _require_int(row.get("request_bytes"), "request_bytes", minimum=1)
+        for field in (
+            "request_start_ns", "first_response_header_ns", "first_event_ns",
+            "first_visible_token_ns", "final_token_ns",
+        ):
+            _require_int(row.get(field), field, minimum=0)
+        ordered_times = [
+            row["request_start_ns"], row["first_response_header_ns"], row["first_event_ns"],
+            row["first_visible_token_ns"], row["final_token_ns"],
+        ]
+        if ordered_times != sorted(ordered_times):
+            raise Stage2Error("observation event times are not monotonic")
+        if not isinstance(row.get("stop_state"), str) or not row["stop_state"]:
+            raise Stage2Error("stop_state must be a nonempty string")
         route = _require_sha256(row.get("route_identity_sha256"), "route_identity_sha256")
         contract = _require_sha256(row.get("api_contract_sha256"), "api_contract_sha256")
         block = (row["control_id"], row["effort"])
@@ -702,6 +732,19 @@ def validate_observations(
         if block in contract_bindings and contract_bindings[block] != contract:
             raise Stage2Error(f"API/runtime contract drift inside block {block}")
         contract_bindings[block] = contract
+        execution_block = row["block_id"]
+        response_model = row["response_model_sha256"]
+        backend = row["backend_fingerprint_sha256"]
+        if execution_block in response_model_bindings and response_model_bindings[execution_block] != response_model:
+            raise Stage2Error(f"response model drift inside block {execution_block}")
+        if execution_block in backend_bindings and backend_bindings[execution_block] != backend:
+            raise Stage2Error(f"backend fingerprint drift inside block {execution_block}")
+        response_model_bindings[execution_block] = response_model
+        backend_bindings[execution_block] = backend
+        request_id = row["request_id_sha256"]
+        if request_id in request_ids:
+            raise Stage2Error("duplicate authenticated request identifier")
+        request_ids.add(request_id)
     if seen != set(expected):
         raise Stage2Error("observation ids do not equal the frozen plan denominator")
     if len(evidence_classes) != 1:

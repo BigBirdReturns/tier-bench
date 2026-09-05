@@ -3,34 +3,240 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
-    "accepted": {"type": "boolean"},
-    "api_contract_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
-    "cached_input_tokens": {"minimum": 0, "type": "number"},
-    "case_id": {"pattern": "^s2case_[0-9a-f]{24}$", "type": "string"},
-    "control_class": {"enum": ["recurrent_latent", "parallel_latent", "conventional_negative"]},
-    "control_id": {"enum": ["lotus_3b_recurrent", "loopcoder_v2_7b_parallel", "conventional_transformer_negative"]},
-    "control_identity_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
-    "effort": {"enum": ["low", "high"]},
-    "evidence_class": {"enum": ["fixture_synthetic", "empirical_local"]},
-    "expected_checksum": {"pattern": "^[0-9a-f]{16}$", "type": "string"},
-    "family": {"enum": ["pointer_chase", "coupled_ring", "branch_reconcile"]},
-    "input_tokens": {"minimum": 0, "type": "number"},
-    "k": {"enum": [1, 8, 32]},
-    "latency_ms": {"minimum": 0, "type": "number"},
-    "observation_id": {"pattern": "^s2obs_[0-9a-f]{24}$", "type": "string"},
-    "observed_checksum": {"pattern": "^[0-9a-f]{16}$", "type": "string"},
-    "output_tokens": {"minimum": 0, "type": "number"},
-    "provider_error": {"const": false},
-    "r": {"enum": [1, 4, 16]},
-    "reasoning_tokens": {"minimum": 0, "type": "number"},
-    "record_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
-    "replicate": {"enum": [0, 1, 2, 3]},
-    "route_identity_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
-    "schema": {"const": "tier-bench/astra-stage2-observation@1"},
-    "task_sha256": {"pattern": "^[0-9a-f]{64}$", "type": "string"},
-    "ttft_ms": {"minimum": 0, "type": "number"}
+    "accepted": {
+      "type": "boolean"
+    },
+    "api_contract_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "cached_input_tokens": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "case_id": {
+      "pattern": "^s2case_[0-9a-f]{24}$",
+      "type": "string"
+    },
+    "control_class": {
+      "enum": [
+        "recurrent_latent",
+        "parallel_latent",
+        "conventional_negative"
+      ]
+    },
+    "control_id": {
+      "enum": [
+        "lotus_3b_recurrent",
+        "loopcoder_v2_7b_parallel",
+        "conventional_transformer_negative"
+      ]
+    },
+    "control_identity_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "effort": {
+      "enum": [
+        "low",
+        "high"
+      ]
+    },
+    "evidence_class": {
+      "enum": [
+        "fixture_synthetic",
+        "empirical_local"
+      ]
+    },
+    "expected_checksum": {
+      "pattern": "^[0-9a-f]{16}$",
+      "type": "string"
+    },
+    "family": {
+      "enum": [
+        "pointer_chase",
+        "coupled_ring",
+        "branch_reconcile"
+      ]
+    },
+    "input_tokens": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "k": {
+      "enum": [
+        1,
+        8,
+        32
+      ]
+    },
+    "latency_ms": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "observation_id": {
+      "pattern": "^s2obs_[0-9a-f]{24}$",
+      "type": "string"
+    },
+    "observed_checksum": {
+      "pattern": "^[0-9a-f]{16}$",
+      "type": "string"
+    },
+    "output_tokens": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "provider_error": {
+      "const": false
+    },
+    "r": {
+      "enum": [
+        1,
+        4,
+        16
+      ]
+    },
+    "reasoning_tokens": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "record_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "replicate": {
+      "enum": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    "route_identity_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "schema": {
+      "const": "tier-bench/astra-stage2-observation@2"
+    },
+    "task_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "ttft_ms": {
+      "minimum": 0,
+      "type": "number"
+    },
+    "request_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "request_bytes": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "block_id": {
+      "pattern": "^s2block_[0-9a-f]{16}$",
+      "type": "string"
+    },
+    "order_index": {
+      "minimum": 0,
+      "maximum": 8,
+      "type": "integer"
+    },
+    "raw_evidence_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "selected_headers_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "inter_event_times_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "request_id_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "response_model_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "backend_fingerprint_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "stop_state": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "request_start_ns": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "first_response_header_ns": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "first_event_ns": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "first_visible_token_ns": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "final_token_ns": {
+      "minimum": 0,
+      "type": "integer"
+    }
   },
-  "required": ["observation_id", "case_id", "family", "k", "r", "replicate", "task_sha256", "expected_checksum", "control_id", "control_class", "control_identity_sha256", "effort", "schema", "evidence_class", "route_identity_sha256", "api_contract_sha256", "input_tokens", "cached_input_tokens", "output_tokens", "reasoning_tokens", "ttft_ms", "latency_ms", "observed_checksum", "accepted", "provider_error", "record_sha256"],
+  "required": [
+    "observation_id",
+    "case_id",
+    "family",
+    "k",
+    "r",
+    "replicate",
+    "task_sha256",
+    "expected_checksum",
+    "control_id",
+    "control_class",
+    "control_identity_sha256",
+    "effort",
+    "schema",
+    "evidence_class",
+    "route_identity_sha256",
+    "api_contract_sha256",
+    "input_tokens",
+    "cached_input_tokens",
+    "output_tokens",
+    "reasoning_tokens",
+    "ttft_ms",
+    "latency_ms",
+    "observed_checksum",
+    "accepted",
+    "provider_error",
+    "record_sha256",
+    "request_sha256",
+    "request_bytes",
+    "block_id",
+    "order_index",
+    "raw_evidence_sha256",
+    "selected_headers_sha256",
+    "inter_event_times_sha256",
+    "request_id_sha256",
+    "response_model_sha256",
+    "backend_fingerprint_sha256",
+    "stop_state",
+    "request_start_ns",
+    "first_response_header_ns",
+    "first_event_ns",
+    "first_visible_token_ns",
+    "final_token_ns"
+  ],
   "title": "Astra Stage 2 observation",
   "type": "object"
 }

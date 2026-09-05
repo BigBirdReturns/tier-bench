@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import math
 import subprocess
 import tempfile
@@ -23,6 +24,7 @@ from astra_stage2.contracts import (
     verify_stage1_blobs,
 )
 from astra_stage2.generator import (
+    CHECKSUM_HEX_LENGTH,
     EXPECTED_CASE_COUNT,
     EXPECTED_OBSERVATION_COUNT,
     build_calibration_plan,
@@ -32,6 +34,7 @@ from astra_stage2.generator import (
     empirical_control_template,
     fixture_control_manifest,
     reconstruct_task,
+    render_task_prompt,
 )
 
 
@@ -124,7 +127,7 @@ class Stage2ScaffoldTests(unittest.TestCase):
 
     def test_04_generator_tamper_and_unknown_properties_refuse(self) -> None:
         mutated = copy.deepcopy(self.generator)
-        mutated["cases"][0]["expected_checksum"] = "0" * 16
+        mutated["cases"][0]["expected_checksum"] = "0" * CHECKSUM_HEX_LENGTH
         rehash(mutated)
         with self.assertRaises(Stage2Error):
             validate_generator_manifest(mutated)
@@ -306,7 +309,7 @@ class Stage2ScaffoldTests(unittest.TestCase):
 
     def test_19_acceptance_is_reconstructed(self) -> None:
         rows = copy.deepcopy(self.observations)
-        rows[0]["observed_checksum"] = "0" * 16
+        rows[0]["observed_checksum"] = "0" * CHECKSUM_HEX_LENGTH
         rows[0]["accepted"] = True
         rehash_observation(rows[0])
         with self.assertRaises(Stage2Error):
@@ -430,9 +433,9 @@ class Stage2ScaffoldTests(unittest.TestCase):
         )
         self.assertEqual(baseline["state"], "EMPIRICAL_CALIBRATION_CANDIDATE")
         expected_checksum = plan["observations"][0]["expected_checksum"]
-        rows[0]["observed_checksum"] = "0" * 16
+        rows[0]["observed_checksum"] = "0" * CHECKSUM_HEX_LENGTH
         if rows[0]["observed_checksum"] == expected_checksum:
-            rows[0]["observed_checksum"] = "f" * 16
+            rows[0]["observed_checksum"] = "f" * CHECKSUM_HEX_LENGTH
         rows[0]["accepted"] = False
         rehash_observation(rows[0])
         with self.assertRaises(Stage2Error):
@@ -536,6 +539,60 @@ class Stage2ScaffoldTests(unittest.TestCase):
         rehash(fabricated)
         with self.assertRaises(Stage2Error):
             self._validate_result(fabricated, control=bound, plan=plan, rows=rows)
+
+
+    def test_28_request_renderer_is_fixed_answer_hidden_and_bound(self) -> None:
+        prompts = []
+        for case in self.generator["cases"]:
+            task = reconstruct_task(case)
+            prompt = render_task_prompt(task)
+            prompts.append(prompt)
+            self.assertEqual(hashlib.sha256(prompt).hexdigest(), case["request_sha256"])
+            self.assertEqual(len(prompt), case["request_bytes"])
+            self.assertEqual(len(task["expected_checksum"]), CHECKSUM_HEX_LENGTH)
+            mutated = copy.deepcopy(task)
+            mutated["expected_checksum"] = "f" * CHECKSUM_HEX_LENGTH
+            self.assertEqual(render_task_prompt(mutated), prompt)
+            prompt.decode("ascii")
+        self.assertEqual(len({len(prompt) for prompt in prompts}), 1)
+
+    def test_29_blocked_order_is_complete_and_request_projection_is_exact(self) -> None:
+        blocks = {}
+        cases = {case["case_id"]: case for case in self.generator["cases"]}
+        for row in self.plan["observations"]:
+            blocks.setdefault(row["block_id"], set()).add(row["order_index"])
+            case = cases[row["case_id"]]
+            self.assertEqual(row["request_sha256"], case["request_sha256"])
+            self.assertEqual(row["request_bytes"], case["request_bytes"])
+        self.assertEqual(len(blocks), 72)
+        self.assertTrue(all(order == set(range(9)) for order in blocks.values()))
+
+    def test_30_observation_request_and_backend_evidence_fail_closed(self) -> None:
+        rows = copy.deepcopy(self.observations)
+        rows[0]["request_sha256"] = "0" * 64
+        rehash_observation(rows[0])
+        with self.assertRaises(Stage2Error):
+            validate_observations(rows, self.plan, self.fixture_control)
+
+        rows = copy.deepcopy(self.observations)
+        rows[1]["request_id_sha256"] = rows[0]["request_id_sha256"]
+        rehash_observation(rows[1])
+        with self.assertRaises(Stage2Error):
+            validate_observations(rows, self.plan, self.fixture_control)
+
+        rows = copy.deepcopy(self.observations)
+        block = rows[0]["block_id"]
+        peer = next(index for index, row in enumerate(rows[1:], 1) if row["block_id"] == block)
+        rows[peer]["backend_fingerprint_sha256"] = "a" * 64
+        rehash_observation(rows[peer])
+        with self.assertRaises(Stage2Error):
+            validate_observations(rows, self.plan, self.fixture_control)
+
+        rows = copy.deepcopy(self.observations)
+        rows[0]["final_token_ns"] = rows[0]["request_start_ns"] - 1
+        rehash_observation(rows[0])
+        with self.assertRaises(Stage2Error):
+            validate_observations(rows, self.plan, self.fixture_control)
 
 
 if __name__ == "__main__":

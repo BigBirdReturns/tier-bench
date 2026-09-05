@@ -8,10 +8,10 @@ from typing import Any, Iterable
 
 from .canonical import Stage2Error, canonical_json_bytes, sha256_object
 
-SCHEMA_GENERATOR_MANIFEST = "tier-bench/astra-stage2-generator-manifest@1"
-SCHEMA_PLAN = "tier-bench/astra-stage2-calibration-plan@1"
-SCHEMA_TASK = "tier-bench/astra-stage2-task@1"
-SCHEMA_OBSERVATION = "tier-bench/astra-stage2-observation@1"
+SCHEMA_GENERATOR_MANIFEST = "tier-bench/astra-stage2-generator-manifest@2"
+SCHEMA_PLAN = "tier-bench/astra-stage2-calibration-plan@2"
+SCHEMA_TASK = "tier-bench/astra-stage2-task@2"
+SCHEMA_OBSERVATION = "tier-bench/astra-stage2-observation@2"
 
 FAMILIES = ("pointer_chase", "coupled_ring", "branch_reconcile")
 K_LEVELS = (1, 8, 32)
@@ -27,11 +27,13 @@ LANE_COUNT = 32
 TABLE_SIZE = 16
 EXPECTED_CASE_COUNT = len(FAMILIES) * len(K_LEVELS) * len(R_LEVELS) * len(REPLICATES)
 EXPECTED_OBSERVATION_COUNT = EXPECTED_CASE_COUNT * len(CONTROL_ROLES) * len(EFFORTS)
-GENERATOR_VERSION = "astra-stage2-generator-v1"
+GENERATOR_SEED_VERSION = "astra-stage2-generator-v1"
+GENERATOR_VERSION = "astra-stage2-generator-v2"
+CHECKSUM_HEX_LENGTH = 16
 
 
 def _digest(seed: str, label: str) -> bytes:
-    return hashlib.sha256(f"{GENERATOR_VERSION}|{seed}|{label}".encode("utf-8")).digest()
+    return hashlib.sha256(f"{GENERATOR_SEED_VERSION}|{seed}|{label}".encode("utf-8")).digest()
 
 
 def _uint(seed: str, label: str, modulus: int) -> int:
@@ -126,17 +128,79 @@ def _evaluate_branch(task: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def evaluate_task(task: dict[str, Any]) -> str:
+def _evaluate_task_result(task: dict[str, Any]) -> dict[str, Any]:
     family = task.get("family")
     if family == "pointer_chase":
-        result = _evaluate_pointer(task)
-    elif family == "coupled_ring":
-        result = _evaluate_ring(task)
-    elif family == "branch_reconcile":
-        result = _evaluate_branch(task)
-    else:
+        return _evaluate_pointer(task)
+    if family == "coupled_ring":
+        return _evaluate_ring(task)
+    if family == "branch_reconcile":
+        return _evaluate_branch(task)
+    raise Stage2Error(f"unsupported task family: {family!r}")
+
+
+def _checksum_result(result: dict[str, Any]) -> str:
+    """Return the frozen model-computable 16-nibble checksum."""
+    buckets = [0] * CHECKSUM_HEX_LENGTH
+    for item in result["finals"]:
+        lane = int(item["lane"])
+        state = int(item["state"])
+        bucket = lane % CHECKSUM_HEX_LENGTH
+        buckets[bucket] = (buckets[bucket] + state + 7 * (lane // 16) + 1) % 16
+    if result["family"] == "branch_reconcile":
+        buckets[14] = (buckets[14] + int(result["witness_lane"])) % 16
+        buckets[15] = (buckets[15] + int(result["witness_state"]) + 1) % 16
+    return "".join(format(value, "x") for value in buckets)
+
+
+def evaluate_task(task: dict[str, Any]) -> str:
+    return _checksum_result(_evaluate_task_result(task))
+
+
+_PROMPT_HEADER = (
+    "ASTRA-STAGE2-REQUEST-V2\n"
+    "Return exactly 16 lowercase hexadecimal characters and nothing else.\n"
+    "All state arithmetic is modulo 16. Use only lanes whose A field is 1.\n"
+    "F=P: repeat R times independently per active lane: state=T[state].\n"
+    "F=C: each round uses previous states; predecessor is previous active lane cyclically; "
+    "selector=(self+pred+round+salt) mod 16; state=T[selector].\n"
+    "F=B: each round parity=sum(active states) mod16; for active position p from 0 upward, "
+    "branch=(nonce >> ((round+p) mod32))&1; selector=(state+parity+branch*(p+1)+salt) mod16; "
+    "state=T[selector]. After R rounds witness position=(sum(states)+nonce) mod K.\n"
+    "Checksum: start 16 zero nibbles. For each active lane i final state s, bucket i mod16 "
+    "becomes (bucket+s+7*floor(i/16)+1) mod16. For F=B also add witness lane to bucket14 "
+    "and witness state+1 to bucket15, modulo16. Emit buckets 0..15.\n"
+    "Fields are fixed-width hex except CASE and MASK. T is 16 two-hex transition states.\n"
+)
+
+
+def render_task_prompt(task: dict[str, Any]) -> bytes:
+    family_codes = {
+        "pointer_chase": "P",
+        "coupled_ring": "C",
+        "branch_reconcile": "B",
+    }
+    family = task.get("family")
+    if family not in family_codes:
         raise Stage2Error(f"unsupported task family: {family!r}")
-    return hashlib.sha256(canonical_json_bytes(result)).hexdigest()[:16]
+    active = set(task["active_lanes"])
+    mask = "".join("1" if index in active else "0" for index in range(LANE_COUNT))
+    lines = [
+        _PROMPT_HEADER.rstrip("\n"),
+        (
+            f"CASE={task['case_id']};F={family_codes[family]};K={int(task['k']):02x};"
+            f"R={int(task['r']):02x};REP={int(task['replicate']):x};"
+            f"NONCE={task['nonce']};MASK={mask}"
+        ),
+    ]
+    for lane in task["lanes"]:
+        index = int(lane["index"])
+        transition = "".join(f"{int(value):02x}" for value in lane["transition"])
+        lines.append(
+            f"L={index:02x};A={1 if index in active else 0};S={int(lane['start']):02x};"
+            f"Z={int(lane['salt']):08x};T={transition}"
+        )
+    return ("\n".join(lines) + "\n").encode("ascii")
 
 
 def build_task(*, family: str, k: int, r: int, replicate: int) -> dict[str, Any]:
@@ -149,7 +213,7 @@ def build_task(*, family: str, k: int, r: int, replicate: int) -> dict[str, Any]
         "k": k,
         "r": r,
         "replicate": replicate,
-        "generator_version": GENERATOR_VERSION,
+        "generator_version": GENERATOR_SEED_VERSION,
     }
     seed = sha256_object(coordinate)
     task: dict[str, Any] = {
@@ -187,10 +251,13 @@ def reconstruct_task(summary: dict[str, Any]) -> dict[str, Any]:
         r=int(summary["r"]),
         replicate=int(summary["replicate"]),
     )
+    request = render_task_prompt(task)
     expected = {
         "case_id": task["case_id"],
         "task_sha256": sha256_object(task),
         "expected_checksum": task["expected_checksum"],
+        "request_sha256": hashlib.sha256(request).hexdigest(),
+        "request_bytes": len(request),
     }
     for key, value in expected.items():
         if summary.get(key) != value:
@@ -211,6 +278,8 @@ def build_generator_manifest() -> dict[str, Any]:
                 "task_sha256": sha256_object(task),
                 "task_bytes": len(canonical_json_bytes(task)),
                 "expected_checksum": task["expected_checksum"],
+                "request_sha256": hashlib.sha256(render_task_prompt(task)).hexdigest(),
+                "request_bytes": len(render_task_prompt(task)),
             }
         )
     manifest: dict[str, Any] = {
@@ -336,6 +405,13 @@ def build_calibration_plan(
                     "generator_manifest_sha256": generator_manifest["payload_sha256"],
                     "control_manifest_sha256": control_manifest["payload_sha256"],
                 }
+                block_coordinate = {
+                    "family": case["family"], "replicate": case["replicate"],
+                    "control_id": control["control_id"], "effort": effort,
+                    "generator_manifest_sha256": generator_manifest["payload_sha256"],
+                    "control_manifest_sha256": control_manifest["payload_sha256"],
+                }
+                block_id = "s2block_" + sha256_object(block_coordinate)[:16]
                 rows.append(
                     {
                         "observation_id": "s2obs_" + sha256_object(coordinate)[:24],
@@ -346,12 +422,26 @@ def build_calibration_plan(
                         "replicate": case["replicate"],
                         "task_sha256": case["task_sha256"],
                         "expected_checksum": case["expected_checksum"],
+                        "request_sha256": case["request_sha256"],
+                        "request_bytes": case["request_bytes"],
                         "control_id": control["control_id"],
                         "control_class": control["class_label"],
                         "control_identity_sha256": control["identity_sha256"],
                         "effort": effort,
+                        "block_id": block_id,
+                        "order_index": -1,
                     }
                 )
+    by_block: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_block.setdefault(row["block_id"], []).append(row)
+    for block_id, block_rows in by_block.items():
+        ordered = sorted(
+            block_rows,
+            key=lambda row: sha256_object({"block_id": block_id, "case_id": row["case_id"]}),
+        )
+        for index, row in enumerate(ordered):
+            row["order_index"] = index
     plan: dict[str, Any] = {
         "schema": SCHEMA_PLAN,
         "stage1_join_head": control_manifest["stage1_join_head"],
@@ -418,6 +508,19 @@ def build_fixture_observations(plan: dict[str, Any]) -> list[dict[str, Any]]:
             item["control_id"], item["k"], item["r"], item["effort"], item["observation_id"]
         )
         reasoning_tokens = 64 if item["effort"] == "low" else 128
+        seed = int(item["observation_id"].split("_", 1)[1][:12], 16)
+        request_start_ns = seed * 1_000
+        first_header_ns = request_start_ns + 500_000
+        first_event_ns = first_header_ns + 250_000
+        first_visible_ns = request_start_ns + int(ttft * 1_000_000)
+        final_token_ns = request_start_ns + int(latency * 1_000_000)
+        raw_evidence = {
+            "request_start_ns": request_start_ns,
+            "first_response_header_ns": first_header_ns,
+            "first_event_ns": first_event_ns,
+            "first_visible_token_ns": first_visible_ns,
+            "final_token_ns": final_token_ns,
+        }
         body: dict[str, Any] = {
             "schema": SCHEMA_OBSERVATION,
             "observation_id": item["observation_id"],
@@ -429,6 +532,10 @@ def build_fixture_observations(plan: dict[str, Any]) -> list[dict[str, Any]]:
             "replicate": item["replicate"],
             "task_sha256": item["task_sha256"],
             "expected_checksum": item["expected_checksum"],
+            "request_sha256": item["request_sha256"],
+            "request_bytes": item["request_bytes"],
+            "block_id": item["block_id"],
+            "order_index": item["order_index"],
             "control_id": item["control_id"],
             "control_class": item["control_class"],
             "control_identity_sha256": item["control_identity_sha256"],
@@ -436,7 +543,23 @@ def build_fixture_observations(plan: dict[str, Any]) -> list[dict[str, Any]]:
             "route_identity_sha256": hashlib.sha256(
                 f"fixture-route:{item['control_id']}".encode()
             ).hexdigest(),
-            "api_contract_sha256": hashlib.sha256(b"fixture-local-contract-v1").hexdigest(),
+            "api_contract_sha256": hashlib.sha256(b"fixture-local-contract-v2").hexdigest(),
+            "raw_evidence_sha256": sha256_object(raw_evidence),
+            "selected_headers_sha256": hashlib.sha256(b"fixture-no-headers").hexdigest(),
+            "inter_event_times_sha256": sha256_object([first_event_ns, first_visible_ns, final_token_ns]),
+            "request_id_sha256": hashlib.sha256(item["observation_id"].encode()).hexdigest(),
+            "response_model_sha256": hashlib.sha256(
+                f"fixture-model:{item['control_id']}".encode()
+            ).hexdigest(),
+            "backend_fingerprint_sha256": hashlib.sha256(
+                f"fixture-backend:{item['control_id']}:{item['effort']}".encode()
+            ).hexdigest(),
+            "stop_state": "completed",
+            "request_start_ns": request_start_ns,
+            "first_response_header_ns": first_header_ns,
+            "first_event_ns": first_event_ns,
+            "first_visible_token_ns": first_visible_ns,
+            "final_token_ns": final_token_ns,
             "input_tokens": 4096,
             "cached_input_tokens": 0,
             "output_tokens": 12,
