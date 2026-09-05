@@ -406,6 +406,11 @@ function Get-CanonicalPayloadSha256 {
         [Parameter(Mandatory = $true)][string]$Path
     )
 
+    $createdScriptPath = $null
+    $scriptStream = $null
+    $digest = $null
+    $failure = $null
+    $cleanupFailure = $null
     $program = @'
 import hashlib
 import json
@@ -424,11 +429,117 @@ payload = json.dumps(
 ).encode("utf-8")
 print(hashlib.sha256(payload).hexdigest())
 '@
-    $digest = (& $Python -c $program $Path)
-    if ($LASTEXITCODE -ne 0) {
-        throw "Canonical payload hashing failed for $Path"
+
+    try {
+        $tempRoot = [System.IO.Path]::GetTempPath()
+        foreach ($attempt in 1..32) {
+            $candidate = [System.IO.Path]::Combine(
+                $tempRoot,
+                'astra-canonical-payload-' +
+                    [System.Guid]::NewGuid().ToString('N') + '.py'
+            )
+            try {
+                $scriptStream = New-Object System.IO.FileStream(
+                    $candidate,
+                    [System.IO.FileMode]::CreateNew,
+                    [System.IO.FileAccess]::Write,
+                    [System.IO.FileShare]::None
+                )
+                $createdScriptPath = $candidate
+                break
+            }
+            catch [System.IO.IOException] {
+                if ($attempt -eq 32) {
+                    throw
+                }
+            }
+        }
+        if ($null -eq $createdScriptPath -or $null -eq $scriptStream) {
+            throw 'Exclusive temporary script creation did not succeed'
+        }
+
+        $writer = $null
+        try {
+            $writer = New-Object System.IO.StreamWriter(
+                $scriptStream,
+                [System.Text.UTF8Encoding]::new($false)
+            )
+            $writer.Write($program)
+            $writer.Flush()
+        }
+        finally {
+            if ($null -ne $writer) {
+                $writer.Dispose()
+            }
+            elseif ($null -ne $scriptStream) {
+                $scriptStream.Dispose()
+            }
+            $scriptStream = $null
+        }
+
+        $nativeOutput = @()
+        $nativeExitCode = $null
+        $nativeFailure = $null
+        $inheritedErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            try {
+                $nativeOutput = @(& $Python -B $createdScriptPath $Path 2>&1)
+                $nativeExitCode = $LASTEXITCODE
+            }
+            catch {
+                $nativeExitCode = $LASTEXITCODE
+                $nativeFailure = $_.Exception.Message
+            }
+        }
+        finally {
+            $ErrorActionPreference = $inheritedErrorActionPreference
+        }
+
+        if ($null -ne $nativeFailure) {
+            throw "Native interpreter startup failed: $nativeFailure"
+        }
+        if ($null -eq $nativeExitCode -or $nativeExitCode -ne 0) {
+            throw "Native interpreter exited with code $nativeExitCode"
+        }
+        if ($nativeOutput.Count -ne 1) {
+            throw "Native interpreter returned $($nativeOutput.Count) output values"
+        }
+        $candidateDigest = [string]$nativeOutput[0]
+        if ($candidateDigest.Contains("`r") -or
+            $candidateDigest.Contains("`n") -or
+            $candidateDigest -cnotmatch '^[0-9a-f]{64}$') {
+            throw 'Native interpreter returned an invalid digest'
+        }
+        $digest = $candidateDigest
     }
-    return ([string]$digest).Trim().ToLowerInvariant()
+    catch {
+        $failure = "Canonical payload hashing failed for ${Path}: $($_.Exception.Message)"
+    }
+    finally {
+        if ($null -ne $scriptStream) {
+            $scriptStream.Dispose()
+        }
+        if ($null -ne $createdScriptPath) {
+            try {
+                [System.IO.File]::Delete($createdScriptPath)
+            }
+            catch {
+                $cleanupFailure = $_.Exception.Message
+            }
+        }
+    }
+
+    if ($null -ne $cleanupFailure) {
+        throw (
+            "Canonical payload hashing failed for ${Path}: " +
+            "temporary script cleanup failed: $cleanupFailure"
+        )
+    }
+    if ($null -ne $failure) {
+        throw $failure
+    }
+    return $digest
 }
 
 function Assert-FileSha256 {

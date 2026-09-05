@@ -73,11 +73,16 @@ jobs:
             Write-Host "POWERSHELL_PARSE_PASS $relative"
           }
 
-      - name: Probe symlink privilege and run all 43 tests
+      - name: Probe symlink privilege and run all 44 tests
         id: tests
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          $evidenceRoot = Join-Path $env:RUNNER_TEMP 'astra-control-identity-windows-evidence'
+          New-Item -ItemType Directory -Force -Path $evidenceRoot | Out-Null
+          $env:ASTRA_TRANSPORT_EVIDENCE_DIR = $evidenceRoot
+          $env:PYTHONDONTWRITEBYTECODE = '1'
+          $env:PYTHONPATH = $PWD.ProviderPath
           $probeRoot = Join-Path $env:RUNNER_TEMP 'astra-symlink-privilege-probe'
           New-Item -ItemType Directory -Force -Path $probeRoot | Out-Null
           $target = Join-Path $probeRoot 'target.txt'
@@ -107,45 +112,82 @@ jobs:
           }
 
           $lines = @(
-            & python -m unittest discover `
+            & python -B -m unittest discover `
               -s tests `
               -p 'test_astra_stage2_control_identity*.py' `
               -v 2>&1
           )
           $exitCode = $LASTEXITCODE
-          $log = Join-Path $env:RUNNER_TEMP 'test-control-identity-windows.log'
+          $log = Join-Path $evidenceRoot 'test-control-identity-windows.log'
           $lines | Set-Content -Encoding utf8 -LiteralPath $log
           $lines | ForEach-Object { Write-Host $_ }
           if ($exitCode -ne 0) { throw "Windows suite failed with exit code $exitCode" }
 
           $joined = $lines -join "`n"
-          if ($joined -notmatch '(?m)^Ran 43 tests in ') {
-            throw 'Windows test denominator is not 43'
+          if ($joined -notmatch '(?m)^Ran 44 tests in ') {
+            throw 'Windows test denominator is not 44'
           }
           $testLines = @($lines | Where-Object { $_ -match '^test_' })
           $passedLines = @($testLines | Where-Object { $_ -match '\.\.\. ok$' })
           $skippedLines = @($testLines | Where-Object { $_ -match '\.\.\. skipped ' })
           $test10Lines = @($testLines | Where-Object { $_ -match '^test_10_symlinked_model_file_refuses ' })
-          if ($testLines.Count -ne 43 -or $test10Lines.Count -ne 1) {
+          $test30Lines = @($testLines | Where-Object { $_ -match '^test_30_canonical_payload_digest_survives_native_powershell_argument_transport ' })
+          if ($testLines.Count -ne 44 -or $test10Lines.Count -ne 1 -or
+              $test30Lines.Count -ne 1 -or $test30Lines[0] -notmatch '\.\.\. ok$') {
             throw 'Windows verbose test ledger is incomplete or duplicated'
           }
 
           if ($symlinkState -eq 'CAPABLE') {
-            if ($passedLines.Count -ne 43 -or $skippedLines.Count -ne 0 -or
+            if ($passedLines.Count -ne 44 -or $skippedLines.Count -ne 0 -or
                 $test10Lines[0] -notmatch '\.\.\. ok$' -or
                 $joined -notmatch '(?m)^OK$') {
-              throw 'Symlink-capable Windows runner did not pass 43/43 with test_10 executed'
+              throw 'Symlink-capable Windows runner did not pass 44/44 with test_10 executed'
             }
           }
           else {
-            if ($passedLines.Count -ne 42 -or $skippedLines.Count -ne 1 -or
+            if ($passedLines.Count -ne 43 -or $skippedLines.Count -ne 1 -or
                 $skippedLines[0] -notmatch '^test_10_symlinked_model_file_refuses ' -or
                 $joined -notmatch '(?m)^OK \(skipped=1\)$') {
               throw 'WinError-1314 runner did not produce the sole permitted test_10 skip'
             }
           }
 
+          $transportPath = Join-Path $evidenceRoot 'transport-windows.json'
+          $transport = Get-Content -Raw -LiteralPath $transportPath | ConvertFrom-Json
+          $ps51 = @($transport.interpreters | Where-Object { $_.mode -eq 'windows_powershell_5_1' })
+          $pwsh = @($transport.interpreters | Where-Object { $_.mode -eq 'windows_pwsh' })
+          if ($ps51.Count -ne 1 -or $ps51[0].full_version -notmatch '^5\.1\.' -or
+              $ps51[0].edition -ne 'Desktop' -or
+              $ps51[0].ps_native_command_argument_passing -ne 'LEGACY_UNAVAILABLE' -or
+              $ps51[0].fixtures.valid.outcome -ne 'PASS' -or
+              $ps51[0].fixtures.valid.exit_code -ne 0 -or
+              $ps51[0].fixtures.malformed.outcome -ne 'REFUSED' -or
+              $ps51[0].fixtures.malformed.exit_code -ne 20 -or
+              $pwsh.Count -ne 1 -or $pwsh[0].fixtures.valid.outcome -ne 'PASS' -or
+              $pwsh[0].fixtures.valid.exit_code -ne 0 -or
+              $pwsh[0].fixtures.malformed.outcome -ne 'REFUSED' -or
+              $pwsh[0].fixtures.malformed.exit_code -ne 20 -or
+              [string]::IsNullOrWhiteSpace($pwsh[0].edition) -or
+              [string]::IsNullOrWhiteSpace($pwsh[0].ps_native_command_argument_passing) -or
+              $transport.legacy_e336_windows_powershell_5_1.outcome -ne 'REPRODUCED_FAILURE' -or
+              $transport.legacy_e336_windows_powershell_5_1.exit_code -ne 20 -or
+              -not $transport.error_action_preference_restored -or
+              $transport.temporary_script_cleanup -ne 'PASS' -or
+              $transport.cleanup_error -ne 'REFUSED') {
+            throw 'Windows transport fixture evidence is incomplete'
+          }
+
           "log=$log" >> $env:GITHUB_OUTPUT
+          "evidence_root=$evidenceRoot" >> $env:GITHUB_OUTPUT
+          "transport_path=$transportPath" >> $env:GITHUB_OUTPUT
+          "powershell_5_1_path=$($ps51[0].path)" >> $env:GITHUB_OUTPUT
+          "powershell_5_1_version=$($ps51[0].full_version)" >> $env:GITHUB_OUTPUT
+          "powershell_5_1_edition=$($ps51[0].edition)" >> $env:GITHUB_OUTPUT
+          "powershell_5_1_argument_passing=$($ps51[0].ps_native_command_argument_passing)" >> $env:GITHUB_OUTPUT
+          "pwsh_path=$($pwsh[0].path)" >> $env:GITHUB_OUTPUT
+          "pwsh_version=$($pwsh[0].full_version)" >> $env:GITHUB_OUTPUT
+          "pwsh_edition=$($pwsh[0].edition)" >> $env:GITHUB_OUTPUT
+          "pwsh_argument_passing=$($pwsh[0].ps_native_command_argument_passing)" >> $env:GITHUB_OUTPUT
           "passed=$($passedLines.Count)" >> $env:GITHUB_OUTPUT
           "skipped=$($skippedLines.Count)" >> $env:GITHUB_OUTPUT
           "symlink_state=$symlinkState" >> $env:GITHUB_OUTPUT
@@ -157,42 +199,78 @@ jobs:
           SOURCE_HEAD: ${{ steps.custody.outputs.head }}
           SOURCE_TREE: ${{ steps.custody.outputs.tree }}
           TEST_LOG: ${{ steps.tests.outputs.log }}
+          EVIDENCE_ROOT: ${{ steps.tests.outputs.evidence_root }}
+          TRANSPORT_PATH: ${{ steps.tests.outputs.transport_path }}
+          POWERSHELL_5_1_PATH: ${{ steps.tests.outputs.powershell_5_1_path }}
+          POWERSHELL_5_1_VERSION: ${{ steps.tests.outputs.powershell_5_1_version }}
+          POWERSHELL_5_1_EDITION: ${{ steps.tests.outputs.powershell_5_1_edition }}
+          POWERSHELL_5_1_ARGUMENT_PASSING: ${{ steps.tests.outputs.powershell_5_1_argument_passing }}
+          PWSH_PATH: ${{ steps.tests.outputs.pwsh_path }}
+          PWSH_VERSION: ${{ steps.tests.outputs.pwsh_version }}
+          PWSH_EDITION: ${{ steps.tests.outputs.pwsh_edition }}
+          PWSH_ARGUMENT_PASSING: ${{ steps.tests.outputs.pwsh_argument_passing }}
           PASSED: ${{ steps.tests.outputs.passed }}
           SKIPPED: ${{ steps.tests.outputs.skipped }}
           SYMLINK_STATE: ${{ steps.tests.outputs.symlink_state }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $root = Join-Path $env:RUNNER_TEMP 'astra-convergence-windows'
-          New-Item -ItemType Directory -Force -Path $root | Out-Null
-          $path = Join-Path $root 'platform-receipt.json'
+          $path = Join-Path $env:EVIDENCE_ROOT 'platform-receipt.json'
           $value = [ordered]@{
             schema = 'tier-bench/astra-stage2-control-identity-platform-qualification@1'
             platform = 'windows-2025'
             source_head_sha1 = $env:SOURCE_HEAD
             source_tree_sha1 = $env:SOURCE_TREE
-            tests = 43
+            tests = 44
             passed = [int]$env:PASSED
             skipped = [int]$env:SKIPPED
             failed = 0
             errors = 0
             symlink_probe = $env:SYMLINK_STATE
             test_10_executed_or_winerror_1314 = $true
+            test_30_executed = $true
             powershell_surfaces_parsed = 2
+            windows_powershell_5_1 = [ordered]@{
+              path = $env:POWERSHELL_5_1_PATH
+              full_version = $env:POWERSHELL_5_1_VERSION
+              edition = $env:POWERSHELL_5_1_EDITION
+              ps_native_command_argument_passing = $env:POWERSHELL_5_1_ARGUMENT_PASSING
+              fixture_executed = $true
+            }
+            pwsh = [ordered]@{
+              path = $env:PWSH_PATH
+              full_version = $env:PWSH_VERSION
+              edition = $env:PWSH_EDITION
+              ps_native_command_argument_passing = $env:PWSH_ARGUMENT_PASSING
+              fixture_executed = $true
+            }
             checkdigest_match_and_mismatch = 'PASS'
             model_calls = 0
             provider_calls = 0
             launcher_modes_executed = @()
             test_log_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:TEST_LOG).Hash.ToLowerInvariant()
+            transport_fixture_sha256 = (Get-FileHash -Algorithm SHA256 -LiteralPath $env:TRANSPORT_PATH).Hash.ToLowerInvariant()
           }
           $value | ConvertTo-Json -Depth 16 | Set-Content -Encoding utf8 -LiteralPath $path
           $digest = (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToLowerInvariant()
           "receipt_path=$path" >> $env:GITHUB_OUTPUT
           "receipt_sha256=$digest" >> $env:GITHUB_OUTPUT
 
+      - name: Upload retained Windows platform evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-control-identity-windows-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.tests.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
   provider-free-release:
     needs: windows-conformance
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    outputs:
+      head: ${{ steps.custody.outputs.head }}
+      tree: ${{ steps.custody.outputs.tree }}
     steps:
       - name: Check out exact release and enforce nine-path delta
         id: custody
@@ -289,46 +367,334 @@ jobs:
               '$ErrorActionPreference = "Stop"; $text = Get-Content -Raw -LiteralPath $env:ASTRA_POWERSHELL_SURFACE; [void][scriptblock]::Create($text); Write-Output "POWERSHELL_PARSE_PASS $env:ASTRA_POWERSHELL_SURFACE"'
           done
 
-      - name: Run all 43 tests with test_10 executed
+      - name: Run all 44 tests with test_10 and test_30 executed
         shell: bash
         env:
           EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
+          ASTRA_TRANSPORT_EVIDENCE_DIR: ${{ steps.custody.outputs.evidence_root }}
+          PYTHONDONTWRITEBYTECODE: '1'
         run: |
           set -euo pipefail
-          PYTHONPATH=. python3 -m unittest discover \
+          PYTHONPATH="$PWD" python3 -B -m unittest discover \
             -s tests \
             -p 'test_astra_stage2_control_identity*.py' \
             -v 2>&1 | tee "$EVIDENCE_ROOT/test-control-identity-linux.log"
-          grep -q '^Ran 43 tests in ' "$EVIDENCE_ROOT/test-control-identity-linux.log"
+          grep -q '^Ran 44 tests in ' "$EVIDENCE_ROOT/test-control-identity-linux.log"
           grep -q '^OK$' "$EVIDENCE_ROOT/test-control-identity-linux.log"
-          test "$(grep -c '^test_' "$EVIDENCE_ROOT/test-control-identity-linux.log")" -eq 43
+          test "$(grep -c '^test_' "$EVIDENCE_ROOT/test-control-identity-linux.log")" -eq 44
           grep -Eq '^test_10_symlinked_model_file_refuses .* \.\.\. ok$' \
+            "$EVIDENCE_ROOT/test-control-identity-linux.log"
+          grep -Eq '^test_30_canonical_payload_digest_survives_native_powershell_argument_transport .* \.\.\. ok$' \
             "$EVIDENCE_ROOT/test-control-identity-linux.log"
           if grep -q ' \.\.\. skipped ' "$EVIDENCE_ROOT/test-control-identity-linux.log"; then
             echo 'Ubuntu may not skip any test' >&2
             exit 1
           fi
 
-      - name: Build one convergence qualification index
-        id: index
+      - name: Seal Ubuntu platform receipt
         shell: bash
         env:
           EVIDENCE_ROOT: ${{ steps.custody.outputs.evidence_root }}
           SOURCE_HEAD: ${{ steps.custody.outputs.head }}
           SOURCE_TREE: ${{ steps.custody.outputs.tree }}
-          WINDOWS_RECEIPT_SHA256: ${{ needs.windows-conformance.outputs.receipt_sha256 }}
-          WINDOWS_PASSED: ${{ needs.windows-conformance.outputs.passed }}
-          WINDOWS_SKIPPED: ${{ needs.windows-conformance.outputs.skipped }}
-          WINDOWS_SYMLINK_STATE: ${{ needs.windows-conformance.outputs.symlink_state }}
         run: |
           set -euo pipefail
-          python3 - "$EVIDENCE_ROOT/qualification-index.json" <<'PY'
+          python3 - "$EVIDENCE_ROOT" <<'PY'
           import hashlib
           import json
           import os
           import pathlib
           import sys
 
+          root = pathlib.Path(sys.argv[1])
+          transport_path = root / "transport-linux.json"
+          log_path = root / "test-control-identity-linux.log"
+          transport = json.loads(transport_path.read_text(encoding="utf-8"))
+          interpreters = transport["interpreters"]
+          if len(interpreters) != 1 or interpreters[0]["mode"] != "linux_pwsh":
+              raise SystemExit("Linux transport evidence lacks its pwsh witness")
+          fixtures = interpreters[0]["fixtures"]
+          if (
+              fixtures["valid"] != {"outcome": "PASS", "exit_code": 0}
+              or fixtures["malformed"]
+              != {"outcome": "REFUSED", "exit_code": 20}
+          ):
+              raise SystemExit("Linux transport fixtures did not pass/refuse as required")
+          value = {
+              "schema": "tier-bench/astra-stage2-control-identity-platform-qualification@1",
+              "platform": "ubuntu-24.04",
+              "source_head_sha1": os.environ["SOURCE_HEAD"],
+              "source_tree_sha1": os.environ["SOURCE_TREE"],
+              "tests": 44,
+              "passed": 44,
+              "skipped": 0,
+              "failed": 0,
+              "errors": 0,
+              "test_10_executed": True,
+              "test_30_executed": True,
+              "powershell_surfaces_parsed": 2,
+              "pwsh": {
+                  "path": interpreters[0]["path"],
+                  "full_version": interpreters[0]["full_version"],
+                  "edition": interpreters[0]["edition"],
+                  "ps_native_command_argument_passing": interpreters[0][
+                      "ps_native_command_argument_passing"
+                  ],
+                  "fixture_executed": True,
+              },
+              "checkdigest_match_and_mismatch": "PASS",
+              "model_calls": 0,
+              "provider_calls": 0,
+              "launcher_modes_executed": [],
+              "test_log_sha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+              "transport_fixture_sha256": hashlib.sha256(
+                  transport_path.read_bytes()
+              ).hexdigest(),
+          }
+          (root / "platform-receipt.json").write_text(
+              json.dumps(value, sort_keys=True, indent=2) + "\n",
+              encoding="utf-8",
+              newline="\n",
+          )
+          PY
+
+      - name: Upload retained Ubuntu platform evidence
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: astra-control-identity-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ steps.custody.outputs.evidence_root }}
+          if-no-files-found: error
+          retention-days: 90
+          compression-level: 9
+
+  qualification-index:
+    needs:
+      - windows-conformance
+      - provider-free-release
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download retained Windows platform evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: astra-control-identity-windows-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/astra-control-identity-complete/platforms/windows
+
+      - name: Download retained Ubuntu platform evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: astra-control-identity-ubuntu-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/astra-control-identity-complete/platforms/ubuntu
+
+      - name: Recompute retained bytes and seal qualification index
+        id: index
+        shell: bash
+        env:
+          SOURCE_HEAD: ${{ needs.provider-free-release.outputs.head }}
+          SOURCE_TREE: ${{ needs.provider-free-release.outputs.tree }}
+          WINDOWS_PASSED: ${{ needs.windows-conformance.outputs.passed }}
+          WINDOWS_SKIPPED: ${{ needs.windows-conformance.outputs.skipped }}
+          WINDOWS_SYMLINK_STATE: ${{ needs.windows-conformance.outputs.symlink_state }}
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/astra-control-identity-complete"
+          python3 - "$root" <<'PY'
+          import hashlib
+          import json
+          import os
+          import pathlib
+          import re
+          import sys
+
+          root = pathlib.Path(sys.argv[1])
+          platforms = root / "platforms"
+          expected_names = {
+              "windows": {
+                  "platform-receipt.json",
+                  "test-control-identity-windows.log",
+                  "transport-windows.json",
+              },
+              "ubuntu": {
+                  "platform-receipt.json",
+                  "test-control-identity-linux.log",
+                  "transport-linux.json",
+              },
+          }
+
+          def sha256(path: pathlib.Path) -> str:
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          receipts = {}
+          transports = {}
+          for platform, names in expected_names.items():
+              directory = platforms / platform
+              observed = {
+                  path.name for path in directory.iterdir() if path.is_file()
+              }
+              if observed != names:
+                  raise SystemExit(
+                      f"{platform} retained evidence mismatch: "
+                      f"expected={sorted(names)} observed={sorted(observed)}"
+                  )
+              receipt = json.loads(
+                  (directory / "platform-receipt.json").read_text(encoding="utf-8-sig")
+              )
+              transport_name = (
+                  "transport-windows.json"
+                  if platform == "windows"
+                  else "transport-linux.json"
+              )
+              log_name = (
+                  "test-control-identity-windows.log"
+                  if platform == "windows"
+                  else "test-control-identity-linux.log"
+              )
+              if receipt["test_log_sha256"] != sha256(directory / log_name):
+                  raise SystemExit(f"{platform} test log digest mismatch")
+              if receipt["transport_fixture_sha256"] != sha256(
+                  directory / transport_name
+              ):
+                  raise SystemExit(f"{platform} transport digest mismatch")
+              if (
+                  receipt["source_head_sha1"] != os.environ["SOURCE_HEAD"]
+                  or receipt["source_tree_sha1"] != os.environ["SOURCE_TREE"]
+              ):
+                  raise SystemExit(f"{platform} source binding mismatch")
+              log = (directory / log_name).read_text(
+                  encoding="utf-8-sig", errors="strict"
+              )
+              if (
+                  not re.search(r"(?m)^Ran 44 tests in ", log)
+                  or not re.search(
+                      r"(?m)^test_30_canonical_payload_digest_survives_"
+                      r"native_powershell_argument_transport .* \.\.\. ok$",
+                      log,
+                  )
+              ):
+                  raise SystemExit(f"{platform} test log lacks the 44/test_30 witness")
+              receipts[platform] = receipt
+              transports[platform] = json.loads(
+                  (directory / transport_name).read_text(encoding="utf-8")
+              )
+
+          windows = receipts["windows"]
+          ubuntu = receipts["ubuntu"]
+          if windows["tests"] != 44 or ubuntu["tests"] != 44:
+              raise SystemExit("platform denominator mismatch")
+          if ubuntu["passed"] != 44 or ubuntu["skipped"] != 0:
+              raise SystemExit("Ubuntu did not pass 44/44 with zero skips")
+          if windows["symlink_probe"] == "CAPABLE":
+              if windows["passed"] != 44 or windows["skipped"] != 0:
+                  raise SystemExit("symlink-capable Windows did not pass 44/44")
+          elif windows["symlink_probe"] == "WINERROR_1314":
+              if windows["passed"] != 43 or windows["skipped"] != 1:
+                  raise SystemExit("WinError-1314 Windows result is not 43+1")
+          else:
+              raise SystemExit("unknown Windows symlink state")
+          if (
+              windows["passed"] != int(os.environ["WINDOWS_PASSED"])
+              or windows["skipped"] != int(os.environ["WINDOWS_SKIPPED"])
+              or windows["symlink_probe"] != os.environ["WINDOWS_SYMLINK_STATE"]
+          ):
+              raise SystemExit("Windows job outputs disagree with retained receipt")
+
+          win_modes = {
+              item["mode"]: item for item in transports["windows"]["interpreters"]
+          }
+          linux_modes = {
+              item["mode"]: item for item in transports["ubuntu"]["interpreters"]
+          }
+          if set(win_modes) != {"windows_powershell_5_1", "windows_pwsh"}:
+              raise SystemExit("Windows interpreter set is incomplete")
+          if set(linux_modes) != {"linux_pwsh"}:
+              raise SystemExit("Ubuntu interpreter set is incomplete")
+          ps51 = win_modes["windows_powershell_5_1"]
+          if not ps51["full_version"].startswith("5.1."):
+              raise SystemExit("Windows PowerShell version is not 5.1")
+          expected_ps51_suffix = (
+              "\\windows\\system32\\windowspowershell\\v1.0\\powershell.exe"
+          )
+          if not ps51["path"].lower().endswith(expected_ps51_suffix):
+              raise SystemExit("Windows PowerShell path is not the native system path")
+          if (
+              windows["windows_powershell_5_1"]["path"] != ps51["path"]
+              or windows["windows_powershell_5_1"]["full_version"]
+              != ps51["full_version"]
+              or windows["windows_powershell_5_1"]["edition"] != ps51["edition"]
+              or windows["windows_powershell_5_1"][
+                  "ps_native_command_argument_passing"
+              ] != ps51["ps_native_command_argument_passing"]
+              or windows["pwsh"]["path"] != win_modes["windows_pwsh"]["path"]
+              or windows["pwsh"]["full_version"]
+              != win_modes["windows_pwsh"]["full_version"]
+              or windows["pwsh"]["edition"]
+              != win_modes["windows_pwsh"]["edition"]
+              or windows["pwsh"]["ps_native_command_argument_passing"]
+              != win_modes["windows_pwsh"]["ps_native_command_argument_passing"]
+              or ubuntu["pwsh"]["path"] != linux_modes["linux_pwsh"]["path"]
+              or ubuntu["pwsh"]["full_version"]
+              != linux_modes["linux_pwsh"]["full_version"]
+              or ubuntu["pwsh"]["edition"] != linux_modes["linux_pwsh"]["edition"]
+              or ubuntu["pwsh"]["ps_native_command_argument_passing"]
+              != linux_modes["linux_pwsh"]["ps_native_command_argument_passing"]
+          ):
+              raise SystemExit("platform receipt interpreter binding mismatch")
+          allowed_argument_passing = {
+              "Legacy", "Standard", "Windows", "LEGACY_UNAVAILABLE"
+          }
+          for mode, witness in {**win_modes, **linux_modes}.items():
+              if witness["edition"] not in {"Desktop", "Core"}:
+                  raise SystemExit(f"{mode} PowerShell edition is invalid")
+              if witness["ps_native_command_argument_passing"] not in allowed_argument_passing:
+                  raise SystemExit(f"{mode} native argument mode is invalid")
+          if (
+              ps51["edition"] != "Desktop"
+              or ps51["ps_native_command_argument_passing"] != "LEGACY_UNAVAILABLE"
+          ):
+              raise SystemExit("Windows PowerShell 5.1 legacy identity mismatch")
+          required_fixtures = {
+              "valid": {"outcome": "PASS", "exit_code": 0},
+              "malformed": {"outcome": "REFUSED", "exit_code": 20},
+              "nonfinite": {"outcome": "REFUSED", "exit_code": 20},
+              "missing_input": {"outcome": "REFUSED", "exit_code": 20},
+              "missing_interpreter": {"outcome": "REFUSED", "exit_code": 20},
+              "empty": {"outcome": "REFUSED", "exit_code": 20},
+              "multiline": {"outcome": "REFUSED", "exit_code": 20},
+              "nonhex": {"outcome": "REFUSED", "exit_code": 20},
+              "uppercase": {"outcome": "REFUSED", "exit_code": 20},
+              "nonzero": {"outcome": "REFUSED", "exit_code": 20},
+              "cleanup_error": {"outcome": "REFUSED", "exit_code": 20},
+              "preference_restore": {"outcome": "REFUSED", "exit_code": 20},
+          }
+          for mode, witness in {**win_modes, **linux_modes}.items():
+              if witness["fixtures"] != required_fixtures:
+                  raise SystemExit(f"{mode} fixture results are incomplete")
+          function_hashes = {
+              transport["production_function_sha256"]
+              for transport in transports.values()
+          }
+          valid_digests = {
+              transport["valid_digest"] for transport in transports.values()
+          }
+          if len(function_hashes) != 1 or len(valid_digests) != 1:
+              raise SystemExit("platform transport function or fixture digest drift")
+          if (
+              transports["windows"]["legacy_e336_windows_powershell_5_1"]
+              != {"outcome": "REPRODUCED_FAILURE", "exit_code": 20}
+          ):
+              raise SystemExit("e336 Windows PowerShell 5.1 failure was not reproduced")
+          for platform, transport in transports.items():
+              if (
+                  not transport["error_action_preference_restored"]
+                  or transport["temporary_script_cleanup"] != "PASS"
+                  or transport["cleanup_error"] != "REFUSED"
+              ):
+                  raise SystemExit(f"{platform} cleanup/preference witness failed")
+
+          retained = {}
+          for path in sorted(platforms.rglob("*")):
+              if path.is_file():
+                  retained[path.relative_to(root).as_posix()] = sha256(path)
           value = {
               "schema": "tier-bench/astra-stage2-control-identity-convergence-qualification@1",
               "classification": "CONVERGENCE_QUALIFIED_ACTUAL_IDENTITIES_UNBOUND",
@@ -336,7 +702,7 @@ jobs:
               "run_id": int(os.environ["GITHUB_RUN_ID"]),
               "run_attempt": int(os.environ["GITHUB_RUN_ATTEMPT"]),
               "source": {
-                  "branch": "release/astra-stage2-control-identity-v1-20260903",
+                  "branch": os.environ["RELEASE_BRANCH"],
                   "head_sha1": os.environ["SOURCE_HEAD"],
                   "tree_sha1": os.environ["SOURCE_TREE"],
                   "binder_head_sha1": os.environ["BINDER_HEAD"],
@@ -346,19 +712,44 @@ jobs:
               },
               "release_delta_paths": 9,
               "tests": {
-                  "total": 43,
+                  "total": 44,
                   "core": 34,
-                  "release": 9,
-                  "ubuntu_passed": 43,
+                  "release": 10,
+                  "ubuntu_passed": 44,
                   "ubuntu_skipped": 0,
-                  "windows_passed": int(os.environ["WINDOWS_PASSED"]),
-                  "windows_skipped": int(os.environ["WINDOWS_SKIPPED"]),
-                  "windows_symlink_probe": os.environ["WINDOWS_SYMLINK_STATE"],
-                  "windows_receipt_sha256": os.environ["WINDOWS_RECEIPT_SHA256"],
+                  "windows_passed": windows["passed"],
+                  "windows_skipped": windows["skipped"],
+                  "windows_symlink_probe": windows["symlink_probe"],
+                  "test_10_executed_or_winerror_1314": True,
+                  "test_30_executed": True,
                   "checkdigest_match_and_mismatch": "PASS",
                   "autocrlf_byte_custody": "PASS",
                   "powershell_surfaces_parsed": 2,
+                  "interpreters": {
+                      "windows_powershell_5_1": {
+                          "full_version": ps51["full_version"],
+                          "edition": ps51["edition"],
+                          "ps_native_command_argument_passing": ps51[
+                              "ps_native_command_argument_passing"
+                          ],
+                      },
+                      "windows_pwsh": {
+                          "full_version": win_modes["windows_pwsh"]["full_version"],
+                          "edition": win_modes["windows_pwsh"]["edition"],
+                          "ps_native_command_argument_passing": win_modes[
+                              "windows_pwsh"
+                          ]["ps_native_command_argument_passing"],
+                      },
+                      "linux_pwsh": {
+                          "full_version": linux_modes["linux_pwsh"]["full_version"],
+                          "edition": linux_modes["linux_pwsh"]["edition"],
+                          "ps_native_command_argument_passing": linux_modes[
+                              "linux_pwsh"
+                          ]["ps_native_command_argument_passing"],
+                      },
+                  },
               },
+              "retained_evidence": retained,
               "authority": {
                   "actual_executable_control_identities": "UNBOUND",
                   "physical_prepare": "NOT_RUN",
@@ -373,23 +764,35 @@ jobs:
           }
           payload = json.dumps(
               value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-          ).encode()
+          ).encode("utf-8")
           value["payload_sha256"] = hashlib.sha256(payload).hexdigest()
-          path = pathlib.Path(sys.argv[1])
-          path.write_text(
+          index_path = root / "qualification-index.json"
+          index_path.write_text(
               json.dumps(value, sort_keys=True, indent=2) + "\n",
               encoding="utf-8",
               newline="\n",
           )
+          manifest_paths = sorted(
+              path for path in root.rglob("*")
+              if path.is_file() and path.name != "SHA256SUMS"
+          )
+          (root / "SHA256SUMS").write_text(
+              "".join(
+                  f"{sha256(path)}  {path.relative_to(root).as_posix()}\n"
+                  for path in manifest_paths
+              ),
+              encoding="utf-8",
+              newline="\n",
+          )
           PY
-          printf 'index_path=%s\n' "$EVIDENCE_ROOT/qualification-index.json" >> "$GITHUB_OUTPUT"
-          cat "$EVIDENCE_ROOT/qualification-index.json" >> "$GITHUB_STEP_SUMMARY"
+          printf 'root=%s\n' "$root" >> "$GITHUB_OUTPUT"
+          cat "$root/qualification-index.json" >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload the single qualification index
+      - name: Upload complete qualification evidence and index
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: astra-stage2-control-identity-convergence-${{ github.run_id }}-${{ github.run_attempt }}
-          path: ${{ steps.index.outputs.index_path }}
+          path: ${{ steps.index.outputs.root }}
           if-no-files-found: error
           retention-days: 90
           compression-level: 9
