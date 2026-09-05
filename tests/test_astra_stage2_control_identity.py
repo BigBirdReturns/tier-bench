@@ -313,7 +313,6 @@ class ControlIdentityTests(unittest.TestCase):
         with self.assertRaisesRegex(Stage2Error, "not a regular file"):
             self.bind(bad, name="missing-weight")
 
-    @unittest.skipIf(os.name == "nt", "symlink creation is privilege-dependent on Windows")
     def test_10_symlinked_model_file_refuses(self) -> None:
         bad = copy.deepcopy(self.config)
         model_root = Path(bad["controls"][0]["model_root"])
@@ -321,7 +320,12 @@ class ControlIdentityTests(unittest.TestCase):
         real.write_text("{}", encoding="utf-8")
         link = model_root / "config.json"
         link.unlink()
-        link.symlink_to(real)
+        try:
+            link.symlink_to(real)
+        except OSError as exc:
+            if os.name == "nt" and getattr(exc, "winerror", None) == 1314:
+                self.skipTest("symlink creation is privilege-dependent on Windows")
+            raise
         with self.assertRaisesRegex(Stage2Error, "symbolic link"):
             self.bind(bad, name="symlink")
 
