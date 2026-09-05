@@ -595,5 +595,20 @@ class Stage2ScaffoldTests(unittest.TestCase):
             validate_observations(rows, self.plan, self.fixture_control)
 
 
+    def test_31_checksum_semantics_are_pinned_by_golden_coordinates(self) -> None:
+        expected = {
+            ("pointer_chase", 1, 1, 0): ("s2case_550b598fc9384419f1df2662", "0d00000000000000"),
+            ("coupled_ring", 8, 4, 1): ("s2case_5ba7d4ba75723e7d1ccb2210", "6402000600400002"),
+            ("branch_reconcile", 32, 16, 3): ("s2case_d5e48940242c1675c677b9f3", "d69c7f0ca4dcfcc2"),
+        }
+        for coordinate, (case_id, checksum) in expected.items():
+            task = build_task(
+                family=coordinate[0], k=coordinate[1], r=coordinate[2], replicate=coordinate[3]
+            )
+            self.assertEqual(task["case_id"], case_id)
+            self.assertEqual(task["expected_checksum"], checksum)
+
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

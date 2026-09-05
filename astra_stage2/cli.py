@@ -128,8 +128,8 @@ def _qualification(args: argparse.Namespace) -> dict[str, Any]:
         raise Stage2Error("fixture result is not bound to the qualified Stage 1 blob set")
     changed_paths = _read_changed_paths(args.changed_paths_z)
     tests = _test_count(args.test_log)
-    if tests != 30:
-        raise Stage2Error(f"expected 30 adversarial tests, observed {tests}")
+    if tests != 31:
+        raise Stage2Error(f"expected 31 adversarial tests, observed {tests}")
     _scan_public_files(
         [
             args.generator_manifest,
